@@ -1,0 +1,226 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   THE LANDING PAGE'S LIVE HALF, OFFLINE: lib/edgedesk_home.js (the view
+   model the landing page, the first-run screen and the trial emails share),
+   lib/edgedesk_track.js (the funnel client) and football/home/board.json
+   (tools/home/build_home.js).
+
+     1  nothing is fabricated: no data → no number (null, never 0); a count
+        of zero is hidden, not printed as a claim
+     2  staleness is judged at VIEW time: a game market older than 3 h is
+        DATA INCOMPLETE; a prop price is FRESH ≤15 min, AGING ≤30, STALE ≤90
+        (research-grade → WATCH), EXPIRED beyond (→ DATA INCOMPLETE, no EV)
+     3  the hero preview holds only RESEARCH / WATCH, 2-4 items, nothing
+        promoted to fill space
+     4  the four public words are the only words; never BET / LOCK / PICK
+     5  the tracker: known names only, one per entity per page load, no
+        e-mail / token / query string ever leaves, batches of ≤25, and its
+        name list is funnel.sql's client registry exactly
+     6  board.json: small, self-consistent, every price carries its time
+
+   (The JS status rule is held equal to the SQL one in home_sql.test.js,
+   against a real PostgreSQL.)
+
+   Run: node tools/home/home.test.js
+   =========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const ROOT = path.join(__dirname, '..', '..');
+const H = require(path.join(ROOT, 'lib', 'edgedesk_home.js'));
+const BH = require('./build_home.js');
+
+let pass = 0, fail = 0; const failures = [];
+function chk(label, ok, detail) { if (ok) pass++; else { fail++; failures.push(label + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); } }
+
+const NOW = Date.parse('2026-10-01T18:00:00Z');
+const ago = (min) => new Date(NOW - min * 60e3).toISOString();
+const ahead = (h) => new Date(NOW + h * 3600e3).toISOString();
+
+function prop(id, o) {
+  return Object.assign({
+    id, prop_id: 'cfb|1|' + id + '|rec_yds', league: 'cfb', game_key: 'cfb|1',
+    matchup: { home: 'Iowa', away: 'Ohio State', kickoff: ahead(30) },
+    player: { name: 'Player ' + id, team: 'Iowa', position: 'WR' }, market: { key: 'rec_yds', label: 'Receiving Yards' },
+    selection: { side: 'under', line: 44.5, text: 'Under 44.5 receiving yards' },
+    price: { american: -110, book: 'draftkings', captured_at: ago(8), books_at_line: 3 },
+    projection: { mean: 38.2, median: 35, p25: 20, p75: 55 }, probability: 0.58, fair_american: -138, break_even: 0.524,
+    ev: 0.041, ev_raw: 0.07, decision: 'LEAN', research_grade: true, research_score: 70, why: ['a'], concerns: ['b']
+  }, o || {});
+}
+function game(key, o) {
+  return Object.assign({
+    game_key: key, league: 'cfb', home: 'Iowa', away: 'Ohio State', kickoff_at: ahead(30), status: 'RESEARCH',
+    fair: { home_line: 7.7, total: null, text: 'Ohio State -7.7' }, market: { home_line: 14, text: 'Ohio State -14.0', book: 'fanduel', captured_at: ago(20), stale: false },
+    gap: { points: 6.3, toward: 'home' }, win_prob_home: 0.3, reliability: { score: 71 }, props: { top: [] }
+  }, o || {});
+}
+const rpc = (games, counts, times) => ({ ok: true, schema: 'edgedesk_home_board/1', games, counts: counts || {}, times: times || {} });
+
+/* ── 1 nothing fabricated ─────────────────────────────────────────────── */
+let v = H.build(null, null, NOW);
+chk('no data: not live, nothing to preview', v.ok === false && v.live === false && v.games.length === 0 && v.props.length === 0 && v.preview.length === 0);
+chk('no data: every count is null, never a zero', Object.keys(v.counts).every((k) => v.counts[k] === null), v.counts);
+chk('no data: no freshness text', v.times.updated_text === null && v.times.model_text === null && v.times.odds_text === null);
+v = H.build(rpc([], { games_analyzed: 0, props_tracked: 0, sportsbook_quotes: 0 }), null, NOW);
+chk('a zero headline stat is hidden (null), not printed as "0 games analyzed"', v.counts.games_analyzed === null && v.counts.props_tracked === null && v.counts.sportsbook_quotes === null);
+v = H.build(rpc([game('cfb|1', { fair: {}, market: {} })]), null, NOW);
+chk('a game without numbers prints no numbers', v.games[0].fair_text === null && v.games[0].market_text === null && v.games[0].projected_text === null);
+chk('…and is DATA INCOMPLETE with a reason, whatever label arrived', v.games[0].status === 'DATA_INCOMPLETE' && /market/.test(v.games[0].status_note), v.games[0].status_note);
+v = H.build(rpc([game('cfb|1', { fair: {} })]), null, NOW);
+chk('a market without EdgeDesk\'s number is not research', v.games[0].status === 'DATA_INCOMPLETE' && /not priced/.test(v.games[0].status_note));
+v = H.build(rpc([game('cfb|1')], { games_analyzed: 12, game_research: 1, watching: 3, passes: 5, data_incomplete: 3, sportsbook_quotes: 480 }, { model_updated_at: ago(12), market_updated_at: ago(20) }), null, NOW);
+chk('counts come straight from the database answer', v.counts.games_analyzed === 12 && v.counts.game_research === 1 && v.counts.watching === 3 && v.counts.sportsbook_quotes === 480, v.counts);
+chk('"updated" is the most recent of model and odds', v.times.updated_text === '12 min ago' && v.times.model_text === '12 min ago' && v.times.odds_text === '20 min ago', v.times);
+chk('without a prop summary, player-prop research is not invented', v.counts.prop_research === null && v.counts.props_tracked === null);
+chk('the fair and market lines are the numbers given', /7\.7/.test(v.games[0].fair_text) && /14\.0/.test(v.games[0].market_text) && v.games[0].gap_text === '6.3 pts');
+chk('one minus sign everywhere', v.games[0].fair_text.indexOf('-') < 0 && v.games[0].fair_text.indexOf('−') > 0, v.games[0].fair_text);
+
+/* ── 2 staleness at view time ─────────────────────────────────────────── */
+v = H.build(rpc([game('cfb|1', { market: { home_line: 14, book: 'fanduel', captured_at: ago(200) } })]), null, NOW);
+chk('a game market older than 3 h is DATA INCOMPLETE, and says why', v.games[0].status === 'DATA_INCOMPLETE' && /stale/.test(v.games[0].status_note) && v.games[0].market_stale === true, v.games[0]);
+v = H.build(rpc([game('cfb|1', { market: { home_line: 14, captured_at: ago(200) } }), game('cfb|2', { status: 'WATCH', market: { home_line: 3, captured_at: ago(300) } }), game('cfb|3')],
+  { games_analyzed: 3, game_research: 2, watching: 1, passes: 0, data_incomplete: 0 }, { model_updated_at: ago(10), market_updated_at: ago(20) }), null, NOW);
+chk('the headline counts follow a view-time downgrade (never "2 research-grade" over a board showing one)', v.counts.game_research === 1 && v.counts.watching === 0 && v.counts.data_incomplete === 2, v.counts);
+v = H.build(rpc([game('cfb|1')], { games_analyzed: 1 }, { model_updated_at: ago(240), market_updated_at: ago(200) }), null, NOW);
+chk('nothing refreshed in 3 h: the board is not "live"', v.times.stale === true && v.times.updated_text === '3 h ago');
+chk('…and a fresh one is', H.build(rpc([game('cfb|1')], {}, { model_updated_at: ago(10) }), null, NOW).times.stale === false);
+v = H.build(rpc([game('cfb|1', { market: { home_line: 14, captured_at: ago(20), stale: true } })]), null, NOW);
+chk('a market the database marked stale is DATA INCOMPLETE', v.games[0].status === 'DATA_INCOMPLETE');
+const ps = (min) => H.priceState(ago(min), NOW);
+chk('prop price windows: FRESH ≤15 · AGING ≤30 · STALE ≤90 · EXPIRED beyond', ps(10) === 'FRESH' && ps(15) === 'FRESH' && ps(25) === 'AGING' && ps(60) === 'STALE' && ps(91) === 'EXPIRED' && H.priceState(null, NOW) === 'UNKNOWN');
+let pv = H.propView(prop('a'), NOW);
+chk('a fresh research-grade LEAN is RESEARCH with its EV', pv.status === 'RESEARCH' && pv.ev_text === '+4.1%' && pv.odds_text === '−110' && pv.book === 'DraftKings' && pv.age_text === '8 min ago', pv);
+pv = H.propView(prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(45) } }), NOW);
+chk('the same prop at 45 min is WATCH, with a re-check note', pv.status === 'WATCH' && /re-check/.test(pv.status_note) && pv.price_state === 'STALE');
+pv = H.propView(prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW);
+chk('at 2 h it is DATA INCOMPLETE and no EV is printed', pv.status === 'DATA_INCOMPLETE' && pv.ev === null && pv.ev_text === null && /Stale price/.test(pv.status_note), pv);
+pv = H.propView(prop('a', { price: { book: 'draftkings', captured_at: ago(5) } }), NOW);
+chk('no price → DATA INCOMPLETE ("No sportsbook price is on file")', pv.status === 'DATA_INCOMPLETE' && /No sportsbook price/.test(pv.status_note));
+pv = H.propView(prop('a', { ev: null }), NOW);
+chk('no EV → DATA INCOMPLETE, not a guess', pv.status === 'DATA_INCOMPLETE' && pv.ev_text === null);
+pv = H.propView(prop('a', { decision: 'PASS' }), NOW);
+chk('the engine\'s PASS stays PASS', pv.status === 'PASS');
+pv = H.propView(prop('a', { research_grade: false, ev: 0.02 }), NOW);
+chk('a positive EV that is not research-grade is WATCH, never RESEARCH', pv.status === 'WATCH');
+chk('an Under with the projection below the line SUPPORTS the side', H.propView(prop('a'), NOW).supports === true && H.propView(prop('a', { selection: { side: 'over', line: 44.5 } }), NOW).supports === false);
+chk('a model-estimated probability says so', H.propView(prop('a', { probability_label: 'MODEL-ESTIMATED' }), NOW).ev_label === 'model-estimated');
+
+/* prop research counts only while that league's capture is fresh */
+const stat = (capMin, grade) => ({ schema: 'edgedesk_home_static/1', props: { counts: { cfb: { research_grade: grade, capture: { last_success_at: ago(capMin) } }, total: { props: 2400 } }, items: { a: prop('a'), b: prop('b', { research_score: 90 }) }, top: ['a', 'b'], by_game: {} } });
+v = H.build(rpc([]), stat(30, 24), NOW);
+chk('a fresh capture\'s research-grade count is the headline', v.counts.prop_research === 24 && v.counts.props_tracked === 2400, v.counts);
+v = H.build(rpc([]), stat(180, 24), NOW);
+chk('a stale capture\'s count is dropped for what is research-grade NOW', v.counts.prop_research === 2, v.counts);
+chk('research-grade props lead, best research score first', v.props[0].id === 'b' && v.props[1].id === 'a');
+const agedItems = stat(4, 24); agedItems.props.items = { a: prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(46) } }) };
+v = H.build(rpc([]), agedItems, NOW);
+chk('a fresh capture whose printed props have aged to WATCH claims no research-grade props', v.counts.prop_research === null && v.props[0].status === 'WATCH', v.counts);
+
+/* ── 3 the hero preview ───────────────────────────────────────────────── */
+const g4 = [game('cfb|1'), game('cfb|2', { status: 'WATCH' }), game('cfb|3', { status: 'PASS' }), game('cfb|4', { status: 'DATA_INCOMPLETE' })];
+v = H.build(rpc(g4), stat(30, 24), NOW);
+chk('the preview holds only RESEARCH and WATCH', v.preview.every((x) => (x.kind === 'game' ? x.game.status : x.prop.status).match(/^(RESEARCH|WATCH)$/)), v.preview.map((x) => x.kind));
+chk('…games first, then research-grade props, at most 4', v.preview.length <= 4 && v.preview[0].kind === 'game' && v.preview[0].game.status === 'RESEARCH' && v.preview.filter((x) => x.kind === 'prop').every((x) => x.prop.status === 'RESEARCH'));
+v = H.build(rpc([game('cfb|3', { status: 'PASS' })]), null, NOW);
+chk('a board of PASSes previews nothing rather than promoting one', v.preview.length === 0 && v.live === true);
+chk('the board sorts RESEARCH, WATCH, PASS, DATA INCOMPLETE', H.build(rpc(g4.slice().reverse()), null, NOW).games.map((g) => g.status).join() === 'RESEARCH,WATCH,PASS,DATA_INCOMPLETE');
+
+/* ── 4 words and links ────────────────────────────────────────────────── */
+chk('the four public words are the only words', Object.keys(H.STATUS).join() === 'RESEARCH,WATCH,PASS,DATA_INCOMPLETE' && !/\b(BET|LOCK|PICK)\b/.test(JSON.stringify(H.STATUS).replace(/not a bet|never a pick/gi, '')));
+v = H.build(rpc([game('cfb|1', { sample: true }), game('nfl|2026_05_KC_BUF', { league: 'nfl', home: 'Buffalo Bills', away: 'Kansas City Chiefs', status: 'WATCH' })]), null, NOW);
+chk('a public sample link only where an admin made the game public', v.games[0].sample_url === '/research/sample/?game=cfb%7C1' && v.games[1].sample_url === null);
+chk('terminal links: college by game id, NFL with its league prefix', v.games[0].app_hash === '#research/football/1' && v.games[1].app_hash === '#research/football/nfl|2026_05_KC_BUF', v.games.map((g) => g.app_hash));
+chk('NFL numbers read with team codes', /BUF|KC/.test(v.games[1].fair_text), v.games[1].fair_text);
+
+/* the signed-in copy: research-state rows → the same shape */
+const rows = [
+  { game_key: 'cfb|1', sport: 'cfb', home: 'Iowa', away: 'Ohio State', kickoff_at: ahead(20), projected: true, status: 'RESEARCH', research_label: 'WORTH_RESEARCHING', research_grade: true, market_home_line: 14, market_stale: false, gap_pts: 6.3, fair_home_line: 7.7, market_captured_at: ago(20), computed_at: ago(5) },
+  { game_key: 'cfb|2', sport: 'cfb', home: 'A', away: 'B', kickoff_at: ahead(20), projected: true, status: 'AGREEMENT', research_grade: false, market_home_line: -3, market_stale: false, gap_pts: 0.5, computed_at: ago(9) },
+  { game_key: 'cfb|3', sport: 'cfb', home: 'C', away: 'D', kickoff_at: ahead(20), projected: true, status: 'NO MARKET', research_grade: false, market_home_line: null, gap_pts: null, computed_at: ago(9) },
+  { game_key: 'cfb|old', sport: 'cfb', home: 'E', away: 'F', kickoff_at: ago(60), projected: true, status: 'RESEARCH', research_grade: true, market_home_line: -3, gap_pts: 5 },
+  { game_key: 'cfb|far', sport: 'cfb', home: 'G', away: 'H', kickoff_at: ahead(24 * 10), projected: true, status: 'RESEARCH', research_grade: true, market_home_line: -3, gap_pts: 5 }
+];
+const fr = H.fromStateRows(rows, NOW);
+chk('state rows: only games kicking off in the next 8 days', fr.games.map((g) => g.game_key).join() === 'cfb|1,cfb|2,cfb|3');
+chk('state rows: the four counts add up', fr.counts.game_research === 1 && fr.counts.passes === 1 && fr.counts.data_incomplete === 1 && fr.counts.watching === 0 && fr.counts.games_on_slate === 3, fr.counts);
+chk('state rows: a DATA INCOMPLETE game says why', fr.games[2].status_note === 'No current sportsbook market has been captured.');
+chk('state rows: times are the newest real ones', fr.times.model_updated_at === ago(5) && fr.times.market_updated_at === ago(20));
+
+/* ── 5 the tracker ────────────────────────────────────────────────────── */
+function store() { const m = {}; return { getItem: (k) => (k in m ? m[k] : null), setItem: (k, v) => { m[k] = String(v); }, removeItem: (k) => { delete m[k]; }, _m: m }; }
+const sent = [];
+Object.assign(globalThis, {
+  localStorage: store(), sessionStorage: store(),
+  location: { pathname: '/', search: '?utm_source=Reddit&utm_medium=social!&utm_campaign=wk5%20launch&email=a@b.com', hostname: 'edgedesksports.com' },
+  document: { referrer: 'https://www.reddit.com/r/cfb/comments/abc?x=1', visibilityState: 'visible', addEventListener() {} },
+  addEventListener() {},
+  fetch: async (url, init) => { sent.push({ url, init, body: JSON.parse(init.body) }); return { ok: true }; }
+});
+const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
+(async function () {
+  T.configure({ url: 'https://sb.test', key: 'anon-key', flush_ms: 0, ga: false });
+  T._reset();
+  chk('an unknown event name is dropped before the network', T.event('page_scrolled', {}) === false && T.event('subscription_started', {}) === false && T._queue().length === 0);
+  chk('a known event queues', T.event('landing_view', { surface: 'hero' }) === true && T._queue().length === 1);
+  chk('the same event twice on one page load queues once (re-renders cannot double-count)', T.event('landing_view', { surface: 'hero' }) === false && T._queue().length === 1);
+  chk('a different entity is a different event', T.event('game_opened', { entity: 'cfb|1' }) && T.event('game_opened', { entity: 'cfb|2' }) && !T.event('game_opened', { entity: 'cfb|1' }));
+  chk('a different CTA is a different click', T.event('cta_clicked', { cta: 'hero_board' }) && T.event('cta_clicked', { cta: 'pricing' }) && !T.event('cta_clicked', { cta: 'pricing' }));
+  chk('once:false lets it queue again (the server still dedupes)', T.event('cta_clicked', { cta: 'pricing' }, { once: false }) === true);
+  const p = T._props({ entity: 'cfb|1', email: 'reader@example.com', note: 'mail me at x@y.z', Bad_Key: 1, nested: { a: 1 }, n: Infinity, ok: true, long: 'x'.repeat(500) });
+  chk('props keep short scalars and drop anything with an @, objects, odd keys and non-finite numbers', p.entity === 'cfb|1' && !('email' in p) && !('note' in p) && !('Bad_Key' in p) && !('nested' in p) && !('n' in p) && p.ok === true && p.long.length === 120, p);
+  const many = {}; for (let i = 0; i < 30; i++) many['k' + i] = i;
+  chk('at most 16 props', Object.keys(T._props(many)).length === 16);
+  const q = T._queue()[0];
+  chk('context: the path without its query string', q.page_path === '/');
+  chk('context: the referring HOST only', q.referrer === 'www.reddit.com');
+  chk('context: utm values cleaned to [a-z0-9_.-]', q.utm_source === 'reddit' && q.utm_medium === 'social' && q.utm_campaign === 'wk5launch', q);
+  await T.flush();
+  chk('one request for the whole queue', sent.length === 1 && sent[0].url === 'https://sb.test/rest/v1/rpc/ed_track' && sent[0].body.p_events.length === 6, sent.map((s) => s.body.p_events.length));
+  const body = JSON.stringify(sent[0].body);
+  chk('nothing in the body looks like an address, a token or a query string', !/@/.test(body) && !/utm_source=|\?/.test(body) && !/anon-key|access_token/.test(body));
+  chk('a visitor id and a session id ride along', /^[a-f0-9]{36}$/.test(sent[0].body.p_visitor) && /^[a-f0-9]{24}$/.test(sent[0].body.p_session), [sent[0].body.p_visitor, sent[0].body.p_session]);
+  chk('the visitor id is the page\'s shared one (localStorage edgedesk_visitor)', globalThis.localStorage.getItem('edgedesk_visitor') === sent[0].body.p_visitor);
+  chk('signed out, the request carries the anon key', sent[0].init.headers.authorization === 'Bearer anon-key' && sent[0].init.credentials === 'omit');
+  globalThis.localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'user-jwt', expires_at: Math.floor(Date.now() / 1000) + 3600 }));
+  T.event('board_viewed', {}); await T.flush();
+  chk('signed in, the reader\'s own token — the server takes the user from it, never from the body', sent[1].init.headers.authorization === 'Bearer user-jwt' && !/user-jwt/.test(sent[1].init.body));
+  globalThis.localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'old-jwt', expires_at: Math.floor(Date.now() / 1000) - 10 }));
+  T.event('prop_board_opened', {}); await T.flush();
+  chk('an expired token is not used', sent[2].init.headers.authorization === 'Bearer anon-key');
+  T._reset();
+  for (let i = 0; i < 30; i++) T.event('prop_opened', { entity: 'p' + i });
+  const before = sent.length; await T.flush();
+  chk('batches of at most 25', sent.length - before === 2 && sent[before].body.p_events.length === 25 && sent[before + 1].body.p_events.length === 5);
+  T._reset(); T.configure({ enabled: false });
+  chk('switched off, nothing queues', T.event('landing_view', {}) === false && T._queue().length === 0);
+  T.configure({ enabled: true });
+  const sid = T.session(Date.now());
+  chk('a session holds inside 30 minutes idle', T.session(Date.now() + 29 * 60e3) === sid);
+  chk('and renews after', T.session(Date.now() + 29 * 60e3 + 31 * 60e3) !== sid);
+  globalThis.fetch = async () => { throw new Error('offline'); };
+  T._reset(); T.event('landing_view', {});
+  chk('an offline phone costs the reader nothing (flush resolves false, never throws)', (await T.flush()) === false);
+
+  const FSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'funnel.sql'), 'utf8');
+  const clientKinds = [...FSQL.matchAll(/^\s*\('([a-z_0-9]+)',\s*'client'/gm)].map((m) => m[1]).sort();
+  chk('the tracker\'s names are funnel.sql\'s client registry exactly', JSON.stringify(T.CLIENT.slice().sort()) === JSON.stringify(clientKinds), { js: T.CLIENT.length, sql: clientKinds.length });
+
+  /* ── 6 board.json ─────────────────────────────────────────────────── */
+  const RAW = fs.readFileSync(path.join(ROOT, 'football', 'home', 'board.json'), 'utf8');
+  const S = JSON.parse(RAW);
+  chk('board.json is the static schema, and small (< 64 KB)', S.schema === 'edgedesk_home_static/1' && Buffer.byteLength(RAW) < 64 * 1024, Buffer.byteLength(RAW));
+  chk('props.top: at most 12 ids, each printed once in items', S.props.top.length <= BH.LIMITS.top && S.props.top.every((id) => S.props.items[id]));
+  chk('props.by_game: at most 3 ids a game, each in items', Object.values(S.props.by_game).every((g) => (g.top || []).length <= BH.LIMITS.per_game && (g.top || []).every((id) => S.props.items[id])));
+  chk('every printed prop carries its price and the time it was captured', Object.values(S.props.items).every((p) => p.price && typeof p.price.american === 'number' && isFinite(Date.parse(p.price.captured_at))));
+  chk('every college game EV carries the exact quote it is for', Object.values(S.game_ev).every((e) => e.selection && typeof e.price === 'number' && e.book && isFinite(Date.parse(e.captured_at)) && 'calibrated_ev' in e && 'raw_ev' in e));
+  chk('the landing page no longer needs the 6 MB ratings file', !!S.ratings && Array.isArray(S.ratings.top) && S.ratings.top.length <= 5);
+  const rebuilt = BH.build({ now: S.generated_at });
+  chk('build_home is deterministic over the committed artifacts', JSON.stringify(Object.assign({}, rebuilt, { generated_at: null })) === JSON.stringify(Object.assign({}, S, { generated_at: null })));
+  const noRead = BH.build({ now: S.generated_at, read: () => null });
+  chk('with no artifacts it writes an empty board, not an invented one', noRead.props.top.length === 0 && Object.keys(noRead.props.items).length === 0 && Object.keys(noRead.game_ev).length === 0);
+
+  failures.forEach((f) => console.log('FAIL | ' + f));
+  console.log((fail ? 'FAILED' : 'ALL GREEN') + ' home view model + tracker — ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail ? 1 : 0);
+})();

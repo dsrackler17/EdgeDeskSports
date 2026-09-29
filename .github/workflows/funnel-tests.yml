@@ -1,0 +1,102 @@
+# EdgeDesk — the checks that gate the conversion funnel: the landing page's
+# live board, the terminal's first run, the funnel analytics, the operator's
+# dashboard and the trial emails.
+#
+#   suites      lib/edgedesk_home.js (the view model the landing page, the
+#               first run and the emails share), lib/edgedesk_track.js (the
+#               funnel client), football/home/board.json, the email templates
+#               and the sender — offline.
+#   migrations  supabase/funnel.sql, lifecycle_email.sql and home_board.sql
+#               applied TWICE to a throwaway PostgreSQL and attacked as other
+#               readers, as anon and as the service role; the browser's status
+#               rule held equal to the database's.
+#   browser     index.html at 375 · 390 · 430 · 768 · 1280 (live, stale and
+#               unreachable data), the first run in app.html, admin/funnel/.
+#
+# Nothing here deploys, writes or sends.
+name: Funnel tests
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'app.html'
+      - 'methodology/**'
+      - 'admin/funnel/**'
+      - 'email/**'
+      - 'lib/edgedesk_home.js'
+      - 'lib/edgedesk_track.js'
+      - 'lib/edgedesk_first_run.*'
+      - 'lib/edgedesk_pricing.js'
+      - 'lib/edgedesk_personal_ui.js'
+      - 'lib/edgedesk_props_ui.js'
+      - 'supabase/funnel.sql'
+      - 'supabase/home_board.sql'
+      - 'supabase/lifecycle_email.sql'
+      - 'supabase/growth.sql'
+      - 'supabase/personal_research.sql'
+      - 'football/home/**'
+      - 'tools/home/**'
+      - 'tools/funnel/**'
+      - 'tools/lifecycle/**'
+      - '.github/workflows/funnel-tests.yml'
+      - '.github/workflows/lifecycle-email.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: funnel-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Nothing fabricated, staleness judged at view time, the tracker sends nothing private
+        run: node tools/home/home.test.js
+      - name: The trial emails read the live board, pass the copy rule and cannot double-send
+        run: node tools/lifecycle/lifecycle.test.js
+      - name: The landing page's promises and its interaction
+        run: |
+          node tools/presentation/landing_positioning.test.js
+          node tools/presentation/landing_interaction.test.js
+          node tools/presentation/landing_ev.test.js
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Funnel events, the first-run state, the admin report and the trial email queue
+        run: node tools/funnel/funnel_sql.test.js
+      - name: The public home board is a subset, cached, and says what the research state says
+        run: node tools/home/home_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The landing page at five widths, live, stale and unreachable
+        run: node tools/home/landing.e2e.js
+      - name: The terminal's first run for a new trial
+        run: node tools/funnel/first_run.e2e.js
+      - name: The operator's conversion dashboard
+        run: node tools/funnel/admin_funnel.e2e.js

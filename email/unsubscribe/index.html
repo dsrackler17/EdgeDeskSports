@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Trial emails — EdgeDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     ONE-CLICK OPT-OUT FOR THE TRIAL TIPS (supabase/lifecycle_email.sql).
+
+     The link in a trial email carries ?t=<64-hex token>. This page posts that
+     token — and nothing else — to lifecycle_unsubscribe(), which turns off
+     user_preferences.trial_emails for the account the token belongs to and
+     skips any tip still waiting to go. It returns only { ok }: it never says
+     whose token it was, so the page cannot be used to look anybody up.
+
+     The billing reminder before a trial converts is NOT a tip and is not
+     switched off here — a card is about to be charged, and that notice is
+     owed. Cancel in the terminal (Settings › Subscription) to stop it.
+     =========================================================================== -->
+<style>
+:root{--ink:#0d1117;--panel:#141a22;--line:#26303c;--text:#eef2f6;--dim:#9aa7b4;--faint:#6b7885;--accent:#2fa79a;--on-accent:#042320;--neg:#e2604a}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:480px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+.ey{font:700 11px/1.4 'JetBrains Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:22px;line-height:1.25;letter-spacing:-.02em;margin:10px 0 10px}
+p{color:var(--dim);font-size:14.5px;margin-top:10px}
+p.err{color:var(--neg)}
+.btn{display:inline-block;margin-top:18px;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;border-radius:10px;padding:11px 16px;text-decoration:none;border:0;cursor:pointer}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+small{display:block;margin-top:18px;color:var(--faint);font-size:12px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main class="card" aria-live="polite">
+  <span class="ey">EdgeDesk · Trial emails</span>
+  <h1 id="h">Turning off trial tips…</h1>
+  <p id="m">One moment.</p>
+  <a class="btn" id="go" href="/app.html" hidden>Open the terminal</a>
+  <small>Research, not picks. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</small>
+</main>
+<script>
+(function(){
+  var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go');
+  function done(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; go.hidden=false; }
+  var t=''; try{ t=(new URLSearchParams(location.search).get('t')||'').toLowerCase(); }catch(_){}
+  /* the token leaves the address bar before anything else happens */
+  try{ history.replaceState(null,'',location.pathname); }catch(_){}
+  if(!/^[0-9a-f]{64}$/.test(t)){
+    done('That link is incomplete.','Open the most recent EdgeDesk email and use its link again, or switch trial emails off in the terminal under Settings.',true);
+    return;
+  }
+  fetch(SB_URL+'/rest/v1/rpc/lifecycle_unsubscribe',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:t})})
+    .then(function(r){ return r.ok?r.json():null; })
+    .then(function(j){
+      if(j&&j.ok){ done('Trial tips are off.','You will not get the day-1 or day-3 research emails. If your trial is set to convert, we still send one billing notice before your card is charged — cancel in the terminal under Settings › Subscription to stop that too.'); }
+      else{ done('That link has expired or was already used.','If you are still getting emails you do not want, reply to one of them and we will take care of it.',true); }
+    })
+    .catch(function(){ done('We could not reach EdgeDesk.','Check your connection and open the link again.',true); });
+})();
+</script>
+</body>
+</html>

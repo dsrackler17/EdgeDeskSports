@@ -15,11 +15,11 @@
   gtag('js', new Date());
   gtag('config', 'G-1PXVBV53FZ');
 </script>
-<!-- Reveal-on-scroll hides content only when script is running, so a page
-     whose JS fails never leaves a section invisible. -->
+<!-- Reveal-on-scroll and the live-board skeleton hide content only when script
+     is running, so a page whose JS fails never leaves a section invisible. -->
 <script>document.documentElement.className+=' js';</script>
 <title>EdgeDesk Sports | Football Research Terminal</title>
-<meta name="description" content="Research NFL and college football in one terminal: model vs market, matchups, rosters, simulations, EdgeDesk EV and the uncertainty. Research, not picks.">
+<meta name="description" content="Research NFL and college football in one terminal: model vs market, game lines, player props, EdgeDesk EV and stated uncertainty. Research, not picks.">
 <link rel="canonical" href="https://edgedesksports.com/">
 <meta name="theme-color" content="#100e0a">
 <meta name="color-scheme" content="dark">
@@ -28,21 +28,22 @@
 <meta property="og:site_name" content="EdgeDesk Sports">
 <meta property="og:url" content="https://edgedesksports.com/">
 <meta property="og:title" content="EdgeDesk Sports | Football Research Terminal">
-<meta property="og:description" content="Research the matchup. Then price it. The model, the market, the matchup, the roster, EdgeDesk EV and the uncertainty for every NFL and FBS game. Research, not picks.">
+<meta property="og:description" content="Find where the model and the market disagree. Game lines, player props, EdgeDesk EV and the uncertainty behind every NFL and FBS game. Research, not picks.">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:site" content="@edgedesksports">
 <meta name="twitter:title" content="EdgeDesk Sports | Football Research Terminal">
-<meta name="twitter:description" content="A football research terminal for NFL and FBS: model against market, matchup and roster research, EdgeDesk EV and stated uncertainty. It never tells you what to bet.">
+<meta name="twitter:description" content="One football research terminal for the game, the market and the players: NFL and FBS model vs market, player props, EdgeDesk EV and stated uncertainty. Research, not picks.">
 <!-- Structured data: who publishes this and what it sells. No rating, no
      review count and no user count — nothing is claimed here that the page
-     itself does not state. The offer must match PRICE_DISPLAY below. -->
+     itself does not state. The offer must match lib/edgedesk_pricing.js. -->
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://edgedesksports.com/#org","name":"EdgeDesk Sports","url":"https://edgedesksports.com/","email":"support@edgedesksports.com","legalName":"Rackler Tech Ventures LLC"},
  {"@type":"WebSite","@id":"https://edgedesksports.com/#site","url":"https://edgedesksports.com/","name":"EdgeDesk Sports","publisher":{"@id":"https://edgedesksports.com/#org"}},
- {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"A football research terminal for NFL and FBS: model against market, matchup, roster and player research, EdgeDesk EV and stated uncertainty. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","price":"79.99","priceCurrency":"USD","description":"7-day free trial, then $79.99 per month. Cancel anytime.","category":"subscription"}}
+ {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"A football research terminal for NFL and FBS: model against market for game lines and player props, matchup and roster research, EdgeDesk EV and stated uncertainty. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","price":"79.99","priceCurrency":"USD","description":"7-day free trial, then $79.99 per month. Cancel anytime.","category":"subscription"}}
 ]}
 </script>
+<link rel="preconnect" href="https://iattxbkbufslbauoumga.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -51,23 +52,20 @@
   /* THE GROUND is a warm ink — brown-black, with the paper-white to match —
      rather than the cool blue-grey every dark product ships. Every step here
      was solved to the luminance of the step it replaced, so depth and contrast
-     are fixed and only hue moves. Keep that property if these ever change: a
-     ramp that drifts lighter washes the whole UI out, and a hue change should
-     never quietly become a contrast change. */
+     are fixed and only hue moves. */
   --ink:#100e0a;--panel:#191510;--raised:#221c15;--cell:#1e1913;
   --line:#332a1b;--line2:#3a3124;
   --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
   /* semantic provenance palette — each hue is a source/status, not decoration.
-     OBSERVED doubles as the brand accent. Teal is a mid-tone, so anything
-     painted ON it takes dark text: use --on-accent, never white. */
-  --obs:#2fa79a;   /* OBSERVED   — measured from data, and the brand accent */
-  --est:#d9a441;   /* ESTIMATED  — needs attention */
-  --exp:#d274b0;   /* EXPERIMENTAL — model running, not yet validated */
-  --val:#7cc142;   /* VALIDATED  — proven over a real sample / positive */
+     OBSERVED doubles as the brand accent. Anything painted ON teal takes dark
+     text: use --on-accent, never white. */
+  --obs:#2fa79a;   /* OBSERVED / RESEARCH */
+  --est:#d9a441;   /* ESTIMATED / WATCH   */
+  --exp:#d274b0;   /* EXPERIMENTAL        */
+  --val:#7cc142;   /* VALIDATED / positive */
   --neg:#e2664b;
   --accent:var(--obs);--on-accent:#042320;
   --brand-lit:var(--exp);
-  /* aliases used by the preserved live-record loader */
   --warn:var(--est);--border:var(--line);
   --deep:#0d0b08;
   --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -92,7 +90,7 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .skip:focus{top:10px}
 
 /* ---------- buttons ---------- */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;line-height:1.2;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer;text-align:center;white-space:nowrap;transition:background .15s,border-color .15s,color .15s,transform .15s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;line-height:1.2;border-radius:10px;padding:10px 16px;border:1px solid transparent;cursor:pointer;text-align:center;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
 .btn.primary{background:var(--obs);color:var(--on-accent);border-color:var(--obs);font-weight:700}
 .btn.primary:hover{background:#4cc2b4;border-color:#4cc2b4}
 .btn.ghost{background:transparent;color:var(--text);border-color:var(--line2)}
@@ -105,16 +103,14 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .lnk:hover{border-bottom-color:var(--obs)}
 
 /* ---------- nav ---------- */
-.nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.88);-webkit-backdrop-filter:saturate(140%) blur(12px);backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--line)}
+.nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.9);-webkit-backdrop-filter:saturate(140%) blur(12px);backdrop-filter:saturate(140%) blur(12px);border-bottom:1px solid var(--line)}
 .nav-in{display:flex;align-items:center;gap:8px;height:64px}
 .logo{display:flex;align-items:center;gap:10px;font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:-.01em;flex:none}
 .logo .mk{width:10px;height:20px;background:linear-gradient(180deg,var(--obs),var(--brand-lit));border-radius:2px;transform:skewX(-11deg);flex:none}
 .logo small{font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-left:-2px;padding-top:2px}
 .nav-links{display:flex;align-items:center;gap:2px;flex:1;margin-left:26px}
-.nlink{color:var(--dim);font-size:14px;font-weight:500;padding:8px 12px;border-radius:8px;white-space:nowrap;transition:color .15s,background .15s}
+.nlink{color:var(--dim);font-size:14px;font-weight:500;padding:8px 11px;border-radius:8px;white-space:nowrap;transition:color .15s,background .15s}
 .nlink:hover{color:var(--text);background:rgba(241,235,223,.04)}
-/* The free, no-account pages live in the menu and the footer rather than
-   competing with the trial for the bar; on a phone they are in the menu. */
 .nav-links .nlink[href="/games/"],.nav-links .nlink[href="/articles"]{display:none}
 #navLogin{margin-left:auto}
 .nav-offer{display:none}
@@ -126,7 +122,7 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .nav.open .burger i{background:transparent}
 .nav.open .burger i::before{transform:translateY(5px) rotate(45deg)}
 .nav.open .burger i::after{transform:translateY(-5px) rotate(-45deg)}
-@media(max-width:900px){
+@media(max-width:960px){
   .burger{display:inline-flex}
   .nav-links{display:none;position:absolute;top:64px;left:0;right:0;margin:0;flex-direction:column;align-items:stretch;gap:0;padding:6px 20px 20px;background:var(--ink);border-bottom:1px solid var(--line);box-shadow:0 30px 40px -30px rgba(0,0,0,.8)}
   .nav.open .nav-links{display:flex}
@@ -138,342 +134,272 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 @media(max-width:560px){.wrap{padding:0 16px}.logo small{display:none}.nav-in{height:60px}.nav-links{top:60px;padding:4px 16px 18px}#navSignup{padding:10px 13px;font-size:13.5px}}
 @media(max-width:340px){.logo{font-size:16px}#navSignup{padding:9px 10px;font-size:12.5px}.burger{width:38px;height:38px}}
 
-/* ---------- shared data grammar: the terminal's own labels and cells ---------- */
+/* ---------- the terminal's own data grammar ---------- */
 .ey{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
 .ey::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--obs);flex:none}
 .l{display:block;font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
-.v{display:block;font-family:var(--mono);font-weight:700;font-size:17px;line-height:1.25;margin-top:4px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.v.mdl{color:var(--obs)}.v.warn{color:var(--est)}.v.pos{color:var(--val)}.v.neg{color:var(--neg)}.v.dim{color:var(--dim)}
-.st{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;border:1px solid var(--line2);border-radius:6px;padding:3px 8px;white-space:nowrap;color:var(--dim)}
-.st.warn{color:var(--est);border-color:rgba(217,164,65,.45)}
-.st.pos{color:var(--val);border-color:rgba(124,193,66,.45)}
-.st.neg{color:var(--neg);border-color:rgba(226,102,75,.45)}
-.st.mdl{color:var(--obs);border-color:rgba(47,167,154,.45)}
+.v{display:block;font-family:var(--mono);font-weight:700;font-size:16px;line-height:1.25;margin-top:3px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.v.mdl{color:var(--obs)}.v.warn{color:var(--est)}.v.pos{color:var(--val)}.v.neg{color:var(--neg)}
+.st{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;border:1px solid var(--line2);border-radius:6px;padding:3px 7px;white-space:nowrap;color:var(--dim)}
+.st.research{color:var(--obs);border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.07)}
+.st.watch{color:var(--est);border-color:rgba(217,164,65,.45)}
+.st.pass{color:var(--dim);border-color:var(--line2)}
+.st.incomplete{color:var(--neg);border-color:rgba(226,102,75,.4)}
 .ck{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);border-radius:5px;padding:2px 7px;color:var(--dim);white-space:nowrap}
 .ck.ok{color:var(--val);border-color:rgba(124,193,66,.32)}
 .ck.warn{color:var(--est);border-color:rgba(217,164,65,.34)}
 .ck.neg{color:var(--neg);border-color:rgba(226,102,75,.34)}
 .chks{display:flex;flex-wrap:wrap;gap:5px}
-/* product panels: what a subscriber actually sees, in its own chrome */
+.age{font-family:var(--mono);font-size:10px;color:var(--faint);white-space:nowrap}
+.age.aging{color:var(--est)}.age.stale{color:var(--neg)}
 .panel{background:var(--panel);border:1px solid var(--line2);border-radius:16px;overflow:hidden}
 .panel-bar{display:flex;align-items:center;gap:10px;padding:11px 16px;border-bottom:1px solid var(--line);background:#14100b;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.03em}
 .panel-bar .mk{width:6px;height:13px;background:linear-gradient(180deg,var(--obs),var(--brand-lit));border-radius:1px;transform:skewX(-11deg);flex:none}
 .panel-bar .nm{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .panel-bar .tag{margin-left:auto;flex:none;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);border:1px solid var(--line2);border-radius:5px;padding:3px 7px}
+.panel-bar .tag.live{color:var(--val);border-color:rgba(124,193,66,.4)}
+.panel-bar .tag.live::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--val);margin-right:6px;vertical-align:1px}
 .panel-foot{padding:10px 16px;border-top:1px solid var(--line);background:#14100b;font-family:var(--mono);font-size:10px;letter-spacing:.03em;line-height:1.6;color:var(--faint)}
 .cells{display:grid;gap:1px;background:var(--line)}
-.cells>div{background:var(--panel);padding:12px 14px;min-width:0}
+.cells>div{background:var(--panel);padding:10px 12px;min-width:0}
+.c3{grid-template-columns:repeat(3,minmax(0,1fr))}
 
 /* ---------- hero ---------- */
-.hero{position:relative;padding:76px 0 104px}
+.hero{position:relative;padding:64px 0 76px}
 .hero::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(55% 60% at 82% 18%,rgba(47,167,154,.09),transparent 70%)}
-.hero-in{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,540px);gap:60px;align-items:center}
-h1{font-size:clamp(42px,5.6vw,70px);line-height:1;letter-spacing:-.04em;margin-top:20px}
+.hero-in{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,520px);gap:52px;align-items:start}
+h1{font-size:clamp(40px,4.8vw,60px);line-height:1.03;letter-spacing:-.04em;margin-top:18px}
 h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.sub{font-size:clamp(16.5px,1.5vw,19px);line-height:1.55;color:var(--dim);max-width:32em;margin-top:24px}
+.sub{font-size:clamp(16.5px,1.45vw,18.5px);line-height:1.55;color:var(--dim);max-width:34em;margin-top:22px}
 .sub b{color:var(--text);font-weight:600}
-.instead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 9px;margin-top:16px;font-size:14px;color:var(--faint)}
-.instead .k{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
-.instead s{color:var(--dim);text-decoration-color:rgba(226,102,75,.6)}
-.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
-/* the offer, directly under the button: never something a reader hunts for */
-.microcta{display:flex;flex-wrap:wrap;gap:6px 0;margin-top:16px;font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--dim);line-height:1.6}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.microcta{display:flex;flex-wrap:wrap;gap:6px 0;margin-top:14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--dim);line-height:1.6}
 .microcta>span{padding:0 12px;position:relative}
 .hero .microcta>span{white-space:nowrap}
 .microcta>span:first-child{padding-left:0}
 .microcta>span+span::before{content:"";position:absolute;left:-2px;top:50%;width:3px;height:3px;border-radius:50%;background:var(--line2)}
 .microcta b{color:var(--text);font-weight:500}
-/* space is reserved before the counts arrive, so the hero never jumps */
-.live{margin-top:10px;min-height:17px;font-family:var(--mono);font-size:10.5px;line-height:17px;color:var(--faint);letter-spacing:.02em}
-.live b{color:var(--dim);font-weight:500}
-@media(max-width:980px){.hero-in{grid-template-columns:1fr;gap:44px}.hero{padding:44px 0 80px}}
+/* live statistics: space reserved, each metric hidden until the database returns it */
+.stats{list-style:none;padding:0;margin:22px 0 0;display:flex;flex-wrap:wrap;gap:8px;min-height:34px}
+.stats li{display:inline-flex;align-items:baseline;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:rgba(25,21,16,.6)}
+.stats li b{color:var(--text);font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.stats li.upd{border-color:rgba(124,193,66,.3);color:var(--val)}
+.stats li.upd::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--val);flex:none;align-self:center}
+.stats li.upd.old{border-color:rgba(217,164,65,.35);color:var(--est)}
+.stats li.upd.old::before{background:var(--est)}
+@media(max-width:1020px){.hero-in{grid-template-columns:1fr;gap:36px}.hero{padding:40px 0 64px}}
 @media(max-width:560px){
-  .hero{padding:28px 0 64px}
-  h1{font-size:clamp(34px,10.2vw,44px);margin-top:14px;letter-spacing:-.035em}
-  .sub{font-size:16px;margin-top:16px}
-  .instead{font-size:13px;margin-top:12px}
-  .cta{margin-top:22px;gap:10px}
-  .cta .btn.lg{flex:1 1 auto;padding:14px 16px;font-size:15px}
+  .hero{padding:24px 0 52px}
+  h1{font-size:clamp(33px,9.6vw,42px);margin-top:12px;letter-spacing:-.035em}
+  .sub{font-size:16px;margin-top:14px}
+  .cta{margin-top:20px;gap:10px}
+  .cta .btn.lg{flex:1 1 100%;padding:14px 16px;font-size:15.5px}
   .hero .ey{font-size:10px;letter-spacing:.14em}
   .hero .microcta{font-size:11px}
-  .live{min-height:34px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:18px;min-height:0}
+  .stats li{font-size:10.5px;padding:6px 8px;flex-wrap:wrap;gap:0 5px}
 }
-/* wherever the hero column is too narrow for the offer on one line, a 2x2
-   grid rather than a wrapped row that starts with a separator */
 @media(max-width:1180px){
   .hero .microcta{display:grid;grid-template-columns:auto auto;justify-content:start;gap:3px 22px}
   .hero .microcta>span{padding:0}
   .hero .microcta>span::before{display:none}
 }
 
-/* the hero's product preview */
-.gcard{box-shadow:0 50px 90px -60px rgba(0,0,0,.95),0 0 0 1px rgba(47,167,154,.05)}
-.gcard-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 16px 14px}
-.gcard-hd b{display:block;font-family:var(--disp);font-size:19px;font-weight:600;letter-spacing:-.015em}
-.gcard-hd span.w{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:3px}
-.gcard .c3{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
-.gcard .c2{grid-template-columns:1.25fr 1fr;border-top:1px solid var(--line)}
-.gcard .v{font-size:16px}
-.sc{display:flex;gap:12px}
-.sc span{white-space:nowrap}
-.sc em{font-style:normal;color:var(--dim);font-weight:500;font-size:12px;margin-right:5px}
-.evbox{margin:14px;border:1px solid rgba(47,167,154,.34);border-radius:12px;background:linear-gradient(180deg,rgba(47,167,154,.07),rgba(47,167,154,.015));overflow:hidden}
-.evbox-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-bottom:1px solid rgba(47,167,154,.2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--obs);font-weight:700}
-.evbox-hd span+span{color:var(--dim);font-weight:500;letter-spacing:.04em;text-transform:none;font-size:11px}
-.evbox .cells{background:rgba(47,167,154,.14);grid-template-columns:repeat(4,minmax(0,1fr))}
-.evbox .cells>div{background:#15130d;padding:10px 12px}
-.evbox .v.big{font-size:22px;color:var(--val)}
-.gcard-chk{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:0 16px 16px}
-.gcard-chk .l{margin-right:4px}
-@media(max-width:560px){
-  .gcard-hd{padding:14px 14px 12px;flex-direction:column;gap:8px}
-  .gcard-hd b{font-size:18px}
-  .gcard .c3>div,.gcard .c2>div{padding:10px 12px}
-  .gcard .v{font-size:14.5px}
-  .evbox{margin:12px}
-  .evbox .cells{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .gcard-chk{padding:0 14px 14px}
+/* ---------- the live research preview (hero) ---------- */
+.prev{box-shadow:0 50px 90px -60px rgba(0,0,0,.95),0 0 0 1px rgba(47,167,154,.05)}
+.prev-body{min-height:360px}
+.js .prev-ill{display:none}
+.js .prev-body.ill .prev-ill{display:block}
+.prev-skel{display:none;padding:18px 16px}
+.js .prev-body.loading .prev-skel{display:block}
+.skel{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--cell),var(--raised),var(--cell));background-size:200% 100%;margin:10px 0}
+.skel.w6{width:60%}.skel.w8{width:80%}.skel.w4{width:40%}.skel.tall{height:52px}
+@media(prefers-reduced-motion:no-preference){.skel{animation:sk 1.4s linear infinite}@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}}
+.opp{padding:14px 16px;border-bottom:1px solid var(--line)}
+.opp:last-child{border-bottom:0}
+.opp-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.opp-hd b{display:block;font-family:var(--disp);font-size:17px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.opp-hd .w{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:3px}
+.opp-k{margin-top:12px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.opp .cells{margin-top:6px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.opp .cells>div{background:var(--deep)}
+.opp .ev{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--dim);line-height:1.55}
+.opp .ev b{color:var(--text)}
+.opp .ev .pos{color:var(--val)}.opp .ev .neg{color:var(--neg)}
+.pm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;padding:8px 0;border-top:1px dashed var(--line)}
+.pm:first-of-type{border-top:0}
+.pm .pwho{font-size:13.5px;line-height:1.35;min-width:0}
+.pm .pwho small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:1px}
+.pm .nums{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;white-space:nowrap}
+.pm .nums b{color:var(--text)}
+.pm .d{font-weight:700}.pm .d.pos{color:var(--val)}.pm .d.neg{color:var(--neg)}
+.opp .more{display:inline-flex;margin-top:12px;font-size:13.5px;font-weight:600;color:var(--obs);cursor:pointer;background:none;border:0;padding:0}
+.opp .more small{font-weight:400;color:var(--faint);margin-left:8px;font-family:var(--mono);font-size:10.5px}
+.opp.compact .opp-hd b{font-size:15px}
+@media(max-width:560px){.prev-body{min-height:300px}.opp{padding:13px 14px}.pm .nums{font-size:11px}}
+/* on a phone the three numbers read as three lines, label left, value right */
+@media(max-width:520px){
+  .opp .cells.c3,.gc .cells.c3{grid-template-columns:1fr}
+  .opp .cells.c3>div,.gc .cells.c3>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 12px}
+  .opp .cells.c3 .v,.gc .cells.c3 .v{margin-top:0;text-align:right;font-size:14px}
+  .opp .more{flex-wrap:wrap;text-align:left}
+  .opp .more small{display:block;width:100%;margin:2px 0 0}
 }
-@media(max-width:440px){.gcard .c3{grid-template-columns:1fr 1fr}.gcard .c3>div:last-child{grid-column:1/-1}}
-@media(max-width:340px){.gcard .c2{grid-template-columns:1fr}}
+@media(max-width:380px){.pm{grid-template-columns:1fr}.pm .nums{text-align:left}}
 
 /* ---------- sections ---------- */
-.sec{padding:104px 0}
+.sec{padding:92px 0}
 .sec.alt{background:var(--deep);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.sec-head{max-width:800px}
+.sec-head{max-width:820px}
 .sec-head.center{text-align:center;margin:0 auto}
-.sec-head h2{font-size:clamp(30px,3.8vw,46px);line-height:1.06;letter-spacing:-.03em;margin-top:16px}
-.sec-head .lede{font-size:18px;line-height:1.55;color:var(--dim);margin-top:18px;max-width:36em}
+.sec-head h2{font-size:clamp(30px,3.6vw,44px);line-height:1.06;letter-spacing:-.03em;margin-top:14px}
+.sec-head .lede{font-size:18px;line-height:1.55;color:var(--dim);margin-top:16px;max-width:38em}
 .sec-head.center .lede{margin-left:auto;margin-right:auto}
 .sec-head .lede b{color:var(--text);font-weight:600}
-.sec-body{margin-top:56px}
-@media(max-width:760px){.sec{padding:80px 0}.sec-body{margin-top:36px}.sec-head .lede{font-size:16.5px;margin-top:14px}}
+.sec-body{margin-top:44px}
+@media(max-width:760px){.sec{padding:68px 0}.sec-body{margin-top:30px}.sec-head .lede{font-size:16.5px;margin-top:12px}}
 
-/* ---------- 3 · not picks ---------- */
-.vs{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:16px;align-items:stretch;max-width:980px}
-.vs-side{border-radius:16px;padding:26px}
+/* ---------- today on edgedesk ---------- */
+.tiles{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tiles>div{background:var(--panel);padding:14px 14px 13px;min-width:0}
+.tiles .n{display:block;font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:6px}
+.tiles .n.research{color:var(--obs)}.tiles .n.watch{color:var(--est)}.tiles .n.t{font-size:15px}
+.tiles .n.stale{color:var(--neg)}
+@media(max-width:1080px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles .n{font-size:19px}.tiles>div{padding:12px}.tiles>div:last-child:nth-child(odd){grid-column:1/-1}}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+@media(max-width:1020px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.board{grid-template-columns:1fr}}
+.gc{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}
+.gc.research{border-color:rgba(47,167,154,.45)}
+.gc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.gc-hd b{font-family:var(--disp);font-size:16px;font-weight:600;letter-spacing:-.01em;line-height:1.25}
+.gc-hd .w{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:3px}
+.gc .cells{margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.gc .cells>div{background:var(--deep);padding:8px 10px}
+.gc .cells .v{font-size:13.5px}
+.gc .note{font-size:13px;color:var(--dim);line-height:1.5;margin-top:10px}
+.gc .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 10px;margin-top:auto;padding-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.gc .foot .pr{color:var(--obs)}
+.empty{border:1px dashed var(--line2);border-radius:14px;padding:22px;color:var(--dim);font-size:15px;line-height:1.55;margin-top:18px}
+.empty b{color:var(--text)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:12.5px;color:var(--faint);line-height:1.5}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.board-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-top:26px}
+.board-cta p{font-size:14px;color:var(--dim);max-width:44em}
+.srcnote{margin-top:14px;font-family:var(--mono);font-size:10.5px;color:var(--faint);line-height:1.6;max-width:90ch}
+
+/* ---------- game + player workflow ---------- */
+.wf{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:36px;align-items:start}
+@media(max-width:960px){.wf{grid-template-columns:1fr;gap:28px}}
+.gr{padding:14px 16px}
+.gr-k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--obs);margin:14px 0 6px}
+.gr-k:first-child{margin-top:0}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 12px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13.5px}
+.mrow:first-of-type{border-top:0}
+.mrow .pwho{min-width:0}
+.mrow .pwho small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:1px}
+.mrow .nums{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-align:right;white-space:nowrap}
+.mrow .nums b{color:var(--text)}
+@media(max-width:480px){.mrow{grid-template-columns:minmax(0,1fr) auto}.mrow .nums{grid-column:1/-1;text-align:left}}
+.steps{list-style:none;padding:0;display:grid;gap:22px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px}
+.steps .n{font-family:var(--mono);font-size:12px;color:var(--obs);border:1px solid rgba(47,167,154,.4);border-radius:9px;height:32px;display:flex;align-items:center;justify-content:center}
+.steps h3{font-size:18px}
+.steps p{color:var(--dim);font-size:15px;line-height:1.55;margin-top:5px}
+
+/* ---------- player props table ---------- */
+.ptab-wrap{border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--panel)}
+.ptab{width:100%;border-collapse:collapse;font-size:13.5px}
+.ptab th{font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);background:#14100b;white-space:nowrap}
+.ptab th:first-child,.ptab td:first-child,.ptab th:nth-child(2),.ptab td:nth-child(2){text-align:left}
+.ptab td{font-family:var(--mono);text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+.ptab tr:last-child td{border-bottom:0}
+.ptab td.pl{font-family:'Inter',sans-serif;font-weight:600;min-width:150px}
+.ptab td.pl small,.ptab td.pr small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;color:var(--faint);margin-top:2px}
+.ptab td.pr{font-family:'Inter',sans-serif;color:var(--dim)}
+.ptab .pos{color:var(--val)}.ptab .neg{color:var(--neg)}
+.ptab td.stc{text-align:left}
+@media(max-width:760px){
+  .ptab thead{display:none}
+  .ptab,.ptab tbody{display:block}
+  .ptab tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;padding:14px;border-bottom:1px solid var(--line)}
+  .ptab tr:last-child{border-bottom:0}
+  .ptab td{display:block;padding:0;border:0;text-align:left;min-width:0}
+  .ptab td::before{content:attr(data-l);display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:2px}
+  .ptab td.pl{grid-column:1/-1;min-width:0}
+  .ptab td.pr{grid-column:1/-1}
+  .ptab td.pl::before,.ptab td.pr::before{display:none}
+  .ptab td.stc{grid-column:1/-1}
+  .ptab td.stc::before{display:none}
+}
+.fieldset{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+@media(max-width:900px){.fieldset{grid-template-columns:1fr}}
+.fieldset>div{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel)}
+.fieldset h3{font-size:15px}
+.fieldset p{font-size:13px;color:var(--dim);margin-top:6px;line-height:1.5}
+.fieldset .chks{margin-top:10px}
+.pnote{margin-top:18px;font-size:13.5px;color:var(--dim);line-height:1.6;max-width:62em}
+.pnote b{color:var(--text);font-weight:600}
+
+/* ---------- why different ---------- */
+.vs{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:16px;align-items:stretch}
+.vs-side{border-radius:16px;padding:24px}
 .vs-side .k{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
 .vs-them{border:1px dashed var(--line2);color:var(--dim)}
 .vs-them .k{color:var(--faint)}
-.vs-them .q{font-family:var(--disp);font-size:clamp(26px,3vw,34px);font-weight:600;letter-spacing:-.025em;color:var(--dim);margin-top:22px;line-height:1.1}
-.vs-them p{font-size:14px;margin-top:14px;line-height:1.55}
+.vs-them .q{font-family:var(--disp);font-size:clamp(24px,2.8vw,32px);font-weight:600;letter-spacing:-.025em;color:var(--dim);margin-top:18px;line-height:1.1}
+.vs-them p{font-size:14px;margin-top:12px;line-height:1.55}
 .vs-us{border:1px solid rgba(47,167,154,.4);background:linear-gradient(180deg,rgba(47,167,154,.06),transparent 70%)}
 .vs-us .k{color:var(--obs)}
-.vs-us .cells{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:18px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.vs-us .cells>div{background:var(--deep);padding:11px 12px}
-.vs-us ul{list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:8px 18px}
-.vs-us li{position:relative;padding-left:20px;font-size:14px;line-height:1.45}
-.vs-us li::before{content:"\2713";position:absolute;left:0;top:0;color:var(--obs);font-weight:700;font-size:13px}
-.vs-line{margin-top:28px;font-size:17px;color:var(--dim);max-width:44em}
-.vs-line b{color:var(--text);font-weight:600}
-@media(max-width:820px){.vs{grid-template-columns:1fr}.vs-us .cells{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:480px){.vs-side{padding:20px}.vs-us ul{grid-template-columns:1fr}}
+.diffs{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:14px 22px}
+.diffs li b{display:block;font-size:15px}
+.diffs li span{display:block;font-size:13.5px;color:var(--dim);line-height:1.5;margin-top:3px}
+.priceex{margin-top:18px;border:1px solid var(--line);border-radius:12px;background:var(--deep);padding:14px 16px;font-size:14px;line-height:1.6;color:var(--dim)}
+.priceex b{color:var(--text)}
+.priceex .k{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.priceex .pos{color:var(--val)}.priceex .neg{color:var(--neg)}
+@media(max-width:860px){.vs{grid-template-columns:1fr}}
+@media(max-width:520px){.diffs{grid-template-columns:1fr}.vs-side{padding:20px}}
 
-/* ---------- 4 · three steps ---------- */
-.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;list-style:none;padding:0}
-.step h3{font-size:20px;margin-top:14px;display:flex;align-items:baseline;gap:10px}
-.step h3 .n{font-family:var(--mono);font-size:12px;color:var(--obs);font-weight:500}
-.step p{color:var(--dim);font-size:15px;line-height:1.55;margin-top:8px;max-width:30em}
-.step .panel{border-radius:13px}
-.mini{padding:12px;min-height:162px;display:flex;flex-direction:column;justify-content:center;gap:6px;font-size:12.5px}
-.mboard .r{display:grid;grid-template-columns:minmax(0,1fr) 52px 52px 42px;gap:8px;align-items:center;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--deep);font-family:var(--mono);font-size:11px}
-.mboard .r span:first-child{font-family:'Inter',sans-serif;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mboard .r.hd{background:none;border:0;padding:0 9px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
-.mboard .r.hd span:first-child{font-family:var(--mono);font-size:9px}
-.mboard .r.on{border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.07)}
-.mboard .g{font-weight:700;color:var(--est);text-align:right}
-.mboard .g.q{color:var(--faint);font-weight:500}
-.mwhy .r{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:center}
-.mwhy .p{font-family:var(--mono);font-weight:700;color:var(--obs);text-align:right;font-size:12px}
-.mwhy .t{color:var(--dim);font-size:12px;line-height:1.35}
-.mwhy .chks{margin-top:6px}
-.mprice{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:6px;text-align:center}
-.mprice .ar{color:var(--faint);font-family:var(--mono)}
-.mprice .v{font-size:18px}
-.mprice-note{text-align:center;color:var(--faint);font-family:var(--mono);font-size:10.5px;margin-top:8px}
-@media(max-width:900px){.steps{grid-template-columns:1fr;gap:36px;max-width:560px}}
-
-/* ---------- 5 · ten tabs, one page ---------- */
-.tabsx{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1fr);gap:18px;align-items:center}
-.tabsx .k{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
-.pile{display:flex;flex-wrap:wrap;gap:7px}
-.pile span{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:8px 8px 3px 3px;padding:8px 11px}
-.pile span::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--line2);flex:none}
-.pile span:nth-child(3n+1){transform:translateY(3px)}
-.pile span:nth-child(4n+2){transform:translateY(-2px)}
-.pile-cost{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--faint)}
-.tabsx .arrow{display:flex;align-items:center;justify-content:center;color:var(--obs);font-size:26px}
-.one{border:1px solid rgba(47,167,154,.42);border-radius:16px;background:linear-gradient(180deg,rgba(47,167,154,.07),transparent 80%);padding:20px}
-.one .k{color:var(--obs)}
-.one-h{font-family:var(--disp);font-size:20px;font-weight:600;letter-spacing:-.015em}
-.one-h span{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);font-weight:400;letter-spacing:0;margin-top:3px}
-.one ul{list-style:none;padding:0;margin:14px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.one li{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);padding:8px 10px;border:1px solid rgba(47,167,154,.22);border-radius:8px;background:rgba(16,14,10,.5)}
-.one li::before{content:"\2713";color:var(--obs);font-weight:700}
-@media(max-width:820px){.tabsx{grid-template-columns:1fr;gap:10px}.tabsx .arrow{transform:rotate(90deg);height:36px}}
-
-/* ---------- 6 · what you get ---------- */
-.feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.feat{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;padding:24px;background:var(--panel);transition:border-color .2s}
-.feat:hover{border-color:var(--line2)}
+/* ---------- what you get ---------- */
+.feats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.feat{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--panel)}
 .feat.hot{border-color:rgba(47,167,154,.45);background:linear-gradient(180deg,rgba(47,167,154,.08),var(--panel) 60%)}
 .feat .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--faint)}
 .feat.hot .n{color:var(--obs)}
-.feat h3{font-size:19px;margin-top:10px}
+.feat h3{font-size:18.5px;margin-top:10px}
 .feat p{color:var(--dim);font-size:14.5px;line-height:1.55;margin-top:8px}
-.snap{margin-top:auto;padding-top:18px}
+.snap{margin-top:auto;padding-top:16px}
 .snap-in{border:1px solid var(--line);border-radius:10px;background:var(--deep);padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
 .snap-in .l{margin-bottom:6px}
-#lpRatings{min-height:86px}
 .snap-in .row{display:flex;align-items:baseline;gap:9px;padding:4px 0;border-top:1px solid var(--line)}
 .snap-in .row:first-of-type{border-top:0}
 .snap-in .row .n{flex:none;width:14px;color:var(--faint);font-size:10.5px;letter-spacing:0}
 .snap-in .row .t{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Inter',sans-serif;font-size:12.5px;color:var(--text)}
 .snap-in .row .v{margin:0;font-size:12px;color:var(--obs)}
-.snap-in .flow,.snap-in.flow{display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--text)}
-.snap-in .flow i,.snap-in.flow i{font-style:normal;color:var(--faint)}
-.snap-in .flow b{color:var(--val)}
 .snap-in.stack{display:grid;gap:6px}
 .snap-in.stack span{position:relative;padding-left:18px;color:var(--text)}
 .snap-in.stack span::before{content:"\2713";position:absolute;left:0;color:var(--obs)}
+.snap-in .flow{display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--text)}
+.snap-in .flow i{font-style:normal;color:var(--faint)}
 @media(max-width:980px){.feats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.feats{grid-template-columns:1fr}.feat{padding:20px}}
+@media(max-width:640px){.feats{grid-template-columns:1fr}.feat{padding:18px}}
 
-/* ---------- 7 · one complete game ---------- */
-.game{max-width:980px}
-.game-hd{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:18px 20px}
-.game-hd b{display:block;font-family:var(--disp);font-size:24px;font-weight:600;letter-spacing:-.02em}
-.game-hd .w{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:4px}
-.game .c6{grid-template-columns:repeat(6,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.game .chks{padding:14px 20px 0}
-.gtabs{display:flex;gap:4px;padding:16px 20px 0;overflow-x:auto;scrollbar-width:none}
-.gtabs::-webkit-scrollbar{display:none}
-.gtabs button{flex:none;font-size:13.5px;font-weight:600;color:var(--dim);background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
-.gtabs button:hover{color:var(--text);border-color:var(--line2)}
-.gtabs button[aria-selected=true]{color:var(--on-accent);background:var(--obs);border-color:var(--obs)}
-.gpanel{padding:18px 20px 22px;min-height:196px}
-.drv{display:grid;gap:10px}
-.drv .r{display:grid;grid-template-columns:48px 110px minmax(0,1fr);gap:14px;align-items:center}
-.drv .p{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--obs);text-align:right}
-.drv .b{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
-.drv .b i{display:block;height:100%;background:var(--obs);border-radius:3px}
-.drv .t{font-size:14.5px;line-height:1.45}
-.drv .t small{display:block;color:var(--dim);font-size:13px;margin-top:1px}
-.drv-sum{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--faint)}
-.risks{list-style:none;padding:0;display:grid;gap:10px}
-.risks li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;font-size:14.5px;line-height:1.45}
-.risks li small{display:block;color:var(--dim);font-size:13px;margin-top:2px}
-.pcheck{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.pcheck>div{border:1px solid var(--line);border-radius:11px;padding:12px 13px;background:var(--deep)}
-.pcheck>div.here{border-color:rgba(47,167,154,.5)}
-.pcheck .line{font-family:var(--mono);font-weight:700;font-size:16px}
-.pcheck .v{font-size:15px}
-.pcheck .st{margin-top:8px}
-.pnote{margin-top:14px;font-size:13.5px;color:var(--dim);line-height:1.5}
-.pnote b{color:var(--text);font-weight:600}
-@media(max-width:820px){.game .c6{grid-template-columns:repeat(3,minmax(0,1fr))}.pcheck{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:560px){
-  .game-hd{padding:16px}.game-hd b{font-size:20px}
-  .game .c6{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .game .chks{padding:12px 16px 0}.gpanel{padding:16px 16px 18px}
-  .gtabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:14px 16px 0;overflow:visible}
-  .gtabs button{white-space:normal;font-size:12.5px;line-height:1.25;padding:9px 6px;border-radius:10px}
-  .picks .l{width:100%;margin:0 0 2px}
-  .drv .r{grid-template-columns:44px minmax(0,1fr);gap:10px}.drv .b{display:none}
-}
-
-/* ---------- 8 · EdgeDesk EV ---------- */
-.evx{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:20px;align-items:start}
-.evcard .top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;padding:18px 20px 4px}
-.evcard .top h3{font-size:18px}
-.evcard .top .w{font-family:var(--mono);font-size:11px;color:var(--faint)}
-.slot{padding:22px 20px 6px}
-.slabel{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
-.slabel output{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.01em;text-transform:none}
-.strack{position:relative;padding:4px 0 2px}
-.fairmark{position:absolute;top:-6px;bottom:4px;width:2px;margin-left:-1px;background:var(--est);border-radius:1px;pointer-events:none;opacity:.85}
-.fairmark span{position:absolute;bottom:calc(100% + 2px);left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--est);white-space:nowrap}
-input[type=range].edge{-webkit-appearance:none;appearance:none;display:block;width:100%;height:34px;margin:0;background:transparent;cursor:pointer;position:relative;z-index:2}
-input[type=range].edge::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,rgba(124,193,66,.6),rgba(124,193,66,.5) 49%,rgba(217,164,65,.6) 53%,rgba(217,164,65,.6) 61%,rgba(226,102,75,.6) 65%,rgba(226,102,75,.55));border:1px solid var(--line2)}
-input[type=range].edge::-moz-range-track{height:8px;border-radius:5px;background:linear-gradient(90deg,rgba(124,193,66,.6),rgba(124,193,66,.5) 49%,rgba(217,164,65,.6) 53%,rgba(217,164,65,.6) 61%,rgba(226,102,75,.6) 65%,rgba(226,102,75,.55));border:1px solid var(--line2)}
-input[type=range].edge::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-11px;border-radius:50%;background:var(--text);border:4px solid var(--ink);box-shadow:0 0 0 1px var(--line2),0 3px 10px rgba(0,0,0,.6);cursor:grab}
-input[type=range].edge::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--text);border:4px solid var(--ink);box-shadow:0 0 0 1px var(--line2),0 3px 10px rgba(0,0,0,.6);cursor:grab}
-input[type=range].edge:focus-visible{outline:2px solid var(--obs);outline-offset:4px;border-radius:8px}
-.sends{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-top:2px}
-.picks{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:14px 20px 0}
-.picks .l{margin-right:4px}
-.picks button{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--dim);background:var(--deep);border:1px solid var(--line2);border-radius:8px;padding:7px 11px;cursor:pointer;transition:color .15s,border-color .15s}
-.picks button:hover{color:var(--text);border-color:var(--dim)}
-.picks button[aria-pressed=true]{color:var(--obs);border-color:var(--obs)}
-.evout{grid-template-columns:repeat(5,minmax(0,1fr));margin-top:18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.evout .v{font-size:18px}
-.evout .v.big{font-size:22px}
-.state{margin:16px 20px 20px;border:1px solid var(--line2);border-radius:12px;padding:14px 16px;background:var(--deep);transition:border-color .2s,background .2s}
-.state .sv{font-family:var(--mono);font-weight:700;font-size:17px;letter-spacing:.1em}
-.state .sc{font-size:14px;color:var(--dim);margin-top:6px;line-height:1.5}
-.state.s-pos{border-color:rgba(124,193,66,.5);background:rgba(124,193,66,.05)}.state.s-pos .sv{color:var(--val)}
-.state.s-thin{border-color:rgba(217,164,65,.5);background:rgba(217,164,65,.05)}.state.s-thin .sv{color:var(--est)}
-.state.s-neg{border-color:rgba(226,102,75,.5);background:rgba(226,102,75,.05)}.state.s-neg .sv{color:var(--neg)}
-.ladder-wrap{padding:6px 0 0;overflow-x:auto}
-.ladder{width:100%;border-collapse:collapse;font-size:13px}
-.ladder th{font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-.ladder th:first-child,.ladder td:first-child{text-align:left}
-.ladder td{font-family:var(--mono);text-align:right;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
-.ladder tr:last-child td{border-bottom:0}
-.ladder td.ev{font-weight:700}
-.ladder td.ev.pos{color:var(--val)}.ladder td.ev.neg{color:var(--neg)}
-.ladder tr.main td{background:rgba(47,167,154,.06)}
-.ladder td.tagc{text-align:left;padding-left:4px}
-.ladder .tg{font-size:9.5px;letter-spacing:.08em;font-weight:700;border-radius:5px;padding:2px 6px;border:1px solid var(--line2);color:var(--dim)}
-.ladder .tg.main{color:var(--obs);border-color:rgba(47,167,154,.45)}
-.ladder .tg.max{color:var(--est);border-color:rgba(217,164,65,.45)}
-.ladder .tg.safe{color:var(--val);border-color:rgba(124,193,66,.45)}
-.ev-notes{display:grid;gap:14px;margin-top:28px;grid-template-columns:repeat(2,minmax(0,1fr));max-width:980px}
-.ev-notes p{font-size:14px;color:var(--dim);line-height:1.6;border-left:2px solid var(--line2);padding-left:14px}
-.ev-notes p b{color:var(--text);font-weight:600}
-@media(max-width:1100px){.evx{grid-template-columns:1fr;max-width:720px}}
-@media(max-width:360px){.ladder th,.ladder td{padding:9px 6px}.ladder .tg{font-size:8.5px;padding:2px 4px}}
-@media(max-width:640px){
-  .evout{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .evout>div:first-child{grid-column:1/-1}
-  .ladder .xs{display:none}
-  .ladder th,.ladder td{padding:9px 10px}
-  .ev-notes{grid-template-columns:1fr}
-}
-@media(max-width:560px){.evcard .top,.slot,.picks{padding-left:16px;padding-right:16px}.state{margin:14px 16px 16px}}
-
-/* ---------- 9 · why trust it ---------- */
-.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}
-.trust h3{font-size:19px;margin-top:14px}
-.trust p{color:var(--dim);font-size:15px;line-height:1.55;margin-top:8px}
-.trust .ic{width:36px;height:36px;border-radius:10px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--obs)}
-.trust .ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.press{margin-top:56px;padding-top:40px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px 40px;align-items:start}
-.press h3{font-size:19px;margin-top:12px}
-.press p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-top:8px}
-.press q{color:var(--text)}
-.press-list{display:grid;gap:10px}
-.press-card{display:block;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);transition:border-color .15s}
-.press-card:hover{border-color:rgba(47,167,154,.45)}
-.press-card .pub{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-.press-card .pub b{color:var(--text);font-weight:700}
-.press-card .hl{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-top:6px}
-.press-card .cr{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--obs)}
-.press .press-note{grid-column:1/-1;margin-top:0;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);max-width:90ch}
-@media(max-width:900px){.trust{grid-template-columns:1fr;gap:30px;max-width:560px}.press{grid-template-columns:1fr}}
-
-/* ---------- 10 · public record ---------- */
-.rec{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
-.rec-list{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:12px}
-.rec-list li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:15.5px;line-height:1.5}
-.rec-list li::before{content:"\2192";color:var(--obs);font-family:var(--mono)}
-.rec-cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;margin-top:28px}
+/* ---------- trust / public record ---------- */
+.trust{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:44px;align-items:start}
+@media(max-width:900px){.trust{grid-template-columns:1fr;gap:32px}}
+.proc{list-style:none;padding:0;margin:0;display:grid;gap:14px}
+.proc li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:15.5px;line-height:1.5}
+.proc li::before{content:"\2713";color:var(--obs);font-weight:700;font-family:var(--mono);border:1px solid rgba(47,167,154,.35);border-radius:7px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px}
+.proc li b{display:block}
+.proc li span{display:block;color:var(--dim);font-size:14px;margin-top:2px}
+.rec-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-top:24px}
 .rec-cta small{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
-/* classes the preserved live-record loader injects into */
 .ledger{border:1px solid var(--line2);border-radius:16px;overflow:hidden;background:var(--panel)}
 .ledger-hd{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--val);flex:none}
-#proofInner{padding:0}
+#proofInner{padding:0;min-height:120px}
 .rf{display:grid;grid-template-columns:132px minmax(0,1fr);gap:15px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
 .rf:last-child{border-bottom:0}
 .rf .rk{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
@@ -490,27 +416,39 @@ input[type=range].edge:focus-visible{outline:2px solid var(--obs);outline-offset
 .lk .l{font-size:10px;margin-top:3px}
 .lnote{padding:12px 2px 0;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--faint)}
 .relia{display:block;width:100%;max-width:320px;margin:6px auto 2px}
-@media(max-width:900px){.rec{grid-template-columns:1fr;gap:36px}}
 @media(max-width:560px){.rf{grid-template-columns:1fr;gap:5px}}
+.press{margin-top:52px;padding-top:36px;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:24px 40px;align-items:start}
+.press h3{font-size:19px;margin-top:12px}
+.press p{color:var(--dim);font-size:14.5px;line-height:1.6;margin-top:8px}
+.press q{color:var(--text)}
+.press-list{display:grid;gap:10px}
+.press-card{display:block;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--panel);transition:border-color .15s}
+.press-card:hover{border-color:rgba(47,167,154,.45)}
+.press-card .pub{display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.press-card .pub b{color:var(--text);font-weight:700}
+.press-card .hl{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-top:6px}
+.press-card .cr{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--obs)}
+.press .press-note{grid-column:1/-1;margin-top:0;font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--faint);max-width:90ch}
+@media(max-width:900px){.press{grid-template-columns:1fr}}
 
-/* ---------- 11 · who it is for ---------- */
+/* ---------- who it is for ---------- */
 .who{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-.who>div{background:var(--ink);padding:24px 22px}
+.who>div{background:var(--ink);padding:22px 20px}
 .who b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--obs);font-weight:700}
 .who p{font-size:15px;line-height:1.5;margin-top:10px}
 @media(max-width:900px){.who{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.who{grid-template-columns:1fr}.who>div{padding:18px}}
 
-/* ---------- 12 · pricing ---------- */
+/* ---------- pricing ---------- */
 .price{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:24px 56px;align-items:center;max-width:1000px;margin-left:auto;margin-right:auto}
 .pcard{position:relative;background:var(--panel);border:1px solid rgba(47,167,154,.45);border-radius:20px;padding:30px;box-shadow:0 40px 80px -60px rgba(0,0,0,.95)}
 .pcard .ptag{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--obs)}
 .pcard .pname{font-family:var(--disp);font-size:22px;font-weight:600;margin-top:6px}
-.pprice{display:flex;align-items:baseline;gap:8px;margin-top:16px}
+.pprice{display:flex;align-items:baseline;gap:8px;margin-top:14px}
 .pamt{font-family:var(--disp);font-size:56px;font-weight:600;letter-spacing:-.04em;line-height:1}
 .pper{color:var(--dim);font-size:16px}
 .ptrial{display:inline-flex;margin-top:12px;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--val);border:1px solid rgba(124,193,66,.42);border-radius:7px;padding:5px 10px}
-.pincl{list-style:none;margin:22px 0 24px;padding:0;display:grid;gap:8px}
+.pincl{list-style:none;margin:20px 0 22px;padding:0;display:grid;gap:8px}
 .pincl li{position:relative;padding-left:24px;font-size:14.5px;line-height:1.45}
 .pincl li::before{content:"\2713";position:absolute;left:0;top:0;color:var(--val);font-weight:700}
 .authbtn{width:100%}
@@ -527,36 +465,36 @@ input[type=range].edge:focus-visible{outline:2px solid var(--obs);outline-offset
 .founding{margin-top:20px;font-size:14px;color:var(--dim);line-height:1.55}
 .founding b{color:var(--text);font-weight:600}
 @media(max-width:900px){.price{grid-template-columns:1fr;max-width:520px}}
-@media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}.timeline li{grid-template-columns:70px minmax(0,1fr);gap:12px}}
+@media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}.timeline li{grid-template-columns:78px minmax(0,1fr);gap:12px}}
 
-/* ---------- 13 · FAQ ---------- */
+/* ---------- FAQ ---------- */
 .faq{max-width:820px;margin-left:auto;margin-right:auto}
 .faq details{border-bottom:1px solid var(--line)}
 .faq details:first-of-type{border-top:1px solid var(--line)}
-.faq summary{list-style:none;cursor:pointer;position:relative;padding:20px 40px 20px 0;font-family:var(--disp);font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.4}
+.faq summary{list-style:none;cursor:pointer;position:relative;padding:19px 40px 19px 0;font-family:var(--disp);font-size:18px;font-weight:600;letter-spacing:-.01em;line-height:1.4}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"+";position:absolute;right:4px;top:18px;font-family:var(--mono);font-size:20px;font-weight:400;color:var(--dim);transition:transform .2s}
+.faq summary::after{content:"+";position:absolute;right:4px;top:17px;font-family:var(--mono);font-size:20px;font-weight:400;color:var(--dim)}
 .faq details[open] summary::after{content:"\2212"}
 .faq summary:hover{color:var(--obs)}
-.faq .a{padding:0 40px 22px 0;color:var(--dim);font-size:15.5px;line-height:1.65}
+.faq .a{padding:0 40px 20px 0;color:var(--dim);font-size:15.5px;line-height:1.65}
 .faq .a p+p{margin-top:10px}
 .faq .a b{color:var(--text);font-weight:600}
 .faq .a button{font:inherit;color:var(--obs);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.faq-sub{max-width:820px;margin:44px auto 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.faq-sub{max-width:820px;margin:40px auto 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
 .faq-sub+.faq{margin-top:10px}
-@media(max-width:560px){.faq summary{font-size:16.5px;padding:17px 34px 17px 0}.faq .a{padding-right:0;font-size:15px}}
+@media(max-width:560px){.faq summary{font-size:16.5px;padding:16px 34px 16px 0}.faq .a{padding-right:0;font-size:15px}}
 
-/* ---------- 14 · final ---------- */
-.final{text-align:center;padding:128px 0 120px;background:radial-gradient(50% 70% at 50% 100%,rgba(47,167,154,.08),transparent 70%)}
-.final h2{font-size:clamp(36px,5vw,60px);line-height:1.02;letter-spacing:-.035em}
-.final .lede{font-size:18px;color:var(--dim);margin-top:20px}
-.final .cta{justify-content:center;margin-top:34px}
+/* ---------- final ---------- */
+.final{text-align:center;padding:110px 0 104px;background:radial-gradient(50% 70% at 50% 100%,rgba(47,167,154,.08),transparent 70%)}
+.final h2{font-size:clamp(34px,4.6vw,56px);line-height:1.04;letter-spacing:-.035em}
+.final .lede{font-size:18px;color:var(--dim);margin-top:18px}
+.final .cta{justify-content:center;margin-top:30px}
 .final .microcta{justify-content:center}
 .final .fine{margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.02em}
-@media(max-width:560px){.final{padding:88px 0 84px}.final .lede{font-size:16px}}
+@media(max-width:560px){.final{padding:76px 0 72px}.final .lede{font-size:16px}}
 
 /* ---------- footer ---------- */
-footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48px;font-size:13.5px;color:var(--faint)}
+footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44px;font-size:13.5px;color:var(--faint)}
 .foot{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:32px}
 .foot h4{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
 .foot ul{list-style:none;padding:0;display:grid;gap:8px}
@@ -594,7 +532,6 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
 .arl-row{display:flex;gap:9px;align-items:flex-start;margin-top:11px;padding-top:11px;border-top:1px solid rgba(217,164,65,.22);cursor:pointer;font-size:12.5px;color:var(--text);line-height:1.45}
 .arl-row input{margin-top:2px;flex:none;width:17px;height:17px;accent-color:var(--est);cursor:pointer}
 .refchip{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--val);border:1px solid rgba(124,193,66,.42);background:rgba(124,193,66,.07);border-radius:999px;padding:4px 11px}
-/* checkout-return interstitial */
 .retn{position:fixed;inset:0;z-index:90;background:rgba(4,5,15,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:22px;text-align:center}
 .retn.on{display:flex}
 .retn-in{max-width:420px}
@@ -605,13 +542,12 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
 .retn .cta{justify-content:center}
 
 /* ---------- motion: one quiet entrance per block, nothing that loops ---------- */
-.js .rv{opacity:0;transform:translateY(14px);transition:opacity .55s ease-out,transform .55s ease-out}
+.js .rv{opacity:0;transform:translateY(12px);transition:opacity .5s ease-out,transform .5s ease-out}
 .js .rv.in{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{animation:none!important;transition:none!important}
   .js .rv{opacity:1;transform:none}
-  .pile span{transform:none!important}
 }
 </style>
 </head>
@@ -619,432 +555,319 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
 <a class="skip" href="#main">Skip to content</a>
 
 <!-- ============================ NAV ============================
-     One primary action. Pricing lives under the hero button, not in the bar.
      #navLogin / #navSignup are rewritten by bootAuthState for a signed-in
      visitor, so both ids stay. -->
 <nav class="nav" id="nav" aria-label="Main">
   <div class="wrap nav-in">
     <a class="logo" href="#top" aria-label="EdgeDesk Sports, back to top"><span class="mk" aria-hidden="true"></span>EdgeDesk <small>Sports</small></a>
     <div class="nav-links" id="navMenu">
-      <a class="nlink" href="#product">Product</a>
-      <a class="nlink" href="#how">How it works</a>
-      <a class="nlink" href="#record">Record</a>
+      <a class="nlink" href="#today" data-cta="nav_today">Today</a>
+      <a class="nlink" href="#props" data-cta="nav_props">Player props</a>
+      <a class="nlink" href="#workflow">How it works</a>
+      <a class="nlink" href="#trust">Record</a>
       <a class="nlink" href="#pricing">Pricing</a>
-      <!-- the public, no-account half of the terminal: research articles and
-           the free games. In the menu and the footer, never competing with
-           the trial for the bar. -->
+      <!-- the public, no-account half: research articles and the free games.
+           In the menu and the footer, never competing with the trial. -->
       <a class="nlink" href="/articles">Research articles</a>
       <a class="nlink" href="/games/">Games</a>
-      <button type="button" class="btn ghost" id="navLogin" type="button" onclick="openAuth('login')" data-track="login_click">Log in</button>
+      <button type="button" class="btn ghost" id="navLogin" onclick="openAuth('login')" data-track="login_click">Log in</button>
       <p class="nav-offer"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
     </div>
     <div class="nav-act">
-      <button type="button" class="btn primary" id="navSignup" type="button" onclick="startSubscribe()" data-track="nav_trial_click">Start 7 days free</button>
-      <button type="button" class="burger" id="navBurger" type="button" aria-expanded="false" aria-controls="navMenu" aria-label="Open menu"><i aria-hidden="true"></i></button>
+      <button type="button" class="btn primary" id="navSignup" onclick="startSubscribe()" data-track="nav_trial_click" data-cta="nav_trial">Start free trial</button>
+      <button type="button" class="burger" id="navBurger" aria-expanded="false" aria-controls="navMenu" aria-label="Open menu"><i aria-hidden="true"></i></button>
     </div>
   </div>
 </nav>
 
 <main id="main">
 
-<!-- ============================ HERO ============================
-     What it is, what it replaces, what it costs and the one button — then the
-     product itself. The card's numbers are an illustrative game and say so
-     in its own chrome; every EV figure in it is computed by
-     lib/edgedesk_quote_ev.js (pinned by tools/presentation/landing_ev.test.js). -->
+<!-- ============================ 1 · HERO ============================
+     What EdgeDesk does in one line, the two actions, the offer under them,
+     live statistics READ from the database (each hidden until it arrives),
+     and the live research preview. Nothing in the hero is typed in by hand:
+     the statistics and the preview come from public_home_board() and
+     football/home/board.json through lib/edgedesk_home.js. When no live
+     game exists the preview falls back to an example that SAYS it is one. -->
 <header class="hero" id="top">
   <div class="wrap hero-in">
     <div>
-      <span class="ey">Football research terminal &middot; NFL + FBS</span>
-      <h1>Research the matchup.<br><span class="g">Then price it.</span></h1>
-      <p class="sub">One workspace for the model, the market, the matchup, the roster, the players and the uncertainty behind every NFL and FBS game.</p>
-      <p class="instead"><span class="k">Instead of</span> <s>10 tabs</s> <s>5 sites</s> <s>a spreadsheet</s> <s>guessing what mattered</s></p>
+      <span class="ey">NFL + CFB research terminal</span>
+      <h1>Find where the model and the market <span class="g">disagree.</span></h1>
+      <p class="sub">EdgeDesk analyzes every NFL and FBS matchup, compares its fair numbers with live sportsbook markets, and brings <b>game lines, player props, matchup research and uncertainty</b> into one terminal.</p>
       <div class="cta">
-        <button type="button" class="btn primary lg" id="heroStart" type="button" onclick="startSubscribe()" data-track="hero_trial_click">Start 7 days free <span class="ar" aria-hidden="true">&rarr;</span></button>
-        <a class="btn ghost lg" href="#game" data-track="hero_demo_click">See a game</a>
+        <a class="btn primary lg" id="heroBoard" href="#today" data-track="hero_board_click" data-cta="hero_board">Explore today&rsquo;s board <span class="ar" aria-hidden="true">&rarr;</span></a>
+        <button type="button" class="btn ghost lg" id="heroStart" onclick="startSubscribe()" data-track="hero_trial_click" data-cta="hero_trial">Start free trial</button>
       </div>
-      <p class="microcta"><span><b>Full access for 7 days</b></span><span>Then <span data-ed-price="price">$79.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
-      <!-- LIVE SYSTEM ACTIVITY: counts of what EdgeDesk is doing right now, read
-           from public.edgedesk_proof_metrics(). Real rows only; nothing here is
-           a user count, an accuracy or a profit, and it stays empty rather than
-           showing a number the database did not return. -->
-      <p class="live" id="lpLive" aria-live="off"></p>
+      <p class="microcta"><span><b><span data-ed-price="trial">7 days free</span></b></span><span>Then <span data-ed-price="price">$79.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
+      <!-- LIVE STATISTICS: counts of what EdgeDesk holds right now. Real rows
+           only; every item stays hidden unless the database returned it. Not
+           a user count, not an accuracy, not a profit. -->
+      <ul class="stats" id="lpStats" aria-label="EdgeDesk right now">
+        <li data-k="games_analyzed" hidden><b></b> games analyzed</li>
+        <li data-k="research" hidden><b></b> research-grade opportunities</li>
+        <li data-k="props_tracked" hidden><b></b> player props tracked</li>
+        <li data-k="sportsbook_quotes" hidden><b></b> sportsbook quotes</li>
+        <li data-k="updated" class="upd" hidden>Updated <b></b></li>
+      </ul>
     </div>
 
-    <div class="panel gcard" role="figure" aria-label="An illustrative EdgeDesk game research card">
-      <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk &middot; Game research</span><span class="tag">Illustrative game</span></div>
-      <div class="gcard-hd">
-        <div><b>Baylor @ Auburn</b><span class="w">Sat &middot; 7:30 PM &middot; Big 12 at SEC</span></div>
-        <span class="st warn">WORTH RESEARCHING</span>
-      </div>
-      <div class="cells c3">
-        <div><span class="l">EdgeDesk line</span><span class="v mdl">Auburn &minus;10.2</span></div>
-        <div><span class="l">Market</span><span class="v">Auburn &minus;8.0</span></div>
-        <div><span class="l">Difference</span><span class="v warn">2.2 pts</span></div>
-      </div>
-      <div class="cells c2">
-        <div><span class="l">Projected score</span><span class="v sc"><span><em>AUB</em>31</span><span><em>BAY</em>21</span></span></div>
-        <div><span class="l">Win probability</span><span class="v">Auburn 74%</span></div>
-      </div>
-      <div class="evbox">
-        <div class="evbox-hd"><span>EdgeDesk EV</span><span>Auburn &minus;8 at &minus;108</span></div>
-        <div class="cells">
-          <div><span class="l">EdgeDesk prob.</span><span class="v">55.6%</span></div>
-          <div><span class="l">Break-even</span><span class="v dim">51.9%</span></div>
-          <div><span class="l">Fair odds</span><span class="v dim">&minus;125</span></div>
-          <div><span class="l">EdgeDesk EV</span><span class="v big">+6.9%</span></div>
+    <div class="panel prev" id="lpPreview" role="region" aria-label="Live research preview">
+      <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk &middot; Research</span><span class="tag" id="lpPrevTag">Loading</span></div>
+      <div class="prev-body loading" id="lpPrevBody" aria-live="polite">
+        <div class="prev-skel" aria-hidden="true"><div class="skel w6"></div><div class="skel w4"></div><div class="skel tall"></div><div class="skel w8"></div><div class="skel w6"></div><div class="skel tall"></div><div class="skel w8"></div></div>
+        <!-- THE EXAMPLE: shown only without script, or when no live game or
+             prop is available. It says what it is in its own chrome. -->
+        <div class="prev-ill" id="lpPrevIll">
+          <div class="opp">
+            <div class="opp-hd"><div><b>Baylor @ Auburn</b><span class="w">Example game &middot; not live</span></div><span class="st research">RESEARCH</span></div>
+            <div class="opp-k">Game market</div>
+            <div class="cells c3"><div><span class="l">Market</span><span class="v">AUB &minus;8.0</span></div><div><span class="l">EdgeDesk</span><span class="v mdl">AUB &minus;10.2</span></div><div><span class="l">Difference</span><span class="v warn">2.2 pts</span></div></div>
+            <div class="opp-k">Player props</div>
+            <div class="pm"><span class="pwho">QB passing yards<small>Example</small></span><span class="nums">Mkt <b>226.5</b> &middot; ED <b>241.0</b> &middot; <span class="d pos">+14.5</span></span></div>
+            <div class="pm"><span class="pwho">WR receiving yards<small>Example</small></span><span class="nums">Mkt <b>61.5</b> &middot; ED <b>66.0</b> &middot; <span class="d pos">+4.5</span></span></div>
+          </div>
         </div>
       </div>
-      <div class="gcard-chk"><span class="l">Research check</span><span class="ck ok">&#10003; model</span><span class="ck ok">&#10003; market fresh</span><span class="ck ok">&#10003; roster</span><span class="ck warn">? starting QB</span><span class="ck neg">&times; availability</span></div>
-      <div class="panel-foot">Illustrative numbers, in the shape the terminal renders them. Player quality and scheme are shown as research and move no line until they clear validation. Nothing here tells you what to bet.</div>
+      <div class="panel-foot" id="lpPrevFoot">Numbers are read from EdgeDesk&rsquo;s stored research with the time each price was captured. Research, not picks.</div>
     </div>
   </div>
 </header>
 
-<!-- ================== 3 · NOT PICKS ================== -->
+<!-- ================== 2 · TODAY ON EDGEDESK ==================
+     The board, live: counts, freshness and several current games. Filled by
+     the presentation script from the same two reads as the hero; every tile
+     is hidden until it has a real value, and an empty slate says so. -->
+<section class="sec alt" id="today">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="ey">Today on EdgeDesk</span>
+      <h2>The current slate, as EdgeDesk has it right now.</h2>
+      <p class="lede">EdgeDesk re-prices the NFL and FBS slate as markets move. Every figure below is read from its stored research, with the time it was captured &mdash; and it says when a price is stale or the data is thin.</p>
+    </div>
+    <div class="sec-body">
+      <div class="tiles" id="lpTiles" aria-label="The board right now" hidden>
+        <div data-k="games_analyzed"><span class="l">Games analyzed</span><span class="n">&mdash;</span></div>
+        <div data-k="game_research"><span class="l">Game-market research</span><span class="n research">&mdash;</span></div>
+        <div data-k="prop_research"><span class="l">Player-prop research</span><span class="n research">&mdash;</span></div>
+        <div data-k="watching"><span class="l">Watching</span><span class="n watch">&mdash;</span></div>
+        <div data-k="passes"><span class="l">Passes</span><span class="n">&mdash;</span></div>
+        <div data-k="model"><span class="l">Last model update</span><span class="n t">&mdash;</span></div>
+        <div data-k="odds"><span class="l">Last odds update</span><span class="n t">&mdash;</span></div>
+      </div>
+      <div class="board" id="lpBoard" aria-live="polite"></div>
+      <div class="empty" id="lpBoardEmpty" hidden></div>
+      <noscript><div class="empty"><b>The live board needs JavaScript.</b> It reads EdgeDesk&rsquo;s current research the moment the page loads.</div></noscript>
+      <div class="legend" aria-label="What the labels mean">
+        <span><span class="st research">RESEARCH</span> clears EdgeDesk&rsquo;s research gates &mdash; worth opening, not a bet</span>
+        <span><span class="st watch">WATCH</span> a real disagreement that hasn&rsquo;t cleared them</span>
+        <span><span class="st pass">PASS</span> model and market agree, or the price leaves no value</span>
+        <span><span class="st incomplete">DATA INCOMPLETE</span> something is missing or stale &mdash; and it says what</span>
+      </div>
+      <div class="board-cta">
+        <button type="button" class="btn primary" onclick="startSubscribe()" data-cta="board_trial">Open every game in the terminal <span class="ar" aria-hidden="true">&rarr;</span></button>
+        <p>The terminal has the whole slate: every game&rsquo;s drivers, simulations, player markets and the price check at any line and odds you type.</p>
+      </div>
+      <p class="srcnote" id="lpBoardSrc"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 3 · GAME + PLAYER WORKFLOW ==================
+     Player props are part of the game, not a second product: the game card
+     carries its PLAYER MARKETS. The card is a live game with priced player
+     markets when one exists; otherwise the same layout as a labelled example. -->
+<section class="sec" id="workflow">
+  <span id="how" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="ey">How it works</span>
+      <h2>Price the game. Price the players.</h2>
+      <p class="lede">Game lines, player props, matchup data, rosters, simulations and market prices in one research terminal &mdash; so a player market is always read beside the game it belongs to.</p>
+    </div>
+    <div class="sec-body wf">
+      <div class="panel rv" id="lpConnected">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm" id="lpConnName">EdgeDesk &middot; Game card</span><span class="tag" id="lpConnTag">Example</span></div>
+        <div class="gr" id="lpConnBody">
+          <div class="gr-k">Game research</div>
+          <div class="mrow"><span class="pwho"><b>Chiefs @ Bills</b><small>Example game &middot; not live</small></span><span class="nums">Mkt <b>BUF +2.5</b></span><span class="nums">ED <b>BUF +0.8</b></span></div>
+          <div class="gr-k">Player markets</div>
+          <div class="mrow"><span class="pwho">Josh Allen rushing yards<small>Example</small></span><span class="nums">Mkt <b>43.5</b> &middot; ED <b>51.2</b></span><span class="st research">RESEARCH</span></div>
+          <div class="mrow"><span class="pwho">James Cook rushing attempts<small>Example</small></span><span class="nums">Mkt <b>15.5</b> &middot; ED <b>17.8</b></span><span class="st watch">WATCH</span></div>
+          <div class="mrow"><span class="pwho">Travis Kelce receptions<small>Example</small></span><span class="nums">Mkt <b>5.5</b> &middot; ED <b>5.1</b></span><span class="st pass">PASS</span></div>
+        </div>
+        <div class="panel-foot" id="lpConnFoot">Example layout. In the terminal every game card carries its player markets; opening a player opens the full prop research card.</div>
+      </div>
+      <ol class="steps rv">
+        <li><span class="n">01</span><div><h3>Find the disagreement</h3><p>The board sets every NFL and FBS game&rsquo;s fair number beside the market&rsquo;s, sizes the gap, and says when the market is stale or the data is thin.</p></div></li>
+        <li><span class="n">02</span><div><h3>Open the game &mdash; then its players</h3><p>Each game card carries the drivers, roster and availability context, simulations and uncertainty, and a <b>Player markets</b> section with the strongest prop research for that game.</p></div></li>
+        <li><span class="n">03</span><div><h3>Price the exact odds</h3><p>EdgeDesk EV compares EdgeDesk&rsquo;s probability with the sportsbook&rsquo;s break-even at the price you&rsquo;re offered &mdash; for spreads, moneylines, totals and props, and at any line and odds you type in.</p></div></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 4 · PRICE THE PLAYERS TOO ==================
+     The prop table is read from football/home/board.json, and every price's
+     age is judged when the page is read: a stale price is labelled and its
+     EV withheld. Only factors the prop model actually uses are listed. -->
+<section class="sec alt" id="props">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="ey">Player prop research</span>
+      <h2>Price the players too.</h2>
+      <p class="lede">EdgeDesk doesn&rsquo;t stop at the spread. Research player markets using projections, sportsbook prices, expected value, role, matchup and uncertainty.</p>
+    </div>
+    <div class="sec-body">
+      <div class="ptab-wrap rv">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">Player prop research &middot; NFL + CFB</span><span class="tag" id="lpPropTag">Loading</span></div>
+        <table class="ptab" id="lpPropTable">
+          <caption class="sr">Player prop research: EdgeDesk&rsquo;s projection against the sportsbook line, the best captured odds, EdgeDesk EV and status.</caption>
+          <thead><tr><th scope="col">Player</th><th scope="col">Prop</th><th scope="col">Market</th><th scope="col">EdgeDesk</th><th scope="col">Difference</th><th scope="col">Best odds</th><th scope="col">EdgeDesk EV</th><th scope="col">Status</th></tr></thead>
+          <tbody id="lpPropRows"><tr><td class="pl" colspan="8" data-l="">Reading the current player-prop research&hellip;</td></tr></tbody>
+        </table>
+        <div class="panel-foot" id="lpPropFoot">Player-prop EV is model-estimated: prop markets are in EdgeDesk&rsquo;s experimental validation stage, so they inform research and carry no stake until their graded record promotes them.</div>
+      </div>
+      <div class="fieldset rv">
+        <div>
+          <h3>Every supported prop shows</h3>
+          <div class="chks"><span class="ck">Player</span><span class="ck">Market</span><span class="ck">Line</span><span class="ck">Odds</span><span class="ck">EdgeDesk projection</span><span class="ck">EdgeDesk probability</span><span class="ck">Break-even</span><span class="ck">Fair odds</span><span class="ck">Raw EV</span><span class="ck">Calibrated EV</span><span class="ck">Projection difference</span><span class="ck">Confidence</span><span class="ck">Best available price</span><span class="ck">Market consensus</span><span class="ck">Market range</span></div>
+        </div>
+        <div>
+          <h3>The reasons, when the data has them</h3>
+          <div class="chks"><span class="ck">Expected volume</span><span class="ck">Snap share</span><span class="ck">Carries</span><span class="ck">Targets</span><span class="ck">Red-zone share</span><span class="ck">Opponent matchup by position</span><span class="ck">Pace</span><span class="ck">Game script</span><span class="ck">Quarterback</span><span class="ck">Injury effects</span><span class="ck">Weather</span><span class="ck">Historical role</span></div>
+          <p>Routes and offensive-line data aren&rsquo;t in EdgeDesk&rsquo;s feed yet, so they are never shown as a reason.</p>
+        </div>
+        <div>
+          <h3>And the uncertainty</h3>
+          <div class="chks"><span class="ck warn">Role uncertainty</span><span class="ck warn">Injury uncertainty</span><span class="ck warn">Limited sample</span><span class="ck warn">QB uncertainty</span><span class="ck warn">Market disagreement</span><span class="ck neg">Stale price</span></div>
+          <p>A prop whose price has gone stale is labelled and its EV withheld &mdash; never presented as current.</p>
+        </div>
+      </div>
+      <p class="pnote rv">Passing yards, passing touchdowns, interceptions, rushing yards, rushing attempts, receiving yards, receptions, touchdowns and other supported NFL and FBS props, as sportsbooks post them. <a class="lnk" href="/methodology/#props">How prop projections are built</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 5 · WHY EDGEDESK IS DIFFERENT ================== -->
 <section class="sec" id="difference">
   <div class="wrap">
     <div class="sec-head rv">
       <span class="ey">The difference</span>
-      <h2>Not picks. A research terminal.</h2>
+      <h2>Research, not picks.</h2>
     </div>
     <div class="sec-body vs rv">
       <div class="vs-side vs-them">
         <span class="k">A picks service</span>
         <p class="q">&ldquo;Take Auburn &minus;8.&rdquo;</p>
-        <p>One answer. No price to check, no reasoning to argue with.</p>
+        <p>One answer. No price to check, no reasoning to argue with, and last week&rsquo;s misses quietly gone.</p>
       </div>
       <div class="vs-side vs-us">
         <span class="k">EdgeDesk</span>
-        <div class="cells">
-          <div><span class="l">Fair spread</span><span class="v mdl">AUB &minus;10.2</span></div>
-          <div><span class="l">Market</span><span class="v">AUB &minus;8</span></div>
-          <div><span class="l">Available odds</span><span class="v">&minus;108</span></div>
-          <div><span class="l">EdgeDesk EV</span><span class="v pos">+6.9%</span></div>
-        </div>
-        <ul>
-          <li>Why the model differs</li>
-          <li>What could make it wrong</li>
-          <li>How sensitive the edge is to price</li>
-          <li>What happens if the line moves</li>
+        <ul class="diffs">
+          <li><b>Its own number</b><span>A fair line, projected score and win probability for every game, and a projection for every supported prop.</span></li>
+          <li><b>The price, not just the side</b><span>EdgeDesk EV at the exact odds offered &mdash; raw and calibrated kept apart.</span></li>
+          <li><b>Why it disagrees</b><span>The drivers behind the number, and what could make it wrong.</span></li>
+          <li><b>What it doesn&rsquo;t know</b><span>An unconfirmed starter, a stale price or a thin market is named on the game.</span></li>
         </ul>
-      </div>
-    </div>
-    <p class="vs-line rv">A picks service gives you an answer. <b>EdgeDesk gives you what you need to judge the price</b> &mdash; and the decision stays yours.</p>
-  </div>
-</section>
-
-<!-- ================== 4 · HOW IT WORKS ================== -->
-<section class="sec alt" id="how">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="ey">How it works</span>
-      <h2>From the slate to the price in three steps.</h2>
-    </div>
-    <ol class="sec-body steps">
-      <li class="step rv">
-        <div class="panel" aria-hidden="true">
-          <div class="mini mboard">
-            <div class="r hd"><span>Game</span><span>EdgeDesk</span><span>Market</span><span class="g q">Gap</span></div>
-            <div class="r on"><span>Baylor @ Auburn</span><span>&minus;10.2</span><span>&minus;8.0</span><span class="g">2.2</span></div>
-            <div class="r"><span>Iowa @ Wisconsin</span><span>&minus;2.1</span><span>&minus;3.5</span><span class="g q">1.4</span></div>
-            <div class="r"><span>Tulane @ Duke</span><span>&minus;7.7</span><span>&minus;8.5</span><span class="g q">0.8</span></div>
-          </div>
+        <div class="priceex" id="lpPriceEx">
+          <span class="k">A good number at a bad price is still a bad price</span>
+          A model can disagree with the market by several points and the price can still leave no value. EdgeDesk shows both &mdash; and PASS is the most common honest answer. <a class="lnk" href="/methodology/#ev">How EdgeDesk EV works</a>
         </div>
-        <h3><span class="n">01</span>Find the game</h3>
-        <p>Open the slate and see where EdgeDesk&rsquo;s number differs from the market&rsquo;s.</p>
-      </li>
-      <li class="step rv">
-        <div class="panel" aria-hidden="true">
-          <div class="mini mwhy">
-            <div class="r"><span class="p">+6.1</span><span class="t">Opponent-adjusted ratings</span></div>
-            <div class="r"><span class="p">+2.8</span><span class="t">Home field</span></div>
-            <div class="r"><span class="p">+1.3</span><span class="t">Quarterback</span></div>
-            <div class="chks"><span class="ck warn">? starting QB</span><span class="ck neg">&times; availability</span></div>
-          </div>
-        </div>
-        <h3><span class="n">02</span>Research the edge</h3>
-        <p>See why the model prices the game differently &mdash; and what could invalidate it.</p>
-      </li>
-      <li class="step rv">
-        <div class="panel" aria-hidden="true">
-          <div class="mini">
-            <div class="mprice">
-              <div><span class="l">Price</span><span class="v">&minus;108</span></div><span class="ar">&rarr;</span>
-              <div><span class="l">Break-even</span><span class="v dim">51.9%</span></div><span class="ar">&rarr;</span>
-              <div><span class="l">EdgeDesk EV</span><span class="v pos">+6.9%</span></div>
-            </div>
-            <p class="mprice-note">EdgeDesk probability 55.6%</p>
-          </div>
-        </div>
-        <h3><span class="n">03</span>Price the bet</h3>
-        <p>EdgeDesk EV checks the odds you&rsquo;re offered against EdgeDesk&rsquo;s probability: is there still value at this number?</p>
-      </li>
-    </ol>
-  </div>
-</section>
-
-<!-- ================== 5 · TEN TABS, ONE PAGE ==================
-     The value is not that this information never existed. It is that a
-     reader no longer assembles it by hand on a Saturday morning. -->
-<section class="sec" id="tabs">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="ey">Your Saturday</span>
-      <h2>The information already exists. Assembling it is the expensive part.</h2>
-    </div>
-    <div class="sec-body tabsx rv">
-      <div>
-        <p class="k">Without EdgeDesk</p>
-        <div class="pile">
-          <span>Odds screen</span><span>Roster site</span><span>Portal tracker</span><span>Team stats</span><span>Player stats</span>
-          <span>Power ratings</span><span>Injury news</span><span>Weather</span><span>Spreadsheet</span><span>AI chat</span>
-        </div>
-        <p class="pile-cost">10 tabs &middot; none of them joined to the game &middot; the line moves while you read</p>
-      </div>
-      <div class="arrow" aria-hidden="true">&rarr;</div>
-      <div class="one">
-        <p class="k">With EdgeDesk</p>
-        <p class="one-h">One matchup page.<span>Every layer already joined to the game.</span></p>
-        <ul>
-          <li>Model</li><li>Market</li><li>EdgeDesk EV</li><li>Matchup</li><li>Roster</li>
-          <li>Players</li><li>Simulation</li><li>Uncertainty</li><li>Record</li><li>Brief</li>
-        </ul>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================== 6 · WHAT YOU GET ==================
-     Six cards, one or two sentences each. The ratings and the counts are
-     READ from the committed artifacts the app reads, never typed in here. -->
+<!-- ================== 6 · WHAT YOU GET ================== -->
 <section class="sec alt" id="product">
   <div class="wrap">
     <div class="sec-head rv">
       <span class="ey">What you get</span>
-      <h2>One page per game. Every layer joined to it.</h2>
+      <h2>One terminal for the game, the market and the players.</h2>
     </div>
     <div class="sec-body feats">
       <article class="feat rv">
         <span class="n">01</span>
-        <h3>Model + projections</h3>
-        <p>Fair spread, projected score, win probability and the range the game could land in.</p>
+        <h3>Game markets</h3>
+        <p>Spreads, moneylines and totals: fair lines, projected scores and win probabilities beside the live market.</p>
         <div class="snap"><div class="snap-in">
-          <span class="l">EdgeDesk power ratings &middot; current</span>
-          <div id="lpRatings">
-            <div class="row"><span class="n">&mdash;</span><span class="t">loading the current board&hellip;</span></div>
-          </div>
+          <span class="l">EdgeDesk FBS power ratings &middot; current</span>
+          <div id="lpRatings"><div class="row"><span class="n">&mdash;</span><span class="t">reading the current ratings&hellip;</span></div></div>
         </div></div>
       </article>
       <article class="feat hot rv">
         <span class="n">02</span>
-        <h3>EdgeDesk EV + price</h3>
-        <p>Fair probability, sportsbook break-even, expected value &mdash; and how quickly the edge changes as the market moves.</p>
-        <div class="snap"><div class="snap-in">
-          <span class="l">Auburn &minus;8 &middot; illustrative</span>
-          <div class="flow"><span>&minus;108</span><i>&rarr;</i><span>BE 51.9%</span><i>&rarr;</i><b>EV +6.9%</b></div>
-        </div></div>
+        <h3>Player prop research</h3>
+        <p>Projection, probability, break-even, fair odds and EV for each supported prop &mdash; with the role, matchup and uncertainty behind it.</p>
+        <div class="snap"><div class="snap-in stack"><span>Projection vs line</span><span>Best available price</span><span>Market consensus and range</span></div></div>
       </article>
       <article class="feat rv">
         <span class="n">03</span>
-        <h3>Matchup research</h3>
-        <p>Team strengths, scheme tendencies, position groups and where the game is likely to be won.</p>
-        <div class="snap"><div class="snap-in chks"><span class="ck">Position-group matrix</span><span class="ck">Scheme tendencies</span><span class="ck">Run-defence gate</span><span class="ck">Pace fit</span></div></div>
+        <h3>EdgeDesk EV + price</h3>
+        <p>EdgeDesk&rsquo;s probability against the sportsbook&rsquo;s break-even at the exact price &mdash; and how fast the value moves with the line.</p>
+        <div class="snap"><div class="snap-in"><div class="flow"><span>Price</span><i>&rarr;</i><span>Break-even</span><i>&rarr;</i><span>EdgeDesk EV</span></div></div></div>
       </article>
       <article class="feat rv">
         <span class="n">04</span>
-        <h3>Players + rosters</h3>
-        <p>Player ratings, returning production, portal movement and availability context.</p>
-        <div class="snap"><div class="snap-in stack">
-          <span id="lpPlayers">Player ratings across FBS</span>
-          <span id="lpTeams">Every FBS team</span>
-        </div></div>
+        <h3>Matchup research</h3>
+        <p>Team strengths, scheme tendencies, position groups and where the game is likely to be won.</p>
+        <div class="snap"><div class="snap-in chks"><span class="ck">Position-group matrix</span><span class="ck">Scheme tendencies</span><span class="ck">Pace fit</span></div></div>
       </article>
       <article class="feat rv">
         <span class="n">05</span>
-        <h3>Simulation + uncertainty</h3>
-        <p>Outcome distributions, scenario ranges, risk gates &mdash; and exactly what EdgeDesk doesn&rsquo;t know.</p>
-        <div class="snap"><div class="snap-in chks"><span class="ck ok">&#10003; margin distribution</span><span class="ck ok">&#10003; stale-market gate</span><span class="ck warn">? starting QB</span><span class="ck neg">&times; availability</span></div></div>
+        <h3>Players + rosters</h3>
+        <p>Player ratings, returning production, portal movement and availability context.</p>
+        <div class="snap"><div class="snap-in stack"><span id="lpPlayers">Player ratings across FBS</span><span id="lpTeams">Every FBS team</span></div></div>
       </article>
       <article class="feat rv">
         <span class="n">06</span>
-        <h3>Public record</h3>
-        <p>Research captured before kickoff and graded afterward &mdash; without quietly deleting the ugly parts.</p>
-        <div class="snap"><div class="snap-in flow"><span>Captured pregame</span><i>&rarr;</i><span>Graded</span><i>&rarr;</i><span>Public</span></div></div>
+        <h3>Simulation + uncertainty</h3>
+        <p>Outcome distributions and scenario ranges &mdash; and exactly what EdgeDesk doesn&rsquo;t know.</p>
+        <div class="snap"><div class="snap-in chks"><span class="ck ok">&#10003; margin distribution</span><span class="ck ok">&#10003; stale-market gate</span><span class="ck warn">? starting QB</span></div></div>
       </article>
     </div>
   </div>
 </section>
 
-<!-- ================== 7 · ONE COMPLETE GAME ==================
-     The whole read on one illustrative game. Tab content is in the markup,
-     so it reads without script; the script only switches panels. -->
-<section class="sec" id="game">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="ey">See a game</span>
-      <h2>One game, start to finish.</h2>
-      <p class="lede">An illustrative matchup, laid out the way the terminal lays it out.</p>
-    </div>
-    <div class="sec-body panel game rv">
-      <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk &middot; Baylor @ Auburn</span><span class="tag">Illustrative game</span></div>
-      <div class="game-hd">
-        <div><b>Baylor @ Auburn</b><span class="w">Sat &middot; 7:30 PM &middot; Big 12 at SEC</span></div>
-        <span class="st warn" title="A 2+ point model&ndash;market gap at a fresh market">WORTH RESEARCHING</span>
-      </div>
-      <div class="cells c6">
-        <div><span class="l">Market</span><span class="v">Auburn &minus;8</span></div>
-        <div><span class="l">EdgeDesk</span><span class="v mdl">Auburn &minus;10.2</span></div>
-        <div><span class="l">Model&ndash;market gap</span><span class="v warn">2.2 pts</span></div>
-        <div><span class="l">Projected</span><span class="v">31&ndash;21</span></div>
-        <div><span class="l">Win probability</span><span class="v">Auburn 74%</span></div>
-        <div><span class="l">Data confidence</span><span class="v">72%</span></div>
-      </div>
-      <div class="chks"><span class="ck ok">&#10003; model built</span><span class="ck ok">&#10003; market fresh</span><span class="ck ok">&#10003; roster loaded</span><span class="ck warn">? starting QB</span><span class="ck neg">&times; availability</span></div>
-
-      <div class="gtabs" role="tablist" aria-label="Research on this game">
-        <button type="button" role="tab" id="gt-why" aria-controls="gp-why" aria-selected="true">Why EdgeDesk is here</button>
-        <button type="button" role="tab" id="gt-risk" aria-controls="gp-risk" aria-selected="false" tabindex="-1">What could break it</button>
-        <button type="button" role="tab" id="gt-price" aria-controls="gp-price" aria-selected="false" tabindex="-1">Price check</button>
-      </div>
-      <div class="gpanel" role="tabpanel" id="gp-why" aria-labelledby="gt-why" tabindex="0">
-        <div class="drv">
-          <div class="r"><span class="p">+6.1</span><span class="b"><i style="width:100%"></i></span><span class="t">Opponent-adjusted ratings<small>Auburn&rsquo;s efficiency per play, adjusted for who each team has played, rates well above Baylor&rsquo;s.</small></span></div>
-          <div class="r"><span class="p">+2.8</span><span class="b"><i style="width:46%"></i></span><span class="t">Home field<small>Playing at Auburn &mdash; learned from the league, not assumed at three points.</small></span></div>
-          <div class="r"><span class="p">+1.3</span><span class="b"><i style="width:21%"></i></span><span class="t">Quarterback<small>Auburn&rsquo;s starter grades higher in the learned quarterback layer.</small></span></div>
-        </div>
-        <p class="drv-sum">= Auburn by 10.2, EdgeDesk&rsquo;s fair line. Every driver is a term the model actually priced.</p>
-      </div>
-      <div class="gpanel" role="tabpanel" id="gp-risk" aria-labelledby="gt-risk" tabindex="0" hidden>
-        <ul class="risks">
-          <li><span class="ck warn">? QB</span><span>Baylor&rsquo;s starting quarterback isn&rsquo;t confirmed.<small>Carried as unknown &mdash; never as healthy, never guessed.</small></span></li>
-          <li><span class="ck neg">&times; data</span><span>Neither school publishes a participation report.<small>Availability is left out of the number and named on the game.</small></span></li>
-          <li><span class="ck warn">! market</span><span>The line has moved from &minus;6.5 to &minus;8.<small>If it reaches &minus;10, the price no longer qualifies.</small></span></li>
-        </ul>
-      </div>
-      <div class="gpanel" role="tabpanel" id="gp-price" aria-labelledby="gt-price" tabindex="0" hidden>
-        <div class="pcheck" id="lineCheck">
-          <div data-line="-7.5"><span class="line">&minus;7.5</span><span class="v pos">+8.2%</span><span class="st pos">QUALIFIES</span></div>
-          <div data-line="-8" class="here"><span class="line">&minus;8</span><span class="v pos">+6.0%</span><span class="st pos">QUALIFIES</span></div>
-          <div data-line="-9"><span class="line">&minus;9</span><span class="v warn">+1.3%</span><span class="st warn">THIN</span></div>
-          <div data-line="-10"><span class="line">&minus;10</span><span class="v neg">&minus;3.5%</span><span class="st neg">PASS</span></div>
-        </div>
-        <p class="pnote">EdgeDesk EV for Auburn at each number, at a reference price of &minus;110. <b>The research didn&rsquo;t change. The number did.</b></p>
-      </div>
-      <div class="panel-foot">Illustrative game, not a live price. Nothing here tells you what to bet.</div>
-    </div>
-  </div>
-</section>
-
-<!-- ================== 8 · EDGEDESK EV ==================
-     The core idea: a side is only good or bad AT A PRICE. Every derived
-     number below is computed by lib/edgedesk_quote_ev.js — the one EV
-     implementation the terminal uses — from the illustrative inputs in
-     #lpEvData. The markup carries the same numbers for readers without
-     script, and tools/presentation/landing_ev.test.js pins the two together. -->
-<section class="sec alt" id="ev">
-  <div class="wrap">
-    <div class="sec-head rv">
-      <span class="ey">EdgeDesk EV</span>
-      <h2>A good number at a bad price is still a bad price.</h2>
-      <p class="lede">EdgeDesk EV compares EdgeDesk&rsquo;s probability with the sportsbook&rsquo;s break-even at the exact odds you&rsquo;re offered &mdash; so you can see what that price is actually worth.</p>
-    </div>
-
-    <div class="sec-body evx">
-      <div class="panel evcard rv" id="evCard">
-        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk EV &middot; Price check</span><span class="tag">Illustrative game</span></div>
-        <div class="top"><h3>The game didn&rsquo;t change. The price did.</h3><span class="w">Baylor @ Auburn &middot; Auburn &minus;8</span></div>
-        <div class="slot">
-          <div class="slabel"><label for="evSlider">Sportsbook price</label><output id="evPrice" for="evSlider">&minus;108</output></div>
-          <div class="strack">
-            <div class="fairmark" id="evFairMark" style="left:62.5%"><span>FAIR &minus;125</span></div>
-            <input type="range" class="edge" id="evSlider" min="0" max="40" step="1" value="8" aria-valuetext="minus 108">
-          </div>
-          <div class="sends"><span>&minus;100</span><span>&minus;140</span></div>
-        </div>
-        <div class="picks" role="group" aria-label="Same line, three prices"><span class="l">Same line, three prices</span><button type="button" data-price="-105" aria-pressed="false">&minus;105</button><button type="button" data-price="-122" aria-pressed="false">&minus;122</button><button type="button" data-price="-130" aria-pressed="false">&minus;130</button></div>
-        <div class="cells evout">
-          <div><span class="l">EdgeDesk probability</span><span class="v" id="evProb">55.6%</span></div>
-          <div><span class="l">Break-even</span><span class="v dim" id="evBe">51.9%</span></div>
-          <div><span class="l">Probability edge</span><span class="v" id="evEdge">+3.7 pp</span></div>
-          <div><span class="l">EdgeDesk EV</span><span class="v big pos" id="evEv">+6.9%</span></div>
-          <div><span class="l">Fair odds</span><span class="v dim" id="evFair">&minus;125</span></div>
-        </div>
-        <div class="state s-pos" id="evState" role="status" aria-live="polite">
-          <div class="sv" id="evStateV">QUALIFIES</div>
-          <p class="sc" id="evStateC">EdgeDesk&rsquo;s probability clears the break-even by 3.7 points. At this price the side meets EdgeDesk&rsquo;s price rules.</p>
-        </div>
-      </div>
-
-      <div class="panel rv">
-        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk EV &middot; Auburn, every number</span><span class="tag">Illustrative prices</span></div>
-        <div class="evcard"><div class="top"><h3>The standard number isn&rsquo;t always the best price.</h3></div></div>
-        <div class="ladder-wrap">
-          <table class="ladder" id="evLadder">
-            <caption class="sr">EdgeDesk EV for Auburn at each available line and price. Illustrative prices.</caption>
-            <thead><tr><th scope="col">Line</th><th scope="col">Price</th><th scope="col" class="xs">EdgeDesk prob.</th><th scope="col">EdgeDesk EV</th><th scope="col"><span class="sr">Label</span></th></tr></thead>
-            <tbody>
-              <tr><td>&minus;7</td><td>&minus;125</td><td class="xs">58.1%</td><td class="ev pos">+4.5%</td><td class="tagc"><span class="tg safe">SAFEST +EV</span></td></tr>
-              <tr><td>&minus;7.5</td><td>&minus;118</td><td class="xs">56.7%</td><td class="ev pos">+4.8%</td><td class="tagc"></td></tr>
-              <tr class="main"><td>&minus;8</td><td>&minus;108</td><td class="xs">55.6%</td><td class="ev pos">+6.9%</td><td class="tagc"><span class="tg main">MAIN LINE</span></td></tr>
-              <tr><td>&minus;8.5</td><td>&minus;102</td><td class="xs">54.2%</td><td class="ev pos">+7.4%</td><td class="tagc"></td></tr>
-              <tr><td>&minus;9</td><td>+105</td><td class="xs">53.1%</td><td class="ev pos">+8.6%</td><td class="tagc"></td></tr>
-              <tr><td>&minus;9.5</td><td>+110</td><td class="xs">51.7%</td><td class="ev pos">+8.7%</td><td class="tagc"></td></tr>
-              <tr><td>&minus;10</td><td>+118</td><td class="xs">50.5%</td><td class="ev pos">+9.9%</td><td class="tagc"><span class="tg max">MAX EV</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel-foot">MAX EV is not a recommendation: aggressive lines lean hardest on the tails of the distribution. EdgeDesk EV prices every captured quote at its own line and price &mdash; and any line and price you type in.</div>
-      </div>
-    </div>
-
-    <div class="ev-notes rv">
-      <p><b>What EV means.</b> Expected value estimates the theoretical return of repeatedly taking the same price if EdgeDesk&rsquo;s probability is accurate. It is an estimate &mdash; it does not guarantee profit.</p>
-      <p><b>It shows its work first.</b> EV is only as good as the probability under it, so the drivers, the uncertainty and the public grading sit beside it, and raw and calibrated EV are shown separately.</p>
-      <p><b>The rules are written down.</b> A price qualifies at 1+ point of probability edge, positive EV and no worse than &minus;125 &mdash; EdgeDesk&rsquo;s pre-registered EV policy. It runs in shadow: every read is recorded and graded, and none is presented as a bet.</p>
-      <p><b>Most prices don&rsquo;t qualify.</b> On a real slate, PASS is the most common answer. That is a normal result, not a broken one.</p>
-    </div>
-  </div>
-</section>
-
-<!-- The illustrative inputs for every EV figure on this page. win/push are
-     the illustrative model's probabilities for Auburn at each line; prices
-     are illustrative quotes; policy mirrors
-     football/cfb_ev/policy/cfb_ev_policy_v1.json. Nothing here is live. -->
-<script type="application/json" id="lpEvData">
-{"team":"Auburn","curve":{"-7":[0.567,0.0244],"-7.5":[0.567,0],"-8":[0.5423,0.0247],"-8.5":[0.5423,0],"-9":[0.5174,0.0249],"-9.5":[0.5174,0],"-10":[0.4925,0.0249]},"policy":{"min_probability_edge":0.01,"min_calibrated_ev":0,"max_price":-125},"hero":{"line":-8,"price":-108},"slider":{"line":-8,"from":-100,"to":-140,"start":-108,"picks":[-105,-122,-130]},"lineCheck":{"price":-110,"lines":[-7.5,-8,-9,-10]},"ladder":{"main":-8,"quotes":[[-7,-125],[-7.5,-118],[-8,-108],[-8.5,-102],[-9,105],[-9.5,110],[-10,118]]}}
-</script>
-
-<!-- ================== 9 · WHY TRUST IT ================== -->
+<!-- ================== 7 · TRUST AND THE PUBLIC RECORD ==================
+     The PROCESS is the headline, not a metric. #proofInner is filled by
+     loadLiveProof() when the section comes near, from the same database the
+     app runs on; the markup is the honest fallback. -->
 <section class="sec" id="trust">
+  <span id="record" aria-hidden="true"></span>
   <div class="wrap">
-    <div class="sec-head rv">
-      <span class="ey">Why trust it</span>
-      <h2>It shows its work &mdash; including the parts that aren&rsquo;t flattering.</h2>
-    </div>
-    <div class="sec-body trust">
+    <div class="trust">
       <div class="rv">
-        <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h10M4 19h7"/><path d="M17 15l2 2 3-4"/></svg></span>
-        <h3>A public record</h3>
-        <p>Research is captured before kickoff and graded automatically afterward. <a class="lnk" href="#record">See the record</a></p>
+        <div class="sec-head">
+          <span class="ey">The public record</span>
+          <h2>Nothing quietly disappears after kickoff.</h2>
+        </div>
+        <ul class="proc" style="margin-top:26px">
+          <li><div><b>Every research result is captured before kickoff.</b><span>Frozen with the price and the time, before anyone knows the answer.</span></div></li>
+          <li><div><b>Automatically graded.</b><span>Against the close and the result, with nothing entered by hand.</span></div></li>
+          <li><div><b>Losses remain visible.</b><span>Losing stretches stay in. If the number is negative, it says so.</span></div></li>
+          <li><div><b>Uncertainty is explicitly shown.</b><span>Small samples are labelled as small samples; unvalidated layers move no line.</span></div></li>
+          <li><div><b>Methodology is published.</b><span>How every number is built and graded, in the open.</span></div></li>
+        </ul>
+        <div class="rec-cta">
+          <a class="btn ghost" href="/record.html" data-track="public_record_click" data-cta="record">Open the public record <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <a class="lnk" href="/methodology/" data-cta="methodology">Read the methodology</a>
+          <small>No account. Not behind the paywall.</small>
+        </div>
       </div>
-      <div class="rv">
-        <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.6"/><path d="M12 17h.01"/></svg></span>
-        <h3>Stated uncertainty</h3>
-        <p>An unconfirmed starter, a stale price or a missing report is named on the game &mdash; never filled with a guess.</p>
-      </div>
-      <div class="rv">
-        <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>
-        <h3>Published methodology</h3>
-        <p>Every number comes with the drivers behind it, and the grading method is public. <a class="lnk" href="/record.html" data-track="public_record_click">Methodology</a></p>
+      <div class="ledger rv">
+        <div class="ledger-hd"><span class="dot" aria-hidden="true"></span> Live &middot; auto-graded &middot; unedited</div>
+        <div id="proofInner">
+          <div class="rf"><span class="rk">Status</span><span class="rv2">Opens as you scroll here&hellip;</span></div>
+        </div>
       </div>
     </div>
 
     <!-- FEATURED IN: INDEPENDENT COVERAGE. Social proof, stated exactly.
          Stadium Rant is an independent publisher; its writers cite EdgeDesk's
          numbers in articles they publish on their own site. That is editorial
-         attribution — not a partnership, not a sponsorship, and not EdgeDesk
-         hosting their work. The copy and the note below keep saying only that. -->
+         attribution — not a partnership, not a sponsorship. -->
     <div class="press rv" id="featured">
       <div>
         <span class="ey">Independent use</span>
@@ -1068,38 +891,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
   </div>
 </section>
 
-<!-- ================== 10 · PUBLIC RECORD ==================
-     #proofInner is filled by loadLiveProof() from the same database the app
-     runs on; the markup below is the honest fallback. -->
-<section class="sec alt" id="record">
-  <div class="wrap rec">
-    <div class="rv">
-      <div class="sec-head">
-        <span class="ey">The public record</span>
-        <h2>No screenshots. No deleted losses. No resets.</h2>
-      </div>
-      <ul class="rec-list">
-        <li>Research is captured before kickoff and frozen.</li>
-        <li>It is graded automatically afterward &mdash; nothing entered by hand.</li>
-        <li>Small samples are labelled as small samples.</li>
-        <li>Losing stretches stay in. If the number is negative, it says so.</li>
-      </ul>
-      <div class="rec-cta">
-        <a class="btn ghost" href="/record.html" data-track="public_record_click">Open the public record <span class="ar" aria-hidden="true">&rarr;</span></a>
-        <small>No account. Not behind the paywall.</small>
-      </div>
-    </div>
-    <div class="ledger rv">
-      <div class="ledger-hd"><span class="dot" aria-hidden="true"></span> Live &middot; auto-graded &middot; unedited</div>
-      <div id="proofInner">
-        <div class="rf"><span class="rk">Status</span><span class="rv2">Reading the record&hellip;</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ================== 11 · WHO IT IS FOR ================== -->
-<section class="sec" id="who">
+<!-- ================== 8 · WHO IT IS FOR ================== -->
+<section class="sec alt" id="who">
   <div class="wrap">
     <div class="sec-head rv">
       <span class="ey">Who it&rsquo;s for</span>
@@ -1107,17 +900,17 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
     </div>
     <div class="sec-body who rv">
       <div><b>Serious football bettors</b><p>Research a slate without ten tabs and a spreadsheet you maintain by hand.</p></div>
+      <div><b>Player-prop researchers</b><p>Projections, prices and role context for player markets &mdash; read beside the game they belong to.</p></div>
       <div><b>Model builders + data people</b><p>A second opinion, a market comparison and a graded record you didn&rsquo;t have to build.</p></div>
       <div><b>Creators + writers</b><p>Turn a matchup into content with numbers you can quote, check and stand behind.</p></div>
-      <div><b>Football nerds</b><p>Go absurdly deep. Apparently this is what we have decided to do with Saturdays.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ================== 12 · PRICING ==================
-     app.html sends unauthenticated visitors to ./index.html#pricing and
-     ./index.html#subscribe, so both anchors live here. -->
-<section class="sec alt" id="pricing">
+<!-- ================== 9 · PRICING ==================
+     Every figure is lib/edgedesk_pricing.js (data-ed-price), the one source.
+     app.html sends visitors to ./index.html#pricing and #subscribe. -->
+<section class="sec" id="pricing">
   <div class="wrap">
     <div class="sec-head center rv">
       <span class="ey">Pricing</span>
@@ -1126,42 +919,43 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
     <div class="sec-body price">
       <div class="pcard rv">
         <span id="subscribe"></span>
-        <span class="ptag">EdgeDesk &middot; Full access</span>
-        <p class="pname">Football research terminal</p>
+        <span class="ptag">Full access</span>
+        <p class="pname" data-ed-price="plan">EdgeDesk Founding Member</p>
         <div class="pprice"><span class="pamt" data-ed-price="price">$79.99</span><span class="pper">/ month</span></div>
-        <span class="ptrial">7 days free</span>
-        <ul class="pincl">
+        <span class="ptrial" data-ed-price="trial">7 days free</span>
+        <ul class="pincl" id="lpIncludes">
           <li>NFL + FBS, one terminal</li>
-          <li>Fair spread, projected score and win probability</li>
-          <li>Model vs market, with the gap sized</li>
+          <li>Game markets: spreads, moneylines and totals</li>
+          <li>Player props, priced at the exact odds</li>
+          <li>Fair lines, projected scores and win probabilities</li>
           <li>EdgeDesk EV at the exact price you&rsquo;re offered</li>
           <li>Matchup, roster and player research</li>
           <li>Simulations and outcome ranges</li>
           <li>Uncertainty and data quality on every game</li>
-          <li>EdgeDesk power ratings</li>
           <li>The public record and copyable research briefs</li>
+          <li>Everything included &mdash; no tiers</li>
         </ul>
-        <button type="button" class="btn primary lg authbtn" id="subBtn" type="button" onclick="startSubscribe()" data-track="pricing_trial_click">Start 7 days free <span class="ar" aria-hidden="true">&rarr;</span></button>
+        <button type="button" class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()" data-track="pricing_trial_click" data-cta="pricing_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
         <p class="psub"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
-        <p class="psub">Nothing charged until day 8. Cancel anytime before renewal.</p>
+        <p class="psub">Nothing charged until day <span data-ed-price="day8">8</span>. Cancel anytime before renewal.</p>
         <p class="psub" id="edOffer" hidden></p>
         <p class="psmall">21+ &middot; Research and decision-support tool &middot; Signals can be wrong &middot; <span class="nw">1-800-GAMBLER</span></p>
       </div>
       <div class="rv">
         <ol class="timeline">
           <li><span class="when">Today</span><span><b>Full access, $0</b><span>Every layer of the terminal. Stripe holds a card and charges nothing.</span></span></li>
-          <li><span class="when">Before day 8</span><span><b>We email you</b><span>A reminder before the trial converts. Nobody here gets billed by forgetting.</span></span></li>
-          <li><span class="when">Day 8</span><span><b>$79.99 / month</b><span>Unless you cancel &mdash; Settings &rsaquo; Subscription, one click, no retention call.</span></span></li>
+          <li><span class="when">Before day <span data-ed-price="day8">8</span></span><span><b>We email you</b><span>A reminder that says the exact date your card will be charged. Nobody here gets billed by forgetting.</span></span></li>
+          <li><span class="when">Day <span data-ed-price="day8">8</span></span><span><b><span data-ed-price="price">$79.99</span> / month</b><span>Unless you cancel &mdash; Settings &rsaquo; Subscription, one click, no retention call.</span></span></li>
         </ol>
-        <p class="founding"><b>Founding rate:</b> $79.99 is locked for as long as you stay subscribed. No tiers, no countdown, no invented scarcity.</p>
+        <p class="founding"><b>Founding members</b> <span data-ed-price="founding">Founding members keep their rate while continuously subscribed.</span> No tiers, no countdown, no invented scarcity.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ================== 13 · FAQ ==================
+<!-- ================== 10 · FAQ ==================
      Native <details>: it works without script and with every screen reader. -->
-<section class="sec" id="faq">
+<section class="sec alt" id="faq">
   <div class="wrap">
     <div class="sec-head center rv">
       <span class="ey">FAQ</span>
@@ -1170,27 +964,27 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
     <div class="sec-body faq">
       <details>
         <summary>Is EdgeDesk a picks service?</summary>
-        <div class="a"><p>No. EdgeDesk is a sports market research and decision-support platform. It shows its own price, the market&rsquo;s price, why they differ and what could make it wrong &mdash; and its decision engine classifies the current price as BET, LEAN, WATCH or PASS, with the exact line, book and a conservative unit size when a price qualifies, and the price that would change the answer when it does not. Every decision says why, and the choice to bet stays yours &mdash; no picks, no locks, no guaranteed winners.</p></div>
+        <div class="a"><p>No. EdgeDesk is a sports market research and decision-support platform. It shows its own price, the market&rsquo;s price, why they differ and what could make it wrong &mdash; and inside the terminal its decision engine classifies the current price as BET, LEAN, WATCH or PASS, with the exact line and book when a price qualifies and the price that would change the answer when it does not. Every decision says why, and the choice to bet stays yours &mdash; no picks, no locks, no guaranteed winners.</p></div>
       </details>
       <details>
-        <summary>What sports does EdgeDesk cover?</summary>
-        <div class="a"><p>Football: the NFL and NCAA FBS, the top division of college football, in one terminal.</p></div>
+        <summary>What does EdgeDesk cover?</summary>
+        <div class="a"><p>Football: the NFL and NCAA FBS, the top division of college football, in one terminal &mdash; game markets (spreads, moneylines, totals) and player props.</p></div>
       </details>
       <details>
-        <summary>How does the 7-day trial work?</summary>
-        <div class="a"><p>You get the full product for 7 days &mdash; no locked tiers, no trial-only board. Stripe holds a card and <b>charges nothing until day 8</b>. We email you before the trial converts, and if you cancel in the 7 days you are never charged.</p></div>
+        <summary>Which player props does EdgeDesk analyze?</summary>
+        <div class="a"><p>Passing yards, passing touchdowns, interceptions, rushing yards, rushing attempts, receiving yards, receptions, touchdowns and other supported NFL and FBS markets, whenever sportsbooks post them. Each prop is read beside its game. Prop markets are in EdgeDesk&rsquo;s experimental validation stage: their EV is labelled model-estimated and they carry no stake until their graded record promotes them.</p></div>
+      </details>
+      <details>
+        <summary>How does the free trial work?</summary>
+        <div class="a"><p>You get the full product for <span data-ed-price="days">7</span> days &mdash; no locked tiers, no trial-only board. Stripe holds a card and <b>charges nothing until day <span data-ed-price="day8">8</span></b>. We email you before the trial converts, with the exact date you will be charged, and if you cancel during the trial you are never charged.</p></div>
       </details>
       <details>
         <summary>Where does EdgeDesk get its numbers?</summary>
-        <div class="a"><p>It builds its own. A football model built from opponent-adjusted efficiency per play, home field and a learned quarterback layer; player and roster ratings built from public play-by-play and participation data; and sportsbook prices captured with the time they were captured. A language model never produces a probability, a price or a rating.</p></div>
+        <div class="a"><p>It builds its own. A football model built from opponent-adjusted efficiency per play, home field and a learned quarterback layer; a player-prop model built from volume, share and efficiency, adjusted for matchup, game script, weather and availability; and sportsbook prices captured with the time they were captured. A language model never produces a probability, a price or a rating.</p></div>
       </details>
       <details>
         <summary>What is EdgeDesk EV?</summary>
-        <div class="a"><p>It compares EdgeDesk&rsquo;s estimated probability with the sportsbook&rsquo;s actual price and break-even probability, to estimate the value available at that exact price. Raw and calibrated EV are shown separately, and only the calibrated number can clear EdgeDesk&rsquo;s price rules.</p></div>
-      </details>
-      <details>
-        <summary>Why isn&rsquo;t the model spread enough?</summary>
-        <div class="a"><p>Because Auburn &minus;8 at &minus;105 and Auburn &minus;8 at &minus;130 are economically different bets. A model edge only becomes a betting edge at a price. EdgeDesk evaluates the price, not merely the side.</p></div>
+        <div class="a"><p>It compares EdgeDesk&rsquo;s estimated probability with the sportsbook&rsquo;s actual price and break-even probability, to estimate the value available at that exact price. Expected value estimates the theoretical return of repeatedly taking the same price if EdgeDesk&rsquo;s probability is accurate &mdash; it does not guarantee profit. Raw and calibrated EV are shown separately. <a class="lnk" href="/methodology/#ev">More in the methodology</a>.</p></div>
       </details>
       <details>
         <summary>Does EdgeDesk guarantee winning bets?</summary>
@@ -1201,8 +995,12 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
         <div class="a"><p>It says so on the game. An unconfirmed starting quarterback is carried as unknown, never as healthy. A stale price is not compared. A very large gap is investigated as a possible data problem rather than surfaced as a find. Layers that have not cleared validation move no line.</p></div>
       </details>
       <details>
+        <summary>What does &ldquo;founding member&rdquo; mean?</summary>
+        <div class="a"><p><span data-ed-price="founding">Founding members keep their rate while continuously subscribed.</span> There is one plan and everyone gets everything; nothing about it is limited-time.</p></div>
+      </details>
+      <details>
         <summary>Can I cancel anytime?</summary>
-        <div class="a"><p>Yes. Settings &rsaquo; Subscription inside the app, one click, no conversation. <b>Cancel during the 7 days and you are never charged</b>; cancel later and access runs to the end of the period you already paid for.</p></div>
+        <div class="a"><p>Yes. Settings &rsaquo; Subscription inside the app, one click, no conversation. <b>Cancel during the trial and you are never charged</b>; cancel later and access runs to the end of the period you already paid for.</p></div>
       </details>
       <details>
         <summary>What is the public record?</summary>
@@ -1224,13 +1022,14 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
   </div>
 </section>
 
-<!-- ================== 14 · FINAL ================== -->
+<!-- ================== 11 · FINAL ================== -->
 <section class="final" id="start">
   <div class="wrap">
-    <h2 class="rv">Research the matchup.<br><span class="g">Then price it.</span></h2>
-    <p class="lede rv">One football research terminal. NFL + FBS.</p>
+    <h2 class="rv">Find where the model and the market <span class="g">disagree.</span></h2>
+    <p class="lede rv">One football research terminal for the game, the market and the players. NFL + FBS.</p>
     <div class="cta rv">
-      <button type="button" class="btn primary lg" id="btmLogin" type="button" onclick="startSubscribe()" data-track="final_trial_click">Start 7 days free <span class="ar" aria-hidden="true">&rarr;</span></button>
+      <button type="button" class="btn primary lg" id="btmLogin" onclick="startSubscribe()" data-track="final_trial_click" data-cta="final_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
+      <a class="btn ghost lg" href="#today" data-cta="final_board">Explore today&rsquo;s board</a>
     </div>
     <p class="microcta"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
     <p class="fine">Research, not picks &middot; 21+ &middot; <span class="nw">1-800-GAMBLER</span></p>
@@ -1250,11 +1049,11 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
       <div>
         <h4>Product</h4>
         <ul>
-          <li><a href="#product">What you get</a></li>
-          <li><a href="#ev">EdgeDesk EV</a></li>
+          <li><a href="#today">Today&rsquo;s board</a></li>
+          <li><a href="#props">Player props</a></li>
           <li><a href="#pricing">Pricing</a></li>
           <li><a href="/record.html" data-track="public_record_click">Public record</a></li>
-          <li><a href="/record.html">Methodology</a></li>
+          <li><a href="/methodology/">Methodology</a></li>
         </ul>
       </div>
       <div>
@@ -1284,9 +1083,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
   </div>
 </footer>
 
-<!-- Shown only when a visitor returns from Stripe. Set the payment link's
-     success URL to https://edgedesksports.com/?checkout=success so paying
-     customers land here instead of on a page that still says "Sign up". -->
+<!-- Shown only when a visitor returns from Stripe. The payment link's success
+     URL is https://edgedesksports.com/?checkout=success. -->
 <div class="retn" id="retnBox" role="dialog" aria-modal="true" aria-live="polite">
   <div class="retn-in">
     <h3 id="retnH">Trial started. Opening your terminal&hellip;</h3>
@@ -1297,26 +1095,29 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
   </div>
 </div>
 
+<!-- THE RENEWAL TERMS. Every figure is a data-ed-price span filled from
+     lib/edgedesk_pricing.js before the modal can open; the consent record
+     stores this element's text exactly as the customer read it. -->
 <div class="modal" id="arlModal" role="dialog" aria-modal="true" aria-labelledby="arlTitle">
   <div class="modal-in">
     <button type="button" class="x" onclick="closeArl()" aria-label="Close">&times;</button>
-    <h3 id="arlTitle">Start your 7-day free trial</h3>
+    <h3 id="arlTitle">Start your <span data-ed-price="days">7</span>-day free trial</h3>
     <p class="ld" id="arlWho"></p>
     <div class="arl">
       <div class="arl-h">FREE TRIAL &amp; AUTOMATIC RENEWAL TERMS</div>
-      <p id="arlTerms"><b>EdgeDesk Research Terminal &mdash; 7-day free trial, then $79.99 per month (founding rate).</b>
-      <b>You are not charged today.</b> Your free trial begins now and lasts <b>7 days</b>. Full access opens immediately.
-      <b>Unless you cancel before the trial ends, the trial converts automatically into a paid subscription and your card is charged $79.99</b>, and $79.99 again every month on that same date, until you cancel. This founding rate is locked for the life of your subscription and will not increase.
-      <b>To avoid being charged you must cancel before the end of the 7th day</b> &mdash; from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. Cancelling during the trial costs nothing and stops all charges. Cancelling later takes effect at the end of the billing period you have already paid for and stops every future charge. We will also email you before the trial converts.
+      <p id="arlTerms"><b><span data-ed-price="plan">EdgeDesk Founding Member</span> &mdash; <span data-ed-price="days">7</span>-day free trial, then <span data-ed-price="price">$79.99</span> per month (founding rate).</b>
+      <b>You are not charged today.</b> Your free trial begins now and lasts <b><span data-ed-price="days">7</span> days</b>. Full access opens immediately.
+      <b>Unless you cancel before the trial ends, the trial converts automatically into a paid subscription and your card is charged <span data-ed-price="price">$79.99</span></b>, and <span data-ed-price="price">$79.99</span> again every month on that same date, until you cancel. This founding rate is locked for the life of your subscription and will not increase.
+      <b>To avoid being charged you must cancel before the end of the <span data-ed-price="days">7</span>th day</b> &mdash; from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. Cancelling during the trial costs nothing and stops all charges. Cancelling later takes effect at the end of the billing period you have already paid for and stops every future charge. We will also email you before the trial converts.
       Cancelling during the free trial costs you nothing. <b>Fees already charged are non-refundable</b>, so cancel before the trial ends if you do not want to be billed. Questions: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>.</p>
       <label class="arl-row">
         <input type="checkbox" id="arlAgree">
-        <span>I have read and <b>expressly agree to these free-trial and automatic renewal terms</b>. I understand my trial <b>converts to a paid subscription after 7 days</b> and my card is charged <b>$79.99 per month until I cancel</b>, unless I cancel before the trial ends.</span>
+        <span>I have read and <b>expressly agree to these free-trial and automatic renewal terms</b>. I understand my trial <b>converts to a paid subscription after <span data-ed-price="days">7</span> days</b> and my card is charged <b><span data-ed-price="price">$79.99</span> per month until I cancel</b>, unless I cancel before the trial ends.</span>
       </label>
     </div>
     <button type="button" class="btn primary lg authbtn" id="arlSubmit" onclick="confirmArl()" disabled>Start free trial &mdash; $0 today</button>
     <div class="auth-msg" id="arlMsg"></div>
-    <p class="auth-legal"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b> Stripe collects a card to hold the trial and charges nothing for 7 days. EdgeDesk never sees or stores your card details.</p>
+    <p class="auth-legal"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b> Stripe collects a card to hold the trial and charges nothing during it. EdgeDesk never sees or stores your card details.</p>
   </div>
 </div>
 
@@ -1341,18 +1142,26 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:56px 0 48
 
 <!-- ==========================================================================
      PRESERVED PRODUCTION BLOCK — auth, ARL consent, Stripe, live record.
-     Carried over verbatim from the previous landing page. app.html redirects
-     unauthenticated visitors to ./index.html#pricing and ./index.html#subscribe,
-     so this flow and those anchors have to live here. Do not rewrite it as part
-     of a presentation change.
+     Carried over from the previous landing page. app.html links unsubscribed
+     readers to ./index.html#pricing and ./index.html#subscribe, so this flow
+     and those anchors have to live here. Do not rewrite it as part of a
+     presentation change. Since the funnel upgrade the offer's figures are
+     read from lib/edgedesk_pricing.js (each constant keeps a literal fallback
+     that tools/personal/personal_wiring.test.js holds equal to it), and the
+     funnel events signup_started and checkout_started are sent through
+     lib/edgedesk_track.js.
      ========================================================================== -->
 <!-- The shared auth vocabulary: what a link in an email means, what a
      Supabase error means, and whether a signup created anything. Loaded here
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260930a"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
+<!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
+     board's view model (supabase/home_board.sql + football/home/board.json) -->
+<script src="/lib/edgedesk_track.js?v=20260930a"></script>
+<script src="/lib/edgedesk_home.js?v=20260930a"></script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -1365,6 +1174,9 @@ var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var APP_URL="./app.html";
 var authMode='signup';
+try{ window.EDTrack&&EDTrack.configure({url:SB_URL,key:SB_KEY,ga:false}); }catch(e){}
+/* one call for every funnel event this page sends; never throws */
+function edFunnel(name,props,opts){ try{ return !!(window.EDTrack&&EDTrack.event(name,props||{},opts||{})); }catch(e){ return false; } }
 try{ window.EDReport.configure({url:SB_URL,key:SB_KEY,version:'landing-2026-09',surface:'landing'}); }
 catch(e){ try{console.error('problem reporting not configured',e);}catch(_){} }
 
@@ -1589,26 +1401,10 @@ async function edOfferLoad(){
     var el=document.getElementById('edOffer'); if(el&&line){el.textContent=line;el.hidden=false;}
   }catch(e){}
 }
-/* the live-activity line in the hero: real counts or nothing */
-async function lpLiveLoad(){
-  var el=document.getElementById('lpLive'); if(!el) return;
-  try{
-    var r=await fetch(SB_URL+'/rest/v1/rpc/edgedesk_proof_metrics',{method:'POST',
-      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:'{}'});
-    if(!r.ok) return;
-    var m=await r.json(); if(!m) return;
-    var bits=[];
-    function add(v,l){ if(typeof v==='number'&&isFinite(v)&&v>0) bits.push('<b>'+v+'</b> '+l); }
-    add(m.games_analyzed,'games analyzed');
-    add(m.research_grade,'research-grade');
-    add(m.active_market_quotes,'live market quotes');
-    add(m.books_represented,'sportsbooks');
-    if(!bits.length) return;
-    var t=m.model_updated_at?Date.parse(m.model_updated_at):NaN, mins=isFinite(t)?Math.max(0,Math.round((Date.now()-t)/60000)):null;
-    el.innerHTML='Live now &middot; '+bits.join(' &middot; ')+(mins!=null?(' &middot; model updated '+(mins<60?mins+'m':Math.round(mins/60)+'h')+' ago'):'');
-    el.style.display='';
-  }catch(e){}
-}
+/* The hero's live statistics, the live preview and the board are the
+   presentation script's (edgedesk_home.js over public_home_board() and
+   football/home/board.json); the old one-line hero counter they replace is
+   gone. */
 
 /* Keep attribution attached across internal pages and onto URLs the visitor
    copies to someone else. Done at click time by delegation rather than by
@@ -1635,50 +1431,13 @@ function attrDecorateLinks(){
    is still named in the renewal-consent screen (openArl) — it just no longer
    changes what the page says. */
 
-/* ===== THE LANDING PAGE READS THE PRODUCT'S OWN ARTIFACTS =================
-   The power-ratings board and the two counts are NOT written into this page.
-   They are read from the same committed JSON the app reads, so a marketing
-   claim cannot drift away from the product that has to honour it. Two
-   same-origin static reads, no API, no auth, and every failure leaves the
-   honest fallback already in the markup. */
-(function landingArtifacts(){
-  function n(x){ return typeof x === 'number' && isFinite(x) ? x.toLocaleString() : null; }
-  /* ESCAPE, do not strip: stripping turned Texas A&M into "Texas AM" on a
-     page whose whole argument is that it does not distort the product. */
-  function esc(v){ return String(v).replace(/[&<>"]/g, function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-
-  fetch('football/rankings/current.json',{cache:'no-cache'})
-    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(j){
-      var host=document.getElementById('lpRatings'); if(!host||!j||!j.teams) return;
-      var teams=[],k;
-      for(k in j.teams){ var t=j.teams[k];
-        if(t && t.rank!=null && t.etsr!=null) teams.push(t); }
-      if(!teams.length) return;                    /* nothing ranked: keep the fallback */
-      teams.sort(function(a,b){ return a.rank-b.rank; });
-      host.innerHTML = teams.slice(0,3).map(function(t){
-        var v=(t.etsr>=0?'+':'')+t.etsr.toFixed(1);
-        return '<div class="row"><span class="n">'+t.rank+'</span>'
-          +'<span class="t">'+esc(String(t.team))+'</span>'
-          +'<span class="v">'+v+'</span></div>';
-      }).join('');
-      var teamEl=document.getElementById('lpTeams');
-      if(teamEl && n(j.team_count)) teamEl.textContent=n(j.team_count)+' FBS teams rated';
-    })
-    .catch(function(){});                           /* the markup already says "loading" */
-
-  fetch('football/players/current.json',{cache:'no-cache'})
-    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
-    .then(function(j){
-      var pl=document.getElementById('lpPlayers');
-      if(pl && n(j.player_count)) pl.textContent=n(j.player_count)+' FBS player records rated';
-      var teamEl=document.getElementById('lpTeams');
-      if(teamEl && n(j.team_count) && /Every FBS team/.test(teamEl.textContent))
-        teamEl.textContent=n(j.team_count)+' FBS teams';
-    })
-    .catch(function(){});
-})();
+/* ===== THE PRODUCT'S OWN ARTIFACTS =====================================
+   The power-ratings snippet and the rated team and player counts used to be
+   read here from football/rankings/current.json (6 MB) and
+   football/players/current.json (0.7 MB) on every visit, to print five
+   numbers. tools/home/build_home.js now copies those numbers into
+   football/home/board.json, which the presentation script already reads for
+   the live board — one small file instead of seven megabytes. */
 
 /* ===== LIVE PUBLIC PROOF (reads the same DB the app runs on; self-gates on sample) ===== */
 async function sbGet(q){var r=await fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});if(!r.ok)throw new Error(r.status);return r.json();}
@@ -1749,11 +1508,20 @@ async function loadLiveProof(){
   }
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-loadLiveProof();
+/* The record panel is below the fold: its four reads wait until a reader is
+   near it (or the browser has nothing better to do), never on first paint. */
+(function lazyProof(){
+  var sec=document.getElementById('trust'), done=false;
+  function go(){ if(done)return; done=true; loadLiveProof(); }
+  if(sec&&'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){ for(var i=0;i<es.length;i++){ if(es[i].isIntersecting){ io.disconnect(); go(); return; } } },{rootMargin:'600px 0px'});
+    io.observe(sec);
+  }else{ go(); }
+})();
 
 /* Audience + attribution run as soon as the DOM below them exists. */
 attrDecorateLinks();
-affTrackClick(); acqTrackVisit(); edOfferLoad(); lpLiveLoad();
+affTrackClick(); acqTrackVisit(); edOfferLoad();
 
 /* ===== subscribe: signup/login -> SEPARATE ARL consent -> Stripe =====
    The 21+/Terms checkbox on signup does NOT cover auto-renewal. California's ARL
@@ -1765,22 +1533,23 @@ affTrackClick(); acqTrackVisit(); edOfferLoad(); lpLiveLoad();
    checkout.session.completed, which is how the webhook attributes the payment.
    Stripe silently DROPS invalid values — only [A-Za-z0-9_-], max 200 chars. A UUID
    is valid; an email is not (the @ would be stripped and the payment orphaned). */
-/* The $79.99 founding-rate payment link. This MUST point at a Stripe price of
-   the same amount shown in PRICE_DISPLAY and in the auto-renewal consent text —
-   a customer consenting to one figure and being charged another is a
-   compliance problem, not a display bug. */
-var STRIPE_LINK="https://buy.stripe.com/fZufZggqeev36iOf9o8IU0b";
-/* Must match the amount on the Stripe price behind STRIPE_LINK. This string is
-   recorded with the auto-renewal consent, so a mismatch is a compliance problem,
-   not a cosmetic one. */
-var PRICE_DISPLAY="$79.99";
-var BILLING_PERIOD="month";
-/* The trial length shown on the page and written into the consent record. This
-   page CANNOT create a trial — the trial lives on the Stripe price behind
-   STRIPE_LINK. If Stripe is not configured for a 7-day trial, every line of
-   copy on this page is false and the first charge lands immediately. Changing
-   this number without changing Stripe is a compliance problem, not a typo. */
-var TRIAL_DAYS=7;
+/* THE OFFER, FROM ITS ONE SOURCE: lib/edgedesk_pricing.js (PLAN). Each
+   literal after || is only the fallback for a page whose pricing file did not
+   load, and tools/personal/personal_wiring.test.js fails the moment any of
+   them differs from the file — so the figure a customer consents to and the
+   figure checkout charges cannot drift apart here.
+
+   STRIPE_LINK is the founding-rate payment link. It MUST point at a Stripe
+   price of the same amount as PRICE_DISPLAY and the auto-renewal consent
+   text — a customer consenting to one figure and being charged another is a
+   compliance problem, not a display bug. This page CANNOT create a trial or
+   change a price: both live on the Stripe price behind STRIPE_LINK. */
+var ED_PRICING=window.EDPricing||null;
+var STRIPE_LINK=(ED_PRICING&&ED_PRICING.PAYMENT_LINK)||"https://buy.stripe.com/fZufZggqeev36iOf9o8IU0b";
+var PRICE_DISPLAY=(ED_PRICING&&ED_PRICING.PRICE_DISPLAY)||"$79.99";
+var BILLING_PERIOD=(ED_PRICING&&ED_PRICING.BILLING_PERIOD)||"month";
+var TRIAL_DAYS=(ED_PRICING&&ED_PRICING.TRIAL_DAYS)||7;
+var STRIPE_PRICE_ID=(ED_PRICING&&ED_PRICING.STRIPE_PRICE_ID)||null;
 /* Bumped to v6: the 30-day CLV guarantee is gone and the 7-day free trial is
    the offer. Earlier versions promised a conditional refund that this text no
    longer offers, so the version string is what keeps those older records true
@@ -1788,7 +1557,7 @@ var TRIAL_DAYS=7;
    guarantee and is still owed it. billing_consents stores
    the exact offer_text shown, so old records stay accurate on their own terms;
    the version string is what distinguishes which text a user actually saw. */
-var CONSENT_VERSION="arl-2026-08-v6-trial7";
+var CONSENT_VERSION=(ED_PRICING&&ED_PRICING.CONSENT_VERSION)||"arl-2026-08-v6-trial7";
 
 function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function edUserFromSession(){
@@ -1904,6 +1673,7 @@ async function confirmArl(){
   var btn=document.getElementById('arlSubmit'); btn.disabled=true; var old=btn.textContent; btn.textContent='…';
   /* Record the consent BEFORE sending them to Stripe, storing the exact terms
      displayed on screen. ARL requires the record; retain it for 3 years. */
+  try{ window.EDPricing&&EDPricing.apply(document.getElementById('arlModal')); }catch(_){}
   var offer=document.getElementById('arlTerms').innerText||document.getElementById('arlTerms').textContent||'';
   try{
     var r=await fetch(SB_URL+'/rest/v1/billing_consents',{method:'POST',
@@ -1967,6 +1737,9 @@ async function confirmArl(){
      and how much it discounts (affiliate_offer only names a code Stripe has) */
   if(ED_OFFER&&ED_OFFER.checkout_code&&/^[A-Z0-9_.-]{1,64}$/.test(ED_OFFER.checkout_code))url+='&prefilled_promo_code='+encodeURIComponent(ED_OFFER.checkout_code);
   msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
+  /* the funnel's checkout step, sent with keepalive so the navigation below
+     cannot cancel it; it carries the plan, never anything personal */
+  edFunnel('checkout_started',{plan:(ED_PRICING&&ED_PRICING.PLAN&&ED_PRICING.PLAN.key)||'founding',price_id:STRIPE_PRICE_ID||'',promo:!!(ED_OFFER&&ED_OFFER.checkout_code)},{now:true,keepalive:true});
   window.location.href=url;
 }
 
@@ -1981,7 +1754,8 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeArl();}
 /* ===== auth ===== */
 function openAuth(mode){authMode=mode;var su=mode==='signup';
   document.getElementById('authTitle').textContent=su?'Create your account':'Welcome back';
-  document.getElementById('authLede').textContent=su?'Step 1 of 2. Create your account, then start your 7-day free trial. Nothing is charged today.':'Log in to your EdgeDesk research terminal.';
+  document.getElementById('authLede').textContent=su?'Step 1 of 2. Create your account, then start your '+TRIAL_DAYS+'-day free trial. Nothing is charged today.':'Log in to your EdgeDesk research terminal.';
+  if(su) edFunnel('signup_started',{step:'form_opened'});
   document.getElementById('authSubmit').textContent=su?'Sign up':'Log in';
   document.getElementById('aPass').autocomplete=su?'new-password':'current-password';
   // consent checkbox: required for signup, hidden for login. reset each open.
@@ -2102,7 +1876,7 @@ async function submitAuth(){
       /* An account alone does not open the terminal. New signups go straight to
          checkout; returning logins go to the app, where the paywall gate decides. */
       if(authMode==='signup'){
-        msg('Account created — next, start your 7 free days.','ok');
+        msg('Account created — next, start your '+TRIAL_DAYS+' free days.','ok');
         setTimeout(function(){closeAuth();openArl();},400);return;}
       msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);
     }else{
@@ -2330,6 +2104,7 @@ async function handleAuthCallback(){
      from the confirmation link in their email. */
   if(await handleCheckoutReturn()) return;
   if(await handleAuthCallback()) return;
+  window.ED_PAID='no';
   var s=edSession();
   if(s&&(s.access_token||s.refresh_token)){
     var u=edUserFromSession()||{};
@@ -2340,28 +2115,33 @@ async function handleAuthCallback(){
        shown "Open scanner", which walked them into a locked screen and read as
        a broken product rather than an unfinished purchase. Ask first. */
     var paid=await edSubState();
+    window.ED_PAID=paid;
     var toApp=function(){window.location.href=APP_URL;};
     var toPay=function(){ if(sessionValid()){openArl();} else {setPendingSub(true);openAuth('login');} };
 
     var su=document.getElementById('navSignup');
     var hs=document.getElementById('heroStart');
     var bl=document.getElementById('btmLogin');
+    var hb=document.getElementById('heroBoard');
 
     if(paid==='no'){
-      if(su){su.textContent='Start 7 days free';su.onclick=toPay;}
-      if(hs){hs.textContent='Start 7 days free →';hs.onclick=toPay;}
-      if(bl){bl.textContent=(u.email?'Start your free trial as '+u.email:'Start 7 days free');bl.onclick=toPay;}
+      if(su){su.textContent='Start free trial';su.onclick=toPay;}
+      if(hs){hs.textContent='Start free trial';hs.onclick=toPay;}
+      if(bl){bl.textContent=(u.email?'Start your free trial as '+u.email:'Start free trial');bl.onclick=toPay;}
       var sb=document.getElementById('subBtn');
-      if(sb)sb.textContent='Start 7 days free →';
+      if(sb)sb.textContent='Start free trial →';
       /* Say why the terminal has not opened, rather than letting them find out
          by clicking into a wall. */
       var hp=document.querySelector('.microcta');
-      if(hp)hp.innerHTML='<b style="color:var(--est)">Your account exists, but your trial has not started.</b> The terminal opens the moment it does &mdash; and the first 7 days are free. &middot; 21+ &middot; 1-800-GAMBLER';
+      if(hp)hp.innerHTML='<b style="color:var(--est)">Your account exists, but your trial has not started.</b> The terminal opens the moment it does &mdash; and the first '+TRIAL_DAYS+' days are free. &middot; 21+ &middot; 1-800-GAMBLER';
     }else{
       if(su){su.textContent='Open the terminal';su.onclick=toApp;}
       if(hs){hs.textContent='Open the terminal →';hs.onclick=toApp;}
       if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open the terminal');bl.onclick=toApp;}
+      /* a subscriber's board is the terminal's, not this page's preview */
+      if(hb&&paid==='yes'){hb.setAttribute('href',APP_URL);hb.innerHTML='Open today&rsquo;s board <span class="ar" aria-hidden="true">&rarr;</span>';}
     }
+    try{ document.dispatchEvent(new CustomEvent('ed:paid',{detail:paid})); }catch(_){}
   }
   if(!getPendingSub())return;
   if(sessionValid()){pendingSubscribe=true;setTimeout(openArl,300);return;}
@@ -2371,39 +2151,51 @@ async function handleAuthCallback(){
 
 <!-- ==========================================================================
      LANDING PAGE INTERACTIONS — presentation only. No auth, no billing.
-     Every EV figure is computed by lib/edgedesk_quote_ev.js (the terminal's
-     one EV implementation, over lib/research_core.js's odds math) from the
-     illustrative inputs in #lpEvData. This block has no odds math of its own.
+     The live board is two small reads in parallel — public_home_board()
+     (supabase/home_board.sql) and football/home/board.json
+     (tools/home/build_home.js) — turned into words by lib/edgedesk_home.js,
+     which re-judges every price's age when the page is read. This block has
+     no odds math and invents nothing: a value the data does not carry is
+     not printed, and an empty slate says so.
      ========================================================================== -->
 <script>
 (function(){
 'use strict';
 var REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 var HAS_IO = 'IntersectionObserver' in window;
+var H = window.EDHome || null;
+function $(id){ return document.getElementById(id); }
+function e(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function n(v){ return typeof v==='number'&&isFinite(v)?v.toLocaleString('en-US'):null; }
 
 /* ======================================================================
    0 · MEASUREMENT
-   The site's existing GA4 tag, no new vendor. A control names its own
-   event in data-track; nothing here reads or sends a personal detail.
+   GA4 (the existing tag) for the page's own events, and the funnel
+   (lib/edgedesk_track.js → supabase/funnel.sql). A control names itself in
+   data-track (GA) and data-cta (the funnel). Nothing personal is sent.
    ====================================================================== */
 function track(name, params){
-  try{ if(typeof window.gtag==='function') window.gtag('event', name, params||{}); }catch(e){}
+  try{ if(typeof window.gtag==='function') window.gtag('event', name, params||{}); }catch(err){}
 }
+function funnel(name, props, opts){ try{ return !!(window.EDTrack&&EDTrack.event(name, props||{}, opts||{})); }catch(err){ return false; } }
 track('landing_page_view', {page_path: location.pathname});
-document.addEventListener('click', function(e){
-  var el = e.target && e.target.closest ? e.target.closest('[data-track]') : null;
+funnel('landing_view', {});
+document.addEventListener('click', function(ev){
+  var el = ev.target && ev.target.closest ? ev.target.closest('[data-track],[data-cta]') : null;
   if(!el) return;
   var name = el.getAttribute('data-track');
   /* bootAuthState turns Log in into Sign out for a signed-in visitor */
   if(name==='login_click' && /sign out/i.test(el.textContent||'')) return;
-  track(name, {link_text: String(el.textContent||'').replace(/\s+/g,' ').trim().slice(0,60)});
+  if(name) track(name, {link_text: String(el.textContent||'').replace(/\s+/g,' ').trim().slice(0,60)});
+  var cta = el.getAttribute('data-cta');
+  if(cta) funnel('cta_clicked', {cta: cta});
 }, true);
 (function pricingView(){
-  var sec=document.getElementById('pricing');
+  var sec=$('pricing');
   if(!sec||!HAS_IO) return;
   var io=new IntersectionObserver(function(es){
-    for(var i=0;i<es.length;i++){ if(es[i].isIntersecting){ io.disconnect(); track('pricing_view'); return; } }
-  },{threshold:.3});
+    for(var i=0;i<es.length;i++){ if(es[i].isIntersecting){ io.disconnect(); track('pricing_view'); funnel('pricing_view', {}); return; } }
+  },{threshold:0, rootMargin:'0px 0px -35% 0px'});
   io.observe(sec);
 })();
 
@@ -2411,7 +2203,7 @@ document.addEventListener('click', function(e){
    1 · THE MENU (phones and tablets)
    ====================================================================== */
 (function navMenu(){
-  var nav=document.getElementById('nav'), btn=document.getElementById('navBurger'), menu=document.getElementById('navMenu');
+  var nav=$('nav'), btn=$('navBurger'), menu=$('navMenu');
   if(!nav||!btn||!menu) return;
   function set(open){
     nav.classList.toggle('open', open);
@@ -2423,235 +2215,269 @@ document.addEventListener('click', function(e){
     set(open);
     if(open){ var first=menu.querySelector('a,button'); if(first) first.focus(); }
   });
-  menu.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('a,button')) set(false); });
-  document.addEventListener('keydown', function(e){
-    if(e.key==='Escape' && nav.classList.contains('open')){ set(false); btn.focus(); }
+  menu.addEventListener('click', function(ev){ if(ev.target.closest && ev.target.closest('a,button')) set(false); });
+  document.addEventListener('keydown', function(ev){
+    if(ev.key==='Escape' && nav.classList.contains('open')){ set(false); btn.focus(); }
   });
-  document.addEventListener('click', function(e){
-    if(nav.classList.contains('open') && !nav.contains(e.target)) set(false);
+  document.addEventListener('click', function(ev){
+    if(nav.classList.contains('open') && !nav.contains(ev.target)) set(false);
   });
-  window.addEventListener('resize', function(){ if(window.innerWidth>900) set(false); }, {passive:true});
+  window.addEventListener('resize', function(){ if(window.innerWidth>960) set(false); }, {passive:true});
 })();
 
 /* ======================================================================
-   2 · ONE GAME — the tabs
-   The panels are in the markup; this only switches between them.
+   2 · THE LIVE BOARD
+   Read once per visit (a 90-second session cache covers a reload or a
+   back-navigation), each request with its own deadline, so a slow network
+   leaves the honest fallback rather than a spinner.
    ====================================================================== */
-(function gameTabs(){
-  var list=document.querySelector('#game [role="tablist"]');
-  if(!list) return;
-  var tabs=[].slice.call(list.querySelectorAll('[role="tab"]'));
-  function select(i, focus){
-    tabs.forEach(function(t, j){
-      var on=j===i;
-      t.setAttribute('aria-selected', on?'true':'false');
-      t.tabIndex=on?0:-1;
-      var p=document.getElementById(t.getAttribute('aria-controls'));
-      if(p) p.hidden=!on;
-    });
-    if(focus) tabs[i].focus();
-    track('sample_game_interaction', {tab: tabs[i].id});
-  }
-  tabs.forEach(function(t, i){
-    t.addEventListener('click', function(){ select(i); });
-    t.addEventListener('keydown', function(e){
-      var n=null;
-      if(e.key==='ArrowRight') n=(i+1)%tabs.length;
-      else if(e.key==='ArrowLeft') n=(i-1+tabs.length)%tabs.length;
-      else if(e.key==='Home') n=0;
-      else if(e.key==='End') n=tabs.length-1;
-      if(n!==null){ e.preventDefault(); select(n, true); }
-    });
-  });
-})();
-
-/* ======================================================================
-   3 · EDGEDESK EV
-   One idea: a side is good or bad AT A PRICE. The arithmetic is the
-   terminal's own (EDQuoteEV: break-even, push-aware EV, fair odds), loaded
-   when the reader gets near it so it costs the first screen nothing.
-   The markup already carries the same numbers, so nothing jumps.
-
-   The state words apply the pre-registered thresholds in #lpEvData
-   (football/cfb_ev/policy/cfb_ev_policy_v1.json): a positive EV, at least
-   one point of probability edge, and no price worse than -125. In the
-   terminal these apply after calibration, freshness and integrity gates,
-   and while the policy is in SHADOW nothing is presented as a bet.
-   ====================================================================== */
-var EV_LIBS=['/lib/research_core.js?v=20260928','/lib/edgedesk_quote_ev.js?v=20260928'];
-var evPromise=null;
-function addScript(src){
-  return new Promise(function(res, rej){
-    var s=document.createElement('script');
-    s.src=src; s.async=false; s.onload=res; s.onerror=rej;
-    document.head.appendChild(s);
+var HOME_KEY='edgedesk_home_cache_v1', HOME_TTL=90*1000, HOME_WAIT=7000;
+var VIEW=null;
+function withDeadline(p, ms){
+  return new Promise(function(res){ var t=setTimeout(function(){ res(null); }, ms); p.then(function(v){ clearTimeout(t); res(v); }, function(){ clearTimeout(t); res(null); }); });
+}
+function readHome(){
+  try{
+    var c=JSON.parse(sessionStorage.getItem(HOME_KEY)||'null');
+    if(c&&c.t&&(Date.now()-c.t)<HOME_TTL&&(c.rpc||c.stat)) return Promise.resolve(c);
+  }catch(err){}
+  var url=(typeof SB_URL!=='undefined')?SB_URL:null, key=(typeof SB_KEY!=='undefined')?SB_KEY:null;
+  var rpc=url&&key?withDeadline(fetch(url+'/rest/v1/rpc/public_home_board',{method:'POST',
+      headers:{apikey:key,authorization:'Bearer '+key,'content-type':'application/json'},body:'{}'})
+      .then(function(r){ return r.ok?r.json():null; }), HOME_WAIT):Promise.resolve(null);
+  var stat=withDeadline(fetch('/football/home/board.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }), HOME_WAIT);
+  return Promise.all([rpc,stat]).then(function(x){
+    var o={t:Date.now(), rpc:x[0]&&x[0].ok?x[0]:null, stat:x[1]&&x[1].schema?x[1]:null};
+    if(o.rpc||o.stat){ try{ sessionStorage.setItem(HOME_KEY, JSON.stringify(o)); }catch(err){} }
+    return o;
   });
 }
-function loadEV(){
-  if(window.EDQuoteEV && window.EDResearchCore) return Promise.resolve(window.EDQuoteEV);
-  if(evPromise) return evPromise;
-  evPromise=EV_LIBS.reduce(function(p, src){ return p.then(function(){ return addScript(src); }); }, Promise.resolve())
-    .then(function(){ if(!window.EDQuoteEV) throw new Error('EDQuoteEV did not load'); return window.EDQuoteEV; });
-  evPromise.catch(function(){ evPromise=null; });
-  return evPromise;
+
+/* where "see why" goes: the terminal for a subscriber, an admin-chosen public
+   sample page for anyone, otherwise the free trial */
+function paid(){ return window.ED_PAID==='yes'; }
+function gameAction(g, label){
+  label=label||'See why EdgeDesk disagrees';
+  if(paid()&&g.app_hash) return '<a class="more" href="./app.html'+e(g.app_hash)+'" data-cta="see_why_app">'+e(label)+' &rarr;</a>';
+  if(g.sample_url) return '<a class="more" href="'+e(g.sample_url)+'" data-cta="see_why_sample">'+e(label)+' &rarr;</a>';
+  return '<button type="button" class="more" onclick="startSubscribe()" data-cta="see_why_trial">'+e(label)+' &rarr;<small>in the terminal &middot; <span data-ed-price="trial">7 days free</span></small></button>';
+}
+function stChip(x){ return '<span class="st '+e(x.tone)+'" title="'+e(x.status_note||'')+'">'+e(x.status_label)+'</span>'; }
+function ageSpan(text, state){
+  if(!text) return '';
+  var cls=state==='EXPIRED'||state==='STALE'||state===true?'stale':(state==='AGING'?'aging':'');
+  return '<span class="age '+cls+'">'+e(text)+'</span>';
+}
+function supCls(p){ return p.supports===true?'pos':(p.supports===false?'neg':''); }
+function propRow(p){
+  var cls=supCls(p);
+  return '<div class="pm"><span class="pwho">'+e(p.market)+' &middot; '+e(p.player)+(p.position?' ('+e(p.position)+')':'')
+    +'<small>'+e(p.selection||'')+(p.odds_text?' &middot; '+e(p.odds_text)+(p.book?' '+e(p.book):''):'')+(p.age_text?' &middot; '+e(p.age_text):'')+'</small></span>'
+    +'<span class="nums">Mkt <b>'+e(p.line_text||'—')+'</b> &middot; ED <b>'+e(p.projection_text||'—')+'</b>'+(p.difference_text?' &middot; <span class="d '+cls+'">'+e(p.difference_text)+'</span>':'')+'</span></div>';
+}
+function evLine(g){
+  var v=g.ev; if(!v||!v.calibrated_text) return '';
+  var cls=v.calibrated>0?'pos':(v.calibrated<0?'neg':'');
+  return '<p class="ev">EdgeDesk EV <b class="'+cls+'">'+e(v.calibrated_text)+'</b> (calibrated) at <b>'+e(v.selection||'')+'</b>'
+    +(v.price_text?' '+e(v.price_text):'')+(v.book?' &middot; '+e(v.book):'')+(v.age_text?' &middot; '+ageSpan('captured '+v.age_text, v.stale):'')
+    +(v.stale?' &middot; <span class="age stale">not a current price</span>':'')+'</p>';
+}
+function gameBlock(g, full){
+  var h='<div class="opp'+(full?'':' compact')+'">'
+    +'<div class="opp-hd"><div><b>'+e(g.matchup)+'</b><span class="w">'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+'</span></div>'+stChip(g)+'</div>';
+  if(full) h+='<div class="opp-k">Game market</div>';
+  h+='<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(g.market_text||'—')+'</span></div>'
+    +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(g.fair_text||'—')+'</span></div>'
+    +'<div><span class="l">Difference</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>';
+  if(full){
+    h+='<p class="ev">'+(g.market_book?e(g.market_book)+' &middot; ':'')+(g.market_age_text?ageSpan('market captured '+g.market_age_text, g.market_stale):(g.market_note?ageSpan('market: '+g.market_note,'AGING'):''))
+      +(g.status==='DATA_INCOMPLETE'&&g.status_note?' &middot; '+e(g.status_note):'')+'</p>';
+    h+=evLine(g);
+    var ps=g.props.filter(function(p){ return p.status!=='DATA_INCOMPLETE'; }).slice(0,2);
+    if(ps.length){ h+='<div class="opp-k">Player props</div>'+ps.map(propRow).join(''); }
+    else if(g.props_empty){ h+='<p class="ev">'+e(g.props_empty)+'</p>'; }
+    h+=gameAction(g);
+  }
+  return h+'</div>';
+}
+function propBlock(p){
+  var cls=supCls(p);
+  return '<div class="opp compact"><div class="opp-hd"><div><b>'+e(p.player)+' &middot; '+e(p.market)+'</b>'
+    +'<span class="w">'+e(p.matchup?(p.matchup.away+' @ '+p.matchup.home):'')+(p.league?' &middot; '+e(p.league.toUpperCase()):'')+'</span></div>'+stChip(p)+'</div>'
+    +'<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(p.line_text||'—')+'</span></div>'
+    +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(p.projection_text||'—')+'</span></div>'
+    +'<div><span class="l">Difference</span><span class="v '+(cls||'warn')+'">'+e(p.difference_text||'—')+'</span></div></div>'
+    +(p.ev_text?'<p class="ev">EdgeDesk EV <b class="'+(p.ev>0?'pos':'neg')+'">'+e(p.ev_text)+'</b>'+(p.ev_label?' ('+e(p.ev_label)+')':'')+' at '+e(p.selection||'')+' '+e(p.odds_text||'')+(p.book?' &middot; '+e(p.book):'')+(p.age_text?' &middot; '+ageSpan(p.age_text,p.price_state):'')+'</p>':'')
+    +'</div>';
 }
 
-(function evDemo(){
-  var dataEl=document.getElementById('lpEvData'), slider=document.getElementById('evSlider');
-  if(!dataEl||!slider) return;
-  var D;
-  try{ D=JSON.parse(dataEl.textContent); }catch(e){ return; }
-  var P=D.policy, S=D.slider;
-  var $=function(id){ return document.getElementById(id); };
-  var el={price:$('evPrice'), prob:$('evProb'), be:$('evBe'), edge:$('evEdge'), ev:$('evEv'), fair:$('evFair'),
-          state:$('evState'), sv:$('evStateV'), sc:$('evStateC'), mark:$('evFairMark')};
-  var picks=[].slice.call(document.querySelectorAll('#evCard .picks button'));
-  var Q=null;
-
-  function minus(s){ return String(s).replace(/-/g,'−'); }
-  function priceOf(v){ return S.from-v; }
-  function valueOf(price){ return S.from-price; }
-
-  /* one quote, through the engine */
-  function quote(line, price){
-    var o=D.curve[String(line)]; if(!o) return null;
-    var win=o[0], push=o[1], loss=1-win-push;
-    var d=Q.americanToDecimal(price); if(d==null) return null;
-    var ev=Q.expectedValue(win, push, loss, d), be=Q.breakEven(d);
-    if(ev==null||be==null) return null;
-    var cover=win/(win+loss);
-    return {line:line, price:price, cover:cover, be:be, edge:cover-be, ev:ev, fair:Q.fairAmerican(win, push)};
-  }
-  function stateOf(r){
-    if(!(r.ev>P.min_calibrated_ev)) return 'PASS';
-    if(r.price<P.max_price) return 'OVER PRICE LIMIT';
-    if(r.edge<P.min_probability_edge) return 'THIN';
-    return 'QUALIFIES';
-  }
-  var TONE={'QUALIFIES':'pos','THIN':'warn','PASS':'neg','OVER PRICE LIMIT':'neg'};
-  var BOX={'QUALIFIES':'s-pos','THIN':'s-thin','PASS':'s-neg','OVER PRICE LIMIT':'s-neg'};
-  function copyOf(st, r){
-    var pts=Math.abs(r.edge*100).toFixed(1);
-    if(st==='QUALIFIES') return 'EdgeDesk’s probability clears the break-even by '+pts+' points. At this price the side meets EdgeDesk’s price rules.';
-    if(st==='THIN') return 'Still positive, but only '+pts+' points over break-even — under the 1-point floor. Most of the value has been paid away.';
-    if(st==='OVER PRICE LIMIT') return 'Priced past '+minus(P.max_price)+', EdgeDesk’s price limit. The number no longer qualifies.';
-    return 'The price now costs more than EdgeDesk’s probability says the bet is worth. Same game, same research — no value at this number.';
-  }
-  function setV(node, text, tone, big){
-    if(!node) return;
-    node.textContent=text;
-    node.className='v'+(big?' big':'')+(tone?' '+tone:'');
-  }
-
-  function renderSlider(){
-    var p=priceOf(+slider.value);
-    if(el.price) el.price.textContent=minus(p);
-    picks.forEach(function(b){ b.setAttribute('aria-pressed', +b.getAttribute('data-price')===p ? 'true':'false'); });
-    if(!Q){ return; }
-    var r=quote(S.line, p);
-    if(!r){ return; }
-    var st=stateOf(r);
-    setV(el.prob, Q.pct(r.cover,1));
-    setV(el.be, Q.pct(r.be,1), 'dim');
-    setV(el.edge, Q.ppText(r.edge,1), r.edge>=0?'':'neg');
-    setV(el.ev, Q.signedPct(r.ev,1), TONE[st], true);
-    setV(el.fair, minus(Q.priceText(r.fair)), 'dim');
-    el.state.className='state '+BOX[st];
-    el.sv.textContent=st;
-    el.sc.textContent=copyOf(st, r);
-    slider.setAttribute('aria-valuetext', minus(p).replace('−','minus ')+', EdgeDesk EV '+Q.signedPct(r.ev,1).replace('−','minus ')+', '+st.toLowerCase());
-  }
-  function failed(){
-    [el.prob, el.be, el.edge, el.ev, el.fair].forEach(function(n){ if(n) n.textContent='—'; });
-    el.state.className='state';
-    el.sv.textContent='UNAVAILABLE';
-    el.sc.textContent='EdgeDesk EV could not load just now. Reload the page to try again.';
-  }
-  function placeFair(){
-    var o=D.curve[String(S.line)], fair=Q.fairAmerican(o[0], o[1]);
-    if(fair==null||!el.mark) return;
-    var frac=Math.max(0, Math.min(1, valueOf(fair)/(+slider.max)));
-    el.mark.style.left=(frac*100).toFixed(2)+'%';
-    var lab=el.mark.querySelector('span'); if(lab) lab.textContent='FAIR '+minus(Q.priceText(fair));
-  }
-
-  /* the sample game's price check: the same side, a reference price, other numbers */
-  function renderLineCheck(){
-    var host=document.getElementById('lineCheck'); if(!host) return;
-    host.innerHTML=D.lineCheck.lines.map(function(line){
-      var r=quote(line, D.lineCheck.price); if(!r) return '';
-      var st=stateOf(r), tone=TONE[st];
-      return '<div data-line="'+line+'"'+(line===S.line?' class="here"':'')+'><span class="line">'+minus(line)+'</span>'+
-        '<span class="v '+tone+'">'+Q.signedPct(r.ev,1)+'</span><span class="st '+tone+'">'+st+'</span></div>';
-    }).join('');
-  }
-
-  /* every number on the side, at its own price. The labels are the
-     terminal's: MAIN LINE, MAX EV (never a recommendation) and SAFEST +EV
-     (the highest cover among positive-EV prices inside the price limit). */
-  function renderLadder(){
-    var body=document.querySelector('#evLadder tbody'); if(!body) return;
-    var rows=D.ladder.quotes.map(function(q){ return quote(q[0], q[1]); }).filter(Boolean);
-    if(!rows.length) return;
-    var max=null, safe=null;
-    rows.forEach(function(r){
-      if(!max||r.ev>max.ev) max=r;
-      if(r.ev>0 && r.price>=P.max_price && (!safe||r.cover>safe.cover)) safe=r;
-    });
-    body.innerHTML=rows.map(function(r){
-      var tags=[];
-      if(r===safe) tags.push('<span class="tg safe">SAFEST +EV</span>');
-      if(r.line===D.ladder.main) tags.push('<span class="tg main">MAIN LINE</span>');
-      if(r===max) tags.push('<span class="tg max">MAX EV</span>');
-      return '<tr'+(r.line===D.ladder.main?' class="main"':'')+'><td>'+minus(r.line)+'</td><td>'+minus(Q.priceText(r.price))+'</td>'+
-        '<td class="xs">'+Q.pct(r.cover,1)+'</td>'+
-        '<td class="ev '+(r.ev>=0?'pos':'neg')+'">'+Q.signedPct(r.ev,1)+'</td><td class="tagc">'+tags.join(' ')+'</td></tr>';
-    }).join('');
-  }
-
-  function withEngine(then){
-    if(Q){ then(); return; }
-    loadEV().then(function(q){
-      Q=q; placeFair(); renderLineCheck(); renderLadder(); renderSlider(); if(then) then();
-    }).catch(failed);
-  }
-
-  slider.min=0; slider.max=S.from-S.to; slider.value=valueOf(S.start);
-  slider.addEventListener('input', function(){ renderSlider(); withEngine(renderSlider); });
-  slider.addEventListener('change', function(){ track('ev_price_interaction', {price: priceOf(+slider.value)}); });
-  picks.forEach(function(b){
-    b.addEventListener('click', function(){
-      var p=+b.getAttribute('data-price');
-      slider.value=valueOf(p);
-      renderSlider(); withEngine(renderSlider);
-      track('ev_price_interaction', {price: p, via: 'pick'});
-    });
+function renderStats(V){
+  var host=$('lpStats'); if(!host) return;
+  var c=V.counts, research=(c.game_research||0)+(c.prop_research||0);
+  var vals={games_analyzed:n(c.games_analyzed), research:research>0?n(research):null, props_tracked:n(c.props_tracked),
+    sportsbook_quotes:n(c.sportsbook_quotes), updated:V.times.updated_text};
+  [].forEach.call(host.querySelectorAll('li[data-k]'), function(li){
+    var v=vals[li.getAttribute('data-k')];
+    if(v){ li.querySelector('b').textContent=v; li.hidden=false; } else li.hidden=true;
   });
-
-  /* fetched as the reader approaches the game or the EV section */
-  var near=[document.getElementById('game'), document.getElementById('ev')].filter(Boolean);
-  if(HAS_IO && near.length){
-    var io=new IntersectionObserver(function(es){
-      for(var i=0;i<es.length;i++){ if(es[i].isIntersecting){ io.disconnect(); withEngine(); return; } }
-    },{rootMargin:'700px 0px'});
-    near.forEach(function(n){ io.observe(n); });
+  var upd=host.querySelector('li[data-k="updated"]');
+  if(upd){ upd.classList.toggle('old', !!V.times.stale); upd.firstChild.nodeValue=V.times.stale?'Last update ':'Updated '; }
+}
+function renderPreview(V){
+  var body=$('lpPrevBody'), tag=$('lpPrevTag'), foot=$('lpPrevFoot'); if(!body) return;
+  body.classList.remove('loading');
+  var items=V.preview;
+  if(!items.length&&V.games.length){
+    /* live games, none clearing the research gates: say so, show the two
+       widest disagreements with their honest labels, promote nothing */
+    items=V.games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,2).map(function(g){ return {kind:'game',game:g}; });
+    body.innerHTML='<div class="opp"><p class="ev" style="margin:0"><b>No game clears EdgeDesk&rsquo;s research gates right now.</b> PASS is a normal answer. The widest current disagreements:</p></div>'
+      +items.map(function(x,i){ return gameBlock(x.game, i===0); }).join('');
+  }else if(items.length){
+    body.innerHTML=items.map(function(x,i){ return x.kind==='game'?gameBlock(x.game, i===0):propBlock(x.prop); }).join('');
   }else{
-    withEngine();
+    body.classList.add('ill');
+    if(tag){ tag.textContent='Example'; tag.className='tag'; }
+    if(foot) foot.textContent='Example layout. No live game or player prop is on EdgeDesk’s board right now; the live preview returns as soon as the slate does.';
+    return;
   }
+  if(tag){
+    if(V.times.stale){ tag.textContent='Last update'+(V.times.updated_text?' · '+V.times.updated_text:''); tag.className='tag'; }
+    else{ tag.textContent='Live'+(V.times.updated_text?' · '+V.times.updated_text:''); tag.className='tag live'; }
+  }
+  if(foot) foot.textContent='Read from EdgeDesk’s stored research. Each price shows when it was captured; a stale price is labelled, never shown as current. Research, not picks.';
+  try{ window.EDPricing&&EDPricing.apply(body); }catch(err){}
+}
+function renderToday(V){
+  var tiles=$('lpTiles'), board=$('lpBoard'), empty=$('lpBoardEmpty'), src=$('lpBoardSrc'); if(!board) return;
+  var c=V.counts, t=V.times;
+  var vals={games_analyzed:n(c.games_analyzed), game_research:n(c.game_research), prop_research:n(c.prop_research),
+    watching:n(c.watching), passes:n(c.passes), model:t.model_text, odds:t.odds_text};
+  var any=false;
+  if(tiles){
+    [].forEach.call(tiles.querySelectorAll('[data-k]'), function(d){
+      var v=vals[d.getAttribute('data-k')];
+      d.hidden=v==null; if(v!=null){ d.querySelector('.n').textContent=v; any=true; }
+      if(d.getAttribute('data-k')==='model') d.querySelector('.n').classList.toggle('stale', !!t.model_stale);
+    });
+    tiles.hidden=!any;
+  }
+  var games=V.games.slice(0,6);
+  if(!games.length){
+    board.innerHTML='';
+    if(empty){ empty.hidden=false; empty.innerHTML=V.ok?'<b>No upcoming NFL or FBS games are on EdgeDesk&rsquo;s board right now.</b> The board fills as the next slate is priced'+(t.model_text?' &middot; last model update '+e(t.model_text):'')+'.'
+      :'<b>The live board couldn&rsquo;t be reached just now.</b> Nothing is wrong with your connection to the terminal &mdash; this page reads a public summary, and it will be back on the next visit.'; }
+  }else{
+    if(empty) empty.hidden=true;
+    board.innerHTML=games.map(function(g){
+      var note=g.status==='DATA_INCOMPLETE'?g.status_note:(g.key_reason||'');
+      var pr=g.props_count>0?(g.props_count+' player prop'+(g.props_count===1?'':'s')+' at research grade'):(g.props_total>0?(n(g.props_total)+' player props tracked'):'');
+      return '<article class="gc '+e(g.tone)+'"><div class="gc-hd"><div><b>'+e(g.matchup)+'</b><span class="w">'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+'</span></div>'+stChip(g)+'</div>'
+        +'<div class="cells c3"><div><span class="l">EdgeDesk</span><span class="v mdl">'+e(g.fair_text||'—')+'</span></div>'
+        +'<div><span class="l">Market</span><span class="v">'+e(g.market_text||'—')+'</span></div>'
+        +'<div><span class="l">Gap</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>'
+        +(note?'<p class="note">'+e(String(note).slice(0,170))+'</p>':'')
+        +'<div class="foot"><span>'+(g.market_book?e(g.market_book)+' &middot; ':'')+(g.market_age_text?ageSpan(g.market_age_text, g.market_stale):(g.market_note?ageSpan('market: '+g.market_note,'AGING'):''))+'</span>'+(pr?'<span class="pr">'+e(pr)+'</span>':'')+'</div></article>';
+    }).join('');
+  }
+  if(src) src.textContent=(t.model_at?'Research state as of '+new Date(t.model_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'. ':'')
+    +'Market prices show the book and capture time. Nothing here is a recommendation.';
+}
+function renderConnected(V){
+  var body=$('lpConnBody'), tag=$('lpConnTag'), name=$('lpConnName'), foot=$('lpConnFoot'); if(!body) return;
+  var g=null;
+  V.games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })&&(x.status==='RESEARCH'||x.status==='WATCH')) g=x; });
+  V.games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })) g=x; });
+  if(!g) return;                                     /* the labelled example stays */
+  var ps=g.props.filter(function(p){ return p.status!=='DATA_INCOMPLETE'; }).slice(0,4);
+  body.innerHTML='<div class="gr-k">Game research</div>'
+    +'<div class="mrow"><span class="pwho"><b>'+e(g.matchup)+'</b><small>'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+(g.market_age_text?' &middot; market '+e(g.market_age_text):(g.market_note?' &middot; market: '+e(g.market_note):''))+'</small></span>'
+    +'<span class="nums">Mkt <b>'+e(g.market_text||'—')+'</b></span><span class="nums">ED <b>'+e(g.fair_text||'—')+'</b></span></div>'
+    +'<div class="gr-k">Player markets</div>'
+    +ps.map(function(p){
+      return '<div class="mrow"><span class="pwho">'+e(p.player)+' '+e(String(p.market||'').toLowerCase())+'<small>'+e(p.selection||'')+(p.odds_text?' &middot; '+e(p.odds_text):'')+(p.age_text?' &middot; '+e(p.age_text):'')+'</small></span>'
+        +'<span class="nums">Mkt <b>'+e(p.line_text||'—')+'</b> &middot; ED <b>'+e(p.projection_text||'—')+'</b></span>'+stChip(p)+'</div>';
+    }).join('');
+  if(tag){ tag.textContent=V.times.stale?'Last update · '+(V.times.updated_text||''):'Live'; tag.className=V.times.stale?'tag':'tag live'; }
+  if(name) name.textContent='EdgeDesk · '+g.matchup;
+  if(foot) foot.textContent='A live game card: the game market above, its strongest player-market research below. In the terminal, opening a player opens the full prop research card.';
+}
+function renderProps(V){
+  var rows=$('lpPropRows'), tag=$('lpPropTag'); if(!rows) return;
+  var ps=V.props.slice(0,8);
+  if(!ps.length){
+    rows.innerHTML='<tr><td class="pl" colspan="8">No player prop clears EdgeDesk&rsquo;s research threshold right now &mdash; a normal result. Props are priced as sportsbooks post them, and the table fills when they do.</td></tr>';
+    if(tag){ tag.textContent='Nothing qualifies'; tag.className='tag'; }
+    return;
+  }
+  rows.innerHTML=ps.map(function(p){
+    var cls=supCls(p);
+    return '<tr>'
+      +'<td class="pl" data-l="Player">'+e(p.player)+'<small>'+e([p.team,p.position,p.league?p.league.toUpperCase():null].filter(Boolean).join(' · '))+'</small></td>'
+      +'<td class="pr" data-l="Prop">'+e(p.market)+'<small>'+e(p.selection||'')+'</small></td>'
+      +'<td data-l="Market">'+e(p.line_text||'—')+'</td>'
+      +'<td data-l="EdgeDesk">'+e(p.projection_text||'—')+'</td>'
+      +'<td data-l="Difference" class="'+cls+'" title="'+(p.supports===true?'The projection leans the way the selection is priced':(p.supports===false?'The projection leans against the selection':''))+'">'+e(p.difference_text||'—')+'</td>'
+      +'<td data-l="Best odds">'+e(p.odds_text||'—')+(p.book?'<small style="display:block;color:var(--faint);font-size:10.5px">'+e(p.book)+'</small>':'')+'</td>'
+      +'<td data-l="EdgeDesk EV" class="'+(p.ev==null?'':(p.ev>0?'pos':'neg'))+'">'+e(p.ev_text||'—')+(p.ev_text&&p.ev_label?'<small style="display:block;color:var(--faint);font-size:10.5px">'+e(p.ev_label)+'</small>':'')+'</td>'
+      +'<td class="stc" data-l="Status">'+stChip(p)+(p.age_text?' '+ageSpan(p.age_text, p.price_state):'')+'</td>'
+      +'</tr>';
+  }).join('');
+  var fresh=ps.filter(function(p){ return p.price_state==='FRESH'||p.price_state==='AGING'; }).length;
+  if(tag){ tag.textContent=fresh?'Live':'Prices ageing'; tag.className='tag'+(fresh?' live':''); }
+}
+function renderPriceExample(V){
+  var host=$('lpPriceEx'); if(!host) return;
+  var g=null;
+  V.games.forEach(function(x){ if(!g&&x.ev&&!x.ev.stale&&x.gap!=null&&(x.status==='RESEARCH'||x.status==='WATCH')) g=x; });
+  if(!g) return;
+  var v=g.ev, neg=v.calibrated<=0;
+  host.insertAdjacentHTML('beforeend','<p style="margin-top:10px"><b>Right now:</b> EdgeDesk makes it <b>'+e(g.fair_text)+'</b> against a market of <b>'+e(g.market_text)+'</b> &mdash; a '+e(g.gap_text)+' disagreement. At '+e(v.selection)+' '+e(v.price_text||'')+(v.book?' on '+e(v.book):'')+' (captured '+e(v.age_text||'')+'), the calibrated EdgeDesk EV is <b class="'+(neg?'neg':'pos')+'">'+e(v.calibrated_text)+'</b>'+(neg?' &mdash; so at that price, it does not qualify.':'.')+'</p>');
+}
+function renderRatings(stat){
+  var r=stat&&stat.ratings; if(!r) return;
+  var host=$('lpRatings');
+  if(host&&r.top&&r.top.length) host.innerHTML=r.top.slice(0,3).map(function(t){
+    return '<div class="row"><span class="n">'+e(t.rank)+'</span><span class="t">'+e(t.team)+'</span><span class="v">'+(t.rating>=0?'+':'')+Number(t.rating).toFixed(1)+'</span></div>';
+  }).join('');
+  if(n(r.player_count)&&$('lpPlayers')) $('lpPlayers').textContent=n(r.player_count)+' FBS player records rated';
+  if(n(r.team_count)&&$('lpTeams')) $('lpTeams').textContent=n(r.team_count)+' FBS teams rated';
+}
+function failAll(){
+  var body=$('lpPrevBody');
+  if(body){ body.classList.remove('loading'); body.classList.add('ill'); }
+  var tag=$('lpPrevTag'); if(tag){ tag.textContent='Example'; tag.className='tag'; }
+  var foot=$('lpPrevFoot'); if(foot) foot.textContent='Example layout. The live preview could not be read just now; it returns on the next visit.';
+  var empty=$('lpBoardEmpty'); if(empty){ empty.hidden=false; empty.innerHTML='<b>The live board couldn&rsquo;t be reached just now.</b> It reads a public summary of EdgeDesk&rsquo;s research and will be back on the next visit.'; }
+  var rows=$('lpPropRows'); if(rows) rows.innerHTML='<tr><td class="pl" colspan="8">The player-prop research could not be read just now.</td></tr>';
+  var ptag=$('lpPropTag'); if(ptag){ ptag.textContent='Unavailable'; ptag.className='tag'; }
+}
+(function liveBoard(){
+  if(!H){ failAll(); return; }
+  readHome().then(function(o){
+    if(!o||(!o.rpc&&!o.stat)){ failAll(); return; }
+    var V=H.build(o.rpc, o.stat, Date.now());
+    VIEW=V;
+    renderStats(V); renderPreview(V); renderToday(V); renderConnected(V); renderProps(V); renderPriceExample(V); renderRatings(o.stat);
+    /* the funnel's "saw the live board": only when there was a live board to see */
+    if(V.live&&window.EDTrack) EDTrack.seen($('today'), 'landing_live_board_view', {games:V.games.length, props:V.props.length}, 0.25);
+  }).catch(function(){ failAll(); });
+  /* a subscriber's links point into the terminal once billing has answered */
+  document.addEventListener('ed:paid', function(){ if(VIEW){ renderPreview(VIEW); } });
 })();
 
 /* ======================================================================
-   4 · ONE QUIET ENTRANCE PER BLOCK — skipped under reduced motion
+   3 · ONE QUIET ENTRANCE PER BLOCK — skipped under reduced motion
    ====================================================================== */
 (function reveals(){
   var els=[].slice.call(document.querySelectorAll('.rv'));
-  if(REDUCE||!HAS_IO){ els.forEach(function(e){ e.classList.add('in'); }); return; }
+  if(REDUCE||!HAS_IO){ els.forEach(function(x){ x.classList.add('in'); }); return; }
   var io=new IntersectionObserver(function(entries){
     entries.forEach(function(en){
       if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
     });
-  },{threshold:.08,rootMargin:'0px 0px -6% 0px'});
-  els.forEach(function(e){ io.observe(e); });
+  },{threshold:.06,rootMargin:'0px 0px -5% 0px'});
+  els.forEach(function(x){ io.observe(x); });
 })();
 })();
 </script>

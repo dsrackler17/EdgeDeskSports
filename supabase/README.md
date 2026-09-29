@@ -109,6 +109,55 @@ the shared research state). Admin reports (`growth_admin_*`) check the partner
 program's operator list. Report rows 1-9 should say `ok`. Tested by
 `tools/personal/growth_sql.test.js`; see `docs/growth-upgrade.md`.
 
+### `funnel.sql` — where people stop: one event stream, the first run, the admin report
+Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,
+`affiliates.sql` and `growth.sql` (the guard says so). `user_event_kinds` (the
+26 event names, each with its source — `client` events may arrive through
+`ed_track()`, `server` ones only from triggers here — and its dedupe rule:
+once per session, per entity per day, once ever…), `user_events` (the events;
+a unique `dedupe_key` makes a re-render, a double click or a replayed webhook
+land once), `user_event_links` (which hashed visitor became which account, so
+landing events stitch to the trial) and `user_event_buckets` (rate limits).
+`ed_track(p_events, p_visitor, p_session)` is the only client write: signed
+out or in, at most 25 events a call, 600 an hour per reader, and the user is
+taken from the access token, never from the body. Triggers record
+`account_created` (on `auth.users` — a failing insert never fails a signup),
+`trial_started` / `subscription_started` / `subscription_cancelled` (on
+`subscriptions`, comps excluded) and a paid invoice (on `stripe_events`);
+day-1/3/7 returns are derived from terminal events. `user_preferences` gains
+`research_focus`, `favorite_teams`, `trial_emails`, `first_run_seen_at` and
+`first_run_done_at`. `ed_first_run_state()` gives a reader their own five
+onboarding steps; `funnel_admin_report(p_days)` (operators only) gives the
+funnel, the rates, retention, trial outcomes and cohorts. Report rows 1-8
+should say `ok`. Tested by `tools/funnel/funnel_sql.test.js`; see
+`docs/funnel-upgrade.md`.
+
+### `home_board.sql` — the landing page's live board, for a signed-out visitor
+Run after `personal_research.sql`. `public_home_board()` (anon) is a SUBSET of
+`game_research_state`: the next 8 days, at most 8 games (research first) with
+at most 3 player props each, the fair and market numbers with the market's
+book and capture time, one of four public words (`ed_public_status`: RESEARCH,
+WATCH, PASS, DATA_INCOMPLETE — never a pick), the counts and the freshness
+times. No priority reasoning, driver, movement or personal row leaves the
+database. The answer is cached for 60 seconds in `public_home_board_cache`
+(internal), so a traffic spike is one build a minute. Report rows 1-4 should
+say `ok`. Tested by `tools/home/home_sql.test.js`.
+
+### `lifecycle_email.sql` — the four trial emails, and nothing more
+Run after `funnel.sql`. `lifecycle_settings` (one row; **`sending_enabled`
+defaults to false**, a switch per email, the renewal lead time — 24 to 120
+hours — sender, reply-to and postal address), `lifecycle_messages` (one row
+per reader, email and reference, so nothing can be scheduled twice) and
+`lifecycle_tokens` (the one-click opt-out). `lifecycle_plan()`,
+`lifecycle_due()` and `lifecycle_mark()` are the hourly sender's alone
+(service role): due rows are claimed `FOR UPDATE SKIP LOCKED` and re-checked
+at claim time — cancelled, opted out, bounced or a charge date that moved is
+skipped with the reason, never sent. `lifecycle_unsubscribe(token)` (anon)
+only turns the day-1 and day-3 tips off; the billing reminder is not a tip.
+`lifecycle_admin_summary()` / `lifecycle_admin_set()` back the controls in
+`/admin/funnel/`. Report rows 1-5 should say `ok`. Tested by
+`tools/funnel/funnel_sql.test.js`; the sender by `tools/lifecycle/lifecycle.test.js`.
+
 ### `bankroll_and_stakes.sql` — the risk policy and the stake audit trail
 `bankroll_settings` is one MUTABLE row per reader: the bankroll (deliberately
 nullable — EdgeDesk answers in units and refuses to assume one), the base unit,

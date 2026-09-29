@@ -1,0 +1,73 @@
+# EdgeDesk — the four trial emails (supabase/lifecycle_email.sql).
+#
+#   trial_welcome      "Your EdgeDesk terminal is live."   right after the trial starts
+#   trial_day1         the research on the board now        ~24h after
+#   trial_day3         what changed since the last visit    ~72h after
+#   renewal_reminder   the exact date and amount of the first charge,
+#                      renewal_lead_hours (default 48) before it
+#
+# EVERY EMAIL IS BUILT FROM THE BOARD AT SEND TIME — public_home_board() and
+# football/home/board.json through lib/edgedesk_home.js, the same view model
+# the landing page renders. Stale prices are not quoted, a missing number is
+# never filled in, and an empty board says PASS is a normal answer.
+#
+# SENDING IS OFF UNTIL SOMEBODY TURNS IT ON in /admin/funnel/
+# (lifecycle_settings.sending_enabled defaults to false). Until then a run
+# only schedules rows, and lifecycle_due() claims nothing.
+#
+# A RE-RUN CANNOT DOUBLE-SEND. Rows are claimed FOR UPDATE SKIP LOCKED, and
+# each Resend call carries an Idempotency-Key equal to the message row id.
+#
+# SECRETS (the repository's existing ones)
+#   SB_SERVICE_ROLE    required: the lifecycle RPCs are service-role only
+#   RESEND_API_KEY     required to send; without it the run schedules only
+#   SB_URL             optional; defaults to the site's project
+name: Trial emails
+
+on:
+  schedule:
+    # Hourly, off the top of the hour (GitHub names minute 0 as its busiest).
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the due emails instead of sending them (rows are released, not consumed)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifecycle-email
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # An email cannot be unsent: the templates, the copy rule and the sender
+      # must pass before anything reaches an inbox.
+      - name: The trial emails must pass before they send
+        run: node tools/lifecycle/lifecycle.test.js
+
+      - name: Send what is due
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node tools/lifecycle/send.js --dry-run
+          else
+            node tools/lifecycle/send.js
+          fi

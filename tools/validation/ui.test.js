@@ -84,7 +84,11 @@ const LAND = read('index.html');
 lacks(LAND, "state:'REVIEW'", 'the landing demo drops the REVIEW synonym');
 lacks(LAND, '>REVIEW<', 'and never renders it as a badge either');
 lacks(LAND, 'past EdgeDesk&rsquo;s own guard bound', 'and no longer calls a 10.5-pt gap past the 21-pt guard');
-has(LAND, '<span class="st warn">WORTH RESEARCHING</span>', 'the illustrative game (a 2.2-pt gap) is WORTH RESEARCHING');
+/* the illustrative game and its canonical label moved to the methodology page;
+   the landing page prints the four public words over LIVE data instead */
+const METH = read('methodology/index.html');
+chk('the illustrative game (a 2.2-pt gap) is WORTH RESEARCHING', /<span class="st warn"[^>]*>WORTH RESEARCHING<\/span>/.test(METH));
+has(LAND, '<span class="st research">RESEARCH</span>', 'and the landing page labels research-grade work with the public word RESEARCH');
 
 /* 4. the validation dashboard runs its own code on the committed artifacts */
 const VAL = read('admin/cfb-validation/index.html');
