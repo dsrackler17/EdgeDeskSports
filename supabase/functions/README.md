@@ -46,7 +46,7 @@ Evidence from the shipped front end, not from the naming.
 | `collective_ingest` | the Model Collective submission API — see its `SECURITY.md` |
 | `edgedesk_ai` | the AI presentation layer |
 | `odds` | odds reads |
-| `props_cron` | the Props page's **Refresh prices** (`{action: 'refresh'}` then `{action: 'status'}`, under the reader's session); also the Player Props primary scheduler, poked by pg_cron (`supabase/player_props_cron.sql`) — it dispatches `player-props.yml`, it never captures a price itself. JWT verification ON. |
+| `props_cron` | the Props page's **Refresh prices** (`{action: 'refresh'}` then `{action: 'status'}`, under the reader's session); also the Player Props primary scheduler, poked by pg_cron (`supabase/player_props_cron.sql`) — it dispatches `player-props.yml`, it never captures a price itself. JWT verification OFF (`--no-verify-jwt`): pg_cron sends no JWT, and Refresh / status check the reader's session themselves. |
 | `team_brief` | team briefs |
 
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**
