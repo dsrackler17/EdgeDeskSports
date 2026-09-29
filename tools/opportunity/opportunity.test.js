@@ -210,6 +210,9 @@ async function buildFixture() {
   chk('capture switched off is said as such', O.eventCaptureState(gFar, { status: 'NOT_RUN' }, {}, 0).state === 'CAPTURE_OFF');
   const zero = { capture: { state: 'PRICED' }, evaluated_props: 42, priced_props: 42, top_opportunities: [], more: 0 };
   chk('no prop clears the research threshold: "42 props evaluated … a valid result"', /^42 props evaluated\. No player props currently meet EdgeDesk’s research threshold\. This is a valid result\.$/.test(O.emptyText(zero)), O.emptyText(zero));
+  const none = { capture: { state: 'PRICED' }, evaluated_props: 0, priced_props: 35, top_opportunities: [], more: 0 };
+  chk('priced, none evaluated: the count is 0, not the priced 35 (0 is a count, not a missing field)', O.evaluatedCount(none) === 0 && O.pricedNotEvaluated(none) && O.evaluatedCount({ priced_props: 35 }) === 35 && !O.pricedNotEvaluated(zero), [O.evaluatedCount(none), O.evaluatedCount({ priced_props: 35 })]);
+  chk('…and the empty state says none of the 35 priced props could be evaluated, never "35 props evaluated"', /^None of the 35 priced props could be evaluated/.test(O.emptyText(none)) && !/35 props evaluated/.test(O.emptyText(none)), O.emptyText(none));
   const late = NOW + 3 * 3600e3;
   const evStale = O.eventFromSummary(SN, GID, late);
   chk('F: three hours later every summarized price is STALE: nothing is research grade, and it says why', evStale.stale_now && evStale.research_grade_now === 0 && evStale.top_opportunities.every((o) => o.decision === 'NO_DECISION' && o.code === 'STALE_QUOTE' && o.units === 0 && !o.research.grade), evStale.top_opportunities.map((o) => [o.decision, o.code]));

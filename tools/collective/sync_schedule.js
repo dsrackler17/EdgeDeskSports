@@ -179,6 +179,27 @@ async function fetchJson(url, opts) {
   return text ? JSON.parse(text) : null;
 }
 
+/* The source is read over the open internet, and one dropped connection is
+   not a missing week: a scheduled run once failed on a single "fetch failed"
+   for NFL week 4 while every other week answered. A request that got no
+   answer, or a 429 / 5xx, is asked again -- three tries, a short pause
+   between. Any other status is the source's answer and is not asked twice.
+   Reads only: nothing here repeats a write. */
+const SOURCE_TRIES = 3;
+const SOURCE_WAIT_MS = 1500;
+async function fetchSource(url, opts) {
+  const tries = (opts && opts.tries) || SOURCE_TRIES;
+  const wait = opts && opts.waitMs != null ? opts.waitMs : SOURCE_WAIT_MS;
+  for (let i = 1; ; i++) {
+    try { return await fetchJson(url); }
+    catch (e) {
+      const transient = e.status == null || e.status === 429 || e.status >= 500;
+      if (!transient || i >= tries) throw e;
+      await new Promise(r => setTimeout(r, wait * i));
+    }
+  }
+}
+
 /* The week as ESPN has it, normalised through the settler's own reader so the
    two tools cannot drift on what a team is called.
 
@@ -187,11 +208,11 @@ async function fetchJson(url, opts) {
    it addresses the same bucket that was asked for; otherwise it is the week
    that was asked for, which is what the request already means. Either way the
    number is the PROVIDER'S -- nothing here derives a week from a date. */
-async function espnWeek(sport, season, week) {
+async function espnWeek(sport, season, week, opts) {
   const url = espnScoreboardUrl(sport, season, week);
   if (!url) return [];
   const at = espnAddress(sport, week);
-  const d = await fetchJson(url);
+  const d = await fetchSource(url, opts);
   return ((d && d.events) || []).map(S.normEspn)
     .filter(r => r.home_team && r.away_team && r.start_date)
     .map(r => Object.assign({}, r, { week: collectiveWeekOf(sport, r, at, week) }));
@@ -763,7 +784,7 @@ async function postGames(sport, season, games, token) {
 }
 
 module.exports = {
-  espnScoreboardUrl, espnAddress, espnWeek, collectiveWeekOf,
+  espnScoreboardUrl, espnAddress, espnWeek, fetchSource, collectiveWeekOf,
   alreadyHave, resolveFeedTeams, missingFrom, updatesFor, planWeek, teamsNeeded, gamePayload,
   isDuplicateKey, heldUnderKey,
   refOf, refMatches, REF_PREFIX,

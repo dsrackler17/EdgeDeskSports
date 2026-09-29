@@ -496,7 +496,37 @@ chk('the code is derived exactly as collective_admin derives it',
   chk('DIRECT  and Current is decided over that whole season by the shared rule',
     require('../../collective/week.js').resolveCurrentWeek(held, NOW) === 2);
 })().catch(function (e) { chk('the direct door drive did not crash', false, String(e && e.stack || e)); })
+  .then(sourceRetryDrive)
   .then(function () { report(); });
+
+/* ---- one dropped connection is not a missing week ----------------------- */
+async function sourceRetryDrive() {
+  const realFetch = global.fetch;
+  const answer = (status, body) => ({ ok: status >= 200 && status < 300, status, text: async () => JSON.stringify(body) });
+  const week = { events: [ev('Pittsburgh', 'Cleveland', '2026-10-04T17:00Z')] };
+  const drive = async (script) => {
+    let calls = 0;
+    global.fetch = async () => { const step = script[Math.min(calls++, script.length - 1)]; if (step instanceof Error) throw step; return step; };
+    let rows = null, err = null;
+    try { rows = await Y.espnWeek('NFL', 2026, 4, { waitMs: 0 }); } catch (e) { err = e; }
+    return { rows, err, calls };
+  };
+  try {
+    let r = await drive([new TypeError('fetch failed'), answer(200, week)]);
+    chk('SOURCE  a request that got no answer ("fetch failed") is asked again, and the week loads',
+      !r.err && r.calls === 2 && r.rows.length === 1 && r.rows[0].home_team === 'Cleveland', r);
+    r = await drive([answer(503, {}), answer(429, {}), answer(200, week)]);
+    chk('SOURCE  a 5xx or a 429 is asked again, up to three tries', !r.err && r.calls === 3 && r.rows.length === 1, r);
+    r = await drive([new TypeError('fetch failed')]);
+    chk('SOURCE  a source that never answers still fails the week after three tries -- it is not hidden',
+      r.err && /fetch failed/.test(r.err.message) && r.calls === 3, { calls: r.calls, err: r.err && r.err.message });
+    r = await drive([answer(404, { error: { message: 'no such week' } }), answer(200, week)]);
+    chk('SOURCE  any other status is the source\'s answer and is not asked twice',
+      r.err && r.err.status === 404 && r.calls === 1, { calls: r.calls, err: r.err && r.err.message });
+  } catch (e) {
+    chk('the source retry drive did not crash', false, String(e && e.stack || e));
+  } finally { global.fetch = realFetch; }
+}
 
 /* ---- report ------------------------------------------------------------ */
 function report() {
