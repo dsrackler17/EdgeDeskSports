@@ -201,6 +201,15 @@ async function mainCfb(args) {
   if (args.includes('--check')) { if (!fs.existsSync(CFB_OUT)) { console.error('CHECK: no artifact'); process.exit(1); } const prev = JSON.parse(fs.readFileSync(CFB_OUT, 'utf8')); const same = JSON.stringify(prev.games.filter((g) => g.season < c.last_season)) === JSON.stringify(art.games.filter((g) => g.season < c.last_season)); console.log(same ? 'CHECK: artifact is current (past seasons)' : 'CHECK: artifact differs from a fresh build'); process.exit(same ? 0 : 1); }
   console.log(writeIfChanged(CFB_OUT, art) + ' ' + path.relative(ROOT, CFB_OUT) + ' (' + Math.round(fs.statSync(CFB_OUT).size / 1024) + ' KB)');
   console.log(writeIfChanged(CFB_OPENERS, cfbOpeners(art), { pretty: true }) + ' ' + path.relative(ROOT, CFB_OPENERS));
+  keyNumbers();
+}
+
+/* football/validation/key_numbers.json is built from the final margins in
+   both archives, and tools/validation/market_execution.test.js fails the
+   moment the two disagree. Every write of an archive rebuilds it here, so a
+   new final never lands without the table that counts it. */
+function keyNumbers() {
+  try { const KN = require(path.join(ROOT, 'tools', 'validation', 'build_key_numbers.js')); console.log(KN.write() + ' ' + path.relative(ROOT, KN.OUT)); } catch (e) { console.error('the key-number table could not be rebuilt: ' + e.message); process.exitCode = 1; }
 }
 
 function main() {
@@ -228,6 +237,7 @@ function write(args) {
     process.exit(same ? 0 : 1);
   }
   console.log(writeIfChanged(OUT, art) + ' ' + path.relative(ROOT, OUT) + ' (' + Math.round(fs.statSync(OUT).size / 1024) + ' KB)');
+  keyNumbers();
 }
 
 module.exports = { build, buildCfb, cfbOpeners, updateOpeners, applyOpeners, SCHEMA, OUT, OPENERS, CFB_OUT, CFB_OPENERS, CACHE, GAMES_URL, COLS };

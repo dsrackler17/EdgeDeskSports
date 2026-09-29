@@ -5,6 +5,10 @@
      node tools/validation/build_key_numbers.js          # print
      node tools/validation/build_key_numbers.js --write  # football/validation/key_numbers.json
 
+   tools/football/build_lines_archive.js calls write() every time it writes
+   an archive, so a final margin landing in the archive and the key-number
+   table that is built from it are always committed together.
+
    Reads every final margin in the committed closing-line archives
    (football/pricing/lines_nfl.json, lines_cfb.json), measures each league's
    share of games decided by exactly k points, and derives its key numbers
@@ -22,6 +26,7 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const X = require(path.join(ROOT, 'lib', 'edgedesk_execution.js'));
+const { writeIfChanged } = require(path.join(ROOT, 'tools', 'football', 'write_if_changed.js'));
 const OUT = path.join(ROOT, 'football', 'validation', 'key_numbers.json');
 
 function r(x, k) { const m = Math.pow(10, k); return Math.round(x * m) / m; }
@@ -51,9 +56,11 @@ function build() {
     note: 'Empirical, per league. The decision engine reads each game’s own distribution for the value of a half point; this table only names which margins are keys and how many games support it.',
     leagues: { NFL: league('football/pricing/lines_nfl.json', 'NFL'), CFB: league('football/pricing/lines_cfb.json', 'CFB') } };
 }
+/** Rebuild the table and write it only when it changed. 'written' | 'unchanged'. */
+function write() { return writeIfChanged(OUT, build(), { pretty: true, newline: true }); }
 if (require.main === module) {
   const K = build();
   ['NFL', 'CFB'].forEach((s) => { const L = K.leagues[s]; console.log(s + ' · n=' + L.n_games + ' (' + L.seasons.join('–') + ') · primary ' + L.key_numbers.primary.join(', ') + ' · secondary ' + L.key_numbers.secondary.join(', ') + ' · top ' + L.key_numbers.ranked.slice(0, 6).map((x) => x.margin + ':' + (100 * x.mass).toFixed(1) + '%').join(' ')); });
-  if (process.argv.includes('--write')) { fs.writeFileSync(OUT, JSON.stringify(K, null, 1) + '\n'); console.log('wrote ' + path.relative(ROOT, OUT)); }
+  if (process.argv.includes('--write')) console.log(write() + ' ' + path.relative(ROOT, OUT));
 }
-module.exports = { build: build };
+module.exports = { build: build, write: write, OUT: OUT };
