@@ -101,7 +101,11 @@ async function main() {
     const r = await sync({ league, season, days: Number(arg('days', 4)), db: PGR.client(cfg) });
     console.log('[props sync] ' + JSON.stringify(r));
   } catch (e) {
-    console.log('[props sync] ' + (PGR.refused(e) ? 'refused by the database (apply supabase/player_props.sql?): ' : 'failed: ') + (e.message || e));
+    const msg = (PGR.refused(e) ? 'refused by the database (apply supabase/player_props.sql?): ' : 'failed: ') + (e.message || e);
+    console.log('[props sync] ' + msg);
+    /* the page never depends on this copy, so the run stays green — but a
+       refused ledger write is surfaced on the run, never only in its log */
+    if (process.env.GITHUB_ACTIONS === 'true') console.log('::warning title=Player props ledger sync (' + league + ')::' + String(msg).replace(/[\r\n]+/g, ' ').slice(0, 400));
   }
   return 0;
 }
