@@ -152,6 +152,20 @@ signed-in readers. Views: `bettor_decision_transitions`,
 50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
 `tools/bettor/bettor_sql.test.js`; the design is `docs/bettor-decision/DESIGN.md`.
 
+### `card_opportunities.sql` — the EdgeDesk Card's saved games and props
+Apply **after** `bettor_decisions.sql` (the file stops with a message naming
+it otherwise). `card_opportunities` holds what a reader added to the Card
+from research — a game market or a player prop — frozen at that moment: type
+(`GAME` / `PLAYER_PROP`), EdgeDesk's decision, event, market, line, side,
+price, book, probability, EV, edge, confidence, units and time, and the
+player and prop type for a prop (`lib/edgedesk_opportunity.js` `cardEntry`).
+Owner-only RLS; refused at or after kickoff; write-once (the reader changes
+only `status`, to `removed`, and a removed row stays removed); units only on a
+BET and never above 1.00U; the grade columns are the service role's. The view
+`card_record_by_type` keeps GAME and PLAYER_PROP results apart. Tested against
+a real PostgreSQL by `tools/opportunity/card_sql.test.js`; the design is
+`docs/opportunity/DESIGN.md`.
+
 ### `player_props.sql` — the Player Props ledger
 Needs nothing else first. Four tables, all write-once and never deleted:
 

@@ -407,6 +407,9 @@ async function build(opts) {
     probability: EDP.calibrationOf(cal), market_weight: EDP.CONFIG.market_weight,
     stages: Object.keys(stages).reduce((o, k) => { if (props.some((x) => x.m === k)) o[k] = stages[k]; return o; }, {}),
     correlation, exposure: EDP.CONFIG.exposure,
+    /* the model's own script rule, so a page can state the game model's
+       sensitivity without importing the model (lib/edgedesk_opportunity.js) */
+    script_rule: { pass_rate_per_pt: M.PARAMS.script_pass_rate_per_pt, source: 'football/props/model.js PARAMS.script_pass_rate_per_pt' },
     factory: !fx ? { state: 'NOT_PUBLISHED', why: 'No factory projections on file (football/props/factory/' + league + '/projections.json).' }
       : fx.stale ? { state: 'STALE', generated_at: fx.generated_at, why: 'The factory projections are older than ' + FACTORY_MAX_AGE_H + ' h and are not shown.' }
       : { state: 'JOINED', schema: fx.schema, generated_at: fx.generated_at, feature_version: fx.feature_version, rule: fx.rule, model_cols: fx.model_cols, models: fxUsed.models, n_joined: fxUsed.joined, n_available: fx.n },
@@ -524,6 +527,15 @@ async function main() {
   console.log('[props board] board ' + writeIfChanged(P.board, B) + ', players ' + writeIfChanged(P.players, r.players) + ', pregame state ' + writeIfChanged(path.join(P.dir, 'pregame_state.json'), r.pregame));
   if (r.ledger_rows.length) { fs.mkdirSync(P.season_dir, { recursive: true }); fs.appendFileSync(P.evaluations, r.ledger_rows.map((x) => JSON.stringify(x)).join('\n') + '\n'); }
   if (r.shapes) console.log('[props board] shapes ' + writeIfChanged(path.join(P.dir, 'shapes.json'), r.shapes));
+  /* the per-event summary Research reads instead of the board (build_summary.js) */
+  try {
+    const SUM = require('./build_summary.js');
+    /* summarize the board AS WRITTEN: an unchanged board keeps its old
+       generated_at on disk, and the summary must agree with it (and not
+       commit a new file every quiet hour) */
+    const sr = SUM.run(league, { board: readJson(P.board) || B, capture_state: readJson(P.capture_state), write: true, file: path.join(P.dir, 'summary.json') });
+    console.log('[props board] summary ' + (sr.wrote || sr.status) + (sr.summary ? ' (' + sr.summary.counts.research_grade + ' research-grade props across ' + sr.summary.counts.events + ' events)' : ''));
+  } catch (e) { console.log('[props board] summary not written: ' + e.message); }
   /* the resolved quotes the Supabase sync inserts (a working file, not committed) */
   fs.mkdirSync(C.CACHE, { recursive: true });
   fs.writeFileSync(path.join(C.CACHE, league + '_resolved_quotes.json'), JSON.stringify({ league, season, generated_at: B.generated_at, rows: r.resolved_quotes }) + '\n');

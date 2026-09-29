@@ -199,6 +199,17 @@ const LIBS = [
     start: '/*__EDPROPSDESK_START__*/', end: '/*__EDPROPSDESK_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* THE OPPORTUNITY LAYER (lib/edgedesk_opportunity.js): one object for a
+     game market and a player prop, the per-event prop summary, the research
+     score and the Card's exposure — the desk answers "what should I research
+     in X vs Y" and "what is on my card" with the same code the page runs.
+     ORDER MATTERS: it reads EDProps. */
+  {
+    name: 'EDOPP',
+    src: path.join(ROOT, 'lib', 'edgedesk_opportunity.js'),
+    start: '/*__EDOPP_START__*/', end: '/*__EDOPP_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The CFB explanation fact boundary (brief §90-91; docs/cfb-production/
      SECURITY.md §5): the only facts an explanation of a CFB game may use (the
      stored canonical projection and the governed decision), the tool-less

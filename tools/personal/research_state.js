@@ -144,10 +144,18 @@ async function buildStates() {
      artifacts) settle in the background; give them the same grace the
      research host gives the P4 load */
   for (let i = 0; i < 60 && !(win.FB.at && win.FB.p4 && (win.FB.p4.loadedAt || win.FB.p4.engineErr)); i++) await new Promise((r) => setTimeout(r, 1000));
-  ['lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js', 'lib/research_priority.js', 'lib/edgedesk_personal.js'].forEach((f) => {
+  ['lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js', 'lib/research_priority.js', 'lib/edgedesk_personal.js',
+    /* the player-prop signal: the kernel, the opportunity layer and the loader
+       of football/props/<lg>/summary.json (served from the repo) */
+    'lib/edgedesk_vocab.js', 'lib/edgedesk_props.js', 'lib/edgedesk_opportunity.js', 'lib/edgedesk_props_ui.js'].forEach((f) => {
     win.module = undefined;
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f });
   });
+  if (typeof win.fbPsReady === 'function') {
+    await Promise.race([win.fbPsReady(), new Promise((r) => setTimeout(r, 15000))]).catch(() => null);
+    const S = win.EDPropsUI && win.EDPropsUI.state && win.EDPropsUI.state.summaries;
+    log('  player props: summaries ' + ['nfl', 'cfb'].map((lg) => lg + ' ' + (S && S[lg] && !S[lg].error ? S[lg].counts.research_grade + ' research-grade' : 'not loaded')).join(' · '));
+  }
   if (typeof win.fbResearchStates !== 'function') throw new Error('app.html does not export window.fbResearchStates');
   const res = win.fbResearchStates();
   const now = Date.now();
