@@ -18,10 +18,12 @@
      7  in the terminal, Settings shows EdgeDesk Full Access, the 7-day trial,
         then $49.99/month, and the day the trial ends from the row itself
 
-   And the other half of the same rule: with NO checkout link configured (the
-   state lib/edgedesk_pricing.js ships in until the $49.99 links exist), the
+   And the other half of the same rule: with NO checkout link configured, the
    flow stops at step 4 — nothing recorded, nothing charged, and the visitor is
    told so — and a retired $79.99 link is never navigated to.
+
+   Neither run ever reaches the real Stripe: every buy.stripe.com request is
+   answered by the stand-in below, whatever link the pricing file carries.
 
    The run with a link swaps ONE value in the pricing file as it is served —
    CHECKOUT_LINK — so every other word the page shows is the shipped file's.
@@ -116,11 +118,23 @@ async function run(browser, base, opts) {
 async function startTrial(page) {
   await page.click('#subBtn');
   await page.waitForSelector('#authModal.on');
+  /* openAuth() moves focus to the email field 50 ms after the form opens. A
+     browser driven faster than any typist can land its first keystrokes in
+     the password box and its next ones in the email box once that focus
+     arrives, so wait for it rather than race it. */
+  await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'aEmail');
   await page.fill('#aEmail', EMAIL);
   await page.fill('#aPass', 'correct horse battery staple');
   await page.check('#aConsent');
   await page.click('#authSubmit');
-  await page.waitForSelector('#arlModal.on', { timeout: 8000 });
+  try { await page.waitForSelector('#arlModal.on', { timeout: 15000 }); }
+  catch (e) {
+    const why = await page.evaluate(() => ({ auth: (document.getElementById('authMsg') || {}).textContent,
+      authOpen: document.getElementById('authModal').classList.contains('on'),
+      btn: document.getElementById('authSubmit').disabled, pending: localStorage.getItem('edgedesk_pending_sub'),
+      session: !!localStorage.getItem('edgedesk_session') }));
+    throw new Error('the renewal-terms screen never opened: ' + JSON.stringify(why));
+  }
   await page.check('#arlAgree');
   await page.click('#arlSubmit');
 }
@@ -177,8 +191,25 @@ async function startTrial(page) {
       await ctx.close();
     }
 
-    /* ── as shipped: no link yet ───────────────────────────────────────── */
-    for (const [label, link] of [['as shipped, no checkout link configured', undefined], ['a retired $79.99 link pasted back', X.RETIRED_LINKS[0]]]) {
+    /* ── the file exactly as shipped: the link it carries is the one opened ── */
+    {
+      console.log('\n390px, lib/edgedesk_pricing.js exactly as shipped');
+      const { ctx, page, state } = await run(browser, base, {});
+      await startTrial(page);
+      if (X.checkoutLink('trial')) {
+        await eventually(() => state.stripe.length > 0, 10000);
+        const to = state.stripe[0] || '';
+        chk('the shipped CHECKOUT_LINK is the one opened, with the account id', to.indexOf(X.CHECKOUT_LINK + '?client_reference_id=' + UID) === 0, to);
+        chk('after a $49.99 consent, recorded once', state.consents.length === 1 && state.consents[0].price_display === '$49.99', state.consents);
+      } else {
+        await eventually(async () => /Checkout is being updated/.test(await page.textContent('#arlMsg')), 6000);
+        chk('with no link shipped, nothing is recorded and nobody is sent to Stripe', state.consents.length === 0 && state.stripe.length === 0);
+      }
+      await ctx.close();
+    }
+
+    /* ── no link, or a retired one ─────────────────────────────────────── */
+    for (const [label, link] of [['no checkout link configured', ''], ['a retired $79.99 link pasted back', X.RETIRED_LINKS[0]]]) {
       console.log('\n390px, ' + label);
       const { ctx, page, state } = await run(browser, base, { link });
       await startTrial(page);
