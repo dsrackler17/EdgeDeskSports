@@ -111,9 +111,10 @@ jobs:
           PROPS_LEAGUES: ${{ vars.PROPS_LEAGUES }}
           FORCE_CAPTURE: ${{ github.event.inputs.force_capture }}
         run: |
-          echo "event: ${{ github.event_name }} · ref: ${{ github.ref_name }}"
-          echo "ODDS_API_KEY present: $([ -n "$ODDS_API_KEY" ] && echo true || echo false)"
-          echo "PROPS_CAPTURE raw: '${PROPS_CAPTURE}'"
+          # capture.js prints "ODDS_API_KEY present: true|false" and PROPS_CAPTURE
+          # raw / parsed for each league; no run line here touches the secret
+          # (tools/cfb/secret_audit.js refuses any echo that names it)
+          echo "event: $GITHUB_EVENT_NAME · ref: $GITHUB_REF_NAME"
           FORCE=""
           if [ "$FORCE_CAPTURE" = "true" ]; then FORCE="--force"; fi
           for LG in $(echo "${PROPS_LEAGUES:-nfl,cfb}" | tr ',' ' '); do
