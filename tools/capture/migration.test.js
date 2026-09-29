@@ -130,6 +130,34 @@ const RESERVED = new Set([
     (SQL.match(/\bdrop\s+(table|column|index|database)\b/gi) || []).length === 0);
 }
 
+/* ═══ STATIC — capture_v11_player_props.sql, same rules ════════════════════ */
+const V11_PATH = path.join(ROOT, 'supabase', 'capture_v11_player_props.sql');
+const V11 = fs.readFileSync(V11_PATH, 'utf8');
+{
+  const stripped = V11
+    .replace(/--[^\n]*/g, ' ')
+    .replace(/\$\$[\s\S]*?\$\$/g, ' $BODY$ ')
+    .replace(/'(?:[^']|'')*'/g, "'STR'")
+    /* `create view ... as select` is view syntax, not an alias */
+    .replace(/(create\s+or\s+replace\s+view\s+[^;]*?)\bas\s+select\b/gi, '$1 VIEW_BODY select');
+  const bad = [];
+  const aliasRe = /\bas\s+("?)([a-z_][a-z0-9_]*)\1/gi;
+  let m;
+  while ((m = aliasRe.exec(stripped))) if (m[1] !== '"' && RESERVED.has(m[2].toLowerCase())) bad.push(m[2]);
+  chk('v11 · no reserved keyword is used as a bare alias', bad.length === 0, bad);
+  chk('v11 · every ADD COLUMN is guarded', (V11.match(/add column(?!\s+if not exists)/gi) || []).length === 0);
+  chk('v11 · every CREATE TABLE is guarded', (V11.match(/create table(?!\s+if not exists)/gi) || []).length === 0);
+  chk('v11 · every CREATE INDEX is guarded', (V11.match(/create (unique )?index(?!\s+if not exists)/gi) || []).length === 0);
+  chk('v11 · the schema changes are one transaction and the report runs after it',
+    /^\s*begin;/m.test(V11) && /^\s*commit;/m.test(V11) && V11.indexOf('commit;') < V11.lastIndexOf('check_name'));
+  chk('v11 · it ends in a report whose rows say ok', /'ok'/.test(V11) && /'CHECK THIS'/.test(V11));
+  chk('v11 · nothing is dropped except triggers and policies it recreates',
+    (V11.match(/\bdrop\s+(table|column|index|database|view)\b/gi) || []).length === 0);
+  chk('v11 · it rewrites no existing row (no UPDATE, no DELETE)',
+    !/^\s*(update|delete\s+from)\s+public\./gim.test(V11));
+  chk('v11 · no psql meta-command (the SQL editor would refuse the whole paste)', !/^\s*\\/m.test(V11));
+}
+
 /* ═══ LIVE ════════════════════════════════════════════════════════════════ */
 function findPg() {
   for (const c of ['pg_ctl', '/usr/lib/postgresql/16/bin/pg_ctl', '/usr/lib/postgresql/15/bin/pg_ctl']) {
@@ -275,6 +303,65 @@ values ('e1|spreads|A|-3.5','americanfootball_nfl','spreads','A',-3.5, now()-int
   const live = psql('edt', `-tAc "select best_dec||'/'||edge||'/'||qual_reason from public.signals where sig_key='e1|spreads|A|-3.5'"`).trim();
   chk('live columns still update freely — the freeze is anchor-only', live === '1.80/-0.01/below_segment_edge_floor', live);
 
+  /* ── capture_v11_player_props.sql, on top of v9 ─────────────────────────── */
+  const v11mig = path.join(HOME, 'v11.sql');
+  fs.copyFileSync(V11_PATH, v11mig);
+  if (asPostgres) cp.execSync(`chmod a+r ${v11mig}`);
+  /* The name must be free or already capture's: a first-release Player Props
+     ledger at player_prop_quotes stops the file with the fix, and nothing of it
+     is applied. */
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "create table public.player_prop_quotes (quote_id text primary key, game_id text)"`);
+  let v11stop = '';
+  try { psql('edt', `-v ON_ERROR_STOP=1 -f ${v11mig}`); } catch (e) { v11stop = String(e.stderr || e.stdout || e.message); }
+  const partial = psql('edt', `-tAc "select count(*) from information_schema.columns where table_name='signals' and column_name='participant'"`).trim();
+  chk('v11 · refuses to build over a first-release ledger, names player_props.sql, applies nothing',
+    /player_props\.sql/.test(v11stop) && partial === '0', [v11stop.slice(0, 300), partial]);
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "alter table public.player_prop_quotes rename to player_prop_ledger_quotes"`);
+  const V11_ROWS = (V11.match(/union all select \d+/g) || []).length + 1;
+  chk('v11 · the report has checks to run', V11_ROWS >= 16, V11_ROWS);
+  const v1 = psql('edt', `-v ON_ERROR_STOP=1 -f ${v11mig}`);
+  chk('v11 · runs to completion against a real postgres', /COMMIT/.test(v1), v1.slice(-600));
+  chk('v11 · every report row says ok on the first run', okRows(v1) === V11_ROWS && badRows(v1) === 0,
+    { ok: okRows(v1), want: V11_ROWS, bad: badRows(v1), raw: v1.slice(-900) });
+  const v2 = psql('edt', `-v ON_ERROR_STOP=1 -f ${v11mig}`);
+  chk('v11 · and again (idempotent)', okRows(v2) === V11_ROWS && /COMMIT/.test(v2), okRows(v2));
+
+  const gameProp = psql('edt', `-tAc "select string_agg(sig_key||'='||is_player_prop::text, ',' order by sig_key) from public.signals"`).trim();
+  chk('v11 · every existing game row reads is_player_prop = false, and no sig_key changed',
+    /e1\|spreads\|A\|-3\.5=false/.test(gameProp) && /e2\|h2h\|B\|=false/.test(gameProp) && !/=true/.test(gameProp), gameProp);
+
+  /* The current-quote table behaves the way capture counts on: PostgREST's
+     merge-duplicates upsert is INSERT ... ON CONFLICT DO UPDATE of the columns
+     sent, so that is exactly what these statements do. */
+  const qcols = 'quote_key,event_id,sport_key,player_name,player_key,market,source_market,side,point,book_key,decimal_odds,opposite_decimal_odds,book_fair_probability,is_fresh,captured_at,is_two_sided,qualifiable';
+  const set = qcols.split(',').filter((c) => c !== 'quote_key').map((c) => `${c}=excluded.${c}`).join(',');
+  const up = (price, at) => psql('edt', `-q -v ON_ERROR_STOP=1 -c "insert into public.player_prop_quotes (${qcols}) values ('E|player_pass_yds|patrick mahomes|Over|274.5|dk','E','americanfootball_nfl','Patrick Mahomes','patrick mahomes','player_pass_yds','player_pass_yds','Over',274.5,'dk',${price},1.91,0.5,true,'${at}',true,true) on conflict (quote_key) do update set ${set}"`);
+  const ticks = () => Number(psql('edt', `-tAc "select count(*) from public.player_prop_quote_ticks"`).trim());
+  const quote = () => psql('edt', `-tAc "select decimal_odds||'/'||first_decimal_odds||'/'||to_char(first_seen_at at time zone 'UTC','HH24:MI')||'/'||to_char(price_changed_at at time zone 'UTC','HH24:MI')||'/'||to_char(captured_at at time zone 'UTC','HH24:MI') from public.player_prop_quotes"`).trim();
+  up(1.91, '2026-10-04T12:00:00Z');
+  chk('v11 · a new quote writes one tick and opens at its first price', ticks() === 1 && quote() === '1.91/1.91/12:00/12:00/12:00', [ticks(), quote()]);
+  up(1.91, '2026-10-04T12:30:00Z');
+  chk('v11 · the same price seen again adds no tick, and price_changed_at does not move',
+    ticks() === 1 && quote() === '1.91/1.91/12:00/12:00/12:30', [ticks(), quote()]);
+  up(1.87, '2026-10-04T13:00:00Z');
+  chk('v11 · a changed price adds exactly one tick and never moves the opening',
+    ticks() === 2 && quote() === '1.87/1.91/12:00/13:00/13:00', [ticks(), quote()]);
+  let refused = false;
+  try { psql('edt', `-q -v ON_ERROR_STOP=1 -c "update public.player_prop_quote_ticks set decimal_odds = 9"`); } catch (_) { refused = true; }
+  chk('v11 · a recorded tick cannot be edited', refused);
+  let oneSidedFair = false;
+  try {
+    psql('edt', `-q -v ON_ERROR_STOP=1 -c "insert into public.player_prop_quotes (quote_key,event_id,sport_key,player_name,player_key,market,source_market,side,point,book_key,decimal_odds,book_fair_probability,captured_at,is_two_sided) values ('k1','E','americanfootball_nfl','A','a','player_tds_over','player_tds_over','Over',0.5,'dk',2.5,0.4,now(),false)"`);
+  } catch (_) { oneSidedFair = true; }
+  chk('v11 · a one-sided quote carrying a fair value is refused by the database', oneSidedFair);
+  let gameMarket = false;
+  try {
+    psql('edt', `-q -v ON_ERROR_STOP=1 -c "insert into public.player_prop_quotes (quote_key,event_id,sport_key,player_name,player_key,market,source_market,side,book_key,decimal_odds,captured_at) values ('k2','E','americanfootball_nfl','A','a','spreads','spreads','Over','dk',1.9,now())"`);
+  } catch (_) { gameMarket = true; }
+  chk('v11 · a game market cannot be written into the player table', gameMarket);
+  const best = psql('edt', `-tAc "select count(*) from public.player_prop_best_quotes"`).trim();
+  chk('v11 · the line-shopping view reads the table', best === '1', best);
+
   /* THE ONE THAT MATTERS MOST: every column capture writes must exist. A column
      it writes that the migration forgot is dropped by the schema-gap fallback
      and never persisted, silently, forever. */
@@ -283,7 +370,7 @@ values ('e1|spreads|A|-3.5','americanfootball_nfl','spreads','A',-3.5, now()-int
   chk('capture reports the columns it writes', cols.length > 80, cols.length);
   const values = cols.map(([t, c]) => `('${t}','${c}')`).join(',');
   const missing = psql('edt', `-tAc "with w(tbl,col) as (values ${values}) select string_agg(w.tbl||'.'||w.col,',') from w left join information_schema.columns ic on ic.table_schema='public' and ic.table_name=w.tbl and ic.column_name=w.col where ic.column_name is null"`).trim();
-  chk('EVERY column capture writes exists after the migration', missing === '', missing);
+  chk('EVERY column capture writes exists after the migrations (v9, then v11)', missing === '', missing);
 
   /* ── close_v7_parity.sql, against the same real database ────────────────
      Same three rules, same failure mode: this file also ends in a report, and

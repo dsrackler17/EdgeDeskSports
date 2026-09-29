@@ -4,7 +4,7 @@
    (supabase/player_props.sql). The committed JSON feeds stay the page's
    source; this is the durable, queryable ledger.
 
-     player_prop_quotes       the quotes the latest board build resolved to a
+     player_prop_ledger_quotes       the quotes the latest board build resolved to a
                               game and a player (football/props/.cache/
                               <league>_resolved_quotes.json). captured_at is the
                               FIRST poll that saw each price, so re-sending an
@@ -77,7 +77,7 @@ async function sync(o) {
   const db = o.db;
   const out = { league: o.league, quotes: 0, evaluations: 0, projections: 0, results: 0 };
   const put = async (rel, rows, conflict) => { if (!rows.length) return 0; await db.upsert('public', rel, rows, conflict, { ignoreDuplicates: true, returning: false }); return rows.length; };
-  out.quotes = await put('player_prop_quotes', quoteRows(resolved && resolved.rows), 'sport,game_id,player_key,market,line,side,book,captured_at');
+  out.quotes = await put('player_prop_ledger_quotes', quoteRows(resolved && resolved.rows), 'sport,game_id,player_key,market,line,side,book,captured_at');
   out.evaluations = await put('player_prop_evaluations', evaluationRows(evals.filter((x) => Date.parse(x.evaluated_at) < Date.parse(x.kickoff))), 'evaluation_id');
   out.projections = await put('player_prop_projections', projectionRows(evals), 'projection_id');
   out.results = await put('player_prop_results', resultRows(results), 'evaluation_id');

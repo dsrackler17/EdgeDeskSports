@@ -155,9 +155,11 @@ signed-in readers. Views: `bettor_decision_transitions`,
 ### `player_props.sql` — the Player Props ledger
 Needs nothing else first. Four tables, all write-once and never deleted:
 
-- `player_prop_quotes`: every captured sportsbook price. It is change-only by
-  its identity (sport, game, player, market, line, side, book, capture time),
-  and a line must be a half point.
+- `player_prop_ledger_quotes`: the prices the Props board build resolved to an
+  EdgeDesk game and player id. It is change-only by its identity (sport, game,
+  player, market, line, side, book, capture time), and a line must be a half
+  point. (The raw provider feed, keyed by provider event and player name, is
+  capture's `player_prop_quotes` — see `capture_v11_player_props.sql`.)
 - `player_prop_projections`: the distribution each record priced.
 - `player_prop_evaluations`: `qualified` rows (the first BET or LEAN of a
   selection) and `final` rows (the last pregame evaluation). These are
@@ -165,8 +167,18 @@ Needs nothing else first. Four tables, all write-once and never deleted:
 - `player_prop_results`: settlement, units and CLV.
 
 Signed-in readers can read; only the service role writes, through
-`football/props/sync_supabase.js`. Views: `player_prop_quotes_latest`,
+`football/props/sync_supabase.js`. Views: `player_prop_ledger_quotes_latest`,
 `player_prop_line_movement`, `player_prop_performance`.
+
+**Upgrading from the first release.** That release named the ledger
+`player_prop_quotes`, which is now capture's table. Re-running this file on
+such a database renames the ledger in place, with its rows, key, indexes,
+constraints, trigger, policy and view. It recognises the ledger by shape (it
+has `game_id`, not `quote_key`), so capture's table is never touched. Run it
+before `capture_v11_player_props.sql`, which refuses to start while the old
+ledger holds the name. `tools/props/player_props_sql.test.js` tests the
+upgrade from the exact first-release file
+(`tools/props/fixtures/player_props_first_release.sql`).
 
 ### `player_props_watchlist.sql` — a reader's starred props, players and games
 Run after `player_props.sql` (it stops with a message naming that file
@@ -422,6 +434,42 @@ never reach its second confirmation and the actionable board stays empty.
 
 See `functions/capture/README.md` for the environment variables and the deploy
 sequence.
+
+### `capture_v11_player_props.sql` — what capture v11 writes for player props
+Run after `capture_v9_qualification.sql` and **before** deploying capture v11.
+Capture checks for `player_prop_quotes` first and buys no prop market without
+it.
+
+If a first-release Player Props ledger still holds the name
+`player_prop_quotes`, this file stops and applies nothing. Its error says to run
+`player_props.sql` first, which renames the ledger.
+
+`signals` gains `participant`, `participant_key`, `is_player_prop` (not null,
+default false) and `source_market`, with two indexes. They are written only on
+player rows, and only when `CAPTURE_PLAYER_PROP_SIGNALS` is on. No existing row
+or `sig_key` changes.
+
+Four tables:
+
+- `player_prop_quotes`: the current price of every player quote, one row per
+  `quote_key` (event|market|player_key|side|point|book).
+  - Upserted by capture.
+  - The database keeps the opening price and stamps `price_changed_at`.
+  - It refuses a one-sided quote that carries a fair value, and a game market.
+- `player_prop_quote_ticks`: history. A trigger appends a row when a quote
+  first appears or its price changes, never on a re-seen price. A tick cannot
+  be edited.
+- `player_prop_event_polls`: each event's last prop poll, which is capture's
+  refresh clock.
+- `player_prop_identities`: empty until a roster source joins (event,
+  player_key) to a real player id. Capture never writes it.
+
+The view `player_prop_best_quotes` gives the best current price per selection.
+RLS is on for all four tables: signed-in readers can read, and only the service
+role writes.
+
+Tested against a real PostgreSQL by `tools/capture/migration.test.js`, which
+also proves every column capture writes exists.
 
 ### `lock_rule.sql` — the Collective's 30-minute lock
 Every game locks 30 minutes before kickoff. Each model's latest live submission

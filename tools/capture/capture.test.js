@@ -75,7 +75,7 @@ const ENV = {
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 /* ---- the mocked network ------------------------------------------------- */
-const net = { calls: [], odds: {}, sports: ['americanfootball_nfl'], db: null, oddsFail: {} };
+const net = { calls: [], odds: {}, sports: ['americanfootball_nfl'], db: null, oddsFail: {}, eventOdds: {}, eventFail: null, eventRemaining: null };
 function res(status, body, headers) {
   const h = headers || {};
   return {
@@ -90,6 +90,25 @@ globalThis.fetch = async function (url, init) {
   net.calls.push({ url: u, method, body: init && init.body ? JSON.parse(init.body) : null });
   if (u.indexOf('api.the-odds-api.com/v4/sports/?') >= 0) {
     return res(200, net.sports.map((k) => ({ key: k, active: true, has_outrights: false })));
+  }
+  /* The event-level endpoint, shaped like the provider: it returns only the
+     markets asked for, and bills (unique markets returned) x (region
+     equivalents) in x-requests-last. An unknown event is a 404, as before. */
+  const em = /\/v4\/sports\/([^/]+)\/events\/([^/?]+)\/odds/.exec(u);
+  if (em) {
+    const sport = decodeURIComponent(em[1]), id = decodeURIComponent(em[2]);
+    const asked = decodeURIComponent((/[?&]markets=([^&]*)/.exec(u) || [])[1] || '').split(',').filter(Boolean);
+    const remaining = String(net.eventRemaining == null ? 4000 : net.eventRemaining);
+    if (net.eventFail) { const st = net.eventFail(sport, id, asked); if (st) return res(st, 'upstream said no', { 'x-requests-remaining': remaining, 'x-requests-last': '0' }); }
+    const full = (net.eventOdds[sport] || {})[id];
+    if (!full) return res(404, 'nope');
+    const books = (full.bookmakers || []).map((b) => Object.assign({}, b, { markets: (b.markets || []).filter((mk) => asked.includes(mk.key)) }))
+      .filter((b) => b.markets.length);
+    const returned = new Set();
+    books.forEach((b) => b.markets.forEach((mk) => returned.add(mk.key)));
+    const regions = /[?&]bookmakers=/.test(u) ? 1 : decodeURIComponent((/[?&]regions=([^&]*)/.exec(u) || [])[1] || 'us').split(',').length;
+    return res(200, Object.assign({}, full, { bookmakers: books }),
+      { 'x-requests-remaining': remaining, 'x-requests-used': '1000', 'x-requests-last': String(returned.size * regions) });
   }
   const m = /\/v4\/sports\/([^/]+)\/odds/.exec(u);
   if (m) {
@@ -143,7 +162,7 @@ function ev(bookmakers, over) {
   const q = (c, cfg, streak) => M.qualifySignal(c, { priorStreak: streak || 0, nowMs: NOW }, cfg || cfg0);
 
   chk('module exports the qualification engine', typeof M.qualifySignal === 'function' && typeof M.priceEvent === 'function');
-  chk('build and policy version are both stamped', /^capture-v9/.test(M.BUILD) && /^qual-/.test(M.POLICY_VERSION), [M.BUILD, M.POLICY_VERSION]);
+  chk('build and policy version are both stamped', /^capture-v11-player-props/.test(M.BUILD) && /^qual-/.test(M.POLICY_VERSION), [M.BUILD, M.POLICY_VERSION]);
 
   /* ═══ MATH ══════════════════════════════════════════════════════════════ */
   {
@@ -1032,6 +1051,543 @@ function ev(bookmakers, over) {
       chk('the backup carries no odds key and no service role',
         !/ODDS_API_KEY/.test(y) && !/SB_SERVICE_ROLE/.test(y));
     }
+  }
+
+  /* ═══ PLAYER PROPS (v11) ════════════════════════════════════════════════
+     The player lives in `description`; `name` is the side. Every test below
+     is a way the game-market identity (event|market|selection|point) would
+     have merged two humans, or the game pipeline would have been disturbed. */
+  {
+    const pbk = (key, markets, age) => ({
+      key, title: key.toUpperCase(), last_update: AGO(age == null ? 60 : age),
+      markets: markets.map((mk) => ({ key: mk.key, last_update: AGO(age == null ? 60 : age), outcomes: mk.outcomes })),
+    });
+    const ou = (player, point, over, under) => [
+      { name: 'Over', description: player, price: over, point }, { name: 'Under', description: player, price: under, point }];
+    const yn = (player, yes, no) => [{ name: 'Yes', description: player, price: yes }, { name: 'No', description: player, price: no }];
+    const pev = (bookmakers, over) => ev(bookmakers, Object.assign({ id: 'evt-p' }, over || {}));
+    const keyOf = (c) => c.market + '|' + (c.participant_key || '') + '|' + c.selection + '|' + (c.point == null ? '' : c.point);
+    const priceP = (e, cfg) => { const r = M.priceEvent(e, cfg || cfg0, NOW); const m = {}; r.candidates.forEach((c) => { m[keyOf(c)] = c; }); return { r, m }; };
+    const iso = new Date(NOW).toISOString();
+    const v9Key = (o) => `${o.event_id}|${o.market}|${o.selection}|${o.point ?? ''}`;
+
+    /* ── the market lists are exactly the provider's, nothing invented ───── */
+    const STANDARD = ['player_assists', 'player_defensive_interceptions', 'player_field_goals', 'player_kicking_points',
+      'player_pass_attempts', 'player_pass_completions', 'player_pass_interceptions', 'player_pass_longest_completion',
+      'player_pass_rush_yds', 'player_pass_rush_reception_tds', 'player_pass_rush_reception_yds', 'player_pass_tds',
+      'player_pass_yds', 'player_pass_yds_q1', 'player_pats', 'player_receptions', 'player_reception_longest',
+      'player_reception_tds', 'player_reception_yds', 'player_rush_attempts', 'player_rush_longest',
+      'player_rush_reception_tds', 'player_rush_reception_yds', 'player_rush_tds', 'player_rush_yds', 'player_sacks',
+      'player_solo_tackles', 'player_tackles_assists', 'player_tds', 'player_tds_over', 'player_1st_td',
+      'player_anytime_td', 'player_last_td'];
+    const ALT = ['player_assists', 'player_field_goals', 'player_kicking_points', 'player_pass_attempts',
+      'player_pass_completions', 'player_pass_interceptions', 'player_pass_longest_completion', 'player_pass_rush_yds',
+      'player_pass_rush_reception_tds', 'player_pass_rush_reception_yds', 'player_pass_tds', 'player_pass_yds', 'player_pats',
+      'player_receptions', 'player_reception_longest', 'player_reception_tds', 'player_reception_yds', 'player_rush_attempts',
+      'player_rush_longest', 'player_rush_reception_tds', 'player_rush_reception_yds', 'player_rush_tds', 'player_rush_yds',
+      'player_sacks', 'player_solo_tackles', 'player_tackles_assists'].map((k) => k + '_alternate');
+    chk('props · the standard list is exactly the provider list (33 keys)',
+      JSON.stringify(M.PLAYER_PROP_MARKETS) === JSON.stringify(STANDARD) && JSON.stringify(cfg0.playerPropMarkets) === JSON.stringify(STANDARD));
+    chk('props · the alternate list is exactly the provider list (26 keys)',
+      JSON.stringify(M.PLAYER_PROP_ALT_MARKETS) === JSON.stringify(ALT) && JSON.stringify(cfg0.playerPropAlternateMarkets) === JSON.stringify(ALT));
+    chk('props · every alternate has its standard market in the standard list',
+      ALT.every((k) => STANDARD.includes(M.playerPropBaseMarket(k))));
+    chk('props · defaults: on, 30 h / 3 h windows, 80 events, 4 at a time, prop signals OFF',
+      cfg0.playerProps === true && cfg0.playerPropMaxHours === 30 && cfg0.playerPropNearHours === 3
+      && cfg0.playerPropMaxEvents === 80 && cfg0.playerPropConcurrency === 4 && cfg0.playerPropSignals === false);
+    chk('props · "none" empties a list; overrides keep only player keys of the right kind',
+      M.propMarketList('none', STANDARD, false).length === 0
+      && JSON.stringify(M.propMarketList('player_rush_yds, spreads,player_rush_yds, player_rush_yds_alternate', STANDARD, false)) === '["player_rush_yds"]'
+      && JSON.stringify(M.propMarketList('player_rush_yds_alternate,player_rush_yds', ALT, true)) === '["player_rush_yds_alternate"]');
+    const cm = M.defaultConfig((k) => (k === 'CAPTURE_MARKETS' ? 'h2h,spreads,player_pass_yds,totals' : undefined));
+    chk('props · a player market in CAPTURE_MARKETS is removed from the featured request, and named',
+      cm.markets === 'h2h,spreads,totals' && JSON.stringify(cm.marketsIgnored) === '["player_pass_yds"]', [cm.markets, cm.marketsIgnored]);
+    chk('props · the featured market string is untouched when it names no player market',
+      cfg0.markets === 'h2h,spreads,totals' && cfg0.marketsIgnored.length === 0);
+    chk('props · tennis is no longer auto-captured by default: NFL and NCAAF only',
+      JSON.stringify(M.defaultConfig(() => undefined).autoPrefixes) === '["americanfootball_nfl","americanfootball_ncaaf"]');
+
+    /* ── market helpers ─────────────────────────────────────────────────── */
+    chk('props · isPlayerPropMarket', M.isPlayerPropMarket('player_pass_yds') && M.isPlayerPropMarket('player_pass_yds_alternate')
+      && !M.isPlayerPropMarket('spreads') && !M.isPlayerPropMarket('alternate_spreads') && !M.isPlayerPropMarket('h2h'));
+    chk('props · an alternate player ladder files under its base market',
+      M.playerPropBaseMarket('player_rush_yds_alternate') === 'player_rush_yds'
+      && M.canonicalMarket('player_reception_yds_alternate') === 'player_reception_yds'
+      && M.canonicalMarket('player_pass_yds') === 'player_pass_yds');
+    chk('props · canonicalMarket keeps the v10 game mapping exactly',
+      M.canonicalMarket('alternate_spreads') === 'spreads' && M.canonicalMarket('alternate_totals') === 'totals'
+      && M.canonicalMarket('h2h') === 'h2h' && M.canonicalMarket('spreads') === 'spreads' && M.canonicalMarket('totals') === 'totals');
+    chk('props · every player market is one policy family; game markets are their own',
+      M.marketPolicyFamily('player_pass_yds_alternate') === 'player_props' && M.marketPolicyFamily('player_anytime_td') === 'player_props'
+      && M.marketPolicyFamily('spreads') === 'spreads' && M.marketPolicyFamily('alternate_totals') === 'totals');
+    chk('props · qualification understands game markets and two-sided Over/Under props only',
+      M.marketUnderstoodForQualification('h2h') && M.marketUnderstoodForQualification('player_pass_yds', 'Over')
+      && M.marketUnderstoodForQualification('player_pass_yds', 'under')
+      && !M.marketUnderstoodForQualification('player_anytime_td', 'Yes')
+      && !M.marketUnderstoodForQualification('player_pass_yds', 'Yes')
+      && !M.marketUnderstoodForQualification('player_pass_yds_alternate', 'Over')
+      && !M.marketUnderstoodForQualification('player_made_up'.replace('made_up', '1st_td'), 'Yes'));
+
+    /* ── player identity ────────────────────────────────────────────────── */
+    chk('props · punctuation that never separates two people is folded',
+      M.playerKey('A.J. Brown') === 'aj brown' && M.playerKey('AJ Brown') === 'aj brown' && M.playerKey('  a.j.   BROWN ') === 'aj brown');
+    chk('props · accents and apostrophes fold; hyphens stay',
+      M.playerKey('José Ramírez') === 'jose ramirez' && M.playerKey("Ja'Marr Chase") === 'jamarr chase'
+      && M.playerKey('Ja’Marr Chase') === 'jamarr chase' && M.playerKey('Amon-Ra St. Brown') === 'amon-ra st brown');
+    chk('props · a suffix is KEPT: father and son are never merged',
+      M.playerKey('Michael Pittman Jr.') === 'michael pittman jr' && M.playerKey('Michael Pittman Jr.') !== M.playerKey('Michael Pittman')
+      && M.playerKey('Marvin Harrison Jr.') !== M.playerKey('Marvin Harrison Sr.'));
+    chk('props · a key can never carry the sig_key separator', !/\|/.test(M.playerKey('A | B')) && M.playerKey('A | B') === 'a b');
+    chk('props · a non-Latin name keeps its letters rather than collapsing to nothing',
+      M.playerKey('Дмитрий Иванов') === 'дмитрии иванов' && M.playerKey('Дмитрий Иванов') !== M.playerKey('Иван Дмитриев'));
+    chk('props · the display name keeps what the book wrote', M.playerDisplayName('  Patrick   Mahomes ') === 'Patrick Mahomes');
+
+    /* ── 28 · game-market sig_keys are byte-for-byte what they were ────────── */
+    chk('28 · a spread sig_key is the v9 string', M.sigKey({ event_id: 'E', market: 'spreads', selection: 'Chiefs', point: -3.5 }) === 'E|spreads|Chiefs|-3.5');
+    chk('28 · a total sig_key is the v9 string', M.sigKey({ event_id: 'E', market: 'totals', selection: 'Over', point: 47.5 }) === 'E|totals|Over|47.5');
+    chk('28 · a moneyline sig_key keeps its load-bearing trailing pipe', M.sigKey({ event_id: 'E', market: 'h2h', selection: 'Chiefs', point: null }) === 'E|h2h|Chiefs|');
+    chk('28 · a stray participant on a game object changes nothing',
+      M.sigKey({ event_id: 'E', market: 'spreads', selection: 'Chiefs', point: -3.5, participant_key: 'x' }) === 'E|spreads|Chiefs|-3.5');
+    {
+      const nfl = ev([
+        bk('draftkings', spread(1.91, 1.91)), bk('fanduel', spread(1.92, 1.90)),
+        { key: 'betmgm', title: 'BetMGM', last_update: AGO(60), markets: [
+          { key: 'h2h', last_update: AGO(60), outcomes: [{ name: 'Chiefs', price: 1.60 }, { name: 'Ravens', price: 2.45 }] },
+          { key: 'totals', last_update: AGO(60), outcomes: [{ name: 'Over', price: 1.91, point: 47.5 }, { name: 'Under', price: 1.91, point: 47.5 }] }] },
+      ]);
+      const cfb = ev([bk('draftkings', spread(1.91, 1.91, -7)), bk('fanduel', spread(1.90, 1.92, -7))],
+        { id: 'cfb-1', sport_key: 'americanfootball_ncaaf', sport_title: 'NCAAF', home_team: 'Chiefs', away_team: 'Ravens' });
+      const all = M.priceEvent(nfl, cfg0, NOW).candidates.concat(M.priceEvent(cfb, cfg0, NOW).candidates);
+      chk('28 · NFL and NCAAF spread, total and moneyline keys all equal the v9 template',
+        all.length === 8 && all.every((c) => M.sigKey(c) === v9Key(c)), all.map((c) => [M.sigKey(c), v9Key(c)]));
+      chk('28 · a game candidate names no player', all.every((c) => c.participant === null && c.participant_key === null && c.is_player_prop === false));
+      const gv = q(all[0]);
+      const gr = M.signalRow(all[0], gv, iso);
+      chk('28 · a game signals row keeps exactly its v9 columns (no player column is sent)',
+        !('participant' in gr) && !('participant_key' in gr) && !('is_player_prop' in gr) && !('source_market' in gr));
+      chk('28 · and records no player quote', M.playerPropQuoteRows(all[0], iso).length === 0);
+
+      /* v10 alternate spreads, merged before pricing */
+      const merged = M.mergeEventOdds(nfl, { id: 'evt-1', bookmakers: [{ key: 'draftkings', title: 'DK', last_update: AGO(30), markets: [
+        { key: 'alternate_spreads', outcomes: [{ name: 'Chiefs', price: 2.30, point: -7.5 }, { name: 'Ravens', price: 1.65, point: 7.5 },
+                                               { name: 'Chiefs', price: 1.80, point: -3.5 }, { name: 'Ravens', price: 2.00, point: 3.5 }] }] }] });
+      const am = {}; M.priceEvent(merged, cfg0, NOW).candidates.forEach((c) => { am[M.sigKey(c)] = c; });
+      chk('28 · an alternate spread lands under `spreads` with its own point', !!am['evt-1|spreads|Chiefs|-7.5'] && am['evt-1|spreads|Chiefs|-7.5'].quotes[0].sourceMarket === 'alternate_spreads');
+      chk('28 · a ladder repeating the featured number keeps the featured quote',
+        am['evt-1|spreads|Chiefs|-3.5'].quotes.find((x) => x.book === 'draftkings').dec === 1.91
+        && am['evt-1|spreads|Chiefs|-3.5'].quotes.find((x) => x.book === 'draftkings').sourceMarket === 'spreads');
+      chk('28 · a response for another event is never merged in', M.mergeEventOdds(nfl, { id: 'other', bookmakers: [{ key: 'x', markets: [] }] }) === nfl);
+    }
+
+    /* ── 22 · two players, one book, the same line ─────────────────────────── */
+    {
+      const { r, m } = priceP(pev([pbk('draftkings', [{ key: 'player_pass_yds',
+        outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91).concat(ou('Josh Allen', 274.5, 1.95, 1.87)) }])]));
+      const mo = m['player_pass_yds|patrick mahomes|Over|274.5'], ao = m['player_pass_yds|josh allen|Over|274.5'];
+      chk('22 · Mahomes and Allen at 274.5 from one book are FOUR candidates, none malformed',
+        r.candidates.length === 4 && r.malformed === 0 && !!mo && !!ao && !!m['player_pass_yds|patrick mahomes|Under|274.5'] && !!m['player_pass_yds|josh allen|Under|274.5'],
+        Object.keys(m));
+      chk('22 · each player is devigged as his own two-way market, never one four-way one',
+        Math.abs(mo.quotes[0].fair - 0.5) < 1e-9 && ao.quotes[0].fair > 0.47 && ao.quotes[0].fair < 0.5
+        && Math.abs(ao.quotes[0].fair + m['player_pass_yds|josh allen|Under|274.5'].quotes[0].fair - 1) < 1e-9,
+        [mo.quotes[0].fair, ao.quotes[0].fair]);
+      chk('22 · each Over pairs with its own player\'s Under', mo.quotes[0].oppDec === 1.91 && ao.quotes[0].oppDec === 1.87);
+      const keys = r.candidates.map(M.sigKey);
+      chk('22 · four distinct sig_keys, each naming its player', new Set(keys).size === 4, keys);
+      chk('22 · the key is event|market|player|side|point', M.sigKey(mo) === 'evt-p|player_pass_yds|patrick mahomes|Over|274.5', M.sigKey(mo));
+      chk('22 · the candidate carries the player as written and as keyed',
+        mo.participant === 'Patrick Mahomes' && mo.participant_key === 'patrick mahomes' && mo.is_player_prop === true && mo.is_two_sided === true);
+      const rows = r.candidates.flatMap((c) => M.playerPropQuoteRows(c, iso));
+      chk('22 · four player quotes, four quote keys', rows.length === 4 && new Set(rows.map((x) => x.quote_key)).size === 4);
+      chk('22 · partitionOutcomes, given the market, splits by player', M.partitionOutcomes(
+        ou('A', 1.5, 1.9, 1.9).concat(ou('B', 1.5, 1.9, 1.9)), 'player_receptions').filter((x) => x.ok).length === 2);
+      chk('22 · the v9 call shape (no market) still pairs a game market on |point|',
+        M.partitionOutcomes(spread(1.9, 1.9)).length === 1 && M.partitionOutcomes(spread(1.9, 1.9))[0].ok === true);
+    }
+
+    /* ── 23 · different lines are different bets ────────────────────────── */
+    {
+      const { r, m } = priceP(pev([
+        pbk('draftkings', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91) }]),
+        pbk('fanduel', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 275.5, 2.10, 1.75) }]),
+      ]));
+      const a = m['player_pass_yds|patrick mahomes|Over|274.5'], b = m['player_pass_yds|patrick mahomes|Over|275.5'];
+      chk('23 · 274.5 and 275.5 are separate candidates', r.candidates.length === 4 && !!a && !!b);
+      chk('23 · the 274.5 candidate never sees the 275.5 book, and vice versa',
+        a.quotes.every((x) => x.book === 'draftkings') && b.quotes.every((x) => x.book === 'fanduel'));
+      const va = q(a);
+      chk('23 · so the 274.5 price is never compared with a 275.5 fair',
+        Math.abs(va.consensus_fair - a.quotes[0].fair) < 1e-12 && va.actionable === false, [va.consensus_fair, va.reason]);
+      chk('23 · the census sees both lines for the player', a.points_offered === 2 && b.points_offered === 2);
+    }
+
+    /* ── 24 · one player, two books, one bet ─────────────────────────────── */
+    {
+      const { r, m } = priceP(pev([
+        pbk('draftkings', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.909, 1.909) }]),
+        pbk('fanduel', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.952, 1.87) }]),
+      ]));
+      const o = m['player_pass_yds|patrick mahomes|Over|274.5'];
+      chk('24 · one candidate per player/market/side/point with both books on it',
+        r.candidates.length === 2 && o.quotes.length === 2 && o.quotes.map((x) => x.book).sort().join() === 'draftkings,fanduel');
+      chk('24 · the best price is found across the two books', q(o).best_dec === 1.952);
+    }
+
+    /* ── 25 · alternate player ladders ────────────────────────────────────── */
+    {
+      const ladder = [
+        { name: 'Over', description: 'Patrick Mahomes', price: 1.40, point: 250.5 },
+        { name: 'Over', description: 'Patrick Mahomes', price: 1.95, point: 275.5 },
+        { name: 'Over', description: 'Patrick Mahomes', price: 2.90, point: 299.5 },
+        { name: 'Over', description: 'Patrick Mahomes', price: 1.80, point: 274.5 },
+      ];
+      for (const order of ['featured-first', 'ladder-first']) {
+        const mk = [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91) }, { key: 'player_pass_yds_alternate', outcomes: ladder }];
+        const { r, m } = priceP(pev([pbk('draftkings', order === 'featured-first' ? mk : mk.slice().reverse())]));
+        const overs = r.candidates.filter((c) => c.selection === 'Over');
+        chk('25 · [' + order + '] every quote files under the base market player_pass_yds',
+          r.candidates.every((c) => c.market === 'player_pass_yds'), r.candidates.map((c) => c.market));
+        chk('25 · [' + order + '] four distinct Over points: 250.5, 274.5, 275.5, 299.5',
+          JSON.stringify(overs.map((c) => c.point).sort((x, y) => x - y)) === '[250.5,274.5,275.5,299.5]');
+        const main = m['player_pass_yds|patrick mahomes|Over|274.5'].quotes[0];
+        chk('25 · [' + order + '] the ladder repeating 274.5 does not replace the standard quote',
+          main.sourceMarket === 'player_pass_yds' && main.dec === 1.91 && main.fair != null && r.duplicateQuotes === 1, [main, r.duplicateQuotes]);
+        chk('25 · [' + order + '] each ladder rung keeps its alternate source',
+          ['250.5', '275.5', '299.5'].every((pt) => m['player_pass_yds|patrick mahomes|Over|' + pt].quotes[0].sourceMarket === 'player_pass_yds_alternate'));
+        chk('25 · [' + order + '] a one-sided rung is kept, with no fair value',
+          m['player_pass_yds|patrick mahomes|Over|299.5'].quotes[0].fair === null && m['player_pass_yds|patrick mahomes|Over|299.5'].is_two_sided === false);
+      }
+      const { r } = priceP(pev([pbk('draftkings', [{ key: 'player_pass_yds_alternate', outcomes: ladder.slice(0, 3) }])]));
+      const rows = r.candidates.flatMap((c) => M.playerPropQuoteRows(c, iso));
+      chk('25 · stored rows say standard or alternate, per quote',
+        rows.length === 3 && rows.every((x) => x.market === 'player_pass_yds' && x.source_market === 'player_pass_yds_alternate'));
+    }
+
+    /* ── 26 · Yes / No, per player ────────────────────────────────────────── */
+    {
+      const { r, m } = priceP(pev([pbk('draftkings', [{ key: 'player_anytime_td', outcomes: yn('Travis Kelce', 2.10, 1.70).concat(yn('Isiah Pacheco', 3.50, 1.28)) }])]));
+      const ky = m['player_anytime_td|travis kelce|Yes|'], kn = m['player_anytime_td|travis kelce|No|'];
+      const py = m['player_anytime_td|isiah pacheco|Yes|'], pn = m['player_anytime_td|isiah pacheco|No|'];
+      chk('26 · two scorers are four candidates', r.candidates.length === 4 && ky && kn && py && pn);
+      chk('26 · each player\'s Yes/No devigs to 1 on its own — the TD scorers are never one probability space',
+        Math.abs(ky.quotes[0].fair + kn.quotes[0].fair - 1) < 1e-9 && Math.abs(py.quotes[0].fair + pn.quotes[0].fair - 1) < 1e-9
+        && ky.quotes[0].fair > 0.4 && py.quotes[0].fair > 0.2, [ky.quotes[0].fair, py.quotes[0].fair]);
+      chk('26 · the no-point key ends in a pipe, like a moneyline', M.sigKey(ky) === 'evt-p|player_anytime_td|travis kelce|Yes|');
+      const blank = M.priceEvent(pev([pbk('draftkings', [{ key: 'player_anytime_td', outcomes: [
+        { name: 'Yes', description: 'Travis Kelce', price: 2.10, point: '' }, { name: 'No', description: 'Travis Kelce', price: 1.70, point: '' }] }])]), cfg0, NOW);
+      chk('26 · an empty point is no line — never a line of 0', blank.candidates.length === 2 && blank.candidates.every((c) => c.point === null), blank.candidates.map((c) => c.point));
+      const v = q(ky);
+      chk('26 · a scorer market is captured but not yet qualified', v.actionable === false && v.reason === 'prop_market_not_yet_qualifiable', v.reason);
+      chk('26 · and its stored quote says why', M.playerPropQuoteRows(ky, iso)[0].unqualifiable_reason === 'prop_market_not_yet_qualifiable'
+        && M.playerPropQuoteRows(ky, iso)[0].qualifiable === false && M.playerPropQuoteRows(ky, iso)[0].is_two_sided === true);
+    }
+
+    /* ── 27 · a one-sided market ──────────────────────────────────────────── */
+    {
+      const { r, m } = priceP(pev([pbk('draftkings', [{ key: 'player_tds_over', outcomes: [{ name: 'Over', description: 'Player A', price: 2.50, point: 0.5 }] }])]));
+      const c = m['player_tds_over|player a|Over|0.5'];
+      chk('27 · the raw quote is captured', r.candidates.length === 1 && !!c && c.quotes[0].dec === 2.5 && r.malformed === 0 && r.oneSidedQuotes === 1);
+      chk('27 · no Under is invented', !r.candidates.some((x) => x.selection === 'Under'));
+      chk('27 · no fair value is invented', c.quotes[0].fair === null && c.quotes[0].oppDec === null && c.is_two_sided === false);
+      const v = q(c, cfg0, 9);
+      chk('27 · it is never actionable, and says exactly why',
+        v.actionable === false && v.reason === 'one_sided_player_market' && v.fair_probability === null && v.edge === null, v);
+      const row = M.playerPropQuoteRows(c, iso)[0];
+      chk('27 · stored with is_two_sided false, no fair, not qualifiable, with the reason',
+        row.is_two_sided === false && row.book_fair_probability === null && row.opposite_decimal_odds === null
+        && row.qualifiable === false && row.unqualifiable_reason === 'one_sided_player_market');
+      chk('27 · the one-sided reason is mapped in the funnel', M.stagesPassed('one_sided_player_market') === 0 && 'one_sided_player_market' in M.STAGE_OF_REASON);
+      /* A one-sided book beside two-sided ones contributes nothing to the fair. */
+      const mix = priceP(pev([
+        pbk('draftkings', [{ key: 'player_receptions', outcomes: ou('Player B', 4.5, 1.91, 1.91) }]),
+        pbk('fanduel', [{ key: 'player_receptions', outcomes: [{ name: 'Over', description: 'Player B', price: 3.00, point: 4.5 }] }]),
+      ]));
+      const mc = mix.m['player_receptions|player b|Over|4.5'];
+      const mv = q(mc);
+      chk('27 · a one-sided quote beside a two-sided one never enters the consensus or the best price',
+        mc.quotes.length === 2 && mc.is_two_sided === true && mv.total_books === 1 && mv.best_book === 'draftkings'
+        && Math.abs(mv.consensus_fair - 0.5) < 1e-9, [mv.total_books, mv.best_book, mv.consensus_fair]);
+    }
+
+    /* ── the census is per player ────────────────────────────────────────── */
+    {
+      const { m } = priceP(pev(['draftkings', 'fanduel', 'betmgm'].map((b) => pbk(b, [{ key: 'player_pass_yds',
+        outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91).concat(ou('Josh Allen', b === 'draftkings' ? 250.5 : 251.5, 1.91, 1.91)) }]))));
+      const mo = m['player_pass_yds|patrick mahomes|Over|274.5'], a1 = m['player_pass_yds|josh allen|Over|250.5'];
+      chk('census · Mahomes\' modal line is his own, untouched by Allen\'s', mo.modal_point === 274.5 && mo.points_offered === 1 && mo.books_at_modal === 3);
+      chk('census · Allen\'s minority line is visible as a minority line', a1.modal_point === 251.5 && a1.points_offered === 2 && a1.point_is_modal !== true);
+      chk('census · a player line reports no football key numbers', q(a1).key_numbers_to_modal.length === 0);
+    }
+
+    /* ── malformed player outcomes are refused, not guessed ─────────────── */
+    {
+      const bad = (outcomes) => M.priceEvent(pev([pbk('draftkings', [{ key: 'player_pass_yds', outcomes }])]), cfg0, NOW);
+      const noPlayer = bad([{ name: 'Over', price: 1.9, point: 274.5 }, { name: 'Under', price: 1.9, point: 274.5 }]);
+      chk('malformed · a player outcome with no player is refused', noPlayer.candidates.length === 0 && noPlayer.malformed === 2);
+      const noLine = bad([{ name: 'Over', description: 'X', price: 1.9 }, { name: 'Under', description: 'X', price: 1.9 }]);
+      chk('malformed · an Over/Under with no line is refused', noLine.candidates.length === 0 && noLine.malformed === 2);
+      const garbled = bad([{ name: 'Over', description: 'X', price: 1.9, point: 'abc' }]);
+      chk('malformed · a line that is not a number is refused', garbled.candidates.length === 0 && garbled.malformed === 1);
+      const dup = bad([{ name: 'Over', description: 'X', price: 1.9, point: 4.5 }, { name: 'Over', description: 'X', price: 2.2, point: 4.5 },
+        { name: 'Under', description: 'X', price: 1.9, point: 4.5 }]);
+      chk('malformed · a side repeated for one player and line is a duplicate, first wins',
+        dup.duplicateQuotes === 1 && dup.candidates.find((c) => c.selection === 'Over').quotes[0].dec === 1.9);
+      const price = bad([{ name: 'Over', description: 'X', price: 'n/a', point: 4.5 }, { name: 'Under', description: 'X', price: 1.9, point: 4.5 }]);
+      chk('malformed · a non-numeric price refuses that player line', price.candidates.length === 0 && price.malformed === 1);
+    }
+
+    /* ── 12 · no prop inherits a game-line edge floor ─────────────────────── */
+    {
+      const five = (market, outcomesFor) => pev(['draftkings', 'fanduel', 'betmgm', 'caesars', 'betrivers'].map((b) => pbk(b, [{ key: market, outcomes: outcomesFor(b) }])));
+      const { m } = priceP(five('player_receptions', (b) => (b === 'betrivers' ? ou('Player C', 4.5, 2.02, 1.83) : ou('Player C', 4.5, 1.87, 1.95))));
+      const c = m['player_receptions|player c|Over|4.5'];
+      const v = q(c, cfg0, 5);
+      chk('12 · the same numbers that make a spread actionable leave a prop at PASS',
+        v.actionable === false && v.reason === 'segment_not_qualified_for_action' && v.edge > 0.025 && v.edge_floor === null, [v.reason, v.edge]);
+      const noRows = cfgWith({ edgeFloor: Object.fromEntries(Object.entries(cfg0.edgeFloor).filter(([k]) => !/player_props/.test(k))) });
+      chk('12 · even with the player_props rows deleted, a prop never falls through to `*|*`',
+        q(c, noRows, 5).reason === 'segment_not_qualified_for_action' && noRows.edgeFloor['*|*|B'] === 0.035);
+      const floored = cfgWith({ edgeFloor: Object.assign({}, cfg0.edgeFloor, { '*|player_props|B': 0.02 }) });
+      const fv = q(c, floored, 5);
+      chk('12 · a player_props floor, once evidence sets one, is the only thing that changes',
+        fv.actionable === true && fv.segment === 'nfl|player_receptions|B', [fv.reason, fv.segment]);
+    }
+
+    /* ── 31 · fifty players, every identity preserved ─────────────────────── */
+    {
+      const players = Array.from({ length: 50 }, (_, i) => ['Player', String.fromCharCode(65 + (i % 26)), 'Number' + i].join(' '));
+      const books = ['draftkings', 'fanduel', 'betmgm', 'caesars', 'betrivers'];
+      const e50 = (id) => pev(books.map((b) => pbk(b, [{ key: 'player_receptions',
+        outcomes: players.flatMap((p, i) => ou(p, 2.5 + (i % 5), 1.91, 1.91)) }])), { id });
+      const r = M.priceEvent(e50('evt-50'), cfg0, NOW);
+      const keys = new Set(r.candidates.map((c) => c.participant_key));
+      chk('31 · 50 players x Over/Under = 100 candidates, 50 distinct identities',
+        r.candidates.length === 100 && keys.size === 50 && r.malformed === 0, [r.candidates.length, keys.size, r.malformed]);
+      chk('31 · every player line has all five books on it', r.candidates.every((c) => c.quotes.length === 5));
+      const rows = r.candidates.flatMap((c) => M.playerPropQuoteRows(c, iso));
+      chk('31 · 500 quotes, 500 distinct quote keys', rows.length === 500 && new Set(rows.map((x) => x.quote_key)).size === 500);
+      const complete = rows.every((x) => x.player_name && x.player_key && x.market === 'player_receptions'
+        && (x.side === 'Over' || x.side === 'Under') && typeof x.point === 'number' && books.includes(x.book_key)
+        && x.decimal_odds === 1.91 && x.source_updated_at && x.captured_at === iso && x.event_id === 'evt-50'
+        && x.home_team && x.away_team && x.commence_time && x.source_market === 'player_receptions'
+        && typeof x.is_fresh === 'boolean' && typeof x.quote_age_s === 'number');
+      chk('31 · every quote answers who, what, side, line, where, price, when, game, source and freshness', complete, rows[0]);
+      const two = M.priceEvent(e50('evt-51'), cfg0, NOW).candidates.flatMap((c) => M.playerPropQuoteRows(c, iso));
+      chk('31 · the same names in another game are different quotes', two.every((x) => !rows.some((y) => y.quote_key === x.quote_key)));
+      const sk = new Set(r.candidates.map(M.sigKey));
+      chk('31 · and 100 distinct sig_keys', sk.size === 100);
+    }
+
+    /* ── windows, clocks and billing ─────────────────────────────────────── */
+    {
+      chk('16 · props by tier: BOARD none, DAY 30 h, NEAR 3 h, untiered = DAY',
+        M.playerPropHoursForTier(cfg0, 'board') === 0 && M.playerPropHoursForTier(cfg0, 'day') === 30
+        && M.playerPropHoursForTier(cfg0, 'near') === 3 && M.playerPropHoursForTier(cfg0, null) === 30);
+      chk('16 · off, or with no markets, buys nothing', M.playerPropHoursForTier(cfgWith({ playerProps: false }), 'day') === 0
+        && M.playerPropHoursForTier(cfgWith({ playerPropMarkets: [], playerPropAlternateMarkets: [] }), 'day') === 0);
+      chk('v10 · alternate spreads by tier: BOARD none, DAY 30 h, NEAR 2 h',
+        M.alternateHoursForTier(cfg0, 'board') === 0 && M.alternateHoursForTier(cfg0, 'day') === 30 && M.alternateHoursForTier(cfg0, 'near') === 2);
+      const min = 60000;
+      chk('clock · an event never polled is due', M.propEventDue(null, 10, cfg0, NOW));
+      chk('clock · inside 3 h the 20-minute interval applies (with 2 minutes of drift)',
+        !M.propEventDue(NOW - 10 * min, 2, cfg0, NOW) && M.propEventDue(NOW - 18 * min, 2, cfg0, NOW));
+      chk('clock · beyond 3 h the 120-minute interval applies',
+        !M.propEventDue(NOW - 60 * min, 10, cfg0, NOW) && M.propEventDue(NOW - 118 * min, 10, cfg0, NOW));
+      chk('billing · us,eu is two region-equivalents; ten bookmakers one; eleven two',
+        M.regionEquivalents(cfg0) === 2 && M.regionEquivalents(cfgWith({ bookmakers: M.SUGGESTED_BOOKMAKERS })) === 1
+        && M.regionEquivalents(cfgWith({ bookmakers: M.SUGGESTED_BOOKMAKERS.concat(['fanatics']) })) === 2);
+      const batches = M.propMarketBatches(cfg0);
+      chk('billing · 59 markets go out in batches of 12, standard first, none twice',
+        batches.length === 5 && batches.flat().length === 59 && new Set(batches.flat()).size === 59 && batches[0][0] === 'player_assists');
+    }
+
+    /* ── THE HANDLER, with props ─────────────────────────────────────────── */
+    const propBoard = {
+      id: 'evt-1', sport_key: 'americanfootball_nfl', sport_title: 'NFL', commence_time: KICK, home_team: 'Chiefs', away_team: 'Ravens',
+      bookmakers: [
+        pbk('draftkings', [
+          { key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91).concat(ou('Josh Allen', 274.5, 1.95, 1.87)) },
+          { key: 'player_pass_yds_alternate', outcomes: [{ name: 'Over', description: 'Patrick Mahomes', price: 1.40, point: 250.5 }] },
+          { key: 'player_anytime_td', outcomes: yn('Patrick Mahomes', 7.0, 1.08) },
+          { key: 'player_tds_over', outcomes: [{ name: 'Over', description: 'Travis Kelce', price: 2.5, point: 0.5 }] },
+        ]),
+        pbk('fanduel', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.95, 1.87) }]),
+      ],
+    };
+    const writes = {};
+    const propDb = (opts) => (u, method, init) => {
+      const o = opts || {};
+      const table = (/\/rest\/v1\/([a-z_]+)/.exec(u) || [])[1];
+      if (method === 'GET' && table === 'player_prop_quotes' && o.storageMissing) return res(404, '{"code":"PGRST205","message":"Could not find the table public.player_prop_quotes"}');
+      if (method === 'GET' && table === 'player_prop_event_polls') return res(200, o.polls || [], { 'content-range': '*/0' });
+      if (method === 'POST') {
+        const body = JSON.parse(init.body);
+        (writes[table] = writes[table] || []).push({ url: u, body });
+        if (table === 'player_prop_quotes') return res(201, body.map((r) => ({ price_changed_at: o.unchanged ? '2020-01-01T00:00:00Z' : r.captured_at })), { 'content-range': '*/' + body.length });
+        if (/select=sig_key/.test(u)) return res(201, body.map((r) => ({ sig_key: r.sig_key })), { 'content-range': '*/' + body.length });
+        return res(201, '', { 'content-range': '*/' + body.length });
+      }
+      return res(200, [], { 'content-range': '*/0' });
+    };
+    const reset = () => { for (const k in writes) delete writes[k]; net.calls = []; net.eventFail = null; net.eventRemaining = null; };
+    const propCalls = () => net.calls.filter((c) => /\/events\/[^/]+\/odds/.test(c.url) && /markets=player_/.test(c.url));
+    net.odds['americanfootball_nfl'] = okPack();
+    net.eventOdds['americanfootball_nfl'] = { 'evt-1': propBoard };
+    /* The mocked account reports 4,321 credits left, under the default 5,000
+       floor, so these runs set a lower floor; the floor has its own case below. */
+    ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING = '1000';
+
+    /* A game-line run with props OFF, as the baseline game rows. */
+    reset();
+    ENV.CAPTURE_PLAYER_PROPS = 'false';
+    net.db = propDb();
+    let j = await (await M.handle(rq('?tier=day'))).json();
+    const strip = (rows) => JSON.stringify(rows.map((r) => { const o = Object.assign({}, r); ['last_seen_at', 'first_seen_at'].forEach((k) => delete o[k]); return o; }));
+    const baseline = strip((writes.signals || [])[0].body);
+    chk('handler · props off: no player request, and the pass says it is disabled',
+      propCalls().length === 0 && j.player_props.status === 'disabled');
+    delete ENV.CAPTURE_PLAYER_PROPS;
+
+    /* The same run with props ON (the default). */
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    const P = j.player_props;
+    chk('handler · the game-line rows are identical with props on and off', strip((writes.signals || [])[0].body) === baseline);
+    chk('handler · no signals row carries a player market or a player column (prop signals are off by default)',
+      (writes.signals || []).every((w) => w.body.every((r) => !/^player_/.test(r.market || '') && !('participant' in r))));
+    chk('handler · ONE event, one request per batch of markets — never one per player',
+      P.status === 'ok' && P.events_requested === 1 && P.requests === 5 && propCalls().length === 5 && P.markets_requested === 59, P);
+    chk('handler · markets returned are counted from the response', P.markets_returned === 4, P.markets_returned);
+    chk('handler · prop spend is the provider\'s own x-requests-last (4 markets x 2 regions)',
+      P.quota_spent === 8 && P.quota_spent_is_exact === true && j.prop_quota_spent === 8, P.quota_spent);
+    chk('handler · the run total includes the prop spend', j.quota_spent_this_run === 3 + 8 + 0, j.quota_spent_this_run);
+    chk('handler · three players seen, with their markets', P.unique_players === 3 && P.unique_player_markets === 4, [P.unique_players, P.unique_player_markets]);
+    const qrows = (writes.player_prop_quotes || []).flatMap((w) => w.body);
+    chk('handler · every quote is written, upserted on quote_key', P.quotes_seen === 10 && P.quotes_written === 10 && qrows.length === 10
+      && (writes.player_prop_quotes || []).every((w) => /on_conflict=quote_key/.test(w.url)), [P.quotes_seen, P.quotes_written, qrows.length]);
+    chk('handler · Mahomes and Allen at the same line are two stored quotes',
+      qrows.some((x) => x.quote_key === 'evt-1|player_pass_yds|patrick mahomes|Over|274.5|draftkings')
+      && qrows.some((x) => x.quote_key === 'evt-1|player_pass_yds|josh allen|Over|274.5|draftkings'));
+    chk('handler · one-sided quotes are stored, not dropped', P.one_sided_quotes === 2
+      && qrows.filter((x) => x.is_two_sided === false).length === 2 && qrows.find((x) => x.player_key === 'travis kelce').book_fair_probability === null);
+    chk('handler · ticks are the ones the database says it made', P.ticks_written === 10 && P.ticks_written_is_exact === true, [P.ticks_written]);
+    const polls = (writes.player_prop_event_polls || []).flatMap((w) => w.body);
+    chk('handler · the event\'s poll time is recorded for its own clock',
+      polls.length === 1 && polls[0].event_id === 'evt-1' && polls[0].last_polled_at && polls[0].poll_status === 'ok'
+      && (writes.player_prop_event_polls || [])[0].url.indexOf('on_conflict=event_id') > 0, polls);
+    const prior = net.calls.find((c) => c.method === 'GET' && /qual_streak/.test(c.url));
+    chk('handler · the game prior-state read excludes player rows', prior && /market=not\.like\.player_\*/.test(decodeURIComponent(prior.url)), prior && prior.url);
+    chk('handler · the flat prop_* summary is in the run log', ['prop_quota_spent', 'prop_events_eligible', 'prop_events_requested', 'prop_markets_requested',
+      'prop_markets_returned', 'prop_players_seen', 'prop_quotes_seen', 'prop_quotes_written', 'prop_ticks_written',
+      'prop_events_skipped_budget', 'prop_failures'].every((k) => typeof j[k] === 'number'));
+    chk('handler · the game run status is unaffected by the prop pass', j.ok === true && j.status === 'ok', [j.status, j.write_errors]);
+
+    /* An unchanged board writes no ticks. */
+    reset();
+    net.db = propDb({ unchanged: true });
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('handler · a re-seen, unchanged price is upserted but ticks nothing', j.player_props.quotes_written === 10 && j.player_props.ticks_written === 0);
+
+    /* BOARD never buys props. */
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=board'))).json();
+    chk('handler · the BOARD tier buys no player props', propCalls().length === 0 && j.player_props.status === 'skipped' && /BOARD/.test(j.player_props.reason));
+    chk('handler · nor alternate ladders', net.calls.filter((c) => /alternate_spreads/.test(c.url)).length === 0);
+
+    /* NEAR: the game is 6 h out, outside the 3 h prop window. */
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=near'))).json();
+    chk('handler · NEAR buys props only inside its 3 h window', propCalls().length === 0 && j.player_props.events_eligible === 0);
+
+    /* The event was polled five minutes ago; it is 6 h out, so its interval is 120 min. */
+    reset();
+    net.db = propDb({ polls: [{ event_id: 'evt-1', last_polled_at: new Date(Date.now() - 5 * 60000).toISOString() }] });
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('handler · an event inside its own refresh interval is not re-bought',
+      propCalls().length === 0 && j.player_props.events_skipped_interval === 1 && j.player_props.events_due === 0);
+
+    /* ── 17 · budgets ─────────────────────────────────────────────────────── */
+    reset();
+    ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN = '20';
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · a credit budget smaller than one batch\'s worst case spends nothing',
+      propCalls().length === 0 && j.player_props.stopped === 'credit_budget' && j.player_props.events_skipped_budget === 1, j.player_props);
+    ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN = '26';
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · the credit budget stops BEFORE a request that could pass it, mid-event',
+      propCalls().length === 3 && j.player_props.stopped === 'credit_budget' && j.player_props.quota_spent <= 26, j.player_props);
+    chk('17 · and what was already bought is still stored', j.player_props.quotes_written > 0
+      && (writes.player_prop_event_polls || [])[0].body[0].poll_status === 'partial');
+    delete ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN;
+
+    reset();
+    ENV.CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN = '12';
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · the (event x market) request budget stops the pass', propCalls().length === 1 && j.player_props.stopped === 'market_request_budget', j.player_props.stopped);
+    delete ENV.CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN;
+
+    reset();
+    delete ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING;
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · below the (default 5,000) quota floor no prop request is made; the game lines still run',
+      propCalls().length === 0 && j.player_props.stopped === 'quota_floor' && j.priced > 0 && j.ok === true, j.player_props.stopped);
+    ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING = '1000';
+
+    reset();
+    net.eventFail = (sport, id, asked) => (asked.some((k) => /^player_/.test(k)) ? 429 : 0);
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · a 429 stops the prop pass at once', propCalls().length === 1 && j.player_props.stopped === 'provider_429'
+      && j.player_props.failures === 1 && j.player_props.failure_samples[0].status === 429);
+    chk('17 · and a failed event gets no poll time, so it is retried next run', !(writes.player_prop_event_polls || []).length);
+    chk('17 · the game-line run is still ok', j.ok === true && j.status === 'ok');
+
+    /* Storage first, credits second. */
+    reset();
+    net.db = propDb({ storageMissing: true });
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('handler · with no player_prop_quotes table nothing is bought', propCalls().length === 0 && j.player_props.status === 'storage_missing'
+      && /capture_v11_player_props\.sql/.test(j.player_props.reason));
+
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day&props=0'))).json();
+    chk('handler · ?props=0 turns the pass off for one run', propCalls().length === 0 && j.player_props.status === 'skipped');
+
+    reset();
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day&diag=1'))).json();
+    chk('handler · a diagnostic run never buys props', propCalls().length === 0 && j.player_props.status === 'skipped');
+
+    /* ── 11 · optional prop signals ──────────────────────────────────────── */
+    reset();
+    ENV.CAPTURE_PLAYER_PROP_SIGNALS = 'true';
+    net.db = propDb();
+    j = await (await M.handle(rq('?tier=day'))).json();
+    const propSig = (writes.signals || []).flatMap((w) => w.body).filter((r) => /^player_/.test(r.market || ''));
+    chk('11 · with prop signals on, two-sided props reach `signals` carrying their player',
+      propSig.length > 0 && propSig.every((r) => r.participant && r.participant_key && r.is_player_prop === true && r.source_market), propSig[0]);
+    chk('11 · one-sided props never do', !propSig.some((r) => r.participant_key === 'travis kelce' || r.point === 250.5));
+    chk('11 · and none is actionable: the player_props floor is null',
+      propSig.every((r) => r.actionable === false) && j.player_props.qualification.actionable === 0
+      && (j.player_props.qualification.by_reason.segment_not_qualified_for_action > 0 || j.player_props.qualification.by_reason.insufficient_fresh_books > 0),
+      j.player_props.qualification);
+    chk('11 · prop signal rows are sent in their own batches, apart from game rows',
+      (writes.signals || []).every((w) => w.body.every((r) => /^player_/.test(r.market || '')) || w.body.every((r) => !/^player_/.test(r.market || ''))));
+    chk('11 · no signal tick is written for a prop', !(writes.signal_ticks || []).flatMap((w) => w.body).some((r) => /\|player_/.test(r.sig_key)));
+    const propPrior = net.calls.find((c) => c.method === 'GET' && /qual_streak/.test(c.url) && /market=like\.player_/.test(decodeURIComponent(c.url)));
+    chk('11 · prop persistence is read separately from game persistence', !!propPrior);
+    delete ENV.CAPTURE_PLAYER_PROP_SIGNALS;
+    delete ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING;
+    reset();
   }
 
   done();

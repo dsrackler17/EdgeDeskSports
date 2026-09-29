@@ -65,6 +65,27 @@ hourly. The capture also stops in three cases:
 - a run would pass `PROPS_MAX_CREDITS`;
 - the provider returns a 401 or 429.
 
+### Two captures, one key
+
+There are now two ways to buy prop prices. Both spend the same `ODDS_API_KEY`,
+so run one of them, not both.
+
+1. **The Supabase capture function, from build `capture-v11-player-props-r1`.**
+   - It captures every player quote for NFL and NCAAF events on its DAY and
+     NEAR tiers into `player_prop_quotes`, with change-only history in
+     `player_prop_quote_ticks`.
+   - It is budgeted per run and per event, and stops at a quota floor.
+   - Its setup and arithmetic are in `supabase/functions/capture/README.md`;
+     its tables are in `supabase/capture_v11_player_props.sql`.
+   - This is the capture to run.
+2. **The GitHub Actions capture here (`PROPS_CAPTURE=on`).**
+   - It writes `football/props/<league>/quotes.json` for the static board.
+   - Leave it off while the Supabase capture runs.
+
+**Gap to close:** the board build still reads `quotes.json`. Pointing
+`build_board.js` at `player_prop_quotes` would make the Supabase capture the
+page's only source.
+
 ### The credit arithmetic
 
 Player markets exist only on The Odds API's per-event endpoint, at one request

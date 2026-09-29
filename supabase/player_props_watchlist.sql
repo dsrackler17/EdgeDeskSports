@@ -17,8 +17,8 @@
 -- =============================================================================
 
 do $dep$ begin
-  if to_regclass('public.player_prop_quotes') is null then
-    raise exception 'player_props_watchlist.sql needs public.player_prop_quotes: apply supabase/player_props.sql first';
+  if to_regclass('public.player_prop_evaluations') is null then
+    raise exception 'player_props_watchlist.sql needs public.player_prop_evaluations: apply supabase/player_props.sql first';
   end if;
 end $dep$;
 

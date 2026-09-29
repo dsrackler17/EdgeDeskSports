@@ -44,7 +44,7 @@ nflverse (stats_player_week, snap_counts, pbp, depth_charts,       sportsdataver
                                         ▼
 The Odds API /events/{id}/odds ──► football/props/capture.js ──► quotes.json (current listing)
   (per-event, budgeted, opt-in)        identity + dedupe + bounds    lines.json  (open → current, movement)
-                                        │                            Supabase player_prop_quotes (ledger)
+                                        │                            Supabase player_prop_ledger_quotes (ledger)
                                         ▼
                         football/props/model.js   projection engine (volume × share × efficiency
                                         │          × matchup × script × weather × injuries × QB)
@@ -234,12 +234,12 @@ structured facts) · CLV once closed.
 
 | Table | Purpose | Identity / rule |
 |---|---|---|
-| `player_prop_quotes` | every captured price, append-only | unique (sport, game_id, player_id, market, line, side, book, quoted_at); write-once |
+| `player_prop_ledger_quotes` | every captured price, append-only | unique (sport, game_id, player_id, market, line, side, book, quoted_at); write-once |
 | `player_prop_projections` | projection + distribution per build | unique (sport, game_id, player_id, market, model_version, built_at); write-once |
 | `player_prop_evaluations` | probability, no-vig, EV, decision, units per evaluated selection | unique `evaluation_id` (content hash); write-once; refused after kickoff |
 | `player_prop_results` | settlement, closing line/price, CLV | one row per evaluation; service role only |
 | `player_prop_watchlist` | a reader's starred players / props / games | RLS: owner only |
-| views `player_prop_quotes_latest`, `player_prop_line_movement` | current price per identity; open / current / close | security invoker |
+| views `player_prop_ledger_quotes_latest`, `player_prop_line_movement` | current price per identity; open / current / close | security invoker |
 
 The committed JSON feeds are the browser's source; Supabase is the durable
 ledger when `SB_URL` / `SB_SERVICE_ROLE` are configured.
