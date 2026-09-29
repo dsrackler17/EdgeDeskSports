@@ -1,7 +1,7 @@
 /* ===========================================================================
    EXPOSE mlbhist, cbb AND props TO THE API.
 
-   props (supabase/player_props.sql, the CFB + NFL player-prop factory) joins
+   props (supabase/props_factory.sql, the CFB + NFL player-prop data factory) joins
    the list the same way: its readable views (v_player_props_board,
    v_prop_record_summary, the ai_* functions) are served from the props schema.
 
@@ -113,8 +113,8 @@ with checks as (
   union all select 7,
     'a reader may reach the player-prop board',
     case when not exists (select 1 from pg_namespace where nspname = 'props')
-         then 'ok (props is not installed yet: run supabase/player_props.sql, then this file again)'
+         then 'ok (props is not installed yet: run supabase/props_factory.sql, then this file again)'
          when has_schema_privilege('anon', 'props', 'usage')
-         then 'ok' else 'CHECK THIS — re-run supabase/player_props.sql; it grants this' end
+         then 'ok' else 'CHECK THIS — re-run supabase/props_factory.sql; it grants this' end
 )
 select n, guarantee, result from checks order by n;

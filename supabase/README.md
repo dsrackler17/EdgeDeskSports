@@ -167,32 +167,27 @@ label with a sample floor. Tested against a real PostgreSQL by
 `Deploy intelligence` workflow's `apply_research_packets` input. The
 function reports its last write in `?probe=1 → packet_health`.
 
-### `player_props.sql` — the CFB + NFL player-prop factory (`props` schema)
-The database half of `football/props/` (`docs/player-props/ARCHITECTURE.md`):
-the catalog (27 canonical markets, the provider→canonical market map, 121
-features, 15 quality rules, 20 walk-forward folds, 18 pipeline jobs), the
-identity bridge (`dim_player`, `player_id_map`, `bridge` with a generated
-`production_eligible`, `identity_review`), the facts (`dim_game`,
-`fact_player_game` with the Q001–Q004 checks, `fact_team_game`,
-`fact_corrections`), the append-only observed market (`fact_prop_quote`,
-`fact_prop_listing`, `raw_odds_payloads`), the point-in-time feature store
+### `props_factory.sql` — the player-prop data factory (`props` schema)
+The warehouse under the Player Props terminal (`docs/player-props/FACTORY.md`;
+the terminal's own live ledger is `player_props.sql`). The catalog (27
+canonical markets, 121 features, 15 quality rules, 20 walk-forward folds, 18
+pipeline jobs), the CFB→NFL identity bridge (`dim_player`, `player_id_map`,
+`bridge` with a generated `production_eligible`, `identity_review`), the
+historical facts (`dim_game`, `fact_player_game` with the Q001–Q004 checks,
+`fact_team_game`, `fact_corrections`), the point-in-time feature store
 (`fact_feature_snapshot`: `source_max_timestamp <= asof_at <= kickoff`,
 immutable), immutable `model_registry` / `model_prediction`, the backtest
-tables and the write-once `prop_record`. **Lineage is required and never
-defaulted**: a quote is `observed` or `reconstructed`, a reconstructed quote
-must name `edgedesk_reconstruction` as its provider, and a backtest decision
-can only stand on an observed pregame quote. The same distribution arithmetic
-as `lib/player_props.js` lives in `props.dist_probs()`. Readers get owner-run
-views (`v_player_props_board`, `v_latest_prop_quotes` — listing-aware, so a
-withdrawn line drops out — `v_prop_line_shopping`, `v_prop_movement`,
-`v_prop_record_summary`, `v_quality`) and the AI doors `ai_prop_context`,
-`ai_prop_board`, `ai_data_health`; the ingestion doors
-(`ingest_prop_quotes`, `promote_player_games`) belong to `service_role` only.
-Loaded by `node football/props/run.js sync` (psql + COPY through
-`tools/tennis/lib/pg.js`; `SUPABASE_DB_URL`), applied by the `Player props`
-workflow's `apply_sql` mode, pasteable as `parts/player_props.part*-of-*.sql`.
-Add `props` to the served schemas with `expose_schemas.sql`. Tested against a
-real PostgreSQL by `football/props/sql.test.js` (twice, idempotent).
+tables, and the lineage-checked historical quote store (`fact_prop_quote`,
+`fact_prop_listing`, `raw_odds_payloads`) that the Odds API historical
+backfill fills. **Lineage is required and never defaulted**: a quote is
+`observed` or `reconstructed`, a reconstructed one must name
+`edgedesk_reconstruction` as its provider, and a backtest decision can only
+stand on an observed pregame quote. `props.dist_probs()` carries the factory's
+distribution arithmetic. Loaded by `node football/props/factory/run.js sync`
+(psql + COPY through `tools/tennis/lib/pg.js`; `SUPABASE_DB_URL`), pasteable
+as `parts/props_factory.part*-of-*.sql`; add `props` to the served schemas
+with `expose_schemas.sql`. Tested against a real PostgreSQL by
+`football/props/factory/sql.test.js` (twice, idempotent).
 
 ### `cfb_lab.sql` — the CFB Live Model Lab, in Postgres
 The database half of the lab (`docs/cfb-lab/SCHEMA.md`, `docs/cfb-lab/METRICS.md`):

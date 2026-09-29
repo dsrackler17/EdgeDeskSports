@@ -182,29 +182,6 @@ const LIBS = [
     start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
-  /* Player props for the desk (football/props/): the quote-level EV module,
-     the player-prop kernel it prices through (lib/player_props.js) and the
-     deterministic props answer (football/props/desk.js). Server-side copies
-     of the SAME files the Props tab loads, so the desk and the page price a
-     line identically. */
-  {
-    name: 'EDQUOTEEV',
-    src: path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'),
-    start: '/*__EDQUOTEEV_START__*/', end: '/*__EDQUOTEEV_END__*/',
-    hosts: [path.join(FN, 'index.ts')],
-  },
-  {
-    name: 'EDPROPSLIB',
-    src: path.join(ROOT, 'lib', 'player_props.js'),
-    start: '/*__EDPROPSLIB_START__*/', end: '/*__EDPROPSLIB_END__*/',
-    hosts: [path.join(FN, 'index.ts')],
-  },
-  {
-    name: 'EDPROPS',
-    src: path.join(ROOT, 'football', 'props', 'desk.js'),
-    start: '/*__EDPROPS_START__*/', end: '/*__EDPROPS_END__*/',
-    hosts: [path.join(FN, 'index.ts')],
-  },
   /* The CFB explanation fact boundary (brief §90-91; docs/cfb-production/
      SECURITY.md §5): the only facts an explanation of a CFB game may use (the
      stored canonical projection and the governed decision), the tool-less

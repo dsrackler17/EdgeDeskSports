@@ -14,7 +14,7 @@
     "cfb:terminal:check": "node football/cfb_terminal/build.js --check",
     "cfb:terminal:test": "node football/cfb_terminal/tests.js && node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js && node tools/bettor/consistency.test.js && node football/cfb_terminal/read.test.js && node football/cfb_ev/ev.test.js && node tools/football/quote_ev.test.js && node football/cfb_terminal/alternates.test.js && node football/cfb_terminal/user_test.js && node football/cfb_terminal/analytics_sql.test.js",
     "bettor:consistency:test": "node tools/bettor/consistency.test.js",
-    "cfb:terminal:usertest": "node football/cfb_terminal/user_test.js --md",
+ "cfb:terminal:usertest": "node football/cfb_terminal/user_test.js --md",
     "cfb:validation": "node football/cfb_validation/build.js",
     "cfb:validation:check": "node football/cfb_validation/build.js --check",
     "cfb:validation:test": "node tools/validation/canon.test.js && node football/cfb_validation/tests.js && node tools/validation/ui.test.js",
@@ -308,18 +308,6 @@
     "validation:health": "node tools/validation/model_health.js",
     "validation:health:write": "node tools/validation/model_health.js --write",
     "validation:health:check": "node tools/validation/model_health.js --check",
-    "validation:keys": "node tools/validation/build_key_numbers.js --write",
-    "props:history": "node --max-old-space-size=12288 football/props/run.js history",
-    "props:train": "node --max-old-space-size=12288 football/props/run.js train --offline",
-    "props:backtest": "node --max-old-space-size=12288 football/props/run.js backtest --offline --last-n 3",
-    "props:summarize": "node football/props/run.js summarize",
-    "props:score": "node --max-old-space-size=12288 football/props/run.js score --offline",
-    "props:record": "node --max-old-space-size=12288 football/props/run.js record --offline",
-    "props:capture": "node --max-old-space-size=8192 football/props/run.js capture --network --offline",
-    "props:backfill": "node --max-old-space-size=8192 football/props/run.js backfill --network --offline",
-    "props:sync": "node --max-old-space-size=12288 football/props/run.js sync --offline",
-    "props:test": "node football/props/props.test.js && node football/props/leakage.test.js && node football/props/identity.test.js && node football/props/odds.test.js && node football/props/desk.test.js && node football/props/ui.test.js && node football/props/record_section.test.js",
-    "props:sql": "node football/props/sql.test.js",
-    "props:e2e": "node football/props/ui.e2e.js"
+    "validation:keys": "node tools/validation/build_key_numbers.js --write"
   }
 }

@@ -37,7 +37,7 @@ Independent of all of the above, the CFB Live Model Lab:
 
 Independent of all of the above, the CFB + NFL player-prop factory:
 
-8. `player_props.part1-of-*.sql` … the last part, then `expose_schemas.sql`
+8. `props_factory.part1-of-*.sql` … the last part, then `expose_schemas.sql`
    (unsplit) so PostgREST serves the `props` schema
 
 The last part of each file prints that file's report. Every row of the

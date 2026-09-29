@@ -120,9 +120,9 @@ has(APP, 'id="v-more"', 'and More is a view like any other');
    Research shell's default destination rather than a dead route */
 lacks(APP, 'id="v-tennis"', 'the Tennis panel is gone');
 lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
-chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Props | Stats | Lab',
+chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
     JSON.stringify((APP.match(/<nav class="stseg research-sub" aria-label="Research sports">[^\n]*?<\/nav>/) || [''])[0].match(/data-sub="[a-z]+"/g))
-      === JSON.stringify(['rdesk','football','ufc','baseball','props','stats','lab'].map(s => 'data-sub="' + s + '"')));
+      === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
 has(APP, "var RS_RETIRED=EDSPORTS.retiredModuleRoutes();", 'old tennis routes have a destination (lib/edgedesk_sports.js)');
 has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
 has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",

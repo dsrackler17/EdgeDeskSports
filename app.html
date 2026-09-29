@@ -2871,7 +2871,6 @@ body.focus .dk-focusnote{display:block}
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929b">
-<link rel="stylesheet" href="/lib/player_props.css?v=20260929b">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3167,7 +3166,7 @@ body.focus .dk-focusnote{display:block}
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <nav class="stseg research-sub" aria-label="Research sports"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></nav>
+    <nav class="stseg research-sub" aria-label="Research sports"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></nav>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3263,12 +3262,12 @@ body.focus .dk-focusnote{display:block}
     <div id="stBody"><div class="empty">Loading…</div></div>
     <div id="rsSys-stats" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
-    <!-- PROPS — CFB and NFL player-prop research (lib/player_props_ui.js over
-         football/props/published/*), plus the season-rate projections of the
-         other sports (public.model_props) on their own chips -->
+    <!-- PROPS -->
+    <!-- Props: panel and module kept (the projections surface inside Stats);
+         no sub-nav tab, and researchGo('props') lands on Stats -->
     <div id="v-props" class="rpanel hide">
     <div class="row-between fb-panelhd"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" id="prRefreshBtn" title="Refresh" aria-label="Refresh props" onclick="rsTkRefresh('prRefreshBtn',['props'])">&#8635;</button></div>
-    <p class="rs-lede" id="prLede">Player props, CFB and NFL: EdgeDesk's outcome distribution for every player and market, priced at every observed sportsbook line. <b>Model, market and edge are separate columns</b> — and nothing is shown as a price unless a sportsbook actually posted it. Research, not picks.</p>
+    <p class="rs-lede">Season-rate projections with modeled variance. <b>Projections, not lines, not edges</b> — an edge exists only once these beat a real closing number.</p>
     <div class="stchips" id="prSports"></div>
     <div id="prControls"></div>
     <div id="prBody"><div class="empty">Loading…</div></div>
@@ -5154,9 +5153,10 @@ window.researchGo=function(sub){
      prefs land on Football instead of a hidden panel */
   if(sub==='cfb')sub='football';
   if(RS_RETIRED[sub])sub=RS_RETIRED[sub];
-  /* Props has its own seat since the CFB/NFL player-prop research system
-     (football/props/, lib/player_props_ui.js): model distributions, observed
-     sportsbook quotes, alternate ladders and the research card */
+  /* Props has no top-level seat until it carries a workflow of its own: its
+     season-rate projections already attach to Stats player rows, so old
+     links and remembered prefs land there */
+  if(sub==='props')sub='stats';
   if(!RESEARCH_MODULES[sub])sub='football';
   var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
@@ -5318,10 +5318,10 @@ researchRegister({id:'stats',label:'Stats',schema:'public',cadenceMs:86400000,
 researchRegister({id:'props',label:'Props',schema:'public',cadenceMs:86400000,
   load:function(force,signal){return window.loadProps(force,signal);},
   render:function(){renderProps();},
-  hasData:function(){return !!PR.at;},
+  hasData:function(){return !!PR.rows.length;},
   search:function(q){return [];},                              /* stage 2 */
   openEntity:null,closeEntity:null,entityOpen:null,
-  freshness:function(){var b=window.EDPropsUI&&window.EDPropsUI.state.boards[PR.sport];return {loadedAt:PR.at||null,builtAt:b&&b.generated_at?Date.parse(b.generated_at):null};},
+  freshness:function(){return {loadedAt:PR.at||null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
   load:function(force,signal){return (typeof window.loadLab==='function')?window.loadLab(force,signal):Promise.resolve();},
@@ -11776,43 +11776,27 @@ async function loadStats(force,signal){
   }catch(e){var c=rsClassifyError(e);if(!c)return;$('stBody').innerHTML='';rsSetState('stats',c.state,c);}
 }
 /* ===== PROPS tab — browsable player-prop projection board (model, not lines) ===== */
-var PR={rows:[],sport:null,market:null,dir:'proj',at:0,force:false};
-/* CFB and NFL are the player-prop research board (lib/player_props_ui.js over
-   football/props/published/*): committed artifacts, never gated on model_props */
-var PR_FOOTBALL=['NFL','CFB'];
+var PR={rows:[],sport:null,market:null,dir:'proj',at:0};
 var PR_MKT={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
 var PR_ORDER=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
 async function loadProps(force,signal){
-  if(!force&&PR.at&&(Date.now()-PR.at)<300000){renderProps();return;}
-  PR.force=!!force;
-  /* the other sports' season-rate projections: a failed read leaves the
-     football board working and says so on those chips only */
+  if(!force&&PR.rows.length&&(Date.now()-PR.at)<300000){renderProps();return;}
   try{
     var rows=await stFetchAll('model_props?select=sport,player,team,position,market,proj,line,p_over,dist','sport,player',signal);
-    PR.rows=rows||[];PR.mpErr=null;
-  }catch(e){var c=rsClassifyError(e);if(!c)return;PR.rows=[];PR.mpErr=c;}
-  PR.at=Date.now();
-  rsFreshApply('props');
-  rsSetState('props','ok');
-  renderProps();
+    PR.rows=rows||[];PR.at=Date.now();
+    rsFreshApply('props');
+    rsSetState('props',PR.rows.length?'ok':'empty');
+    renderProps();
+  }catch(e){var c=rsClassifyError(e);if(!c)return;$('prBody').innerHTML='';rsSetState('props',c.state,c);}
 }
-function prSports(){var s={};PR.rows.forEach(function(r){var k=(r.sport||'').toUpperCase();if(k&&PR_FOOTBALL.indexOf(k)<0)s[k]=1;});return PR_FOOTBALL.concat(Object.keys(s).sort());}
-function prFootball(){
-  var force=PR.force;PR.force=false;
-  $('prControls').innerHTML='';$('prBody').innerHTML='<div class="empty">Loading '+rsEsc(PR.sport)+' props…</div>';
-  var go=function(){if(force)window.EDPropsUI.load(PR.sport,true).then(function(){window.EDPropsUI.render(PR.sport);},function(){window.EDPropsUI.render(PR.sport);});else window.EDPropsUI.render(PR.sport);};
-  if(window.EDPropsUI){go();return;}
-  var load=(typeof fbScript==='function')?fbScript:function(src){return new Promise(function(res,rej){var e=document.createElement('script');e.src=src;e.onload=res;e.onerror=function(){rej(new Error('failed to load '+src));};document.head.appendChild(e);});};
-  load('lib/player_props_ui.js').then(go).catch(function(e){$('prBody').innerHTML='<div class="empty">The props module did not load: '+rsEsc(e.message)+'</div>';});
-}
+function prSports(){var s={};PR.rows.forEach(function(r){if(r.sport)s[(r.sport||'').toUpperCase()]=1;});return Object.keys(s).sort();}
 function prMarkets(L){var m={};PR.rows.forEach(function(r){if((r.sport||'').toUpperCase()===L)m[r.market]=1;});
   return Object.keys(m).sort(function(a,b){var ia=PR_ORDER.indexOf(a),ib=PR_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib);});}
 function renderProps(){
+  if(!PR.rows.length){$('prSports').innerHTML='';$('prControls').innerHTML='';$('prBody').innerHTML='';return;}
   var sports=prSports();if(!PR.sport||sports.indexOf(PR.sport)<0)PR.sport=sports[0];
-  $('prSports').innerHTML=sports.map(function(s){var fb=PR_FOOTBALL.indexOf(s)>=0;return '<button class="stchip'+(s===PR.sport?' on':'')+'" data-s="'+s+'">'+(fb?s+' props':(ST_LABEL[s]||s)+' · projections')+'</button>';}).join('');
+  $('prSports').innerHTML=sports.map(function(s){return '<button class="stchip'+(s===PR.sport?' on':'')+'" data-s="'+s+'">'+(ST_LABEL[s]||s)+'</button>';}).join('');
   var sc=$('prSports').querySelectorAll('.stchip');for(var i=0;i<sc.length;i++)sc[i].onclick=(function(el){return function(){PR.sport=el.getAttribute('data-s');PR.market=null;renderProps();};})(sc[i]);
-  if(PR_FOOTBALL.indexOf(PR.sport)>=0){prFootball();return;}
-  if(!PR.rows.length){$('prControls').innerHTML='';$('prBody').innerHTML=PR.mpErr?'<div class="empty">Projections for this sport could not be read.</div>':'';return;}
   var markets=prMarkets(PR.sport);if(!PR.market||markets.indexOf(PR.market)<0)PR.market=markets[0];
   $('prControls').innerHTML='<div class="stctlrow"><select class="stsearch" id="prMkt">'+markets.map(function(m){return '<option value="'+rsEsc(''+m)+'"'+(m===PR.market?' selected':'')+'>'+rsEsc(''+(PR_MKT[m]||m))+'</option>';}).join('')+'</select>'+
     '<button class="stdir" id="prDir">'+(PR.dir==='proj'?'By projection':'By over %')+'</button></div>';
