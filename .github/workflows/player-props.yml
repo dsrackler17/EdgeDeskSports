@@ -1,0 +1,139 @@
+# EdgeDesk Player Props — prices, projections, the board, grading.
+#
+# Every hour in football season:
+#   1. the kernel and the pipeline suites must pass before anything is written;
+#   2. the prop capture (football/props/capture.js) asks The Odds API for player
+#      markets — ONLY when the repository variable PROPS_CAPTURE is 'on' and the
+#      ODDS_API_KEY secret exists. It is budgeted: each event is re-polled only
+#      when its own interval has passed (8 h beyond 36 h of kickoff, 3 h inside
+#      it, every run inside six hours), it stops before the credit floor and
+#      never passes PROPS_MAX_CREDITS in one run (docs/runbooks/player-props.md
+#      has the credit arithmetic).
+#      Off, nothing is spent and the page says prices are not captured yet;
+#   3. the board (football/props/build_board.js) is rebuilt for the NFL and
+#      college from the public nflverse / sportsdataverse feeds and whatever
+#      prices were captured — committed only when a number, a price, a decision
+#      or a game changed (clock fields never make a board new);
+#   4. finished games are graded (football/props/grade.js) into the append-only
+#      results ledger and performance.json;
+#   5. the append-only ledgers are proved to have only grown since the last
+#      commit (football/props/verify_ledger.js) — otherwise nothing publishes;
+#   6. the artifacts are pushed through tools/ci/push_generated.sh;
+#   7. the ledger is copied into Supabase (supabase/player_props.sql) when
+#      SB_URL / SB_SERVICE_ROLE are set — insert-only, idempotent, optional.
+#
+# workflow_dispatch can also re-run the walk-forward distribution backtest
+# (football/props/backtest.js) that writes football/props/nfl/calibration.json,
+# and with it the same-game correlation model (football/props/correlation.js)
+# that writes football/props/nfl/correlation.json.
+name: Player props
+
+on:
+  schedule:
+    # hourly through the season (August–January); the capture decides for itself whether to spend
+    - cron: '23 * * 8-12,1 *'
+  workflow_dispatch:
+    inputs:
+      backtest:
+        description: 'Re-run the walk-forward distribution backtest (season to test, e.g. 2025; empty = skip)'
+        required: false
+        default: ''
+      force_capture:
+        description: 'Capture even inside the interval (still budgeted; needs PROPS_CAPTURE=on)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: player-props
+  cancel-in-progress: false
+
+jobs:
+  props:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # the college player box is parquet while its season is in progress
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install --quiet pyarrow
+
+      - name: The prop kernel must pass before anything is written
+        run: node tools/props/props_core.test.js
+
+      - name: The pipeline (capture, identity, model, board, grading, sync) must pass before anything is written
+        run: node football/props/pipeline.test.js
+
+      - name: Walk-forward distribution backtest (on request)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
+        run: node football/props/backtest.js --league nfl --season "${{ github.event.inputs.backtest }}" --write
+
+      - name: Same-game correlation from the game logs (with the backtest, on request)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
+        run: node football/props/correlation.js --season "${{ github.event.inputs.backtest }}" --write
+
+      - name: Capture sportsbook prop prices (opt-in, budgeted)
+        if: ${{ vars.PROPS_CAPTURE == 'on' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          PROPS_BOOKMAKERS: ${{ vars.PROPS_BOOKMAKERS }}
+          PROPS_MARKET_GROUPS: ${{ vars.PROPS_MARKET_GROUPS }}
+          PROPS_MAX_CREDITS: ${{ vars.PROPS_MAX_CREDITS }}
+          PROPS_MIN_INTERVAL_H: ${{ vars.PROPS_MIN_INTERVAL_H }}
+          PROPS_FAR_INTERVAL_H: ${{ vars.PROPS_FAR_INTERVAL_H }}
+          PROPS_LEAGUES: ${{ vars.PROPS_LEAGUES }}
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "::warning::PROPS_CAPTURE is on but the ODDS_API_KEY secret is empty: no prop price was captured"
+            echo "PROPS_CAPTURE is on but ODDS_API_KEY is empty — nothing captured." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          FORCE=""
+          if [ "${{ github.event.inputs.force_capture }}" = "true" ]; then FORCE="--force"; fi
+          for LG in $(echo "${PROPS_LEAGUES:-nfl,cfb}" | tr ',' ' '); do
+            node football/props/capture.js --network --league "$LG" $FORCE || echo "::warning::$LG prop capture failed; the board keeps its last prices and ages them"
+          done
+
+      - name: Build the NFL board
+        run: node football/props/build_board.js --league nfl --write
+
+      - name: Build the college board
+        run: node football/props/build_board.js --league cfb --write || echo "::warning::the college board could not be rebuilt; the last one stays published"
+
+      - name: Grade finished games
+        run: |
+          node football/props/grade.js --league nfl --write
+          node football/props/grade.js --league cfb --write || echo "::warning::college grading could not run"
+
+      - name: The ledgers only grew
+        # every append-only file (evaluations, results, closes) must extend the
+        # committed one: a published row edited, removed or re-dated stops the
+        # run here, before anything is committed (football/props/verify_ledger.js)
+        run: node football/props/verify_ledger.js --league all --base HEAD
+
+      - name: Commit the artifacts
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
+            'player props: prices, projections, board and grades' -- \
+            football/props/nfl/ football/props/cfb/
+
+      - name: Insert-only copy to Supabase
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node football/props/sync_supabase.js --league nfl || echo "::warning::prop ledger sync failed (apply supabase/player_props.sql)"
+          node football/props/sync_supabase.js --league cfb || echo "::warning::college prop ledger sync failed"

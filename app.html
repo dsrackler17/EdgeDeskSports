@@ -825,7 +825,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .bottomnav button:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:10px}
 /* six seats share a phone's width, so the labels stay readable at 320px */
 @media(max-width:359px){.bottomnav button{font-size:10px}}
-@media(min-width:760px){.bottomnav{justify-content:center;gap:8px}.bottomnav button{flex:0 0 104px;font-size:11px}}
+@media(min-width:760px){.bottomnav{justify-content:center;gap:8px}.bottomnav button{flex:0 1 104px;font-size:11px}}
 /* the disclaimer sits ABOVE the nav (nav height + its own safe-area pad) as
    one compact line. Every compliance element stays on every width — not
    betting advice, signals can be wrong, 21+, 1-800-GAMBLER — and a phone
@@ -2870,7 +2870,8 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929b">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929c">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929b">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3150,6 +3151,12 @@ body.focus .dk-focusnote{display:block}
        The Research Board answers "what games deserve attention?"; this page answers
        "what does the current price justify?": BET / LEAN / WATCH / PASS / NO DECISION. -->
   <section id="v-card" class="view hide"><div id="eddCardHost"></div></section>
+
+  <!-- PLAYER PROPS — the prop research terminal (lib/edgedesk_props_ui.js over the
+       lib/edgedesk_props.js kernel). Sport → game → market → player → every line at
+       every book → best price → fair probability → EV → research context → decision.
+       Research, not picks. docs/player-props/DESIGN.md -->
+  <section id="v-pprops" class="view hide"><div id="ppHost"></div></section>
 
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
        Panels keep their original ids so every existing $() lookup and render
@@ -3768,6 +3775,9 @@ window.mcRefresh=function(){
        was the clutter. -->
   <button data-v="research" class="on" aria-current="page" aria-label="Research"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>Research</button>
   <button data-v="card" aria-label="EdgeDesk Card"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h5"/><path d="M14 15.5l2 2 3.5-4"/></svg>Card</button>
+  <!-- PLAYER PROPS: its own seat beside the Card — the prop terminal is a workflow
+       of its own (prices, projection, probability, EV), not a Research sub-panel. -->
+  <button data-v="pprops" aria-label="Player Props"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20c.8-3.6 3.4-5.6 6.5-5.6s5.7 2 6.5 5.6"/><path d="M17.5 4.5l2 2M19.5 4.5l-2 2"/></svg>Props</button>
   <button data-v="edges" aria-label="Edges"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Edges</button>
   <button data-v="ai" aria-label="AI"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg>AI</button>
   <button data-v="record" aria-label="Record"><svg class="ic" viewBox="0 0 24 24"><path d="M4 19V5"/><rect x="7" y="11" width="3" height="8"/><rect x="13" y="7" width="3" height="12"/><rect x="19" y="14" width="2" height="5"/></svg>Record</button>
@@ -3845,6 +3855,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
 <script src="/lib/edgedesk_decision_ui.js?v=20260929b"></script>
+<!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
+     file the Node build prices with) and the terminal that renders it -->
+<script src="/lib/edgedesk_props.js?v=20260929b"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929b"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5121,7 +5135,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      this the bar shows nothing active and a reader loses their place. */
   var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/
+  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/if(v==='pprops'){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}}else{try{if(/^#playerprops/.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}}/*ADDED: PLAYER PROPS terminal; its #playerprops link belongs to it alone*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
@@ -19012,8 +19026,8 @@ function renderSetEdge(){
 
   out+=setCard('Startup',null,
     setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
-      ['research','edges','collective','record','ledger','news','faults'].map(function(t){
-        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+t.charAt(0).toUpperCase()+t.slice(1)+'</option>';}).join('')+'</select>',
+      ['research','pprops','edges','collective','record','ledger','news','faults'].map(function(t){
+        return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+(t==='pprops'?'Player Props':t.charAt(0).toUpperCase()+t.slice(1))+'</option>';}).join('')+'</select>',
       'Research is the default. Faults is still selectable; it just no longer holds a seat in the nav bar')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 
@@ -19896,6 +19910,7 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
   var _rh=null;try{_rh=researchParseHash();}catch(__){}
   if((location.hash||'')==='#card')show('card'); /* the EdgeDesk Card deep link */
+  else if(/^#playerprops/.test(location.hash||''))show('pprops'); /* the Player Props deep link (#playerprops[/<league>[/<prop>]]) */
   else if(_rh){ /* a #research/<module>[/<entity>] deep link beats the remembered tab */
     researchGo(_rh.sub);
     if(_rh.entity!=null){(function(rm,ent){
@@ -24456,7 +24471,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     {id:'marketlab',ic:'market',t:'Market lab',d:'Consensus, sharp-only, no-vig and best price from stored quotes.'},
     {id:'features',ic:'game',t:'Feature explorer',d:'Definition, source, transformation and distribution of every input.'},
     {id:'provenance',ic:'fighter',t:'Data provenance',d:'Where every model input came from, and how fresh it is.'},
-    {id:'record',ic:'history',t:'Research record',d:'Historical research output, graded against the close.'}
+    {id:'record',ic:'history',t:'Research record',d:'Historical research output, graded against the close.'},
+    {id:'props',ic:'research',t:'Player props validation',d:'Each prop market\'s stage and the walk-forward and live evidence behind it.'}
   ];
   function toolById(id){for(var i=0;i<TOOLS.length;i++)if(TOOLS[i].id===id)return TOOLS[i];return null;}
   function homeHTML(){
@@ -24936,6 +24952,15 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
 
   /* --------------------------------------------------------------- record */
+  /* PLAYER PROPS VALIDATION: lib/edgedesk_props_ui.js renders every market's
+     stage with EDProps.stageTable over football/props/nfl/calibration.json
+     and the live performance.json files, the function the build stamps on
+     the board. It paints into its host after this string lands. */
+  function propsTool(){
+    if(!window.EDPropsUI||!EDPropsUI.lab)return none('The player-props module is not loaded on this page.');
+    setTimeout(function(){try{EDPropsUI.lab(document.getElementById('labPropsHost'));}catch(_){}},0);
+    return '<div id="labPropsHost"></div>';
+  }
   function recordTool(){
     var h='<p class="fb-ms-d"><b>Historical research output.</b> Every graded signal the capture flagged, against the close it later recorded. This is not a picks record: a row is a research claim and its closing-line result.</p>';
     if(!L.sigs)return h+(L.sigsErr?none('Signals could not be read: '+esc(L.sigsErr)):'<div class="fb-skel" style="height:60px"></div>');
@@ -25000,7 +25025,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var head='<div class="lab-tool-hd"><button class="fb-tgl" onclick="labGoHome()" aria-label="Back to Lab">‹ Lab</button>';
     if(t.indexOf('exp:')===0){var x=expById(t.slice(4));if(!x)return head+'<span class="t">Experiment</span></div>'+none('No experiment with that id is on file. Pick one from the list.');return head+'<span class="t">Experiment</span></div>'+expDetail(x);}
     var tool=toolById(t);if(!tool)return head+'</div>'+none('No tool with that name. Pick one from the list.');
-    var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool}[t];
+    var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool,props:propsTool}[t];
     var out;try{out=body();}catch(e){out=none('This tool failed to render ('+esc(e&&e.message)+'). Nothing is shown rather than something wrong; refresh to retry.');}
     return head+'<span class="t">'+esc(tool.t)+'</span></div>'+mobileNav()+out;
   }
@@ -48342,7 +48367,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id)+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -53253,9 +53278,17 @@ window.fbGxToggle=function(gid,id){
   var el=document.getElementById('gxs-'+String(k).replace(/[^a-zA-Z0-9]/g,'_'));
   if(el){el.classList.toggle('open',FB_GX_OPEN[k]);
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
-      var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
+      var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}
+    /* the player-prop section reads its board only once it is opened */
+    if(FB_GX_OPEN[k]&&id==='props'&&window.EDPropsUI&&EDPropsUI.wake){try{EDPropsUI.wake(el);}catch(_){}}}
 };
-var FB_GX_DEFAULT={why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+/* PLAYER PROP RESEARCH on a game card (NFL and FBS): lib/edgedesk_props_ui.js
+   over the Player Props board, the same evaluation the Props page runs. The
+   board is fetched once, and only when a reader opens the section. */
+function fbPropsBody(lg,gid){try{return window.EDPropsUI&&EDPropsUI.gameSection?EDPropsUI.gameSection(lg,gid,true):'';}catch(_){return '';}}
+function fbPropsSecHTML(lg,gid){var b=fbPropsBody(lg,gid);return b?'<details class="qev-more fb-props" ontoggle="if(this.open&&window.EDPropsUI)EDPropsUI.wake(this)"><summary>Player prop research</summary>'+b+'</details>':'';}
+window.fbPropsSecHTML=fbPropsSecHTML; /* the NFL card's section, for tools/props/props_ui.e2e.js */
+var FB_GX_DEFAULT={props:false,why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -54824,6 +54857,7 @@ function fbP4Card(u){
       'answers built only from typed evidence — fact, model, market, history, uncertainty, hypothetical')
     +fbGxSec(gid,'watch','Follow · what changed',fbGxWatch(u,p),false,
       'a timeline of captured changes for games you follow')
+    +fbGxSec(gid,'props','Player prop research',fbPropsBody('cfb',g.game_id),false,'EdgeDesk’s player-prop projections and any priced leads')
     +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
     +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
     +fbGxSec(gid,'quality','Data quality and methodology',compl+why,false,'the engine’s own notes')

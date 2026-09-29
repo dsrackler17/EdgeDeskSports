@@ -242,6 +242,43 @@ the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
 - `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
 - `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
 
+## Player Props — the prop research terminal (NFL and CFB)
+
+The **Props** tab (`#playerprops`) prices player props the same way the
+decision layer prices sides and totals. For every prop it shows:
+
+- **Projection:** volume × share × efficiency, with the raw model shown
+  beside a 30% market-informed blend.
+- **Distribution:** a full distribution per market (Normal, Poisson, negative
+  binomial, gamma-compound, longest-play), giving the probability of over,
+  under and push at any line.
+- **Price:** fair odds; the no-vig market; the best price across books and
+  alternate lines; EV at that exact price.
+- **Decision:** BET / LEAN / WATCH / PASS / NO DECISION. Units are 0.25–1U,
+  capped by how well the probabilities have been validated. A huge EV is
+  treated as a price to verify, not a bet.
+
+Hit rates, usage, matchup ranks, role, injuries and the game environment sit
+beside the numbers as context. The page labels them as context, never as a
+probability.
+
+Prices come from The Odds API. The capture is opt-in and budgeted: it needs
+the `ODDS_API_KEY` secret and the repository variable `PROPS_CAPTURE=on`.
+Until then the board shows projections and fair lines, and no EV.
+
+Graded results print CLV only where a close exists. Calibration is measured
+by probability bucket. The probability source is promoted only when the
+settled record earns it.
+
+- **Runbook:** [`docs/runbooks/player-props.md`](docs/runbooks/player-props.md)
+- **Design:** [`docs/player-props/DESIGN.md`](docs/player-props/DESIGN.md)
+
+- `npm run props:test` — the kernel and the offline pipeline
+- `npm run props:sql` — the ledger and watchlist SQL against a real PostgreSQL
+- `npm run props:e2e` — the page in Chromium, desktop and a 390 px phone
+- `npm run props:board`, `props:board:cfb`, `props:capture`, `props:grade`,
+  `props:backtest`, `props:sync` — the pipeline steps
+
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on
 every game card and on the Top 5), **research-condition alerts** under the bell

@@ -227,6 +227,15 @@ footer a:hover{color:var(--text)}
   </div>
 </section>
 
+<section class="sec" id="player-props">
+  <div class="wrap">
+    <span class="ey">Player props · frozen before kickoff · graded after the final</span>
+    <h2>Every player-prop bet EdgeDesk flagged, and how it graded</h2>
+    <p class="sub">Before kickoff, EdgeDesk freezes each player-prop BET and LEAN it would act on: the price, the book, EdgeDesk's probability, EV, the decision, and the market's validation stage. The ledger only ever grows. After the game each one is graded against the box score as a win, loss or push, or void when the player did not play. LEANs are graded at a flat 1U for information and are not counted as bets. Closing-line value is measured against the last price EdgeDesk captured before kickoff. Every figure below is copied from the file football/props/grade.js writes; this page calculates nothing of its own.</p>
+    <div id="propsPub"><div class="edrec-empty">Loading the player-prop record…</div></div>
+  </div>
+</section>
+
 <section class="sec">
   <div class="wrap">
     <span class="ey">Method check</span>
@@ -4290,6 +4299,49 @@ footer a:hover{color:var(--text)}
   if(typeof document!=='undefined'&&document.getElementById('labPub')) window.EDLABPUB.load();
 })();
 /*__EDLAB_PUB_END__*/
+</script>
+<script>
+/* PLAYER PROPS — the public record (football/props/<league>/performance.json,
+   written by football/props/grade.js from the append-only evaluations and
+   results ledgers). Nothing here computes a metric: every figure is copied
+   from the file, and a missing file is the empty state. */
+(function(){
+  'use strict';
+  var D='—', LEAGUES=[['nfl','NFL'],['cfb','College football']];
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function pc(x,k){ return isNum(x)?(100*x).toFixed(k==null?1:k)+'%':D; }
+  function sp(x,k){ return isNum(x)?(x>=0?'+':'−')+Math.abs(100*x).toFixed(k==null?1:k)+'%':D; }
+  function ppt(x){ return isNum(x)?(x>=0?'+':'−')+Math.abs(x).toFixed(2)+' pp':D; }
+  function u2(x){ return isNum(x)?(x>=0?'+':'−')+Math.abs(x).toFixed(2)+'U':D; }
+  function wlp(s){ return s&&isNum(s.wins)?s.wins+'-'+(s.losses||0)+'-'+(s.pushes||0):D; }
+  function kpis(rows){ return '<div class="kpis">'+rows.map(function(k){ return '<div class="kpi"><div class="n">'+esc(k[1])+'</div><div class="l">'+esc(k[0])+'</div></div>'; }).join('')+'</div>'; }
+  function leagueHTML(name,perf,lg){
+    var h='<h3 style="margin:22px 0 0;font-size:15px">'+esc(name)+'</h3>';
+    if(!perf||perf.schema!=='edgedesk_player_props_performance_v1'||!perf.summary)
+      return h+'<div class="edrec-empty">No '+esc(name.toLowerCase())+' player prop has been graded yet. Pregame evaluations are frozen before kickoff and graded after the final; nothing is shown here until one settles.</div>';
+    var s=perf.summary, c=perf.calibration||{}, cs=perf.calibration_state||{}, ln=perf.lean||{};
+    h+=kpis([['Bets (W-L-P)',s.n?s.n+' ('+wlp(s)+')':'0'],['Units',u2(s.units)],['ROI',sp(s.roi)],['Average EV at entry',sp(s.avg_ev)],['Closing-line value',ppt(s.avg_prob_clv_pp)],['Beat the close',pc(s.beat_close_rate,0)],['Leans, flat 1U (W-L-P)',wlp(ln)],['Calibration (Brier · ECE · n)',(isNum(c.brier)?c.brier.toFixed(3):D)+' · '+(isNum(c.ece)?c.ece.toFixed(3):D)+' · '+(c.n||0)]]);
+    var bm=perf.breakdown&&perf.breakdown.market||[];
+    if(bm.length) h+='<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:12.5px;font-family:\'JetBrains Mono\',monospace"><thead><tr style="color:var(--faint);text-align:right"><th style="text-align:left;padding:4px">Market</th><th style="padding:4px">Bets</th><th style="padding:4px">W-L-P</th><th style="padding:4px">Units</th><th style="padding:4px">ROI</th><th style="padding:4px">CLV</th></tr></thead><tbody>'+
+      bm.map(function(r){ return '<tr style="text-align:right;border-top:1px solid var(--border)"><td style="text-align:left;padding:4px">'+esc(r.key)+'</td><td style="padding:4px">'+esc(r.n)+'</td><td style="padding:4px">'+wlp(r)+'</td><td style="padding:4px">'+u2(r.units)+'</td><td style="padding:4px">'+sp(r.roi)+'</td><td style="padding:4px">'+ppt(r.avg_prob_clv_pp)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    h+='<div class="edrec-note">'+esc(perf.note||'')+(s.sample&&s.sample.label?' Sample: '+esc(s.sample.label)+'.':'')+' Probability source: '+esc(cs.state||D)+'. Last written '+esc(perf.generated_at||D)+'. <a href="/app.html#playerprops/'+lg+'">Open the Props page</a>.</div>';
+    return h;
+  }
+  function sectionHTML(files){
+    files=files||{};
+    return LEAGUES.map(function(L){ return leagueHTML(L[1],files[L[0]],L[0]); }).join('');
+  }
+  window.EDPROPSPUB={
+    leagueHTML:leagueHTML, sectionHTML:sectionHTML,
+    render:function(files){ var el=document.getElementById('propsPub'); if(el) el.innerHTML=sectionHTML(files); },
+    load:function(){
+      var get=function(lg){ return fetch('/football/props/'+lg+'/performance.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); };
+      return Promise.all(LEAGUES.map(function(L){ return get(L[0]); })).then(function(a){ var f={}; LEAGUES.forEach(function(L,i){ f[L[0]]=a[i]; }); window.EDPROPSPUB.render(f); return f; });
+    }
+  };
+  if(typeof document!=='undefined'&&document.getElementById('propsPub')) window.EDPROPSPUB.load();
+})();
 </script>
 <script>
 /* EdgeDesk sports (lib/edgedesk_sports.js, inlined by tools/presentation/inline.js):

@@ -182,6 +182,23 @@ const LIBS = [
     start: '/*__EDPERSONNEL_START__*/', end: '/*__EDPERSONNEL_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* PLAYER PROPS for the desk. EDPROPS is the one prop core every surface
+     prices with (lib/edgedesk_props.js — the Props page and the build load
+     the SAME file), and EDPROPSDESK the deterministic answers over the
+     committed Player Props boards (football/props/desk.js). ORDER MATTERS:
+     the desk reads EDProps. Server-side copies of browser/Node files. */
+  {
+    name: 'EDPROPS',
+    src: path.join(ROOT, 'lib', 'edgedesk_props.js'),
+    start: '/*__EDPROPS_START__*/', end: '/*__EDPROPS_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDPROPSDESK',
+    src: path.join(ROOT, 'football', 'props', 'desk.js'),
+    start: '/*__EDPROPSDESK_START__*/', end: '/*__EDPROPSDESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The CFB explanation fact boundary (brief §90-91; docs/cfb-production/
      SECURITY.md §5): the only facts an explanation of a CFB game may use (the
      stored canonical projection and the governed decision), the tool-less

@@ -1,0 +1,72 @@
+# EdgeDesk Player Props — the suites a pull request must pass.
+#
+# The prop kernel decides what a reader is told about money on a player prop:
+# the probability, the EV at an exact price, the best price across books and
+# lines, BET / LEAN / WATCH / PASS / NO DECISION and the units. A change that
+# assumes −110, turns a hit rate into a probability, prices a stale quote,
+# sizes a stake above its probability source, or lets a positive EV become a
+# BET without clearing every cap has to fail on the PR that makes it.
+# Offline: the pipeline runs on a committed real-data fixture; the SQL suite
+# starts its own throwaway PostgreSQL cluster; the browser suite builds its
+# board in-process.
+name: Player props tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_props*.js'
+      - 'lib/edgedesk_props.css'
+      - 'lib/edgedesk_decision.js'
+      - 'lib/research_core.js'
+      - 'lib/edgedesk_market.js'
+      - 'lib/edgedesk_bankroll.js'
+      - 'football/props/**'
+      - 'tools/props/**'
+      - 'supabase/player_props*.sql'
+      - 'supabase/functions/edgedesk_ai/index.ts'
+      - 'app.html'
+      - '.github/workflows/player-props*.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_props*.js'
+      - 'football/props/*.js'
+      - 'football/props/sources/**'
+      - 'tools/props/**'
+      - 'supabase/player_props*.sql'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: player-props-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The kernel (odds, distributions, quotes, price shopping, decisions, units, settlement, CLV, calibration, engine parity)
+        run: node tools/props/props_core.test.js
+      - name: The pipeline (capture, identity, model, board, pregame freeze, grading, sync) on the real-data fixture
+        run: node football/props/pipeline.test.js
+      - name: The AI desk's prop answers (the kernel on the pipeline's board, and the real edge-function handler)
+        run: node tools/props/props_desk.test.js
+      - name: The ledger and the watchlist against a real PostgreSQL (write-once, pregame-only, RLS)
+        env:
+          PLAYER_PROPS_SQL_REQUIRED: '1'
+        run: node tools/props/player_props_sql.test.js
+      - name: The navigation still holds with the Props seat
+        run: node tools/app/navigation.test.js
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The terminal in a real browser (desktop and a 390 px phone)
+        run: node tools/props/props_ui.e2e.js

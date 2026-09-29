@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T16:45:00.000Z",
   "game_when_label": "2026-10-03 16:45 UTC",
   "published_at": null,
-  "updated_at": "2026-09-28T21:12:19.786Z",
-  "generated_at": "2026-09-28T21:12:19.786Z",
+  "updated_at": "2026-09-29T05:35:56.211Z",
+  "generated_at": "2026-09-29T05:35:56.211Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetOnline.ag and BetRivers on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T20:15:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
       "home": {
         "team": "Georgia",
@@ -321,9 +321,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T19:30:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
-      "generated_at": "2026-09-28T20:39:04.783Z",
+      "generated_at": "2026-09-29T01:44:48.499Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1448,6 +1448,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 10h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Vanderbilt — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1510,12 +1516,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "low confidence",
-          "text": "rivalry situational effect is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1582,7 +1582,7 @@
       "total_market": "52.5",
       "book": "captured · BetOnline.ag",
       "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "1 hour old",
+      "capture_age": "10 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1647,11 +1647,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "85 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.51 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 85,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1677,7 +1677,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 13.4,
             "max": 15
           },
           {
@@ -1707,7 +1707,7 @@
             "text": "up to +3"
           },
           {
-            "action": "Fetch the venue forecast",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1739,28 +1739,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Vanderbilt",
-          "side": "away",
-          "line": 24.5,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "Vanderbilt +24.5 (price not captured) at BetOnline.ag"
-        },
-        "other": {
-          "team": "Georgia",
-          "side": "home",
-          "line": -24.5,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "Georgia -24.5 (price not captured) at BetOnline.ag"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1972,11 +1952,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-28T21:12:19.786Z"
+    "at": "2026-09-29T05:35:56.211Z"
   }
 }

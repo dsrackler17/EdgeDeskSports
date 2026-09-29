@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-28T23:28:04.002Z",
+ "generated_at": "2026-09-29T10:25:23.510Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-28T23:28:04.002Z",
-  "reliability_generated_at": "2026-09-28T23:28:04.002Z",
-  "enrichment_generated_at": "2026-09-28T23:27:57.539Z",
+  "at": "2026-09-29T10:25:23.510Z",
+  "reliability_generated_at": "2026-09-29T10:25:23.510Z",
+  "enrichment_generated_at": "2026-09-29T10:25:16.120Z",
   "counts": {
-   "games": 64,
-   "mean": 84,
-   "median": 87,
+   "games": 66,
+   "mean": 83.9,
+   "median": 86.5,
    "by_band": {
-    "STRONG": 50,
+    "STRONG": 51,
     "LOW": 3,
-    "ADEQUATE": 10,
+    "ADEQUATE": 11,
     "CAUTION": 1
    },
-   "missing_qb_status": 127,
+   "missing_qb_status": 131,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 14,
+   "games_lacking_injury_information": 15,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 64,
-   "stale_evidence_records": 76,
+   "games_under_two_market_sources": 66,
+   "stale_evidence_records": 75,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -318,6 +318,7 @@
      "availability": 4.6,
      "qb_status": 2,
      "rating_sample": 1.7,
+     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1025,6 +1026,30 @@
      "away": "NO_SOURCE"
     }
    },
+   "401862794": {
+    "game": "South Florida @ UTSA",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "fam": {
+     "favorite_flips": 6,
+     "stability": 2.8,
+     "availability": 4.6,
+     "qb_status": 2,
+     "qb_identity": 1.3,
+     "qb_conflict": 0.9,
+     "rating_sample": 1.4,
+     "starters": 0.6,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
    "401864513": {
     "game": "San José State @ Hawai'i",
     "score": 89,
@@ -1079,6 +1104,7 @@
      "qb_status": 2,
      "rating_sample": 0.7,
      "stability": 0.6,
+     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1253,6 +1279,28 @@
      "stability": 1.1,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
+    }
+   },
+   "401869933": {
+    "game": "South Alabama @ Arkansas State",
+    "score": 85,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 6,
+     "qb_status": 4,
+     "stability": 1.5,
+     "qb_conflict": 0.9,
+     "rating_sample": 1.4,
+     "qb_identity": 0.9,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1508,25 +1556,25 @@
   }
  },
  "previous": {
-  "at": "2026-09-28T23:24:56.728Z",
+  "at": "2026-09-29T05:57:24.961Z",
   "counts": {
-   "games": 64,
-   "mean": 84,
-   "median": 87,
+   "games": 66,
+   "mean": 83.9,
+   "median": 86.5,
    "by_band": {
-    "STRONG": 50,
+    "STRONG": 51,
     "LOW": 3,
-    "ADEQUATE": 10,
+    "ADEQUATE": 11,
     "CAUTION": 1
    },
-   "missing_qb_status": 127,
+   "missing_qb_status": 131,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 14,
+   "games_lacking_injury_information": 15,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 64,
-   "stale_evidence_records": 76,
+   "games_under_two_market_sources": 66,
+   "stale_evidence_records": 75,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -2636,6 +2684,78 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 64,
     "stale_evidence_records": 76,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-29T01:45:37.746Z",
+   "counts": {
+    "games": 66,
+    "mean": 83.9,
+    "median": 86.5,
+    "by_band": {
+     "STRONG": 51,
+     "LOW": 3,
+     "ADEQUATE": 11,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 131,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 66,
+    "stale_evidence_records": 76,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-29T05:57:24.961Z",
+   "counts": {
+    "games": 66,
+    "mean": 83.9,
+    "median": 86.5,
+    "by_band": {
+     "STRONG": 51,
+     "LOW": 3,
+     "ADEQUATE": 11,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 131,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 66,
+    "stale_evidence_records": 75,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-29T10:25:23.510Z",
+   "counts": {
+    "games": 66,
+    "mean": 83.9,
+    "median": 86.5,
+    "by_band": {
+     "STRONG": 51,
+     "LOW": 3,
+     "ADEQUATE": 11,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 131,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 66,
+    "stale_evidence_records": 75,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

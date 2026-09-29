@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/capture/index.ts
 //  TYPE:    Edge Function (deployed) - cron job
 //  DEPLOY:  supabase functions deploy capture --no-verify-jwt
-//  BUILD:   capture-v9-qualified-r2   (authoritative value: `export const BUILD` below)
+//  BUILD:   capture-v11-player-props-r1   (authoritative value: `export const BUILD` below)
 //  IMPORTS: NONE. Not one. See "WHY THIS FILE HAS NO IMPORTS" below.
 //  TESTS:   node tools/capture/capture.test.js   (imports THIS file, no network)
 // ============================================================
@@ -109,6 +109,42 @@
 //   - Tick history, on by default, with its errors checked.
 //   - Rejection counts by reason, so "quiet slate" and "capture rejected
 //     everything" can never look the same.
+//
+// ═════════════════════════════════════════════════════════════════════════════
+// v10 — ALTERNATE LINES
+//
+//   `alternate_spreads` and `alternate_totals` exist only on the event-level
+//   endpoint (/events/{id}/odds). The DAY and NEAR tiers buy them for football
+//   events inside their window, merge each response into its event BEFORE
+//   priceEvent(), and canonicalMarket() files them under `spreads` / `totals`.
+//   The point stays in sigKey(), so -3 and -3.5 remain two bets; a ladder that
+//   repeats the featured number at the same book keeps the featured quote.
+//
+// v11 — PLAYER PROPS
+//
+//   THE PLAYER IS IN `description`, NOT `name`. A player outcome reads
+//   { name: "Over", description: "Patrick Mahomes", price, point }. Keyed the way
+//   game markets are keyed — event|market|selection|point — Mahomes Over 274.5
+//   and Josh Allen Over 274.5 are ONE row, and devigging one book's player
+//   market as a single outcome space averages every quarterback on the slate
+//   into one probability. So a player market is identified by the player at
+//   every step: the partition that pairs Over with Under (partitionPlayer-
+//   PropOutcomes), the priceEvent slot, the point census, sigKey() and the
+//   quote key. Game-market sig_keys are byte-for-byte what they were.
+//
+//   CAPTURED IS NOT QUALIFIED. Every quote the provider returns for an eligible
+//   event is stored in player_prop_quotes (current) and player_prop_quote_ticks
+//   (change-only history) so a reader can line-shop it, including one-sided
+//   markets that have no honest fair value. Qualification is separate: only a
+//   two-sided Over/Under at one player's exact line can reach qualifySignal(),
+//   and the player-prop policy family has NO edge floor, so nothing here
+//   becomes an actionable EdgeDesk signal until a floor is earned from history.
+//   POLICY_VERSION is unchanged because no actionable rule changed.
+//
+//   GAME LINES COME FIRST. Props run in a second pass after every sport's game
+//   lines are written, on their own credit budget, their own per-event refresh
+//   clock and a quota floor, so a Saturday slate cannot starve a spread of its
+//   write or drain the account.
 //
 // ═════════════════════════════════════════════════════════════════════════════
 // WHY THIS FILE HAS NO IMPORTS
@@ -322,7 +358,7 @@
 /*__EDSPORTS_END__*/
 const EDSPORTS: any = (globalThis as any).EDSPORTS;
 
-export const BUILD = "capture-v9-qualified-r3";
+export const BUILD = "capture-v11-player-props-r1";
 
 /* Bumped whenever the QUALIFICATION RULES change, independently of BUILD. It is
    written to `flagged_policy` on every freeze so the record can segment its
@@ -555,6 +591,12 @@ export const EDGE_FLOOR: Record<string, number | null> = {
   "*|totals|A": 0.020, "*|totals|B": 0.030,
   "*|h2h|A": 0.025, "*|h2h|B": 0.035,
   "*|*|A": 0.025, "*|*|B": 0.035,
+  /* PLAYER PROPS: NO FLOOR. Nothing in this repository has measured a single
+     player-prop edge against a result, so there is no number to write here
+     that would not be invented. Two-sided props are priced and stored; none is
+     actionable until backtested evidence puts a floor in this row (or in
+     CAPTURE_EDGE_FLOOR as `"nfl|player_props|A": 0.04`). */
+  "*|player_props|A": null, "*|player_props|B": null,
 };
 
 /* The ceiling above which an edge is evidence of a broken price rather than an
@@ -673,10 +715,163 @@ export const KEY_NUMBERS_MINOR: Record<string, number[]> = {
   ncaaf: [1, 2, 4, 8, 11, 13, 17, 18, 21, 24, 28],
 };
 
+/* ── PLAYER PROP MARKETS ─────────────────────────────────────────────────────
+   The Odds API's American-football player markets (NFL and NCAAF share one
+   key list), exactly as the provider names them. Nothing here is invented: a
+   key the provider does not serve fails only the request batch that carried
+   it, and the run names the batch. Player markets are served ONLY by
+   /events/{id}/odds; they never belong in CAPTURE_MARKETS.
+
+   One list, two consumers: defaultConfig() reads it as the default capture
+   set, and the tests assert its exact contents so a key cannot be dropped or
+   typed into existence without a failing check. */
+export const PLAYER_PROP_MARKETS: string[] = [
+  "player_assists",
+  "player_defensive_interceptions",
+  "player_field_goals",
+  "player_kicking_points",
+  "player_pass_attempts",
+  "player_pass_completions",
+  "player_pass_interceptions",
+  "player_pass_longest_completion",
+  "player_pass_rush_yds",
+  "player_pass_rush_reception_tds",
+  "player_pass_rush_reception_yds",
+  "player_pass_tds",
+  "player_pass_yds",
+  "player_pass_yds_q1",
+  "player_pats",
+  "player_receptions",
+  "player_reception_longest",
+  "player_reception_tds",
+  "player_reception_yds",
+  "player_rush_attempts",
+  "player_rush_longest",
+  "player_rush_reception_tds",
+  "player_rush_reception_yds",
+  "player_rush_tds",
+  "player_rush_yds",
+  "player_sacks",
+  "player_solo_tackles",
+  "player_tackles_assists",
+  "player_tds",
+  "player_tds_over",
+  "player_1st_td",
+  "player_anytime_td",
+  "player_last_td",
+];
+
+/* The alternate ladders the provider serves for those markets. Each is filed
+   under its base market by canonicalMarket(); the quote keeps the alternate key
+   as its source_market so provenance is never lost. */
+export const PLAYER_PROP_ALT_MARKETS: string[] = [
+  "player_assists_alternate",
+  "player_field_goals_alternate",
+  "player_kicking_points_alternate",
+  "player_pass_attempts_alternate",
+  "player_pass_completions_alternate",
+  "player_pass_interceptions_alternate",
+  "player_pass_longest_completion_alternate",
+  "player_pass_rush_yds_alternate",
+  "player_pass_rush_reception_tds_alternate",
+  "player_pass_rush_reception_yds_alternate",
+  "player_pass_tds_alternate",
+  "player_pass_yds_alternate",
+  "player_pats_alternate",
+  "player_receptions_alternate",
+  "player_reception_longest_alternate",
+  "player_reception_tds_alternate",
+  "player_reception_yds_alternate",
+  "player_rush_attempts_alternate",
+  "player_rush_longest_alternate",
+  "player_rush_reception_tds_alternate",
+  "player_rush_reception_yds_alternate",
+  "player_rush_tds_alternate",
+  "player_rush_yds_alternate",
+  "player_sacks_alternate",
+  "player_solo_tackles_alternate",
+  "player_tackles_assists_alternate",
+];
+
+/* Scorer markets are priced Yes / No, not Over / Under. They are captured and
+   devigged per player like any two-sided market, but a scorer probability is a
+   different object from a yardage line and is not yet allowed near
+   qualification. */
+export const PLAYER_PROP_YES_NO = new Set(["player_1st_td", "player_anytime_td", "player_last_td"]);
+
+/** A player-market override from the environment. Unset or "" keeps the
+    provider list; "none" / "off" / "false" is an empty list, so a deployment
+    can turn alternates off without a redeploy. Only player_* keys are kept (a
+    game market here would be requested from the event endpoint for nothing),
+    alternates only in the alternate list and standard keys only in the other. */
+export function propMarketList(raw: string | undefined, fallback: string[], alternate: boolean): string[] {
+  const v = String(raw ?? "").trim().toLowerCase();
+  if (!v) return [...fallback];
+  if (v === "none" || v === "off" || v === "false") return [];
+  const keys = v.split(",").map((x) => x.trim()).filter(Boolean)
+    .filter((k) => isPlayerPropMarket(k) && k.endsWith("_alternate") === alternate);
+  return [...new Set(keys)];
+}
+
+/** CAPTURE_MARKETS with any player market removed. Returned unchanged —
+    byte for byte — when there is none, which is every correct configuration. */
+export function withoutPlayerMarkets(markets: string): string {
+  const parts = String(markets ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (!parts.some((m) => isPlayerPropMarket(m))) return markets;
+  return parts.filter((m) => !isPlayerPropMarket(m)).join(",");
+}
+
 export interface Config {
   regions: string;
   bookmakers: string[];
   markets: string;
+  /** Player markets somebody put in CAPTURE_MARKETS. The sport-wide /odds
+      endpoint refuses player markets, so one there would 422 the whole sport's
+      board; they are removed from `markets` and named in the run log instead. */
+  marketsIgnored: string[];
+  /** Additional event-level markets. The provider only exposes these through
+      /events/{eventId}/odds, so they are fetched separately and normalized back
+      into spreads/totals before pricing. */
+  alternateLines: boolean;
+  alternateMarkets: string[];
+  alternateMaxHours: number;
+  alternateNearHours: number;
+  alternateMaxEvents: number;
+  alternateConcurrency: number;
+  /** PLAYER PROPS — event-level only, football only, captured in their own pass
+      after every game line is written. */
+  playerProps: boolean;
+  playerPropMarkets: string[];
+  playerPropAlternateMarkets: string[];
+  /** How far ahead the DAY tier (and an untiered run) buys props. */
+  playerPropMaxHours: number;
+  /** How far ahead the NEAR tier buys props, and the window inside which an
+      event is re-polled on the short interval. */
+  playerPropNearHours: number;
+  /** Events per sport per run, nearest kickoff first. */
+  playerPropMaxEvents: number;
+  /** Events fetched at once. Each event's market batches run in sequence. */
+  playerPropConcurrency: number;
+  /** Markets per provider request. Billing is per market returned, so the
+      batch size changes the request count, never the cost. */
+  playerPropMarketsPerRequest: number;
+  /** Minimum minutes between two prop polls of the same event outside, and
+      inside, playerPropNearHours of its kickoff. Without this the DAY tier
+      (every 30 minutes) would re-buy a full prop board 60 times per game. */
+  playerPropIntervalMin: number;
+  playerPropNearIntervalMin: number;
+  /** Credits one run may spend on props, estimated before each request as
+      markets requested × region-equivalents and settled from x-requests-last. */
+  propMaxCreditsPerRun: number;
+  /** (event × market) pairs one run may request. */
+  propMaxMarketRequestsPerRun: number;
+  /** Props stop when the provider reports fewer credits than this left on the
+      account, so game-line capture always has quota to run on. */
+  propMinQuotaRemaining: number;
+  /** Also write two-sided player props into `signals`. OFF by default: see
+      PLAYER PROP SIGNALS in the handler for the three places game-line capture
+      would pay for it. */
+  playerPropSignals: boolean;
   sportsEnv: string;
   autoPrefixes: string[];
   referenceBooks: string[];
@@ -785,7 +980,36 @@ export function defaultConfig(env: EnvGet): Config {
        route once ?probe=1 has confirmed how the account is billed for it. */
     regions: g("CAPTURE_REGIONS", "us,eu"),
     bookmakers: list("CAPTURE_BOOKMAKERS", ""),
-    markets: g("CAPTURE_MARKETS", "h2h,spreads,totals"),
+    markets: withoutPlayerMarkets(g("CAPTURE_MARKETS", "h2h,spreads,totals")),
+    marketsIgnored: list("CAPTURE_MARKETS", "h2h,spreads,totals").filter((m) => isPlayerPropMarket(m)),
+    /* Alternate lines are opt-out once this build is deployed, but they are
+       deliberately constrained by cadence below: DAY refreshes the ladder out
+       to 30h, NEAR only refreshes the final 2h, and BOARD does not buy alternate
+       markets at all. Every knob can be overridden without a redeploy. */
+    alternateLines: bool("CAPTURE_ALT_LINES", true),
+    alternateMarkets: list("CAPTURE_ALT_MARKETS", "alternate_spreads,alternate_totals"),
+    alternateMaxHours: Math.max(0, num("CAPTURE_ALT_MAX_HOURS", 30)),
+    alternateNearHours: Math.max(0, num("CAPTURE_ALT_NEAR_HOURS", 2)),
+    alternateMaxEvents: Math.max(0, Math.floor(num("CAPTURE_ALT_MAX_EVENTS", 80))),
+    alternateConcurrency: Math.max(1, Math.floor(num("CAPTURE_ALT_CONCURRENCY", 6))),
+    /* Player props: on, windowed by tier (BOARD buys none), and budgeted three
+       ways — per run in credits, per run in (event × market) requests, and by a
+       floor on the account's remaining quota. A market list set to "none" or
+       "off" is empty; unset or "" is the full provider list below. */
+    playerProps: bool("CAPTURE_PLAYER_PROPS", true),
+    playerPropMarkets: propMarketList(env("CAPTURE_PLAYER_PROP_MARKETS"), PLAYER_PROP_MARKETS, false),
+    playerPropAlternateMarkets: propMarketList(env("CAPTURE_PLAYER_PROP_ALT_MARKETS"), PLAYER_PROP_ALT_MARKETS, true),
+    playerPropMaxHours: Math.max(0, num("CAPTURE_PLAYER_PROP_MAX_HOURS", 30)),
+    playerPropNearHours: Math.max(0, num("CAPTURE_PLAYER_PROP_NEAR_HOURS", 3)),
+    playerPropMaxEvents: Math.max(0, Math.floor(num("CAPTURE_PLAYER_PROP_MAX_EVENTS", 80))),
+    playerPropConcurrency: Math.max(1, Math.floor(num("CAPTURE_PLAYER_PROP_CONCURRENCY", 4))),
+    playerPropMarketsPerRequest: Math.max(1, Math.floor(num("CAPTURE_PLAYER_PROP_MARKETS_PER_REQUEST", 12))),
+    playerPropIntervalMin: Math.max(0, num("CAPTURE_PLAYER_PROP_INTERVAL_MIN", 120)),
+    playerPropNearIntervalMin: Math.max(0, num("CAPTURE_PLAYER_PROP_NEAR_INTERVAL_MIN", 20)),
+    propMaxCreditsPerRun: Math.max(0, num("CAPTURE_PROP_MAX_CREDITS_PER_RUN", 1000)),
+    propMaxMarketRequestsPerRun: Math.max(0, Math.floor(num("CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN", 2000))),
+    propMinQuotaRemaining: Math.max(0, num("CAPTURE_PROP_MIN_QUOTA_REMAINING", 5000)),
+    playerPropSignals: bool("CAPTURE_PLAYER_PROP_SIGNALS", false),
     sportsEnv: g("CAPTURE_SPORTS", ""),
     /* v8 CONCATENATED "americanfootball_nfl" onto whatever this was set to, so
        auto-add could not be turned off: setting CAPTURE_AUTO_PREFIXES="" still
@@ -984,10 +1208,95 @@ export function backable(market: string): boolean {
     refuses cannot be flagged by another. */
 export const BACK_MARKETS = new Set(["h2h", "spreads", "totals"]);
 
+/** A provider player market: `player_*`, standard or alternate. */
+export function isPlayerPropMarket(market: string): boolean {
+  return /^player_[a-z0-9_]+$/.test(String(market ?? "").toLowerCase());
+}
+
+/** The standard market an alternate player ladder belongs to:
+    player_rush_yds_alternate -> player_rush_yds. Anything else is returned as
+    given (lower-cased). The quote keeps the alternate key as its source. */
+export function playerPropBaseMarket(market: string): string {
+  const m = String(market ?? "").toLowerCase();
+  return isPlayerPropMarket(m) && m.endsWith("_alternate") ? m.slice(0, -"_alternate".length) : m;
+}
+
+/** Map provider-specific alternate market keys onto the canonical market that
+    EdgeDesk already understands. The POINT remains part of sigKey(), so -3 and
+    -3.5 are still different bets; this only prevents the same bet from becoming
+    a second namespace merely because it came from the event-level endpoint.
+    Game markets map exactly as v10 did; a player alternate maps to its base. */
+export function canonicalMarket(market: string): string {
+  const m = String(market ?? "").toLowerCase();
+  if (m === "alternate_spreads") return "spreads";
+  if (m === "alternate_totals") return "totals";
+  if (isPlayerPropMarket(m)) return playerPropBaseMarket(m);
+  return m;
+}
+
+/** Which policy table row a market reads. Game markets are their own family,
+    so every existing lookup resolves exactly as before. Every player market is
+    `player_props`, which keeps a prop from inheriting a game-line number —
+    above all the generic `*|*` edge floor, which was never validated for props. */
+export function marketPolicyFamily(market: string): string {
+  const m = canonicalMarket(market);
+  return isPlayerPropMarket(m) ? "player_props" : m;
+}
+
+/** Can qualifySignal() price this market honestly? The three game markets, and
+    — for players — only a standard Over/Under at one player's exact line. A
+    scorer market (Yes/No) is captured and devigged but not qualified yet, and a
+    one-sided market never gets this far: it has no fair value to test. */
+export function marketUnderstoodForQualification(market: string, selection?: string | null): boolean {
+  const m = String(market ?? "").toLowerCase();
+  if (BACK_MARKETS.has(m)) return true;
+  if (!isPlayerPropMarket(m) || m !== playerPropBaseMarket(m)) return false;
+  if (PLAYER_PROP_YES_NO.has(m)) return false;
+  if (selection == null) return true;
+  const side = String(selection).trim().toLowerCase();
+  return side === "over" || side === "under";
+}
+
+/** The player as the book wrote them, tidied only for whitespace. */
+export function playerDisplayName(raw: unknown): string {
+  return String(raw ?? "").normalize("NFC").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * The player's key inside ONE event: the name folded only where two spellings
+ * can never be two people — case, accents, periods and apostrophes, spacing.
+ * "A.J. Brown" and "AJ Brown" are one key; "Michael Pittman Jr." and "Michael
+ * Pittman" are NOT, because a suffix can be the only thing separating a father
+ * from a son. It is scoped to an event and is NOT a player id: nothing here
+ * pretends a name is globally authoritative. A roster source joins onto
+ * (event, player_key) later.
+ */
+export function playerKey(raw: unknown): string {
+  return playerDisplayName(raw).normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase()
+    .replace(/[.'\u2018\u2019`\u00b4]/g, "")
+    .replace(/[^\p{L}\p{N}\- ]+/gu, " ")
+    .replace(/\s+/g, " ").trim();
+}
+
+/* Sides as the reader sees them. Books agree on these four words and disagree
+   on their case; a game-market selection is never touched. */
+function propSide(raw: unknown): string {
+  const t = String(raw ?? "").trim();
+  const l = t.toLowerCase();
+  return l === "over" ? "Over" : l === "under" ? "Under" : l === "yes" ? "Yes" : l === "no" ? "No" : t;
+}
+
 /* THE TRAILING PIPE IS LOAD-BEARING. A selection with no point still ends in "|".
-   This is the primary key of `signals` and it must not drift by one character. */
-export const sigKey = (o: { event_id: string; market: string; selection: string; point: number | null }): string =>
-  `${o.event_id}|${o.market}|${o.selection}|${o.point ?? ""}`;
+   This is the primary key of `signals` and it must not drift by one character.
+
+   A PLAYER MARKET CARRIES THE PLAYER. Decided by the market key, not by a flag
+   a caller could forget: event|market|player_key|selection|point. Without the
+   player, Mahomes Over 274.5 and Allen Over 274.5 are one row. Every other
+   market builds exactly the v9 string. */
+export const sigKey = (o: { event_id: string; market: string; selection: string; point: number | null; participant_key?: string | null }): string =>
+  isPlayerPropMarket(o.market)
+    ? `${o.event_id}|${o.market}|${o.participant_key ?? ""}|${o.selection}|${o.point ?? ""}`
+    : `${o.event_id}|${o.market}|${o.selection}|${o.point ?? ""}`;
 
 /**
  * Which football key numbers a move between two spread/total values touches.
@@ -1032,7 +1341,7 @@ export function freshnessBucket(hoursToStart: number): string {
 
 /** The maximum quote age, in seconds, that counts as fresh for this selection. */
 export function freshnessLimit(cfg: Config, sportKey: string, market: string, hoursToStart: number): number {
-  const table = policyLookup(cfg.freshnessPolicy, sportGroup(sportKey), market) ?? FRESHNESS_POLICY["*|*"];
+  const table = policyLookup(cfg.freshnessPolicy, sportGroup(sportKey), marketPolicyFamily(market)) ?? FRESHNESS_POLICY["*|*"];
   return table[freshnessBucket(hoursToStart)] ?? table.deep ?? 3600;
 }
 
@@ -1054,8 +1363,10 @@ export interface Quote {
       `pin_opp_dec` need, and app.html has a whole method-sensitivity panel that
       has been gated off waiting for capture to write them since they were added. */
   oppDec: number | null;
-  /** Devigged fair probability from this book's own complete market. */
-  fair: number;
+  /** Devigged fair probability from this book's own complete market. NULL for
+      a one-sided player quote: with one price there is no margin to remove,
+      and inventing the missing side would invent the probability. */
+  fair: number | null;
   /** Seconds between the provider's update stamp for this quote and the run's
       clock. null means the provider sent no usable timestamp. */
   ageS: number | null;
@@ -1065,6 +1376,13 @@ export interface Quote {
   /** How many outcomes the devig used. A two-way devig is much better determined
       than a three-way one and the qualification engine is entitled to know. */
   sides: number;
+  /** Provider market key this quote came from (`player_pass_yds_alternate`,
+      `alternate_spreads`, `spreads`...). Resolves a duplicate exact point
+      deterministically — the featured quote beats the same quote repeated in
+      a ladder — and is stored with every player quote as its provenance. */
+  sourceMarket: string;
+  /** The provider's own update stamp for this quote, epoch ms, or null. */
+  updatedMs: number | null;
 }
 
 export interface Candidate {
@@ -1088,6 +1406,14 @@ export interface Candidate {
   hours_to_start: number;
   freshness_limit_s: number;
   devig_method: string;
+  /** The player, for a player market; null for every game market. The display
+      form is what the book wrote; the key is playerKey() of it. */
+  participant: string | null;
+  participant_key: string | null;
+  is_player_prop: boolean;
+  /** At least one book quoted both sides at this exact line. A candidate where
+      no book did is captured and never qualified. */
+  is_two_sided: boolean;
 }
 
 export interface PriceEventResult {
@@ -1100,6 +1426,9 @@ export interface PriceEventResult {
   missingTimestamps: number;
   /** Second and later quotes from a book that listed the same selection twice. */
   duplicateQuotes: number;
+  /** Player quotes with no opposite side at the same book, player and line.
+      Captured with a NULL fair value, never devigged against an invented side. */
+  oneSidedQuotes: number;
 }
 
 /**
@@ -1123,7 +1452,12 @@ export interface PriceEventResult {
  * A point-bearing group that is not exactly two outcomes is not a market this
  * function understands, and it is refused rather than guessed at.
  */
-export function partitionOutcomes(outcomes: any[]): { group: any[]; ok: boolean }[] {
+export function partitionOutcomes(outcomes: any[], marketKey?: string): { group: any[]; ok: boolean }[] {
+  if (marketKey !== undefined && isPlayerPropMarket(marketKey)) return partitionPlayerPropOutcomes(outcomes);
+  return partitionStandardOutcomes(outcomes);
+}
+
+export function partitionStandardOutcomes(outcomes: any[]): { group: any[]; ok: boolean }[] {
   const hasPoint = outcomes.some((o) => o?.point != null && Number.isFinite(Number(o.point)));
   if (!hasPoint) return [{ group: outcomes, ok: outcomes.length >= 2 }];
   const by = new Map<string, any[]>();
@@ -1137,6 +1471,61 @@ export function partitionOutcomes(outcomes: any[]): { group: any[]; ok: boolean 
     if (arr) arr.push(o); else by.set(k, [o]);
   }
   return [...by.values()].map((group) => ({ group, ok: group.length === 2 }));
+}
+
+export interface PropPart {
+  group: any[];
+  ok: boolean;
+  participant: string;
+  participant_key: string;
+  /** Repeats of a side this book already quoted for this player at this line. */
+  duplicates: number;
+}
+
+/**
+ * Split one book's PLAYER market object into complete per-player sub-markets.
+ *
+ * partitionOutcomes() pairs a game market on |point|, which for a player
+ * market pairs EVERY quarterback at 274.5 into one "market" — four prices
+ * devigged as one outcome space, each fair roughly halved. A player market is
+ * PLAYER + LINE + the sides offered at it:
+ *
+ *   Patrick Mahomes | 274.5   Over, Under     one two-sided market
+ *   Josh Allen      | 274.5   Over, Under     a different one
+ *   Patrick Mahomes | (none)  Yes, No         a scorer market
+ *   Player A        | 0.5     Over            one-sided: captured, never devigged
+ *
+ * Refused (ok:false, counted as malformed): no player in `description`, no
+ * side in `name`, an Over/Under with no line, a line that is present but not a
+ * number, and more than two distinct sides for one player at one line. A side
+ * the book repeats for the same player and line is a duplicate; the first wins.
+ */
+export function partitionPlayerPropOutcomes(outcomes: any[]): PropPart[] {
+  const out: PropPart[] = [];
+  const by = new Map<string, PropPart>();
+  for (const o of outcomes ?? []) {
+    const participant = playerDisplayName(o?.description);
+    const pkey = playerKey(o?.description);
+    const side = propSide(o?.name).toLowerCase();
+    const ptRaw = o?.point;
+    const pt = strictNum(ptRaw);
+    const pointGarbled = ptRaw != null && ptRaw !== "" && pt == null;
+    const lineMissing = (side === "over" || side === "under") && pt == null;
+    if (!pkey || !side || pointGarbled || lineMissing) {
+      out.push({ group: [o], ok: false, participant, participant_key: pkey, duplicates: 0 });
+      continue;
+    }
+    const k = pkey + "|" + (pt == null ? "" : String(pt));
+    let part = by.get(k);
+    if (!part) { part = { group: [], ok: true, participant, participant_key: pkey, duplicates: 0 }; by.set(k, part); }
+    if (part.group.some((x) => propSide(x?.name).toLowerCase() === side)) { part.duplicates++; continue; }
+    part.group.push(o);
+  }
+  for (const part of by.values()) {
+    part.ok = part.group.length === 1 || part.group.length === 2;
+    out.push(part);
+  }
+  return out;
 }
 
 function parseStamp(v: unknown): number | null {
@@ -1155,7 +1544,7 @@ function parseStamp(v: unknown): number | null {
  * object arriving without an `outcomes` array; nothing below assumes a shape.
  */
 export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResult {
-  const out: PriceEventResult = { candidates: [], malformed: 0, missingTimestamps: 0, duplicateQuotes: 0 };
+  const out: PriceEventResult = { candidates: [], malformed: 0, missingTimestamps: 0, duplicateQuotes: 0, oneSidedQuotes: 0 };
   if (!ev || typeof ev !== "object") return out;
 
   const commence = String(ev.commence_time ?? "");
@@ -1168,10 +1557,14 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
      and a quote on Team A -3.5 land in different slots, are never devigged
      together, never share a consensus, and never compare a fair from one with a
      price from the other. Every football key-number trap in the adversarial
-     suite is a test of this one line. */
+     suite is a test of this one line.
+
+     For a PLAYER market the player leads the slot key —
+     player_key + "|" + side + "|" + point — so two players on the same number
+     can never meet. */
   const mkts: Record<string, Record<string, any>> = {};
-  /* Per (market, selection name): how many BOOKS sit on each point, so a minority
-     line is visible as such. */
+  /* Per (market, selection name) — and per player for a player market — how
+     many BOOKS sit on each point, so a minority line is visible as such. */
   const pointCensus: Record<string, Record<string, Set<string>>> = {};
 
   for (const bk of ev.bookmakers ?? []) {
@@ -1180,16 +1573,20 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
     const bookStamp = parseStamp(bk?.last_update);
 
     for (const mk of bk.markets ?? []) {
-      const mkey = String(mk?.key ?? "");
-      if (!mkey) { out.malformed++; continue; }
+      const sourceMarket = String(mk?.key ?? "").toLowerCase();
+      if (!sourceMarket) { out.malformed++; continue; }
+      const mkey = canonicalMarket(sourceMarket);
+      const isProp = isPlayerPropMarket(mkey);
       const rawOutcomes: any[] = Array.isArray(mk?.outcomes) ? mk.outcomes : [];
-      if (rawOutcomes.length < 2) { out.malformed++; continue; }
+      /* One player on one side is a real player market (player_tds_over is
+         Over-only). A game market with one outcome never is. */
+      if (rawOutcomes.length < (isProp ? 1 : 2)) { out.malformed++; continue; }
       /* A handicap market without a handicap is a schema fault (a provider that
          drops `point`), never a market with no point: refuse it rather than
          price it as a two-way without a line. strictNum never reads null as 0. */
       if ((mkey === "spreads" || mkey === "totals") && !rawOutcomes.every((o) => strictNum(o?.point) != null)) { out.malformed++; continue; }
 
-      const method = policyLookup(cfg.devigPolicy, sportGroup(sportKey), mkey) ?? "shin";
+      const method = policyLookup(cfg.devigPolicy, sportGroup(sportKey), marketPolicyFamily(mkey)) ?? "shin";
 
       /* Market-level stamp where the provider sends one, book-level otherwise.
          The market stamp is the better answer — a book can refresh its baseball
@@ -1203,32 +1600,62 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
          silently changes the size of every consensus in the system. */
       const fresh = ageS == null ? cfg.treatMissingTimestampAsFresh : ageS <= limit;
 
-      for (const part of partitionOutcomes(rawOutcomes)) {
+      const parts: any[] = isProp ? partitionPlayerPropOutcomes(rawOutcomes) : partitionStandardOutcomes(rawOutcomes);
+      for (const part of parts) {
+        if (part.duplicates) out.duplicateQuotes += part.duplicates;
         if (!part.ok) { out.malformed++; continue; }
         const outcomes = part.group;
         const decs = outcomes.map((o: any) => Number(o?.price));
-        if (decs.length < 2 || decs.some((d: number) => !Number.isFinite(d) || d <= 1)) { out.malformed++; continue; }
+        if (decs.some((d: number) => !Number.isFinite(d) || d <= 1)) { out.malformed++; continue; }
+        if (!isProp && decs.length < 2) { out.malformed++; continue; }
 
-        const fair = devig(decs, method);
-        if (fair.some((f) => !Number.isFinite(f) || f <= 0 || f >= 1)) { out.malformed++; continue; }
+        /* ONE PRICE HAS NO MARGIN TO REMOVE. A one-sided player quote is kept
+           as the raw price it is; its fair is NULL rather than a number built
+           on an opposite side nobody offered. */
+        let fair: (number | null)[];
+        if (decs.length >= 2) {
+          const f = devig(decs, method);
+          if (f.some((x) => !Number.isFinite(x) || x <= 0 || x >= 1)) { out.malformed++; continue; }
+          fair = f;
+        } else {
+          fair = [null];
+          out.oneSidedQuotes++;
+        }
         if (stamp == null) out.missingTimestamps += outcomes.length;
 
         for (let i = 0; i < outcomes.length; i++) {
           const o = outcomes[i];
-          const nm = String(o?.name ?? "");
+          const nm = isProp ? propSide(o?.name) : String(o?.name ?? "");
           if (!nm) continue;
           const ptRaw = o?.point;
-          const pt = (ptRaw == null || !Number.isFinite(Number(ptRaw))) ? null : Number(ptRaw);
-          const okey = nm + "|" + (pt == null ? "" : pt);
+          /* A player line reads the point exactly as its partition did (strictNum:
+             "" is no line, never 0). A game market keeps its v9 expression. */
+          const pt = isProp ? strictNum(ptRaw)
+            : (ptRaw == null || !Number.isFinite(Number(ptRaw))) ? null : Number(ptRaw);
+          const pkey: string | null = isProp ? part.participant_key : null;
+          const okey = (isProp ? pkey + "|" : "") + nm + "|" + (pt == null ? "" : pt);
 
           mkts[mkey] = mkts[mkey] ?? {};
-          const slot = mkts[mkey][okey] ?? (mkts[mkey][okey] = { name: nm, point: pt, byBook: new Map<string, Quote>() });
+          const slot = mkts[mkey][okey] ?? (mkts[mkey][okey] = {
+            name: nm, point: pt, participant: isProp ? part.participant : null, participant_key: pkey,
+            byBook: new Map<string, Quote>(),
+          });
 
           /* ONE QUOTE PER BOOK PER SELECTION, first wins. A book listing the same
              outcome twice used to count as two books, which defeated the very gate
              that exists to stop one feed's opinion being called a consensus, and
              double-weighted that book in the median as well. */
-          if (slot.byBook.has(bookKey)) { out.duplicateQuotes++; continue; }
+          const existing = slot.byBook.get(bookKey) as Quote | undefined;
+          if (existing) {
+            out.duplicateQuotes++;
+            /* The featured market is the authoritative line. If an alternate
+               ladder repeats that exact book/selection/point, keep the featured
+               quote; if the alternate happened to arrive first, the featured
+               quote replaces it. */
+            const incomingFeatured = sourceMarket === mkey;
+            const existingFeatured = existing.sourceMarket === mkey;
+            if (!(incomingFeatured && !existingFeatured)) continue;
+          }
 
           slot.byBook.set(bookKey, {
             book: bookKey,
@@ -1240,9 +1667,11 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
             family: bookFamily(bookKey, cfg.familyOverrides),
             tier: bookTier(bookKey),
             sides: outcomes.length,
+            sourceMarket,
+            updatedMs: stamp,
           });
 
-          const cKey = mkey + "|" + nm;
+          const cKey = mkey + "|" + (isProp ? pkey + "|" : "") + nm;
           pointCensus[cKey] = pointCensus[cKey] ?? {};
           const pKey = pt == null ? "" : String(pt);
           (pointCensus[cKey][pKey] = pointCensus[cKey][pKey] ?? new Set<string>()).add(bookKey);
@@ -1252,12 +1681,13 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
   }
 
   for (const mkey in mkts) {
+    const isProp = isPlayerPropMarket(mkey);
     for (const okey in mkts[mkey]) {
       const s = mkts[mkey][okey];
       const quotes = [...s.byBook.values()] as Quote[];
       if (!quotes.length) continue;
 
-      const census = pointCensus[mkey + "|" + s.name] ?? {};
+      const census = pointCensus[mkey + "|" + (isProp ? s.participant_key + "|" : "") + s.name] ?? {};
       let modalPoint: number | null = null, modalN = -1, offered = 0;
       for (const p in census) {
         offered++;
@@ -1281,7 +1711,11 @@ export function priceEvent(ev: any, cfg: Config, nowMs: number): PriceEventResul
         books_at_modal: modalN < 0 ? 0 : modalN,
         hours_to_start: hoursToStart,
         freshness_limit_s: freshnessLimit(cfg, sportKey, mkey, hoursToStart),
-        devig_method: policyLookup(cfg.devigPolicy, sportGroup(sportKey), mkey) ?? "shin",
+        devig_method: policyLookup(cfg.devigPolicy, sportGroup(sportKey), marketPolicyFamily(mkey)) ?? "shin",
+        participant: s.participant,
+        participant_key: s.participant_key,
+        is_player_prop: isProp,
+        is_two_sided: quotes.some((q) => q.fair != null),
       });
     }
   }
@@ -1374,7 +1808,35 @@ function clamp(x: number, a: number, b: number): number { return Math.max(a, Mat
  */
 export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verdict {
   const group = sportGroup(c.sport_key);
-  const quotes = c.quotes;
+  /* Every policy table is read through the market's FAMILY. A game market is its
+     own family, so each lookup below resolves exactly as it did in v9; a player
+     market reads `player_props` and can never fall through to a game number. */
+  const family = marketPolicyFamily(c.market);
+
+  /* ONE-SIDED IS CAPTURED, NEVER QUALIFIED. A player market no book quoted on
+     both sides at this line has no fair value, so there is nothing to test a
+     price against. It gets its own reason rather than a borrowed one. A game
+     candidate cannot reach this: its quotes always come from a devigged pair. */
+  if (!c.quotes.some((q) => q.fair != null)) {
+    const bestRaw = c.quotes.reduce((a, b) => (b.dec > a.dec ? b : a));
+    return {
+      actionable: false, tier: "PASS", reason: "one_sided_player_market",
+      reference_type: "none", reference_book: null,
+      fair_probability: null, fair_decimal: null, consensus_fair: null, sharp_book_fair: null, edge: null,
+      best_dec: bestRaw.dec, best_book: bestRaw.book, best_book_title: bestRaw.title,
+      best_quote_age_s: bestRaw.ageS, reference_quote_age_s: null,
+      median_dec: median(c.quotes.map((q) => q.dec)),
+      fresh_books: c.quotes.filter((q) => q.fresh).length, total_books: c.quotes.length,
+      families: 0, dispersion: 0, edge_floor: null, segment: `${group}|${c.market}|PASS`,
+      confirmations: 0, required_confirmations: 0, quality_score: 0, quality: {},
+      point_is_modal: c.point === c.modal_point, modal_point: c.modal_point, key_numbers_to_modal: [],
+      is_fav: median(c.quotes.map((q) => q.dec)) < 2, pin_dec: null, pin_opp_dec: null,
+      corrob_n: 0, corrob_ref: "none", corrob_levels: 0, has_sharp: false,
+    };
+  }
+  /* A one-sided quote sitting beside two-sided ones at other books is kept out
+     of every consensus number below: it has no fair to contribute. */
+  const quotes = c.quotes.filter((q) => q.fair != null);
   const fresh = quotes.filter((q) => q.fresh);
 
   /* One quote per operator family for every consensus number below. Six books on
@@ -1394,8 +1856,8 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
   const best = quotes.reduce((a, b) => (b.dec > a.dec ? b : a));
   const bestFresh = fresh.length ? fresh.reduce((a, b) => (b.dec > a.dec ? b : a)) : null;
   const medianDec = median(quotes.map((q) => q.dec));
-  const consensusAll = indep.length ? trimmedMedian(indep.map((q) => q.fair)) : null;
-  const dispersion = indep.length >= 2 ? mad(indep.map((q) => q.fair)) : 0;
+  const consensusAll = indep.length ? trimmedMedian(indep.map((q) => q.fair as number)) : null;
+  const dispersion = indep.length >= 2 ? mad(indep.map((q) => q.fair as number)) : 0;
 
   /* The reference book, chosen by the PRIORITY ORDER of cfg.referenceBooks rather
      than by whichever one the feed happened to list first. v8 picked the LAST
@@ -1415,7 +1877,7 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
      cloned line cannot corroborate itself. */
   const corrobRef = refFresh ? "pinnacle" : "median";
   const corrobBase = refFresh ? refFresh.fair : consensusAll;
-  const corroborating = corrobBase == null ? [] : indep.filter((q) => (corrobBase - q.fair) >= CORROB_MATERIAL);
+  const corroborating = corrobBase == null ? [] : indep.filter((q) => (corrobBase - (q.fair as number)) >= CORROB_MATERIAL);
   const corrobLevels = new Set(corroborating.map((q) => q.dec.toFixed(3))).size;
 
   const base = {
@@ -1435,7 +1897,10 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
     confirmations: 0,
     point_is_modal: c.point === c.modal_point,
     modal_point: c.modal_point,
-    key_numbers_to_modal: keyNumbersCrossed(c.point, c.modal_point, c.sport_key),
+    /* Key numbers are margins of victory. A receptions line moving 2.5 -> 3.5
+       does not "cross 3" in any sense that matters, so a player market reports
+       none rather than borrowing the spread's vocabulary. */
+    key_numbers_to_modal: c.is_player_prop ? [] : keyNumbersCrossed(c.point, c.modal_point, c.sport_key),
     is_fav: isFav,
     pin_dec: refBook ? refBook.dec : null,
     pin_opp_dec: refBook ? refBook.oppDec : null,
@@ -1456,7 +1921,9 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
 
   // ── Gate 1: is this a bet a person can place at all? ─────────────────────
   if (!backable(c.market)) return pass("exchange_lay_not_backable");
-  if (!BACK_MARKETS.has(String(c.market).toLowerCase())) return pass("market_not_understood");
+  if (!marketUnderstoodForQualification(c.market, c.selection)) {
+    return pass(c.is_player_prop ? "prop_market_not_yet_qualifiable" : "market_not_understood");
+  }
   if (!Number.isFinite(best.dec) || best.dec <= 1) return pass("no_usable_price");
 
   // ── Gate 2: is there time to place it, and is it near enough to be real? ──
@@ -1524,7 +1991,7 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
   }
 
   // ── Gate 5: the reference tier. ───────────────────────────────────────────
-  const req = policyLookup(cfg.bookRequirements, group, c.market) ?? BOOK_REQUIREMENTS["*|*"];
+  const req = policyLookup(cfg.bookRequirements, group, family) ?? BOOK_REQUIREMENTS["*|*"];
   let tier: "A" | "B";
   let refType: "sharp" | "robust_consensus";
   let fairProb: number;
@@ -1537,7 +2004,7 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
     if (refFresh.sides < 2) return pass("reference_market_not_two_sided");
     if (fresh.length < req.A.books) return pass("insufficient_fresh_books");
     if (indep.length < req.A.families) return pass("insufficient_independent_books");
-    tier = "A"; refType = "sharp"; fairProb = refFresh.fair; refAge = refFresh.ageS;
+    tier = "A"; refType = "sharp"; fairProb = refFresh.fair as number; refAge = refFresh.ageS;
   } else {
     /* TIER B. No approved reference book, or its quote is stale. The difference
        matters and is reported separately: a missing Pinnacle is a coverage
@@ -1553,14 +2020,14 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
     }
     if (indep.length < req.B.families) return pass("insufficient_independent_books");
 
-    const maxDisp = policyLookup(cfg.maxDispersion, group, c.market) ?? MAX_DISPERSION["*|*"];
+    const maxDisp = policyLookup(cfg.maxDispersion, group, family) ?? MAX_DISPERSION["*|*"];
     if (dispersion > maxDisp) return pass("consensus_dispersion_too_high");
 
     /* THE BEST-PRICE BOOK IS REMOVED FROM ITS OWN FAIR VALUE. Without this, on a
        four-book market the book being tested supplies a quarter of the number it
        is tested against, and on a two-book market it supplies half. A soft line
        must not be allowed to help prove that it is soft. */
-    const packFairs = indep.filter((q) => q.family !== execBest.family).map((q) => q.fair);
+    const packFairs = indep.filter((q) => q.family !== execBest.family).map((q) => q.fair as number);
     if (packFairs.length < req.B.families - 1) return pass("insufficient_independent_books");
     tier = "B"; refType = "robust_consensus"; fairProb = trimmedMedian(packFairs);
     /* The "reference age" for a consensus is the median age of the books that
@@ -1576,10 +2043,17 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
   // ── Gate 6: the edge, against a floor that knows what it is looking at. ───
   const edge = fairProb * execBest.dec - 1;
   const segment = `${group}|${c.market}|${tier}`;
-  const floorKey = [`${group}|${c.market}|${tier}`, `${group}|*|${tier}`, `*|${c.market}|${tier}`, `*|*|${tier}`]
-    .find((k) => cfg.edgeFloor[k] !== undefined);
+  /* A PLAYER MARKET HAS ONLY ITS OWN FLOOR. The generic `${group}|*` and `*|*`
+     rows were set for game lines; letting a prop fall through to them would
+     make a 2.5% player edge "actionable" on a threshold nobody validated for
+     props. With no `player_props` row the floor is null, and a null floor is
+     PASS: segment_not_qualified_for_action. */
+  const floorKeys = family === "player_props"
+    ? [`${group}|player_props|${tier}`, `*|player_props|${tier}`]
+    : [`${group}|${c.market}|${tier}`, `${group}|*|${tier}`, `*|${c.market}|${tier}`, `*|*|${tier}`];
+  const floorKey = floorKeys.find((k) => cfg.edgeFloor[k] !== undefined);
   const floor = floorKey === undefined ? null : cfg.edgeFloor[floorKey];
-  const saneMax = policyLookup(cfg.edgeSaneMax, group, c.market) ?? EDGE_SANE_MAX["*|*"];
+  const saneMax = policyLookup(cfg.edgeSaneMax, group, family) ?? EDGE_SANE_MAX["*|*"];
 
   const priced = {
     reference_type: refType,
@@ -1599,7 +2073,7 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
   if (edge < floor) return pass("below_segment_edge_floor", priced);
 
   // ── Gate 7: persistence. ──────────────────────────────────────────────────
-  const confPolicy = policyLookup(cfg.confirmations, group, c.market) ?? CONFIRMATIONS["*|*"];
+  const confPolicy = policyLookup(cfg.confirmations, group, family) ?? CONFIRMATIONS["*|*"];
   const needed = tier === "A" ? confPolicy.A : confPolicy.B;
   const streak = Math.max(0, ctx.priorStreak) + 1;
 
@@ -1616,7 +2090,7 @@ export function qualifySignal(c: Candidate, ctx: QualContext, cfg: Config): Verd
   const quality = {
     reference: tier === "A" ? 100 : clamp(40 + 15 * (indep.length - req.B.families), 40, 85),
     freshness: clamp(100 * (1 - (Math.max(execBest.ageS ?? limit, refAge ?? 0) / limit)), 0, 100),
-    consensus: clamp(100 * (1 - dispersion / (policyLookup(cfg.maxDispersion, group, c.market) ?? 0.02)), 0, 100),
+    consensus: clamp(100 * (1 - dispersion / (policyLookup(cfg.maxDispersion, group, family) ?? 0.02)), 0, 100),
     persistence: clamp(100 * (streak / Math.max(1, needed)), 0, 100),
     edge: clamp(100 * (edge / Math.max(1e-9, floor * 3)), 0, 100),
     historical: 50,
@@ -1665,6 +2139,7 @@ export const STAGE_OF_REASON: Record<string, number> = {
   consensus_dispersion_too_high: 5, fair_not_computable: 5,
   edge_not_computable: 6, edge_implausible_bad_price: 6,
   segment_not_qualified_for_action: 6, below_segment_edge_floor: 6,
+  one_sided_player_market: 0, prop_market_not_yet_qualifiable: 0,
   awaiting_confirmation: 7,
   below_quality_floor: 8,
   /* THE NUMBER OF STAGES CLEARED, WHICH FOR A REJECTION IS THE INDEX OF THE
@@ -1861,6 +2336,138 @@ export async function fetchEvents(key: string, sport: string): Promise<{ commenc
   } catch { return { commences: [], ok: false }; }
 }
 
+/**
+ * Fetch non-featured markets for ONE event: alternate spreads/totals, and every
+ * player market. The provider serves these only on this endpoint, one event per
+ * request, and bills each request at (unique markets RETURNED) × (region
+ * equivalents) — so a batch of twelve player markets on an event where books
+ * post eight costs eight, and a market nobody posts costs nothing. The same
+ * bookmaker/region selection as fetchOdds(), so reference and consensus policy
+ * do not change because a quote came from a ladder.
+ */
+export async function fetchEventOdds(
+  key: string, sport: string, eventId: string, cfg: Config, markets = cfg.alternateMarkets,
+): Promise<OddsResult> {
+  const sel = cfg.bookmakers.length
+    ? `bookmakers=${encodeURIComponent(cfg.bookmakers.join(","))}`
+    : `regions=${encodeURIComponent(cfg.regions)}`;
+  const u = `${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/${encodeURIComponent(eventId)}/odds`
+    + `?apiKey=${encodeURIComponent(key)}&${sel}&markets=${encodeURIComponent(markets.join(","))}`
+    + `&oddsFormat=decimal&dateFormat=iso`;
+  try {
+    const r = await fetch(u, { signal: deadline(ODDS_TIMEOUT_MS) });
+    const h = (n: string) => r.headers.get(n) ?? "";
+    const meta = { quotaRemaining: h("x-requests-remaining"), quotaUsed: h("x-requests-used"), lastCost: h("x-requests-last") };
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      return { data: [], ok: false, status: r.status, detail: body.slice(0, 240), ...meta };
+    }
+    const data = await r.json();
+    return { data: data && typeof data === "object" && !Array.isArray(data) ? [data] : [], ok: true, status: 200, detail: "", ...meta };
+  } catch (e) {
+    const name = String((e as Error)?.name ?? "");
+    const timeout = name === "TimeoutError" || name === "AbortError";
+    return { data: [], ok: false, status: 0, detail: (timeout ? "TIMEOUT after " + ODDS_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e), quotaRemaining: "", quotaUsed: "", lastCost: "" };
+  }
+}
+
+/**
+ * Merge an event-level response into an event BEFORE priceEvent(). This is
+ * deliberately not two independent pricing passes: doing that would make the
+ * same featured point collide at sigKey() after qualification and whichever
+ * pass ran first would win by accident.
+ *
+ * Base markets are appended first. priceEvent() canonicalizes alternate_spreads
+ * -> spreads, alternate_totals -> totals and player_*_alternate -> player_*, and
+ * its per-book duplicate rule keeps the featured quote when a ladder repeats the
+ * exact same point. A response for a different event id is ignored.
+ */
+export function mergeEventOdds(base: any, extra: any): any {
+  if (!base || typeof base !== "object") return extra;
+  if (!extra || typeof extra !== "object") return base;
+  if (base.id && extra.id && String(base.id) !== String(extra.id)) return base;
+
+  const books = new Map<string, any>();
+  for (const bk of base.bookmakers ?? []) {
+    const key = String(bk?.key ?? "").toLowerCase();
+    if (!key) continue;
+    books.set(key, { ...bk, markets: Array.isArray(bk?.markets) ? [...bk.markets] : [] });
+  }
+  for (const bk of extra.bookmakers ?? []) {
+    const key = String(bk?.key ?? "").toLowerCase();
+    if (!key) continue;
+    const cur = books.get(key) ?? { ...bk, markets: [] };
+    const added = (Array.isArray(bk?.markets) ? bk.markets : []).map((mk: any) => ({
+      ...mk,
+      /* Keep the event-level bookmaker clock when a market-level clock is
+         absent; otherwise merging into the featured bookmaker would age the
+         extra quote by the featured book's timestamp. */
+      last_update: mk?.last_update ?? bk?.last_update ?? null,
+    }));
+    cur.markets = [...(cur.markets ?? []), ...added];
+    books.set(key, cur);
+  }
+
+  return {
+    ...base,
+    sport_key: base.sport_key ?? extra.sport_key,
+    sport_title: base.sport_title ?? extra.sport_title,
+    commence_time: base.commence_time ?? extra.commence_time,
+    home_team: base.home_team ?? extra.home_team,
+    away_team: base.away_team ?? extra.away_team,
+    bookmakers: [...books.values()],
+  };
+}
+
+/** How far out this invocation should buy alternate ladders. BOARD is kept at 0
+    because six full-board refreshes per day are useful for featured prices but
+    wasteful for per-event ladders. DAY carries the research board to the
+    configured horizon; NEAR only refreshes the final window where 30-minute
+    alts would become too old for the reader. */
+export function alternateHoursForTier(cfg: Config, tier: string | null): number {
+  if (!cfg.alternateLines || !cfg.alternateMarkets.length) return 0;
+  if (tier === "board") return 0;
+  if (tier === "near") return Math.min(cfg.alternateMaxHours, cfg.alternateNearHours);
+  return cfg.alternateMaxHours;
+}
+
+/** How far out this invocation should buy player props. BOARD buys none: it
+    runs every four hours over the whole horizon, which is exactly the shape
+    that turns a prop list into thousands of billed markets. DAY covers the
+    research window (30 h), NEAR the final hours (3 h). An untiered manual run
+    uses the DAY window. */
+export function playerPropHoursForTier(cfg: Config, tier: string | null): number {
+  if (!cfg.playerProps || !(cfg.playerPropMarkets.length + cfg.playerPropAlternateMarkets.length)) return 0;
+  if (tier === "board") return 0;
+  if (tier === "near") return Math.min(cfg.playerPropMaxHours, cfg.playerPropNearHours);
+  return cfg.playerPropMaxHours;
+}
+
+/** Is this event due a prop poll? Inside playerPropNearHours of kickoff the
+    short interval applies, otherwise the long one. Two minutes of slack absorb
+    scheduler drift, so a 20-minute interval on a 10-minute cron is every other
+    run rather than every third. An event never polled is always due. */
+export function propEventDue(lastPolledMs: number | null, hoursToStart: number, cfg: Config, nowMs: number): boolean {
+  if (lastPolledMs == null || !Number.isFinite(lastPolledMs)) return true;
+  const mins = hoursToStart <= cfg.playerPropNearHours ? cfg.playerPropNearIntervalMin : cfg.playerPropIntervalMin;
+  return nowMs - lastPolledMs >= Math.max(0, mins * 60000 - 120000);
+}
+
+/** Region-equivalents a request is billed at: a bookmaker list is charged per
+    ten keys, rounded up; otherwise one per region named. */
+export function regionEquivalents(cfg: Config): number {
+  if (cfg.bookmakers.length) return Math.max(1, Math.ceil(cfg.bookmakers.length / 10));
+  return Math.max(1, cfg.regions.split(",").map((x) => x.trim()).filter(Boolean).length);
+}
+
+/** The prop markets one run requests, standard first, in batches. */
+export function propMarketBatches(cfg: Config): string[][] {
+  const all = [...new Set([...cfg.playerPropMarkets, ...cfg.playerPropAlternateMarkets])];
+  const out: string[][] = [];
+  for (let i = 0; i < all.length; i += cfg.playerPropMarketsPerRequest) out.push(all.slice(i, i + cfg.playerPropMarketsPerRequest));
+  return out;
+}
+
 export async function fetchActiveSports(key: string): Promise<{ keys: string[]; ok: boolean; detail: string }> {
   try {
     const r = await fetch(`${ODDS_BASE}/sports/?apiKey=${encodeURIComponent(key)}`, { signal: deadline(ODDS_TIMEOUT_MS) });
@@ -1893,6 +2500,25 @@ export function liveRow(r: any): any {
 }
 
 export function signalRow(c: Candidate, v: Verdict, nowIso: string): any {
+  const row = gameSignalRow(c, v, nowIso);
+  if (!c.is_player_prop) return row;
+  /* A PLAYER ROW NAMES ITS PLAYER. Only player rows carry these four columns:
+     PostgREST writes a batch with one key set, so game rows keep exactly the
+     v9 shape and a database that has not run the v11 migration keeps taking
+     them untouched. `source_market` is the source of the best quote — where a
+     reader would go to take the price; each book's own source is on its
+     player_prop_quotes row. */
+  const best = c.quotes.find((q) => q.book === v.best_book) ?? c.quotes[0];
+  return {
+    ...row,
+    participant: c.participant,
+    participant_key: c.participant_key,
+    is_player_prop: true,
+    source_market: best ? best.sourceMarket : null,
+  };
+}
+
+function gameSignalRow(c: Candidate, v: Verdict, nowIso: string): any {
   return {
     sig_key: sigKey(c),
     event_id: c.event_id, sport_key: c.sport_key,
@@ -1979,6 +2605,66 @@ export function bookQuoteRows(c: Candidate, v: Verdict, cfg: Config, nowIso: str
     is_best: q.book === v.best_book,
     updated_at: nowIso,
   }));
+}
+
+/** The deterministic identity of one player quote: which game, which player,
+    which market, which side, which line, which book. Two different players can
+    never share it, and the same quote seen on the next run always has it, so
+    the current table upserts in place and history appends only on change. */
+export function propQuoteKey(o: { event_id: string; market: string; participant_key: string | null; selection: string; point: number | null; book: string }): string {
+  return `${o.event_id}|${o.market}|${o.participant_key ?? ""}|${o.selection}|${o.point ?? ""}|${o.book}`;
+}
+
+/** Why a player quote cannot enter qualification, or null if it can. */
+export function propUnqualifiableReason(c: Candidate, q: Quote): string | null {
+  if (q.fair == null) return "one_sided_player_market";
+  if (!marketUnderstoodForQualification(c.market, c.selection)) return "prop_market_not_yet_qualifiable";
+  return null;
+}
+
+/**
+ * One player_prop_quotes row per book quoting a player selection — EVERY quote,
+ * qualified or not, fresh or stale, one-sided or two. This is what the Player
+ * Props page line-shops from, so it answers, for each quote: who (player_name,
+ * player_key), what (market), side, line (point), where (book), price
+ * (decimal_odds), when (source_updated_at from the provider, captured_at from
+ * this run), which game (event, teams, kickoff), from where (source_market:
+ * standard or alternate) and how fresh (quote_age_s, is_fresh).
+ */
+export function playerPropQuoteRows(c: Candidate, nowIso: string): any[] {
+  if (!c.is_player_prop) return [];
+  return c.quotes.map((q) => {
+    const reason = propUnqualifiableReason(c, q);
+    return {
+      quote_key: propQuoteKey({ event_id: c.event_id, market: c.market, participant_key: c.participant_key, selection: c.selection, point: c.point, book: q.book }),
+      event_id: c.event_id, sport_key: c.sport_key, sport_title: canonicalTitle(c.sport_key, c.sport_title),
+      commence_time: c.commence_time, home_team: c.home_team, away_team: c.away_team,
+      player_name: c.participant, player_key: c.participant_key,
+      market: c.market, source_market: q.sourceMarket, side: c.selection, point: c.point,
+      book_key: q.book, book_title: q.title,
+      decimal_odds: q.dec, opposite_decimal_odds: q.oppDec, book_fair_probability: q.fair,
+      quote_age_s: q.ageS, is_fresh: q.fresh,
+      source_updated_at: q.updatedMs == null ? null : new Date(q.updatedMs).toISOString(),
+      captured_at: nowIso,
+      is_two_sided: q.fair != null,
+      qualifiable: reason == null,
+      unqualifiable_reason: reason,
+    };
+  });
+}
+
+/** One event's prop poll: when, what it asked for, what came back, what it
+    cost. Written only after at least one request for the event succeeded, so a
+    failed poll is retried on the next run rather than waiting out an interval. */
+export function propPollRow(ev: any, sport: string, nowIso: string, m: {
+  markets_requested: number; markets_returned: number; requests_failed: number;
+  credits_spent: number; quotes: number; players: number; poll_status: string;
+}): any {
+  return {
+    event_id: String(ev?.id ?? ""), sport_key: String(ev?.sport_key ?? sport),
+    commence_time: ev?.commence_time ?? null, home_team: ev?.home_team ?? null, away_team: ev?.away_team ?? null,
+    last_polled_at: nowIso, ...m,
+  };
 }
 
 export function tickRow(c: Candidate, v: Verdict, nowIso: string): any {
@@ -2207,6 +2893,342 @@ function explainWriteError(phase: string, e: string): string {
   return `${phase}: ${e}`;
 }
 
+/* ==========================================================================
+   PLAYER PROPS — THE SECOND PASS.
+
+   Runs after every sport's game lines have been priced and written, so a prop
+   board can never take the wall clock, the write budget or the quota a spread
+   needed. For each NFL / NCAAF event inside the tier's window whose own
+   refresh interval has passed, nearest kickoff first:
+
+     1. ONE event-level request per batch of player markets — never one per
+        player: a single response already carries every player a book offers
+        in those markets. Standard and alternate batches are merged into one
+        event before pricing, so the featured-beats-ladder rule and the
+        per-player point census see both.
+     2. priceEvent() on that event: per player, per line, per side, per book.
+     3. EVERY quote to player_prop_quotes (upsert on quote_key); the database
+        appends a tick to player_prop_quote_ticks only when a price changed.
+     4. The event's poll time to player_prop_event_polls, which is the clock
+        step 0 reads on the next run.
+     5. Optionally (CAPTURE_PLAYER_PROP_SIGNALS) two-sided props to `signals`.
+
+   Before each request the pass checks, in order: the wall clock, the credit
+   budget (spent + in flight + this batch's worst case), the (event × market)
+   request budget and the account's quota floor. The first to fail stops the
+   pass cleanly and is named in `stopped`. A 401 or 429 stops it at once.
+   ========================================================================== */
+export interface PropQueueItem { sport: string; events: any[] }
+
+export async function runPlayerProps(o: {
+  cfg: Config; tier: string | null; oddsKey: string; rest: Rest; nowMs: number; nowIso: string;
+  outOfTime: () => boolean; queue: PropQueueItem[]; quotaRemaining: string; diag: boolean; disabledByRequest?: boolean;
+}): Promise<any> {
+  const { cfg, tier, rest, nowMs, nowIso } = o;
+  const hours = playerPropHoursForTier(cfg, tier);
+  const regionEq = regionEquivalents(cfg);
+  const T: any = {
+    enabled: cfg.playerProps, status: "ok", tier, window_hours: hours,
+    markets_configured: { standard: cfg.playerPropMarkets.length, alternate: cfg.playerPropAlternateMarkets.length, per_request: cfg.playerPropMarketsPerRequest },
+    budget: {
+      max_credits_per_run: cfg.propMaxCreditsPerRun, max_market_requests_per_run: cfg.propMaxMarketRequestsPerRun,
+      min_quota_remaining: cfg.propMinQuotaRemaining, region_equivalents: regionEq,
+      interval_min: cfg.playerPropIntervalMin, near_interval_min: cfg.playerPropNearIntervalMin,
+      near_hours: cfg.playerPropNearHours, max_events_per_sport: cfg.playerPropMaxEvents,
+    },
+    events_eligible: 0, events_due: 0, events_skipped_interval: 0, events_skipped_cap: 0,
+    events_skipped_budget: 0, events_skipped_time: 0, events_requested: 0, events_with_props: 0,
+    requests: 0, markets_requested: 0, markets_returned: 0,
+    unique_players: 0, unique_player_markets: 0, candidates: 0,
+    quotes_seen: 0, two_sided_quotes: 0, one_sided_quotes: 0, fresh_quotes: 0, stale_quotes: 0,
+    quotes_missing_timestamp: 0, malformed: 0, duplicate_quotes: 0,
+    quotes_written: 0, quotes_written_is_exact: true, ticks_written: 0, ticks_written_is_exact: true,
+    polls_written: 0, quota_spent: 0, quota_spent_is_exact: true, failures: 0, stopped: null,
+    signals_enabled: cfg.playerPropSignals, per_sport: {},
+  };
+  const skip = (status: string, reason: string) => { T.status = status; T.reason = reason; return T; };
+  if (!cfg.playerProps) return skip("disabled", "CAPTURE_PLAYER_PROPS is off.");
+  if (o.disabledByRequest) return skip("skipped", "?props=0 turned player props off for this run.");
+  if (o.diag) return skip("skipped", "diagnostic runs never buy player props.");
+  if (hours <= 0) {
+    return skip("skipped", tier === "board"
+      ? "BOARD buys no player props: DAY and NEAR do, inside their windows."
+      : "No player markets are configured (CAPTURE_PLAYER_PROP_MARKETS and _ALT_MARKETS are both empty).");
+  }
+  if (!o.queue.length) return skip("skipped", "No NFL or NCAAF board was captured this run, so no event is eligible.");
+
+  /* STORAGE FIRST, CREDITS SECOND. If the table the quotes go to is not there,
+     buying them would pay for data with nowhere to live. */
+  const pre = await rest.select("player_prop_quotes?select=quote_key&limit=1");
+  if (pre.error) {
+    return skip("storage_missing", "player_prop_quotes is not readable (" + pre.error.slice(0, 160) + "). Run "
+      + "supabase/capture_v11_player_props.sql. No prop request was made, so nothing was spent.");
+  }
+
+  /* Each event's own clock. Unreadable state is reported, and every event then
+     reads as due — the run budget below still bounds what that can cost. */
+  const polled = new Map<string, number>();
+  const pr = await rest.select(`player_prop_event_polls?select=event_id,last_polled_at&commence_time=gte.${encodeURIComponent(nowIso)}&limit=5000`);
+  if (pr.error) T.poll_state_error = pr.error.slice(0, 200);
+  else for (const r of pr.rows) { const t = Date.parse(String(r?.last_polled_at ?? "")); if (r?.event_id && Number.isFinite(t)) polled.set(String(r.event_id), t); }
+
+  const batches = propMarketBatches(cfg);
+  let reserved = 0, spent = 0, marketReqs = 0;
+  let quotaLeft = o.quotaRemaining === "" ? NaN : Number(o.quotaRemaining);
+  let stopped: string | null = null;
+  const players = new Set<string>(), playerMarkets = new Set<string>();
+  const failureSamples: any[] = [];
+  const quoteRows: any[] = [], pollRows: any[] = [];
+  const propCands: Candidate[] = [];
+
+  const canSpend = (nMarkets: number): boolean => {
+    if (stopped) return false;
+    if (o.outOfTime()) { stopped = "wall_clock"; return false; }
+    const est = nMarkets * regionEq;
+    if (spent + reserved + est > cfg.propMaxCreditsPerRun) { stopped = "credit_budget"; return false; }
+    if (marketReqs + nMarkets > cfg.propMaxMarketRequestsPerRun) { stopped = "market_request_budget"; return false; }
+    if (Number.isFinite(quotaLeft) && quotaLeft - est < cfg.propMinQuotaRemaining) { stopped = "quota_floor"; return false; }
+    return true;
+  };
+
+  const processEvent = async (sport: string, ev: any, PS: any): Promise<void> => {
+    const eventId = String(ev?.id ?? "");
+    let merged: any = {
+      id: ev?.id, sport_key: ev?.sport_key ?? sport, sport_title: ev?.sport_title,
+      commence_time: ev?.commence_time, home_team: ev?.home_team, away_team: ev?.away_team, bookmakers: [],
+    };
+    let okReqs = 0, failReqs = 0, eventCost = 0, requested = 0, cut = false;
+    const returned = new Set<string>();
+    for (const batch of batches) {
+      if (!canSpend(batch.length)) { cut = true; break; }
+      const est = batch.length * regionEq;
+      reserved += est; marketReqs += batch.length;
+      const r = await fetchEventOdds(o.oddsKey, sport, eventId, cfg, batch);
+      reserved -= est;
+      T.requests++; T.markets_requested += batch.length; requested += batch.length;
+      /* Spend is what the provider says it charged. If a response ever arrives
+         without x-requests-last, the budget counts the worst case instead and
+         the total is labelled inexact rather than presented as a measurement. */
+      const cost = r.lastCost === "" ? NaN : Number(r.lastCost);
+      if (Number.isFinite(cost)) { spent += cost; eventCost += cost; T.quota_spent += cost; }
+      else if (r.ok) { spent += est; eventCost += est; T.quota_spent_is_exact = false; }
+      const q = r.quotaRemaining === "" ? NaN : Number(r.quotaRemaining);
+      if (Number.isFinite(q)) { quotaLeft = q; T.last_quota_remaining = r.quotaRemaining; }
+      if (r.quotaUsed) T.last_quota_used = r.quotaUsed;
+      if (!r.ok) {
+        failReqs++; T.failures++;
+        if (failureSamples.length < 8) failureSamples.push({ sport, event_id: eventId, status: r.status, detail: r.detail, markets: batch });
+        if (r.status === 401 || r.status === 429) { stopped = `provider_${r.status}`; break; }
+        continue;
+      }
+      okReqs++;
+      const extra = r.data[0];
+      if (extra) {
+        for (const bk of extra.bookmakers ?? []) for (const mk of bk?.markets ?? []) if (mk?.key) returned.add(String(mk.key));
+        merged = mergeEventOdds(merged, extra);
+      }
+    }
+    if (!okReqs && !failReqs) {
+      if (stopped === "wall_clock") { T.events_skipped_time++; PS.skipped_time++; }
+      else { T.events_skipped_budget++; PS.skipped_budget++; }
+      return;
+    }
+    T.events_requested++; PS.requested++;
+    T.markets_returned += returned.size; PS.markets_returned += returned.size;
+    PS.quota_spent += eventCost;
+    if (!okReqs) return;   // every batch failed: no poll time, so it is retried next run
+
+    const pe = priceEvent(merged, cfg, nowMs);
+    T.malformed += pe.malformed; T.duplicate_quotes += pe.duplicateQuotes; T.quotes_missing_timestamp += pe.missingTimestamps;
+    const cands = pe.candidates.filter((c) => c.is_player_prop);
+    let nq = 0;
+    for (const c of cands) {
+      T.candidates++;
+      players.add(`${sport}|${c.event_id}|${c.participant_key}`);
+      playerMarkets.add(`${sport}|${c.event_id}|${c.market}|${c.participant_key}`);
+      for (const q of c.quotes) {
+        nq++;
+        if (q.fair == null) T.one_sided_quotes++; else T.two_sided_quotes++;
+        if (q.fresh) T.fresh_quotes++; else T.stale_quotes++;
+      }
+      quoteRows.push(...playerPropQuoteRows(c, nowIso));
+      propCands.push(c);
+    }
+    T.quotes_seen += nq; PS.quotes_seen += nq;
+    if (cands.length) { T.events_with_props++; PS.with_props++; }
+    pollRows.push(propPollRow(ev, sport, nowIso, {
+      markets_requested: requested, markets_returned: returned.size, requests_failed: failReqs,
+      credits_spent: eventCost, quotes: nq, players: new Set(cands.map((c) => c.participant_key)).size,
+      poll_status: cut || failReqs ? "partial" : "ok",
+    }));
+  };
+
+  for (const item of o.queue) {
+    const sport = item.sport;
+    const PS: any = T.per_sport[sport] = {
+      eligible: 0, due: 0, requested: 0, with_props: 0, skipped_budget: 0, skipped_time: 0,
+      markets_returned: 0, quotes_seen: 0, quota_spent: 0,
+    };
+    const eligible = (item.events ?? [])
+      .map((ev: any) => ({ ev, t: Date.parse(String(ev?.commence_time ?? "")) }))
+      .filter((x: any) => x.ev?.id && Number.isFinite(x.t) && x.t > nowMs && x.t <= nowMs + hours * 3600000)
+      .sort((a: any, b: any) => a.t - b.t);
+    const due = eligible.filter((x: any) => propEventDue(polled.get(String(x.ev.id)) ?? null, (x.t - nowMs) / 3600000, cfg, nowMs));
+    const selected = due.slice(0, cfg.playerPropMaxEvents);
+    PS.eligible = eligible.length; PS.due = due.length;
+    T.events_eligible += eligible.length; T.events_due += due.length;
+    T.events_skipped_interval += eligible.length - due.length;
+    T.events_skipped_cap += due.length - selected.length;
+    for (let i = 0; i < selected.length; i += cfg.playerPropConcurrency) {
+      if (stopped || o.outOfTime()) {
+        const left = selected.length - i;
+        if (!stopped) stopped = "wall_clock";
+        if (stopped === "wall_clock") { T.events_skipped_time += left; PS.skipped_time += left; }
+        else { T.events_skipped_budget += left; PS.skipped_budget += left; }
+        break;
+      }
+      const batch = selected.slice(i, i + cfg.playerPropConcurrency);
+      await Promise.all(batch.map((x: any) => processEvent(sport, x.ev, PS)));
+    }
+  }
+  T.unique_players = players.size;
+  T.unique_player_markets = playerMarkets.size;
+  T.stopped = stopped;
+  if (failureSamples.length) T.failure_samples = failureSamples;
+
+  /* ── WRITES. The current quote upserts on quote_key; the database's trigger
+     stamps price_changed_at and appends a tick only when the price moved, and
+     `returning` reads that stamp back so ticks_written is a count the database
+     made, not one this function inferred. */
+  const writeErrors: string[] = [];
+  const gaps = new Set<string>();
+  const byKey = new Map<string, any>();
+  for (const r of quoteRows) byKey.set(r.quote_key, r);   // one row per identity per statement
+  const rows = [...byKey.values()];
+  const CHUNK = 1000;
+  let returning: string | undefined = "price_changed_at";
+  const capturedMs = Date.parse(nowIso);
+  const writeChunk = async (slice: any[]): Promise<void> => {
+    let chunk = dropColumns(slice, gaps);
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const res = await rest.insert("player_prop_quotes", chunk, { onConflict: "quote_key", ignoreDuplicates: false, returning });
+      if (!res.error) {
+        if (returning) {
+          T.quotes_written += res.rows.length;
+          T.ticks_written += res.rows.filter((r: any) => Date.parse(String(r?.price_changed_at ?? "")) === capturedMs).length;
+        } else {
+          T.quotes_written += res.count ?? chunk.length;
+          if (res.count == null) T.quotes_written_is_exact = false;
+          T.ticks_written_is_exact = false;
+        }
+        return;
+      }
+      const col = missingColumnFrom(res.error);
+      if (col === "price_changed_at" && returning) { returning = undefined; continue; }
+      if (col) { gaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
+      if (writeErrors.length < 8) writeErrors.push("player_prop_quotes: " + res.error.slice(0, 300));
+      return;
+    }
+  };
+  const WRITE_CONCURRENCY = 4;
+  let unwritten = 0;
+  for (let i = 0; i < rows.length; i += CHUNK * WRITE_CONCURRENCY) {
+    if (o.outOfTime()) { unwritten = rows.length - i; break; }
+    const group: Promise<void>[] = [];
+    for (let j = i; j < Math.min(rows.length, i + CHUNK * WRITE_CONCURRENCY); j += CHUNK) group.push(writeChunk(rows.slice(j, j + CHUNK)));
+    await Promise.all(group);
+  }
+  if (unwritten) T.quotes_unwritten_for_time = unwritten;
+
+  if (pollRows.length && !o.outOfTime()) {
+    let chunk = dropColumns(pollRows, gaps);
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const res = await rest.insert("player_prop_event_polls", chunk, { onConflict: "event_id", ignoreDuplicates: false });
+      if (!res.error) { T.polls_written += res.count ?? chunk.length; break; }
+      const col = missingColumnFrom(res.error);
+      if (col) { gaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
+      if (writeErrors.length < 8) writeErrors.push("player_prop_event_polls: " + res.error.slice(0, 300));
+      break;
+    }
+  }
+
+  /* ── PLAYER PROP SIGNALS (optional, OFF by default).
+     Writing every prop into `signals` costs game-line capture in three places,
+     which is why it is opt-in: the close function takes unclosed signals by
+     kickoff with a 5,000-row limit and no market filter, so a Sunday of prop
+     rows would push spreads out of their close; capture's own prior-state read
+     is capped at 20,000 rows; and `signal_ticks` appends one row per candidate
+     per run where player_prop_quote_ticks appends only on change. So only
+     two-sided props are sent, they never write signal_ticks, their prior state
+     is read separately, and the game-line read filters them out. With the
+     player_props floor at null, none of them is actionable. */
+  if (cfg.playerPropSignals && propCands.length && !o.outOfTime()) {
+    const Q: any = T.qualification = { candidates: 0, actionable: 0, by_reason: {}, new_signals: 0, refreshed: 0, flag_frozen: 0 };
+    const prior = new Map<string, number>();
+    const horizon = new Date(nowMs + cfg.maxDaysToStart * 86400000).toISOString();
+    const ps = await rest.select(`signals?select=sig_key,qual_streak&market=like.player_*`
+      + `&commence_time=gte.${encodeURIComponent(nowIso)}&commence_time=lte.${encodeURIComponent(horizon)}&limit=20000`);
+    if (ps.error) { const col = missingColumnFrom(ps.error); if (col) gaps.add(col); else if (writeErrors.length < 8) writeErrors.push("prop prior_state: " + ps.error.slice(0, 300)); }
+    else for (const r of ps.rows) prior.set(r.sig_key, Number(r.qual_streak) || 0);
+
+    const sigRows: any[] = [], flags: any[] = [];
+    const seen = new Set<string>();
+    for (const c of propCands) {
+      if (!c.is_two_sided) continue;
+      const key = sigKey(c);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const v = qualifySignal(c, { priorStreak: prior.get(key) ?? 0, nowMs }, cfg);
+      Q.candidates++;
+      Q.by_reason[v.reason] = (Q.by_reason[v.reason] ?? 0) + 1;
+      sigRows.push(signalRow(c, v, nowIso));
+      if (v.actionable) { Q.actionable++; flags.push(flagRow(c, v, nowIso)); }
+    }
+    const existing = new Set<string>();
+    for (let i = 0; i < sigRows.length && !o.outOfTime(); i += 500) {
+      const slice = sigRows.slice(i, i + 500);
+      let chunk = dropColumns(slice, gaps);
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const res = await rest.insert("signals", chunk, { onConflict: "sig_key", ignoreDuplicates: true, returning: "sig_key" });
+        if (!res.error) { Q.new_signals += res.rows.length; for (const r of slice) existing.add(r.sig_key); break; }
+        const col = missingColumnFrom(res.error);
+        if (col) { gaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
+        if (writeErrors.length < 8) writeErrors.push("prop signals insert: " + res.error.slice(0, 300));
+        break;
+      }
+    }
+    const live = sigRows.filter((r) => existing.has(r.sig_key)).map(liveRow);
+    for (let i = 0; i < live.length && !o.outOfTime(); i += 500) {
+      let chunk = dropColumns(live.slice(i, i + 500), gaps);
+      for (let attempt = 0; attempt < 12; attempt++) {
+        const res = await rest.insert("signals", chunk, { onConflict: "sig_key", ignoreDuplicates: false });
+        if (!res.error) { Q.refreshed += res.count ?? chunk.length; break; }
+        const col = missingColumnFrom(res.error);
+        if (col) { gaps.add(col); chunk = dropColumns(chunk, new Set([col])); continue; }
+        if (writeErrors.length < 8) writeErrors.push("prop signals update: " + res.error.slice(0, 300));
+        break;
+      }
+    }
+    for (const f of flags) {
+      if (o.outOfTime()) break;
+      if (!existing.has(f.sig_key)) continue;
+      const res = await rest.patch("signals", `sig_key=eq.${encodeURIComponent(f.sig_key)}&flagged_at=is.null`, dropColumns([f], gaps)[0], "sig_key");
+      if (res.error) { if (writeErrors.length < 8) writeErrors.push("prop signals flag: " + res.error.slice(0, 300)); }
+      else Q.flag_frozen += res.rows.length;
+    }
+  }
+
+  if (writeErrors.length) T.write_errors = writeErrors;
+  if (gaps.size) {
+    T.schema_gaps = [...gaps].sort();
+    T.schema_warning = "These player-prop columns do not exist, so they were dropped and everything else was written. "
+      + "Run supabase/capture_v11_player_props.sql.";
+  }
+  T.status = T.requests > 0 && T.events_requested > 0 && T.failures === T.requests ? "failed"
+    : (stopped || T.failures || writeErrors.length || gaps.size || T.poll_state_error || unwritten) ? "partial" : "ok";
+  return T;
+}
+
 export async function handle(req: Request): Promise<Response> {
   const envGet: EnvGet = (k) => (typeof Deno !== "undefined" ? Deno.env.get(k) : undefined);
   const baseCfg = defaultConfig(envGet);
@@ -2360,6 +3382,13 @@ export async function handle(req: Request): Promise<Response> {
   const tierCounts: Record<string, number> = { A: 0, B: 0, PASS: 0 };
   const perSegment: Record<string, { candidates: number; actionable: number }> = {};
   let quotaRemaining = "", quotaUsed = "", quotaSpent = 0;
+  let altEligible = 0, altRequested = 0, altMerged = 0, altFailed = 0, altSkippedByCap = 0;
+  const altErrorSamples: any[] = [];
+  const perSportAlt: Record<string, { eligible: number; requested: number; merged: number; failed: number }> = {};
+  /* The football boards this run captured, handed to the player-prop pass
+     after every game line is written. */
+  const propQueue: PropQueueItem[] = [];
+  const propHours = playerPropHoursForTier(cfg, tier);
   /* the CFB Model Lab feed (see cfbLabQuotes); never part of the run status */
   const cfbLab: any = { enabled: cfg.cfbLab, sent: 0, skipped: {}, results: [] as any[], errors: [] as string[],
     quarantined: 0, quarantine_reasons: {} as Record<string, number>, quarantine_errors: [] as string[] };
@@ -2425,6 +3454,52 @@ export async function handle(req: Request): Promise<Response> {
     }
     funnel.events_returned += res.data.length;
 
+    /* EVENT-LEVEL ALTERNATE LADDERS. Only NFL/NCAAF are enabled here because the
+       downstream policy (key numbers, spread semantics, current product surface)
+       is football-specific. The requests are bounded, sorted nearest-first, and
+       made in small concurrent batches so the wall-clock budget still means
+       something. */
+    const altByEvent = new Map<string, any>();
+    const altHours = alternateHoursForTier(cfg, tier);
+    const group = sportGroup(sport);
+    const altStat = perSportAlt[sport] = { eligible: 0, requested: 0, merged: 0, failed: 0 };
+    if (altHours > 0 && (group === "nfl" || group === "ncaaf")) {
+      const eligible = res.data
+        .map((ev: any) => ({ ev, t: Date.parse(String(ev?.commence_time ?? "")) }))
+        .filter((x: any) => Number.isFinite(x.t) && x.t >= nowMs && x.t <= nowMs + altHours * 3600000)
+        .sort((a: any, b: any) => a.t - b.t);
+      altStat.eligible = eligible.length;
+      altEligible += eligible.length;
+      const selected = eligible.slice(0, cfg.alternateMaxEvents);
+      altSkippedByCap += Math.max(0, eligible.length - selected.length);
+
+      for (let i = 0; i < selected.length && !outOfTime(); i += cfg.alternateConcurrency) {
+        const batch = selected.slice(i, i + cfg.alternateConcurrency);
+        const results = await Promise.all(batch.map(async ({ ev }: any) => {
+          const eventId = String(ev?.id ?? "");
+          if (!eventId) return { eventId, ev, res: null as OddsResult | null };
+          return { eventId, ev, res: await fetchEventOdds(ODDS_KEY, sport, eventId, cfg) };
+        }));
+        for (const item of results) {
+          if (!item.res) continue;
+          altRequested++; altStat.requested++;
+          if (item.res.quotaRemaining) quotaRemaining = item.res.quotaRemaining;
+          if (item.res.quotaUsed) quotaUsed = item.res.quotaUsed;
+          quotaSpent += Number(item.res.lastCost) || 0;
+          if (!item.res.ok) {
+            altFailed++; altStat.failed++;
+            if (altErrorSamples.length < 8) altErrorSamples.push({
+              sport, event_id: item.eventId, status: item.res.status, detail: item.res.detail,
+            });
+            continue;
+          }
+          const extra = item.res.data[0];
+          if (extra) { altByEvent.set(item.eventId, extra); altMerged++; altStat.merged++; }
+        }
+      }
+    }
+    if (propHours > 0 && !diag && (group === "nfl" || group === "ncaaf")) propQueue.push({ sport, events: res.data });
+
     /* PRIOR STATE for persistence, in ONE read per sport. A candidate whose prior
        streak is unknown is treated as 0, which requires it to re-confirm: the
        conservative direction, and the direction that cannot manufacture a signal
@@ -2433,7 +3508,10 @@ export async function handle(req: Request): Promise<Response> {
     if (!diag) {
       const horizon = new Date(nowMs + cfg.maxDaysToStart * 86400000).toISOString();
       const { rows, error } = await rest.select(
-        `signals?select=sig_key,qual_streak&sport_key=eq.${encodeURIComponent(sport)}`
+        /* Game lines only. Player rows (when CAPTURE_PLAYER_PROP_SIGNALS is on)
+           are read by the prop pass; here they could only use up the row limit
+           that a spread's streak depends on. */
+        `signals?select=sig_key,qual_streak&sport_key=eq.${encodeURIComponent(sport)}&market=not.like.player_*`
         + `&commence_time=gte.${encodeURIComponent(nowIso)}&commence_time=lte.${encodeURIComponent(horizon)}&limit=20000`,
       );
       if (error) {
@@ -2461,11 +3539,13 @@ export async function handle(req: Request): Promise<Response> {
          cron caller never records. */
       let pe: PriceEventResult;
       try {
-        for (const bk of ev?.bookmakers ?? []) {
+        const eventId = String(ev?.id ?? "");
+        const pricedEvent = altByEvent.has(eventId) ? mergeEventOdds(ev, altByEvent.get(eventId)) : ev;
+        for (const bk of pricedEvent?.bookmakers ?? []) {
           const k = String(bk?.key ?? "").toLowerCase();
           if (k) { bookSet.add(k); if (cfg.referenceBooks.includes(k)) refSeen.add(k); }
         }
-        pe = priceEvent(ev, cfg, nowMs);
+        pe = priceEvent(pricedEvent, cfg, nowMs);
       } catch (e) {
         eventErrors++;
         if (eventErrorSamples.length < 5) eventErrorSamples.push({ sport, event_id: ev?.id ?? null, error: String((e as Error)?.message ?? e) });
@@ -2476,6 +3556,10 @@ export async function handle(req: Request): Promise<Response> {
       duplicateQuotes += pe.duplicateQuotes;
 
       for (const c of pe.candidates) {
+        /* Player markets belong to the second pass. The sport-wide endpoint
+           never returns them and CAPTURE_MARKETS cannot name them, so this is a
+           guard, not a path: a player row must never enter the game funnel. */
+        if (c.is_player_prop) continue;
         const key = sigKey(c);
         /* DEDUPE BEFORE THE WRITE. Postgres refuses an ON CONFLICT statement that
            touches the same row twice, and that error fails the entire chunk, not
@@ -2666,6 +3750,15 @@ export async function handle(req: Request): Promise<Response> {
     }
   }
 
+  /* ── THE PLAYER-PROP PASS. Every game line above is already written. ───── */
+  const playerProps = await runPlayerProps({
+    cfg, tier, oddsKey: ODDS_KEY, rest, nowMs, nowIso, outOfTime, queue: propQueue,
+    quotaRemaining, diag, disabledByRequest: params.props === "0",
+  });
+  quotaSpent += playerProps.quota_spent || 0;
+  if (playerProps.last_quota_remaining) quotaRemaining = playerProps.last_quota_remaining;
+  if (playerProps.last_quota_used) quotaUsed = playerProps.last_quota_used;
+
   const books = [...bookSet].sort();
   const referencePresent = refSeen.size > 0;
   const rejectedTotal = Object.values(rejected).reduce((a, b) => a + b, 0);
@@ -2705,6 +3798,47 @@ export async function handle(req: Request): Promise<Response> {
     rejected_total: rejectedTotal,
     ...(rejectSamples.length ? { rejected_samples: rejectSamples } : {}),
     ...(actionableSamples.length ? { actionable_samples: actionableSamples } : {}),
+
+    // ── alternate-line coverage ───────────────────────────────────────────
+    alternate_lines: {
+      enabled: cfg.alternateLines,
+      markets: cfg.alternateMarkets,
+      cadence_hours: alternateHoursForTier(cfg, tier),
+      near_hours: cfg.alternateNearHours,
+      max_hours: cfg.alternateMaxHours,
+      max_events_per_sport_run: cfg.alternateMaxEvents,
+      concurrency: cfg.alternateConcurrency,
+      eligible_events: altEligible,
+      requests: altRequested,
+      merged_events: altMerged,
+      failed_requests: altFailed,
+      skipped_by_cap: altSkippedByCap,
+      per_sport: perSportAlt,
+      ...(altErrorSamples.length ? { errors: altErrorSamples } : {}),
+      note: tier === "board"
+        ? "BOARD intentionally skips per-event alternate ladders; DAY refreshes the research horizon and NEAR refreshes only the final window."
+        : "alternate_spreads/totals are normalized to spreads/totals before qualification; point remains part of sig_key.",
+    },
+
+    // ── player props: captured in their own pass, never part of the status ──
+    player_props: playerProps,
+    prop_quota_spent: playerProps.quota_spent,
+    prop_events_eligible: playerProps.events_eligible,
+    prop_events_requested: playerProps.events_requested,
+    prop_markets_requested: playerProps.markets_requested,
+    prop_markets_returned: playerProps.markets_returned,
+    prop_players_seen: playerProps.unique_players,
+    prop_quotes_seen: playerProps.quotes_seen,
+    prop_quotes_written: playerProps.quotes_written,
+    prop_ticks_written: playerProps.ticks_written,
+    prop_events_skipped_budget: playerProps.events_skipped_budget,
+    prop_failures: playerProps.failures,
+    ...(cfg.marketsIgnored.length ? {
+      markets_ignored: cfg.marketsIgnored,
+      markets_warning: "CAPTURE_MARKETS named player markets. The sport-wide endpoint refuses them and would have failed "
+        + "the whole board, so they were removed from the featured request. Player markets are captured by the prop pass "
+        + "(CAPTURE_PLAYER_PROP_MARKETS).",
+    } : {}),
 
     // ── reference / market coverage ────────────────────────────────────────
     reference_books: cfg.referenceBooks,
@@ -2802,6 +3936,22 @@ export async function handle(req: Request): Promise<Response> {
       max_dispersion: cfg.maxDispersion,
       freshness: cfg.freshnessPolicy,
       devig: cfg.devigPolicy,
+      alternate_lines: {
+        enabled: cfg.alternateLines, markets: cfg.alternateMarkets,
+        max_hours: cfg.alternateMaxHours, near_hours: cfg.alternateNearHours,
+        max_events: cfg.alternateMaxEvents, concurrency: cfg.alternateConcurrency,
+      },
+      player_props: {
+        enabled: cfg.playerProps, signals: cfg.playerPropSignals,
+        markets: cfg.playerPropMarkets, alternate_markets: cfg.playerPropAlternateMarkets,
+        max_hours: cfg.playerPropMaxHours, near_hours: cfg.playerPropNearHours,
+        max_events: cfg.playerPropMaxEvents, concurrency: cfg.playerPropConcurrency,
+        markets_per_request: cfg.playerPropMarketsPerRequest,
+        interval_min: cfg.playerPropIntervalMin, near_interval_min: cfg.playerPropNearIntervalMin,
+        max_credits_per_run: cfg.propMaxCreditsPerRun, max_market_requests_per_run: cfg.propMaxMarketRequestsPerRun,
+        min_quota_remaining: cfg.propMinQuotaRemaining,
+        qualification: "two-sided Over/Under at one player's exact line only; the player_props edge floor is null, so none is actionable",
+      },
       min_quality_score: cfg.minQualityScore,
       outlier: {
         max_abs_prob_dev: cfg.maxAbsProbDev, min_prob_ratio: cfg.minProbRatio,

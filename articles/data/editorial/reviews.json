@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-09-29T01:30:38.308Z",
-  "open": 7,
-  "count": 7,
+  "generated_at": "2026-09-29T10:30:35.927Z",
+  "open": 8,
+  "count": 8,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -13,7 +13,7 @@
       "question": "Does EdgeDesk’s explosiveness handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-09-25T03:20:23.133Z",
+      "updated_at": "2026-09-29T03:20:22.190Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:contradicted:explosiveness",
@@ -47,16 +47,67 @@
           "result": "Green Bay Packers 5.21 yards per play against Atlanta Falcons 7.55.",
           "severity": "high",
           "at": "2026-09-25T03:20:23.133Z"
+        },
+        {
+          "lesson_id": "2026_03_PHI_CHI:contradicted:explosiveness",
+          "game_id": "2026_03_PHI_CHI",
+          "season": 2026,
+          "week": 3,
+          "team": "Philadelphia Eagles",
+          "expectation": "Philadelphia Eagles holds the largest measured edge in this matchup: Philadelphia Eagles −0.6 pp (#11 of 32) vs Chicago Bears +1.1 pp (#27 of 32) — 16 places on the league board.",
+          "result": "Philadelphia Eagles 5.28 yards per play against Chicago Bears 5.43.",
+          "severity": "high",
+          "at": "2026-09-29T03:20:22.190Z"
         }
       ],
-      "occurrences": 3,
+      "occurrences": 4,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:variance:general",
+      "sport": "NFL",
+      "category": "variance",
+      "question": "Does EdgeDesk’s variance handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-21T04:00:22.158Z",
+      "updated_at": "2026-09-29T03:20:22.190Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_02_IND_KC:won_wrong",
+          "game_id": "2026_02_IND_KC",
+          "season": 2026,
+          "week": 2,
+          "team": null,
+          "expectation": "The number implied Indianapolis Colts +5.5.",
+          "result": "It graded a win. The reasoning behind it did not hold: 4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-09-21T04:00:22.158Z"
+        },
+        {
+          "lesson_id": "2026_03_PHI_CHI:won_wrong",
+          "game_id": "2026_03_PHI_CHI",
+          "season": 2026,
+          "week": 3,
+          "team": null,
+          "expectation": "The number implied Chicago Bears +3.",
+          "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-09-29T03:20:22.190Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -107,35 +158,6 @@
           "result": "The game finished with 67 points, an error of 21.1.",
           "severity": "high",
           "at": "2026-09-13T20:41:25.405Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:variance:general",
-      "sport": "NFL",
-      "category": "variance",
-      "question": "Does EdgeDesk’s variance handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-21T04:00:22.158Z",
-      "updated_at": "2026-09-21T04:00:22.158Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_02_IND_KC:won_wrong",
-          "game_id": "2026_02_IND_KC",
-          "season": 2026,
-          "week": 2,
-          "team": null,
-          "expectation": "The number implied Indianapolis Colts +5.5.",
-          "result": "It graded a win. The reasoning behind it did not hold: 4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
-          "severity": "high",
-          "at": "2026-09-21T04:00:22.158Z"
         }
       ],
       "occurrences": 1,
@@ -223,6 +245,35 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:passing:driver",
+      "sport": "NFL",
+      "category": "passing",
+      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-29T01:40:04.103Z",
+      "updated_at": "2026-09-29T01:40:04.103Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_HOU_IND:contradicted:passing",
+          "game_id": "2026_03_HOU_IND",
+          "season": 2026,
+          "week": 3,
+          "team": "Houston Texans",
+          "expectation": "2 published claims said the same thing: Net passing EPA — Houston Texans by 2.3 points — worth -2.3 of the EdgeDesk number, in Houston Texans’s favour. Indianapolis Colts’ pass offence rates +0.007 (#17 of 32) and Houston Texans’ pass defence rates −0.189 (#3 of 32). Added the way the model adds them, this pairing sits −0.182 from the league mean, which favours Houston Texans.",
+          "result": "Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211. Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211.",
+          "severity": "high",
+          "at": "2026-09-29T01:40:04.103Z"
         }
       ],
       "occurrences": 1,

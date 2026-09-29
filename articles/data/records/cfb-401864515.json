@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-28T21:12:19.786Z",
-  "generated_at": "2026-09-28T21:12:19.786Z",
+  "updated_at": "2026-09-29T05:35:56.211Z",
+  "generated_at": "2026-09-29T05:35:56.211Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and Pinnacle on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -231,7 +231,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T19:00:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
       "home": {
         "team": "North Dakota State",
@@ -315,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T02:30:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
-      "generated_at": "2026-09-28T20:39:04.783Z",
+      "generated_at": "2026-09-29T01:44:48.499Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1423,6 +1423,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 10h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Wyoming — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1551,7 +1557,7 @@
       "total_market": "46.0",
       "book": "captured · Hard Rock Bet",
       "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "1 hour old",
+      "capture_age": "10 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1601,11 +1607,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether North Dakota State or Wyoming’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: Wyoming’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1631,7 +1637,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1647,11 +1653,25 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether North Dakota State or Wyoming’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
+        "main_deduction": "Wyoming’s availability report is not due yet; the impact of Wyoming’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Wyoming)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (North Dakota State)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
+          }
         ],
-        "next_actions": [],
         "stability": {
           "tier": "STABLE",
           "sd": 1.67,
@@ -1685,28 +1705,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Wyoming",
-          "side": "away",
-          "line": 17.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "Wyoming +17.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "North Dakota State",
-          "side": "home",
-          "line": -17.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "North Dakota State -17.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1918,11 +1918,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-28T21:12:19.786Z"
+    "at": "2026-09-29T05:35:56.211Z"
   }
 }

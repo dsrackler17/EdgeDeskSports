@@ -48,6 +48,12 @@
   if(p[0]==='articles'&&p[1]==='community'){location.replace('/articles/community/');return;}
   if(p[0]==='articles'&&p[1]==='write'){location.replace('/articles/write/');return;}
 
+  /* player prop research: /players/{nfl|cfb}/{player id} -> that player on
+     the Player Props page (#playerprops/<league>/player/<id>); /players and
+     /props land on the page itself */
+  if(p[0]==='players'&&(p[1]==='nfl'||p[1]==='cfb')&&p[2]){location.replace('/app.html#playerprops/'+p[1]+'/player/'+p[2]);return;}
+  if(p[0]==='players'||p[0]==='props'){location.replace('/app.html#playerprops');return;}
+
   /* the War Room, the Drill, the Roster and the Front Office are single
      pages: anything deeper lands on the page itself rather than on the games
      home */
