@@ -51,11 +51,12 @@ const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
 eq('the navigation order is exactly the product hierarchy', order.join(','),
-   'research,card,edges,ai,record,more');
-eq('six seats, not eight', order.length, 6);
+   'research,card,pprops,edges,ai,record,more');
+eq('seven seats, not eight', order.length, 7);
 eq('Research is the left-most, primary destination', order[0], 'research');
 eq('the EdgeDesk Card sits immediately beside Research', order[1], 'card');
-eq('Edges follows the Card', order[2], 'edges');
+eq('Player Props follows the Card', order[2], 'pprops');
+eq('Edges follows Player Props', order[3], 'edges');
 eq('More is last', order[order.length - 1], 'more');
 chk('Faults holds no seat in the bottom bar', order.indexOf('faults') < 0);
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));

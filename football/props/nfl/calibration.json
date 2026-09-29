@@ -1,0 +1,1836 @@
+{
+ "schema": "edgedesk_props_calibration_v1",
+ "league": "nfl",
+ "mode": "BACKTEST",
+ "model_version": "edgedesk_props_model_v1",
+ "season_tested": 2025,
+ "weeks": [
+  2,
+  18
+ ],
+ "split_week": 10,
+ "generated_at": "2026-09-29T00:49:59.468Z",
+ "what_it_proves": "whether the projected distributions are honest about realised outcomes (walk-forward, data strictly before each week)",
+ "what_it_does_not": "that EdgeDesk beats a sportsbook price: no historical prop prices were available. Live grading (grade.js) measures that.",
+ "disclosure": "inactive teammates are treated as known pregame (they are); league-wide per-event yard shapes include the tested season",
+ "n_scored": 23150,
+ "out_of_sample": {
+  "before": {
+   "anytime_td": {
+    "n": 1946,
+    "mean_pred": 0.282,
+    "mean_actual": 0.294,
+    "bias_pct": -4.18,
+    "mae": 0.393,
+    "log_score": -0.6677,
+    "cover50": 0.5082,
+    "pit_mean": 0.5094,
+    "pit_var": 0.08446,
+    "calibration": {
+     "n": 5838,
+     "brier": 0.14796,
+     "ece": 0.01717,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 169,
+       "expected": 0.5271,
+       "observed": 0.574,
+       "gap_pp": 4.68
+      },
+      {
+       "bucket": "55–60%",
+       "n": 227,
+       "expected": 0.5753,
+       "observed": 0.5683,
+       "gap_pp": -0.71
+      },
+      {
+       "bucket": "60–65%",
+       "n": 257,
+       "expected": 0.6254,
+       "observed": 0.6342,
+       "gap_pp": 0.88
+      },
+      {
+       "bucket": "65–70%",
+       "n": 321,
+       "expected": 0.6748,
+       "observed": 0.6822,
+       "gap_pp": 0.75
+      },
+      {
+       "bucket": "70%+",
+       "n": 4864,
+       "expected": 0.8592,
+       "observed": 0.8415,
+       "gap_pp": -1.77
+      }
+     ]
+    }
+   },
+   "pass_att": {
+    "n": 274,
+    "mean_pred": 30.456,
+    "mean_actual": 30.617,
+    "bias_pct": -0.52,
+    "mae": 6.709,
+    "log_score": -3.5793,
+    "cover50": 0.4635,
+    "pit_mean": 0.5177,
+    "pit_var": 0.09589,
+    "calibration": {
+     "n": 822,
+     "brier": 0.2197,
+     "ece": 0.0283,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 257,
+       "expected": 0.5239,
+       "observed": 0.5058,
+       "gap_pp": -1.81
+      },
+      {
+       "bucket": "55–60%",
+       "n": 17,
+       "expected": 0.5532,
+       "observed": 0.4118,
+       "gap_pp": -14.15
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 5,
+       "expected": 0.6977,
+       "observed": 0.8,
+       "gap_pp": 10.23
+      },
+      {
+       "bucket": "70%+",
+       "n": 543,
+       "expected": 0.7471,
+       "observed": 0.7182,
+       "gap_pp": -2.88
+      }
+     ]
+    }
+   },
+   "pass_cmp": {
+    "n": 274,
+    "mean_pred": 19.547,
+    "mean_actual": 19.332,
+    "bias_pct": 1.11,
+    "mae": 4.749,
+    "log_score": -3.1952,
+    "cover50": 0.4489,
+    "pit_mean": 0.4958,
+    "pit_var": 0.09237,
+    "calibration": {
+     "n": 822,
+     "brier": 0.21453,
+     "ece": 0.03312,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 196,
+       "expected": 0.5252,
+       "observed": 0.5663,
+       "gap_pp": 4.11
+      },
+      {
+       "bucket": "55–60%",
+       "n": 78,
+       "expected": 0.5654,
+       "observed": 0.4615,
+       "gap_pp": -10.39
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 59,
+       "expected": 0.6913,
+       "observed": 0.6949,
+       "gap_pp": 0.36
+      },
+      {
+       "bucket": "70%+",
+       "n": 489,
+       "expected": 0.7543,
+       "observed": 0.7321,
+       "gap_pp": -2.22
+      }
+     ]
+    }
+   },
+   "pass_ints": {
+    "n": 274,
+    "mean_pred": 0.669,
+    "mean_actual": 0.686,
+    "bias_pct": -2.42,
+    "mae": 0.646,
+    "log_score": -1.0857,
+    "cover50": 0.5109,
+    "pit_mean": 0.5049,
+    "pit_var": 0.0806,
+    "calibration": {
+     "n": 822,
+     "brier": 0.18302,
+     "ece": 0.04726,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 177,
+       "expected": 0.5258,
+       "observed": 0.5706,
+       "gap_pp": 4.48
+      },
+      {
+       "bucket": "55–60%",
+       "n": 136,
+       "expected": 0.5735,
+       "observed": 0.4706,
+       "gap_pp": -10.29
+      },
+      {
+       "bucket": "60–65%",
+       "n": 102,
+       "expected": 0.6184,
+       "observed": 0.6471,
+       "gap_pp": 2.87
+      },
+      {
+       "bucket": "65–70%",
+       "n": 27,
+       "expected": 0.6784,
+       "observed": 0.7407,
+       "gap_pp": 6.24
+      },
+      {
+       "bucket": "70%+",
+       "n": 380,
+       "expected": 0.8439,
+       "observed": 0.8763,
+       "gap_pp": 3.24
+      }
+     ]
+    }
+   },
+   "pass_long": {
+    "n": 274,
+    "mean_pred": 35.637,
+    "mean_actual": 34.504,
+    "bias_pct": 3.29,
+    "mae": 10.415,
+    "log_score": -3.9535,
+    "cover50": 0.5474,
+    "pit_mean": 0.4872,
+    "pit_var": 0.0799,
+    "calibration": {
+     "n": 822,
+     "brier": 0.20343,
+     "ece": 0.01953,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 274,
+       "expected": 0.5149,
+       "observed": 0.5401,
+       "gap_pp": 2.53
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 548,
+       "expected": 0.7461,
+       "observed": 0.7628,
+       "gap_pp": 1.67
+      }
+     ]
+    }
+   },
+   "pass_tds": {
+    "n": 274,
+    "mean_pred": 1.462,
+    "mean_actual": 1.361,
+    "bias_pct": 7.41,
+    "mae": 0.922,
+    "log_score": -1.4582,
+    "cover50": 0.5182,
+    "pit_mean": 0.4822,
+    "pit_var": 0.07721,
+    "calibration": {
+     "n": 822,
+     "brier": 0.1878,
+     "ece": 0.03392,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 132,
+       "expected": 0.5253,
+       "observed": 0.5758,
+       "gap_pp": 5.05
+      },
+      {
+       "bucket": "55–60%",
+       "n": 123,
+       "expected": 0.5751,
+       "observed": 0.5854,
+       "gap_pp": 1.02
+      },
+      {
+       "bucket": "60–65%",
+       "n": 81,
+       "expected": 0.6237,
+       "observed": 0.7037,
+       "gap_pp": 8
+      },
+      {
+       "bucket": "65–70%",
+       "n": 84,
+       "expected": 0.6764,
+       "observed": 0.6429,
+       "gap_pp": -3.36
+      },
+      {
+       "bucket": "70%+",
+       "n": 402,
+       "expected": 0.8043,
+       "observed": 0.8308,
+       "gap_pp": 2.65
+      }
+     ]
+    }
+   },
+   "pass_yds": {
+    "n": 274,
+    "mean_pred": 215.154,
+    "mean_actual": 213.803,
+    "bias_pct": 0.63,
+    "mae": 61.14,
+    "log_score": -5.757,
+    "cover50": 0.4891,
+    "pit_mean": 0.4963,
+    "pit_var": 0.08174,
+    "calibration": {
+     "n": 822,
+     "brier": 0.2089,
+     "ece": 0.00157,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 274,
+       "expected": 0.5025,
+       "observed": 0.5036,
+       "gap_pp": 0.11
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 548,
+       "expected": 0.75,
+       "observed": 0.7482,
+       "gap_pp": -0.18
+      }
+     ]
+    }
+   },
+   "rec_long": {
+    "n": 1169,
+    "mean_pred": 18.353,
+    "mean_actual": 17.216,
+    "bias_pct": 6.6,
+    "mae": 9.989,
+    "log_score": -3.6752,
+    "cover50": 0.4559,
+    "pit_mean": 0.4748,
+    "pit_var": 0.09001,
+    "calibration": {
+     "n": 3507,
+     "brier": 0.21559,
+     "ece": 0.0189,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 1163,
+       "expected": 0.5185,
+       "observed": 0.5314,
+       "gap_pp": 1.29
+      },
+      {
+       "bucket": "55–60%",
+       "n": 6,
+       "expected": 0.5545,
+       "observed": 0.8333,
+       "gap_pp": 27.88
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 13,
+       "expected": 0.6947,
+       "observed": 0.6154,
+       "gap_pp": -7.94
+      },
+      {
+       "bucket": "70%+",
+       "n": 2325,
+       "expected": 0.7461,
+       "observed": 0.7252,
+       "gap_pp": -2.1
+      }
+     ]
+    }
+   },
+   "rec_yds": {
+    "n": 1672,
+    "mean_pred": 32.01,
+    "mean_actual": 30.057,
+    "bias_pct": 6.5,
+    "mae": 20.057,
+    "log_score": -4.1399,
+    "cover50": 0.4737,
+    "pit_mean": 0.4738,
+    "pit_var": 0.08996,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.2149,
+     "ece": 0.02525,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 1631,
+       "expected": 0.5097,
+       "observed": 0.5445,
+       "gap_pp": 3.47
+      },
+      {
+       "bucket": "55–60%",
+       "n": 63,
+       "expected": 0.5746,
+       "observed": 0.5079,
+       "gap_pp": -6.67
+      },
+      {
+       "bucket": "60–65%",
+       "n": 65,
+       "expected": 0.6225,
+       "observed": 0.7385,
+       "gap_pp": 11.6
+      },
+      {
+       "bucket": "65–70%",
+       "n": 66,
+       "expected": 0.6772,
+       "observed": 0.6667,
+       "gap_pp": -1.05
+      },
+      {
+       "bucket": "70%+",
+       "n": 3191,
+       "expected": 0.7501,
+       "observed": 0.7321,
+       "gap_pp": -1.8
+      }
+     ]
+    }
+   },
+   "receptions": {
+    "n": 1672,
+    "mean_pred": 2.855,
+    "mean_actual": 2.67,
+    "bias_pct": 6.92,
+    "mae": 1.502,
+    "log_score": -1.9126,
+    "cover50": 0.4587,
+    "pit_mean": 0.4689,
+    "pit_var": 0.091,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.20431,
+     "ece": 0.01457,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 641,
+       "expected": 0.5256,
+       "observed": 0.5179,
+       "gap_pp": -0.77
+      },
+      {
+       "bucket": "55–60%",
+       "n": 680,
+       "expected": 0.5763,
+       "observed": 0.5941,
+       "gap_pp": 1.78
+      },
+      {
+       "bucket": "60–65%",
+       "n": 769,
+       "expected": 0.6254,
+       "observed": 0.6112,
+       "gap_pp": -1.42
+      },
+      {
+       "bucket": "65–70%",
+       "n": 650,
+       "expected": 0.6736,
+       "observed": 0.6462,
+       "gap_pp": -2.75
+      },
+      {
+       "bucket": "70%+",
+       "n": 2276,
+       "expected": 0.7989,
+       "observed": 0.7869,
+       "gap_pp": -1.2
+      }
+     ]
+    }
+   },
+   "rush_att": {
+    "n": 777,
+    "mean_pred": 8.74,
+    "mean_actual": 8.493,
+    "bias_pct": 2.91,
+    "mae": 3.317,
+    "log_score": -2.7805,
+    "cover50": 0.4234,
+    "pit_mean": 0.4988,
+    "pit_var": 0.0998,
+    "calibration": {
+     "n": 2331,
+     "brier": 0.21944,
+     "ece": 0.03652,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 333,
+       "expected": 0.5258,
+       "observed": 0.5586,
+       "gap_pp": 3.28
+      },
+      {
+       "bucket": "55–60%",
+       "n": 341,
+       "expected": 0.5722,
+       "observed": 0.5894,
+       "gap_pp": 1.73
+      },
+      {
+       "bucket": "60–65%",
+       "n": 232,
+       "expected": 0.6253,
+       "observed": 0.6466,
+       "gap_pp": 2.13
+      },
+      {
+       "bucket": "65–70%",
+       "n": 278,
+       "expected": 0.6773,
+       "observed": 0.6403,
+       "gap_pp": -3.71
+      },
+      {
+       "bucket": "70%+",
+       "n": 1147,
+       "expected": 0.7717,
+       "observed": 0.7254,
+       "gap_pp": -4.63
+      }
+     ]
+    }
+   },
+   "rush_long": {
+    "n": 503,
+    "mean_pred": 15.562,
+    "mean_actual": 14.819,
+    "bias_pct": 5.01,
+    "mae": 8.43,
+    "log_score": -3.6213,
+    "cover50": 0.4771,
+    "pit_mean": 0.478,
+    "pit_var": 0.0914,
+    "calibration": {
+     "n": 1509,
+     "brier": 0.21404,
+     "ece": 0.01336,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 429,
+       "expected": 0.5248,
+       "observed": 0.5338,
+       "gap_pp": 0.9
+      },
+      {
+       "bucket": "55–60%",
+       "n": 74,
+       "expected": 0.5595,
+       "observed": 0.6081,
+       "gap_pp": 4.86
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 165,
+       "expected": 0.686,
+       "observed": 0.6182,
+       "gap_pp": -6.78
+      },
+      {
+       "bucket": "70%+",
+       "n": 841,
+       "expected": 0.7473,
+       "observed": 0.7455,
+       "gap_pp": -0.17
+      }
+     ]
+    }
+   },
+   "rush_rec_yds": {
+    "n": 503,
+    "mean_pred": 66.785,
+    "mean_actual": 63.066,
+    "bias_pct": 5.9,
+    "mae": 28.036,
+    "log_score": -4.9024,
+    "cover50": 0.4553,
+    "pit_mean": 0.4559,
+    "pit_var": 0.09293,
+    "calibration": {
+     "n": 1509,
+     "brier": 0.21543,
+     "ece": 0.03157,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 503,
+       "expected": 0.507,
+       "observed": 0.5567,
+       "gap_pp": 4.96
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 1006,
+       "expected": 0.7491,
+       "observed": 0.7266,
+       "gap_pp": -2.24
+      }
+     ]
+    }
+   },
+   "rush_yds": {
+    "n": 777,
+    "mean_pred": 38.196,
+    "mean_actual": 37.414,
+    "bias_pct": 2.09,
+    "mae": 20.12,
+    "log_score": -4.4368,
+    "cover50": 0.4723,
+    "pit_mean": 0.501,
+    "pit_var": 0.09319,
+    "calibration": {
+     "n": 2331,
+     "brier": 0.21552,
+     "ece": 0.0169,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 804,
+       "expected": 0.5116,
+       "observed": 0.51,
+       "gap_pp": -0.16
+      },
+      {
+       "bucket": "55–60%",
+       "n": 22,
+       "expected": 0.5739,
+       "observed": 0.4545,
+       "gap_pp": -11.93
+      },
+      {
+       "bucket": "60–65%",
+       "n": 12,
+       "expected": 0.6323,
+       "observed": 0.9167,
+       "gap_pp": 28.44
+      },
+      {
+       "bucket": "65–70%",
+       "n": 36,
+       "expected": 0.6748,
+       "observed": 0.8333,
+       "gap_pp": 15.86
+      },
+      {
+       "bucket": "70%+",
+       "n": 1457,
+       "expected": 0.7491,
+       "observed": 0.731,
+       "gap_pp": -1.81
+      }
+     ]
+    }
+   },
+   "targets": {
+    "n": 1672,
+    "mean_pred": 4.236,
+    "mean_actual": 4.032,
+    "bias_pct": 5.06,
+    "mae": 1.95,
+    "log_score": -2.2035,
+    "cover50": 0.439,
+    "pit_mean": 0.4755,
+    "pit_var": 0.09522,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.21129,
+     "ece": 0.02392,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 637,
+       "expected": 0.5254,
+       "observed": 0.5526,
+       "gap_pp": 2.72
+      },
+      {
+       "bucket": "55–60%",
+       "n": 665,
+       "expected": 0.5751,
+       "observed": 0.5549,
+       "gap_pp": -2.02
+      },
+      {
+       "bucket": "60–65%",
+       "n": 774,
+       "expected": 0.6244,
+       "observed": 0.6085,
+       "gap_pp": -1.58
+      },
+      {
+       "bucket": "65–70%",
+       "n": 637,
+       "expected": 0.6747,
+       "observed": 0.6389,
+       "gap_pp": -3.57
+      },
+      {
+       "bucket": "70%+",
+       "n": 2303,
+       "expected": 0.7895,
+       "observed": 0.766,
+       "gap_pp": -2.36
+      }
+     ]
+    }
+   }
+  },
+  "after": {
+   "anytime_td": {
+    "n": 1946,
+    "mean_pred": 0.295,
+    "mean_actual": 0.294,
+    "bias_pct": 0.32,
+    "mae": 0.398,
+    "log_score": -0.6676,
+    "cover50": 0.5128,
+    "pit_mean": 0.5043,
+    "pit_var": 0.08383,
+    "calibration": {
+     "n": 5838,
+     "brier": 0.14657,
+     "ece": 0.01209,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 205,
+       "expected": 0.5264,
+       "observed": 0.5073,
+       "gap_pp": -1.91
+      },
+      {
+       "bucket": "55–60%",
+       "n": 240,
+       "expected": 0.5759,
+       "observed": 0.6167,
+       "gap_pp": 4.07
+      },
+      {
+       "bucket": "60–65%",
+       "n": 279,
+       "expected": 0.6266,
+       "observed": 0.638,
+       "gap_pp": 1.14
+      },
+      {
+       "bucket": "65–70%",
+       "n": 346,
+       "expected": 0.6767,
+       "observed": 0.6676,
+       "gap_pp": -0.9
+      },
+      {
+       "bucket": "70%+",
+       "n": 4768,
+       "expected": 0.8585,
+       "observed": 0.8479,
+       "gap_pp": -1.06
+      }
+     ]
+    }
+   },
+   "pass_att": {
+    "n": 274,
+    "mean_pred": 30.539,
+    "mean_actual": 30.617,
+    "bias_pct": -0.25,
+    "mae": 6.709,
+    "log_score": -3.5869,
+    "cover50": 0.4489,
+    "pit_mean": 0.5144,
+    "pit_var": 0.09795,
+    "calibration": {
+     "n": 822,
+     "brier": 0.21908,
+     "ece": 0.02837,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 245,
+       "expected": 0.5245,
+       "observed": 0.498,
+       "gap_pp": -2.65
+      },
+      {
+       "bucket": "55–60%",
+       "n": 29,
+       "expected": 0.5548,
+       "observed": 0.5862,
+       "gap_pp": 3.14
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 7,
+       "expected": 0.6976,
+       "observed": 0.7143,
+       "gap_pp": 1.67
+      },
+      {
+       "bucket": "70%+",
+       "n": 541,
+       "expected": 0.7482,
+       "observed": 0.719,
+       "gap_pp": -2.91
+      }
+     ]
+    }
+   },
+   "pass_cmp": {
+    "n": 274,
+    "mean_pred": 19.604,
+    "mean_actual": 19.332,
+    "bias_pct": 1.4,
+    "mae": 4.754,
+    "log_score": -3.2092,
+    "cover50": 0.438,
+    "pit_mean": 0.4911,
+    "pit_var": 0.09688,
+    "calibration": {
+     "n": 822,
+     "brier": 0.21642,
+     "ece": 0.04706,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 181,
+       "expected": 0.5237,
+       "observed": 0.5691,
+       "gap_pp": 4.54
+      },
+      {
+       "bucket": "55–60%",
+       "n": 93,
+       "expected": 0.5653,
+       "observed": 0.4839,
+       "gap_pp": -8.14
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 67,
+       "expected": 0.6873,
+       "observed": 0.7612,
+       "gap_pp": 7.39
+      },
+      {
+       "bucket": "70%+",
+       "n": 481,
+       "expected": 0.7566,
+       "observed": 0.7193,
+       "gap_pp": -3.73
+      }
+     ]
+    }
+   },
+   "pass_ints": {
+    "n": 274,
+    "mean_pred": 0.676,
+    "mean_actual": 0.686,
+    "bias_pct": -1.48,
+    "mae": 0.646,
+    "log_score": -1.0839,
+    "cover50": 0.5182,
+    "pit_mean": 0.5016,
+    "pit_var": 0.08076,
+    "calibration": {
+     "n": 822,
+     "brier": 0.18041,
+     "ece": 0.03756,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 178,
+       "expected": 0.5254,
+       "observed": 0.5562,
+       "gap_pp": 3.08
+      },
+      {
+       "bucket": "55–60%",
+       "n": 142,
+       "expected": 0.5757,
+       "observed": 0.5282,
+       "gap_pp": -4.75
+      },
+      {
+       "bucket": "60–65%",
+       "n": 84,
+       "expected": 0.6188,
+       "observed": 0.5952,
+       "gap_pp": -2.36
+      },
+      {
+       "bucket": "65–70%",
+       "n": 30,
+       "expected": 0.6742,
+       "observed": 0.7667,
+       "gap_pp": 9.25
+      },
+      {
+       "bucket": "70%+",
+       "n": 388,
+       "expected": 0.8431,
+       "observed": 0.8789,
+       "gap_pp": 3.57
+      }
+     ]
+    }
+   },
+   "pass_long": {
+    "n": 274,
+    "mean_pred": 35.924,
+    "mean_actual": 34.504,
+    "bias_pct": 4.12,
+    "mae": 10.472,
+    "log_score": -3.9604,
+    "cover50": 0.5511,
+    "pit_mean": 0.4813,
+    "pit_var": 0.07988,
+    "calibration": {
+     "n": 822,
+     "brier": 0.20499,
+     "ece": 0.0179,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 274,
+       "expected": 0.5153,
+       "observed": 0.5474,
+       "gap_pp": 3.22
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 548,
+       "expected": 0.7465,
+       "observed": 0.7573,
+       "gap_pp": 1.08
+      }
+     ]
+    }
+   },
+   "pass_tds": {
+    "n": 274,
+    "mean_pred": 1.475,
+    "mean_actual": 1.361,
+    "bias_pct": 8.36,
+    "mae": 0.924,
+    "log_score": -1.4593,
+    "cover50": 0.5073,
+    "pit_mean": 0.4767,
+    "pit_var": 0.07847,
+    "calibration": {
+     "n": 822,
+     "brier": 0.18651,
+     "ece": 0.02741,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 132,
+       "expected": 0.5262,
+       "observed": 0.5909,
+       "gap_pp": 6.47
+      },
+      {
+       "bucket": "55–60%",
+       "n": 140,
+       "expected": 0.5781,
+       "observed": 0.5929,
+       "gap_pp": 1.48
+      },
+      {
+       "bucket": "60–65%",
+       "n": 69,
+       "expected": 0.6262,
+       "observed": 0.6377,
+       "gap_pp": 1.15
+      },
+      {
+       "bucket": "65–70%",
+       "n": 78,
+       "expected": 0.6757,
+       "observed": 0.6923,
+       "gap_pp": 1.66
+      },
+      {
+       "bucket": "70%+",
+       "n": 403,
+       "expected": 0.8069,
+       "observed": 0.8313,
+       "gap_pp": 2.43
+      }
+     ]
+    }
+   },
+   "pass_yds": {
+    "n": 274,
+    "mean_pred": 216.359,
+    "mean_actual": 213.803,
+    "bias_pct": 1.2,
+    "mae": 61.145,
+    "log_score": -5.7633,
+    "cover50": 0.4489,
+    "pit_mean": 0.4914,
+    "pit_var": 0.08928,
+    "calibration": {
+     "n": 822,
+     "brier": 0.21679,
+     "ece": 0.01953,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 274,
+       "expected": 0.5029,
+       "observed": 0.5109,
+       "gap_pp": 0.8
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 548,
+       "expected": 0.7498,
+       "observed": 0.7245,
+       "gap_pp": -2.54
+      }
+     ]
+    }
+   },
+   "rec_long": {
+    "n": 1169,
+    "mean_pred": 17.397,
+    "mean_actual": 17.216,
+    "bias_pct": 1.05,
+    "mae": 9.802,
+    "log_score": -3.6594,
+    "cover50": 0.4867,
+    "pit_mean": 0.4999,
+    "pit_var": 0.08442,
+    "calibration": {
+     "n": 3507,
+     "brier": 0.21208,
+     "ece": 0.00958,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 1164,
+       "expected": 0.5183,
+       "observed": 0.506,
+       "gap_pp": -1.23
+      },
+      {
+       "bucket": "55–60%",
+       "n": 5,
+       "expected": 0.5565,
+       "observed": 0.4,
+       "gap_pp": -15.65
+      },
+      {
+       "bucket": "60–65%",
+       "n": 2,
+       "expected": 0.6322,
+       "observed": 0.5,
+       "gap_pp": -13.22
+      },
+      {
+       "bucket": "65–70%",
+       "n": 18,
+       "expected": 0.6841,
+       "observed": 0.6111,
+       "gap_pp": -7.3
+      },
+      {
+       "bucket": "70%+",
+       "n": 2318,
+       "expected": 0.7467,
+       "observed": 0.7394,
+       "gap_pp": -0.72
+      }
+     ]
+    }
+   },
+   "rec_yds": {
+    "n": 1672,
+    "mean_pred": 31.191,
+    "mean_actual": 30.057,
+    "bias_pct": 3.77,
+    "mae": 19.891,
+    "log_score": -4.1316,
+    "cover50": 0.5108,
+    "pit_mean": 0.4941,
+    "pit_var": 0.08381,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.20991,
+     "ece": 0.00692,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 1614,
+       "expected": 0.5089,
+       "observed": 0.5192,
+       "gap_pp": 1.03
+      },
+      {
+       "bucket": "55–60%",
+       "n": 71,
+       "expected": 0.5727,
+       "observed": 0.5915,
+       "gap_pp": 1.88
+      },
+      {
+       "bucket": "60–65%",
+       "n": 69,
+       "expected": 0.6267,
+       "observed": 0.5362,
+       "gap_pp": -9.05
+      },
+      {
+       "bucket": "65–70%",
+       "n": 82,
+       "expected": 0.6749,
+       "observed": 0.7683,
+       "gap_pp": 9.34
+      },
+      {
+       "bucket": "70%+",
+       "n": 3180,
+       "expected": 0.7503,
+       "observed": 0.7494,
+       "gap_pp": -0.09
+      }
+     ]
+    }
+   },
+   "receptions": {
+    "n": 1672,
+    "mean_pred": 2.801,
+    "mean_actual": 2.67,
+    "bias_pct": 4.92,
+    "mae": 1.492,
+    "log_score": -1.8972,
+    "cover50": 0.488,
+    "pit_mean": 0.4855,
+    "pit_var": 0.0845,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.20462,
+     "ece": 0.01349,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 697,
+       "expected": 0.5263,
+       "observed": 0.5811,
+       "gap_pp": 5.48
+      },
+      {
+       "bucket": "55–60%",
+       "n": 696,
+       "expected": 0.5749,
+       "observed": 0.5647,
+       "gap_pp": -1.02
+      },
+      {
+       "bucket": "60–65%",
+       "n": 800,
+       "expected": 0.6251,
+       "observed": 0.6238,
+       "gap_pp": -0.13
+      },
+      {
+       "bucket": "65–70%",
+       "n": 638,
+       "expected": 0.6737,
+       "observed": 0.6567,
+       "gap_pp": -1.7
+      },
+      {
+       "bucket": "70%+",
+       "n": 2185,
+       "expected": 0.7961,
+       "observed": 0.7913,
+       "gap_pp": -0.48
+      }
+     ]
+    }
+   },
+   "rush_att": {
+    "n": 777,
+    "mean_pred": 8.625,
+    "mean_actual": 8.493,
+    "bias_pct": 1.55,
+    "mae": 3.296,
+    "log_score": -2.7531,
+    "cover50": 0.4569,
+    "pit_mean": 0.5114,
+    "pit_var": 0.09335,
+    "calibration": {
+     "n": 2331,
+     "brier": 0.21574,
+     "ece": 0.03028,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 368,
+       "expected": 0.5249,
+       "observed": 0.5652,
+       "gap_pp": 4.03
+      },
+      {
+       "bucket": "55–60%",
+       "n": 306,
+       "expected": 0.5726,
+       "observed": 0.5392,
+       "gap_pp": -3.34
+      },
+      {
+       "bucket": "60–65%",
+       "n": 221,
+       "expected": 0.6246,
+       "observed": 0.638,
+       "gap_pp": 1.34
+      },
+      {
+       "bucket": "65–70%",
+       "n": 268,
+       "expected": 0.677,
+       "observed": 0.597,
+       "gap_pp": -8
+      },
+      {
+       "bucket": "70%+",
+       "n": 1168,
+       "expected": 0.769,
+       "observed": 0.7509,
+       "gap_pp": -1.82
+      }
+     ]
+    }
+   },
+   "rush_long": {
+    "n": 503,
+    "mean_pred": 15.29,
+    "mean_actual": 14.819,
+    "bias_pct": 3.18,
+    "mae": 8.342,
+    "log_score": -3.6059,
+    "cover50": 0.4851,
+    "pit_mean": 0.489,
+    "pit_var": 0.08838,
+    "calibration": {
+     "n": 1509,
+     "brier": 0.21218,
+     "ece": 0.00546,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 435,
+       "expected": 0.5236,
+       "observed": 0.5287,
+       "gap_pp": 0.51
+      },
+      {
+       "bucket": "55–60%",
+       "n": 68,
+       "expected": 0.5585,
+       "observed": 0.5294,
+       "gap_pp": -2.91
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 146,
+       "expected": 0.6867,
+       "observed": 0.6849,
+       "gap_pp": -0.18
+      },
+      {
+       "bucket": "70%+",
+       "n": 860,
+       "expected": 0.7474,
+       "observed": 0.743,
+       "gap_pp": -0.44
+      }
+     ]
+    }
+   },
+   "rush_rec_yds": {
+    "n": 503,
+    "mean_pred": 65.957,
+    "mean_actual": 63.066,
+    "bias_pct": 4.58,
+    "mae": 27.856,
+    "log_score": -4.8699,
+    "cover50": 0.5089,
+    "pit_mean": 0.4766,
+    "pit_var": 0.0817,
+    "calibration": {
+     "n": 1509,
+     "brier": 0.20717,
+     "ece": 0.0106,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 503,
+       "expected": 0.5062,
+       "observed": 0.5308,
+       "gap_pp": 2.46
+      },
+      {
+       "bucket": "55–60%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "60–65%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "65–70%",
+       "n": 0,
+       "expected": null,
+       "observed": null,
+       "gap_pp": null
+      },
+      {
+       "bucket": "70%+",
+       "n": 1006,
+       "expected": 0.7489,
+       "observed": 0.7525,
+       "gap_pp": 0.36
+      }
+     ]
+    }
+   },
+   "rush_yds": {
+    "n": 777,
+    "mean_pred": 37.936,
+    "mean_actual": 37.414,
+    "bias_pct": 1.39,
+    "mae": 20.074,
+    "log_score": -4.4261,
+    "cover50": 0.5019,
+    "pit_mean": 0.5123,
+    "pit_var": 0.08771,
+    "calibration": {
+     "n": 2331,
+     "brier": 0.21211,
+     "ece": 0.02004,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 782,
+       "expected": 0.5109,
+       "observed": 0.4872,
+       "gap_pp": -2.37
+      },
+      {
+       "bucket": "55–60%",
+       "n": 40,
+       "expected": 0.5744,
+       "observed": 0.825,
+       "gap_pp": 25.06
+      },
+      {
+       "bucket": "60–65%",
+       "n": 50,
+       "expected": 0.6246,
+       "observed": 0.72,
+       "gap_pp": 9.54
+      },
+      {
+       "bucket": "65–70%",
+       "n": 42,
+       "expected": 0.6759,
+       "observed": 0.7857,
+       "gap_pp": 10.98
+      },
+      {
+       "bucket": "70%+",
+       "n": 1417,
+       "expected": 0.7493,
+       "observed": 0.7431,
+       "gap_pp": -0.62
+      }
+     ]
+    }
+   },
+   "targets": {
+    "n": 1672,
+    "mean_pred": 4.152,
+    "mean_actual": 4.032,
+    "bias_pct": 2.97,
+    "mae": 1.938,
+    "log_score": -2.1825,
+    "cover50": 0.4737,
+    "pit_mean": 0.4923,
+    "pit_var": 0.0883,
+    "calibration": {
+     "n": 5016,
+     "brier": 0.21085,
+     "ece": 0.01609,
+     "table": [
+      {
+       "bucket": "50–55%",
+       "n": 641,
+       "expected": 0.5263,
+       "observed": 0.546,
+       "gap_pp": 1.98
+      },
+      {
+       "bucket": "55–60%",
+       "n": 739,
+       "expected": 0.5752,
+       "observed": 0.5683,
+       "gap_pp": -0.69
+      },
+      {
+       "bucket": "60–65%",
+       "n": 723,
+       "expected": 0.6249,
+       "observed": 0.6086,
+       "gap_pp": -1.63
+      },
+      {
+       "bucket": "65–70%",
+       "n": 644,
+       "expected": 0.6738,
+       "observed": 0.6475,
+       "gap_pp": -2.63
+      },
+      {
+       "bucket": "70%+",
+       "n": 2269,
+       "expected": 0.7855,
+       "observed": 0.7704,
+       "gap_pp": -1.52
+      }
+     ]
+    }
+   }
+  },
+  "fitted_on": "weeks 2–9"
+ },
+ "markets": {
+  "rush_att": {
+   "mean_mult": 0.9829,
+   "mean_mult_raw": 0.965,
+   "f": 1.321,
+   "f_raw": 1.4,
+   "n": 1436,
+   "fit_log_score": -2.7214,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -2.7805,
+    "after": -2.7531
+   }
+  },
+  "rush_yds": {
+   "mean_mult": 0.9896,
+   "mean_mult_raw": 0.9788,
+   "f": 1.203,
+   "f_raw": 1.25,
+   "n": 1436,
+   "fit_log_score": -4.414,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -4.4368,
+    "after": -4.4261
+   }
+  },
+  "rush_long": {
+   "mean_mult": 0.981,
+   "mean_mult_raw": 0.9502,
+   "f": 1.558,
+   "f_raw": 1.8,
+   "n": 924,
+   "fit_log_score": -3.5541,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -3.6213,
+    "after": -3.6059
+   }
+  },
+  "receptions": {
+   "mean_mult": 0.965,
+   "mean_mult_raw": 0.9484,
+   "f": 1.226,
+   "f_raw": 1.25,
+   "n": 3154,
+   "fit_log_score": -1.9252,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -1.9126,
+    "after": -1.8972
+   }
+  },
+  "targets": {
+   "mean_mult": 0.97,
+   "mean_mult_raw": 0.9557,
+   "f": 1.226,
+   "f_raw": 1.25,
+   "n": 3154,
+   "fit_log_score": -2.2077,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -2.2035,
+    "after": -2.1825
+   }
+  },
+  "rec_yds": {
+   "mean_mult": 0.9618,
+   "mean_mult_raw": 0.9436,
+   "f": 1.226,
+   "f_raw": 1.25,
+   "n": 3154,
+   "fit_log_score": -4.1682,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -4.1399,
+    "after": -4.1316
+   }
+  },
+  "rush_rec_yds": {
+   "mean_mult": 0.9786,
+   "mean_mult_raw": 0.9439,
+   "f": 1.289,
+   "f_raw": 1.4,
+   "n": 924,
+   "fit_log_score": -4.8594,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -4.9024,
+    "after": -4.8699
+   }
+  },
+  "anytime_td": {
+   "mean_mult": 1.0457,
+   "mean_mult_raw": 1.0644,
+   "f": 0.624,
+   "f_raw": 0.6,
+   "n": 3666,
+   "fit_log_score": -0.6725,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -0.6677,
+    "after": -0.6676
+   }
+  },
+  "pass_att": {
+   "mean_mult": 1,
+   "mean_mult_raw": 1.0121,
+   "f": 1,
+   "f_raw": 1.1,
+   "n": 512,
+   "fit_log_score": -3.5236,
+   "adopted": false,
+   "heldout_log_score": {
+    "before": -3.5793,
+    "after": -3.5869
+   },
+   "fitted": {
+    "mean_mult": 1.0031,
+    "f": 1.062
+   },
+   "note": "fit not adopted: it did not improve the held-out log score"
+  },
+  "pass_cmp": {
+   "mean_mult": 1,
+   "mean_mult_raw": 1.0045,
+   "f": 1,
+   "f_raw": 1,
+   "n": 512,
+   "fit_log_score": -3.1592,
+   "adopted": false,
+   "heldout_log_score": {
+    "before": -3.1952,
+    "after": -3.2092
+   },
+   "fitted": {
+    "mean_mult": 1.0011,
+    "f": 1
+   },
+   "note": "fit not adopted: it did not improve the held-out log score"
+  },
+  "pass_yds": {
+   "mean_mult": 1,
+   "mean_mult_raw": 1.0158,
+   "f": 1,
+   "f_raw": 0.9,
+   "n": 512,
+   "fit_log_score": -5.7295,
+   "adopted": false,
+   "heldout_log_score": {
+    "before": -5.757,
+    "after": -5.7633
+   },
+   "fitted": {
+    "mean_mult": 1.004,
+    "f": 0.936
+   },
+   "note": "fit not adopted: it did not improve the held-out log score"
+  },
+  "pass_tds": {
+   "mean_mult": 1,
+   "mean_mult_raw": 0.9948,
+   "f": 1,
+   "f_raw": 0.6,
+   "n": 512,
+   "fit_log_score": -1.4903,
+   "adopted": false,
+   "heldout_log_score": {
+    "before": -1.4582,
+    "after": -1.4593
+   },
+   "fitted": {
+    "mean_mult": 0.9987,
+    "f": 0.725
+   },
+   "note": "fit not adopted: it did not improve the held-out log score"
+  },
+  "pass_ints": {
+   "mean_mult": 1.0116,
+   "mean_mult_raw": 1.0457,
+   "f": 0.725,
+   "f_raw": 0.6,
+   "n": 512,
+   "fit_log_score": -1.083,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -1.0857,
+    "after": -1.0839
+   }
+  },
+  "pass_long": {
+   "mean_mult": 1,
+   "mean_mult_raw": 1.0134,
+   "f": 1,
+   "f_raw": 1.6,
+   "n": 512,
+   "fit_log_score": -4.0187,
+   "adopted": false,
+   "heldout_log_score": {
+    "before": -3.9535,
+    "after": -3.9604
+   },
+   "fitted": {
+    "mean_mult": 1.0034,
+    "f": 1.345
+   },
+   "note": "fit not adopted: it did not improve the held-out log score"
+  },
+  "rec_long": {
+   "mean_mult": 0.968,
+   "mean_mult_raw": 0.9465,
+   "f": 1.513,
+   "f_raw": 1.6,
+   "n": 2230,
+   "fit_log_score": -3.6658,
+   "adopted": true,
+   "heldout_log_score": {
+    "before": -3.6752,
+    "after": -3.6594
+   }
+  }
+ }
+}
