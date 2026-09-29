@@ -136,6 +136,44 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const c3 = await CAP.run(Object.assign({}, CL, { now: NOW + 8 * 3600e3 }));
   chk('…and the far game is polled again once its own interval has passed', c3.events_polled >= 1 && c3.polled_at.far === new Date(NOW + 8 * 3600e3).toISOString(), c3.polled_at);
 
+  /* the status model: every outcome is written, and none collapses into another */
+  chk('PROPS_CAPTURE: on / ON / true / 1 / yes (any case, padded) enable; empty, off, unset do not',
+    ['on', 'ON', ' on ', 'true', 'TRUE', '1', 'yes', 'YES', '"on"'].every(CAP.captureEnabled) && !['', ' ', 'off', 'false', '0', 'no', 'onn', null, undefined].some(CAP.captureEnabled));
+  chk('r1 answered with prices from every event it asked: SUCCESS', r1.status === 'SUCCESS' && r1.quotes_written > 0 && r1.last_success_at === r1.last_attempt && r1.events_no_markets === 1, [r1.status, r1.quotes_written, r1.events_no_markets]);
+  chk('the credit floor before any request is an ERROR, never success', r3.status === 'ERROR' && r3.reason === 'STOPPED_BEFORE_REQUEST');
+  chk('a 429 with nothing written is an ERROR (PROVIDER_REFUSED)', r4.status === 'ERROR' && r4.reason === 'PROVIDER_REFUSED' && r4.requests[0].http === 429);
+  let n = 0;
+  const fresh = () => { n++; return Object.assign({}, P, { capture_state: P.capture_state + '.s' + n, quotes: P.quotes + '.s' + n, lines: P.lines + '.s' + n }); };
+  const INDEX = [{ id: EVENT.id, commence_time: EVENT.commence_time, home_team: EVENT.home_team, away_team: EVENT.away_team }, { id: 'e2', commence_time: '2026-10-05T17:00:00Z', home_team: 'Chicago Bears', away_team: 'New York Jets' }];
+  const fake = (onEvent) => async (url) => (/\/events\?/.test(url) ? { status: 200, body: INDEX, remaining: 5000, used: 10, last: 0 } : onEvent(url));
+  const logs = [];
+  const S0 = Object.assign({}, RUN, { key: 'sekrit-key-123456', log: (m) => logs.push(m) });
+  const sOff = await CAP.run(Object.assign({}, S0, { paths: fresh(), enabled: false, flag: { raw: '', enabled: false }, getJson: async () => { throw new Error('must not be called'); } }));
+  chk('PROPS_CAPTURE off: NOT_RUN is written, nothing requested, and the log says so', sOff.status === 'NOT_RUN' && sOff.reason === 'PROPS_CAPTURE_DISABLED' && fs.existsSync(P.capture_state + '.s' + n)
+    && logs.some((l) => /^Player props capture skipped: PROPS_CAPTURE disabled/.test(l)), sOff);
+  const sNoKey = await CAP.run(Object.assign({}, S0, { paths: fresh(), key: null }));
+  chk('on without a key: ERROR (NO_API_KEY), written — not "not run"', sNoKey.status === 'ERROR' && sNoKey.reason === 'NO_API_KEY' && JSON.parse(fs.readFileSync(P.capture_state + '.s' + n, 'utf8')).status === 'ERROR');
+  const sIdx = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: async (url) => { throw Object.assign(new Error('HTTP 401 ' + url), { status: 401, body: '{"message":"API key sekrit-key-123456 is not valid"}' }); } }));
+  chk('the event index failing is an ERROR carrying the status and a safe body', sIdx.status === 'ERROR' && sIdx.reason === 'EVENT_INDEX_FAILED' && /401/.test(sIdx.error_message) && /not valid/.test(sIdx.error_message), sIdx.error_message);
+  const sEmpty = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: fake(async (url) => ({ status: 200, body: { id: /fixture_evt/.test(url) ? EVENT.id : 'e2', bookmakers: [] }, remaining: 4990, last: 0 })) }));
+  chk('HTTP 200 with no player market at any book: NO_MARKETS (MARKETS_NOT_RELEASED), proved by the answers', sEmpty.status === 'NO_MARKETS' && sEmpty.reason === 'MARKETS_NOT_RELEASED'
+    && sEmpty.events_checked === 2 && sEmpty.requests.every((q) => q.http === 200 && q.outcomes === 0) && sEmpty.quotes_written === 0 && sEmpty.last_success_at === null, sEmpty);
+  const sWin = await CAP.run(Object.assign({}, S0, { paths: fresh(), window_h: 1, getJson: fake(async () => { throw new Error('must not be called'); }) }));
+  chk('no event inside the window: NO_MARKETS (NO_EVENTS_IN_WINDOW), zero requests, never SUCCESS', sWin.status === 'NO_MARKETS' && sWin.reason === 'NO_EVENTS_IN_WINDOW' && sWin.events_discovered === 2 && sWin.events_checked === 0);
+  const sPart = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: fake(async (url) => {
+    if (/fixture_evt/.test(url)) return { status: 200, body: EVENT, remaining: 4980, last: 14 };
+    throw Object.assign(new Error('HTTP 500'), { status: 500, body: 'upstream timeout' });
+  }) }));
+  chk('prices from one event and a failure on another: PARTIAL, with the failure named', sPart.status === 'PARTIAL' && sPart.quotes_written > 0 && sPart.events_failed === 1 && /e2 HTTP 500: upstream timeout/.test(sPart.error_message), [sPart.status, sPart.error_message]);
+  const sBad = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: fake(async () => { throw Object.assign(new Error('HTTP 422'), { status: 422, body: '{"message":"Invalid markets: player_hot_dogs"}' }); }) }));
+  chk('every request refused (422): ERROR (REQUESTS_FAILED) with the provider\'s own message', sBad.status === 'ERROR' && sBad.reason === 'REQUESTS_FAILED' && /Invalid markets/.test(sBad.error_message) && sBad.requests.length === 2);
+  chk('the per-event diagnostics are logged: HTTP, books, markets, outcomes, quotes, remaining', logs.some((l) => /event fixture_evt.*HTTP 200 · books \d+ .* markets \d+ · outcomes \d+ · quotes normalized \d+ · cost 14 · remaining 4980/.test(l)), logs.filter((l) => /event /.test(l)).slice(0, 2));
+  chk('an error is logged with its body and the markets requested', logs.some((l) => /HTTP 422 · body: .*Invalid markets.* · markets requested: player_pass_yds/.test(l)));
+  chk('the key never reaches a log line, an error or a state file', logs.every((l) => l.indexOf('sekrit-key-123456') < 0) && [1, 2, 3, 4, 5, 6, 7].every((i) => { try { return fs.readFileSync(P.capture_state + '.s' + i, 'utf8').indexOf('sekrit-key-123456') < 0; } catch (e) { return true; } }));
+  chk('the key is scrubbed from any text that carries it', CAP.scrub('GET /x?apiKey=abc123456789&y=1 key abc123456789', '/x?apiKey=abc123456789').indexOf('abc123456789') < 0);
+  const cbNone = B.captureBlock(null, 'nfl'), cbOk = B.captureBlock(sPart, 'nfl');
+  chk('the board says NOT_RUN when no state was ever published, and carries the status otherwise', cbNone.status === 'NOT_RUN' && cbNone.last_run === null && cbOk.status === 'PARTIAL' && cbOk.quotes_written === sPart.quotes_written && cbOk.books_returned.length > 0);
+
   /* ------------------------------------------------------------ identity */
   const ds = loadDs();
   const ix = B.nameIndex(Object.values(ds.players));

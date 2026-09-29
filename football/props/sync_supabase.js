@@ -87,9 +87,16 @@ async function sync(o) {
 async function main() {
   const a = process.argv.slice(2);
   const arg = (k, d) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : d; };
+  const league = arg('league', 'nfl'), season = Number(arg('season', C.seasonOf()));
+  /* --dry-run counts what would be inserted and writes nothing: a run on a
+     branch must not put rows in the production ledger that main may never hold */
+  if (a.indexOf('--dry-run') >= 0) {
+    const r = await sync({ league, season, days: Number(arg('days', 4)), db: { upsert: async () => null } });
+    console.log('[props sync] dry run, nothing written — would insert-ignore ' + JSON.stringify(r) + ' (credentials ' + (PGR.config() ? 'present' : 'absent') + ')');
+    return 0;
+  }
   const cfg = PGR.config();
   if (!cfg) { console.log('[props sync] SB_URL / SB_SERVICE_ROLE are not set: nothing written (the page reads the committed feeds)'); return 0; }
-  const league = arg('league', 'nfl'), season = Number(arg('season', C.seasonOf()));
   try {
     const r = await sync({ league, season, days: Number(arg('days', 4)), db: PGR.client(cfg) });
     console.log('[props sync] ' + JSON.stringify(r));

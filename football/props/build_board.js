@@ -229,6 +229,9 @@ async function build(opts) {
     (quotesByGame[gid] = quotesByGame[gid] || { event: e, rows: [] }).rows.push(...(e.quotes || []).map(CAP.unpackQuote));
   });
   const unjoined = Object.keys(events).filter((eid) => !ev2game[eid] && Date.parse(events[eid].commence_time) > now).map((eid) => ({ event_id: eid, home_team: events[eid].home_team, away_team: events[eid].away_team, commence_time: events[eid].commence_time }));
+  const upcomingEvents = Object.keys(events).filter((eid) => Date.parse(events[eid].commence_time) > now);
+  const rawQuotes = upcomingEvents.reduce((n, eid) => n + (events[eid].quotes || []).length, 0);
+  const unjoinedQuotes = unjoined.reduce((n, u) => n + (events[u.event_id].quotes || []).length, 0);
 
   const ctxByDay = {};
   const ctxFor = (day) => ctxByDay[day] || (ctxByDay[day] = M.prepare(ds, day, { calibration: calibFile }));
@@ -409,8 +412,7 @@ async function build(opts) {
       : { state: 'JOINED', schema: fx.schema, generated_at: fx.generated_at, feature_version: fx.feature_version, rule: fx.rule, model_cols: fx.model_cols, models: fxUsed.models, n_joined: fxUsed.joined, n_available: fx.n },
     calibration: calibFile ? { mode: calibFile.mode, season_tested: calibFile.season_tested, generated_at: calibFile.generated_at, borrowed: league === 'cfb', n_scored: calibFile.n_scored,
       markets: Object.keys(calibFile.markets || {}).reduce((o, k) => { const c = calibFile.markets[k]; const oos = calibFile.out_of_sample && calibFile.out_of_sample.before ? calibFile.out_of_sample : null; o[k] = { f: c.f, mean_mult: c.mean_mult, n: c.n, adopted: c.adopted !== false, cover50: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].cover50 : oos.after[k].cover50) : null, ece: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].calibration.ece : oos.after[k].calibration.ece) : null }; return o; }, {}) } : null,
-    capture: capState ? { last_run: capState.last_run, last_attempt: capState.last_attempt, stopped: capState.stopped || null, requests_remaining: capState.requests_remaining, bookmakers: capState.bookmakers, events_polled: capState.events_polled }
-      : { last_run: null, state: 'NOT_CAPTURED', why: 'The prop capture has not run: it needs the ODDS_API_KEY secret and the repository variable PROPS_CAPTURE=on (docs/runbooks/player-props.md).' },
+    capture: captureBlock(capState, league),
     quotes: quotesFeed ? { generated_at: quotesFeed.generated_at, n_events: quotesFeed.n_events, n_quotes: quotesFeed.n_quotes, unjoined_events: unjoined } : null,
     sources: { dataset_built_at: ds.built_at, feeds: ds.feeds, injuries: ds.injuries ? { published: ds.injuries.published, retrieved_at: ds.injuries.retrieved_at || null, latest_week: ds.injuries.latest_week || null, note: ds.injuries.note || null } : null,
       caps: ds.caps || { targets: true, snaps: true, pbp: true, injuries: true, depth: true }, shapes_borrowed: !!ds.shapes_borrowed,
@@ -418,13 +420,38 @@ async function build(opts) {
     league_implied: r2(league_implied.length ? league_implied.reduce((a, b) => a + b, 0) / league_implied.length : null),
     team_names: ds.team_names || null,
     shapes: shapesUsed, times, matchups, matchup_rows: MATCHUP, lead: LEAD,
-    counts: { games: gamesOut.length, props: props.length, priced: props.filter((x) => x.q.length).length, unmapped: unmapped.length, markets },
+    counts: { games: gamesOut.length, props: props.length, priced: props.filter((x) => x.q.length).length, unmapped: unmapped.length, markets,
+      /* every captured quote is kept before any name is matched: raw → joined
+         to a scheduled game → matched to one player on the two rosters */
+      quotes_raw: rawQuotes, quotes_joined: resolved.length, quotes_matched: resolved.filter((q) => q.player_id).length, quotes_unmatched: resolved.filter((q) => !q.player_id).length,
+      quotes_unjoined: unjoinedQuotes, books: Array.from(new Set(resolved.map((q) => q.book))).length },
     unmapped: unmapped.slice(0, 200),
     games: gamesOut, players: playersCtx, props
   };
   const playersFile = { schema: PLAYERS_SCHEMA, league, season, generated_at: board.generated_at, cols: LOG_COLS, players: playersOut };
   return { board, players: playersFile, ledger_rows: newRows, pregame: { schema: 'edgedesk_player_props_pregame_v1', rows: keepPre }, resolved_quotes: resolved,
     shapes: league === 'nfl' ? { schema: 'edgedesk_props_shapes_v1', league, season, generated_at: board.generated_at, why: 'league per-play yard shapes; the college board borrows them (no public college per-play feed is wired in)', fits: ds.event_fits } : null };
+}
+
+/* the capture's own account of its last run (capture.js STATUSES: NOT_RUN,
+   RUNNING, SUCCESS, PARTIAL, NO_MARKETS, ERROR). The page reads this instead
+   of guessing from zero priced rows. No state file at all is NOT_RUN — never
+   "markets not released", which only a provider answer can show. A state
+   file from before the status model carries no status: the page reads its
+   last_run as it always has. */
+function captureBlock(s, league) {
+  if (!s) return { status: 'NOT_RUN', reason: 'NO_STATE_FILE', state: 'NOT_CAPTURED', last_run: null, last_success_at: null,
+    why: 'The prop capture has never run for this league: no football/props/' + league + '/capture_state.json has been published. It runs in the Player props workflow with the ODDS_API_KEY secret and PROPS_CAPTURE=on (docs/runbooks/player-props.md).' };
+  const n = (x) => (x == null ? null : x);
+  return {
+    status: n(s.status), reason: n(s.reason), why: n(s.why), error_message: n(s.error_message),
+    last_run: n(s.last_run), last_success_at: n(s.last_success_at), last_attempt: n(s.last_attempt), started_at: n(s.started_at), completed_at: n(s.completed_at),
+    stopped: s.stopped || null, requests_remaining: n(s.requests_remaining), bookmakers: s.bookmakers, books_returned: s.books_returned || null,
+    events_discovered: n(s.events_discovered), events_in_window: n(s.events_in_window), events_checked: s.events_checked != null ? s.events_checked : n(s.events_polled), events_polled: n(s.events_polled),
+    events_no_markets: n(s.events_no_markets), events_failed: n(s.events_failed),
+    markets_returned: s.markets_returned ? Object.keys(s.markets_returned).length : null, outcomes_returned: n(s.outcomes_returned), quotes_written: n(s.quotes_written),
+    window_h: n(s.window_h)
+  };
 }
 
 /* consensus movement for one (player, market) from lines.json */
@@ -464,7 +491,7 @@ function ledgerRow(kind, input, ev, g, p, key) {
 /* clock fields (when a feed was fetched, when this build ran) do not make a
    board new: only a changed number, price, decision or game does. Without
    this a quiet hourly build would commit every hour. */
-const CLOCK_KEYS = { generated_at: 1, dataset_built_at: 1, retrieved_at: 1, built_at: 1, as_of: 1 };
+const CLOCK_KEYS = { generated_at: 1, dataset_built_at: 1, retrieved_at: 1, built_at: 1, as_of: 1, last_attempt: 1, started_at: 1, completed_at: 1 };
 function writeIfChanged(file, obj) {
   const strip = (f) => f ? JSON.stringify(f, (k, v) => (CLOCK_KEYS[k] ? null : v)) : null;
   let prev = null; try { prev = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { prev = null; }
@@ -485,7 +512,13 @@ async function main() {
   const B = r.board;
   console.log('[props board] ' + league + ' ' + season + ': ' + B.counts.games + ' games, ' + B.counts.props + ' props (' + B.counts.priced + ' priced, ' + B.counts.unmapped + ' unmapped names), ' + r.ledger_rows.length + ' new ledger rows — ' + (Date.now() - t0) + ' ms');
   const dec = {}; B.props.forEach((x) => { dec[x.e.d] = (dec[x.e.d] || 0) + 1; });
-  console.log('[props board] decisions ' + JSON.stringify(dec) + ' · probability ' + B.probability.label + ' · capture ' + (B.capture.last_run || 'never'));
+  console.log('[props board] decisions ' + JSON.stringify(dec) + ' · probability ' + B.probability.label + ' · capture ' + (B.capture.status || 'legacy state') + (B.capture.reason ? ' (' + B.capture.reason + ')' : '') + ', last priced ' + (B.capture.last_success_at || B.capture.last_run || 'never'));
+  const Cn = B.counts;
+  const names = {}; B.unmapped.forEach((u) => { if (!names[u.player_name]) names[u.player_name] = u.why; });
+  console.log('[props board] quotes: raw ' + Cn.quotes_raw + ' in quotes.json · joined to a game ' + Cn.quotes_joined + ' · matched to a player ' + Cn.quotes_matched + ' · unmatched ' + Cn.quotes_unmatched
+    + ' (' + Object.keys(names).length + ' names) · on unjoined events ' + Cn.quotes_unjoined + ' · books ' + Cn.books + ' · priced props ' + Cn.priced);
+  Object.keys(names).slice(0, 15).forEach((nm) => console.log('[props board]   unmatched "' + nm + '": ' + names[nm]));
+  (B.quotes && B.quotes.unjoined_events || []).slice(0, 10).forEach((u) => console.log('[props board]   unjoined event ' + u.event_id + ' ' + u.away_team + ' @ ' + u.home_team + ' ' + u.commence_time));
   if (!write) { console.log('[props board] dry run: nothing written (pass --write)'); return 0; }
   const P = C.leaguePaths(league, season);
   console.log('[props board] board ' + writeIfChanged(P.board, B) + ', players ' + writeIfChanged(P.players, r.players) + ', pregame state ' + writeIfChanged(path.join(P.dir, 'pregame_state.json'), r.pregame));
@@ -497,5 +530,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { build, compactEval, ledgerRow, nameIndex, resolveName, joinEvents, roleMarkets, matchupKind, BOARD_SCHEMA, PLAYERS_SCHEMA, LOG_COLS };
+module.exports = { build, captureBlock, compactEval, ledgerRow, nameIndex, resolveName, joinEvents, roleMarkets, matchupKind, BOARD_SCHEMA, PLAYERS_SCHEMA, LOG_COLS };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props board] ' + (e.stack || e.message)); process.exit(1); });
