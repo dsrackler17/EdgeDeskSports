@@ -814,6 +814,7 @@
         + '<div class="cell"><div class="l">Reliability</div><div class="v">' + (o.data_quality.reliability == null ? '—' : o.data_quality.reliability) + '</div></div>'
         + '</div>' + sixAnswers(o)
         + '<div class="note">Win probability is who wins the game. Cover probability is whether a side beats the spread. Reliability is how complete the inputs are — not a probability.</div></div>';
+      h += propsSection(o);
       h += pricingPanel(o) + packetHTML(o);
       h += '<nav class="secnav">' + [['a', 'A · EdgeDesk'], ['b', 'B · Market'], ['c', 'C · Disagreement'], ['d', 'D · Why'], ['e', 'E · What could be wrong'], ['f', 'F · Price'], ['g', 'G · Timing'], ['h', 'H · History'], ['ask', 'Ask'], ['adv', 'Advanced']]
         .map(function (x) { return '<a href="#/game/' + esc(id) + '" data-jump="s-' + x[0] + '">' + x[1] + '</a>'; }).join('') + '</nav>';
@@ -823,6 +824,22 @@
       bindRead(o);
       bindEv(o);
     });
+  }
+  /* PLAYER PROP RESEARCH — on every game page, open, never left out. The
+     app's own renderer (lib/edgedesk_props_ui.js gameSection) over
+     football/props/cfb/summary.json, joined on this page's game id (the
+     prop board's id is the same schedule id). It says the game's state:
+     research-grade props with their numbers and actions, none meeting the
+     threshold, markets not released, pricing unavailable, or outside the
+     capture window. It never loads the prop board here; Research prop,
+     View all props and View projections open the app's Player Props page. */
+  function propsSection(o) {
+    var U = window.EDPropsUI, body;
+    try {
+      if (U && U.gameSection) { U.state.base = '/football/props/'; body = U.gameSection('cfb', o.game_id, true, { kickoff: o.kickoff, inline: false }); }
+    } catch (e) { body = null; }
+    if (!body) body = '<div class="pp pp-gsec"><div class="pp-rsec-h"><b>PLAYER PROP RESEARCH</b></div><div class="pp-pstate warn"><b>Player prop research unavailable</b><p class="pp-note">The player-prop module did not load on this page, so this game’s prop state cannot be read. Nothing is shown in its place.</p></div></div>';
+    return sec('props', 'Player prop research', 'EdgeDesk’s player-prop projections and any priced leads', body, true);
   }
   /* THE SIX QUESTIONS, answered in one block (lib/edgedesk_canon.js SIX_QUESTIONS) */
   function sixAnswers(o) {
