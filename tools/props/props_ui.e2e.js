@@ -94,9 +94,13 @@ async function buildFixture() {
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const FX = await buildFixture();
   const served = { '/football/props/nfl/board.json': JSON.stringify(FX.board), '/football/props/nfl/players.json': JSON.stringify(FX.players), '/football/props/nfl/performance.json': JSON.stringify(FX.perf) };
+  /* the college record is UNPUBLISHED in this run, whatever the repository
+     holds today: the record page's empty state is what is being proven */
+  const absent = { '/football/props/cfb/performance.json': 1 };
   function siteHandler(req, res) {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/app.html';
+    if (absent[p]) { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return; }
     if (served[p]) { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(served[p]); return; }
     const file = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
     if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return; }
