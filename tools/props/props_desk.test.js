@@ -122,8 +122,8 @@ function otherBoard() {
   const c = ask('Should I bet Bijan Robinson over ' + free + ' rushing yards?');
   ok('a line nobody deals, with no price given, is not priced (never −110)', /No captured book deals Over/.test(c.out.text) && /never assumes −110/.test(c.out.text) && c.out.text.indexOf('Your quote') < 0, c.out.text);
   const d = ask('Should I bet Bijan Robinson over 84.5 rushing yards?', { now: NOW + 3 * 3600e3 });
-  ok('three hours later every price is stale: NO DECISION, and no stale price is reused', d.out.evaluation.decision === 'NO_DECISION' && /past the 90-minute decision limit/.test(d.out.text)
-    && /past the decision window/.test(d.out.text) && d.out.text.indexOf('Your quote') < 0 && d.out.text.indexOf('Best value') < 0, d.out.text);
+  ok('three hours later every price is stale: NO DECISION, and no stale price is reused', d.out.evaluation.decision === 'NO_DECISION' && /inside the 30-minute execution window/.test(d.out.text)
+    && /past the execution window/.test(d.out.text) && d.out.text.indexOf('Your quote') < 0 && d.out.text.indexOf('Best value') < 0, d.out.text);
 
   /* projection only */
   const unpriced = NFL.props.find((r) => r.p && !r.q.length && r.x && r.x.dist && !(EDP.MARKETS[r.m] || {}).yesno && NFL.players[r.p + '@' + r.g] && NFL.props.filter((x) => x.p === r.p && x.m === r.m).length === 1);

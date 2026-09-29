@@ -218,7 +218,7 @@ async function buildFixture() {
   chk('F: three hours later every summarized price is STALE: nothing is research grade, and it says why', evStale.stale_now && evStale.research_grade_now === 0 && evStale.top_opportunities.every((o) => o.decision === 'NO_DECISION' && o.code === 'STALE_QUOTE' && o.units === 0 && !o.research.grade), evStale.top_opportunities.map((o) => [o.decision, o.code]));
   chk('F: …the stale decision is only ever DOWN, and the evaluated one is kept beside it', evStale.top_opportunities.every((o) => o.evaluated && o.evaluated.decision !== 'NO_DECISION'));
   chk('F: …re-opened while fresh, the same object reads its own decision again', O.eventFromSummary(SN, GID, NOW).top_opportunities.every((o) => o.decision !== 'NO_DECISION' && !o.stale));
-  chk('F: the empty state names the stale price, not missing markets', /past the 90-minute decision window/.test(O.emptyText(evStale)));
+  chk('F: the empty state names the stale price, not missing markets', /past the 30-minute execution window/.test(O.emptyText(evStale)));
   chk('F: the league-wide leaders drop stale prices too', O.topFromSummary(SN, 5, late).length === 0 && O.topFromSummary(SN, 5, NOW).length > 0);
 
   /* ======================================================================= */
@@ -317,7 +317,7 @@ async function buildFixture() {
   chk('MATCHUP: every sportsbook price quoted is one the summary holds (nothing invented)', quoted.length > 0 && quoted.every((p) => known.has(p)), [quoted, [...known]]);
   chk('MATCHUP: no tout words, no empty values', !BANNED.test(am.text) && !junk(am.text));
   const amStale = O.matchupAnswer(summaries, 'What should I research in Falcons vs Saints?', { now: late });
-  chk('MATCHUP: a stale summary quotes no price and says why', amStale && !/[+−-]\d{3}\b/.test(amStale.text.split('PLAYER PROPS — ')[1] || '') && /90-minute decision window/.test(amStale.text), amStale && amStale.text);
+  chk('MATCHUP: a stale summary quotes no price and says why', amStale && !/[+−-]\d{3}\b/.test(amStale.text.split('PLAYER PROPS — ')[1] || '') && /30-minute execution window/.test(amStale.text), amStale && amStale.text);
   chk('MATCHUP: a team EdgeDesk has no game for is not guessed', O.matchupAnswer(summaries, 'What should I research in Toronto vs Montreal?', { now: NOW }) === null);
   const ca = O.cardAnswer({ entries: [eQB, eWR, eRB], decisions: [gdec] }, { now: NOW, models });
   chk('CARD: types, total exposure and the correlated game — from the Card only', ca && /4 BETs/.test(ca.text) && /1\.25U total exposure/.test(ca.text) && /games 0\.50U, player props 0\.75U/.test(ca.text) && /CORRELATED EXPOSURE/.test(ca.text), ca && ca.text);

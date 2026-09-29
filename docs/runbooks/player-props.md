@@ -25,11 +25,16 @@ Every number the page shows comes from one kernel, `lib/edgedesk_props.js`
 | Grading and performance | `football/props/grade.js` |
 | Supabase ledger copy | `football/props/sync_supabase.js`, `supabase/player_props.sql` |
 | Reader watchlist | `supabase/player_props_watchlist.sql` |
-| Hourly job | `.github/workflows/player-props.yml` |
+| Freshness, executability, health (the one rule) | `lib/edgedesk_props.js` `FRESHNESS` · `docs/player-props/FRESHNESS.md` |
+| The job (capture → board → grade → commit) | `.github/workflows/player-props.yml` |
+| Its primary scheduler and "Refresh prices" | `supabase/functions/props_cron`, `supabase/player_props_cron.sql` |
+| Health record, run log, refresh requests | `supabase/player_props_pipeline.sql`, `football/props/health_sync.js` |
+| Deploying the scheduler and its SQL | `.github/workflows/deploy-props-pipeline.yml` |
 | PR suites | `.github/workflows/player-props-tests.yml` |
 
 The design and its formulas are in `docs/player-props/DESIGN.md`. The audit
-behind them is in `docs/player-props/AUDIT.md`.
+behind them is in `docs/player-props/AUDIT.md`. Freshness, recovery and
+health are in `docs/player-props/FRESHNESS.md`.
 
 ## Turn prices on
 
@@ -49,10 +54,23 @@ an EV or a decision. To capture prices:
    `PROPS_CAPTURE raw: "…"` and `PROPS_CAPTURE parsed enabled: true|false`.
    The key itself is never printed.
 3. Optionally, **tune the budget** with the repository variables below.
-4. Run **Actions → Player props → Run workflow** once, or wait for the hourly
-   schedule (minute 23, August–January). GitHub's scheduler skips hours on
-   this repository (see `capture.yml`), so after changing the variable or the
-   secret, run it by hand rather than waiting.
+4. Run **Actions → Player props → Run workflow** once. GitHub's scheduler
+   skips hours on this repository (it fired the old hourly schedule twice in
+   eight hours on 2026-09-29), so it is only the backup. Set up the primary
+   scheduler (below).
+5. **Set up the primary scheduler**, once:
+   - `supabase secrets set PROPS_GH_TOKEN=<token with actions:write on this repository>`.
+     `EDITORIAL_GH_TOKEN` is used if it is unset.
+   - Run **Actions → Deploy player props pipeline** (deploy `props_cron`, apply
+     `supabase/player_props_pipeline.sql`). Or deploy by hand with
+     `supabase functions deploy props_cron`, and paste the SQL.
+   - Paste `supabase/player_props_cron.sql` into the SQL editor. It needs
+     pg_cron and pg_net, plus the two `edgedesk.*` database settings that
+     `supabase/editorial_cron.sql` documents.
+
+   Its report says `ok`. From then on, pg_cron pokes `props_cron` every five
+   minutes, and it runs this workflow only when a game is due for a price
+   check or a reader presses **Refresh prices**.
 
 The page's status strip then changes from *not captured yet* to
 *Sportsbook prices: LIVE · captured N min ago*, or to whichever status the
@@ -88,36 +106,47 @@ are kept in `quotes.json` before any name is matched.
 | `PROPS_MARKET_GROUPS` | NFL `core,long,alt`, CFB `core,alt` | Groups from `football/props/config.js`: `core` (11), `long` (3), `td` (4), `alt` (6), `kick` (2), `defense` (3). |
 | `PROPS_BOOKMAKERS` | 10 books: eight US books, Pinnacle and BetOnline (`football/props/config.js`) | Up to ten books count as one region. Eleven or more count as two. |
 | `PROPS_MAX_CREDITS` | 800 | The most one run may spend, per league. |
-| `PROPS_MIN_INTERVAL_H` | 3 | How often an event within 36 h of kickoff is re-polled. |
-| `PROPS_FAR_INTERVAL_H` | 8 | How often an event more than 36 h out is re-polled. |
+| `PROPS_MAX_EVENTS` | 16 | Games per run per league, nearest kickoff first. |
+| `PROPS_CADENCE` | `1.5:15,6:30,24:60,48:120,*:360` | Each game's re-poll clock: hours to kickoff : minutes between polls. |
+| `PROPS_FRESH_MIN` / `PROPS_AGING_MIN` / `PROPS_STALE_MIN` | 15 / 30 / 90 | Quote age states (FRESH / AGING / STALE; EXPIRED beyond). |
+| `PROPS_EXEC_MAX_MIN` | 30 | The oldest a quote may be and still price an EV, a decision or a stake. |
+| `PROPS_LOW_CREDITS` / `PROPS_CRITICAL_CREDITS` | 5000 / 1500 | Credit pacing: games more than 6 h out are polled half as often below the first; only games inside 6 h are polled below the second. |
 
-Inside six hours of its kickoff, an event is re-polled on every run, which is
-hourly. The capture also stops in three cases:
-
-- the provider reports fewer than 200 credits left;
-- a run would pass `PROPS_MAX_CREDITS`;
-- the provider returns a 401 or 429.
+`PROPS_MIN_INTERVAL_H` and `PROPS_FAR_INTERVAL_H` are gone; `PROPS_CADENCE`
+replaces both. The capture stops at once on a 401 or 429, when the provider
+reports fewer than 200 credits left, and before a run would pass
+`PROPS_MAX_CREDITS`. After a 429 nothing is asked, a manual refresh included,
+until its `Retry-After` has passed. A failed game is retried on its own
+back-off (5, 10, 20, 40, 60 min, ± jitter), sooner than its cadence. The
+other games are never held up by it.
 
 ### Two captures, one key
 
 There are now two ways to buy prop prices. Both spend the same `ODDS_API_KEY`,
 so run one of them, not both.
 
-1. **The Supabase capture function, from build `capture-v11-player-props-r1`.**
+1. **The Supabase capture function, from build `capture-v11-player-props-r1`
+   (`-r2` isolates a game whose answer cannot be priced, instead of losing the
+   whole prop pass).**
    - It captures every player quote for NFL and NCAAF events on its DAY and
      NEAR tiers into `player_prop_quotes`, with change-only history in
      `player_prop_quote_ticks`.
    - It is budgeted per run and per event, and stops at a quota floor.
    - Its setup and arithmetic are in `supabase/functions/capture/README.md`;
      its tables are in `supabase/capture_v11_player_props.sql`.
-   - This is the capture to run.
+   - `player_prop_executable_quotes` (`supabase/player_props_pipeline.sql`)
+     is its best CURRENT price per selection. `player_prop_best_quotes` keeps
+     every price, which is history, not an executable price.
 2. **The GitHub Actions capture here (`PROPS_CAPTURE=on`).**
-   - It writes `football/props/<league>/quotes.json` for the static board.
-   - Leave it off while the Supabase capture runs.
+   - It writes `football/props/<league>/quotes.json`. The Props page and the
+     AI desk read only this path (through `board.json`).
+   - It is the capture with the recovery, health record and manual refresh
+     in `docs/player-props/FRESHNESS.md`.
 
-**Gap to close:** the board build still reads `quotes.json`. Pointing
-`build_board.js` at `player_prop_quotes` would make the Supabase capture the
-page's only source.
+**While both run, the key pays twice for NFL and NCAAF props inside 30 hours.**
+The page does not read the Supabase capture's prop tables. If the credit
+balance matters more than that queryable copy, set `CAPTURE_PLAYER_PROPS=false`
+on the capture function; its game lines are unaffected.
 
 ### The credit arithmetic
 
@@ -126,20 +155,30 @@ per event. The capture budgets each request as markets × regions. The
 provider's `x-requests-last` header reports the real cost, and the run counts
 that figure.
 
-With the default windows, one game is polled about 24 times before kickoff:
+With the default cadence (`PROPS_CADENCE`), one game is polled about 53 times
+from 96 h out to kickoff. Manual refreshes come on top of that, and credit
+pacing takes some away:
 
 | Time before kickoff | Re-poll interval | Polls |
 |---|---|---|
-| 96 h to 36 h | every 8 h | about 8 |
-| 36 h to 6 h | every 3 h | about 10 |
-| Last 6 h | hourly | about 6 |
+| 96 h to 48 h | every 6 h | about 8 |
+| 48 h to 24 h | every 2 h | about 12 |
+| 24 h to 6 h | every 60 min | about 18 |
+| 6 h to 90 min | every 30 min | about 9 |
+| Last 90 min | every 15 min | about 6 |
 
 | Setup | Credits per poll | Per game | Per week |
 |---|---|---|---|
-| NFL, `core,long,alt` (20 markets) | ≤ 20 | ≤ 480 | 16 games → ≤ ~7,700 |
-| NFL, `core` (11) | ≤ 11 | ≤ 264 | ≤ ~4,200 |
-| CFB, `core,alt` (17) | ≤ 17 | ≤ 408 | 60 listed games → ≤ ~24,500 |
-| CFB, `core` (11) | ≤ 11 | ≤ 264 | ≤ ~15,800 |
+| NFL, `core,long,alt` (20 markets) | ≤ 20 | ≤ 1,060 | 16 games → ≤ ~17,000 |
+| NFL, `core` (11) | ≤ 11 | ≤ 580 | ≤ ~9,300 |
+| CFB, `core,alt` (17) | ≤ 17 | ≤ 900 | capped by `PROPS_MAX_EVENTS` and credit pacing |
+| CFB, `core` (11) | ≤ 11 | ≤ 580 | capped the same way |
+
+A college game with few markets posted costs far less than its ceiling (the
+provider bills markets returned). To spend less, lengthen the far tiers, for
+example `PROPS_CADENCE=1.5:15,6:30,24:90,*:480`. Every quote is still judged by
+the 30-minute execution window, so a slower clock means more of the week reads
+*between scheduled checks* and needs **Refresh prices**.
 
 These are ceilings. A book that posts no props for a small college game
 returns fewer markets. The per-run cap (`max_events` 16, nearest kickoff
@@ -225,8 +264,14 @@ the drawer's *Validation stage* section.
 | **no game inside the capture window** | `NO_MARKETS` / `NO_EVENTS_IN_WINDOW`: no event kicks off inside `PROPS_WINDOW_H`. | Nothing, or widen the window. |
 | **Sportsbook prices: capture error** | `ERROR`: the notice shows `error_message` (the HTTP status and the provider's body). | Fix what it names: a 401 is the key, a 422 a market or book key, a 429 the quota. |
 | **PARTIAL** beside the prices | Some requests failed or the run stopped early. | Read `error_message` in `capture_state.json`. |
-| **STALE** in the status strip; **Stale prices** notice after 3 h | The last capture that wrote prices is over 90 minutes old. | Check the capture step's log and `capture_state.json` for `status`, `stopped` (budget, floor, 401/429) and `error_message`. |
-| `STALE_QUOTE` on a prop | That book's price is older than 90 minutes, so it decides nothing. | Nothing: it clears on the next capture. |
+| **Sportsbook prices: current** (no notice) | HEALTHY: every game was checked on its clock and prices are executable. | Nothing. |
+| **between scheduled checks**, with one grey note | HEALTHY, but most games are far out and between their 1–6 h checks, so their last prices are reference only. | Nothing, or press **Refresh prices**. |
+| **prices partially delayed**, "8/10 books current · 2 providers delayed" | DEGRADED: some books or games failed their last check. Current prices elsewhere are unaffected. | "What happened" in the notice names the games, errors and retry times. |
+| **prices delayed**, "Current sportsbook pricing temporarily unavailable … Automatic recovery is running" | DELAYED: most games are past their check target. | `select * from player_props_pipeline_health;` shows `scheduler_action` (is props_cron dispatching?) and `last_error`. See also the Player props run log. |
+| **price feed unavailable**, "…is unavailable" | OUTAGE: the provider is refusing (401/429, with the time), the capture is failing, or no check has run for 60 min past when one was due. | A 401 is the key; a 429 clears itself at the time shown; "overdue" means the scheduler: check `player_props_dispatch` in `cron.job`, `props_cron`'s `PROPS_GH_TOKEN`, and the workflow's recent runs. |
+| **WAIT FOR PRICE** on a prop, "O 212.5 +105 MGM · last seen 3.3 h ago" | Research stands; no quote is inside the 30-minute execution window (`STALE_QUOTE`), the game was not checked yet (`NO_CURRENT_QUOTE`), or its last check failed (`PROVIDER_FAILURE`). | Nothing: it decides again as soon as a current price arrives. |
+| **MARKET CLOSED** | A book dealt it and pulled it. | Nothing. |
+| **Refresh prices** says "Try again in N min" / "rate-limiting until …" / "Sign in" | The refresh cool-down, a provider 429, or a signed-out reader. | Nothing; the text says what to do. |
 | `PRICE_ANOMALY` (WATCH) | EV ≥ 15% or edge ≥ 12 pp with no second book within 12 cents. | Check the book by hand. This is usually a stale or mistyped line. |
 | **UNMAPPED** row | A book's player name did not resolve to exactly one player on the two rosters. | See `board.unmapped[]` for the reason. The resolver (`build_board.js` `resolveName`) already handles suffixes, punctuation and initials; an ambiguous name stays unmapped by design. |
 | `board.quotes.unjoined_events` | A priced event did not join a scheduled game. | Usually a team-name or kickoff mismatch. The NFL joins by team name within 18 h; CFB joins through `_intelligence.js`. |
@@ -260,8 +305,10 @@ a new column on the player logs. The model reads it only where
 ## Turning it off
 
 - **Stop spending:** set `PROPS_CAPTURE` to anything but `on` / `true` / `1` / `yes`. The board keeps
-  building from the free feeds. The last prices age into STALE and then
-  decide nothing.
+  building from the free feeds. The last prices age out of the execution
+  window and decide nothing, and the page says the capture is off.
+- **Stop the scheduler:** `select cron.unschedule('player_props_dispatch');`.
+  The workflow's own backup schedule keeps running.
 - **Stop the job:** disable the Player props workflow. The last committed
   board stays published.
 - **Remove the tab:** delete the Props nav button and `#v-pprops` in

@@ -29,6 +29,8 @@ on:
       - 'tools/props/**'
       - 'supabase/player_props*.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
+      - 'supabase/functions/props_cron/**'
+      - 'supabase/functions/capture/index.ts'
       - 'app.html'
       - 'research/cfb/**'
       - '.github/workflows/player-props*.yml'
@@ -40,6 +42,7 @@ on:
       - 'football/props/sources/**'
       - 'tools/props/**'
       - 'supabase/player_props*.sql'
+      - 'supabase/functions/props_cron/**'
   workflow_dispatch:
 
 permissions:
@@ -62,6 +65,14 @@ jobs:
         run: node tools/props/props_core.test.js
       - name: The pipeline (capture, identity, model, board, pregame freeze, grading, sync) on the real-data fixture
         run: node football/props/pipeline.test.js
+      - name: Freshness, executability, recovery and health (the one rule; retry, back-off, 429, partial answers, closures, manual refresh)
+        run: node tools/props/props_freshness.test.js
+      - name: The scheduler and the page's refresh (supabase/functions/props_cron, as deployed)
+        run: node tools/props/props_cron.test.js
+      - name: The pipeline health record and refresh requests against a real PostgreSQL (RLS, atomic admission, the execution window)
+        env:
+          PLAYER_PROPS_SQL_REQUIRED: '1'
+        run: node tools/props/props_pipeline_sql.test.js
       - name: The AI desk's prop answers (the kernel on the pipeline's board, and the real edge-function handler)
         run: node tools/props/props_desk.test.js
       - name: The connected research layer (opportunities, research score, event summaries, the combined Card, the desk turn)

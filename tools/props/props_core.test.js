@@ -106,7 +106,7 @@ chk('two different prices at one capture time are refused, never averaged', n.qu
 n = E.normalizeQuotes([Q('dk', 72.5, 'over', 150), Q('dk', 72.5, 'under', 150)], 'rush_yds', NOW);
 chk('two sides both paying above fair are a broken feed', n.quotes.length === 0 && n.refused['two-way hold out of bounds'] === 2, n.refused);
 n = E.normalizeQuotes([Q('dk', 72.5, 'over', -110, 120), Q('dk', 72.5, 'under', -110, 120)], 'rush_yds', NOW);
-chk('a quote 120 minutes old is STALE', n.quotes.every((q) => q.fresh.state === 'STALE'));
+chk('a quote 120 minutes old is EXPIRED (past the 90-minute stale band)', n.quotes.every((q) => q.fresh.state === 'EXPIRED'));
 n = E.normalizeQuotes([Q('dk', 72.5, 'over', -110, -30)], 'rush_yds', NOW);
 chk('a capture time in the future is flagged, not fresh', n.quotes[0].fresh.state === 'FUTURE');
 n = E.normalizeQuotes([{ book: 'dk', side: 'yes', american: -135, captured_at: at(5) }], 'anytime_td', NOW);
@@ -205,7 +205,7 @@ const dc = D.config();
 chk('BET / LEAN / STRONG thresholds are the football engine\'s', JSON.stringify(E.DECISION_FALLBACK.thresholds) === JSON.stringify({ bet: dc.thresholds.bet, strong: dc.thresholds.strong, lean: dc.thresholds.lean }), dc.thresholds);
 chk('the unit ladder and source caps are the football engine\'s', JSON.stringify(E.DECISION_FALLBACK.sizing.grid) === JSON.stringify(dc.sizing.grid) && JSON.stringify(E.DECISION_FALLBACK.sizing.source_caps) === JSON.stringify(dc.sizing.source_caps) && E.DECISION_FALLBACK.sizing.kelly_fraction === dc.sizing.kelly_fraction);
 chk('the kernel reads the live engine config when it is loaded', /EDDecision\.config/.test(E.decisionConfig().source));
-chk('the 90-minute stale limit is the engine\'s', E.CONFIG.max_quote_age_minutes === dc.freshness.max_quote_age_minutes);
+chk('the props execution window is its own rule (FRESHNESS), and CONFIG only aliases it', E.CONFIG.max_quote_age_minutes === E.FRESHNESS.executable_max_minutes && E.CONFIG.fresh_minutes === E.FRESHNESS.quote.fresh_minutes && E.FRESHNESS.executable_max_minutes <= dc.freshness.max_quote_age_minutes);
 
 /* ------------------------------------------------------------ sizing */
 section('sizing');

@@ -99,7 +99,7 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('a game past kickoff moves its series to the closes', closed.closed.length === 1 && !closed.lines.events[EVENT.id]);
   /* the runner */
   const P = paths('nfl');
-  const noKey = await CAP.run({ key: null, league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_interval_h: 2, near_interval_h: 0.5, min_remaining: 50, max_credits_run: 500 });
+  const noKey = await CAP.run({ key: null, league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_remaining: 50, max_credits_run: 500 });
   chk('no key: nothing captured, nothing spent', /no ODDS_API_KEY/.test(noKey.skipped));
   const calls = [];
   const getter = (remaining, fail429) => async (url) => {
@@ -108,7 +108,8 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     if (fail429) throw Object.assign(new Error('HTTP 429'), { status: 429 });
     return { body: /fixture_evt/.test(url) ? EVENT : { id: 'e2', bookmakers: [] }, remaining: remaining - 14, last: 14 };
   };
-  const RUN = { key: 'k', league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_interval_h: 2, near_interval_h: 0.5, min_remaining: 50, max_credits_run: 500, groups: ['core', 'long'] };
+  /* credit pacing is proved on its own below: these runs keep it neutral */
+  const RUN = { key: 'k', league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_remaining: 50, max_credits_run: 500, groups: ['core', 'long'], low_credits: 0, critical_credits: 0, retry_delay_ms: 0 };
   const r1 = await CAP.run(Object.assign({}, RUN, { getJson: getter(1000) }));
   chk('a run polls every event in the window, nearest kickoff first', r1.events_polled === 2 && /events\/e2\//.test(calls[1]) && calls[2].indexOf(EVENT.id) > 0, calls);
   chk('the key never appears in a logged URL', calls.every((u) => u.indexOf('apiKey=***') > 0));
@@ -128,7 +129,7 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     if (/\/events\?/.test(url)) return { body: [{ id: 'near', commence_time: new Date(NOW + 3 * 3600e3).toISOString(), home_team: 'Chicago Bears', away_team: 'New York Jets' }, { id: 'far', commence_time: new Date(NOW + 60 * 3600e3).toISOString(), home_team: 'Green Bay Packers', away_team: 'Detroit Lions' }], remaining: 5000, last: 0 };
     return { body: { id: /events\/near\//.test(url) ? 'near' : 'far', bookmakers: [] }, remaining: 4980, last: 20 };
   };
-  const CL = Object.assign({}, RUN, { paths: P2, getJson: clockGetter, min_interval_h: 3, far_h: 36, far_interval_h: 8 });
+  const CL = Object.assign({}, RUN, { paths: P2, getJson: clockGetter });
   const c1 = await CAP.run(CL);
   seen.length = 0;
   const c2 = await CAP.run(Object.assign({}, CL, { now: NOW + 3600e3 }));
@@ -218,7 +219,11 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('the fixture\'s players are priced on the board', priced.length >= 15, priced.length);
   chk('the unmapped name is kept, visible and never priced', board.props.some((x) => x.fl && x.fl.indexOf('UNMAPPED') >= 0 && x.e.d === 'NO_DECISION'));
   chk('every priced prop carries a decision the page can show', priced.every((x) => ['BET', 'LEAN', 'WATCH', 'PASS', 'NO_DECISION'].indexOf(x.e.d) >= 0));
-  chk('projection-only props are NO_MARKET, with a fair line', board.props.filter((x) => !x.q.length && x.x.dist).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'NO_MARKET' && x.e.inf));
+  const gOf = (x) => board.games.find((g) => g.game_id === x.g) || {};
+  chk('projection-only props are NO_MARKET, with a fair line', board.props.filter((x) => !x.q.length && x.x.dist && !(gOf(x).capture && gOf(x).capture.outside_window)).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'NO_MARKET' && x.e.inf));
+  chk('…and beyond the capture window they are NO_CURRENT_QUOTE (not checked yet), never "no market"', board.props.filter((x) => !x.q.length && x.x.dist && gOf(x).capture && gOf(x).capture.outside_window).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'NO_CURRENT_QUOTE' && x.e.inf)
+    && board.props.some((x) => x.e.c === 'NO_CURRENT_QUOTE'));
+  chk('the board carries the thresholds every reader judges by', board.freshness && board.freshness.executable_max_minutes === EDP.FRESHNESS.executable_max_minutes && Array.isArray(board.freshness.cadence));
   chk('player context is per player and game', Object.keys(board.players).every((k) => /@/.test(k)));
   chk('the page re-prices a row to the same decision the build wrote', (() => {
     const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js')); U.state.clock = () => NOW; U._prepBoard(board);

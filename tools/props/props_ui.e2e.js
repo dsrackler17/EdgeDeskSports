@@ -101,7 +101,10 @@ async function buildFixture() {
   /* the college record is UNPUBLISHED in this run, whatever the repository
      holds today: the record page's empty state is what is being proven */
   const absent = { '/football/props/cfb/performance.json': 1 };
+  const seenUrls = [];
+  let propsCron = null;   /* the refresh flow's stand-in for supabase/functions/props_cron */
   function siteHandler(req, res) {
+    seenUrls.push(req.url);
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/app.html';
     if (absent[p]) { res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return; }
@@ -132,6 +135,7 @@ async function buildFixture() {
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
       if (u.startsWith('http://127.0.0.1')) return route.continue();
+      if (/functions\/v1\/props_cron/.test(u) && propsCron) return propsCron(route);
       if (/supabase\.co/.test(u)) {
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
@@ -156,7 +160,9 @@ async function buildFixture() {
     await page.click('.bottomnav button[data-v="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
     chk('the Props seat opens the Player Props view', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && document.querySelector('.bottomnav button[data-v="pprops"]').classList.contains('on')));
-    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: LIVE · captured/.test(document.querySelector('.pp-strip').textContent)));
+    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: current · updated \d+ min ago · \d+ books · [\d,]+ current prices/.test(document.querySelector('.pp-strip').textContent)));
+    chk('healthy: no banner at all (nothing to explain)', await page.evaluate(() => !document.querySelector('.pp-banner') && !document.querySelector('.pp-warnbox')));
+    chk('the header says when the PRICES were captured, not only when the board was built', await page.evaluate(() => /Prices updated\s*\d+ min ago/.test(document.querySelector('.pp-upd').textContent)));
     chk('the probability source is printed', await page.evaluate(() => /MODEL-ESTIMATED/.test(document.querySelector('.pp-strip').textContent)));
     const nBest = await page.evaluate(() => EDPropsUI._visible().length);
     chk('Best Value lists the priced props, ranked', nBest >= 15 && await page.evaluate(() => { const v = EDPropsUI._visible(); const R = { BET: 4, LEAN: 3, WATCH: 2, PASS: 1, NO_DECISION: 0 }; return v.every((r, i) => i === 0 || R[v[i - 1].decision] >= R[r.decision]); }), nBest);
@@ -240,8 +246,39 @@ async function buildFixture() {
     console.log('stale');
     ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2 * 3600e3));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
-    chk('two hours on, the capture strip warns the prices are stale', await page.evaluate(() => /STALE/.test(document.querySelector('.pp-strip').textContent)));
-    chk('and no stale price is decided on', await page.evaluate(() => EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p).every((r) => r.decision === 'NO_DECISION')));
+    /* two hours on, a game 33 h out is on its 2-hour cadence: the pipeline is
+       on schedule, but no price is executable — said once, calmly, never as
+       a STALE pill on every row */
+    const st2 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner') || {}).textContent || '', pills: document.querySelectorAll('.pp-rows .pp-stale').length,
+      rows: EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p), health: EDPropsUI._pageHealth(EDPropsUI.state.boards.nfl).state }));
+    chk('two hours on (between the far game\'s checks): one calm notice, and the strip says no price is current', /between scheduled checks/.test(st2.strip) && / 0 current prices/.test(st2.strip) && /reference only/.test(st2.banner) && /Refresh prices/.test(st2.banner) && st2.health === 'HEALTHY', st2.strip + ' || ' + st2.banner);
+    chk('and no stale price is decided on', st2.rows.length > 0 && st2.rows.every((r) => r.decision === 'NO_DECISION' && r.wait && !r.cand && !r.units));
+    chk('no STALE pill on any row', st2.pills === 0, st2.pills);
+    await shot(page, 'desktop_between_checks');
+    const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row')).filter((row) => /WAIT FOR PRICE/.test(row.textContent)).slice(0, 5).map((row) => { const c = row.children; return { best: c[6].textContent, proj: c[7].textContent, fair: c[8].textContent, ev: c[11].textContent, stake: c[15].textContent, over: c[4].className, dec: c[14].textContent }; }));
+    chk('a waiting row: decision WAIT FOR PRICE, its last price "O 212.5 +105 MGM" and "last seen 2.1 h ago"', cells.length > 0 && cells.every((c) => /WAIT FOR PRICE/.test(c.dec) && /^(O|U|Yes|No)[^+−-]*[+−-]\d+ \w+last seen 2\.\d h ago/.test(c.best)), cells.slice(0, 2));
+    chk('…its research stays (projection and fair line), its price-dependent numbers wait (EV, stake)', cells.every((c) => /\d/.test(c.proj) && /\d/.test(c.fair) && c.ev === '—' && c.stake === '—'), cells.slice(0, 2));
+    chk('…and its last Over / Under prices are styled as reference, never as live numbers', cells.every((c) => /pp-ref/.test(c.over)), cells.map((c) => c.over).slice(0, 2));
+    await page.click('.pp-row');
+    await page.waitForSelector('#ppDrawer .pp-sec');
+    const dw = await page.evaluate(() => document.getElementById('ppDrawer').textContent);
+    await shot(page, 'desktop_wait_drawer');
+    chk('the drawer keeps the model opinion beside the dead market: projection, last line, last quote, PRICE EXPIRED/STALE, WAIT FOR CURRENT MARKET', /Projection/.test(dw) && /Last observed line/.test(dw) && /Last quote\s*2\.\d h ago/.test(dw) && /PRICE (EXPIRED|STALE)/.test(dw) && /WAIT FOR CURRENT MARKET/.test(dw) && /\(reference\)/.test(dw), dw.slice(0, 600));
+    await ctx.close();
+    /* the far game is now past its 2-hour target: DELAYED, with recovery */
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2.75 * 3600e3));
+    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+    const d3 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner.delayed') || {}).textContent || '' }));
+    await shot(page, 'desktop_delayed');
+    chk('past its check target: DELAYED — "temporarily unavailable", last capture, recovery running, no stale decision', /prices delayed/.test(d3.strip) && /Current sportsbook pricing temporarily unavailable/.test(d3.banner) && /Last successful capture: 2\.\d h ago/.test(d3.banner) && /Automatic recovery is running/.test(d3.banner) && /No stale quote will generate a betting decision/.test(d3.banner), d3);
+    await ctx.close();
+    /* nothing has even tried for five hours: OUTAGE, and it says the capture is overdue */
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 5 * 3600e3));
+    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+    const d5 = await page.evaluate(() => (document.querySelector('.pp-banner.outage') || {}).textContent || '');
+    await shot(page, 'desktop_outage');
+    chk('no capture attempt for five hours: OUTAGE, naming the overdue capture', /Current sportsbook pricing is unavailable/.test(d5) && /overdue/.test(d5) && /Model projections remain available/.test(d5), d5);
+    chk('no page errors across the freshness states', errors.length === 0, errors);
     await ctx.close();
 
     /* the capture's status reaches the page as itself: a provider answer with
@@ -254,7 +291,7 @@ async function buildFixture() {
       const o = await open({ width: 1440, height: 900 }, '#playerprops/nfl');
       await o.page.waitForSelector('.pp-strip');
       await o.page.waitForSelector('.pp-empty');
-      const t = await o.page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, warn: (document.querySelector('.pp-warnbox') || {}).textContent || '', empty: document.querySelector('.pp-empty').textContent }));
+      const t = await o.page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, warn: (document.querySelector('.pp-banner') || {}).textContent || '', empty: document.querySelector('.pp-empty').textContent }));
       await o.ctx.close();
       return t;
     };
@@ -265,6 +302,53 @@ async function buildFixture() {
     const tNot = await stripAndEmpty({ status: 'NOT_RUN', reason: 'NO_STATE_FILE', state: 'NOT_CAPTURED', why: 'The prop capture has never run for this league.', last_run: null, last_success_at: null });
     chk('NOT_RUN: the strip says not captured yet and the empty state does not claim the books are late', /not captured yet/.test(tNot.strip) && /never run/.test(tNot.warn) && /have not been captured yet/.test(tNot.empty) && !/release/.test(tNot.empty), tNot);
     served[boardPath] = live;
+
+    /* ---------------------------------------------------------- refresh
+       "Refresh prices" asks props_cron for a real capture, says so, cannot be
+       spammed, follows the request, and loads the new board past the CDN */
+    console.log('refresh');
+    const calls = [];
+    let statusN = 0;
+    const later = JSON.stringify(Object.assign({}, FX.board, { generated_at: new Date(NOW + 60000).toISOString(), capture: Object.assign({}, FX.board.capture, { last_attempt: new Date(NOW + 30000).toISOString(), last_success_at: new Date(NOW + 30000).toISOString() }) }));
+    propsCron = (route) => {
+      const body = JSON.parse(route.request().postData() || '{}');
+      calls.push(body.action);
+      if (body.action === 'refresh') return route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ ok: true, request_id: '33333333-3333-3333-3333-333333333333', status: 'dispatched', message: 'Refreshing prices…' }) });
+      statusN++;
+      if (statusN >= 2) served[boardPath] = later;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, request: statusN < 2 ? { status: 'running' } : { status: 'completed', reason: 'fresh prices captured', result: { leagues: { nfl: { quotes: 2641 } } } } }) });
+    };
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl'));
+    await page.waitForSelector('.pp-row', { timeout: 15000 });
+    await page.evaluate(() => { EDPropsUI.state.pollMs = 150; });
+    seenUrls.length = 0;
+    await page.click('button[data-pp-act="refresh"]');
+    const busy = await page.evaluate(() => { const b = document.querySelector('button[data-pp-act="refresh"]'); return { disabled: b.disabled, text: b.textContent, note: (document.querySelector('.pp-refresh') || {}).textContent || '' }; });
+    chk('Refresh asks for a real capture and says "Refreshing prices…", its button disabled', busy.disabled && /Refreshing prices/.test(busy.text) && /Refreshing prices/.test(busy.note), busy);
+    await page.evaluate(() => EDPropsUI._requestRefresh('nfl'));
+    chk('a second press while one is in flight sends nothing (no refresh spam)', calls.filter((c) => c === 'refresh').length === 1, calls);
+    await page.waitForFunction(() => { const n = document.querySelector('.pp-refresh.ok'); return n && /Fresh prices captured \(2,641 quotes\)/.test(n.textContent); }, null, { timeout: 15000 });
+    chk('it follows the request to completion and reports what was captured', calls.filter((c) => c === 'status').length >= 2);
+    chk('…and reloads the board past the CDN cache (a cache-busting query)', seenUrls.some((u) => /\/football\/props\/nfl\/board\.json\?t=\d+/.test(u)), seenUrls.filter((u) => /board/.test(u)));
+    chk('…and the button is usable again', await page.evaluate(() => !document.querySelector('button[data-pp-act="refresh"]').disabled));
+    served[boardPath] = live;
+    await ctx.close();
+    propsCron = (route) => route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ ok: false, reason: 'rate_limited', retry_after_s: 240, message: 'Prices were refreshed moments ago. Try again in 4 min.' }) });
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl'));
+    await page.waitForSelector('.pp-row', { timeout: 15000 });
+    await page.click('button[data-pp-act="refresh"]');
+    await page.waitForSelector('.pp-refresh.info');
+    chk('refused by the cool-down: it says exactly how long to wait', await page.evaluate(() => /Try again in 4 min/.test(document.querySelector('.pp-refresh').textContent)));
+    await ctx.close();
+    propsCron = (route) => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ ok: false, reason: 'sign_in_required', message: 'Sign in to ask for a fresh price capture. The page has reloaded the latest published prices.' }) });
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl'));
+    await page.waitForSelector('.pp-row', { timeout: 15000 });
+    await page.click('button[data-pp-act="refresh"]');
+    await page.waitForSelector('.pp-refresh.info');
+    chk('signed out: it says to sign in, and that the latest published prices are shown', await page.evaluate(() => /Sign in/.test(document.querySelector('.pp-refresh').textContent)));
+    chk('no page errors in the refresh flow', errors.length === 0, errors);
+    await ctx.close();
+    propsCron = null;
 
     /* ---------------------------------------------------------- phone */
     console.log('phone');
@@ -296,7 +380,7 @@ async function buildFixture() {
         note: (document.querySelector('.pp-cnote') || {}).textContent || '', tile: getComputedStyle(document.querySelector('.pp-card .g > span')).backgroundColor };
     });
     chk('stale phone cards are not decided', sc.dec.length > 0 && sc.dec.every((d) => d === 'NO_DECISION'), sc.dec);
-    chk('…yet show the last line and each side\'s last price, labelled stale', sc.txt.every((t) => /STALE PRICE/.test(t) && /Line\s*\d/.test(t) && /(Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && /no EV or decision on a stale price/.test(t)), sc.txt.filter((t) => !/(Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
+    chk('…yet show the last line and each side\'s last price, labelled as the LAST ones, waiting for a price', sc.txt.every((t) => /WAIT FOR PRICE/.test(t) && /Last line\s*\d/.test(t) && /Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && /no EV or decision until a current price/.test(t) && !/STALE PRICE/.test(t)), sc.txt.filter((t) => !/Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
     chk('…never an EV figure', sc.txt.every((t) => !/EV\s*[+−-]\d/.test(t)), sc.txt.slice(0, 2));
     chk('…listed in the last capture\'s order, and the list says so', sc.cap.every((x, i) => i === 0 || sc.cap[i - 1] >= x) && sc.cap[0] > 0 && /last capture's order/.test(sc.note), [sc.cap, sc.note]);
     chk('the card tiles are styled (the tile rule matches the card\'s spans)', sc.tile && sc.tile !== 'rgba(0, 0, 0, 0)', sc.tile);

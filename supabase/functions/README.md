@@ -1,6 +1,6 @@
 # Edge Functions
 
-68 functions are deployed. **Eight** of them live here now; the other 60 exist
+68 functions are deployed. **Eight** of them live here now (plus `props_cron`, new, shipped by `.github/workflows/deploy-props-pipeline.yml`); the other 60 exist
 only as deployed artifacts, which means they cannot be reviewed, diffed, tested
 or restored, and nobody can answer "what does this one do?" without opening the
 dashboard.
@@ -46,6 +46,7 @@ Evidence from the shipped front end, not from the naming.
 | `collective_ingest` | the Model Collective submission API — see its `SECURITY.md` |
 | `edgedesk_ai` | the AI presentation layer |
 | `odds` | odds reads |
+| `props_cron` | the Props page's **Refresh prices** (`{action: 'refresh'}` then `{action: 'status'}`, under the reader's session); also the Player Props primary scheduler, poked by pg_cron (`supabase/player_props_cron.sql`) — it dispatches `player-props.yml`, it never captures a price itself. JWT verification ON. |
 | `team_brief` | team briefs |
 
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**

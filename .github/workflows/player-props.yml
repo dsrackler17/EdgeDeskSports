@@ -1,27 +1,35 @@
 # EdgeDesk Player Props — prices, projections, the board, grading.
 #
-# Every hour in football season:
+# WHO WAKES IT. The PRIMARY scheduler is pg_cron → supabase/functions/props_cron
+# (supabase/player_props_cron.sql), every five minutes: it dispatches this
+# workflow only when a game is due for a price check or a reader pressed
+# Refresh. GitHub's own schedule below is the BACKUP: on 2026-09-29 it fired
+# the old hourly schedule twice in eight hours, which is how the page sat on
+# three-hour-old prices with nothing saying why.
+#
+# Every run:
 #   1. the kernel and the pipeline suites must pass before anything is written;
 #   2. the prop capture (football/props/capture.js) asks The Odds API for player
 #      markets — ONLY when the repository variable PROPS_CAPTURE is on (on, true,
 #      1 or yes, any case) and the ODDS_API_KEY secret exists; the step always
-#      runs and records its outcome in capture_state.json either way. It is budgeted: each event is re-polled only
-#      when its own interval has passed (8 h beyond 36 h of kickoff, 3 h inside
-#      it, every run inside six hours), it stops before the credit floor and
-#      never passes PROPS_MAX_CREDITS in one run (docs/runbooks/player-props.md
-#      has the credit arithmetic).
-#      Off, nothing is spent and the page says prices are not captured yet;
-#   3. the board (football/props/build_board.js) is rebuilt for the NFL and
-#      college from the public nflverse / sportsdataverse feeds and whatever
-#      prices were captured — committed only when a number, a price, a decision
-#      or a game changed (clock fields never make a board new);
-#   4. finished games are graded (football/props/grade.js) into the append-only
-#      results ledger and performance.json;
-#   5. the append-only ledgers are proved to have only grown since the last
-#      commit (football/props/verify_ledger.js) — otherwise nothing publishes;
+#      runs and records its outcome in capture_state.json either way. Each game
+#      is re-polled on its own clock by hours to kickoff (lib/edgedesk_props.js
+#      FRESHNESS.cadence: 15 min inside 90 min, 30 inside 6 h, 60 inside 24 h,
+#      2 h inside 48 h, 6 h beyond; PROPS_CADENCE overrides), a failed game on
+#      its back-off, never before a 429's Retry-After, never past the credit
+#      floor or PROPS_MAX_CREDITS in one run (docs/runbooks/player-props.md).
+#      A manual refresh (source=manual_refresh) forces a capture of every game
+#      not captured in the last ten minutes;
+#   3. the boards are rebuilt when anything was captured, on a manual run, or
+#      when the committed board is older than 50 minutes — committed only when a
+#      number, a price, a decision or a game changed;
+#   4. finished games are graded (football/props/grade.js);
+#   5. the append-only ledgers are proved to have only grown;
 #   6. the artifacts are pushed through tools/ci/push_generated.sh;
-#   7. the ledger is copied into Supabase (supabase/player_props.sql) when
-#      SB_URL / SB_SERVICE_ROLE are set — insert-only, idempotent, optional.
+#   7. the ledger is copied into Supabase (supabase/player_props.sql), and the
+#      run's HEALTH record (supabase/player_props_pipeline.sql) is written —
+#      whatever happened, a failed run included — and a reader's refresh
+#      request is completed with what actually happened.
 #
 # workflow_dispatch can also re-run the walk-forward distribution backtest
 # (football/props/backtest.js) that writes football/props/nfl/calibration.json,
@@ -31,8 +39,10 @@ name: Player props
 
 on:
   schedule:
-    # hourly through the season (August–January); the capture decides for itself whether to spend
-    - cron: '23 * * 8-12,1 *'
+    # the BACKUP scheduler, every 15 minutes through the season (August–January).
+    # The capture decides for itself which games are due; a run with nothing due
+    # spends nothing and rebuilds nothing unless the board is 50 minutes old.
+    - cron: '8,23,38,53 * * 8-12,1 *'
   workflow_dispatch:
     inputs:
       backtest:
@@ -45,6 +55,22 @@ on:
         default: 'false'
       window_h:
         description: 'Only events kicking off inside this many hours (empty = PROPS_WINDOW_H or 96)'
+        required: false
+        default: ''
+      source:
+        description: 'Who woke this run (supabase_cron = the primary scheduler, manual_refresh = a reader)'
+        required: false
+        default: 'workflow_dispatch'
+      refresh_request:
+        description: 'A reader refresh request id (player_props_refresh_requests) this run completes'
+        required: false
+        default: ''
+      leagues:
+        description: 'Leagues to capture (empty = PROPS_LEAGUES or nfl,cfb)'
+        required: false
+        default: ''
+      events:
+        description: 'Only these Odds API event ids (comma-separated; empty = every due event)'
         required: false
         default: ''
 
@@ -74,6 +100,14 @@ jobs:
           python-version: '3.11'
       - run: pip install --quiet pyarrow
 
+      - name: Mark the reader's refresh request running
+        if: ${{ github.event.inputs.refresh_request != '' && github.event.inputs.refresh_request != null }}
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          PROPS_REFRESH_REQUEST: ${{ github.event.inputs.refresh_request }}
+        run: node football/props/health_sync.js --phase start || echo "::warning::could not mark the refresh request running"
+
       - name: The prop kernel must pass before anything is written
         run: node tools/props/props_core.test.js
 
@@ -88,46 +122,86 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
         run: node football/props/correlation.js --season "${{ github.event.inputs.backtest }}" --write
 
-      # This step ALWAYS runs. It used to carry `if: vars.PROPS_CAPTURE == 'on'`,
-      # which skipped it silently — no log line, no state file — whenever the
-      # variable was unset, spelled differently ('true', 'on '), or set after
-      # the last run, so the page could only say "has not run". Repository
-      # variables and secrets are NOT shell variables: each is mapped into the
-      # environment here, explicitly. capture.js normalizes PROPS_CAPTURE
-      # (on / true / 1 / yes, any case), prints whether the key is present
-      # (never the key), and writes capture_state.json on EVERY outcome —
-      # NOT_RUN, NO_MARKETS, SUCCESS, PARTIAL or ERROR — which the board and
-      # the page read instead of guessing from zero rows.
+      # This step ALWAYS runs. Repository variables and secrets are NOT shell
+      # variables: each is mapped into the environment here, explicitly.
+      # capture.js normalizes PROPS_CAPTURE (on / true / 1 / yes, any case),
+      # prints whether the key is present (never the key), and writes
+      # capture_state.json on EVERY outcome that reached the provider — NOT_RUN,
+      # NO_MARKETS, SUCCESS, PARTIAL or ERROR — plus each game's own record,
+      # the provider's (429 back-off, failures), the pipeline health and when
+      # the next poll is due. It saves its answer for the health record step.
       - name: Capture sportsbook prop prices (opt-in, budgeted)
+        id: capture
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PROPS_CAPTURE: ${{ vars.PROPS_CAPTURE }}
           PROPS_BOOKMAKERS: ${{ vars.PROPS_BOOKMAKERS }}
           PROPS_MARKET_GROUPS: ${{ vars.PROPS_MARKET_GROUPS }}
           PROPS_MAX_CREDITS: ${{ vars.PROPS_MAX_CREDITS }}
-          PROPS_MIN_INTERVAL_H: ${{ vars.PROPS_MIN_INTERVAL_H }}
-          PROPS_FAR_INTERVAL_H: ${{ vars.PROPS_FAR_INTERVAL_H }}
+          PROPS_MAX_EVENTS: ${{ vars.PROPS_MAX_EVENTS }}
+          PROPS_LOW_CREDITS: ${{ vars.PROPS_LOW_CREDITS }}
+          PROPS_CRITICAL_CREDITS: ${{ vars.PROPS_CRITICAL_CREDITS }}
+          PROPS_CADENCE: ${{ vars.PROPS_CADENCE }}
+          PROPS_FRESH_MIN: ${{ vars.PROPS_FRESH_MIN }}
+          PROPS_AGING_MIN: ${{ vars.PROPS_AGING_MIN }}
+          PROPS_STALE_MIN: ${{ vars.PROPS_STALE_MIN }}
+          PROPS_EXEC_MAX_MIN: ${{ vars.PROPS_EXEC_MAX_MIN }}
           PROPS_WINDOW_H: ${{ github.event.inputs.window_h || vars.PROPS_WINDOW_H }}
-          PROPS_LEAGUES: ${{ vars.PROPS_LEAGUES }}
+          PROPS_LEAGUES: ${{ github.event.inputs.leagues || vars.PROPS_LEAGUES }}
+          PROPS_REFRESH_EVENTS: ${{ github.event.inputs.events }}
+          PROPS_REFRESH_REQUEST: ${{ github.event.inputs.refresh_request }}
+          PROPS_TRIGGER: ${{ github.event.inputs.source || github.event_name }}
           FORCE_CAPTURE: ${{ github.event.inputs.force_capture }}
         run: |
           # capture.js prints "ODDS_API_KEY present: true|false" and PROPS_CAPTURE
           # raw / parsed for each league; no run line here touches the secret
           # (tools/cfb/secret_audit.js refuses any echo that names it)
-          echo "event: $GITHUB_EVENT_NAME · ref: $GITHUB_REF_NAME"
+          echo "event: $GITHUB_EVENT_NAME · trigger: $PROPS_TRIGGER · ref: $GITHUB_REF_NAME"
           FORCE=""
           if [ "$FORCE_CAPTURE" = "true" ]; then FORCE="--force"; fi
           for LG in $(echo "${PROPS_LEAGUES:-nfl,cfb}" | tr ',' ' '); do
             node football/props/capture.js --network --league "$LG" $FORCE || echo "::warning::$LG prop capture crashed; capture_state.json keeps what it last recorded and the board ages the last prices"
           done
+          # rebuild the boards when a price was captured, on any manual run, or
+          # when the committed board is 50 minutes old (games start, injuries move)
+          node -e '
+            const fs = require("fs"), path = require("path");
+            const lgs = String(process.env.PROPS_LEAGUES || "nfl,cfb").split(",").map((x) => x.trim()).filter(Boolean);
+            const read = (p) => { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch (e) { return null; } };
+            let why = null;
+            if (process.env.GITHUB_EVENT_NAME !== "schedule" && process.env.PROPS_TRIGGER !== "supabase_cron") why = "manual run";
+            for (const lg of ["nfl", "cfb"]) {
+              const r = read(path.join("football/props/.cache", lg + "_capture_result.json"));
+              if (!why && lgs.includes(lg) && r && (r.status || r.events_polled)) why = lg + " captured (" + (r.status || "polled") + ")";
+              const b = read(path.join("football/props", lg, "board.json"));
+              if (!why && (!b || Date.now() - Date.parse(b.generated_at) > 50 * 60e3)) why = lg + " board is " + (b ? Math.round((Date.now() - Date.parse(b.generated_at)) / 60e3) + " min old" : "missing");
+            }
+            console.log("rebuild: " + (why || "no — nothing captured and the boards are recent"));
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, "rebuild=" + (why ? "true" : "false") + "\n");
+          '
 
       - name: Build the NFL board
+        if: ${{ steps.capture.outputs.rebuild != 'false' }}
+        env:
+          PROPS_CADENCE: ${{ vars.PROPS_CADENCE }}
+          PROPS_FRESH_MIN: ${{ vars.PROPS_FRESH_MIN }}
+          PROPS_AGING_MIN: ${{ vars.PROPS_AGING_MIN }}
+          PROPS_STALE_MIN: ${{ vars.PROPS_STALE_MIN }}
+          PROPS_EXEC_MAX_MIN: ${{ vars.PROPS_EXEC_MAX_MIN }}
         run: node football/props/build_board.js --league nfl --write
 
       - name: Build the college board
+        if: ${{ steps.capture.outputs.rebuild != 'false' }}
+        env:
+          PROPS_CADENCE: ${{ vars.PROPS_CADENCE }}
+          PROPS_FRESH_MIN: ${{ vars.PROPS_FRESH_MIN }}
+          PROPS_AGING_MIN: ${{ vars.PROPS_AGING_MIN }}
+          PROPS_STALE_MIN: ${{ vars.PROPS_STALE_MIN }}
+          PROPS_EXEC_MAX_MIN: ${{ vars.PROPS_EXEC_MAX_MIN }}
         run: node football/props/build_board.js --league cfb --write || echo "::warning::the college board could not be rebuilt; the last one stays published"
 
       - name: Grade finished games
+        if: ${{ steps.capture.outputs.rebuild != 'false' }}
         run: |
           node football/props/grade.js --league nfl --write
           node football/props/grade.js --league cfb --write || echo "::warning::college grading could not run"
@@ -147,6 +221,7 @@ jobs:
             football/props/nfl/ football/props/cfb/
 
       - name: Insert-only copy to Supabase
+        if: ${{ steps.capture.outputs.rebuild != 'false' }}
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
@@ -157,3 +232,18 @@ jobs:
           if [ "$GITHUB_REF_NAME" != "main" ]; then DRY="--dry-run"; echo "branch run ($GITHUB_REF_NAME): the production ledger is not written"; fi
           node football/props/sync_supabase.js --league nfl $DRY || echo "::warning::prop ledger sync failed (apply supabase/player_props.sql)"
           node football/props/sync_supabase.js --league cfb $DRY || echo "::warning::college prop ledger sync failed"
+
+      # ALWAYS, a failed or cancelled run included: the run log and the
+      # league's health verdict (supabase/player_props_pipeline.sql), which
+      # the scheduler reads for the next due time, and — for a reader's
+      # refresh — what actually happened, which the page is polling for.
+      # Branch runs record too (their run_key says so); the ledger does not.
+      - name: Pipeline health record (and the reader's refresh result)
+        if: ${{ always() }}
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          PROPS_LEAGUES: ${{ github.event.inputs.leagues || vars.PROPS_LEAGUES }}
+          PROPS_REFRESH_REQUEST: ${{ github.event.inputs.refresh_request }}
+          PROPS_TRIGGER: ${{ github.event.inputs.source || github.event_name }}
+        run: node football/props/health_sync.js --outcome "${{ job.status }}" || echo "::warning::the pipeline health record could not be written"

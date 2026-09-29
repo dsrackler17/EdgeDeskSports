@@ -185,8 +185,11 @@ but carries no no-vig and caps the class at LEAN.
 
 - **NO DECISION** with a blocker code: `GAME_STARTED`, `GAME_CANCELLED`,
   `PLAYER_UNMAPPED`, `PLAYER_OUT`, `NO_PROJECTION`, `NO_MARKET`,
-  `STALE_QUOTE` (every quote older than 90 min), `UNSUPPORTED_MARKET`,
-  `INVALID_DISTRIBUTION`.
+  `MARKET_CLOSED`, `UNSUPPORTED_MARKET`, `INVALID_DISTRIBUTION`, and the
+  price-only blockers that read **WAIT FOR PRICE** — `STALE_QUOTE` (no quote
+  inside the 30-minute execution window), `NO_CURRENT_QUOTE`,
+  `PROVIDER_FAILURE`. Whether a quote may price anything is decided by one
+  function, `isExecutableQuote()`; see `docs/player-props/FRESHNESS.md`.
 - **BET** edge ≥ 4.0 pp and EV ≥ 5 % (read from `EDDecision.config()`);
   **LEAN** edge ≥ 2.0 pp and EV > 0 with the model on that side of the line;
   **WATCH** a BET-quality price held back by a cap, or within one step of a
@@ -287,7 +290,7 @@ share one board fetch.
 The committed JSON feeds are the browser's source; Supabase is the durable
 ledger when `SB_URL` / `SB_SERVICE_ROLE` are configured.
 
-**The ledgers only grow.** Before the hourly job commits anything,
+**The ledgers only grow.** Before the job commits anything,
 `football/props/verify_ledger.js --league all --base HEAD` proves each
 `evaluations.jsonl`, `results.jsonl` and `closes.jsonl` is the committed file
 plus new lines, never an edit. It also checks that every line parses, that
