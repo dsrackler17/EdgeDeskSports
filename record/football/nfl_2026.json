@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-09-29T01:16:47.775Z",
+ "updated_at": "2026-09-29T07:31:09.303Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -3767,18 +3767,75 @@
     "book": "consensus",
     "at": "2026-09-28T23:51:18.250Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 3.5,
+    "total": 42.5,
+    "source": "nflverse",
+    "book": "consensus"
+   },
+   "final": {
+    "home_score": 27,
+    "away_score": 7,
+    "source": "nflverse",
+    "at": "2026-09-29T07:31:09.303Z"
+   },
    "provenance": "git 1700d8d32d",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 5.8,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 2.69,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -1.5,
+      "close": 3.5,
+      "gap": 1.64,
+      "pts": -5
+     },
+     "total": {
+      "side": "under",
+      "market": 47.5,
+      "close": 42.5,
+      "gap": 1.56,
+      "pts": 5
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 3.5,
+      "close": 3.5,
+      "gap": 5.8,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 42.5,
+      "close": 42.5,
+      "gap": 2.69,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": 20,
+     "model_margin_err": 17.7,
+     "close_margin_err": 23.5,
+     "model_total_err": 11.19,
+     "close_total_err": 8.5
+    },
+    "brier": 0.1721,
     "beyond_guard": false,
     "reliability": null
    }
