@@ -139,9 +139,16 @@
 .pp-card .h .who b{display:block;font-size:14px}
 .pp-card .h .who i{display:block;font-style:normal;font-size:11px;color:var(--faint);font-family:var(--pp-mono);margin-top:2px}
 .pp-card .g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
-.pp-card .g div{background:var(--pp-bg2);border-radius:8px;padding:6px 8px;min-width:0}
+/* the tiles are spans (a card is a button): `.g div` never matched them */
+.pp-card .g>span{display:block;background:var(--pp-bg2);border-radius:8px;padding:6px 8px;min-width:0}
 .pp-card .g .k{display:block;font-size:9px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
 .pp-card .g .v{display:block;font-family:var(--pp-mono);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-card .h .pp-dec{flex:none}
+.pp-card.stale .g .v{color:var(--dim)}
+.pp-card .g .v small{font-size:10px;color:var(--faint)}
+.pp-cfoot{display:block;margin-top:8px;font-size:11px;line-height:1.45;color:var(--faint)}
+.pp-cnote{margin:2px 2px 8px}
+.pp-cnote b{color:var(--warn)}
 .pp-rank{font-family:var(--pp-mono);font-size:11px;color:var(--faint);width:22px;flex:none;padding-top:2px}
 .pp-more{display:block;margin:8px auto 4px}
 
@@ -218,6 +225,7 @@ body.ed-reduce-motion .pp-skel{animation:none}
   .pp-side{position:static;max-height:none}
   .pp-side.collapsed .pp-glist{display:none}
   .pp-side.collapsed .pp-sh{border-bottom:0}
+  .pp-side.collapsed .pp-st{margin-top:0}
   .pp-thead,.pp-row{grid-template-columns:26px minmax(140px,1.6fr) minmax(80px,.9fr) 52px 58px 58px minmax(108px,1.1fr) 58px 56px 54px 50px 70px}
   .pp-row .c-fair,.pp-thead .c-fair,.pp-row .c-nv,.pp-thead .c-nv,.pp-row .c-stake,.pp-thead .c-stake,.pp-row .c-edge,.pp-thead .c-edge{display:none}
 }
@@ -232,7 +240,23 @@ body.ed-reduce-motion .pp-skel{animation:none}
   .pp-fbox>summary{display:inline-flex}
   .pp-flt{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
   .pp-flt .pp-fg{flex:none;flex-wrap:nowrap}
-  .pp-strip{font-size:11px}
+  .pp-strip{font-size:11px;gap:4px 12px;padding:7px 10px}
+  /* phone: one tight header row, and the views and tabs scroll sideways
+     instead of wrapping onto a second line */
+  .pp-head{gap:8px;margin:4px 0 8px}
+  .pp-head .pp-title{flex:1 1 100%}
+  .pp-head .pp-grow{display:none}
+  .pp-head .pp-upd{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .pp-head .pp-updl,.pp-strip .pp-sx{display:none}
+  .pp-side.collapsed{background:none;border:0}
+  .pp-side.collapsed .pp-sh{padding:0 0 8px}
+  .pp-modes{flex-wrap:nowrap;overflow-x:auto;gap:0;scrollbar-width:none}
+  .pp-modes::-webkit-scrollbar{display:none}
+  .pp-mode{flex:none}
+  .pp-cards{padding:8px 6px}
+  .pp-card{padding:10px}
+  .pp-card .g{gap:6px}
+  .pp-card .g>span{padding:5px 7px}
 }
 
 /* the market's validation stage (EDProps.stageOf) */

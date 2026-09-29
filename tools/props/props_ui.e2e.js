@@ -19,7 +19,9 @@
      - My Props (a star), All Props (projection-only rows say NO MARKET)
      - the performance view; the college board loads beside it
      - two hours later every price reads STALE and nothing is decided
-     - a phone: cards, collapsed filters, a full-screen drawer
+     - a phone: cards, collapsed filters, a full-screen drawer; two hours
+       on, stale cards keep their line and last prices (no EV, no decision)
+       in the last capture's order
      - #playerprops/nfl/<prop> opens that prop; /player/<id> opens a player
        (usage, recent games, only his props; an unknown id is said);
        /game/<id> opens a game
@@ -277,6 +279,29 @@ async function buildFixture() {
     chk('the phone drawer does not scroll sideways', await page.evaluate(() => { const d = document.getElementById('ppDrawer'); return d.scrollWidth <= d.clientWidth + 1; }));
     await shot(page, 'phone_drawer');
     chk('no page errors on the phone', errors.length === 0, errors);
+    await ctx.close();
+
+    /* a phone two hours on: stale cards keep their line and last prices (never
+       an EV or a decision) and keep the last capture's order, not A-to-Z QBs */
+    console.log('phone, stale');
+    ({ ctx, page, errors } = await open({ width: 390, height: 844 }, '#playerprops', NOW + 2 * 3600e3));
+    await page.waitForSelector('.pp-card', { timeout: 15000 });
+    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+    const sc = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll('.pp-card')).slice(0, 8);
+      const v = EDPropsUI._visible().slice(0, 8);
+      return { txt: cards.map((c) => c.textContent.replace(/\s+/g, ' ')), dec: v.map((r) => r.decision), line: v.map((r) => r.refLine), cap: v.map((r) => r.capValue),
+        note: (document.querySelector('.pp-cnote') || {}).textContent || '', tile: getComputedStyle(document.querySelector('.pp-card .g > span')).backgroundColor };
+    });
+    chk('stale phone cards are not decided', sc.dec.length > 0 && sc.dec.every((d) => d === 'NO_DECISION'), sc.dec);
+    chk('…yet show the last line and each side\'s last price, labelled stale', sc.txt.every((t) => /STALE PRICE/.test(t) && /Line\s*\d/.test(t) && /(Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && /no EV or decision on a stale price/.test(t)), sc.txt.filter((t) => !/(Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
+    chk('…never an EV figure', sc.txt.every((t) => !/EV\s*[+−-]\d/.test(t)), sc.txt.slice(0, 2));
+    chk('…listed in the last capture\'s order, and the list says so', sc.cap.every((x, i) => i === 0 || sc.cap[i - 1] >= x) && sc.cap[0] > 0 && /last capture's order/.test(sc.note), [sc.cap, sc.note]);
+    chk('the card tiles are styled (the tile rule matches the card\'s spans)', sc.tile && sc.tile !== 'rgba(0, 0, 0, 0)', sc.tile);
+    chk('a collapsed games pane on a phone is one button', await page.evaluate(() => !document.getElementById('ppGSearch') && document.querySelectorAll('.pp-side .pp-chip').length === 1));
+    chk('no horizontal scroll on a stale phone board', await noHScroll(page));
+    await shot(page, 'phone_cards_stale');
+    chk('no page errors on the stale phone board', errors.length === 0, errors);
     await ctx.close();
 
     /* ---------------------------------------------------------- deep link to a prop */
