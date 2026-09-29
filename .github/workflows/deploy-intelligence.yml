@@ -21,6 +21,15 @@
 # removes is not the decision; it is the laptop, the forgotten step and the
 # undeclared drift.
 #
+# ONE EXCEPTION, AND IT IS NARROW. The Intelligence doctor calls this workflow
+# (workflow_call) when production is serving an edgedesk_ai or capture build
+# other than main's, and asks for those two functions only. It never applies a
+# migration. For those two functions, merging to main is the decision: the
+# doctor was red for two days on 2026-09-27..29 with nothing wrong but a deploy
+# nobody had run. It calls with `verify`, which makes the closing doctor run
+# below decide the job, so the doctor's run is green only when production
+# answers with the new build.
+#
 # ---------------------------------------------------------------------------
 # SECRETS IT NEEDS. Neither is used anywhere else in this repository, so both
 # have to be added once, by the account owner, in
@@ -81,6 +90,23 @@ on:
         default: false
       apply_cfb_lab:
         description: 'Apply supabase/cfb_lab.sql (the CFB Live Model Lab tables, append-only triggers, market-rule functions and public record views), then supabase/cfb_lab_cron.sql (the hourly pg_cron poke of cfb-lab.yml), then supabase/cfb_weekly.sql (the weekly refresh engine run table, state tables and its pg_cron dispatch), then supabase/cfb_personnel.sql (the roster intelligence tables), then supabase/cfb_decision.sql (the wagering decision tables), then supabase/cfb_production.sql (production operations: manifest, compatibility, flags, audit log, corrections, job locks, heartbeats, incidents, cfb_health) and records the production manifest. Each skips its schedule where pg_cron / pg_net are missing; all idempotent; nothing else needed first.'
+        type: boolean
+        default: false
+  # The Intelligence doctor's auto-deploy (see the header). Functions only: an
+  # input it does not declare reads as empty, so every migration step below
+  # stays skipped.
+  workflow_call:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/edgedesk_ai'
+        type: boolean
+        default: false
+      deploy_capture:
+        description: 'Deploy supabase/functions/capture'
+        type: boolean
+        default: false
+      verify:
+        description: 'Fail the job when the closing doctor run still says ACTION NEEDED'
         type: boolean
         default: false
 
@@ -357,9 +383,18 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # THE ONLY HONEST CONFIRMATION IS THE DEPLOYMENT'S OWN ANSWER.
+      # With `verify` (the doctor's auto-deploy) that answer decides the job,
+      # annotated, so a deploy that did not take — a failed test gate, a
+      # missing token — is a red run that says why. By hand it only reports.
       - name: Ask production what it is now running
         if: always()
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node tools/intelligence/deploy_doctor.js || true
+          VERIFY: ${{ inputs.verify && 'yes' || '' }}
+        run: |
+          if [ -n "$VERIFY" ]; then
+            node tools/intelligence/deploy_doctor.js --annotate
+          else
+            node tools/intelligence/deploy_doctor.js || true
+          fi

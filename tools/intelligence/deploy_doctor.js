@@ -25,6 +25,8 @@
 
    Run: node tools/intelligence/deploy_doctor.js
         SB_URL=... SB_ANON=... node tools/intelligence/deploy_doctor.js --json
+        ... --auto-deploy   also name the stale functions a deploy would fix
+                            (as $GITHUB_OUTPUT step outputs); deploys nothing
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -363,9 +365,53 @@ async function doctor(opts) {
     }
   }
 
-  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
+  const bad = out.checks.filter(needsAction);
   out.verdict = bad.length ? 'ACTION NEEDED' : out.checks.some((c) => c.state === 'UNKNOWN') ? 'INCOMPLETE' : 'DEPLOYED AND CURRENT';
   return out;
+}
+
+function needsAction(c) { return /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state); }
+
+/* WHICH FAILURES A DEPLOY FIXES, AND ONLY THOSE.
+ *
+ * The Intelligence doctor workflow deploys on its own when it finds merged
+ * code that is not running (--auto-deploy). That is safe for exactly two
+ * findings: a function answering with a build other than the one this checkout
+ * carries. Deploying the checkout is the whole fix for those, and the deploy
+ * workflow runs the function's own tests before it ships anything.
+ *
+ * Everything else is left to a person, because a deploy is not its fix:
+ * "the board is being captured" is also STALE but means a scheduler is not
+ * firing, NOT_DEPLOYED is as likely a wrong SB_URL as a missing function, and
+ * a missing table is a migration. Matching on the check's NAME rather than its
+ * state is what keeps a stale board from redeploying capture four times a
+ * day. */
+const AUTO_DEPLOYABLE = {
+  'deployed build matches this checkout': 'edgedesk_ai',
+  'deployed capture matches this checkout': 'capture',
+};
+
+function deployPlan(r) {
+  const bad = (r.checks || []).filter(needsAction);
+  const fixes = (c) => c.state === 'STALE' && AUTO_DEPLOYABLE[c.name];
+  const functions = [...new Set(bad.filter(fixes).map((c) => AUTO_DEPLOYABLE[c.name]))];
+  return {
+    edgedesk_ai: functions.includes('edgedesk_ai'),
+    capture: functions.includes('capture'),
+    functions,
+    /* What still needs a person after the deploy, by check name. */
+    other: bad.filter((c) => !fixes(c)).map((c) => c.name),
+  };
+}
+
+/* The step's exit code. With --auto-deploy, a run whose ONLY findings are
+   stale functions exits 0: the deploy job that follows ships them and asks the
+   deployment again, and that second answer decides the run. Anything a deploy
+   does not fix still fails here, on the step that printed it. */
+function exitCode(r, opts) {
+  if (r.verdict !== 'ACTION NEEDED') return 0;
+  const plan = deployPlan(r);
+  return opts && opts.autoDeploy && plan.functions.length && !plan.other.length ? 0 : 1;
 }
 
 /* GitHub workflow-command lines for one doctor result.
@@ -382,35 +428,52 @@ async function doctor(opts) {
  * readable without opening anything. A check the doctor could not determine is
  * a `::warning::` and never an error: UNKNOWN means nobody asked the question
  * successfully, which is not the same as a failure and must not be dressed up
- * as one. */
-function annotations(r) {
+ * as one. Nor is a stale function this run is about to deploy (autoDeploy):
+ * it is a ::warning:: saying so, and the deploy's own re-check is where an
+ * error belongs if the deploy does not take. */
+function annotations(r, opts) {
   const out = [];
-  const one = (level, c) =>
+  const autoDeploy = !!(opts && opts.autoDeploy);
+  const one = (level, c, fix) =>
     `::${level}::${c.name} — ${String(c.state)}`
     + (c.detail ? ': ' + c.detail : '')
-    + (c.fix ? ' | fix: ' + c.fix : '');
-  const bad = (r.checks || []).filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
+    + (fix ? ' | fix: ' + fix : '');
+  const bad = (r.checks || []).filter(needsAction);
   const unknown = (r.checks || []).filter((c) => c.state === 'UNKNOWN');
-  bad.forEach((c) => out.push(one('error', c)));
-  unknown.forEach((c) => out.push(one('warning', c)));
+  const deploying = (c) => autoDeploy && c.state === 'STALE' && AUTO_DEPLOYABLE[c.name];
+  bad.forEach((c) => out.push(deploying(c)
+    ? one('warning', c, null) + ` | auto-deploying ${AUTO_DEPLOYABLE[c.name]} in this run`
+    : one('error', c, c.fix)));
+  unknown.forEach((c) => out.push(one('warning', c, c.fix)));
   /* The verdict last, so it is the line nearest the summary. A run that found
      nothing wrong still says so — silence reads the same as not having run. */
+  const nDeploying = bad.filter(deploying).length;
   out.push(`::notice::VERDICT: ${r.verdict}`
     + (bad.length ? ` — ${bad.length} check(s) need action` : '')
+    + (nDeploying ? ` (${nDeploying} fixed by this run's auto-deploy)` : '')
     + (unknown.length ? `, ${unknown.length} undetermined` : ''));
   return out;
 }
 
-module.exports = { doctor, expectedBuild, expectedCaptureBuild, annotations };
+module.exports = { doctor, expectedBuild, expectedCaptureBuild, annotations, deployPlan, exitCode };
 
 if (require.main === module) {
   doctor().then((r) => {
+    /* --auto-deploy: say which functions a deploy would fix, as step outputs
+       the doctor workflow's deploy job reads. This file still deploys
+       nothing; it only answers the question. */
+    const autoDeploy = process.argv.includes('--auto-deploy');
+    const plan = deployPlan(r);
+    if (autoDeploy && process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(process.env.GITHUB_OUTPUT,
+        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\n`);
+    }
     if (process.argv.includes('--json')) {
       console.log(JSON.stringify(r, null, 1));
       /* --json USED TO EXIT 0 WHATEVER IT FOUND. A caller that asked for the
          machine-readable form and then trusted the exit code was told every
          run was fine. Same verdict, same code, both forms. */
-      process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+      process.exit(exitCode(r, { autoDeploy }));
     }
     console.log('EDGEDESK DEPLOYMENT DOCTOR — merged is not deployed\n');
     console.log('this checkout would deploy: ' + r.expected_build + '\n');
@@ -420,11 +483,15 @@ if (require.main === module) {
       if (c.fix) console.log('                 fix: ' + c.fix);
     });
     console.log('\n  VERDICT: ' + r.verdict);
+    if (autoDeploy && plan.functions.length) {
+      console.log('  AUTO-DEPLOY: ' + plan.functions.join(', ')
+        + ' — this run deploys ' + (plan.functions.length > 1 ? 'them' : 'it') + ' and asks the deployment again');
+    }
     /* One line per failing check, in the form GitHub renders against the run
        itself, so the runs list says WHAT is wrong without anyone opening a
        step. Off unless asked for, so the other callers of this file
        (deploy-intelligence.yml runs it too) do not sprout annotations. */
-    if (process.argv.includes('--annotate')) annotations(r).forEach((l) => console.log(l));
-    process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+    if (process.argv.includes('--annotate')) annotations(r, { autoDeploy }).forEach((l) => console.log(l));
+    process.exit(exitCode(r, { autoDeploy }));
   }).catch((e) => { console.error('CRASH', (e && e.stack) || e); process.exit(2); });
 }
