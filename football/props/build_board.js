@@ -530,7 +530,10 @@ async function main() {
   /* the per-event summary Research reads instead of the board (build_summary.js) */
   try {
     const SUM = require('./build_summary.js');
-    const sr = SUM.run(league, { board: B, write: true, file: path.join(P.dir, 'summary.json') });
+    /* summarize the board AS WRITTEN: an unchanged board keeps its old
+       generated_at on disk, and the summary must agree with it (and not
+       commit a new file every quiet hour) */
+    const sr = SUM.run(league, { board: readJson(P.board) || B, capture_state: readJson(P.capture_state), write: true, file: path.join(P.dir, 'summary.json') });
     console.log('[props board] summary ' + (sr.wrote || sr.status) + (sr.summary ? ' (' + sr.summary.counts.research_grade + ' research-grade props across ' + sr.summary.counts.events + ' events)' : ''));
   } catch (e) { console.log('[props board] summary not written: ' + e.message); }
   /* the resolved quotes the Supabase sync inserts (a working file, not committed) */
