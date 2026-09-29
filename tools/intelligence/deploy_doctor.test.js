@@ -36,12 +36,18 @@ const CAPTURE_ARMED = ['/functions/v1/capture',
 /* The packet ledger present, as the same kind of default: the cases about it
    list their own entry, which is matched first. */
 const PACKETS_APPLIED = ['/rest/v1/research_packets', { status: 200, body: '[]' }];
+/* props_cron's GET health probe serving this checkout's build, the same kind
+   of default again. */
+const PROPS_BUILD = D.expectedFunctionBuild('props_cron');
+const propsCron = (over) => ['/functions/v1/props_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'props_cron', build: PROPS_BUILD, configured: { has_token: true }, health: [] }, over || {})) }];
+const PROPS_CURRENT = propsCron();
 
 /** Answer every URL from a table of {match: response}. */
 function net(table) {
   globalThis.fetch = async (url) => {
     const u = String(url);
-    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED]) {
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -377,6 +383,39 @@ const OK_BOARD = signals(40, 144);
     p = D.deployPlan(s);
     chk('a current deployment plans nothing', p.functions.length === 0 && p.other.length === 0, p);
     eq('and passes either way', D.exitCode(s, { autoDeploy: true }) + D.exitCode(s), 0);
+
+    /* props_cron, the Player Props scheduler. Its GET is behind JWT
+       verification and carries BUILD; the build it was first deployed with
+       carried none. */
+    const PC = 'deployed props_cron matches this checkout';
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('a props_cron serving this checkout is CURRENT', stateOf(s, PC), 'CURRENT');
+
+    s = await run([okFn, propsCron({ build: 'props_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older props_cron build is STALE', stateOf(s, PC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans a props_cron deploy and nothing else', p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+    chk('and is annotated as being deployed',
+      D.annotations(s, { autoDeploy: true }).some((l) => l.startsWith('::warning::') && /auto-deploying props_cron/.test(l)));
+
+    s = await run([okFn, propsCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: a props_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, PC), 'STALE');
+    chk('and says so rather than naming a build it does not have', /predates its build stamp/.test(detailOf(s, PC)), detailOf(s, PC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on props_cron is NOT_DEPLOYED', stateOf(s, 'props_cron deployed'), 'NOT_DEPLOYED');
+    chk('which is never auto-deployed', !D.deployPlan(s).props_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    net([okFn, ['/functions/v1/props_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, ...OK_ARTIFACTS, OK_BOARD]);
+    s = await D.doctor({ url: 'https://p.test', key: '', site: 'https://s.test' });
+    eq('without a key the platform answers for props_cron, so its build is UNKNOWN', stateOf(s, PC), 'UNKNOWN');
+    chk('and nothing is deployed on a guess', !D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 200, body: '{"ok":true}' }], ...ledger, OK_BOARD]);
+    eq('a 200 that is not props_cron\'s own probe is UNKNOWN, not STALE', stateOf(s, PC), 'UNKNOWN');
   }
 
   /* ---- everything deployed and current -------------------------------- */

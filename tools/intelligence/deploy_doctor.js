@@ -52,9 +52,11 @@ function expectedBuild() {
     at all, and it is worth asking: capture is deployed by hand, and a board that
     stopped filling because the fix for it was merged and never deployed looks
     exactly like a board that stopped filling for any other reason. */
-function expectedCaptureBuild() {
+function expectedCaptureBuild() { return expectedFunctionBuild('capture'); }
+
+function expectedFunctionBuild(name) {
   try {
-    const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'capture', 'index.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', name, 'index.ts'), 'utf8');
     const m = /export const BUILD = "([^"]+)"/.exec(src);
     return m ? m[1] : null;
   } catch (_) { return null; }
@@ -340,6 +342,38 @@ async function doctor(opts) {
     }
   }
 
+  /* ---- props_cron: the Player Props scheduler --------------------------
+     Deployed with JWT verification ON, so without a key the platform answers
+     for it and nothing here is known. With one, its GET is a read-only
+     health probe (it never ticks: a tick is a POST) that carries BUILD. A
+     deployment answering WITHOUT a build predates the stamp, which is itself
+     a checkout that was never deployed. */
+  {
+    const wantProps = expectedFunctionBuild('props_cron');
+    if (wantProps) {
+      const pc = await get(`${url}/functions/v1/props_cron`, key ? { apikey: key, authorization: 'Bearer ' + key } : {}, 8000);
+      let j = null; try { j = JSON.parse(pc.text); } catch (_) { /* below */ }
+      if (pc.status === 0) {
+        add('deployed props_cron matches this checkout', 'UNKNOWN', pc.error || 'no response');
+      } else if (pc.status === 404) {
+        add('props_cron deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/props_cron`,
+          'Run the Deploy player props pipeline workflow (deploy_function), or: supabase functions deploy props_cron');
+      } else if (!pc.ok || !j || j.service !== 'props_cron') {
+        add('deployed props_cron matches this checkout', 'UNKNOWN',
+          `HTTP ${pc.status} from props_cron${pc.ok ? ', but not its health probe' : ''}`,
+          pc.status === 401 && !key ? 'Pass SB_ANON so the probe can be reached.' : null);
+      } else {
+        const serving = String(j.build || '');
+        add('deployed props_cron matches this checkout',
+          serving === wantProps ? 'CURRENT' : 'STALE',
+          serving === wantProps ? `both are ${wantProps}`
+            : serving ? `deployed ${serving}, this checkout would deploy ${wantProps}`
+              : `the deployed props_cron predates its build stamp, this checkout would deploy ${wantProps}`,
+          serving === wantProps ? null : 'supabase functions deploy props_cron');
+      }
+    }
+  }
+
   /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
   for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
     const a = await get(site + p, { accept: 'application/json' });
@@ -375,10 +409,10 @@ function needsAction(c) { return /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|
 /* WHICH FAILURES A DEPLOY FIXES, AND ONLY THOSE.
  *
  * The Intelligence doctor workflow deploys on its own when it finds merged
- * code that is not running (--auto-deploy). That is safe for exactly two
- * findings: a function answering with a build other than the one this checkout
- * carries. Deploying the checkout is the whole fix for those, and the deploy
- * workflow runs the function's own tests before it ships anything.
+ * code that is not running (--auto-deploy). That is safe for exactly one kind
+ * of finding: a function answering with a build other than the one this
+ * checkout carries. Deploying the checkout is the whole fix for those, and the
+ * deploy workflows run the function's own tests before they ship anything.
  *
  * Everything else is left to a person, because a deploy is not its fix:
  * "the board is being captured" is also STALE but means a scheduler is not
@@ -389,6 +423,7 @@ function needsAction(c) { return /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|
 const AUTO_DEPLOYABLE = {
   'deployed build matches this checkout': 'edgedesk_ai',
   'deployed capture matches this checkout': 'capture',
+  'deployed props_cron matches this checkout': 'props_cron',
 };
 
 function deployPlan(r) {
@@ -398,6 +433,7 @@ function deployPlan(r) {
   return {
     edgedesk_ai: functions.includes('edgedesk_ai'),
     capture: functions.includes('capture'),
+    props_cron: functions.includes('props_cron'),
     functions,
     /* What still needs a person after the deploy, by check name. */
     other: bad.filter((c) => !fixes(c)).map((c) => c.name),
@@ -405,8 +441,8 @@ function deployPlan(r) {
 }
 
 /* The step's exit code. With --auto-deploy, a run whose ONLY findings are
-   stale functions exits 0: the deploy job that follows ships them and asks the
-   deployment again, and that second answer decides the run. Anything a deploy
+   stale functions exits 0: the deploy jobs that follow ship them, the verify
+   job asks the deployment again, and that second answer decides the run. Anything a deploy
    does not fix still fails here, on the step that printed it. */
 function exitCode(r, opts) {
   if (r.verdict !== 'ACTION NEEDED') return 0;
@@ -429,7 +465,7 @@ function exitCode(r, opts) {
  * a `::warning::` and never an error: UNKNOWN means nobody asked the question
  * successfully, which is not the same as a failure and must not be dressed up
  * as one. Nor is a stale function this run is about to deploy (autoDeploy):
- * it is a ::warning:: saying so, and the deploy's own re-check is where an
+ * it is a ::warning:: saying so, and the verify job's re-check is where an
  * error belongs if the deploy does not take. */
 function annotations(r, opts) {
   const out = [];
@@ -455,18 +491,18 @@ function annotations(r, opts) {
   return out;
 }
 
-module.exports = { doctor, expectedBuild, expectedCaptureBuild, annotations, deployPlan, exitCode };
+module.exports = { doctor, expectedBuild, expectedCaptureBuild, expectedFunctionBuild, annotations, deployPlan, exitCode };
 
 if (require.main === module) {
   doctor().then((r) => {
     /* --auto-deploy: say which functions a deploy would fix, as step outputs
-       the doctor workflow's deploy job reads. This file still deploys
+       the doctor workflow's deploy jobs read. This file still deploys
        nothing; it only answers the question. */
     const autoDeploy = process.argv.includes('--auto-deploy');
     const plan = deployPlan(r);
     if (autoDeploy && process.env.GITHUB_OUTPUT) {
       fs.appendFileSync(process.env.GITHUB_OUTPUT,
-        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\n`);
+        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\ndeploy_props_cron=${plan.props_cron}\n`);
     }
     if (process.argv.includes('--json')) {
       console.log(JSON.stringify(r, null, 1));

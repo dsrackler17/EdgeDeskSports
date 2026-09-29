@@ -166,6 +166,7 @@ const reqOf = (body, auth) => new Request('https://fn.test/props_cron', { method
   r = await mod.handle(new Request('https://fn.test/props_cron', { method: 'GET' }));
   j = await r.json();
   chk('GET is a health probe that never shows the token', j.ok && j.configured.has_token === true && JSON.stringify(j).indexOf('gh-token') < 0 && j.health[0].league === 'nfl', j);
+  chk('and it says which build is answering, the value the deployment doctor compares', /^props_cron-/.test(j.build) && j.build === mod.BUILD, j.build);
 
   console.log('\n' + (fail ? 'FAILED' : 'ALL GREEN') + ' player props scheduler — ' + pass + ' passed, ' + fail + ' failed');
   failures.forEach((f) => console.log('  ✗ ' + f));
