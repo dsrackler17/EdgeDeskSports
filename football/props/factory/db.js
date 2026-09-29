@@ -219,12 +219,19 @@ function syncListings(c) {
 }
 
 
+/* the contract's first and last tables, as psql prints a boolean ('t' / 'f'):
+   the string 'f' is truthy, so the answer is compared, never just tested */
+const CONTRACT_TABLES = ['props.feature_registry', 'props.fact_prop_quote'];
+function contractApplied(c) {
+  return c.scalar('select ' + CONTRACT_TABLES.map((t) => 'to_regclass(' + pg.lit(t) + ') is not null').join(' and ')) === 't';
+}
+
 async function sync(wh, a) {
   a = a || {};
-  const c = connect();
+  const c = a.client || connect();
   if (!c) return { skipped: 'no SUPABASE_DB_URL / DATABASE_URL / EDGD_PG: nothing written to the database' };
   if (!c.ping()) return { skipped: 'the database did not answer' };
-  if (!c.scalar("select to_regclass('props.fact_prop_quote') is not null")) return { skipped: 'supabase/player_props.sql is not applied' };
+  if (!contractApplied(c)) return { skipped: 'supabase/props_factory.sql is not applied to this database: run the Props factory workflow once with mode apply_sql', not_applied: true };
   const out = {};
   syncCatalog(c);
   out.entities = syncEntities(c, wh);

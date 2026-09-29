@@ -178,7 +178,7 @@ A college game with few markets posted costs far less than its ceiling (the
 provider bills markets returned). To spend less, lengthen the far tiers, for
 example `PROPS_CADENCE=1.5:15,6:30,24:90,*:480`. Every quote is still judged by
 the 30-minute execution window, so a slower clock means more of the week reads
-*between scheduled checks* and needs **Refresh prices**.
+*on schedule* (between checks, prices for reference) and needs **Refresh prices**.
 
 These are ceilings. A book that posts no props for a small college game
 returns fewer markets. The per-run cap (`max_events` 16, nearest kickoff
@@ -265,11 +265,12 @@ the drawer's *Validation stage* section.
 | **Sportsbook prices: capture error** | `ERROR`: the notice shows `error_message` (the HTTP status and the provider's body). | Fix what it names: a 401 is the key, a 422 a market or book key, a 429 the quota. |
 | **PARTIAL** beside the prices | Some requests failed or the run stopped early. | Read `error_message` in `capture_state.json`. |
 | **Sportsbook prices: current** (no notice) | HEALTHY: every game was checked on its clock and prices are executable. | Nothing. |
-| **between scheduled checks**, with one grey note | HEALTHY, but most games are far out and between their 1–6 h checks, so their last prices are reference only. | Nothing, or press **Refresh prices**. |
+| **Sportsbook prices: on schedule** · next check 7:45 PM · last 5.4 h ago, grey dot, no notice | HEALTHY, but most games are far out and between their 1–6 h checks, so their last prices are reference only. The ⓘ beside it explains the price clock. | Nothing, or press **Refresh prices**. |
+| **Injury report week N not out yet** | The latest official report is for an earlier week (Monday–Tuesday, before the first practice report). Confidence still carries the missing report. | Nothing. |
 | **prices partially delayed**, "8/10 books current · 2 providers delayed" | DEGRADED: some books or games failed their last check. Current prices elsewhere are unaffected. | "What happened" in the notice names the games, errors and retry times. |
 | **prices delayed**, "Current sportsbook pricing temporarily unavailable … Automatic recovery is running" | DELAYED: most games are past their check target. | `select * from player_props_pipeline_health;` shows `scheduler_action` (is props_cron dispatching?) and `last_error`. See also the Player props run log. |
 | **price feed unavailable**, "…is unavailable" | OUTAGE: the provider is refusing (401/429, with the time), the capture is failing, or no check has run for 60 min past when one was due. | A 401 is the key; a 429 clears itself at the time shown; "overdue" means the scheduler: check `player_props_dispatch` in `cron.job`, `props_cron`'s `PROPS_GH_TOKEN`, and the workflow's recent runs. |
-| **WAIT FOR PRICE** on a prop, "O 212.5 +105 MGM · last seen 3.3 h ago" | Research stands; no quote is inside the 30-minute execution window (`STALE_QUOTE`), the game was not checked yet (`NO_CURRENT_QUOTE`), or its last check failed (`PROVIDER_FAILURE`). | Nothing: it decides again as soon as a current price arrives. |
+| **WAIT FOR PRICE** on a prop, "O 212.5 +105 MGM" in grey italics ("last seen 3.3 h ago" too, when its age differs from the strip's) | Research stands; no quote is inside the 30-minute execution window (`STALE_QUOTE`), the game was not checked yet (`NO_CURRENT_QUOTE`), or its last check failed (`PROVIDER_FAILURE`). | Nothing: it decides again as soon as a current price arrives. |
 | **MARKET CLOSED** | A book dealt it and pulled it. | Nothing. |
 | **Refresh prices** says "Try again in N min" / "rate-limiting until …" / "Sign in" | The refresh cool-down, a provider 429, or a signed-out reader. | Nothing; the text says what to do. |
 | `PRICE_ANOMALY` (WATCH) | EV ≥ 15% or edge ≥ 12 pp with no second book within 12 cents. | Check the book by hand. This is usually a stale or mistyped line. |

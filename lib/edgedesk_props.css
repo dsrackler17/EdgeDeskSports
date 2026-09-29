@@ -43,6 +43,11 @@
 .pp-strip .pp-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px;background:var(--faint)}
 .pp-dot.live{background:var(--pos)}.pp-dot.stale{background:var(--warn)}.pp-dot.off{background:var(--neg)}
 .pp-dot.degraded{background:#c9b458}.pp-dot.idle{background:var(--dim)}
+/* the price clock, explained on request (between scheduled checks) */
+.pp-sched,.pp-sched>summary{display:inline}
+.pp-sched>summary{list-style:none;cursor:pointer;color:var(--faint);font-size:12px}
+.pp-sched>summary::-webkit-details-marker{display:none}
+.pp-sched>span{display:block;max-width:760px;margin-top:4px;line-height:1.5}
 /* ONE calm notice for the whole page (health: degraded / delayed / outage / info) */
 .pp-banner{border:1px solid var(--pp-line);background:var(--surface);color:var(--text);border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:10px}
 .pp-banner b{font-weight:700}
@@ -176,6 +181,7 @@
 .pp-cfoot{display:block;margin-top:8px;font-size:11px;line-height:1.45;color:var(--faint)}
 .pp-cnote{margin:2px 2px 8px}
 .pp-cnote b{color:var(--warn)}
+.pp-cnote.calm b{color:var(--text)}
 .pp-rank{font-family:var(--pp-mono);font-size:11px;color:var(--faint);width:22px;flex:none;padding-top:2px}
 .pp-more{display:block;margin:8px auto 4px}
 

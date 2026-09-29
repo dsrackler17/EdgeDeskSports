@@ -73,5 +73,21 @@ if (fs.existsSync(PUB)) {
   });
 }
 
-console.log((fail ? 'FAILED' : 'ALL GREEN') + ' props factory export — ' + pass + ' passed, ' + fail + ' failed');
-process.exit(fail ? 1 : 0);
+/* the database mirror: psql answers a boolean as the text 't' or 'f', and 'f'
+   is truthy — a database without supabase/props_factory.sql is skipped (said,
+   not failed), never written into table by missing table */
+(async function () {
+  const DB = require('./db.js');
+  const seen = [];
+  const fake = { ping: () => true, scalar: (q) => { seen.push(q); return 'f'; }, script: () => { throw new Error('wrote to a database without the contract'); } };
+  let r;
+  try { r = await DB.sync({ leagues: {} }, { client: fake }); } catch (e) { r = { error: e.message }; }
+  chk('a database without the contract is skipped, not failed, and the skip names the fix', () => {
+    assert.ok(r && r.skipped && r.not_applied, JSON.stringify(r));
+    assert.ok(/props_factory\.sql/.test(r.skipped) && /apply_sql/.test(r.skipped), r.skipped);
+  });
+  chk('…after asking for the first and the last contract table', () => { assert.ok(/props\.feature_registry/.test(seen[0]) && /props\.fact_prop_quote/.test(seen[0]), seen[0]); });
+
+  console.log((fail ? 'FAILED' : 'ALL GREEN') + ' props factory export — ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail ? 1 : 0);
+}());

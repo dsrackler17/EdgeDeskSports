@@ -18,7 +18,9 @@
        "price any line" prices a typed line
      - My Props (a star), All Props (projection-only rows say NO MARKET)
      - the performance view; the college board loads beside it
-     - two hours later every price reads STALE and nothing is decided
+     - two hours later (between scheduled checks) the strip says "on schedule"
+       and when the next check is, with no banner; nothing is decided; a
+       new week's injury report not out yet is said plainly, not flagged STALE
      - a phone: cards, collapsed filters, a full-screen drawer; two hours
        on, stale cards keep their line and last prices (no EV, no decision)
        in the last capture's order
@@ -247,16 +249,24 @@ async function buildFixture() {
     ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2 * 3600e3));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
     /* two hours on, a game 33 h out is on its 2-hour cadence: the pipeline is
-       on schedule, but no price is executable — said once, calmly, never as
-       a STALE pill on every row */
+       on schedule, but no price is executable — said once, calmly, in the
+       strip (never a banner over every visit, never "0 current prices", never
+       a STALE pill on every row); the ⓘ explains the price clock */
     const st2 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner') || {}).textContent || '', pills: document.querySelectorAll('.pp-rows .pp-stale').length,
+      sched: (document.querySelector('.pp-strip .pp-sched') || {}).textContent || '',
+      /* what is on screen: the ⓘ's explanation is collapsed */
+      shown: (() => { const c = document.querySelector('.pp-strip').cloneNode(true); c.querySelectorAll('.pp-sched > span').forEach((x) => x.remove()); return c.textContent; })(),
       rows: EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p), health: EDPropsUI._pageHealth(EDPropsUI.state.boards.nfl).state }));
-    chk('two hours on (between the far game\'s checks): one calm notice, and the strip says no price is current', /between scheduled checks/.test(st2.strip) && / 0 current prices/.test(st2.strip) && /reference only/.test(st2.banner) && /Refresh prices/.test(st2.banner) && st2.health === 'HEALTHY', st2.strip + ' || ' + st2.banner);
+    chk('two hours on (between the far game\'s checks): no banner, and the strip says "on schedule" and how old the last prices are — never "0 current prices"', /Sportsbook prices: on schedule/.test(st2.shown) && /last 2\.\d h ago/.test(st2.shown) && !/current prices/.test(st2.shown) && !st2.banner && st2.health === 'HEALTHY', st2.shown + ' || ' + st2.banner);
+    const fold = await page.evaluate(() => { const d = document.querySelector('.pp-strip .pp-sched'); return d ? { open: d.open, h: d.querySelector('span').getBoundingClientRect().height, vis: d.querySelector('span').checkVisibility ? d.querySelector('span').checkVisibility() : null } : null; });
+    chk('…its explanation is folded away until asked for', !!fold && !fold.open && (fold.h === 0 || fold.vis === false), fold);
+    chk('…and its ⓘ explains the price clock: reference only, nothing decided, Refresh prices', /every 1 h inside 24 h, 2 h inside 48 h, 6 h beyond/.test(st2.sched) && /reference only/.test(st2.sched) && /nothing is decided on a price older than 30 minutes/.test(st2.sched) && /Refresh prices/.test(st2.sched), st2.sched);
     chk('and no stale price is decided on', st2.rows.length > 0 && st2.rows.every((r) => r.decision === 'NO_DECISION' && r.wait && !r.cand && !r.units));
     chk('no STALE pill on any row', st2.pills === 0, st2.pills);
     await shot(page, 'desktop_between_checks');
     const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row')).filter((row) => /WAIT FOR PRICE/.test(row.textContent)).slice(0, 5).map((row) => { const c = row.children; return { best: c[6].textContent, proj: c[7].textContent, fair: c[8].textContent, ev: c[11].textContent, stake: c[15].textContent, over: c[4].className, dec: c[14].textContent }; }));
-    chk('a waiting row: decision WAIT FOR PRICE, its last price "O 212.5 +105 MGM" and "last seen 2.1 h ago"', cells.length > 0 && cells.every((c) => /WAIT FOR PRICE/.test(c.dec) && /^(O|U|Yes|No)[^+−-]*[+−-]\d+ \w+last seen 2\.\d h ago/.test(c.best)), cells.slice(0, 2));
+    chk('a waiting row: decision WAIT FOR PRICE and its last price "O 212.5 +105 MGM" — its age is the strip\'s, not repeated on every row', cells.length > 0 && cells.every((c) => /WAIT FOR PRICE/.test(c.dec) && /^(O|U|Yes|No)[^+−-]*[+−-]\d+ \w+$/.test(c.best)), cells.slice(0, 2));
+    chk('…and the reference price still carries its age where it is read closely (the tooltip)', await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row .best b.pp-last')).slice(0, 5).every((x) => /Last seen .* 2\.\d h ago — reference only/.test(x.title))));
     chk('…its research stays (projection and fair line), its price-dependent numbers wait (EV, stake)', cells.every((c) => /\d/.test(c.proj) && /\d/.test(c.fair) && c.ev === '—' && c.stake === '—'), cells.slice(0, 2));
     chk('…and its last Over / Under prices are styled as reference, never as live numbers', cells.every((c) => /pp-ref/.test(c.over)), cells.map((c) => c.over).slice(0, 2));
     await page.click('.pp-row');
@@ -265,6 +275,23 @@ async function buildFixture() {
     await shot(page, 'desktop_wait_drawer');
     chk('the drawer keeps the model opinion beside the dead market: projection, last line, last quote, PRICE EXPIRED/STALE, WAIT FOR CURRENT MARKET', /Projection/.test(dw) && /Last observed line/.test(dw) && /Last quote\s*2\.\d h ago/.test(dw) && /PRICE (EXPIRED|STALE)/.test(dw) && /WAIT FOR CURRENT MARKET/.test(dw) && /\(reference\)/.test(dw), dw.slice(0, 600));
     await ctx.close();
+    /* the same two hours, with the scheduler's next check ahead and the new
+       week's injury report not published yet (Monday, Tuesday) */
+    {
+      const bp = '/football/props/nfl/board.json', keep = served[bp];
+      const wk = Math.min.apply(null, FX.board.games.map((g) => g.week).filter(Number.isFinite));
+      served[bp] = JSON.stringify(Object.assign({}, FX.board, { capture: Object.assign({}, FX.board.capture, { next_due_at: new Date(NOW + 2.5 * 3600e3).toISOString() }),
+        sources: Object.assign({}, FX.board.sources, { injuries: Object.assign({}, FX.board.sources.injuries, { latest_week: wk - 1 }) }) }));
+      const o = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2 * 3600e3);
+      await o.page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+      const t = await o.page.evaluate(() => document.querySelector('.pp-strip').textContent);
+      await shot(o.page, 'desktop_between_checks_next');
+      chk('with the next check ahead, the strip says when it is', /on schedule · next check \d{1,2}:\d{2}/.test(t), t);
+      chk('a new week\'s injury report not out yet is said plainly, without a STALE flag', new RegExp('Injury report week ' + wk + ' not out yet').test(t) && !/STALE/.test(t), t);
+      chk('no page errors with the next check and the pending report', o.errors.length === 0, o.errors);
+      await o.ctx.close();
+      served[bp] = keep;
+    }
     /* the far game is now past its 2-hour target: DELAYED, with recovery */
     ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2.75 * 3600e3));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
@@ -380,9 +407,10 @@ async function buildFixture() {
         note: (document.querySelector('.pp-cnote') || {}).textContent || '', tile: getComputedStyle(document.querySelector('.pp-card .g > span')).backgroundColor };
     });
     chk('stale phone cards are not decided', sc.dec.length > 0 && sc.dec.every((d) => d === 'NO_DECISION'), sc.dec);
-    chk('…yet show the last line and each side\'s last price, labelled as the LAST ones, waiting for a price', sc.txt.every((t) => /WAIT FOR PRICE/.test(t) && /Last line\s*\d/.test(t) && /Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && /no EV or decision until a current price/.test(t) && !/STALE PRICE/.test(t)), sc.txt.filter((t) => !/Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
+    chk('…yet show the last line and each side\'s last price, labelled as the LAST ones, waiting for a price', sc.txt.every((t) => /WAIT FOR PRICE/.test(t) && /Last line\s*\d/.test(t) && /Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && !/STALE PRICE/.test(t)), sc.txt.filter((t) => !/Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
+    chk('…and the list says once, calmly, that no EV or decision comes until a current price (not a footer on every card)', /Between price checks/.test(sc.note) && /No EV or decision until a current price/.test(sc.note) && sc.txt.every((t) => !/no EV or decision until a current price/.test(t)), [sc.note, sc.txt[0]]);
     chk('…never an EV figure', sc.txt.every((t) => !/EV\s*[+−-]\d/.test(t)), sc.txt.slice(0, 2));
-    chk('…listed in the last capture\'s order, and the list says so', sc.cap.every((x, i) => i === 0 || sc.cap[i - 1] >= x) && sc.cap[0] > 0 && /last capture's order/.test(sc.note), [sc.cap, sc.note]);
+    chk('…listed in the last capture\'s order, and the list says so', sc.cap.every((x, i) => i === 0 || sc.cap[i - 1] >= x) && sc.cap[0] > 0 && /ranked and priced as of the last check \(2\.\d h ago/.test(sc.note), [sc.cap, sc.note]);
     chk('the card tiles are styled (the tile rule matches the card\'s spans)', sc.tile && sc.tile !== 'rgba(0, 0, 0, 0)', sc.tile);
     chk('a collapsed games pane on a phone is one button', await page.evaluate(() => !document.getElementById('ppGSearch') && document.querySelectorAll('.pp-side .pp-chip').length === 1));
     chk('no horizontal scroll on a stale phone board', await noHScroll(page));
