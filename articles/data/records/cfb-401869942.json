@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:00:00.000Z",
   "game_when_label": "2026-10-03 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-28T21:12:19.786Z",
-  "generated_at": "2026-09-28T21:12:19.786Z",
+  "updated_at": "2026-09-29T05:35:56.211Z",
+  "generated_at": "2026-09-29T05:35:56.211Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and FanDuel on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -261,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T20:00:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
       "home": {
         "team": "Coastal Carolina",
@@ -345,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-24T23:30:00.000Z",
-        "retrieved_at": "2026-09-28T20:38:21.623Z"
+        "retrieved_at": "2026-09-29T01:44:06.008Z"
       },
-      "generated_at": "2026-09-28T20:39:04.783Z",
+      "generated_at": "2026-09-29T01:44:48.499Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1446,6 +1446,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 10h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Georgia Southern — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1580,7 +1586,7 @@
       "total_market": "54.5",
       "book": "captured · Hard Rock Bet",
       "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "1 hour old",
+      "capture_age": "10 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1630,11 +1636,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
+        "pct": 77,
         "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
+        "text": "77 · ADEQUATE",
         "sub": "main deduction: the projection flips favorite in 23% of sensitivity runs",
-        "score": 79,
+        "score": 77,
         "grade": "ADEQUATE",
         "grade_label": "ADEQUATE",
         "gate_label": null,
@@ -1660,7 +1666,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.3,
+            "score": 13,
             "max": 15
           },
           {
@@ -1690,9 +1696,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1722,28 +1728,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Coastal Carolina",
-          "side": "home",
-          "line": 1.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "Coastal Carolina +1.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "Georgia Southern",
-          "side": "away",
-          "line": -1.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-09-28T20:00:03.386+00:00",
-          "text": "Georgia Southern -1.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1955,11 +1941,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-28. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-28T21:12:19.786Z"
+    "at": "2026-09-29T05:35:56.211Z"
   }
 }
