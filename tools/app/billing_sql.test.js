@@ -45,10 +45,16 @@ const WEBHOOK = path.join(ROOT, 'supabase', 'stripe_webhook.sql');
 /* Runs third, and says so itself: its two guards refuse to install over a
    project that has not had the other two. */
 const REFERRAL = path.join(ROOT, 'supabase', 'referral_codes.sql');
+/* Fourth: what a reader's own subscription costs, read from the ledger. The
+   standard price is written in lib/edgedesk_pricing.js; a subscription begun
+   on an earlier price keeps it until Stripe moves it, and this is how the
+   Settings card knows. Display only — never an entitlement. */
+const PRICE = path.join(ROOT, 'supabase', 'subscription_price.sql');
 const COMMUNITY = path.join(ROOT, 'supabase', 'community_posts.sql');
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const SUITE = path.join(__dirname, 'sql', 'billing.test.sql');
 const REF_SUITE = path.join(__dirname, 'sql', 'referral_codes.test.sql');
+const PRICE_SUITE = path.join(__dirname, 'sql', 'subscription_price.test.sql');
 const DB = 'edgedesk_billing_sqltest';
 
 const have = (b) => cp.spawnSync('sh', ['-c', 'command -v ' + b], { encoding: 'utf8' }).status === 0;
@@ -85,7 +91,7 @@ let code = 0;
 try {
   psql(conn, ['-d', DB, '-q', '-c',
     "create schema if not exists auth; create extension if not exists pgcrypto;"]);
-  for (const f of [SHIM, SCHEMA, WEBHOOK, REFERRAL]) {
+  for (const f of [SHIM, SCHEMA, WEBHOOK, REFERRAL, PRICE]) {
     const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', f]);
     if (r.status !== 0) {
       console.log('FAIL | billing SQL | ' + path.basename(f) + ' did not apply');
@@ -122,6 +128,18 @@ try {
     console.log('FAIL | billing SQL | referral_codes.sql did not report all ok');
     refBad.forEach((l) => console.log('     | ' + l));
     console.error((refRep.stderr || '').trim().split('\n').slice(0, 8).join('\n'));
+    throw new Error('report');
+  }
+
+  /* The subscription-price file's own report, and its own second run. */
+  const priceRep = psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', PRICE]);
+  const priceBad = (priceRep.stdout || '').split('\n')
+    .filter((l) => /^\d+\|/.test(l) && !/\|ok/.test(l));
+  const priceRows = (priceRep.stdout || '').split('\n').filter((l) => /^\d+\|/.test(l));
+  if (priceRep.status !== 0 || priceBad.length || priceRows.length !== 4) {
+    console.log('FAIL | billing SQL | subscription_price.sql did not report 4 rows, all ok');
+    priceBad.forEach((l) => console.log('     | ' + l));
+    console.error((priceRep.stderr || '').trim().split('\n').slice(0, 8).join('\n'));
     throw new Error('report');
   }
 
@@ -174,6 +192,31 @@ try {
     throw new Error('short');
   }
   passed += rpassed;
+
+  /* The subscription price, attacked — after the referral suite, so that
+     suite's counts are its own. */
+  const pr = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-f', PRICE_SUITE]);
+  const pout = (pr.stdout || '') + (pr.stderr || '');
+  const ppassed = (pout.match(/NOTICE:\s+ok\s/g) || []).length;
+  if (pr.status !== 0 || /FAIL:/.test(pout)) {
+    console.log('FAIL | billing SQL | subscription price | ' + ppassed + ' passed before the failure');
+    console.error(pout.split('\n').filter((l) => /FAIL|ERROR/.test(l)).slice(0, 8).join('\n'));
+    throw new Error('suite');
+  }
+  if (ppassed < 11) {
+    console.log('FAIL | billing SQL | subscription price | only ' + ppassed +
+      ' assertions ran — the suite exited early');
+    throw new Error('short');
+  }
+  passed += ppassed;
+  /* and the report now has real subscriptions to count, by what they pay */
+  const moved = psql(conn, ['-d', DB, '-tA', '-F', '|', '-f', PRICE]);
+  const row4 = (moved.stdout || '').split('\n').filter((l) => /^4\|/.test(l))[0] || '';
+  if (!/\$49\.99 USD\/month/.test(row4)) {
+    console.log('FAIL | billing SQL | the price report does not count the $49.99 subscriptions: ' + row4);
+    throw new Error('suite');
+  }
+  passed += 1;
 
   /* With rows on the table and the shipped predicate installed, the migration's
      own row 11 is now a real comparison rather than "nothing to compare". */

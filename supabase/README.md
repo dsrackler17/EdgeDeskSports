@@ -882,6 +882,31 @@ The Stripe half — creating the coupon, the promotion code and the dry run in
 test mode before any of it touches live money — is
 `functions/stripe_webhook/README.md` §8–10.
 
+### `subscription_price.sql` — what a reader's own subscription costs
+The standard price is written once, in `lib/edgedesk_pricing.js`, and it is
+what a **new** subscriber is sold. A subscription begun on an earlier price
+keeps that price until it is moved in Stripe, so Settings › Subscription cannot
+tell such a reader what they will be charged from the standard price alone.
+
+`my_subscription_price()` answers it from Stripe's own description: the latest
+`customer.subscription.created` / `.updated` delivery in `stripe_events` for the
+caller's **own** subscription (found by `auth.uid()`), keyed on the
+subscription id so an event the webhook could not yet name still counts.
+Security definer because the ledger itself stays closed to every client role;
+it returns the price and nothing else. One item or nothing — a multi-item
+subscription shows the standard price rather than one item's amount. Nothing new
+is stored and the webhook does not change: a subscription moved to a new price
+in Stripe corrects itself on the update that move sends.
+
+**Display only, never an entitlement.** Access is status and period end
+(`pgEntitled()`, `community_is_entitled()`); a subscriber on any price is a
+subscriber. Without this file app.html shows the standard price exactly as
+before. Row 4 of its report counts live subscriptions by the price Stripe last
+reported — after a price change, that is where to see who is still on the old
+figure. Run it **after** `billing.sql` and `stripe_webhook.sql`; rows 1–4
+should say `ok`. Applied twice and attacked on a real PostgreSQL by
+`tools/app/billing_sql.test.js` with `tools/app/sql/subscription_price.test.sql`.
+
 ### `comp_trial.sql` — a free trial for one account, that closes itself
 Hands a named account the terminal without sending it through Stripe, and has
 that access **end on a date** rather than on somebody remembering to close it.
@@ -894,7 +919,7 @@ The whole mechanism is one row in `subscriptions`:
 | `status` | `trialing` | `pgEntitled()` admits it, but only while the period end is in the future |
 | `price_id` | `comp_trial` | granted here, not bought — and deliberately **not** on `COMP_PRICE_IDS` |
 | `current_period_end` | now + N days | **the lock**, and the only thing enforcing it |
-| `cancel_at_period_end` | `true` | nothing renews this, and it is what makes Settings say "Access ends" instead of promising a $79.99 charge to someone with no card |
+| `cancel_at_period_end` | `true` | nothing renews this, and it is what makes Settings say "Access ends" instead of promising a monthly charge to someone with no card |
 | Stripe ids, `last_event_*` | untouched | nothing was bought; leaving the ordering guard null lets a real subscription later write straight over the row |
 
 **Not `owner_comp`.** That is the other way to grant access by hand and it is

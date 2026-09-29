@@ -88,9 +88,10 @@ Stripe then shows a **signing secret** (`whsec_…`). Put it in
 This is the step most easily missed, and without it a paying customer lands on
 a Stripe receipt page and never returns to the product.
 
-For **both** payment links — the landing page's and the terminal paywall's —
-Stripe Dashboard → Payment links → the link → **After payment** →
-*Redirect customers to a URL*:
+For **both** payment links — the landing page's and the terminal paywall's,
+`CHECKOUT_LINK` and `RESUBSCRIBE_LINK` in `lib/edgedesk_pricing.js`, the only
+place either is written — Stripe Dashboard → Payment links → the link →
+**After payment** → *Redirect customers to a URL*:
 
 ```
 https://edgedesksports.com/?checkout=success
@@ -162,14 +163,14 @@ price behind it — `TRIAL_DAYS` in `index.html` only *displays* it. A Stripe
 coupon takes a percentage or an amount off an invoice; **it cannot extend a
 trial.** Trial length is fixed when the subscription is created, which for a
 payment link means a *second* link on a *second* price: two URLs to keep in
-step, two prices to keep at $79.99, and an automatic-renewal consent record
+step, two prices to keep at the same figure, and an automatic-renewal consent record
 whose `trial_days` is wrong for whichever link the customer did not take.
 
 A percent-off coupon needs none of that. One link, one price, one consent text,
 and the code is typed on Stripe's own checkout page.
 
 **The one compliance note.** `billing_consents` stores `price_display =
-"$79.99"` — the figure shown before the customer left for Stripe. Somebody who
+"$49.99"` — the figure shown before the customer left for Stripe. Somebody who
 then redeems a code is charged *less* than that, which is not the ARL problem
 (the problem is being charged more, or on terms never shown), so a
 `duration: once` coupon is fine exactly as it is. **If the coupon is ever made
@@ -338,6 +339,56 @@ the ledger's total. That last one is asserted on a real PostgreSQL by
 `tools/app/sql/referral_codes.test.sql`.
 
 ---
+
+## 11 · Changing the price
+
+The price is not in this function, and it never grants access: every
+entitlement check reads `status` and `current_period_end`, and `price_id` is
+only ever compared with the comp sentinels (`owner_comp`, `comp_trial`). So a
+new price needs **no change here** — a subscriber on the old price and one on
+the new are both just `active` or `trialing`, and nobody loses access because
+their price differs.
+
+What does change, in order:
+
+1. **Stripe: a new recurring price** on the EdgeDesk product — USD, monthly,
+   the amount in `PRICE_CENTS` in `lib/edgedesk_pricing.js`. Name the product
+   *EdgeDesk Full Access*; that is what Stripe Checkout shows.
+2. **Stripe: new payment links on it.** A payment link's price cannot be
+   edited, so the old links cannot be pointed at the new price. Make two:
+   * the **trial** link — *Include a free trial*, 7 days (`TRIAL_DAYS`);
+   * the **resubscribe** link — no trial.
+
+   On both: *Allow promotion codes* ON (§8), *After payment* → redirect to
+   `https://edgedesksports.com/?checkout=success` (§5), and — if Stripe Tax is
+   on — the same tax behaviour as before.
+3. **Prove it before the site says it:**
+   `STRIPE_SECRET_KEY=rk_live_… node tools/billing/verify_stripe_offer.js
+   https://buy.stripe.com/<trial> https://buy.stripe.com/<resubscribe>`
+   (a restricted key with read access to Payment Links, Prices and Products is
+   enough). It checks each link is live and active, sells exactly one active
+   recurring monthly USD price of `PRICE_CENTS`, and carries the trial the
+   page promises — and that the retired links are switched off.
+4. **Paste both URLs** into `CHECKOUT_LINK` / `RESUBSCRIBE_LINK` in
+   `lib/edgedesk_pricing.js`, run the verifier once more with no arguments,
+   and deploy. Until a link is pasted there, the page refuses to send anybody
+   to checkout rather than sending them to a link at a different price.
+5. **Deactivate the old links** in Stripe. They are refused by the site by
+   name already (`RETIRED_LINKS`), but a bookmarked link would still sell the
+   old price.
+6. Existing subscriptions keep the price they were sold at until **you** move
+   them in Stripe (Subscriptions → the subscription → *Update subscription* →
+   the new price). Nothing in this repository moves anybody. Run
+   `supabase/subscription_price.sql` so Settings shows each subscriber the
+   price Stripe actually has them on; its report row 4 shows who is still on
+   the old figure.
+
+**Emails.** Nothing in this repository sends a trial reminder, a receipt or a
+failed-payment email, and no template here states a price. If those go out,
+Stripe sends them from its own settings (Settings → Billing → *Subscriptions
+and emails* / *Customer emails*), and Stripe's templates read the amount off
+the subscription — so check there that the trial reminder is switched on, since
+the landing page promises one before day 8.
 
 ## What it guarantees
 

@@ -72,7 +72,7 @@ chk('the secondary CTA is "See a game" and goes to the game', /href="#game"[^>]*
 /* the offer sits directly under the button — nobody hunts for what the trial becomes */
 const OFFER = (HERO.match(/<p class="microcta">([\s\S]*?)<\/p>/) || [])[1] || '';
 chk('the hero offer line is found', OFFER.length > 40);
-['Full access for 7 days', '$79.99', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
+['Full access for 7 days', '$49.99', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
 chk('the hero offer is the first .microcta, the one bootAuthState rewrites for an unpaid account', () => {
   const first = IDX.search(/class="microcta"/), a = IDX.indexOf('<header class="hero"'), b = IDX.indexOf('</header>');
   return first > a && first < b;
@@ -261,19 +261,27 @@ chk('and every one of them says "Start 7 days free"', TRIAL.every(t => t === 'St
 /* ======================================================================== */
 const PRICE = section('pricing');
 chk('one plan card', (IDX.match(/class="pcard\b/g) || []).length === 1);
-has(PRICE, '$79.99', 'the price is stated');
+has(PRICE, '$49.99', 'the price is stated');
+lacks(PRICE, '$79.99', 'and the retired price is gone');
+has(PRICE, 'EdgeDesk Full Access', 'the plan is named');
+has(PRICE, 'Football research terminal', 'and says what it is');
 has(PRICE, '7 days free', 'the trial is stated');
 has(PRICE, 'id="subscribe"', 'the #subscribe anchor app.html sends people to is here');
-lacks(PRICE, 'Only $79.99', 'and never apologised for');
+lacks(PRICE, 'Only $49.99', 'and never apologised for');
+[/founding/i, /introductory/i, /\bsale\b/i, /\bdiscount/i, /best value/i, /\bwas \$/i, /normally \$/i]
+  .forEach(re => chk('the price is simply the price: ' + re, !re.test(PRICE), (re.exec(PRICE) || [])[0]));
 lacks(TEXT, 'worth every penny', 'no worth-every-penny copy');
 chk('no crossed-out price', !/<(?:s|del|strike)>\s*\$/.test(IDX) && !/line-through[^}]*\$/.test(IDX));
 [/\bcountdown\b/i, /\blimited time\b/i, /\bhurry\b/i, /\bonly \d+ (?:spots|seats|left)\b/i, /\bexpires? (?:soon|tonight|today)\b/i]
   .forEach(re => { const o = claimsIt(re); chk('no scarcity device: ' + re, o.length === 0, o.join(' || ')); });
-['NFL + FBS', 'EdgeDesk EV', 'Simulations', 'EdgeDesk power ratings', 'public record', 'research briefs', 'Matchup, roster and player research']
+['NFL + FBS', 'Game markets', 'Player props', 'Fair spreads and projections', 'EdgeDesk EV', 'Live market comparison',
+ 'Matchup research', 'Player and roster research', 'Simulation and uncertainty', 'Power ratings', 'Public record', 'Research briefs']
   .forEach(f => has(PRICE, f, 'the plan includes ' + f));
 has(PRICE, 'Nothing charged until day 8', 'the trial mechanics are stated');
-has(PRICE, 'Cancel anytime before renewal', 'and so is cancelling');
-has(PRICE, 'We email you', 'and the reminder before conversion');
+has(PRICE, 'Cancel anytime', 'and so is cancelling');
+has(PRICE, 'Reminder email', 'and the reminder before conversion');
+has(PRICE, 'Unless cancelled before renewal', 'and what day 8 means');
+chk('the trial reads Today, Before day 8, Day 8', /<span class="when">Today<\/span>[\s\S]*<span class="when">Before day 8<\/span>[\s\S]*<span class="when">Day 8<\/span><span><b data-ed-price="monthly">\$49\.99\/month<\/b>/.test(PRICE));
 has(PRICE, 'id="edOffer" hidden', 'a creator discount is only ever Stripe\'s own record');
 
 /* ======================================================================== */
@@ -357,8 +365,11 @@ has(IDX, '<link rel="canonical" href="https://edgedesksports.com/">', 'the canon
 chk('the structured data parses and offers the price consent records', () => {
   const j = JSON.parse((IDX.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) || [])[1]);
   const app = j['@graph'].find(n => n['@type'] === 'SoftwareApplication');
-  const price = (IDX.match(/var PRICE_DISPLAY="\$([\d.]+)"/) || [])[1];
-  return app && app.offers && app.offers.price === price && app.offers.priceCurrency === 'USD';
+  /* consent records PRICE_DISPLAY, which index.html reads from the pricing file */
+  const X = require(path.join(ROOT, 'lib', 'edgedesk_pricing.js'));
+  const price = X.PRICE_DISPLAY.replace(/^\$/, '');
+  return /var PRICE_DISPLAY=EDP\?EDP\.PRICE_DISPLAY:'';/.test(IDX) && price === '49.99'
+    && app && app.offers && app.offers.price === price && app.offers.priceCurrency === 'USD';
 });
 
 console.log('');
