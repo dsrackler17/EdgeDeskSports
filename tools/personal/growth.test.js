@@ -159,7 +159,8 @@ chk('no persona keeps today\'s order: Top 5, watchlist, then changes and decisio
 chk('a creator discount is worded from Stripe\'s record', X.discountLine({ percent_off: 20, duration: 'repeating', duration_in_months: 3 }, 'BIGGSFALL') === 'Code BIGGSFALL: 20% off your first 3 months after the free trial, applied by Stripe at checkout.');
 chk('an amount off, once', X.discountLine({ amount_off_cents: 1000, currency: 'USD', duration: 'once' }) === '$10.00 off your first payment after the free trial, applied by Stripe at checkout.');
 chk('no Stripe record, no discount line', X.discountLine(null, 'X') === null && X.discountLine({ percent_off: 20 }) === null);
-chk('the trial line itself never changes', X.CTA_LINE === '7-day free trial. $79.99/month after trial. Cancel anytime.');
+chk('the trial line itself never changes', X.CTA_LINE === '7-day free trial. $49.99/month after trial. Cancel anytime.');
+chk('a discount never rewrites the standard price', X.PRICE_DISPLAY === '$49.99' && /\$49\.99\/month after trial/.test(X.CTA_LINE));
 
 /* ══ 5. THE AI DESK ═══════════════════════════════════════════════════════ */
 chk('"how do my numbers compare with EdgeDesk" is the reader\'s own numbers', MINE.classify('How do my numbers compare with EdgeDesk?') === 'MY_NUMBERS' && P.PERSONAL_Q.test('How do my numbers compare with EdgeDesk?'));

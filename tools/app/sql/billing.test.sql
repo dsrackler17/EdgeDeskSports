@@ -39,7 +39,7 @@ begin
     (user_id,user_email,price_display,billing_period,trial_days,offer_text,consent_version,
      user_agent,ref,ref_last,utm_source,utm_medium,utm_campaign,utm_content,landing_page,
      referrer_host,first_seen_at,organic_first_seen_at)
-    values (ME,'me@x.co','$79.99','month',7,'the exact terms shown','arl-2026-08-v6-trial7',
+    values (ME,'me@x.co','$49.99','month',7,'the exact terms shown','arl-2026-09-v7-trial7',
      'Mozilla/5.0','partnera',null,'x','y','z','w','/','google.com',now(),now());
   reset role;
   select count(*) into n from public.billing_consents where user_id = ME;

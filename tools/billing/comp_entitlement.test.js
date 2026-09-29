@@ -50,6 +50,16 @@ const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const HOOK = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'stripe_webhook', 'index.ts'), 'utf8');
 const BILLING = fs.readFileSync(path.join(ROOT, 'supabase', 'billing.sql'), 'utf8');
+/* The offer the pages read. The sandbox gets the real file, not a copy. */
+const PRICING = require(path.join(ROOT, 'lib', 'edgedesk_pricing.js'));
+/* A context built while the pricing file carries the given links. The pages
+   read their links once, when their script runs, so the file is set for the
+   build and put back straight after — it is never left changed. */
+function withLinks(links, build) {
+  const was = { CHECKOUT_LINK: PRICING.CHECKOUT_LINK, RESUBSCRIBE_LINK: PRICING.RESUBSCRIBE_LINK };
+  Object.assign(PRICING, links);
+  try { return build(); } finally { Object.assign(PRICING, was); }
+}
 
 /* A named region of a source file, start marker to end marker. A suite that
    silently slices nothing would pass having run no code, so every slice is
@@ -138,7 +148,9 @@ function appCtx(opts) {
     setCard: (t, s, b) => '[card:' + t + ']' + (s || '') + (b || ''),
     setRow: (k, v, n) => '<row>' + k + '=' + v + (n ? '(' + n + ')' : '') + '</row>',
     stripePortalHref: () => 'https://billing.stripe.com/p/login/x',
-    SUB_PRICE_DISPLAY: '$79.99',
+    EDPricing: PRICING,
+    SUB_PRICE_DISPLAY: PRICING.PRICE_DISPLAY,
+    SUB_PLAN_NAME: PRICING.PLAN_NAME,
     SET_ACTIVE: 'other',
     renderSettings() {},
     loadEdges() {},
@@ -246,11 +258,47 @@ function appCtx(opts) {
       /href="\.\/index\.html#subscribe"/.test(c.GATE.card.innerHTML) && /7-day free trial/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 200));
   }
   {
-    const c = appCtx({ row: Object.assign({}, COMP, { status: 'canceled', price_id: 'price_live' }) });
+    /* with the resubscribe link configured in lib/edgedesk_pricing.js */
+    const c = withLinks({ RESUBSCRIBE_LINK: 'https://buy.stripe.com/resub4999test' },
+      () => appCtx({ row: Object.assign({}, COMP, { status: 'canceled', price_id: 'price_live' }) }));
     await c.pgCheck();
     c.pgShow(c.pgLockedHTML(''));
     chk('and a lapsed account still gets the Stripe link, with no trial promised',
-      c.GATE.on === true && /buy\.stripe\.com/.test(c.GATE.card.innerHTML) && !/free trial/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 300));
+      c.GATE.on === true && /href="https:\/\/buy\.stripe\.com\/resub4999test\?client_reference_id=/.test(c.GATE.card.innerHTML)
+      && !/free trial/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 300));
+    chk('at the standard price', /Subscribe \u2014 \$49\.99\/mo/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 300));
+  }
+  {
+    /* THE RETIRED LINK, PASTED BACK BY MISTAKE: refused by name, never sent to */
+    const c = withLinks({ RESUBSCRIBE_LINK: PRICING.RETIRED_LINKS[1] },
+      () => appCtx({ row: Object.assign({}, COMP, { status: 'canceled', price_id: 'price_live' }) }));
+    await c.pgCheck();
+    c.pgShow(c.pgLockedHTML(''));
+    chk('a retired $79.99 link is never offered, even if configured',
+      !/buy\.stripe\.com/.test(c.GATE.card.innerHTML) && /mailto:/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 400));
+  }
+  {
+    /* NOT CONFIGURED YET: the button says how to restart rather than guessing a link */
+    const c = withLinks({ RESUBSCRIBE_LINK: '' },
+      () => appCtx({ row: Object.assign({}, COMP, { status: 'canceled', price_id: 'price_live' }) }));
+    await c.pgCheck();
+    c.pgShow(c.pgLockedHTML(''));
+    chk('with no resubscribe link configured, a lapsed reader is sent to a person, not to a guess',
+      !/buy\.stripe\.com/.test(c.GATE.card.innerHTML) && /Restart your subscription/.test(c.GATE.card.innerHTML), c.GATE.card.innerHTML.slice(0, 400));
+  }
+  {
+    /* THE OFFER A NEW ACCOUNT SEES: Full Access, 7 days free, then $49.99 */
+    const c = appCtx({ row: null });
+    await c.pgCheck();
+    c.pgShow(c.pgLockedHTML(''));
+    const h = c.GATE.card.innerHTML;
+    chk('a new account is asked to unlock EdgeDesk Full Access', /Unlock EdgeDesk Full Access/.test(h), h.slice(0, 200));
+    chk('seven days free, then $49.99 a month', /7 days free/.test(h) && /then \$49\.99\/month/.test(h), h.slice(0, 400));
+    chk('the whole trial line before any click', h.indexOf(PRICING.CTA_LINE) >= 0);
+    chk('everything Full Access includes is listed, player props among it',
+      PRICING.FEATURES.every((f) => h.indexOf('<li>' + f + '</li>') >= 0) && /<li>Player props<\/li>/.test(h));
+    chk('the stale sport list is gone', !/MLB, WNBA, UFC/.test(h));
+    chk('no retired price anywhere on it', !/79\.99/.test(h));
   }
 
   /* ====================================================================== */
@@ -276,17 +324,76 @@ function appCtx(opts) {
     const c = appCtx({ row: PAID });
     c.window.SUB = PAID;
     const html = c.renderSetSub();
-    chk('an ordinary subscriber still sees their price and renewal',
-      html.indexOf('$79.99') >= 0 && /Renews on/.test(html), html.slice(0, 400));
+    const when = new Date(PAID.current_period_end).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    chk('an ordinary subscriber sees EdgeDesk Full Access at $49.99 a month',
+      /EdgeDesk Full Access/.test(html) && html.indexOf('$49.99 / month') >= 0, html.slice(0, 400));
+    chk('and the next billing date, which is the row\'s own period end',
+      /Next billing date=/.test(html) && html.indexOf(when) >= 0 && /You will be charged \$49\.99 on this date/.test(html), html.slice(0, 600));
     chk('and still gets the portal to cancel in',
       html.indexOf('billing.stripe.com') >= 0);
+    chk('and never the retired price', html.indexOf('79.99') < 0);
+  }
+  {
+    /* A SUBSCRIBER STILL ON THE OLD PRICE, until it is moved in Stripe: they are
+       shown what Stripe will actually charge them, not the standard figure, and
+       their access is exactly the same. */
+    const c = appCtx({ row: PAID });
+    c.window.SUB = PAID;
+    c.window.SUB_PRICE = { unit_amount: 7999, currency: 'usd', billing_interval: 'month', interval_count: 1 };
+    const html = c.renderSetSub();
+    chk('a subscriber Stripe still bills at another figure is told that figure',
+      /You will be charged \$79\.99 on this date/.test(html), html.slice(0, 600));
+    eq('and is entitled exactly the same', c.pgEntitled(PAID), true);
+    c.window.SUB_PRICE = { unit_amount: 4999, currency: 'usd', billing_interval: 'month', interval_count: 1 };
+    chk('once Stripe moves them, the card follows', /You will be charged \$49\.99 on this date/.test(c.renderSetSub()));
+    c.window.SUB_PRICE = { unit_amount: 49900, currency: 'usd', billing_interval: 'year', interval_count: 1 };
+    chk('a figure that is not monthly is never shown as a monthly price', /\$49\.99 \/ month/.test(c.renderSetSub()));
+  }
+  {
+    /* A STRIPE TRIAL */
+    const TRIAL = { status: 'trialing', price_id: null, cancel_at_period_end: false, stripe_customer_id: 'cus_2',
+                    current_period_end: new Date(Date.now() + 5 * 864e5).toISOString() };
+    const c = appCtx({ row: TRIAL });
+    c.window.SUB = TRIAL;
+    const html = c.renderSetSub();
+    const when = new Date(TRIAL.current_period_end).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    chk('a trial says 7-day free trial, then $49.99/month',
+      /7-day free trial/.test(html) && /Then \$49\.99\/month/.test(html), html.slice(0, 500));
+    chk('and the day it converts is the row\'s own date, with the first charge on it',
+      /Trial ends=/.test(html) && html.indexOf(when) >= 0 && /Your first charge of \$49\.99 is on this date/.test(html), html.slice(0, 600));
+    const ENDING = Object.assign({}, TRIAL, { cancel_at_period_end: true });
+    c.window.SUB = ENDING;
+    const h2 = c.renderSetSub();
+    chk('a trial cancelled before it converts promises no charge',
+      /Access ends=/.test(h2) && /You will not be charged/.test(h2) && !/first charge/.test(h2), h2.slice(0, 600));
+  }
+  {
+    /* A TRIAL GRANTED BY HAND (comp_trial.sql) renews into nothing */
+    const HAND = { status: 'trialing', price_id: 'comp_trial', cancel_at_period_end: true, stripe_customer_id: null,
+                   current_period_end: new Date(Date.now() + 10 * 864e5).toISOString() };
+    const c = appCtx({ row: HAND });
+    c.window.SUB = HAND;
+    const html = c.renderSetSub();
+    chk('a hand-granted trial is not given the checkout\'s 7 days or a charge',
+      /Free trial/.test(html) && !/7-day/.test(html) && !/charged \$|first charge/.test(html) && /Access ends=/.test(html), html.slice(0, 600));
+  }
+  {
+    const GONE = { status: 'canceled', price_id: 'price_live', cancel_at_period_end: false, stripe_customer_id: 'cus_3',
+                   current_period_end: new Date(Date.now() - 3 * 864e5).toISOString() };
+    const c = appCtx({ row: GONE });
+    c.window.SUB = GONE;
+    const html = c.renderSetSub();
+    chk('an ended subscription never claims a coming charge',
+      !/You will be charged/.test(html) && /Ended/.test(html), html.slice(0, 600));
   }
   {
     const c = appCtx({ row: null });
     c.window.SUB = null;
     const html = c.renderSetSub();
     chk('an account with no subscription is still offered one',
-      /Subscribe/.test(html), html.slice(0, 300));
+      /href="\.\/index\.html#subscribe"/.test(html) && /Start 7 days free/.test(html), html.slice(0, 300));
+    chk('as EdgeDesk Full Access: 7 days free, then $49.99/month',
+      /EdgeDesk Full Access/.test(html) && /7 days free/.test(html) && /Then \$49\.99\/month/.test(html), html.slice(0, 400));
   }
 
   /* ====================================================================== */

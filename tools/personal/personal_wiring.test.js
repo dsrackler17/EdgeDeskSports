@@ -2,10 +2,15 @@
 /* ===========================================================================
    THE PERSONAL RESEARCH LAYER, WIRED — static checks, no browser, no database.
 
-     1  THE OFFER HAS ONE SOURCE. lib/edgedesk_pricing.js states it; index.html's
-        consent constants (PRICE_DISPLAY, TRIAL_DAYS, BILLING_PERIOD, recorded
-        with every auto-renewal consent), app.html's SUB_PRICE_DISPLAY and every
-        trial CTA's static text must agree with it, character for character.
+     1  THE OFFER HAS ONE SOURCE. lib/edgedesk_pricing.js states it — the
+        price, the trial, the plan, what it includes and the Stripe payment
+        links. index.html's consent constants (PRICE_DISPLAY, TRIAL_DAYS,
+        BILLING_PERIOD, recorded with every auto-renewal consent) and its
+        checkout link, app.html's SUB_PRICE_DISPLAY and paywall link, all READ
+        it; every static copy a no-JS reader or a search engine sees (the CTAs,
+        the plan card, the consent text, the JSON-LD offer) must agree with it
+        character for character; and no retired price or founding-rate wording
+        is left on a page a customer can read.
      2  THE SPORTSBOOKS a reader can pick are exactly the ones the capture
         function recognises (BOOK_TIER).
      3  THE PAGE LOADS THE LAYER: the stylesheet, the libraries in dependency
@@ -34,27 +39,85 @@ const APP = read('app.html'), IDX = read('index.html'), UI = read('lib/edgedesk_
 const CAPTURE = read('supabase/functions/capture/index.ts');
 
 /* ── 1 the offer ──────────────────────────────────────────────────────── */
-chk('the CTA line is the brief\'s own sentence', X.CTA_LINE === '7-day free trial. $79.99/month after trial. Cancel anytime.', X.CTA_LINE);
-const idxPrice = (IDX.match(/var PRICE_DISPLAY="([^"]+)"/) || [])[1];
-const idxTrial = +((IDX.match(/var TRIAL_DAYS=(\d+);/) || [])[1]);
-const idxPeriod = (IDX.match(/var BILLING_PERIOD="([^"]+)"/) || [])[1];
-chk('index.html PRICE_DISPLAY (recorded with consent) matches', idxPrice === X.PRICE_DISPLAY, idxPrice);
-chk('index.html TRIAL_DAYS matches', idxTrial === X.TRIAL_DAYS, idxTrial);
-chk('index.html BILLING_PERIOD matches', idxPeriod === X.BILLING_PERIOD, idxPeriod);
-chk('app.html SUB_PRICE_DISPLAY matches', (APP.match(/var SUB_PRICE_DISPLAY="([^"]+)"/) || [])[1] === X.PRICE_DISPLAY);
+chk('the standard price is $49.99 a month, from one number', X.PRICE_CENTS === 4999 && X.PRICE_DISPLAY === '$49.99' && X.BILLING_PERIOD === 'month' && X.CURRENCY === 'USD', X.PRICE_DISPLAY);
+chk('the trial is 7 days', X.TRIAL_DAYS === 7);
+chk('the plan is EdgeDesk Full Access', X.PLAN_NAME === 'EdgeDesk Full Access');
+chk('the CTA line is the brief\'s own sentence', X.CTA_LINE === '7-day free trial. $49.99/month after trial. Cancel anytime.', X.CTA_LINE);
+/* the consent constants are READ from the one file, never typed again */
+chk('index.html PRICE_DISPLAY (recorded with consent) is read from the pricing file', /var PRICE_DISPLAY=EDP\?EDP\.PRICE_DISPLAY:'';/.test(IDX));
+chk('index.html TRIAL_DAYS is read from it', /var TRIAL_DAYS=EDP\?EDP\.TRIAL_DAYS:0;/.test(IDX));
+chk('index.html BILLING_PERIOD is read from it', /var BILLING_PERIOD=EDP\?EDP\.BILLING_PERIOD:'';/.test(IDX));
+chk('index.html sends checkout only to the pricing file\'s trial link', /var STRIPE_LINK=EDP\?EDP\.checkoutLink\('trial'\):'';/.test(IDX)
+  && !/buy\.stripe\.com\/[A-Za-z0-9]{6,}/.test(IDX), (IDX.match(/buy\.stripe\.com\/[A-Za-z0-9]{6,}/) || [])[0]);
+chk('app.html SUB_PRICE_DISPLAY is read from it', /var SUB_PRICE_DISPLAY=\(window\.EDPricing&&window\.EDPricing\.PRICE_DISPLAY\)\|\|'';/.test(APP));
+chk('app.html sends a lapsed reader only to the pricing file\'s resubscribe link', /var PG_STRIPE_LINK=\(window\.EDPricing&&window\.EDPricing\.checkoutLink\('resubscribe'\)\)\|\|'';/.test(APP)
+  && !/buy\.stripe\.com\/[A-Za-z0-9]{6,}/.test(APP), (APP.match(/buy\.stripe\.com\/[A-Za-z0-9]{6,}/) || [])[0]);
+/* NO CHECKOUT, NO CONSENT: an unconfigured or retired link stops the flow
+   before a renewal consent is written, not after */
+const ARL_SRC = IDX.slice(IDX.indexOf('async function confirmArl(){'), IDX.indexOf('/* #arlSubmit ships disabled'));
+chk('confirmArl refuses an unconfigured checkout BEFORE it records a consent',
+  ARL_SRC.indexOf('if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS)') > 0
+  && ARL_SRC.indexOf('if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS)') < ARL_SRC.indexOf("fetch(SB_URL+'/rest/v1/billing_consents'"));
+chk('the consent version moved with the terms', /var CONSENT_VERSION="arl-2026-09-v7-trial7";/.test(IDX));
+chk('the retired $79.99 links are refused by name', X.RETIRED_LINKS.length === 2 && X.RETIRED_LINKS.every((u) => X.validLink(u) === ''));
+chk('a configured link, if any, is a Stripe checkout link and not a retired one',
+  [X.CHECKOUT_LINK, X.RESUBSCRIBE_LINK].every((u) => u === '' || X.validLink(u) === u), [X.CHECKOUT_LINK, X.RESUBSCRIBE_LINK]);
+if (!X.CHECKOUT_LINK || !X.RESUBSCRIBE_LINK)
+  console.log('NOTE  lib/edgedesk_pricing.js has no ' + (!X.CHECKOUT_LINK ? 'CHECKOUT_LINK' : 'RESUBSCRIBE_LINK') +
+    ' yet: checkout stays closed until the $49.99 payment links are pasted there (tools/billing/verify_stripe_offer.js).');
 const ctaSpans = IDX.match(/data-ed-price="cta">([^<]+)</g) || [];
 chk('the landing page carries the offer on at least four CTAs', ctaSpans.length >= 4, ctaSpans.length);
 chk('every static CTA text equals the one source (no-JS readers see the same words)',
   ctaSpans.every((m) => m.replace(/^data-ed-price="cta">/, '').replace(/<$/, '') === X.CTA_LINE), ctaSpans);
 chk('the landing page loads the pricing file and applies it', /\/lib\/edgedesk_pricing\.js/.test(IDX) && /EDPricing\.apply\(document\)/.test(IDX));
+/* every static copy of a figure a no-JS reader sees equals the one source */
+const WORD = { price: X.PRICE_DISPLAY, monthly: X.PRICE_DISPLAY + '/' + X.BILLING_PERIOD, plan: X.PLAN_NAME };
+const bound = [...IDX.matchAll(/data-ed-price="(price|monthly|plan)">([^<]+)</g)];
+chk('the price, the monthly figure and the plan name are bound on the landing page', bound.length >= 10, bound.length);
+chk('and every bound static copy equals the one source', bound.every((m) => m[2] === WORD[m[1]]), bound.filter((m) => m[2] !== WORD[m[1]]).map((m) => m[0]));
+/* the consent text is what is recorded with the consent, so its figures are
+   bound and its static copy is the price */
+const ARL_TERMS = (IDX.match(/<p id="arlTerms">([\s\S]*?)<\/p>/) || [])[1] || '';
+chk('the renewal terms state the price three times, all bound', (ARL_TERMS.match(/data-ed-price="price">\$49\.99</g) || []).length === 3, ARL_TERMS.slice(0, 200));
+chk('and promise no founding-rate lock', !/founding|locked for the life/i.test(ARL_TERMS));
+/* the structured data search engines read says what the page says */
+const LD = JSON.parse((IDX.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) || [])[1] || '{}');
+const OFFER = ((LD['@graph'] || []).find((n) => n.offers) || {}).offers || {};
+chk('the JSON-LD offer is $49.99 USD', OFFER.price === (X.PRICE_CENTS / 100).toFixed(2) && OFFER.priceCurrency === X.CURRENCY, OFFER);
+chk('monthly', OFFER.priceSpecification && OFFER.priceSpecification.unitCode === 'MON' && OFFER.priceSpecification.price === OFFER.price, OFFER.priceSpecification);
+chk('and its description is the offer', OFFER.description === X.TRIAL_DAYS + '-day free trial, then ' + X.PRICE_DISPLAY + ' per month. Cancel anytime.', OFFER.description);
+/* the plan card lists exactly what the pricing file says Full Access includes */
+const PCARD = (IDX.match(/<ul class="pincl">([\s\S]*?)<\/ul>/) || [])[1] || '';
+const listed = [...PCARD.matchAll(/<li>([^<]+)<\/li>/g)].map((m) => m[1]);
+chk('the plan card lists the pricing file\'s features, in order', JSON.stringify(listed) === JSON.stringify(X.FEATURES), listed);
+chk('player props are part of Full Access', X.FEATURES.indexOf('Player props') >= 0);
+chk('the paywall renders the same list', /\(\(X&&X\.FEATURES\)\|\|\[\]\)\.map\(/.test(APP));
 /* the offer sits under the hero button rather than in the bar, so a reader
    sees what the free week becomes before any button, at every width */
 chk('the hero says what follows the free week, right under its button',
-  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b>Full access for 7 days<\/b><\/span><span>Then <span data-ed-price="price">\$79\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
+  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b>Full access for 7 days<\/b><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
 chk('the in-app paywall states the trial line for a new account and promises no trial to a lapsed one',
-  /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /Start 7-day free trial \\u2014 then '\+SUB_PRICE_DISPLAY\+'\/mo/.test(APP));
-chk('the new-account paywall button goes through the consented trial flow', /'<a class="pg-btn" href="\.\/index\.html#subscribe">Start 7-day free trial/.test(APP));
-chk('no countdown or scarcity device anywhere in the offer file', !/countdown|limited|hurry|expires/i.test(read('lib/edgedesk_pricing.js').replace(/No countdowns, no scarcity, no "limited time"/, '')));
+  /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
+  && /<span class="per">then '\+stEsc\(price\)\+'\/month<\/span>/.test(APP));
+chk('the new-account paywall button goes through the consented trial flow', /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start /.test(APP));
+chk('and a new account is asked to unlock Full Access, not told it has lapsed', /:fresh\?'Unlock '\+stEsc\(SUB_PLAN_NAME\)/.test(APP));
+chk('no countdown or scarcity device anywhere in the offer file', !/countdown|limited|hurry|expires/i.test(read('lib/edgedesk_pricing.js').replace(/No countdowns, no scarcity, no "limited time"/, '').replace(/nothing here counts down/, '')));
+
+/* NO RETIRED PRICE ON ANY PAGE A CUSTOMER CAN READ. Comments are not read by
+   customers and may say what the price used to be; everything else — markup,
+   strings, structured data — may not. Nor may it call the price anything but
+   the price: no founding rate, no introductory or limited-time figure, no
+   "was" price beside it. */
+const customerFacing = ['index.html', 'app.html', 'terms.html', 'research/sample/index.html',
+  'lib/edgedesk_pricing.js', 'lib/edgedesk_personal_ui.js'];
+const uncomment = (src) => src.replace(/<!--[\s\S]*?-->/g, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+customerFacing.forEach((f) => {
+  const body = uncomment(read(f));
+  const stale = body.match(/\$\s?(79|39|29|24|14)\.99|\b(79|39|29|24|14)\.99\b|\b7999\b/);
+  chk(f + ': no retired or historical price a customer can read', !stale, stale && body.slice(Math.max(0, stale.index - 60), stale.index + 40));
+  const tout = body.match(/founding[ -]rate|founding member(ship)? (price|rate|pricing)|introductory (price|rate|offer)|limited[ -]time (price|offer)|\bwas \$\d|normally \$\d|price increase/i);
+  chk(f + ': the price is never framed as a deal', !tout, tout && tout[0]);
+});
 
 /* ── 2 the books ──────────────────────────────────────────────────────── */
 const tierBlock = (CAPTURE.match(/export const BOOK_TIER[^{]*\{([\s\S]*?)\};/) || [])[1] || '';
