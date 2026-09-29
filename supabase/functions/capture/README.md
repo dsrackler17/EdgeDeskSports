@@ -27,6 +27,13 @@ if any of them starts to.
 #    Paste supabase/capture_v9_qualification.sql into the SQL editor and run it.
 #    Every row of its report should say ok.
 
+# 1b. Then supabase/capture_v11_player_props.sql (player props: the signals
+#     player columns, player_prop_quotes, player_prop_quote_ticks,
+#     player_prop_event_polls, player_prop_identities). Every report row should
+#     say ok. Capture v11 checks for player_prop_quotes before it buys a single
+#     prop market, so deploying first costs nothing — it just captures no props
+#     and says `storage_missing` — but run it first anyway.
+
 # 2. The function.
 supabase functions deploy capture --no-verify-jwt
 
@@ -92,6 +99,153 @@ rule.
 Unchanged: `CAPTURE_MARKETS`, `CAPTURE_SPORTS`, `CAPTURE_TICKS`, `CAPTURE_FLAG_MAX`
 (now a **run** cap, not per sport), `CAPTURE_FLAG_CONCURRENCY`, `CAPTURE_MAX_MS`,
 `CLOSE_MIN_DEC`, `CLOSE_MAX_DEC`.
+
+---
+
+## v10 — alternate spreads and totals
+
+`alternate_spreads` / `alternate_totals` exist only on `/events/{id}/odds`. DAY
+buys them for football events inside 30 h, NEAR for the last 2 h, BOARD never.
+Each response is merged into its event before `priceEvent()`, which files them
+under `spreads` / `totals`; the point stays in `sig_key`, and a ladder that
+repeats the featured number at the same book keeps the featured quote.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `CAPTURE_ALT_LINES` | `true` | Buy alternate ladders at all. |
+| `CAPTURE_ALT_MARKETS` | `alternate_spreads,alternate_totals` | The ladder markets requested. |
+| `CAPTURE_ALT_MAX_HOURS` / `CAPTURE_ALT_NEAR_HOURS` | `30` / `2` | DAY and NEAR windows. |
+| `CAPTURE_ALT_MAX_EVENTS` / `CAPTURE_ALT_CONCURRENCY` | `80` / `6` | Events per sport per run, and at once. |
+
+---
+
+## v11 — player props
+
+**The player is in `description`; `name` is the side.** Keyed like a game
+market, Mahomes Over 274.5 and Allen Over 274.5 would be one row, and one
+book's player market would be devigged as one outcome space. So a player market
+carries the player at every step:
+
+- **Partition.** `partitionPlayerPropOutcomes` pairs Over with Under (or Yes
+  with No) per player per line. A lone side is a one-sided market.
+- **Slot and census.** The `priceEvent` slot and the modal-line census are
+  keyed by player.
+- **`sig_key`.** It is `event|market|player_key|side|point`.
+- **Quote key.** It is `event|market|player_key|side|point|book`.
+
+Game-market `sig_key`s are byte-for-byte what they were.
+
+**Identity.** `player_key` is the book's name with case, accents, periods,
+apostrophes and spacing folded (`A.J. Brown` = `AJ Brown`). Suffixes are kept
+(`Michael Pittman Jr.` ≠ `Michael Pittman`), and the key is scoped to one event.
+
+It is **not a player id**. The Odds API gives no roster. A real source (nflverse,
+ESPN) joins `player_prop_identities (event_id, player_key) → player_id, team,
+position`, which is empty until then.
+
+**Captured is not qualified.** Every quote goes to `player_prop_quotes`: one row
+per `quote_key`, upserted. The database appends a row to
+`player_prop_quote_ticks` only when a quote first appears or its price changes.
+That includes:
+
+- stale quotes;
+- one-sided quotes (`is_two_sided` false, `book_fair_probability` NULL,
+  `unqualifiable_reason = one_sided_player_market`);
+- scorer Yes/No markets.
+
+Only a two-sided Over/Under at one player's exact line can reach
+`qualifySignal()`. The `player_props` edge floor is `null`, so none becomes
+actionable. It never falls through to the game-line `*|*` floor, which was not
+validated for props. Set `CAPTURE_EDGE_FLOOR` `{"nfl|player_props|A": …}`
+only with backtested evidence. `POLICY_VERSION` did not change, because no
+actionable rule changed.
+
+**Game lines come first.** Props run in a second pass after every sport's game
+lines are written. Each event makes one request per batch of 12 markets, never
+one per player: a response already carries every player a book offers.
+
+### Environment
+
+| Variable | Default | What it does |
+|---|---|---|
+| `CAPTURE_PLAYER_PROPS` | `true` | The prop pass at all. `?props=0` turns it off for one run. |
+| `CAPTURE_PLAYER_PROP_MARKETS` | the 33 provider markets (`PLAYER_PROP_MARKETS`) | Standard player markets. `none` = empty. Never put these in `CAPTURE_MARKETS`: the sport-wide endpoint refuses them, so capture strips them and names them in `markets_ignored`. |
+| `CAPTURE_PLAYER_PROP_ALT_MARKETS` | the 26 alternates (`PLAYER_PROP_ALT_MARKETS`) | Alternate ladders, filed under their base market; `source_market` keeps the provenance. `none` = off. |
+| `CAPTURE_PLAYER_PROP_MAX_HOURS` / `_NEAR_HOURS` | `30` / `3` | DAY window / NEAR window (BOARD buys no props). |
+| `CAPTURE_PLAYER_PROP_INTERVAL_MIN` / `_NEAR_INTERVAL_MIN` | `120` / `20` | An event's own refresh clock beyond / inside the near window, read from `player_prop_event_polls`. |
+| `CAPTURE_PLAYER_PROP_MAX_EVENTS` / `_CONCURRENCY` / `_MARKETS_PER_REQUEST` | `80` / `4` / `12` | Events per sport per run, events at once, markets per request. |
+| `CAPTURE_PROP_MAX_CREDITS_PER_RUN` | `1000` | Checked before every request against spent + in flight + that batch's worst case (markets × region-equivalents). |
+| `CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN` | `2000` | (event × market) pairs per run. |
+| `CAPTURE_PROP_MIN_QUOTA_REMAINING` | `5000` | Props stop when `x-requests-remaining` would drop below this, so game lines always have quota. |
+| `CAPTURE_PLAYER_PROP_SIGNALS` | `false` | Also write two-sided props into `signals` (see below). |
+
+### Cost
+
+The event endpoint bills **unique markets returned × region-equivalents** per
+request. A market no book posts costs nothing; `us,eu` is 2, and ten
+`CAPTURE_BOOKMAKERS` keys are 1.
+
+With the defaults, one game is polled about 23 times before kickoff:
+
+| Time before kickoff | Re-poll interval | Polls |
+|---|---|---|
+| 30 h to 3 h | every 120 min | ~14 |
+| Last 3 h | every 20 min | ~9 |
+
+At a typical 30 markets returned, that is ≤ 30 × 2 × 23 ≈ **1,400 credits a game**
+on `us,eu`, or half that with the ten suggested bookmakers.
+
+| Week | Games | Credits (upper bound) |
+|---|---|---|
+| NFL | 16 | ≈ 22K |
+| NCAAF | 60 | ≈ 83K |
+
+The per-run cap, the (event × market) cap and the quota floor bound every run
+regardless. Each stop is named in `player_props.stopped` (`credit_budget`,
+`market_request_budget`, `quota_floor`, `wall_clock`, `provider_429`). To cut
+spend:
+
+- set `CAPTURE_PLAYER_PROP_ALT_MARKETS=none`;
+- shorten the market list;
+- lengthen the intervals.
+
+### Prop signals are off by default
+
+Writing every prop into `signals` would cost game-line capture in three places:
+
+- **Close function:** it takes unclosed signals by kickoff with a 5,000-row limit
+  and no market filter, so a Sunday of prop rows would push spreads out of
+  their close.
+- **Capture's prior-state read:** it is capped at 20,000 rows.
+- **`signal_ticks`:** it appends one row per candidate per run.
+
+With `CAPTURE_PLAYER_PROP_SIGNALS=true`:
+
+- only two-sided props are sent;
+- they go in their own batches with `participant`, `participant_key`,
+  `is_player_prop` and `source_market`;
+- they write no signal ticks;
+- their persistence is read separately, and the game read filters them out.
+
+Before turning it on, make the close function skip `market like 'player_%'`.
+
+### Reading the prop pass
+
+`player_props` in every response, plus a flat `prop_*` summary:
+
+- `events_eligible`, `events_due`, `events_skipped_interval`,
+  `events_skipped_budget`, `events_requested`: which games were bought, and why
+  not.
+- `requests`, `markets_requested`, `markets_returned`, `quota_spent`: the bill,
+  from `x-requests-last`.
+- `unique_players`, `unique_player_markets`, `quotes_seen`: counts that separate
+  "no props posted" from "the parser dropped every player".
+- `two_sided_quotes`, `one_sided_quotes`, `stale_quotes`.
+- `quotes_written`, `ticks_written` (counted from the database's own
+  `price_changed_at`), `polls_written`.
+- `status`: `ok` / `partial` / `failed` / `skipped` / `disabled` /
+  `storage_missing`, and `stopped` for which budget ended the pass. The prop pass
+  never changes the run's own `status`, which stays about game lines.
 
 ---
 
@@ -208,7 +362,15 @@ Written down rather than left to be discovered.
    the `flagged_at IS NULL` guard makes that permanent — the same rule that stops
    an entry price drifting also preserves a bad historical flag. They are labelled
    `pre-v9-legacy` by the migration and reported separately, never deleted.
-7. **Tier B's `CONFIRMATIONS = 2` costs one capture cycle of price movement.** On
+7. **Player props are captured, not yet graded.**
+   - `player_key` is a folded name, not an identity, until a roster source
+     fills `player_prop_identities`.
+   - No prop has an edge floor, so no prop is actionable.
+   - The close function does not close props. The tick history
+     (`player_prop_quote_ticks`) is what a prop close and CLV will be read from.
+   - The GitHub-Actions prop capture in `football/props/capture.js` spends the
+     same `ODDS_API_KEY`. Run one or the other, not both.
+8. **Tier B's `CONFIRMATIONS = 2` costs one capture cycle of price movement.** On
    a fast-moving line the price may be gone by the second sighting. That is the
    intended trade — a single snapshot of a consensus with no independent reference
    is thin evidence — but it is a trade, and the harness measures both sides.

@@ -3,7 +3,7 @@
 -- docs/player-props/DESIGN.md §9
 --
 -- WHAT IT ADDS
---   1. player_prop_quotes — every captured sportsbook price, append-only and
+--   1. player_prop_ledger_quotes — every captured sportsbook price, append-only and
 --      change-only (football/props/capture.js → sync_supabase.js). A quote is
 --      identified by sport, game, player, market, line, side, book and the
 --      capture time; the provider's own update time is kept beside it.
@@ -24,7 +24,7 @@
 -- =============================================================================
 
 -- 1. QUOTES -----------------------------------------------------------------
-create table if not exists public.player_prop_quotes (
+create table if not exists public.player_prop_ledger_quotes (
   quote_id text primary key,
   sport text not null,
   game_id text not null,
@@ -45,26 +45,26 @@ create table if not exists public.player_prop_quotes (
   inserted_at timestamptz not null default now()
 );
 do $chk$ begin
-  if not exists (select 1 from pg_constraint where conname = 'player_prop_quotes_side') then
-    alter table public.player_prop_quotes add constraint player_prop_quotes_side check (side in ('over', 'under'));
+  if not exists (select 1 from pg_constraint where conname = 'player_prop_ledger_quotes_side') then
+    alter table public.player_prop_ledger_quotes add constraint player_prop_ledger_quotes_side check (side in ('over', 'under'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'player_prop_quotes_price') then
-    alter table public.player_prop_quotes add constraint player_prop_quotes_price check (abs(american) between 100 and 20000);
+  if not exists (select 1 from pg_constraint where conname = 'player_prop_ledger_quotes_price') then
+    alter table public.player_prop_ledger_quotes add constraint player_prop_ledger_quotes_price check (abs(american) between 100 and 20000);
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'player_prop_quotes_line') then
-    alter table public.player_prop_quotes add constraint player_prop_quotes_line check (line >= 0 and line <= 2000 and line * 2 = round(line * 2));
+  if not exists (select 1 from pg_constraint where conname = 'player_prop_ledger_quotes_line') then
+    alter table public.player_prop_ledger_quotes add constraint player_prop_ledger_quotes_line check (line >= 0 and line <= 2000 and line * 2 = round(line * 2));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'player_prop_quotes_sport') then
-    alter table public.player_prop_quotes add constraint player_prop_quotes_sport check (sport in ('nfl', 'cfb', 'nba', 'ncaab', 'mlb', 'ufc'));
+  if not exists (select 1 from pg_constraint where conname = 'player_prop_ledger_quotes_sport') then
+    alter table public.player_prop_ledger_quotes add constraint player_prop_ledger_quotes_sport check (sport in ('nfl', 'cfb', 'nba', 'ncaab', 'mlb', 'ufc'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'player_prop_quotes_player_key') then
-    alter table public.player_prop_quotes add constraint player_prop_quotes_player_key check (player_key = coalesce(player_id, player_key) and length(player_key) between 1 and 200);
+  if not exists (select 1 from pg_constraint where conname = 'player_prop_ledger_quotes_player_key') then
+    alter table public.player_prop_ledger_quotes add constraint player_prop_ledger_quotes_player_key check (player_key = coalesce(player_id, player_key) and length(player_key) between 1 and 200);
   end if;
 end $chk$;
-create unique index if not exists player_prop_quotes_identity
-  on public.player_prop_quotes (sport, game_id, player_key, market, line, side, book, captured_at);
-create index if not exists player_prop_quotes_game on public.player_prop_quotes (sport, game_id, market);
-comment on table public.player_prop_quotes is
+create unique index if not exists player_prop_ledger_quotes_identity
+  on public.player_prop_ledger_quotes (sport, game_id, player_key, market, line, side, book, captured_at);
+create index if not exists player_prop_ledger_quotes_game on public.player_prop_ledger_quotes (sport, game_id, market);
+comment on table public.player_prop_ledger_quotes is
   'Every captured player-prop price, append-only and change-only. Identity: sport, game_id, player_key (player_id, or name:<normalised> when the book name matched no single player), market, line, side, book, captured_at.';
 
 -- 2. PROJECTIONS ------------------------------------------------------------
@@ -181,8 +181,8 @@ end $chk$;
 -- 5. WRITE-ONCE, NEVER DELETED ------------------------------------------------
 create or replace function public.player_props_frozen() returns trigger language plpgsql as $$
 begin raise exception '% is write-once and never deleted', tg_table_name using errcode = 'restrict_violation'; end $$;
-drop trigger if exists player_prop_quotes_frozen_trg on public.player_prop_quotes;
-create trigger player_prop_quotes_frozen_trg before update or delete on public.player_prop_quotes for each row execute function public.player_props_frozen();
+drop trigger if exists player_prop_ledger_quotes_frozen_trg on public.player_prop_ledger_quotes;
+create trigger player_prop_ledger_quotes_frozen_trg before update or delete on public.player_prop_ledger_quotes for each row execute function public.player_props_frozen();
 drop trigger if exists player_prop_projections_frozen_trg on public.player_prop_projections;
 create trigger player_prop_projections_frozen_trg before update or delete on public.player_prop_projections for each row execute function public.player_props_frozen();
 drop trigger if exists player_prop_evaluations_frozen_trg on public.player_prop_evaluations;
@@ -191,32 +191,32 @@ drop trigger if exists player_prop_results_frozen_trg on public.player_prop_resu
 create trigger player_prop_results_frozen_trg before update or delete on public.player_prop_results for each row execute function public.player_props_frozen();
 
 -- 6. ACCESS: signed-in readers read; only the service role writes -------------
-alter table public.player_prop_quotes enable row level security;
+alter table public.player_prop_ledger_quotes enable row level security;
 alter table public.player_prop_projections enable row level security;
 alter table public.player_prop_evaluations enable row level security;
 alter table public.player_prop_results enable row level security;
-drop policy if exists player_prop_quotes_read on public.player_prop_quotes;
-create policy player_prop_quotes_read on public.player_prop_quotes for select to authenticated using (true);
+drop policy if exists player_prop_ledger_quotes_read on public.player_prop_ledger_quotes;
+create policy player_prop_ledger_quotes_read on public.player_prop_ledger_quotes for select to authenticated using (true);
 drop policy if exists player_prop_projections_read on public.player_prop_projections;
 create policy player_prop_projections_read on public.player_prop_projections for select to authenticated using (true);
 drop policy if exists player_prop_evaluations_read on public.player_prop_evaluations;
 create policy player_prop_evaluations_read on public.player_prop_evaluations for select to authenticated using (true);
 drop policy if exists player_prop_results_read on public.player_prop_results;
 create policy player_prop_results_read on public.player_prop_results for select to authenticated using (true);
-revoke all on public.player_prop_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results from anon;
-revoke insert, update, delete on public.player_prop_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results from authenticated;
-grant select on public.player_prop_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results to authenticated;
+revoke all on public.player_prop_ledger_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results from anon;
+revoke insert, update, delete on public.player_prop_ledger_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results from authenticated;
+grant select on public.player_prop_ledger_quotes, public.player_prop_projections, public.player_prop_evaluations, public.player_prop_results to authenticated;
 
 -- 7. VIEWS ----------------------------------------------------------------------
-create or replace view public.player_prop_quotes_latest with (security_invoker = true) as
+create or replace view public.player_prop_ledger_quotes_latest with (security_invoker = true) as
 select distinct on (sport, game_id, player_key, market, line, side, book)
        sport, game_id, player_id, player_key, player_name, market, line, side, book, american, is_alternate, quoted_at, captured_at, kickoff
-from public.player_prop_quotes
+from public.player_prop_ledger_quotes
 order by sport, game_id, player_key, market, line, side, book, captured_at desc;
 
 create or replace view public.player_prop_line_movement with (security_invoker = true) as
 with main as (
-  select * from public.player_prop_quotes where not is_alternate and side = 'over'
+  select * from public.player_prop_ledger_quotes where not is_alternate and side = 'over'
 )
 select sport, game_id, player_key, max(player_name) as player_name, market, book,
        (array_agg(line order by captured_at asc))[1] as open_line,
@@ -239,18 +239,18 @@ select e.sport, e.market, e.decision, count(*) as graded,
 from public.player_prop_results r join public.player_prop_evaluations e using (evaluation_id)
 where e.kind = 'qualified'
 group by e.sport, e.market, e.decision;
-grant select on public.player_prop_quotes_latest, public.player_prop_line_movement, public.player_prop_performance to authenticated;
+grant select on public.player_prop_ledger_quotes_latest, public.player_prop_line_movement, public.player_prop_performance to authenticated;
 
 notify pgrst, 'reload schema';
 
 -- THE REPORT.
 select piece, state from (
-  select 'player_prop_quotes table' as piece, case when to_regclass('public.player_prop_quotes') is not null then 'ok' else 'CHECK THIS' end as state
-  union all select 'quote identity unique index', case when to_regclass('public.player_prop_quotes_identity') is not null then 'ok' else 'CHECK THIS' end
+  select 'player_prop_ledger_quotes table' as piece, case when to_regclass('public.player_prop_ledger_quotes') is not null then 'ok' else 'CHECK THIS' end as state
+  union all select 'quote identity unique index', case when to_regclass('public.player_prop_ledger_quotes_identity') is not null then 'ok' else 'CHECK THIS' end
   union all select 'player_prop_projections table', case when to_regclass('public.player_prop_projections') is not null then 'ok' else 'CHECK THIS' end
   union all select 'player_prop_evaluations (pregame only)', case when exists (select 1 from pg_trigger where tgname = 'player_prop_evaluations_pregame_trg') then 'ok' else 'CHECK THIS' end
   union all select 'player_prop_results table', case when to_regclass('public.player_prop_results') is not null then 'ok' else 'CHECK THIS' end
   union all select 'write-once triggers', case when (select count(*) from pg_trigger where tgname like 'player_prop_%_frozen_trg') = 4 then 'ok' else 'CHECK THIS' end
-  union all select 'RLS on every table', case when (select bool_and(relrowsecurity) from pg_class where oid in ('public.player_prop_quotes'::regclass, 'public.player_prop_projections'::regclass, 'public.player_prop_evaluations'::regclass, 'public.player_prop_results'::regclass)) then 'ok' else 'CHECK THIS' end
-  union all select 'views', case when to_regclass('public.player_prop_quotes_latest') is not null and to_regclass('public.player_prop_line_movement') is not null and to_regclass('public.player_prop_performance') is not null then 'ok' else 'CHECK THIS' end
+  union all select 'RLS on every table', case when (select bool_and(relrowsecurity) from pg_class where oid in ('public.player_prop_ledger_quotes'::regclass, 'public.player_prop_projections'::regclass, 'public.player_prop_evaluations'::regclass, 'public.player_prop_results'::regclass)) then 'ok' else 'CHECK THIS' end
+  union all select 'views', case when to_regclass('public.player_prop_ledger_quotes_latest') is not null and to_regclass('public.player_prop_line_movement') is not null and to_regclass('public.player_prop_performance') is not null then 'ok' else 'CHECK THIS' end
 ) r order by 1;

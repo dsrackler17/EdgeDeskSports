@@ -60,24 +60,24 @@ try {
 
   /* ── quotes ───────────────────────────────────────────────────────────── */
   const T0 = iso(-DAY);
-  const q = (id, over) => `insert into public.player_prop_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, quoted_at, captured_at, kickoff)
+  const q = (id, over) => `insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, quoted_at, captured_at, kickoff)
     values ('${id}', 'nfl', '2026_04_ATL_NO', '00-0038542', '00-0038542', 'Bijan Robinson', 'rush_yds', 84.5, 'over', 'draftkings', ${over}, '${T0}', '${T0}', '${KICK}');`;
   db.service(q('q1', -105));
-  chk('the service role writes a quote', db.sql('select count(*) from public.player_prop_quotes;') === '1');
+  chk('the service role writes a quote', db.sql('select count(*) from public.player_prop_ledger_quotes;') === '1');
   chk('the same identity (same capture time) twice is refused', db.mustFail(() => db.service(q('q2', -110))) !== null);
-  chk('a price between -100 and +100 is refused', db.mustFail(() => db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q3','nfl','g','name:x','X','rush_yds',70.5,'over','fanduel',50,now());`)) !== null);
-  chk('a line that is not a half point is refused', db.mustFail(() => db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q4','nfl','g','name:x','X','rush_yds',70.3,'over','fanduel',-110,now());`)) !== null);
-  chk('a side other than over/under is refused', db.mustFail(() => db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q5','nfl','g','name:x','X','rush_yds',70.5,'home','fanduel',-110,now());`)) !== null);
-  chk('player_key must equal player_id when one is known', db.mustFail(() => db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q6','nfl','g','00-1','00-2','X','rush_yds',70.5,'over','fanduel',-110,now());`)) !== null);
-  db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q7','nfl','2026_04_ATL_NO','name:totally unknown','Totally Unknown','anytime_td',0.5,'over','fanduel',400,now());`);
-  chk('an unmapped name is kept under its name key', db.sql("select player_key from public.player_prop_quotes where quote_id = 'q7';") === 'name:totally unknown');
-  chk('a quote is write-once (update refused)', db.mustFail(() => db.service("update public.player_prop_quotes set american = -120 where quote_id = 'q1';")) !== null);
-  chk('and never deleted', db.mustFail(() => db.service("delete from public.player_prop_quotes where quote_id = 'q1';")) !== null);
-  chk('a signed-in reader reads quotes', db.as(A, 'select count(*) from public.player_prop_quotes;') === '2');
-  chk('anon reads nothing', db.mustFail(() => db.anon('select count(*) from public.player_prop_quotes;')) !== null || db.anon('select count(*) from public.player_prop_quotes;') === '0');
+  chk('a price between -100 and +100 is refused', db.mustFail(() => db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q3','nfl','g','name:x','X','rush_yds',70.5,'over','fanduel',50,now());`)) !== null);
+  chk('a line that is not a half point is refused', db.mustFail(() => db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q4','nfl','g','name:x','X','rush_yds',70.3,'over','fanduel',-110,now());`)) !== null);
+  chk('a side other than over/under is refused', db.mustFail(() => db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q5','nfl','g','name:x','X','rush_yds',70.5,'home','fanduel',-110,now());`)) !== null);
+  chk('player_key must equal player_id when one is known', db.mustFail(() => db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q6','nfl','g','00-1','00-2','X','rush_yds',70.5,'over','fanduel',-110,now());`)) !== null);
+  db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('q7','nfl','2026_04_ATL_NO','name:totally unknown','Totally Unknown','anytime_td',0.5,'over','fanduel',400,now());`);
+  chk('an unmapped name is kept under its name key', db.sql("select player_key from public.player_prop_ledger_quotes where quote_id = 'q7';") === 'name:totally unknown');
+  chk('a quote is write-once (update refused)', db.mustFail(() => db.service("update public.player_prop_ledger_quotes set american = -120 where quote_id = 'q1';")) !== null);
+  chk('and never deleted', db.mustFail(() => db.service("delete from public.player_prop_ledger_quotes where quote_id = 'q1';")) !== null);
+  chk('a signed-in reader reads quotes', db.as(A, 'select count(*) from public.player_prop_ledger_quotes;') === '2');
+  chk('anon reads nothing', db.mustFail(() => db.anon('select count(*) from public.player_prop_ledger_quotes;')) !== null || db.anon('select count(*) from public.player_prop_ledger_quotes;') === '0');
   chk('a reader cannot write a quote', db.mustFail(() => db.as(A, q('q8', -110).replace("'q8'", "'q8'"))) !== null);
-  db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, captured_at, kickoff) values ('q9','nfl','2026_04_ATL_NO','00-0038542','00-0038542','Bijan Robinson','rush_yds',86.5,'over','draftkings',-110,'${iso(-DAY / 2)}','${KICK}');`);
-  chk('latest view: one row per identity, the newest capture', db.as(A, "select line || '|' || american from public.player_prop_quotes_latest where book = 'draftkings' and line = 86.5;") === '86.5|-110');
+  db.service(`insert into public.player_prop_ledger_quotes (quote_id, sport, game_id, player_id, player_key, player_name, market, line, side, book, american, captured_at, kickoff) values ('q9','nfl','2026_04_ATL_NO','00-0038542','00-0038542','Bijan Robinson','rush_yds',86.5,'over','draftkings',-110,'${iso(-DAY / 2)}','${KICK}');`);
+  chk('latest view: one row per identity, the newest capture', db.as(A, "select line || '|' || american from public.player_prop_ledger_quotes_latest where book = 'draftkings' and line = 86.5;") === '86.5|-110');
   chk('movement view: open 84.5 → current 86.5', db.as(A, "select open_line || '>' || current_line || '|' || changes from public.player_prop_line_movement where book = 'draftkings';") === '84.5>86.5|2');
 
   /* ── evaluations and results ─────────────────────────────────────────── */

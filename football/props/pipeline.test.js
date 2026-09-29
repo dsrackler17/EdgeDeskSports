@@ -229,10 +229,10 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const resolved = { rows: b1.resolved_quotes };
   const s1 = await SY.sync({ league: 'nfl', season: 2026, now: NOW, db, evaluations: b1.ledger_rows, results: graded.map((x) => Object.assign({}, x, { graded_at: new Date(NOW).toISOString() })), resolved });
   chk('the sync writes quotes, evaluations, projections and results', s1.quotes > 50 && s1.evaluations > 0 && s1.projections > 0 && s1.results > 0, s1);
-  const qt = db.tables['public.player_prop_quotes'];
+  const qt = db.tables['public.player_prop_ledger_quotes'];
   chk('an unmapped quote is keyed by its name, a mapped one by its player id', qt.some((x) => /^name:/.test(x.player_key) && x.player_id === null) && qt.some((x) => x.player_id && x.player_key === x.player_id));
   await SY.sync({ league: 'nfl', season: 2026, now: NOW, db, evaluations: b1.ledger_rows, results: [], resolved });
-  chk('running the sync twice writes nothing twice', db.tables['public.player_prop_quotes'].length === qt.length && db.tables['public.player_prop_evaluations'].length === b1.ledger_rows.length);
+  chk('running the sync twice writes nothing twice', db.tables['public.player_prop_ledger_quotes'].length === qt.length && db.tables['public.player_prop_evaluations'].length === b1.ledger_rows.length);
 
   console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + 'player props pipeline — ' + pass + ' passed, ' + fail + ' failed');
   try { fs.rmSync(tmp, { recursive: true, force: true }); } catch (e) { /* tmp */ }
