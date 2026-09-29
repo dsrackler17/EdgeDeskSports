@@ -1,19 +1,27 @@
 {
  "alerts": [],
  "bet_enabled": false,
+ "by_week": [
+  {
+   "disagreement_c_d_mean": 1.738,
+   "final": 0,
+   "frozen_games": 56,
+   "week": 5
+  }
+ ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.223,
-  "ens_pred_noise_q99": 0.336,
-  "ens_sd": 0.091,
-  "ens_sd_noise_q99": 0.336,
-  "pred_total": 0.289,
-  "pred_total_noise_q99": 0.336,
+  "ens_pred": 0.187,
+  "ens_pred_noise_q99": 0.335,
+  "ens_sd": 0.133,
+  "ens_sd_noise_q99": 0.335,
+  "pred_total": 0.226,
+  "pred_total_noise_q99": 0.335,
   "reference_weeks": "week4",
-  "sigma": 0.213,
-  "sigma_noise_q99": 0.336
+  "sigma": 0.15,
+  "sigma_noise_q99": 0.335
  },
- "generated_at": "2026-09-28T18:08:14Z",
+ "generated_at": "2026-09-29T12:09:45Z",
  "learning": {
   "bias": null,
   "by_model_version": {
@@ -38,7 +46,7 @@
  },
  "model_version": "edgedesk_cfb_v2.1.0",
  "ok": true,
- "pass_rate": 0.0,
+ "pass_rate": 1.0,
  "pbp_missing_final_games": 0,
  "policy": "warnings inform a person; nothing retrains, re-tunes or disables itself because a warning fired",
  "reference": {
@@ -1709,9 +1717,14 @@
  "research_status_counts": {
   "BET": 0,
   "LEAN": 0,
-  "PASS": 0,
+  "PASS": 59,
   "REVIEW": 0
  },
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
- "season": 2026
+ "season": 2026,
+ "season_to_date": {
+  "final": 0,
+  "frozen_games": 56,
+  "mae": null
+ }
 }
