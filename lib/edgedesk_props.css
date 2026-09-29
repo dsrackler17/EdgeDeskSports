@@ -274,3 +274,44 @@ body.ed-reduce-motion .pp-skel{animation:none}
 /* ---- the drawer's same-game correlation table */
 .pp-corr{overflow-x:auto}
 .pp-corr td:first-child{white-space:normal;min-width:120px}
+
+/* ---- prop research surfaces (lib/edgedesk_props_ui.js researchCardHTML /
+   eventSectionHTML / topModuleHTML): the Research board, the desk's Top
+   Research Priorities, a matchup's PLAYER PROP RESEARCH. A research terminal,
+   not a slip: numbers in mono, one accent, no fills beyond the BET chip. */
+.pp-rsec,.pp-top{margin:10px 0 4px;border-top:1px dashed var(--pp-line);padding-top:9px}
+.pp-rsec-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 7px}
+.pp-rsec-h b{font-size:10.5px;letter-spacing:.09em;color:var(--dim);font-weight:800}
+.pp-rsec-h .n{font-family:var(--pp-mono);font-size:11px;color:var(--accent);border:1px solid var(--pp-line);border-radius:4px;padding:0 5px}
+.pp-rsec-h.sub{margin-top:10px}
+.pp-rc{border:1px solid var(--pp-line);background:var(--surface);border-radius:9px;padding:9px 11px;margin:0 0 8px}
+.pp-rc.stale{opacity:.78;border-style:dashed}
+.pp-rc-h{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px}
+.pp-rc-h .pp-grow{flex:1}
+.pp-rc-sel{font-family:var(--pp-mono);font-size:12px;color:var(--accent);margin:3px 0 7px}
+.pp-rc-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:5px 10px;margin:0 0 6px}
+.pp-rc-g>span{display:flex;flex-direction:column;min-width:0}
+.pp-rc-g .k{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.pp-rc-g .v{font-family:var(--pp-mono);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pp-rc-g .v small{color:var(--faint);font-size:10px}
+.pp-rc-x{margin:5px 0 0}
+.pp-rc-x>b{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.pp-rc-x .pp-list{margin:3px 0 0}
+.pp-rc-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pp-oncard{font-size:11px;color:var(--pos);padding:6px 4px;font-weight:600}
+.pp-rsec-all{margin:2px 0 4px}
+.pp-toplist{list-style:none;margin:0 0 8px;padding:0;counter-reset:pptop}
+.pp-toplist li{counter-increment:pptop}
+.pp-toprow{display:grid;grid-template-columns:22px 1fr;grid-template-areas:"i w" "i m" "i n";gap:1px 6px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--pp-line);color:var(--text);padding:7px 2px;cursor:pointer;font:inherit}
+.pp-toprow::before{content:counter(pptop) '.';grid-area:i;font-family:var(--pp-mono);color:var(--faint);font-size:11.5px;padding-top:1px}
+.pp-toprow .w{grid-area:w;font-size:12.5px}.pp-toprow .m{grid-area:m;font-size:11px;color:var(--dim)}
+.pp-toprow .n{grid-area:n;font-family:var(--pp-mono);font-size:11px;color:var(--dim)}
+.pp-toprow:hover .w b{color:var(--accent)}
+.pp-ogrp{border-top:1px solid var(--pp-line);padding:6px 0}
+.pp-ogrp>summary{cursor:pointer;font-size:11.5px;font-weight:700;letter-spacing:.03em}
+.pp-orow{border:1px solid var(--pp-line);border-radius:8px;margin:6px 0;padding:6px 9px;background:var(--surface)}
+.pp-orow>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:3px 10px;justify-content:space-between;font-size:12px;list-style:none}
+.pp-orow>summary::-webkit-details-marker{display:none}
+.pp-orow>summary .n{font-family:var(--pp-mono);font-size:11px;color:var(--dim)}
+.pp-orow[open]>summary{margin-bottom:7px}
+@media(max-width:560px){.pp-rc-g{grid-template-columns:repeat(2,minmax(0,1fr))}.pp-rc-acts .pp-btn{flex:1 1 44%}}

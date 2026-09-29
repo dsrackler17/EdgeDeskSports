@@ -1442,6 +1442,10 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-wr-st.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
 .fb-wr-st.mut{color:var(--dim);border-color:var(--border)}
 .fb-wr-u{margin:6px 0 0 24px;font-size:10.5px;letter-spacing:.02em;color:var(--warn)}
+.fb-wr-ps{margin:6px 0 0 24px;font-size:11.5px;line-height:1.5;color:var(--text)}
+.fb-wr-ps>b{font-size:9.5px;letter-spacing:.08em;color:var(--faint);margin-right:4px}
+.fb-wr-ps .fb-lnk{margin:0 0 0 4px}
+.fb-card.fb-ps{margin-top:12px;padding:4px 14px 12px}
 .fb-wr-v{display:grid;grid-template-columns:max-content minmax(0,1fr);align-items:baseline;gap:4px 14px;margin:8px 0 0 24px;min-width:0}
 .fb-wr-c{display:contents}
 .fb-wr-c i{font:normal 700 9.5px 'Inter',system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
@@ -1473,7 +1477,7 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fb-wr .rs-pv-h{margin-bottom:2px}
 .fb-wr-q{font-size:12.5px;color:var(--dim);line-height:1.5;padding:8px 0 4px}
 .fb-wr-q small{display:block;color:var(--faint);font-size:11.5px;margin-top:4px}
-@media(max-width:400px){.fb-card.fb-wr{padding:2px 12px 10px}.fb-wr-v,.fb-wr-w,.fb-wr-f,.fb-wr-u{margin-left:0}}
+@media(max-width:400px){.fb-card.fb-wr{padding:2px 12px 10px}.fb-wr-v,.fb-wr-w,.fb-wr-f,.fb-wr-u,.fb-wr-ps{margin-left:0}}
 @media(max-width:480px){.fb-wr-h .m,.fb-wr-f .ts{white-space:normal}.fb-wr-r{padding:9px 0}}
 /* research tools */
 .fb-tools{display:grid;grid-template-columns:1fr;gap:8px}
@@ -2869,9 +2873,9 @@ body.focus .dk-focusnote{display:block}
 @media (prefers-reduced-motion:reduce){.dk-skel{animation:none}}
 </style>
 
-<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929c">
-<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929b">
+<link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929e">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929e">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3803,13 +3807,13 @@ window.mcRefresh=function(){
      numbers the board already produced. It computes no projection, line or
      status; the SAME file is what tools/football/research_priority.test.js
      holds to its gates, its order and its explanations. -->
-<script src="/lib/research_priority.js?v=20260924a"></script>
+<script src="/lib/research_priority.js?v=20260929e"></script>
 <!-- The personal research layer (watchlist, research alerts, Top 5 explanations,
      the decision journal and its CLV grade) and the one written-down offer.
      research_core.js is loaded eagerly here because the journal's CLV reads its
      line convention; the football module still lazy-loads it for itself. -->
 <script src="/lib/research_core.js?v=20260925p"></script>
-<script src="/lib/edgedesk_personal.js?v=20260926g"></script>
+<script src="/lib/edgedesk_personal.js?v=20260929e"></script>
 <script src="/lib/edgedesk_share_card.js?v=20260926g"></script>
 <script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
 <!-- The CFB research view: what a reader sees first on the college board
@@ -3854,11 +3858,15 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
 <script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20260929b"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260929e"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
-<script src="/lib/edgedesk_props.js?v=20260929b"></script>
-<script src="/lib/edgedesk_props_ui.js?v=20260929c"></script>
+<script src="/lib/edgedesk_props.js?v=20260929e"></script>
+<!-- THE OPPORTUNITY LAYER: one object for a game market and a player prop, so
+     Research, the Props page, the Card and the AI desk read the same thing
+     (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
+<script src="/lib/edgedesk_opportunity.js?v=20260929e"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929e"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -40873,6 +40881,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         conferences:(f.conferences&&f.conferences.length)?f.conferences.slice(0,12):null};
     }catch(_){ return null; }
   }
+  /* THE CARD FOR THE DESK (lib/edgedesk_opportunity.js cardAnswer): sent only
+     with a question about the reader's card or exposure — never the prices of
+     a card the question does not name. */
+  function aiCardPayload(q){
+    try{
+      if(!/\b(my card|card exposure|my exposure|on my card|in my card)\b/i.test(String(q||'')))return null;
+      var U=window.EDDecisionUI;if(!U||!U.entries)return null;
+      var ds=(U.mergedDecisions?U.mergedDecisions():[]).filter(function(d){return d&&(d.decision==='BET'||d.decision==='LEAN'||d.decision==='WATCH');}).slice(0,60);
+      return {entries:U.entries().slice(0,200),decisions:ds,settings:U.settings?U.settings():null};
+    }catch(_){return null;}
+  }
   async function callFn(mode, question, x, extra, packet, compareArr){
     if(packet===undefined) packet=packetOf(x);
     if(packet && extra && extra.research) packet.research = extra.research;
@@ -40902,7 +40921,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         /* The reader's own time zone, so "today" and "tonight" are their day. */
         timezone:clientTimeZone(),
         /* Identifiers only — see LAST_CTX and LAST_BOARD. */
-        research_context:carriedContext()})});
+        research_context:carriedContext(),
+        /* The reader's own Card, only when the question is about it: the saved
+           snapshots (frozen prices) and EdgeDesk's active game decisions, so
+           the desk answers "what is on my card" from what the Card holds. */
+        card:aiCardPayload(question)})});
     if(!r.ok){
       var body='', parsed=null;
       try{ var t=await r.text(); try{ parsed=JSON.parse(t); body=parsed&&(parsed.error||parsed.message)||t; }catch(_){ body=t; } }catch(_){}
@@ -56365,6 +56388,52 @@ function fbWrCfbObj(r,ix){
   if(!u||!r.ok||typeof fbGxResearchObj!=='function')return null;
   try{return fbGxResearchObj(u,r.p);}catch(_){return null;}
 }
+/* ═══ PLAYER PROP SIGNALS — one small file per league ═════════════════════
+   football/props/<lg>/summary.json (football/props/build_summary.js, written
+   with every board build): per game, how many player props were priced and
+   evaluated, how many meet EdgeDesk's research threshold, the best few with
+   their explanation, and WHY a game has none (not released, not captured
+   yet, capture failed). Read through lib/edgedesk_opportunity.js, which
+   re-judges each price's age NOW. The 1-2 MB board is never loaded here; it
+   loads only when a reader opens a game's prop research. The same fetch
+   feeds the Props page (EDPropsUI.loadSummary). */
+var FB_PS_TTL=10*60000;
+function fbPsSummary(lg){var U=window.EDPropsUI,x=U&&U.state&&U.state.summaries?U.state.summaries[lg]:null;return x&&!x.error?x:null;}
+function fbPsEnsure(){
+  var U=window.EDPropsUI;if(!U||!U.loadSummary||!window.EDOpportunity||!window.FB)return null;
+  var T=FB.ui.psTried||(FB.ui.psTried={}),now=Date.now();
+  var due=['nfl','cfb'].filter(function(lg){return !T[lg]||now-T[lg]>FB_PS_TTL;});
+  if(!due.length)return FB.ui.psP||null;
+  due.forEach(function(lg){T[lg]=now;});
+  FB.ui.psP=Promise.all(due.map(function(lg){return U.loadSummary(lg,true).catch(function(){return null;});}))
+    .then(function(){try{fbWrPaint();}catch(_){}try{if(window.EDMine&&EDMine.paintDesk)EDMine.paintDesk();}catch(_){}});
+  return FB.ui.psP;
+}
+/* for tools/personal/research_state.js: the summaries settle before the states are read */
+window.fbPsReady=function(){return fbPsEnsure()||FB.ui.psP||Promise.resolve();};
+function fbPsEvent(lg,gid){var S=fbPsSummary(lg);if(!S||!window.EDOpportunity)return null;try{return EDOpportunity.eventFromSummary(S,gid,Date.now());}catch(_){return null;}}
+/* the prop line on a Research board card: the count and the best candidate,
+   or nothing (the full list lives on the matchup and the desk) */
+function fbPsLineHTML(c){
+  var p=c&&c.props;if(!p||!p.count||!p.best)return '';
+  return '<div class="fb-wr-ps"><b>PROP SIGNALS</b> '+p.count+' player prop'+(p.count===1?'':'s')+' worth researching · best: '
+    +fbEsc(p.best.player+' '+(p.best.selection||''))+' <span class="mut">EV '+fbEsc(EDOpportunity.text.pct(p.best.ev))+' · confidence '+fbEsc(p.best.confidence==null?'—':p.best.confidence)+'</span>'
+    +' <button class="fb-lnk" onclick="EDPropsUI.go({league:\''+edAttrJs(c.sport)+'\',game:\''+edAttrJs(c.gid)+'\'})">View props</button></div>';
+}
+/* the league-wide player-prop research leaders — the same research score
+   each game card uses, across both leagues' summaries */
+function fbPsTopHTML(){
+  var X=window.EDOpportunity,U=window.EDPropsUI;if(!X||!U||!U.topModuleHTML)return '';
+  fbPsEnsure();
+  var list=[],have=[],priced=0;
+  ['nfl','cfb'].forEach(function(lg){var S=fbPsSummary(lg);if(!S)return;have.push(lg);priced+=(S.counts&&S.counts.priced)||0;try{list=list.concat(X.topFromSummary(S,5,Date.now()));}catch(_){}});
+  list.sort(function(a,b){return (b.research.score-a.research.score)||(a.key<b.key?-1:1);});
+  var empty=!have.length?'Loading player-prop research…'
+    :(priced?'No player prop currently meets EdgeDesk’s research threshold at a fresh price ('+priced+' priced across the boards). This is a valid result.'
+      :'No sportsbook player-prop prices are captured right now. EdgeDesk projections are on the Player Props page.');
+  return '<div class="fb-card fb-ps">'+U.topModuleHTML(list.slice(0,5),{sub:'best research candidates across the NFL and college boards · the ranking each game card uses',empty:empty,league:have[0]||'nfl'})+'</div>';
+}
+window.fbPsTopHTML=fbPsTopHTML; /* the Research board's module, for tools/opportunity/opportunity_ui.e2e.js */
 function fbWrCandidate(r,ix){
   var cfb=r.sport==='p4',p=r.p,mk=r.mkt||{},ok=!!(r.ok&&p&&p.model),st=null;
   try{st=cfb?fbP4StatusFor(p,mk).t:fbNflResearchState(p,mk).label;}catch(_){st=null;}
@@ -56380,6 +56449,9 @@ function fbWrCandidate(r,ix){
     model_total:ok?fbWrNum(p.model.fair_total):null,market_total:fbWrNum(mk.total_line),total_gap:fbWrNum(r.gapT),
     movement:{spread_moved:null,spread_toward_model:null,h2h_pp:fbWrNum(r.move)},
     qb_unknown:(r.warn||[]).some(function(w){return FB_WR_QB_UNKNOWN.test(String(w));})};
+  /* THE PROP SIGNAL: the game's player props, joined on the same schedule id */
+  var pev=fbPsEvent(c.sport,c.gid);
+  if(pev){c.props_event=pev;try{c.props=EDOpportunity.propSignal(pev);}catch(_){c.props=null;}}
   if(!ok)return c;
   /* A COLLEGE GAME READS THROUGH THE RESEARCH VIEW: its confidence,
      reliability and stability tiers scale the reading order
@@ -56479,7 +56551,8 @@ function fbWrRowHTML(x){
   var c=x.candidate,u=x.detail.uncertainty,when='';
   try{when=c.kickoff?whenLabel(new Date(c.kickoff).toISOString()):'';}catch(_){}
   var stCls=c.status==='RESEARCH'?'':(c.status==='INVESTIGATE'?'warn':'mut');
-  var mk=c.market,mAge=mk.kind==='live'?(mk.at!=null?('market '+ago(mk.at)):'market on file'):'consensus line';
+  var mk=c.market||{},mAge=!c.market?'no game market':(mk.kind==='live'?(mk.at!=null?('market '+ago(mk.at)):'market on file'):'consensus line');
+  var gameSig=!(x.detail&&x.detail.game_score==null);
   var vg=c.view&&c.view.market_gap&&c.view.market_gap.available;
   var cf=fbWrConfidence(c);
   function cell(cls,label,val,title){
@@ -56489,15 +56562,17 @@ function fbWrRowHTML(x){
     +'<div class="fb-wr-h"><span class="n">'+x.rank+'</span><span class="m">'+fbEsc(c.away+' @ '+c.home)+'</span>'
       +(window.EDMine?window.EDMine.starHTML(c.board,c.gid,{home:c.home,away:c.away,kickoff:c.kickoff}):'')+'</div>'
     +'<div class="fb-wr-v">'
-      +cell('','Market',fbEsc(vg?c.view.market_gap.market_line_text:(c.home+' '+fbHomeLine(c.market_margin))))
-      +cell('mdl','Model',vg?(fbEsc(c.view.fair.fair_line_text)+fbRvNearBadge(c.view)):fbEsc(c.home+' '+fbHomeLine(c.model_margin)))
-      +cell('gap','Gap',fbEsc(vg?c.view.market_gap.text:(Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts')))
+      +cell('','Market',c.market_margin==null?'<span class="gx-miss">—</span>':fbEsc(vg?c.view.market_gap.market_line_text:(c.home+' '+fbHomeLine(c.market_margin))))
+      +cell('mdl','Model',c.model_margin==null?'<span class="gx-miss">—</span>':(vg?(fbEsc(c.view.fair.fair_line_text)+fbRvNearBadge(c.view)):fbEsc(c.home+' '+fbHomeLine(c.model_margin))))
+      +cell('gap','Gap',(c.model_margin==null||c.market_margin==null)?'<span class="gx-miss">—</span>':fbEsc(vg?c.view.market_gap.text:(Math.abs(c.model_margin-c.market_margin).toFixed(1)+' pts')))
       +cell('cf '+cf.cls,'Confidence',cf.html,cf.title)
       +cell('st','Status','<span class="fb-wr-st '+stCls+'">'+fbEsc(c.status)+'</span>')
       +fbWrEvCell(c,cell)
     +'</div>'
     +(u.elevated?'<div class="fb-wr-u">Higher uncertainty · '+fbEsc(u.reasons.map(function(k){return FB_WR_UNC[k]||k;}).join(' · '))+'</div>':'')
-    +'<details class="fb-wr-w"><summary><b>Why research it</b></summary><p>'+fbEsc(x.why.text)+'</p></details>'
+    +(gameSig?'':'<div class="fb-wr-u">No game-market signal · listed on its player props</div>')
+    +fbPsLineHTML(c)
+    +'<details class="fb-wr-w"><summary><b>Why research it</b></summary><p>'+fbEsc(x.why.text)+'</p>'+(x.prop_why&&gameSig?'<p>'+fbEsc(x.prop_why)+'</p>':'')+'</details>'
     +'<div class="fb-wr-f"><span class="ts">'+fbEsc([c.sport==='cfb'?'CFB':'NFL',when,mAge].filter(Boolean).join(' · '))+'</span>'
       +'<button class="fb-lnk" onclick="fbWrOpen(\''+edAttrJs(c.board)+'\',\''+edAttrJs(c.gid)+'\','+x.rank+')">Open research</button></div>'
     +'</div>';
@@ -56558,6 +56633,7 @@ function fbWrInner(rows){
     +fbWrPanel('cfb',cands.filter(function(c){return c.sport==='cfb';}),P,tally);
   return head('ranked by league',tally.n)
     +'<div class="fb-wr-cols">'+panels+'</div>'
+    +fbPsTopHTML()
     +'<p class="rs-pv-note">Reading order, not a ranking of bets. Research signals can be wrong.</p>'
     +'<button class="fb-how" id="fbWrHowBtn" aria-expanded="'+(open?'true':'false')+'" aria-controls="fbWrHowCol" onclick="rsTkColToggle(\'fbWrHow\',\'Hide\',\'How this order is built →\')">'+(open?'Hide':'How this order is built →')+'</button>'
     +'<div class="fb-col'+(open?' open':'')+'" id="fbWrHowCol"><div class="fb-howbody">'
@@ -56671,7 +56747,10 @@ function fbResearchStateOf(r,c,x,ix){
     if(x.excluded){pr.reasons=(x.reasons||[]).map(function(k){return (window.EDResearchPriority&&EDResearchPriority.REASONS[k])||k;});}
     else{pr.eligible=true;pr.score=fbRsNum(x.score);pr.rank=fbRsNum(x.rank);
       pr.why_code=x.why?x.why.code:null;pr.why_text=x.why?x.why.text:null;
-      pr.uncertainty=(x.detail&&x.detail.uncertainty&&x.detail.uncertainty.reasons)||[];}
+      pr.uncertainty=(x.detail&&x.detail.uncertainty&&x.detail.uncertainty.reasons)||[];
+      pr.signals=(x.detail&&x.detail.signals)||['GAME'];pr.game_score=x.detail?fbRsNum(x.detail.game_score):null;
+      pr.prop_score=x.detail?fbRsNum(x.detail.prop_score):null;pr.prop_why=x.prop_why||null;
+      if(x.detail&&x.detail.game_reasons)pr.game_reasons=x.detail.game_reasons.map(function(k){return (window.EDResearchPriority&&EDResearchPriority.REASONS[k])||k;});}
   }
   var gapPts=(fairHome!=null&&mktHome!=null)?fbRsR2(Math.abs(fairHome-mktHome)):null;
   var s={schema:'edgedesk_research_state/1',game_key:(cfb?'cfb':'nfl')+'|'+r.gid,sport:cfb?'cfb':'nfl',game_id:String(r.gid),
@@ -56692,6 +56771,7 @@ function fbResearchStateOf(r,c,x,ix){
       .map(function(d){return {text:String(d.text||'').replace(/^\+[0-9.]+ pts /,''),points:fbRsNum(d.points)};}),
     flags:c?c.flags.slice():[],qualifiers:c?c.qualifiers.slice():[],warnings:(r.warn||[]).slice(0,6),
     priority:pr,
+    props:(function(){var ev=c&&c.props_event;if(!ev||!window.EDOpportunity)return null;try{return EDOpportunity.stateProps(ev);}catch(_){return null;}})(),
     key_reason:pr.why_text||(v&&v.research_label?v.research_label.means:null)||(c&&!cfb&&p?(function(){try{return fbNflResearchState(p,mk).note;}catch(_){return null;}})():null),
     computed_at:new Date().toISOString()};
   return window.EDPersonal?window.EDPersonal.normalizeState(s):s;
@@ -61205,7 +61285,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260929b"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260929e"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,

@@ -172,3 +172,8 @@
 .edm-dec b{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.06em;margin-right:4px}
 .edm-dec .edm-dec-bet{color:var(--pos,#76bd3e)}.edm-dec .edm-dec-watch{color:var(--warn,#d99a2b)}.edm-dec .edm-dec-lean{color:var(--accent,#2fa79a)}
 .edm-dec .edm-dec-pass,.edm-dec .edm-dec-no_decision{color:var(--dim,#aa9c87)}
+/* the game's two research signals and its score (Top Research Priorities) */
+.edm-sig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:4px 0 6px;padding:6px 0;border-top:1px dashed var(--border);border-bottom:1px dashed var(--border)}
+.edm-sig>span{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:600;color:var(--text);min-width:0}
+.edm-sig i{font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+@media(max-width:560px){.edm-sig{grid-template-columns:1fr 1fr}}
