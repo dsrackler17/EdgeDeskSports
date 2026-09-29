@@ -2871,6 +2871,7 @@ body.focus .dk-focusnote{display:block}
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929a">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929b">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929a">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3166,7 +3167,7 @@ body.focus .dk-focusnote{display:block}
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
-    <nav class="stseg research-sub" aria-label="Research sports"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></nav>
+    <nav class="stseg research-sub" aria-label="Research sports"><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="props" onclick="researchGo('props')">Props</button><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button></nav>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3262,15 +3263,23 @@ body.focus .dk-focusnote{display:block}
     <div id="stBody"><div class="empty">Loading…</div></div>
     <div id="rsSys-stats" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
-    <!-- PROPS -->
-    <!-- Props: panel and module kept (the projections surface inside Stats);
-         no sub-nav tab, and researchGo('props') lands on Stats -->
+    <!-- PROPS: the Player Props research board (lib/edgedesk_props_ui.js,
+         docs/player-props/UI.md). Board = every projected NFL / FBS prop with
+         the book's price beside EdgeDesk's distribution; Validation & record =
+         the walk-forward gates and the frozen live record; Season rates = the
+         older model_props season-rate projections, kept as they were. -->
     <div id="v-props" class="rpanel hide">
-    <div class="row-between fb-panelhd"><h2 style="margin:0">Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" id="prRefreshBtn" title="Refresh" aria-label="Refresh props" onclick="rsTkRefresh('prRefreshBtn',['props'])">&#8635;</button></div>
+    <div class="row-between fb-panelhd"><h2 style="margin:0">Player Props</h2><span class="spacer"></span><span class="freshness" id="prFresh">—</span><button class="refreshbtn" id="prRefreshBtn" title="Refresh" aria-label="Refresh props" onclick="rsTkRefresh('prRefreshBtn',['props'])">&#8635;</button></div>
+    <p class="rs-lede">Player-level research: opportunity, production, the full outcome distribution, EdgeDesk&rsquo;s fair line and fair odds, the book&rsquo;s price, the no-vig probability, EV and how reliable the number is. <b>Research, not picks</b> &mdash; a decision appears only against a real, fresh sportsbook price.</p>
+    <div class="stseg fb-seg" id="prSeg" style="margin-bottom:12px"><button data-seg="board" class="on" onclick="prSetSeg('board')"><b>Board</b><small>NFL &middot; FBS</small></button><button data-seg="analytics" onclick="prSetSeg('analytics')"><b>Validation &amp; record</b><small>Gates &middot; CLV</small></button><button data-seg="rates" onclick="prSetSeg('rates')"><b>Season rates</b><small>Other sports</small></button></div>
+    <div id="prBoard"><div class="empty">Loading&hellip;</div></div>
+    <div id="prAnalytics" class="hide"></div>
+    <div id="prRates" class="hide">
     <p class="rs-lede">Season-rate projections with modeled variance. <b>Projections, not lines, not edges</b> — an edge exists only once these beat a real closing number.</p>
     <div class="stchips" id="prSports"></div>
     <div id="prControls"></div>
     <div id="prBody"><div class="empty">Loading…</div></div>
+    </div>
     <div id="rsSys-props" class="fb-ov" style="margin-top:var(--sp5)"></div>
     </div>
     <!-- LAB (EdgeDesk Lab) -->
@@ -3845,6 +3854,12 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
 <script src="/lib/edgedesk_decision_ui.js?v=20260929b"></script>
+<!-- PLAYER PROPS (docs/player-props/ARCHITECTURE.md): the one prop core every surface
+     prices with (identity, distributions, no-vig consensus, EV via research_core,
+     decisions via edgedesk_decision) and the surfaces that read it: the Props board,
+     the research drawer, the game-card section, the player page and the analytics. -->
+<script src="/lib/edgedesk_props.js?v=20260929a"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5153,10 +5168,9 @@ window.researchGo=function(sub){
      prefs land on Football instead of a hidden panel */
   if(sub==='cfb')sub='football';
   if(RS_RETIRED[sub])sub=RS_RETIRED[sub];
-  /* Props has no top-level seat until it carries a workflow of its own: its
-     season-rate projections already attach to Stats player rows, so old
-     links and remembered prefs land there */
-  if(sub==='props')sub='stats';
+  /* Props has its own seat again: the Player Props research board
+     (football/props, lib/edgedesk_props_ui.js). The season-rate projections
+     that used to live here stay reachable on its "Season rates" segment. */
   if(!RESEARCH_MODULES[sub])sub='football';
   var prev=RESEARCH_SUB;
   RESEARCH_SUB=sub;
@@ -5315,13 +5329,17 @@ researchRegister({id:'stats',label:'Stats',schema:'public',cadenceMs:86400000,
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:ST.at||null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
-researchRegister({id:'props',label:'Props',schema:'public',cadenceMs:86400000,
-  load:function(force,signal){return window.loadProps(force,signal);},
-  render:function(){renderProps();},
-  hasData:function(){return !!PR.rows.length;},
+/* PLAYER PROPS: the board, the drawer and the analytics are lib/edgedesk_props_ui.js
+   reading the committed football/props files; the "Season rates" segment is the
+   older model_props reader (loadProps / renderProps below), loaded only when opened.
+   #research/props/<league>|<projection_id> opens that prop's research drawer. */
+researchRegister({id:'props',label:'Props',schema:'public',cadenceMs:3600000,
+  load:function(force,signal){return window.loadPlayerProps(force,signal);},
+  render:function(){renderPlayerProps();},
+  hasData:function(){return !!(window.EDPropsUI&&EDPropsUI.state.boards[EDPropsUI.state.league]);},
   search:function(q){return [];},                              /* stage 2 */
   openEntity:null,closeEntity:null,entityOpen:null,
-  freshness:function(){return {loadedAt:PR.at||null,builtAt:null};},
+  freshness:function(){return {loadedAt:PRX.at||null,builtAt:PRX.builtAt||null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'lab',label:'Lab',schema:'public',cadenceMs:null,
   load:function(force,signal){return (typeof window.loadLab==='function')?window.loadLab(force,signal):Promise.resolve();},
@@ -5432,6 +5450,10 @@ var RS_PROV={
     {nm:'Over probability',tier:'T3',model:'model_props.p_over',src:'public.model_props.p_over — probability under the modeled variance shape'}
   ],
   props:[
+    {nm:'Player prop distributions, fair lines, fair odds',tier:'T3',model:'NFL_PLAYER_PROPS_V1 · CFB_PLAYER_PROPS_V1',src:'football/props/<league>/games/*.json — 10,000 seeded simulations per game from EdgeDesk’s own game model, fitted team-volume regressions, shrunk player shares and efficiency (football/props/project.js)'},
+    {nm:'Sportsbook prop prices, consensus, no-vig, movement',tier:'T0',src:'football/props/<league>/markets/*.json — The Odds API per-event player props, timestamped and change-only (football/props/capture.js). Absent when no key is configured: the board then says PROJECTION ONLY.'},
+    {nm:'EV, edge, decisions, sizing',tier:'T2',src:'lib/edgedesk_props.js over lib/research_core.js (the one EV engine) and lib/edgedesk_decision.js (the one BET / LEAN / WATCH / PASS rule set)'},
+    {nm:'Validation stage per market',tier:'T2',src:'football/props/nfl/validation.json — walk-forward, no leakage, untouched holdout (football/props/backtest.js)'},
     {nm:'Projection (per-game rate)',tier:'T1',src:'public.model_props.proj — a season rate, not matchup-adjusted'},
     {nm:'Projection line',tier:'T2',src:'public.model_props.line — a half-point placed near the rate'},
     {nm:'Over probability',tier:'T3',model:'model_props.p_over',src:'public.model_props.p_over — probability under the modeled variance shape (Poisson for counts, Normal for points)'}
@@ -5488,7 +5510,10 @@ var RS_LIMITS={
          'Projections attach by exact player-name match across two independently captured tables, so a naming mismatch silently drops them.',
          'In the basic fallback table, ordering uses the first number in the stat line, which is not comparable across positions.',
          'UFC rows shown here lose the UFC module’s per-fight context.'],
-  props:['Projections are season rates. They are not matchup-adjusted and carry no closing-line validation.',
+  props:['Player props are modeled for NFL and FBS football only; QB, RB, WR and TE markets. Kicking, defensive and special-teams props are listed as unmodeled.',
+         'A market stays EXPERIMENTAL until it passes the walk-forward gates; an experimental market never carries a stake.',
+         'Without a fresh sportsbook capture the board shows fair lines and distributions only, with no EV and no decision.',
+         'The Season rates segment: projections are season rates. They are not matchup-adjusted and carry no closing-line validation.',
          'The variance shape is an assumption of the model, not a measurement.',
          'Each sport and market list is capped at the top 100 rows.',
          'A projection is not a price. An edge exists only once these beat a real closing number.'],
@@ -6259,6 +6284,9 @@ function rsDatasetHTML(modId){
     return out;},RS_PROV.stats);
   attach('props',RS_LIMITS.props,function(q){
     var n=rsNorm(q),out=[],seen={};
+    var U=window.EDPropsUI,L=U?U.state.league:null,b=U&&L?U.state.boards[L]:null;
+    for(var j=0;b&&j<b.rows.length&&out.length<8;j++){var br=b.rows[j];
+      if(!seen['p'+br.pid]&&rsNorm(br.name).indexOf(n)>=0){seen['p'+br.pid]=1;out.push({id:L+'|'+br.id,label:br.name,sub:L.toUpperCase()+' · '+br.pos+' · '+br.team});}}
     for(var i=0;i<PR.rows.length&&out.length<8;i++){var r=PR.rows[i];
       var k=(r.sport||'')+'|'+(r.player||'');
       if(!seen[k]&&rsNorm(r.player).indexOf(n)>=0){seen[k]=1;out.push({id:k+'|'+(r.market||''),label:r.player,sub:(r.sport||'')+(r.team?(' · '+r.team):'')});}}
@@ -6271,12 +6299,23 @@ function rsDatasetHTML(modId){
     ST.mode='players';ST.q=parts[1]||'';   /* renderStats paints ST.q into #stQ itself */
     try{renderStats();}catch(_){}
   };
+  /* <league>|<projection_id> opens that prop's research drawer (the Player
+     Props board); the older <sport>|<player>|<market> form opens the Season
+     rates segment on that market, as it always did */
   RESEARCH_MODULES.props.openEntity=function(id){
     var parts=String(id).split('|');
+    if((parts[0]==='nfl'||parts[0]==='cfb')&&parts.length===2&&window.EDPropsUI){
+      prSetSeg('board');EDPropsUI.setLeague(parts[0]);
+      EDPropsUI.loadLeague(parts[0]).then(function(){if(PRX.seg==='board'&&$('prBoard'))EDPropsUI.board($('prBoard'),{league:parts[0]});EDPropsUI.openProp(parts[1],parts[0]);},function(){});
+      return;
+    }
+    prSetSeg('rates');
     if(parts[0])PR.sport=parts[0];
     if(parts[2])PR.market=parts[2];
     try{renderProps();}catch(_){}
   };
+  RESEARCH_MODULES.props.entityOpen=function(){return !!document.querySelector('.edp-ov');};
+  RESEARCH_MODULES.props.closeEntity=function(){var o=document.querySelectorAll('.edp-ov');for(var i=0;i<o.length;i++){try{o[i].parentNode.removeChild(o[i]);}catch(_){}}};
 })();
 
 var navs=document.querySelectorAll('.bottomnav button');for(var n=0;n<navs.length;n++)navs[n].onclick=(function(b){return function(){show(b.dataset.v);};})(navs[n]);
@@ -11775,7 +11814,34 @@ async function loadStats(force,signal){
     renderStats();
   }catch(e){var c=rsClassifyError(e);if(!c)return;$('stBody').innerHTML='';rsSetState('stats',c.state,c);}
 }
-/* ===== PROPS tab — browsable player-prop projection board (model, not lines) ===== */
+/* ===== PLAYER PROPS — the research board (lib/edgedesk_props_ui.js) =====
+   Every number on it is read from the committed football/props files and
+   priced by lib/edgedesk_props.js; this block only routes the three segments. */
+var PRX={seg:'board',at:0,builtAt:null};
+window.prSetSeg=function(seg){
+  PRX.seg=seg;
+  var bs=document.querySelectorAll('#prSeg button');for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].getAttribute('data-seg')===seg);
+  var map={board:'prBoard',analytics:'prAnalytics',rates:'prRates'};
+  Object.keys(map).forEach(function(k){var el=$(map[k]);if(el)el.classList.toggle('hide',k!==seg);});
+  renderPlayerProps();
+  if(seg==='rates'&&!PR.rows.length)loadProps(false,null);
+};
+window.loadPlayerProps=function(force,signal){
+  var U=window.EDPropsUI;
+  if(!U){$('prBoard').innerHTML='<div class="empty">The player-prop module did not load. Nothing is shown rather than something invented.</div>';return Promise.resolve();}
+  if(force){U.state.boards={};U.state.games={};U.state.markets={};U.state.logs={};}
+  var L=U.state.league;
+  return U.loadLeague(L).then(function(b){PRX.at=Date.now();PRX.builtAt=rsParseStamp(b.generated_at||b.as_of);rsFreshApply('props');rsSetState('props','ok');renderPlayerProps();
+    if(PRX.seg==='rates')return loadProps(force,signal);},
+    function(e){$('prBoard').innerHTML='<div class="empty">Player props are not available right now ('+rsEsc(String(e&&e.message||e))+'). Nothing is shown rather than something invented.</div>';});
+};
+function renderPlayerProps(){
+  var U=window.EDPropsUI;if(!U)return;
+  if(PRX.seg==='board'){var h=$('prBoard');if(h&&U.state.boards[U.state.league]){U.state.host=h;h.classList.add('edp');U._paint();}else if(h)U.board(h,{});}
+  else if(PRX.seg==='analytics'){var a=$('prAnalytics');if(a&&!a.getAttribute('data-league-shown'))U.analytics(a,U.state.league).then(function(){a.setAttribute('data-league-shown',U.state.league);});}
+  else if(PRX.seg==='rates')renderProps();
+}
+/* ===== PROPS: Season rates — browsable player-prop projection board (model, not lines) ===== */
 var PR={rows:[],sport:null,market:null,dir:'proj',at:0};
 var PR_MKT={points:'Points',rebounds:'Rebounds',assists:'Assists',threes:'3-Pointers',hr:'Home runs',rbi:'RBI',strikeouts:'Strikeouts'};
 var PR_ORDER=['points','rebounds','assists','threes','hr','rbi','strikeouts'];
@@ -24456,7 +24522,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     {id:'marketlab',ic:'market',t:'Market lab',d:'Consensus, sharp-only, no-vig and best price from stored quotes.'},
     {id:'features',ic:'game',t:'Feature explorer',d:'Definition, source, transformation and distribution of every input.'},
     {id:'provenance',ic:'fighter',t:'Data provenance',d:'Where every model input came from, and how fresh it is.'},
-    {id:'record',ic:'history',t:'Research record',d:'Historical research output, graded against the close.'}
+    {id:'record',ic:'history',t:'Research record',d:'Historical research output, graded against the close.'},
+    {id:'props',ic:'watch',t:'Player props validation',d:'Walk-forward gates, calibration and the live record of every prop market.'}
   ];
   function toolById(id){for(var i=0;i<TOOLS.length;i++)if(TOOLS[i].id===id)return TOOLS[i];return null;}
   function homeHTML(){
@@ -24953,6 +25020,16 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       +'<div class="fb-note">The 150 most recently graded signals are loaded here. Tap a row for its autopsy.</div></div>';
     return h;
   }
+  /* PLAYER PROPS: the same analytics the Props tab's Validation & record
+     segment shows (lib/edgedesk_props_ui.js analytics) — the walk-forward
+     gates, calibration by prop and position, redistribution accuracy and the
+     frozen live record. Painted after the Lab's synchronous render. */
+  function propsTool(){
+    var h='<p class="fb-ms-d">Every player-prop market is <b>EXPERIMENTAL</b> until it passes its walk-forward gates on an untouched holdout; this is where those gates, and the live record, are shown pass or fail.</p>';
+    if(!window.EDPropsUI)return h+none('The player-prop module did not load.');
+    setTimeout(function(){var el=$('labPropsHost');if(el&&!el.getAttribute('data-done')){el.setAttribute('data-done','1');EDPropsUI.analytics(el,EDPropsUI.state.league||'nfl');}},0);
+    return h+'<div id="labPropsHost"><div class="fb-skel" style="height:80px"></div></div><div class="fb-btns"><button class="fb-btn pri" onclick="researchGo(\'props\')">Open the Props board</button></div>';
+  }
   window.labRec=function(k,v){L.sel.rec=L.sel.rec||{sport:'',result:'',clv:''};L.sel.rec[k]=v;labRender();};
   window.labOpenSig=function(key){L.sel.autopsy=key;L.sel.autopsyIdx=null;labOpen('autopsy');};
 
@@ -25000,7 +25077,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var head='<div class="lab-tool-hd"><button class="fb-tgl" onclick="labGoHome()" aria-label="Back to Lab">‹ Lab</button>';
     if(t.indexOf('exp:')===0){var x=expById(t.slice(4));if(!x)return head+'<span class="t">Experiment</span></div>'+none('No experiment with that id is on file. Pick one from the list.');return head+'<span class="t">Experiment</span></div>'+expDetail(x);}
     var tool=toolById(t);if(!tool)return head+'</div>'+none('No tool with that name. Pick one from the list.');
-    var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool}[t];
+    var body={sandbox:sandboxTool,scenario:scenarioTool,sensitivity:sensitivityTool,calibration:calibrationTool,autopsy:autopsyTool,versions:versionsTool,failure:failureTool,walkforward:walkforwardTool,marketlab:marketTool,features:featuresTool,provenance:provenanceTool,record:recordTool,props:propsTool}[t];
     var out;try{out=body();}catch(e){out=none('This tool failed to render ('+esc(e&&e.message)+'). Nothing is shown rather than something wrong; refresh to retry.');}
     return head+'<span class="t">'+esc(tool.t)+'</span></div>'+mobileNav()+out;
   }
@@ -48333,6 +48410,9 @@ function fbGameCardNfl(u){
   if(src==='nflverse reference'&&(mkt.spread_line!=null||mkt.total_line!=null))extra.push('market numbers are nflverse consensus reference, not a live bettable quote');
   var qb='';try{qb=fbQbBlockHTML(g);}catch(_){qb='';}
   var pa='';try{var paB=fbPersonnelHTML(g.game_id);if(paB)pa='<div class="gd-sec">Personnel availability</div>'+paB;}catch(_){pa='';}
+  /* PLAYER PROP RESEARCH: a placeholder lib/edgedesk_props_ui.js hydrates after
+     the board paints (renderFootball) with this game's most informative props */
+  var ppr='';try{if(window.EDPropsUI)ppr='<div class="gd-sec">Player prop research</div>'+EDPropsUI.gameSectionHTML('nfl',g.game_id);}catch(_){ppr='';}
   /* QUOTE-LEVEL EV: the best exact captured price, both sides, every number
      — RAW EV only (no EV calibration exists for the NFL) */
   if(qv)lines+='<div class="gd-sec">Price · expected value</div>'+fbQevRowHTML(qv)
@@ -48342,7 +48422,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+ppr+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -53256,7 +53336,7 @@ window.fbGxToggle=function(gid,id){
       var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
 var FB_GX_DEFAULT={why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true};
+  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true,props:true};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -54812,6 +54892,7 @@ function fbP4Card(u){
     +fbGxSec(gid,'drivers','Why EdgeDesk prices it here',fbGxDrivers(p),true)
     +fbGxSec(gid,'wrong','Why this number could be wrong',fbGxWrong(p),true)
     +fbGxSec(gid,'personnel','Personnel availability',fbPersonnelHTML(gid),true,fbPersonnelNote(gid))
+    +(window.EDPropsUI?fbGxSec(gid,'props','Player prop research',EDPropsUI.gameSectionHTML('cfb',gid),true,'EdgeDesk distributions against the books'):'')
     +fbGxSec(gid,'qb','The quarterbacks · measured',fbGxQb(u),true,
       'passing EPA per dropback, with the sample it came off — research context, not priced')
     +fbGxSec(gid,'cases','The case for each side',fbGxCases(u,p),true)
@@ -55492,6 +55573,7 @@ window.fbP4Gate=function(gid){
   try{if(window.EDMine&&window.EDMine.trackGame)window.EDMine.trackGame('p4',gid);}catch(_){}
   var u=null;FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
   el.innerHTML=u?('<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>'):'';
+  try{if(window.EDPropsUI)EDPropsUI.hydrate(el);}catch(_){}
 };
 function fbP4StatusStrip(){
   var S=FB.p4,h=FB.health;
@@ -57220,6 +57302,7 @@ window.renderFootball=function(){
   fbRenderSystem();          /* creates the rsMeta-football host the shell paints into */
   fbRenderBoard(host);
   fbAfterRender();
+  try{if(window.EDPropsUI)EDPropsUI.hydrate(host);}catch(_){}
 };
 /* ═══ EDGEDESK PLAYER QUALITY + SCHEME MATCHUP ENGINE ══════════════════════
    The fourth segment of the Football module, and a panel under every Power 4

@@ -1017,6 +1017,33 @@ granted to no client role; `games/publish_board.js` calls them from the
 existing games workflows with `SB_SERVICE_ROLE` / `SB_URL`. No new secret is
 needed.
 
+### `player_props.sql` — player identity, prop quotes, projections, frozen decisions and grades
+The Player Props schema (`docs/player-props/SCHEMA.md`). It covers:
+- the durable **player registry** (ids `edp_` + 12 hex, never names) and its
+  **identity map** (provider ids, sportsbook names, former names), plus team
+  memberships;
+- game logs, usage history (with snap / route / target / carry / red-zone views),
+  depth charts, injuries and availability;
+- every **prop quote** tick, markets, consensus, closing lines and snapshots;
+- model versions (seeded `NFL_PLAYER_PROPS_V1.0` and `CFB_PLAYER_PROPS_V1.0`),
+  projections, integer-pmf distributions, correlations and calibration;
+- **frozen decisions** and **grades**, with the `player_prop_record` view.
+
+Every table is **append-only**: UPDATE and DELETE are revoked even from
+`service_role` and blocked by trigger. A decision frozen at or after kickoff is
+refused, as is a BET with zero units, and so is a grade before kickoff.
+
+Row level security:
+- model output is public;
+- the live market is for authenticated readers;
+- a frozen decision is public only after its kickoff.
+
+Idempotent and additive; the report at the end should say `ok` on every row.
+It is tested against a real PostgreSQL by `tools/props/player_props_sql.test.js`
+(`npm run props:sql`). `football/props/sync_supabase.js` mirrors the committed
+files into it insert-only, with `SB_URL` / `SB_SERVICE_ROLE`; the repository
+stays the record either way.
+
 ---
 
 ## Not in this repository

@@ -44,6 +44,7 @@ web UI. Edit there, then run `node tools/presentation/inline.js`:
 | `EDBOARD` | `_board.js` | the board sweep: scope, eligibility, qualification, ranking, the record |
 | `EDSTAKE` | `_stake.js` | bankroll policy, reliability, EV at the executable price, Kelly under every cap, the card |
 | `EDMLBHIST` / `EDMLBOFF_AI` | `_mlbhist.js` / `_mlboff.js` | the 2016–2025 pitching and hitting archives and their critics |
+| `EDPROPS` / `EDPROPSDESK` | `lib/edgedesk_props.js` / `football/props/desk.js` | the player-prop core (identity, distributions, no-vig, EV through research_core, decisions, grading) and the desk's deterministic prop answers and critic |
 
 Only PART 2 — the orchestrator, the system prompt and the HTTP handler — has no
 canonical file, because it is what `index.ts` actually is. `tools/intelligence/lint.js`

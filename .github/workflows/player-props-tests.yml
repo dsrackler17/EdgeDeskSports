@@ -1,0 +1,85 @@
+# EdgeDesk Player Props — the checks that gate every change to the prop
+# system (docs/player-props/ARCHITECTURE.md). Nothing here deploys or writes.
+#
+#   suites      the prop core (identity, odds, no-vig, EV, distributions,
+#               decisions, ladders, sizing, correlation, grading, freezing,
+#               stages), the engine and model on a synthetic game
+#               (reproducible simulation, availability, redistribution,
+#               shrinkage, calibration, leakage), the pipeline on the committed
+#               fixture (capture → market → board), the record (freeze, grade,
+#               an append-only ledger), the AI desk's prop answers through the
+#               real handler, and the static wiring of every surface.
+#   migrations  supabase/player_props.sql applied TWICE to a real PostgreSQL on
+#               the runner's own throwaway cluster, and attacked as anon, as a
+#               reader and as the service role.
+#   browser     Research → Props, the drawer, the game-card section, the Lab
+#               tool, the player pages, the record and a 390 px phone, in
+#               Chromium against the fixture-priced board.
+name: Player props CI
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_props*.js'
+      - 'lib/edgedesk_props.css'
+      - 'lib/research_core.js'
+      - 'lib/edgedesk_decision.js'
+      - 'football/props/**'
+      - 'supabase/player_props.sql'
+      - 'supabase/functions/edgedesk_ai/index.ts'
+      - 'tools/props/**'
+      - 'tools/presentation/inline.js'
+      - 'players/**'
+      - 'app.html'
+      - 'record.html'
+      - '404.html'
+      - 'package.json'
+      - '.github/workflows/player-props*.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: player-props-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Core, engine, pipeline, record, AI desk and wiring
+        run: npm run props:test
+      - name: The inlined kernels match their canonical files
+        run: node tools/presentation/inline.js --check
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; the suite starts its own throwaway
+      # cluster, applies the migration twice, and tears it down.
+      - name: Quotes, projections, frozen decisions and grades are append-only and pregame
+        run: npm run props:sql
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install Playwright with Chromium
+        run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: The props surfaces in a real browser (desktop and phone)
+        run: npm run props:e2e

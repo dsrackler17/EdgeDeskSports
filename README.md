@@ -242,6 +242,40 @@ the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
 - `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
 - `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
 
+## Player props — research, not picks (NFL and FBS)
+**Research → Props** is a player-level research board. For every projected
+QB, RB, WR and TE prop it shows:
+- the player's **opportunity** (snaps, routes, targets, carries, red zone) and
+  **production**;
+- the **full outcome distribution** from 10,000 seeded simulations of EdgeDesk's
+  own game model (never a Normal);
+- the **fair line** (the median) and the **fair odds**;
+- the book's price, the **no-vig** probability, **edge** and **EV** at the exact
+  price, and every alternate line priced on the same distribution;
+- **reliability**, which is how much the number can be trusted, not the size of
+  the edge;
+- a BET / LEAN / WATCH / PASS / NO DECISION on a risk-adjusted probability,
+  with quarter-Kelly sizing under exposure caps.
+
+A market stays **EXPERIMENTAL** (never staked) until it passes walk-forward
+gates on an untouched holdout. Today receiving yards, receptions, targets, rush
+attempts and rush + rec yards are **TRACKING**; QB and rushing-yards props are
+not yet.
+
+Every qualifying pregame prediction is frozen in an append-only ledger and
+graded after the final (WIN / LOSS / PUSH / VOID, units, CLV).
+
+It also appears on:
+- the NFL and FBS game cards;
+- player pages (`/players/nfl/<slug>`);
+- the Lab (*Player props validation*);
+- the public record;
+- the AI desk, which answers prop questions from the same files and invents no
+  number.
+
+Without an `ODDS_API_KEY` the board is PROJECTION ONLY: EdgeDesk never invents
+a price. See `docs/player-props/ARCHITECTURE.md` and `docs/runbooks/player-props.md`.
+
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on
 every game card and on the Top 5), **research-condition alerts** under the bell

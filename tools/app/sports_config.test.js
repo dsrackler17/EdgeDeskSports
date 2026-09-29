@@ -83,8 +83,14 @@ const APP = read('app.html');
 /* the tab strip is a <nav> (it was a <div> before the Research UI refinement) */
 const nav = (APP.match(/<(nav|div) class="stseg research-sub"[^\n]*?<\/\1>/) || [''])[0];
 const subs = (nav.match(/data-sub="([a-z]+)"/g) || []).map((x) => x.slice(10, -1));
-chk('the Research tabs are Desk, the configured coverage, Stats and Lab',
-  JSON.stringify(subs) === JSON.stringify(['rdesk'].concat(S.RESEARCH_COVERAGE.map((c) => c.id), ['stats', 'lab'])), subs);
+/* Props is a research workflow (player props for the football it sits beside),
+   not a sport: it rides right after Football and never enters the coverage
+   sentence the AI and the capture read */
+const coverageTabs = [];
+S.RESEARCH_COVERAGE.forEach((c) => { coverageTabs.push(c.id); if (c.id === 'football') coverageTabs.push('props'); });
+chk('the Research tabs are Desk, the configured coverage (Props after Football), Stats and Lab',
+  JSON.stringify(subs) === JSON.stringify(['rdesk'].concat(coverageTabs, ['stats', 'lab'])), subs);
+chk('and Props is not a sport in the coverage list', !S.RESEARCH_COVERAGE.some((c) => c.id === 'props'));
 S.RETIRED.forEach((r) => r.modules.forEach((m) => {
   chk('no Research tab for retired module ' + m, subs.indexOf(m) < 0);
   lacks(APP, 'id="v-' + m + '"', 'no panel for retired module ' + m);

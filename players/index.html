@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+  EDGEDESK PLAYER RESEARCH PAGES (docs/player-props/UI.md).
+    /players/?p=nfl/puka-nacua          one player's prop research
+    /players/nfl/puka-nacua             the same page (404.html redirects the pretty route here)
+    /players/                           every player on the current NFL and FBS prop boards
+  Every number is read from the committed football/props files and priced by
+  lib/edgedesk_props.js — the same function the Props board and the research
+  drawer run. Nothing here computes a football number of its own.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Player prop research · EdgeDesk</title>
+<meta name="description" content="Player-level research from EdgeDesk: opportunity, production, the full outcome distribution, fair lines, fair odds, the sportsbook price and how reliable the number is. Research, not picks.">
+<meta name="theme-color" content="#100e0a">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929a">
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#aa9c87;--faint:#958a7a;--accent:#2fa79a;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#d274b0}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;color-scheme:dark;accent-color:var(--accent);-webkit-text-size-adjust:100%}
+a{color:var(--accent);text-decoration:none}
+.top{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(16,14,10,.94);backdrop-filter:blur(6px);z-index:10}
+.brand{font-weight:800;letter-spacing:.06em;color:var(--text)}
+.mk{display:inline-block;width:10px;height:16px;background:var(--accent);border-radius:2px;transform:skewX(-12deg);margin-right:8px;vertical-align:-2px}
+.top .sp{flex:1}
+.top a.lk{font-size:13px;color:var(--dim)}
+.top a.lk:hover{color:var(--text)}
+.wrap{max-width:980px;margin:0 auto;padding:18px 16px 60px}
+.crumb{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:0 0 12px}
+.idx-search{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:10px 12px;font-size:14px;margin:0 0 12px;min-height:44px}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.idx a{display:block;border:1px solid var(--border);border-radius:10px;padding:9px 11px;background:var(--surface);color:var(--text)}
+.idx a:hover{border-color:var(--accent)}
+.idx .s{font-size:11.5px;color:var(--dim);margin-top:2px}
+.foot{color:var(--faint);font-size:12px;line-height:1.6;margin-top:26px}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/"><span class="mk"></span>EDGEDESK</a>
+  <span class="sp"></span>
+  <a class="lk" href="/players/">Players</a>
+  <a class="lk" href="/app.html#research/props">Props board</a>
+</header>
+<main class="wrap">
+  <div class="crumb" id="crumb">Player prop research</div>
+  <div id="host"><div class="edp"><div class="edp-dim">Loading…</div></div></div>
+  <p class="foot">Research, not picks. EdgeDesk shows the full distribution behind every number, the price a book is dealing and how reliable the projection is; a decision appears only against a real, fresh sportsbook price. Signals can be wrong. 21+. Bet responsibly.</p>
+</main>
+<script src="/lib/research_core.js?v=20260925p"></script>
+<script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
+<script src="/lib/edgedesk_market.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision.js?v=20260929b"></script>
+<script src="/lib/edgedesk_props.js?v=20260929a"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929a"></script>
+<script>
+(function(){
+  var host=document.getElementById('host'),crumb=document.getElementById('crumb');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var q=new URLSearchParams(location.search).get('p')||'';
+  var m=q.match(/^(nfl|cfb)\/([a-z0-9-]+)$/);
+  window.EDPropsUI.setBase('/');
+  if(m){
+    crumb.innerHTML='<a href="/players/">Players</a> &middot; '+m[1].toUpperCase();
+    window.EDPropsUI.playerPage(host,{league:m[1],slug:m[2],base:'/'});
+    return;
+  }
+  /* the index: everyone on the current NFL and FBS prop boards */
+  host.innerHTML='<div class="edp"><h1 class="edp-h1" style="margin:0 0 6px">Player prop research</h1><p class="edp-dim" style="margin:0 0 14px;font-size:13.5px;line-height:1.6">Every player on EdgeDesk&rsquo;s current NFL and FBS prop boards. Each page shows the prop markets, EdgeDesk&rsquo;s projections and full distributions, recent usage and production, and the graded history.</p>'+
+    '<input class="idx-search" id="q" type="search" placeholder="Search a player or team" aria-label="Search players"><div id="list" class="idx"></div></div>';
+  var all=[];
+  Promise.all(['nfl','cfb'].map(function(L){return fetch('/football/props/'+L+'/players_index.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}).then(function(j){
+    if(!j||!j.players)return;Object.keys(j.players).forEach(function(id){var p=j.players[id];all.push({L:L,name:p[0],slug:p[1],pos:p[2],team:p[3]});});});})).then(function(){
+    all.sort(function(a,b){return a.name<b.name?-1:1;});
+    var list=document.getElementById('list'),inp=document.getElementById('q');
+    function paint(){var t=(inp.value||'').toLowerCase();var rows=all.filter(function(p){return !t||(p.name+' '+p.team).toLowerCase().indexOf(t)>=0;}).slice(0,240);
+      list.innerHTML=rows.length?rows.map(function(p){return '<a href="/players/?p='+p.L+'/'+esc(p.slug)+'">'+esc(p.name)+'<div class="s">'+esc(p.L.toUpperCase()+' · '+(p.pos||'')+' · '+(p.team||''))+'</div></a>';}).join(''):'<div class="edp-dim">No player on the current boards matches.</div>';}
+    inp.oninput=paint;paint();
+  });
+})();
+</script>
+</body>
+</html>

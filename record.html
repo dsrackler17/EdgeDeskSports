@@ -227,6 +227,15 @@ footer a:hover{color:var(--text)}
   </div>
 </section>
 
+<section class="sec" id="player-props">
+  <div class="wrap">
+    <span class="ey">Player props · frozen before kickoff · graded after the final</span>
+    <h2>Every player-prop prediction, and how it graded</h2>
+    <p class="sub">EdgeDesk freezes each qualifying pregame player-prop prediction (the price, the book, EdgeDesk's probability, fair odds, EV, the decision and the model version) in a ledger that only ever grows, then grades it against the box score: win, loss, push, or void when the player did not play. Every decision class is graded, passes included. Closing-line value is measured against EdgeDesk's own last capture before kickoff. Every figure below is copied from the files football/props/record.js writes; this page calculates nothing of its own.</p>
+    <div id="propsPub"><div class="edrec-empty">Loading the player-prop record…</div></div>
+  </div>
+</section>
+
 <section class="sec">
   <div class="wrap">
     <span class="ey">Method check</span>
@@ -4166,6 +4175,37 @@ footer a:hover{color:var(--text)}
   if(typeof document!=='undefined'&&document.getElementById('recBriefs')) window.EDREC.load();
 })();
 /*__EDREC_END__*/
+</script>
+<script>
+/* PLAYER PROPS — the public record (record/props/<league>_<season>.json,
+   written by football/props/record.js from the append-only ledger). Nothing
+   here computes a metric; a missing file is the empty state. */
+(function(){
+  'use strict';
+  var D='—';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function pc(x,k){ return isNum(x)?(100*x).toFixed(k==null?1:k)+'%':D; }
+  function sp(x,k){ return isNum(x)?(x>=0?'+':'')+(100*x).toFixed(k==null?1:k)+'%':D; }
+  function f3(x){ return isNum(x)?x.toFixed(3):D; }
+  var LBL={pass_yds:'Passing yards',pass_att:'Pass attempts',pass_cmp:'Completions',pass_tds:'Passing TDs',pass_int:'Interceptions',rush_att:'Rush attempts',rush_yds:'Rushing yards',targets:'Targets',receptions:'Receptions',rec_yds:'Receiving yards',rush_rec_yds:'Rush + rec yards',pass_rush_yds:'Pass + rush yards',anytime_td:'Anytime TD',longest_rec:'Longest reception',longest_rush:'Longest rush',longest_cmp:'Longest completion'};
+  function block(name,rec){
+    var sc=rec&&rec.scorecards, a=sc&&sc.all;
+    var h='<div class="edrec-note" style="margin-top:14px"><b>'+esc(name)+'</b> · '+esc(a?a.sample_state:'no settled predictions yet')+'</div>';
+    if(!a||!a.settled) return h+'<div class="edrec-empty">Nothing has settled yet. Predictions are frozen before kickoff; the first graded rows appear here after the final whistle.</div>';
+    h+='<div class="kpis">'+[['Settled (W-L-P)',a.wins+'-'+a.losses+'-'+a.pushes],['Voids',String(a.voids)],['Win rate',pc(a.win_rate)],['Mean EdgeDesk probability',pc(a.mean_model_prob)],['Brier · market',f3(a.brier)+' · '+f3(a.market_brier)],['Closing-line value',sp(a.clv_mean,2)],['Flat 1U ROI',sp(a.flat_roi)]].map(function(k){ return '<div class="kpi"><div class="n">'+esc(k[1])+'</div><div class="l">'+esc(k[0])+'</div></div>'; }).join('')+'</div>';
+    var bp=sc.by_prop||{}, keys=Object.keys(bp);
+    if(keys.length) h+='<div style="overflow-x:auto"><table class="edrec-tbl" style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th style="text-align:left">Prop</th><th>n</th><th>Win %</th><th>Mean P</th><th>Brier</th><th>CLV</th><th>ROI</th></tr></thead><tbody>'+keys.map(function(k){ var r=bp[k]; return '<tr><td style="text-align:left">'+esc(LBL[k]||k)+'</td><td>'+r.decided+'</td><td>'+pc(r.win_rate)+'</td><td>'+pc(r.mean_model_prob)+'</td><td>'+f3(r.brier)+'</td><td>'+sp(r.clv_mean,2)+'</td><td>'+sp(r.flat_roi)+'</td></tr>'; }).join('')+'</tbody></table></div>';
+    return h;
+  }
+  window.EDPROPSPUB={ block:block, load:function(){
+    var el=document.getElementById('propsPub'); if(!el) return;
+    var now=new Date(), season=now.getUTCMonth()<=1?now.getUTCFullYear()-1:now.getUTCFullYear();
+    var get=function(L){ return fetch('./record/props/'+L+'_'+season+'.json',{cache:'no-cache'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); };
+    Promise.all([get('nfl'),get('cfb')]).then(function(x){ el.innerHTML=block('NFL player props · '+season,x[0])+block('College football (FBS) player props · '+season,x[1])+'<div class="edrec-note">A market only counts toward EdgeDesk\u2019s stake-bearing record once it passes its validation gates; experimental markets are graded here but never carry units. Full analytics: the Props tab in the terminal (Validation &amp; record).</div>'; });
+  } };
+  if(typeof document!=='undefined'&&document.getElementById('propsPub')) window.EDPROPSPUB.load();
+})();
 </script>
 <script>
 /*__EDLAB_PUB_START__*/

@@ -1,0 +1,112 @@
+# EdgeDesk Player Props — capture, project, freeze, grade, publish.
+#
+# Every hour in season:
+#   1. the props rules must pass (lib + engine + record + identity tests);
+#   2. CAPTURE sportsbook player props (football/props/capture.js), only when
+#      the repository variable PROPS_CAPTURE is 'on' AND the ODDS_API_KEY
+#      secret exists. Capture is budgeted (window, event cap, per-event
+#      cadence that tightens near kickoff, a credit floor) because per-event
+#      prop markets bill per market per region. Without the key the board
+#      says PROJECTION ONLY — EdgeDesk never invents a price;
+#   3. BUILD the NFL and CFB boards from EdgeDesk's own game models and the
+#      public nflverse / cfbfastR data (football/props/build.js). Projections
+#      are deterministic in their inputs, so an unchanged slate rewrites
+#      nothing;
+#   4. FREEZE qualifying pregame predictions into the append-only ledger and
+#      GRADE finished games (football/props/record.js);
+#   5. VERIFY the ledger only grew, then publish with tools/ci/push_generated.sh;
+#   6. MIRROR to Supabase when SB_URL / SB_SERVICE_ROLE exist (insert-only).
+#
+# The walk-forward validation (football/props/backtest.js, ~3 minutes) runs
+# on dispatch with mode=validate and on Tuesdays, after the week's games are
+# in the public data; it refits the calibration on its tuning fold and
+# re-derives every market's stage from the untouched holdout.
+name: Player props
+
+on:
+  schedule:
+    - cron: '17 * * 8-12,1 *'       # hourly, August through January
+    - cron: '41 14 * 8-12,1 2'      # Tuesdays: the walk-forward validation
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'hourly (capture + build + record), build (no capture), validate (walk-forward + calibration), grade (record only)'
+        required: false
+        default: 'hourly'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: player-props
+  cancel-in-progress: false
+
+jobs:
+  props:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      MODE: ${{ github.event.inputs.mode || (github.event.schedule == '41 14 * 8-12,1 2' && 'validate' || 'hourly') }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The props rules must pass before anything is published
+        run: npm run props:test
+
+      - name: Walk-forward validation and calibration
+        if: ${{ env.MODE == 'validate' }}
+        run: |
+          node football/props/backtest.js --from 2025-3 --to $(node -e "const s=require('./football/nfl/slate.json');console.log(s.season+'-'+Math.max(2,(s.games[0]||{}).week-1))") --sims 2000 --write
+
+      - name: Capture sportsbook player props
+        if: ${{ env.MODE == 'hourly' && vars.PROPS_CAPTURE == 'on' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "::warning::PROPS_CAPTURE is on but the ODDS_API_KEY secret is empty: no prop was captured"
+            echo "Player props: NOT captured (the ODDS_API_KEY secret is missing)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node football/props/capture.js --league nfl | tee -a "$GITHUB_STEP_SUMMARY"
+          node football/props/capture.js --league cfb | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the boards
+        if: ${{ env.MODE != 'grade' }}
+        run: node football/props/build.js --league all
+
+      - name: Freeze pregame predictions and grade finished games
+        if: ${{ env.MODE != 'validate' }}
+        run: |
+          node football/props/record.js freeze --league nfl
+          node football/props/record.js freeze --league cfb
+          node football/props/record.js grade --league nfl
+          node football/props/record.js grade --league cfb
+
+      - name: The ledger only grew
+        run: |
+          node football/props/record.js verify --league nfl --base HEAD
+          node football/props/record.js verify --league cfb --base HEAD
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main 'props: player projections, market, frozen predictions and the graded record' -- \
+            football/props/current.json football/props/nfl football/props/cfb football/props/ledger record/props
+
+      - name: Mirror to Supabase (insert-only)
+        if: ${{ env.MODE != 'validate' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node football/props/sync_supabase.js --league nfl || echo "::warning::Supabase mirror (NFL) failed; the committed record is unaffected"
+          node football/props/sync_supabase.js --league cfb || echo "::warning::Supabase mirror (CFB) failed; the committed record is unaffected"

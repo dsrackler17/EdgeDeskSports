@@ -5,6 +5,7 @@
     /join/{token}  ->  /collective/join.html?t={token}
     /c/{slug}      ->  /collective/#/{slug}
     /tennis/…      ->  /app.html#research/football  (Tennis was retired)
+    /players/{league}/{slug}  ->  /players/?p={league}/{slug}  (player prop research)
   Anything else renders a small not-found page.
 -->
 <html lang="en">
@@ -47,6 +48,11 @@
     location.replace('/articles/community/?p='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
   if(p[0]==='articles'&&p[1]==='community'){location.replace('/articles/community/');return;}
   if(p[0]==='articles'&&p[1]==='write'){location.replace('/articles/write/');return;}
+
+  /* player prop research: /players/{league}/{slug} -> the one page that
+     renders it (players/index.html reads ?p=) */
+  if(p[0]==='players'&&(p[1]==='nfl'||p[1]==='cfb')&&p[2]){location.replace('/players/?p='+p[1]+'/'+encodeURIComponent(p[2]));return;}
+  if(p[0]==='players'){location.replace('/players/');return;}
 
   /* the War Room, the Drill, the Roster and the Front Office are single
      pages: anything deeper lands on the page itself rather than on the games

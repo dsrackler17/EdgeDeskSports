@@ -1,0 +1,124 @@
+{
+ "schema": "edgedesk_props_calibration_v1",
+ "league": "NFL",
+ "version": "props_nfl_calibration_v1",
+ "model_version": "NFL_PLAYER_PROPS_V1.0",
+ "generated_at": "2026-09-29T01:52:53.320Z",
+ "tuning_range": "2025-3 to 2025-12",
+ "holdout_range": "after 2025-12 to 2026-3",
+ "method": "grid search of (λ, κ) minimising mean CRPS on the tuning fold (football/props/calibrate.js)",
+ "by_prop": {
+  "pass_yds": {
+   "lambda": 0.5,
+   "kappa": 0.9,
+   "crps_tuning": 38.52119,
+   "crps_tuning_identity": 39.11399,
+   "n": 261
+  },
+  "pass_att": {
+   "lambda": 0.7,
+   "kappa": 1.15,
+   "crps_tuning": 4.604,
+   "crps_tuning_identity": 4.65486,
+   "n": 261
+  },
+  "pass_cmp": {
+   "lambda": 0.7,
+   "kappa": 1.05,
+   "crps_tuning": 3.20663,
+   "crps_tuning_identity": 3.22809,
+   "n": 261
+  },
+  "pass_tds": {
+   "lambda": 0.6,
+   "kappa": 0.85,
+   "crps_tuning": 0.6523,
+   "crps_tuning_identity": 0.65756,
+   "n": 261
+  },
+  "pass_int": {
+   "lambda": 0.8,
+   "kappa": 0.95,
+   "crps_tuning": 0.41042,
+   "crps_tuning_identity": 0.41069,
+   "n": 261
+  },
+  "pass_rush_yds": {
+   "lambda": 0.6,
+   "kappa": 0.9,
+   "crps_tuning": 39.09903,
+   "crps_tuning_identity": 39.68821,
+   "n": 261
+  },
+  "longest_cmp": {
+   "lambda": 0.5,
+   "kappa": 0.9,
+   "crps_tuning": 7.46378,
+   "crps_tuning_identity": 7.57163,
+   "n": 261
+  },
+  "rush_yds": {
+   "lambda": 0.7,
+   "kappa": 1,
+   "crps_tuning": 11.33205,
+   "crps_tuning_identity": 11.36031,
+   "n": 1117
+  },
+  "rush_att": {
+   "lambda": 0.7,
+   "kappa": 0.9,
+   "crps_tuning": 1.84938,
+   "crps_tuning_identity": 1.86228,
+   "n": 1117
+  },
+  "rush_rec_yds": {
+   "lambda": 0.8,
+   "kappa": 0.95,
+   "crps_tuning": 14.90504,
+   "crps_tuning_identity": 14.92146,
+   "n": 914
+  },
+  "longest_rush": {
+   "lambda": 1,
+   "kappa": 1,
+   "crps_tuning": 4.5197,
+   "crps_tuning_identity": 4.5197,
+   "n": 856
+  },
+  "rec_yds": {
+   "lambda": 0.5,
+   "kappa": 0.85,
+   "crps_tuning": 10.50296,
+   "crps_tuning_identity": 10.6202,
+   "n": 2801
+  },
+  "receptions": {
+   "lambda": 0.35,
+   "kappa": 0.9,
+   "crps_tuning": 0.80831,
+   "crps_tuning_identity": 0.8178,
+   "n": 2801
+  },
+  "targets": {
+   "lambda": 0.35,
+   "kappa": 0.9,
+   "crps_tuning": 1.04018,
+   "crps_tuning_identity": 1.05453,
+   "n": 2801
+  },
+  "longest_rec": {
+   "lambda": 0.7,
+   "kappa": 0.85,
+   "crps_tuning": 5.27356,
+   "crps_tuning_identity": 5.30759,
+   "n": 2801
+  },
+  "anytime_td": {
+   "lambda": 0.7,
+   "kappa": 1,
+   "crps_tuning": 0.13596,
+   "crps_tuning_identity": 0.13669,
+   "n": 3101
+  }
+ }
+}
