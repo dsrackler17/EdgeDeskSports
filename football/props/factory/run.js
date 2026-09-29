@@ -73,10 +73,10 @@ function loadModels(league) {
 async function stageHistory(a) {
   const wh = await warehouse.build({ leagues: a.leagues, offline: a.offline, deepCfb: a.deepCfb, log });
   identity.savePins(wh.identity.pins, wh.identity.merges);
-  io.writeJson(path.join(__dirname, 'identity', 'review_queue.json'), { schema: 'edgedesk_props_identity_review_v1', generated_at: wh.built_at,
+  writeIfChanged(path.join(__dirname, 'identity', 'review_queue.json'), { schema: 'edgedesk_props_identity_review_v1', generated_at: wh.built_at,
     rule: 'A person reviews each row: link it in overrides.json (with the evidence), or leave it unlinked. Name-only rows are never linked automatically.',
     quarantined: wh.identity.quarantine, review: wh.identity.review,
-    needs_review_links: wh.identity.bridge.filter((b) => b.needs_review) }, true);
+    needs_review_links: wh.identity.bridge.filter((b) => b.needs_review) }, { pretty: true, newline: true });
   const coverage = { schema: 'edgedesk_props_coverage_v1', generated_at: wh.built_at, adapter_version: wh.adapter_version, identity: wh.identity.stats, leagues: {} };
   Object.keys(wh.leagues).forEach((lg) => { const L = wh.leagues[lg]; coverage.leagues[lg] = { seasons: L.coverage, qa: L.qa, games: L.games.length, player_games: L.playerGames.length, team_games: L.teamGames.length }; });
   coverage.quarantine_by_rule = wh.quarantine.reduce((m, q) => { m[q.rule_id] = (m[q.rule_id] || 0) + 1; return m; }, {});
@@ -196,7 +196,7 @@ function reconcilePredictions(scored, ledgerRows) {
   const key = (p) => p.game_id + '|' + p.player_id + '|' + p.market_key + '|' + p.model_version;
   const last = new Map();
   ledgerRows.forEach((x) => { const k = key(x), prev = last.get(k); if (!prev || x.asof_at > prev.asof_at) last.set(k, x); });
-  const propById = new Map(scored.props.map((p) => [p.model.prediction_id, p]));
+  const propById = new Map(scored.props.map((p) => [p.prediction_id, p]));
   const fresh = [];
   scored.predictions.forEach((p) => {
     p.fingerprint = predFingerprint(p);
@@ -204,7 +204,7 @@ function reconcilePredictions(scored, ledgerRows) {
     if (prev && (prev.fingerprint || predFingerprint(prev)) === p.fingerprint) {
       const prop = propById.get(p.prediction_id);
       p.prediction_id = prev.prediction_id; p.asof_at = prev.asof_at; p.scored_at = prev.scored_at;
-      if (prop) { prop.model.prediction_id = prev.prediction_id; prop.model.scored_at = prev.scored_at; prop.as_of = prev.asof_at; }
+      if (prop) { prop.prediction_id = prev.prediction_id; prop.as_of = prev.asof_at; }
     } else fresh.push(p);
   });
   return fresh;

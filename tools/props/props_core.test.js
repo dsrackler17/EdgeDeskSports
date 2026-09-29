@@ -289,6 +289,32 @@ chk('statOf: anytime TD counts rushing, receiving and return TDs, never passing'
 chk('statOf: kicking points are 3 per FG plus PATs', E.statOf('kicking_pts', { fgm: 2, xpm: 3 }) === 9);
 chk('statOf: a longest-reception market with no catch is 0', E.statOf('rec_long', { rec: 0 }) === 0);
 
+/* ---- 'stored': the data factory's distributions (docs/player-props/FACTORY.md),
+   priced here exactly as the factory's own kernel prices them */
+(function stored() {
+  const F = require(path.join(ROOT, 'football', 'props', 'factory', 'dist.js'));
+  const table = { probs: [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99], bins: [{ mu_lo: 1, mu_hi: 200, mu_mid: 60, n: 1000, q: [0, 0.35, 0.68, 1.0, 1.32, 1.66, 2.4] }] };
+  const forms = { yards: F.roundDist(F.dist.continuousFromRatio(74, table, 0, { integer: true })), counts: F.roundDist(F.dist.negBinomPmf(5.2, 9)) };
+  Object.keys(forms).forEach((k) => {
+    const d = forms[k], S = Object.assign({ family: 'stored' }, d);
+    chk('stored (' + k + '): a valid distribution', E.validDist(S));
+    let worst = 0;
+    for (let L = -2.5; L <= 160; L += 0.5) { const a = F.dist.probs(d, L), b = E.probLine(S, L); worst = Math.max(worst, Math.abs(a.over - b.over), Math.abs(a.under - b.under), Math.abs(a.push - b.push)); }
+    chk('stored (' + k + '): P(over/under/push) at every line equals the factory kernel\'s', worst < 1e-9, worst);
+    chk('stored (' + k + '): never rescaled or widened — it is evidence, not the engine', E.scaleDist(S, 1.3) === S && JSON.stringify(E.widenDist(S, 1.5)) === JSON.stringify(S));
+  });
+  const T = { family: 'stored', t: 'bern', p: 0.41 };
+  chk('stored (yes/no): P(yes) at the 0.5 line', Math.abs(E.probLine(T, 0.5).over - 0.41) < 1e-12);
+  chk('stored: a malformed distribution is refused', !E.validDist({ family: 'stored', t: 'cdf', x: [0, 10, 5], p: [0, 0.5, 1] }) && !E.validDist({ family: 'stored', t: 'pmf', v: [0.5, -0.1] }) && !E.validDist({ family: 'stored', t: 'nope' }));
+  const meta = { models: [['nfl_te_receptions_v1.2025', 'OUTCOME_VALIDATED', 0.12, 0.02, 3]], generated_at: '2026-10-01T12:00:00Z' };
+  const fx = [0, { t: 'pmf', v: [0.05, 0.15, 0.25, 0.25, 0.15, 0.1, 0.05], tail: 0 }, null, '2026-10-01T12:00:00Z'];
+  const v = E.factoryView(fx, meta, 2.5, 'over', -120);
+  chk('factoryView: the side\'s probability, fair price and EV at the given price', v && v.p_side === 0.55 && v.fair_american === E.fairAmerican(0.55, 0) && Math.abs(v.ev - E.expectedValue(0.55, -120, 0)) < 1e-4 && v.model_version === 'nfl_te_receptions_v1.2025' && v.tier === 'OUTCOME_VALIDATED', v);
+  const w = E.factoryView(fx, meta, 3, 'under', null);
+  chk('factoryView: a whole line carries its push; no price, no EV', w && w.p_push === 0.25 && w.p_side === 0.45 && w.ev === null, w);
+  chk('factoryView: nothing without a joined row', E.factoryView(null, meta, 2.5, 'over') === null && E.factoryView(fx, null, 2.5, 'over') === null);
+})();
+
 /* ------------------------------------------------------------ board order */
 section('board order');
 const UI = require('../../lib/edgedesk_props_ui.js');

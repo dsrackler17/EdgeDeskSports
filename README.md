@@ -270,14 +270,23 @@ Graded results print CLV only where a close exists. Calibration is measured
 by probability bucket. The probability source is promoted only when the
 settled record earns it.
 
+Beside the engine, the drawer shows a **validated model**: the data factory's
+learned, walk-forward-validated distribution for the same prop, priced at the
+same line and price. It is built from per-game history (NFL 2011+, college
+2014+), a CFB→NFL identity bridge and a leakage-tested point-in-time feature
+store. It is evidence, not the decision.
+
 - **Runbook:** [`docs/runbooks/player-props.md`](docs/runbooks/player-props.md)
 - **Design:** [`docs/player-props/DESIGN.md`](docs/player-props/DESIGN.md)
+- **Data factory:** [`docs/player-props/FACTORY.md`](docs/player-props/FACTORY.md)
 
 - `npm run props:test` — the kernel and the offline pipeline
 - `npm run props:sql` — the ledger and watchlist SQL against a real PostgreSQL
 - `npm run props:e2e` — the page in Chromium, desktop and a 390 px phone
 - `npm run props:board`, `props:board:cfb`, `props:capture`, `props:grade`,
   `props:backtest`, `props:sync` — the pipeline steps
+- `npm run props:factory:test`, `props:factory:sql` — the data factory's suites;
+  `props:factory:history`, `:backtest`, `:train`, `:project`, `:sync` — its stages
 
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on

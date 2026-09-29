@@ -193,6 +193,26 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   fs.writeFileSync(path.join(BP.dir, 'pregame_state.json'), JSON.stringify(b1.pregame));
   fs.mkdirSync(BP.season_dir, { recursive: true });
   fs.writeFileSync(BP.evaluations, b1.ledger_rows.map((x) => JSON.stringify(x)).join('\n') + '\n');
+  /* the data factory's projections (football/props/factory/<lg>/projections.json),
+     joined by the board's own ids: evidence beside the engine, never the decision */
+  {
+    const fxDoc = { schema: 'edgedesk_props_factory_projections_v1', league: 'NFL', season: 2026, generated_at: new Date(NOW - 3600e3).toISOString(), feature_version: 'pf1', rule: 'TEST FIXTURE',
+      model_cols: ['model_version', 'outcome_tier', 'walk_forward_mae_skill', 'walk_forward_pit_dev', 'folds'], models: [['nfl_fixture_v1.2025', 'OUTCOME_VALIDATED', 0.1, 0.02, 3]], rows: {}, n: 0 };
+    const target = board.props.find((x) => x.p && x.q.length && x.m === 'rush_yds') || priced.find((x) => x.p);
+    fxDoc.rows[target.g + '|' + target.p + '|' + target.m] = [0, { t: 'pmf', v: Array.from({ length: 200 }, (_, k) => (k >= 60 && k < 100 ? 0.025 : 0)), tail: 0 }, null, null, null, null, fxDoc.generated_at, []];
+    fxDoc.rows[target.g + '|someone-else|' + target.m] = [0, { t: 'bern', p: 0.3 }, null, null, null, null, fxDoc.generated_at, []];
+    fxDoc.n = 2;
+    const bx = await B.build({ league: 'nfl', season: 2026, now: NOW, dataset: loadDs(), quotes: feed, lines: null, paths: BP, factory: fxDoc });
+    const joined = bx.board.props.filter((x) => x.fx);
+    const row = bx.board.props.find((x) => x.g === target.g && x.p === target.p && x.m === target.m);
+    chk('factory: a projection joins its prop by game, player and market id', joined.length === 1 && row && row.fx && row.fx[0] === 0 && bx.board.factory.state === 'JOINED' && bx.board.factory.n_joined === 1 && bx.board.factory.models.length === 1, bx.board.factory);
+    chk('factory: the joined probability is the stored distribution\'s at the prop\'s line', row && row.fx[2] != null && row.fx[2] >= 0 && row.fx[2] <= 1);
+    chk('factory: the engine\'s decisions are untouched by it', JSON.stringify(bx.board.props.map((x) => x.e)) === JSON.stringify(board.props.map((x) => x.e)));
+    const none = await B.build({ league: 'nfl', season: 2026, now: NOW, dataset: loadDs(), quotes: feed, lines: null, paths: BP, factory: null });
+    chk('factory: without projections the board says so and carries no fx', none.board.factory.state === 'NOT_PUBLISHED' && !none.board.props.some((x) => x.fx));
+    const staleFx = await B.build({ league: 'nfl', season: 2026, now: NOW, dataset: loadDs(), quotes: feed, lines: null, paths: BP, factory: { stale: true, generated_at: '2026-01-01T00:00:00Z' } });
+    chk('factory: stale projections are not shown', staleFx.board.factory.state === 'STALE' && !staleFx.board.props.some((x) => x.fx));
+  }
   const again = await B.build({ league: 'nfl', season: 2026, now: NOW + 60000, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   chk('a rebuild writes no duplicate qualified record', again.ledger_rows.filter((x) => x.kind === 'qualified').length === 0, again.ledger_rows.length);
   const stale = await B.build({ league: 'nfl', season: 2026, now: Date.parse(OBS) + 2 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });

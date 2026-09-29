@@ -394,3 +394,28 @@ is +0.43. College borrows the NFL model. The board carries the model as
   The build applies the caps before it freezes the record, and the ledger row
   carries `exposure_cap`. The page applies the same caps after it re-prices,
   and the desk applies them to the units it quotes.
+
+## 14. The data factory — a validated second opinion
+
+`football/props/factory/` ([`FACTORY.md`](FACTORY.md)) adds what §10 and the
+audit list as missing on the modelling side: committed per-game history for
+both leagues (NFL 2011+, college 2014+), a CFB→NFL identity bridge, a
+point-in-time feature store with leakage tests, and learned per-position
+models validated walk-forward out of sample — college included, which §8
+leaves EXPERIMENTAL for want of a backtest.
+
+Every few hours `props-factory.yml` writes
+`football/props/factory/<league>/projections.json`: each upcoming prop's
+distribution, keyed by this board's own game, player and market ids. The
+board build joins it as the row's `fx` and stamps `board.factory` (models,
+walk-forward tier and evidence, freshness; older than 36 h is not shown). The
+kernel prices it as family `stored` (`EDProps.factoryView`), the drawer's
+**Validated model** section shows it beside the engine at the same line and
+price, and the desk states it in one sentence.
+
+It is evidence, not the engine: it never sets a price, it does not change a
+decision, units or a market's stage, and a disagreement is shown, not
+resolved. Evidence that the factory's model is calibrated is not evidence
+that the engine is; if the factory should one day drive the probability, that
+is a change to §4 and §8, made on this ledger's own grading.
+

@@ -201,6 +201,22 @@
       if (cand) L.push('Best value: ' + E.selectionText(row.m, cand.side, cand.line) + ' ' + am(cand.american) + ' at ' + E.bookName(cand.book) + ': P(win) ' + pct(cand.p_win) + ', fair ' + am(cand.fair_american) + ', edge ' + pp(cand.edge_pp) + ', EV ' + spct(cand.ev) + '.');
     }
     if (ev.n_quotes) L.push('EdgeDesk decision: ' + ev.decision_label + (ev.decision === 'BET' && ev.units ? ' ' + E.unitsText(ev.units) : '') + ' — ' + sentence(ev.caps && ev.caps.length ? ev.caps[ev.caps.length - 1].text : (ev.blocker_text || codeText(ev.code))) + '.' + (ev.trigger && ev.trigger.realistic && ev.trigger.text ? ' It ' + ev.trigger.text + '.' : ''));
+    /* the data factory's walk-forward-validated distribution, when the board
+       joined one for this prop (EDProps.factoryView): evidence beside the
+       decision, never the decision */
+    if (row.fx && board.factory && board.factory.state === 'JOINED' && typeof E.factoryView === 'function') {
+      var fl = cand ? cand.line : (ac ? ac.line : (yesno ? 0.5 : null)), fs = cand ? cand.side : (ac && ac.over < ac.under ? 'under' : 'over');
+      var fv = E.factoryView(row.fx, board.factory, fl, fs, cand ? cand.american : null);
+      var tier = fv ? ({ OUTCOME_VALIDATED: 'skill in every fold', OUTCOME_LEAN: 'positive skill on average', RESEARCH: 'research only' }[fv.tier] || 'research only') : null;
+      if (fv && num(fv.p_side)) {
+        var engP = cand ? cand.p_win : (ac ? (fs === 'over' ? ac.over : ac.under) : (yesno ? E.probLine(ev._dist.informed, 0.5).over : null));
+        L.push('The validated model (walk-forward, ' + tier + ') has ' + (yesno ? 'the Yes' : side(fs) + ' ' + fl) + ' at ' + pct(fv.p_side) +
+          (num(engP) ? (Math.abs(fv.p_side - engP) < 0.03 ? ', in line with the engine' : ((fv.p_side >= 0.5) === (engP >= 0.5) ? ', the same lean as the engine' : ', against the engine’s ' + pct(engP))) : '') +
+          (num(fv.ev) ? ' (EV ' + spct(fv.ev) + ' at ' + am(fv.american) + ')' : '') + '; it is evidence beside the decision, not the decision.');
+      } else if (fv && num(fv.median)) {
+        L.push('The validated model (walk-forward, ' + tier + ') has a median of ' + f1(fv.median) + ' (80% range ' + f1(fv.p10) + '–' + f1(fv.p90) + ').');
+      }
+    }
     /* a quote the reader named, priced on the same distribution */
     if (qt && num(qt.line) && (qt.side === 'over' || qt.side === 'under') && !yesno) {
       /* a captured price stands in for a missing one only while it is inside

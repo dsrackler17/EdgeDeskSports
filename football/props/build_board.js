@@ -65,6 +65,35 @@ const r4 = (x) => typeof x === 'number' && isFinite(x) ? Math.round(x * 10000) /
 function readJson(p) { try { return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : null; } catch (e) { return null; } }
 function readJsonl(p) { return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch (e) { return null; } }).filter(Boolean) : []; }
 
+/* ------------------------------------------------------------ the data factory
+   football/props/factory/<league>/projections.json — the factory's
+   walk-forward-validated distributions (docs/player-props/FACTORY.md), keyed
+   by this board's own game, player and market ids. Joined onto each prop as
+   `fx`: [model index into board.factory.models, the stored distribution,
+   the factory's probability of the prop's side at the prop's line, as of].
+   Evidence beside the engine: it never prices and never moves a decision. */
+const FACTORY_SCHEMA = 'edgedesk_props_factory_projections_v1';
+const FACTORY_MAX_AGE_H = 36;
+function loadFactory(league, now) {
+  const j = readJson(path.join(C.DIR, 'factory', league, 'projections.json'));
+  if (!j || j.schema !== FACTORY_SCHEMA || !j.rows) return null;
+  const age = (now - Date.parse(j.generated_at)) / 3600e3;
+  if (!(age >= -1 && age <= FACTORY_MAX_AGE_H)) return { stale: true, generated_at: j.generated_at };
+  return j;
+}
+function factoryJoin(fx, used, key, line, side) {
+  const row = fx && fx.rows ? fx.rows[key] : null;
+  if (!row || !row[1]) return null;
+  const d = Object.assign({ family: 'stored' }, row[1]);
+  if (!EDP.validDist(d)) return null;
+  let mi = used.index.get(row[0]);
+  if (mi == null) { mi = used.models.length; used.index.set(row[0], mi); used.models.push(fx.models[row[0]]); }
+  const at = line != null ? line : (d.t === 'bern' ? 0.5 : null);
+  const pl = at != null ? EDP.probLine(d, at) : null;
+  const pSide = pl ? r4(side === 'under' ? pl.under : pl.over) : null;
+  return [mi, row[1], pSide, row[6] || fx.generated_at];
+}
+
 /* ------------------------------------------------------------ identity */
 function nameKeys(p) {
   const ks = new Set();
@@ -146,10 +175,13 @@ function playerDetail(ds, p, ctx, tm) {
 }
 
 async function build(opts) {
+  const fxUsed = { models: [], index: new Map(), joined: 0 };
   opts = opts || {};
   const league = opts.league || 'nfl', now = opts.now != null ? opts.now : Date.now();
   const season = opts.season || C.seasonOf(now);
   const P = opts.paths || C.leaguePaths(league, season);
+  /* the factory's projections: opts.factory (a test's own), else the committed file for a real build */
+  const fx = opts.factory !== undefined ? opts.factory : (opts.paths ? null : loadFactory(league, now));
   const ds = opts.dataset || await loadDataset(league, { season, offline: !!opts.offline, now });
   if (!ds.ok) throw new Error('dataset unavailable: ' + ds.error);
   const calibFile = readJson(league === 'cfb' ? C.leaguePaths('nfl', season).calibration : P.calibration) || readJson(P.calibration);
@@ -304,6 +336,8 @@ async function build(opts) {
         };
         if (!rec.fl.length) delete rec.fl;
         if (!rec.mv) delete rec.mv;
+        const fj = fx && !fx.stale ? factoryJoin(fx, fxUsed, g.game_id + '|' + pid + '|' + m, line, side) : null;
+        if (fj) { rec.fx = fj; fxUsed.joined++; }
         props.push(rec);
         any = true; nProps++; if (input.quotes.length) nPriced++;
         gMarkets[m] = (gMarkets[m] || 0) + 1;
@@ -370,6 +404,9 @@ async function build(opts) {
     probability: EDP.calibrationOf(cal), market_weight: EDP.CONFIG.market_weight,
     stages: Object.keys(stages).reduce((o, k) => { if (props.some((x) => x.m === k)) o[k] = stages[k]; return o; }, {}),
     correlation, exposure: EDP.CONFIG.exposure,
+    factory: !fx ? { state: 'NOT_PUBLISHED', why: 'No factory projections on file (football/props/factory/' + league + '/projections.json).' }
+      : fx.stale ? { state: 'STALE', generated_at: fx.generated_at, why: 'The factory projections are older than ' + FACTORY_MAX_AGE_H + ' h and are not shown.' }
+      : { state: 'JOINED', schema: fx.schema, generated_at: fx.generated_at, feature_version: fx.feature_version, rule: fx.rule, model_cols: fx.model_cols, models: fxUsed.models, n_joined: fxUsed.joined, n_available: fx.n },
     calibration: calibFile ? { mode: calibFile.mode, season_tested: calibFile.season_tested, generated_at: calibFile.generated_at, borrowed: league === 'cfb', n_scored: calibFile.n_scored,
       markets: Object.keys(calibFile.markets || {}).reduce((o, k) => { const c = calibFile.markets[k]; const oos = calibFile.out_of_sample && calibFile.out_of_sample.before ? calibFile.out_of_sample : null; o[k] = { f: c.f, mean_mult: c.mean_mult, n: c.n, adopted: c.adopted !== false, cover50: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].cover50 : oos.after[k].cover50) : null, ece: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].calibration.ece : oos.after[k].calibration.ece) : null }; return o; }, {}) } : null,
     capture: capState ? { last_run: capState.last_run, last_attempt: capState.last_attempt, stopped: capState.stopped || null, requests_remaining: capState.requests_remaining, bookmakers: capState.bookmakers, events_polled: capState.events_polled }

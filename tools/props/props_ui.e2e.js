@@ -63,7 +63,24 @@ async function buildFixture() {
   /* the committed same-game correlation model, as the scheduled build reads it */
   fs.mkdirSync(path.dirname(paths.correlation), { recursive: true });
   fs.copyFileSync(path.join(ROOT, 'football', 'props', 'nfl', 'correlation.json'), paths.correlation);
-  const r = await B.build({ league: 'nfl', season: 2026, now: NOW - 5 * 60000, dataset: ds, quotes: feed, lines: null, paths });
+  /* TEST FIXTURE factory projections (docs/player-props/FACTORY.md): each
+     prop's own engine distribution, shifted 6 % and carried in the factory's
+     stored CDF form, so the drawer's Validated model section has a second
+     opinion to show. Test data, never published. */
+  const r0 = await B.build({ league: 'nfl', season: 2026, now: NOW - 5 * 60000, dataset: ds, quotes: feed, lines: null, paths });
+  const EDP = require(path.join(ROOT, 'lib', 'edgedesk_props.js'));
+  const factory = { schema: 'edgedesk_props_factory_projections_v1', league: 'NFL', season: 2026, generated_at: new Date(NOW - 3600e3).toISOString(), feature_version: 'pf1',
+    rule: 'TEST FIXTURE', model_cols: ['model_version', 'outcome_tier', 'walk_forward_mae_skill', 'walk_forward_pit_dev', 'folds'],
+    models: [['nfl_fixture_v1.2025', 'OUTCOME_VALIDATED', 0.11, 0.02, 3]], rows: {}, n: 0 };
+  r0.board.props.forEach((x) => {
+    if (!x.p || !x.x || !x.x.dist || !EDP.validDist(x.x.dist)) return;
+    const d = EDP.scaleDist(x.x.dist, 1.06), lo = EDP.quantile(d, 0.001) - 1, hi = EDP.quantile(d, 0.999) + 1, xs = [], ps = [];
+    for (let k = lo; k <= hi; k++) { xs.push(k + 0.5); ps.push(Math.round(EDP.cdfInt(d, k) * 1e4) / 1e4); }
+    ps[ps.length - 1] = 1;
+    factory.rows[x.g + '|' + x.p + '|' + x.m] = [0, { t: 'cdf', x: xs, p: ps, int: true }, null, null, null, null, factory.generated_at, []];
+    factory.n++;
+  });
+  const r = await B.build({ league: 'nfl', season: 2026, now: NOW - 5 * 60000, dataset: ds, quotes: feed, lines: null, paths, factory });
   r.board.capture = { last_run: OBS, last_attempt: OBS, bookmakers: p.books, events_polled: 1, requests_remaining: 480 };
   /* a small graded record so the performance view has something real to draw */
   const rows = r.ledger_rows.slice(0, 3).map((x) => Object.assign({}, x, { game_id: '2026_03_ATL_GB', kickoff: '2026-09-25T00:15:00.000Z' }));
@@ -173,6 +190,10 @@ async function buildFixture() {
     const secs = await page.evaluate(() => Array.from(document.querySelectorAll('#ppDrawer .pp-sec h4')).map((h) => h.firstChild.textContent.trim()));
     ['Price', 'Alternate lines', 'EdgeDesk projection', 'Probability', 'EV', 'Why EdgeDesk likes / dislikes it', 'History', 'Usage', 'Game context', 'Role', 'Uncertainty'].forEach((s) => chk('the drawer has ' + s, secs.indexOf(s) >= 0, secs));
     chk('the drawer has the opponent matchup', secs.some((s) => /^Matchup/.test(s)), secs);
+    const fxSec = await page.evaluate(() => { const h = Array.from(document.querySelectorAll('#ppDrawer .pp-sec')).find((x) => { const t = x.querySelector('h4'); return t && /^Validated model/.test(t.textContent); }); return h ? h.textContent.replace(/\s+/g, ' ') : null; });
+    await page.evaluate(() => { const h = Array.from(document.querySelectorAll('#ppDrawer .pp-sec')).find((x) => { const t = x.querySelector('h4'); return t && /^Validated model/.test(t.textContent); }); if (h) h.scrollIntoView({ block: 'center' }); });
+    await shot(page, 'desktop_drawer_factory');
+    chk('the drawer shows the data factory\'s validated model beside the engine', !!fxSec && /Engine P/.test(fxSec) && /P\((over|under) \d/.test(fxSec) && /walk-forward/.test(fxSec) && /does not set this decision/.test(fxSec), fxSec);
     const corr = await page.evaluate(() => { const h = Array.from(document.querySelectorAll('#ppDrawer .pp-sec')).find((x) => x.querySelector('h4') && /^Same-game correlation/.test(x.querySelector('h4').textContent)); return h ? { text: h.textContent, rows: h.querySelectorAll('tbody tr').length } : null; });
     chk('the drawer shows the props this one moves with, each pair simulated jointly', corr && corr.rows >= 1 && /Both win/.test(corr.text) && /If independent/.test(corr.text) && /10,000-run/.test(corr.text), corr);
     chk('the price table names every book and the consensus', await page.evaluate(() => /DraftKings/.test(document.getElementById('ppDrawer').textContent) && /Consensus/.test(document.getElementById('ppDrawer').textContent)));
