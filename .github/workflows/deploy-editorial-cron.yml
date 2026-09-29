@@ -1,10 +1,13 @@
-# Deploy supabase/functions/editorial_cron: the editorial system's PRIMARY
-# scheduler, which pg_cron calls every ten minutes to poke editorial.yml.
+# Deploy supabase/functions/editorial_cron: option B of the editorial
+# scheduler (tools/editorial/README.md), which pg_cron would call every ten
+# minutes to poke editorial.yml.
 #
-# IT HAD NO DEPLOY PATH AT ALL. Its header carried a manual
-# `supabase functions deploy editorial_cron --no-verify-jwt` that only ever
-# ran from somebody's laptop, the drift Deploy intelligence was written to end
-# (see its header).
+# PRODUCTION DOES NOT RUN IT. As of 2026-09-29 the scheduler is option A, the
+# SQL poke public.editorial_poke(), and the README says not to install both;
+# the Intelligence doctor reports the absent function as NOT_INSTALLED and
+# never deploys it. This is the deploy path for the day option B is chosen:
+# before it, the function's header carried a manual
+# `supabase functions deploy editorial_cron --no-verify-jwt` and nothing else.
 #
 # MANUAL ON PURPOSE, with the same one narrow exception as Deploy
 # intelligence: the Intelligence doctor calls it (workflow_call) when
