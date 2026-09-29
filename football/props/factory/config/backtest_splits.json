@@ -1,0 +1,188 @@
+{
+ "schema": "edgedesk_props_backtest_splits_v1",
+ "source": "sheet 07_Backtest_Splits",
+ "live_holdout_season": 2026,
+ "rule": "Chronological folds only. The live/holdout season is never used to tune.",
+ "folds": [
+  {
+   "fold": "OUTCOME_CFB_1",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2018,
+   "test_season": 2019,
+   "method": "Walk-forward",
+   "notes": "Primary baseline"
+  },
+  {
+   "fold": "OUTCOME_CFB_2",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2019,
+   "test_season": 2020,
+   "method": "Walk-forward",
+   "notes": "Pandemic season tagged; report separately"
+  },
+  {
+   "fold": "OUTCOME_CFB_3",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2020,
+   "test_season": 2021,
+   "method": "Walk-forward",
+   "notes": "No random split"
+  },
+  {
+   "fold": "OUTCOME_CFB_4",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2021,
+   "test_season": 2022,
+   "method": "Walk-forward",
+   "notes": "No random split"
+  },
+  {
+   "fold": "OUTCOME_CFB_5",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2022,
+   "test_season": 2023,
+   "method": "Walk-forward",
+   "notes": "Begins overlap with prop-market labels"
+  },
+  {
+   "fold": "OUTCOME_CFB_6",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2023,
+   "test_season": 2024,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_CFB_7",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2024,
+   "test_season": 2025,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_CFB_8",
+   "family": "CFB outcome model",
+   "train_from": 2014,
+   "train_to": 2025,
+   "test_season": 2026,
+   "method": "Live/holdout",
+   "notes": "Do not tune to current-season results"
+  },
+  {
+   "fold": "OUTCOME_NFL_1",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2017,
+   "test_season": 2018,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_2",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2018,
+   "test_season": 2019,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_3",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2019,
+   "test_season": 2020,
+   "method": "Walk-forward",
+   "notes": "Pandemic tagged"
+  },
+  {
+   "fold": "OUTCOME_NFL_4",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2020,
+   "test_season": 2021,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_5",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2021,
+   "test_season": 2022,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_6",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2022,
+   "test_season": 2023,
+   "method": "Walk-forward",
+   "notes": "Market overlap begins"
+  },
+  {
+   "fold": "OUTCOME_NFL_7",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2023,
+   "test_season": 2024,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_8",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2024,
+   "test_season": 2025,
+   "method": "Walk-forward",
+   "notes": ""
+  },
+  {
+   "fold": "OUTCOME_NFL_9",
+   "family": "NFL outcome model",
+   "train_from": 2011,
+   "train_to": 2025,
+   "test_season": 2026,
+   "method": "Live/holdout",
+   "notes": ""
+  },
+  {
+   "fold": "MARKET_1",
+   "family": "Market calibration / EV",
+   "train_from": 2023,
+   "train_to": 2023,
+   "test_season": 2024,
+   "method": "Walk-forward",
+   "notes": "Observed player-prop quotes only"
+  },
+  {
+   "fold": "MARKET_2",
+   "family": "Market calibration / EV",
+   "train_from": 2023,
+   "train_to": 2024,
+   "test_season": 2025,
+   "method": "Walk-forward",
+   "notes": "Observed quotes only"
+  },
+  {
+   "fold": "MARKET_3",
+   "family": "Market calibration / EV",
+   "train_from": 2023,
+   "train_to": 2025,
+   "test_season": 2026,
+   "method": "Live/holdout",
+   "notes": "Observed quotes only"
+  }
+ ]
+}

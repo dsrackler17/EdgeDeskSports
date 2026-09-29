@@ -1,0 +1,1710 @@
+{
+ "schema": "edgedesk_props_feature_registry_v1",
+ "source": "EdgeDesk_Player_Props_Historical_Data_Factory.xlsx sheet 05_Feature_Registry",
+ "feature_version": "pf1",
+ "features": [
+  {
+   "feature": "player_position",
+   "group": "identity",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "current",
+   "definition": "Position at game time",
+   "source": "roster",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "player_class_year",
+   "group": "identity",
+   "positions": [
+    "ALL"
+   ],
+   "league": "CFB",
+   "window": "season",
+   "definition": "FR/SO/JR/SR/GR when available",
+   "source": "roster",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "years_experience",
+   "group": "identity",
+   "positions": [
+    "ALL"
+   ],
+   "league": "NFL",
+   "window": "season",
+   "definition": "NFL experience entering game",
+   "source": "roster",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "home_flag",
+   "group": "game",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "game",
+   "definition": "1 if home",
+   "source": "schedule",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "neutral_site_flag",
+   "group": "game",
+   "positions": [
+    "ALL"
+   ],
+   "league": "CFB",
+   "window": "game",
+   "definition": "Neutral site",
+   "source": "schedule",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "rest_days",
+   "group": "game",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "since prior game",
+   "definition": "Days since last game",
+   "source": "schedule",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "team_implied_points",
+   "group": "market_context",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Derived from pregame spread/total",
+   "source": "game odds",
+   "leakage_rule": "SAFE if timestamped",
+   "priority": "P0"
+  },
+  {
+   "feature": "game_total",
+   "group": "market_context",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Pregame total",
+   "source": "game odds",
+   "leakage_rule": "SAFE if timestamped",
+   "priority": "P0"
+  },
+  {
+   "feature": "team_spread",
+   "group": "market_context",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Pregame spread from player's team perspective",
+   "source": "game odds",
+   "leakage_rule": "SAFE if timestamped",
+   "priority": "P0"
+  },
+  {
+   "feature": "weather_temp_f",
+   "group": "weather",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Temperature",
+   "source": "weather",
+   "leakage_rule": "SAFE if pregame snapshot",
+   "priority": "P1"
+  },
+  {
+   "feature": "weather_wind_mph",
+   "group": "weather",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Wind speed",
+   "source": "weather",
+   "leakage_rule": "SAFE if pregame snapshot",
+   "priority": "P0"
+  },
+  {
+   "feature": "weather_precip_prob",
+   "group": "weather",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Precipitation probability",
+   "source": "weather",
+   "leakage_rule": "SAFE if pregame snapshot",
+   "priority": "P1"
+  },
+  {
+   "feature": "roof_closed_flag",
+   "group": "weather",
+   "positions": [
+    "ALL"
+   ],
+   "league": "NFL",
+   "window": "pregame",
+   "definition": "Roof/dome state",
+   "source": "venue",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "pass_attempts_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average pass_attempts over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "pass_attempts_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average pass_attempts over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "pass_attempts_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average pass_attempts over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "pass_attempts_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average pass_attempts",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "pass_completions_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average pass_completions over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "pass_completions_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average pass_completions over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "pass_completions_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average pass_completions over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "pass_completions_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average pass_completions",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_yards_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average passing_yards over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_yards_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average passing_yards over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_yards_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average passing_yards over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "passing_yards_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average passing_yards",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_tds_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average passing_tds over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_tds_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average passing_tds over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "passing_tds_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average passing_tds over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "passing_tds_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average passing_tds",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "interceptions_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average interceptions over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "interceptions_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average interceptions over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "interceptions_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average interceptions over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "interceptions_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average interceptions",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "carries_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average carries over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "carries_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average carries over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "carries_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average carries over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "carries_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average carries",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_yards_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average rushing_yards over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_yards_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average rushing_yards over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_yards_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average rushing_yards over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "rushing_yards_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average rushing_yards",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_tds_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average rushing_tds over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_tds_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average rushing_tds over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "rushing_tds_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average rushing_tds over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "rushing_tds_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average rushing_tds",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "targets_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average targets over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "targets_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average targets over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "targets_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average targets over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "targets_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average targets",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "receptions_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average receptions over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receptions_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average receptions over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receptions_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average receptions over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "receptions_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average receptions",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_yards_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average receiving_yards over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_yards_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average receiving_yards over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_yards_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average receiving_yards over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "receiving_yards_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average receiving_yards",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_tds_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average receiving_tds over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_tds_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average receiving_tds over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "receiving_tds_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average receiving_tds over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "receiving_tds_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average receiving_tds",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "air_yards_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average air_yards over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "air_yards_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average air_yards over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "air_yards_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average air_yards over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "air_yards_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average air_yards",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "yac_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average yac over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "yac_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average yac over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "yac_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average yac over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "yac_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average yac",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "red_zone_touches_avg_l3",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Average red_zone_touches over prior 3 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "red_zone_touches_avg_l5",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Average red_zone_touches over prior 5 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P0"
+  },
+  {
+   "feature": "red_zone_touches_avg_l8",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Average red_zone_touches over prior 8 games",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: shift before rolling",
+   "priority": "P1"
+  },
+  {
+   "feature": "red_zone_touches_season_avg",
+   "group": "rolling_player",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "season_to_date",
+   "definition": "Season-to-date average red_zone_touches",
+   "source": "fact_player_game",
+   "leakage_rule": "SAFE: games before current only",
+   "priority": "P0"
+  },
+  {
+   "feature": "snap_share_l3",
+   "group": "usage",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Offensive snap share",
+   "source": "snaps/team snaps",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "route_participation_l3",
+   "group": "usage",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Routes / team dropbacks",
+   "source": "routes/PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "target_share_l3",
+   "group": "usage",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Player targets / team attempts",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "air_yard_share_l3",
+   "group": "usage",
+   "positions": [
+    "WR",
+    "TE",
+    "RB"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Player air yards / team air yards",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "rush_share_l3",
+   "group": "usage",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_3",
+   "definition": "Player carries / team rushes",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "rz_opportunity_share_l5",
+   "group": "usage",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Share of team red-zone opportunities",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "goal_line_opportunity_share_l5",
+   "group": "usage",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Share near goal line",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "designed_qb_rush_rate_l5",
+   "group": "usage",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Designed QB rushes per dropback",
+   "source": "PBP-derived",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "scramble_rate_l5",
+   "group": "usage",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Scrambles per dropback",
+   "source": "PBP-derived",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "epa_per_dropback_l8",
+   "group": "efficiency",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "EPA/dropback",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "cpoe_l8",
+   "group": "efficiency",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Completion percentage over expected",
+   "source": "PBP/model",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "yards_per_attempt_l8",
+   "group": "efficiency",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Passing YPA",
+   "source": "player stats",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "yards_per_carry_l8",
+   "group": "efficiency",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Rushing YPC",
+   "source": "player stats",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "yards_per_route_l8",
+   "group": "efficiency",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Receiving yards per route",
+   "source": "route data",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "yards_per_target_l8",
+   "group": "efficiency",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Receiving yards per target",
+   "source": "player stats",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "catch_rate_l8",
+   "group": "efficiency",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Receptions / targets",
+   "source": "player stats",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "explosive_rec_rate_l8",
+   "group": "efficiency",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Explosive receptions / targets",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "explosive_rush_rate_l8",
+   "group": "efficiency",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "last_8",
+   "definition": "Explosive rushes / carries",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "opp_pass_yards_allowed_per_att_l8",
+   "group": "opponent",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Opponent pass efficiency allowed",
+   "source": "team defense",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "opp_pressure_rate_l8",
+   "group": "opponent",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Opponent pressure proxy/rate",
+   "source": "PBP/tracking",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "opp_explosive_pass_rate_allowed_l8",
+   "group": "opponent",
+   "positions": [
+    "QB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Explosive pass rate allowed",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "opp_rush_yards_allowed_per_carry_l8",
+   "group": "opponent",
+   "positions": [
+    "QB",
+    "RB"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Opponent rush efficiency allowed",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "opp_target_rate_allowed_rb_l8",
+   "group": "opponent",
+   "positions": [
+    "RB"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Targets allowed to RBs",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "opp_target_rate_allowed_te_l8",
+   "group": "opponent",
+   "positions": [
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Targets allowed to TEs",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "opp_rec_yards_allowed_wr_l8",
+   "group": "opponent",
+   "positions": [
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "opp_last_8",
+   "definition": "Receiving yards allowed to WRs",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "pace_seconds_per_play_l5",
+   "group": "team_context",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Team offensive pace",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "neutral_pass_rate_l5",
+   "group": "team_context",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Neutral-situation pass rate",
+   "source": "PBP",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "proe_l5",
+   "group": "team_context",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "last_5",
+   "definition": "Pass rate over expectation",
+   "source": "PBP/model",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "starter_probability",
+   "group": "availability",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Probability player starts/active role",
+   "source": "depth/injury",
+   "leakage_rule": "SAFE if timestamped",
+   "priority": "P0"
+  },
+  {
+   "feature": "qb_status_certainty",
+   "group": "availability",
+   "positions": [
+    "QB"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Named starter / competition uncertainty",
+   "source": "depth/news",
+   "leakage_rule": "SAFE if timestamped",
+   "priority": "P0"
+  },
+  {
+   "feature": "teammate_target_vacated_share",
+   "group": "availability",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Target share vacated by inactive teammates",
+   "source": "availability + history",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "teammate_rush_vacated_share",
+   "group": "availability",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Rush share vacated by inactive teammates",
+   "source": "availability + history",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "ol_starter_continuity",
+   "group": "availability",
+   "positions": [
+    "QB",
+    "RB"
+   ],
+   "league": "BOTH",
+   "window": "pregame",
+   "definition": "Returning/current OL starter continuity proxy",
+   "source": "roster/depth",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "cfb_career_target_share",
+   "group": "transition",
+   "positions": [
+    "WR",
+    "TE",
+    "RB"
+   ],
+   "league": "NFL",
+   "window": "career_pre_nfl",
+   "definition": "College career target share",
+   "source": "CFB history",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "cfb_career_rush_share",
+   "group": "transition",
+   "positions": [
+    "RB",
+    "QB"
+   ],
+   "league": "NFL",
+   "window": "career_pre_nfl",
+   "definition": "College career rush share",
+   "source": "CFB history",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "cfb_best_season_yprr_proxy",
+   "group": "transition",
+   "positions": [
+    "WR",
+    "TE"
+   ],
+   "league": "NFL",
+   "window": "career_pre_nfl",
+   "definition": "Best college receiving efficiency proxy",
+   "source": "CFB history",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "cfb_breakout_season_index",
+   "group": "transition",
+   "positions": [
+    "WR",
+    "RB",
+    "TE"
+   ],
+   "league": "NFL",
+   "window": "career_pre_nfl",
+   "definition": "Season of meaningful production relative to eligibility",
+   "source": "CFB history",
+   "leakage_rule": "SAFE",
+   "priority": "P2"
+  },
+  {
+   "feature": "cfb_power_conference_flag",
+   "group": "transition",
+   "positions": [
+    "ALL"
+   ],
+   "league": "NFL",
+   "window": "career_pre_nfl",
+   "definition": "Context flag for competition level",
+   "source": "CFB schedule",
+   "leakage_rule": "SAFE",
+   "priority": "P2"
+  },
+  {
+   "feature": "draft_capital_log",
+   "group": "transition",
+   "positions": [
+    "ALL"
+   ],
+   "league": "NFL",
+   "window": "rookie+",
+   "definition": "Log transform of draft capital",
+   "source": "nflverse draft",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "rookie_flag",
+   "group": "transition",
+   "positions": [
+    "ALL"
+   ],
+   "league": "NFL",
+   "window": "season",
+   "definition": "First NFL season",
+   "source": "roster",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_consensus_line",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Median main line across books",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE if snapshot before bet",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_best_over_price",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Best available over price",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_best_under_price",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Best available under price",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_line_dispersion",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Cross-book line standard deviation/range",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_price_dispersion",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Cross-book probability dispersion",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "prop_open_to_now_move",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Current line minus open",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  },
+  {
+   "feature": "prop_minutes_since_move",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Minutes since meaningful line move",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P1"
+  },
+  {
+   "feature": "book_count",
+   "group": "market",
+   "positions": [
+    "ALL"
+   ],
+   "league": "BOTH",
+   "window": "snapshot",
+   "definition": "Books quoting market",
+   "source": "fact_prop_quote",
+   "leakage_rule": "SAFE",
+   "priority": "P0"
+  }
+ ]
+}

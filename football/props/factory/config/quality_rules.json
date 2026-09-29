@@ -1,0 +1,126 @@
+{
+ "schema": "edgedesk_props_quality_rules_v1",
+ "source": "sheet 06_Quality_Rules",
+ "rules": [
+  {
+   "rule_id": "Q001",
+   "scope": "fact_player_game",
+   "check_type": "PRIMARY KEY",
+   "rule": "game_id + player_id unique",
+   "severity": "ERROR",
+   "action": "Reject duplicate player-game rows"
+  },
+  {
+   "rule_id": "Q002",
+   "scope": "fact_player_game",
+   "check_type": "RANGE",
+   "rule": "all counting stats >= 0",
+   "severity": "ERROR",
+   "action": "Reject negatives except explicitly signed metrics"
+  },
+  {
+   "rule_id": "Q003",
+   "scope": "fact_player_game",
+   "check_type": "CONSISTENCY",
+   "rule": "completions <= attempts",
+   "severity": "ERROR",
+   "action": "Reject or quarantine"
+  },
+  {
+   "rule_id": "Q004",
+   "scope": "fact_player_game",
+   "check_type": "CONSISTENCY",
+   "rule": "receptions <= targets when targets present",
+   "severity": "ERROR",
+   "action": "Reject or quarantine"
+  },
+  {
+   "rule_id": "Q005",
+   "scope": "fact_player_game",
+   "check_type": "CONSISTENCY",
+   "rule": "passing_tds/interceptions plausible vs attempts",
+   "severity": "WARN",
+   "action": "Flag extreme provider errors"
+  },
+  {
+   "rule_id": "Q006",
+   "scope": "fact_prop_quote",
+   "check_type": "LINEAGE",
+   "rule": "lineage in observed,reconstructed",
+   "severity": "ERROR",
+   "action": "Never default missing lineage"
+  },
+  {
+   "rule_id": "Q007",
+   "scope": "fact_prop_quote",
+   "check_type": "TIMESTAMP",
+   "rule": "snapshot_at < kickoff_utc for pregame backtest",
+   "severity": "ERROR",
+   "action": "Prevents in-game leakage"
+  },
+  {
+   "rule_id": "Q008",
+   "scope": "fact_feature_snapshot",
+   "check_type": "POINT IN TIME",
+   "rule": "source_max_timestamp <= asof_at",
+   "severity": "ERROR",
+   "action": "Hard leakage gate"
+  },
+  {
+   "rule_id": "Q009",
+   "scope": "bridge_cfb_nfl_player",
+   "check_type": "IDENTITY",
+   "rule": "match_confidence >= .90 or manual_reviewed=true for production",
+   "severity": "ERROR",
+   "action": "Prevents cross-player contamination"
+  },
+  {
+   "rule_id": "Q010",
+   "scope": "fact_prop_result",
+   "check_type": "SETTLEMENT",
+   "rule": "result_quality >= .95 for training target",
+   "severity": "ERROR",
+   "action": "Quarantine uncertain settlements"
+  },
+  {
+   "rule_id": "Q011",
+   "scope": "fact_prop_quote",
+   "check_type": "ODDS",
+   "rule": "american_price not between -99 and 99",
+   "severity": "ERROR",
+   "action": "Invalid American-odds gap"
+  },
+  {
+   "rule_id": "Q012",
+   "scope": "fact_prop_quote",
+   "check_type": "PAIRING",
+   "rule": "main OU should pair over+under at same book/snapshot/line",
+   "severity": "WARN",
+   "action": "Needed for de-vigging"
+  },
+  {
+   "rule_id": "Q013",
+   "scope": "dim_game",
+   "check_type": "TIME",
+   "rule": "kickoff_utc non-null and timezone-aware",
+   "severity": "ERROR",
+   "action": "No local-time ambiguity"
+  },
+  {
+   "rule_id": "Q014",
+   "scope": "all",
+   "check_type": "SOURCE",
+   "rule": "source/provider present",
+   "severity": "ERROR",
+   "action": "Every row must retain provenance"
+  },
+  {
+   "rule_id": "Q015",
+   "scope": "training_view",
+   "check_type": "LEAKAGE",
+   "rule": "no post-kickoff/in-game/injury-resolution-after-bet fields",
+   "severity": "ERROR",
+   "action": "Automated feature whitelist only"
+  }
+ ]
+}

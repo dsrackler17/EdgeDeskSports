@@ -1,0 +1,168 @@
+{
+ "schema": "edgedesk_props_pipeline_jobs_v1",
+ "source": "sheet 08_Pipeline_Jobs",
+ "jobs": [
+  {
+   "order": "01",
+   "job": "ingest_nfl_players",
+   "league": "NFL",
+   "cadence": "daily in season / weekly offseason",
+   "layer": "RAW",
+   "input": "nflverse players",
+   "output": "dim_player staging"
+  },
+  {
+   "order": "02",
+   "job": "ingest_nfl_rosters",
+   "league": "NFL",
+   "cadence": "daily in season",
+   "layer": "RAW",
+   "input": "nflverse rosters",
+   "output": "roster staging"
+  },
+  {
+   "order": "03",
+   "job": "ingest_nfl_player_stats",
+   "league": "NFL",
+   "cadence": "after games",
+   "layer": "RAW",
+   "input": "nflverse weekly stats",
+   "output": "player_game staging"
+  },
+  {
+   "order": "04",
+   "job": "ingest_nfl_pbp",
+   "league": "NFL",
+   "cadence": "after games",
+   "layer": "RAW",
+   "input": "nflverse PBP",
+   "output": "PBP staging"
+  },
+  {
+   "order": "05",
+   "job": "ingest_cfb_rosters",
+   "league": "CFB",
+   "cadence": "daily in season",
+   "layer": "RAW",
+   "input": "SportsDataverse",
+   "output": "roster staging"
+  },
+  {
+   "order": "06",
+   "job": "ingest_cfb_player_box",
+   "league": "CFB",
+   "cadence": "after games",
+   "layer": "RAW",
+   "input": "SportsDataverse player box",
+   "output": "player_game staging"
+  },
+  {
+   "order": "07",
+   "job": "ingest_cfb_pbp",
+   "league": "CFB",
+   "cadence": "after games",
+   "layer": "RAW",
+   "input": "SportsDataverse PBP",
+   "output": "PBP staging"
+  },
+  {
+   "order": "08",
+   "job": "ingest_cfb_recruiting",
+   "league": "CFB",
+   "cadence": "weekly/monthly",
+   "layer": "RAW",
+   "input": "CFBD",
+   "output": "recruiting staging"
+  },
+  {
+   "order": "09",
+   "job": "ingest_prop_quotes",
+   "league": "BOTH",
+   "cadence": "5-15 min pregame",
+   "layer": "RAW",
+   "input": "Odds API provider",
+   "output": "fact_prop_quote"
+  },
+  {
+   "order": "10",
+   "job": "snapshot_market_open",
+   "league": "BOTH",
+   "cadence": "event-driven",
+   "layer": "CURATED",
+   "input": "fact_prop_quote",
+   "output": "open snapshot flags"
+  },
+  {
+   "order": "11",
+   "job": "snapshot_market_close",
+   "league": "BOTH",
+   "cadence": "10 min pre-kick",
+   "layer": "CURATED",
+   "input": "fact_prop_quote",
+   "output": "close snapshot flags"
+  },
+  {
+   "order": "12",
+   "job": "resolve_player_identity",
+   "league": "BOTH",
+   "cadence": "after source loads",
+   "layer": "CURATED",
+   "input": "all identity sources",
+   "output": "dim_player + bridge"
+  },
+  {
+   "order": "13",
+   "job": "build_player_game_fact",
+   "league": "BOTH",
+   "cadence": "after stats/PBP",
+   "layer": "CURATED",
+   "input": "stats + PBP",
+   "output": "fact_player_game"
+  },
+  {
+   "order": "14",
+   "job": "settle_prop_results",
+   "league": "BOTH",
+   "cadence": "after game final",
+   "layer": "CURATED",
+   "input": "player_game + quotes",
+   "output": "fact_prop_result"
+  },
+  {
+   "order": "15",
+   "job": "build_pit_features",
+   "league": "BOTH",
+   "cadence": "hourly / pre-board",
+   "layer": "FEATURE",
+   "input": "curated facts",
+   "output": "fact_feature_snapshot"
+  },
+  {
+   "order": "16",
+   "job": "score_prop_models",
+   "league": "BOTH",
+   "cadence": "on quote change",
+   "layer": "MODEL",
+   "input": "features + models",
+   "output": "model_prediction"
+  },
+  {
+   "order": "17",
+   "job": "publish_props_board",
+   "league": "BOTH",
+   "cadence": "on scoring update",
+   "layer": "SERVE",
+   "input": "predictions + quotes",
+   "output": "API/public view"
+  },
+  {
+   "order": "18",
+   "job": "nightly_qa",
+   "league": "BOTH",
+   "cadence": "nightly",
+   "layer": "QA",
+   "input": "all layers",
+   "output": "quality metrics + quarantine"
+  }
+ ]
+}

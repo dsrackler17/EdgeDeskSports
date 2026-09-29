@@ -25977,7 +25977,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
      grid (football statistics are whole numbers); continuous families use a
      continuity correction (P(Y <= k + 0.5)). A cache keyed by the parameters
      keeps the browser fast without mutating the (serialisable) dist object. */
-  var FAMILIES = ['normal', 'lognormal', 'poisson', 'negbin', 'gcomp', 'maxcomp', 'maxemp', 'conv', 'bernoulli', 'empirical'];
+  var FAMILIES = ['normal', 'lognormal', 'poisson', 'negbin', 'gcomp', 'maxcomp', 'maxemp', 'conv', 'bernoulli', 'empirical', 'stored'];
   var CACHE = {}, CACHE_N = 0;
   /* named per-event yard shapes (an empirical CDF of league plays) that a
      'maxemp' distribution references by name, so a board carries each table
@@ -26008,6 +26008,49 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   }
   function distKey(d) { return JSON.stringify(d); }
 
+  /* 'stored' — a distribution fitted elsewhere and carried as data: the
+     player-prop data factory's walk-forward-validated models
+     (football/props/factory, docs/player-props/FACTORY.md), joined onto a
+     prop as `fx`. Three forms, read exactly as the factory's own kernel
+     reads them (football/props/factory/dist.js), so a line gets the same
+     probability in both:
+       {family:'stored', t:'pmf', v:[P(0)…P(K)], tail}  P(Y <= k) = Σ v[0..k]
+       {family:'stored', t:'cdf', x:[…], p:[…], int}    knots of a monotone CDF,
+                                                       read at k + 0.5
+       {family:'stored', t:'bern', p}                   yes / no
+     A stored distribution is evidence: it is never rescaled or widened
+     (scaleDist / widenDist return it unchanged). */
+  function storedValid(d) {
+    if (d.t === 'pmf') return Array.isArray(d.v) && d.v.length > 0 && d.v.every(function (x) { return isNum(x) && x >= 0; });
+    if (d.t === 'bern') return isNum(d.p) && d.p >= 0 && d.p <= 1;
+    if (d.t === 'cdf') {
+      if (!Array.isArray(d.x) || !Array.isArray(d.p) || d.x.length < 2 || d.x.length !== d.p.length) return false;
+      for (var i = 0; i < d.x.length; i++) { if (!isNum(d.x[i]) || !isNum(d.p[i]) || d.p[i] < 0 || d.p[i] > 1 + 1e-9) return false; if (i && (d.x[i] < d.x[i - 1] || d.p[i] < d.p[i - 1] - 1e-9)) return false; }
+      return true;
+    }
+    return false;
+  }
+  function storedInterp(xs, ps, x) {
+    var n = xs.length;
+    if (x < xs[0]) return 0;
+    if (x >= xs[n - 1]) return 1;
+    var lo = 0, hi = n - 1;
+    while (hi - lo > 1) { var mid = (lo + hi) >> 1; if (xs[mid] <= x) lo = mid; else hi = mid; }
+    var dx = xs[hi] - xs[lo];
+    return dx <= 0 ? ps[hi] : ps[lo] + (ps[hi] - ps[lo]) * (x - xs[lo]) / dx;
+  }
+  function storedCdfInt(d, k) {
+    if (d.t === 'pmf') { if (k < 0) return 0; if (k >= d.v.length) return 1; var s = 0; for (var i = 0; i <= k; i++) s += d.v[i]; return clamp(s, 0, 1); }
+    if (d.t === 'cdf') return clamp(storedInterp(d.x, d.p, k + 0.5), 0, 1);
+    if (d.t === 'bern') return k < 0 ? 0 : (k >= 1 ? 1 : 1 - d.p);
+    return null;
+  }
+  function storedSupport(d) {
+    if (d.t === 'pmf') return [0, d.v.length];
+    if (d.t === 'bern') return [0, 1];
+    return [Math.floor(d.x[0]) - 1, Math.ceil(d.x[d.x.length - 1]) + 1];
+  }
+
   function validDist(d) {
     if (!d || FAMILIES.indexOf(d.family) < 0) return false;
     switch (d.family) {
@@ -26020,6 +26063,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       case 'conv': return Array.isArray(d.parts) && d.parts.length >= 2 && d.parts.every(validDist);
       case 'bernoulli': return isNum(d.p) && d.p >= 0 && d.p <= 1;
       case 'empirical': return Array.isArray(d.values) && d.values.length > 0 && d.values.every(isNum);
+      case 'stored': return storedValid(d);
     }
     return false;
   }
@@ -26088,6 +26132,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
         for (j = 0; j < d.values.length; j++) { s += w[j] * normCdf((k + 0.5 - d.values[j]) / bw); t += w[j]; }
         return t > 0 ? s / t : null;
       }
+      case 'stored': return storedCdfInt(d, k);
     }
     return null;
   }
@@ -26103,6 +26148,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       case 'conv': return d.parts.reduce(function (s, p) { return s + meanOf(p); }, 0);
       case 'empirical': { var w = d.weights || d.values.map(function () { return 1; }), s = 0, t = 0; d.values.forEach(function (v, i) { s += v * w[i]; t += w[i]; }); return t ? s / t : null; }
       case 'maxcomp': case 'maxemp': return cached('mm' + distKey(d), function () { var s = 0, k; for (k = 0; k < 400; k++) { var q = 1 - cdfInt(d, k); s += q; if (q < 1e-9) break; } return s; });
+      case 'stored': {
+        if (d.t === 'bern') return d.p;
+        return cached('sm' + distKey(d), function () { var b = storedSupport(d), s = 0, k; for (k = b[0]; k <= b[1]; k++) s += k * pmfInt(d, k); return s; });
+      }
     }
     return null;
   }
@@ -26121,7 +26170,8 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   function quantileRaw(d, q) {
     var m = meanOf(d), sd = Math.sqrt(Math.max(varOf(d), 1e-6));
     var lo = Math.floor(m - 14 * sd) - 2, hi = Math.ceil(m + 14 * sd) + 2;
-    if (d.family !== 'normal' && d.family !== 'gcomp' && d.family !== 'conv' && d.family !== 'empirical') lo = Math.max(lo, -1);
+    if (d.family === 'stored') { var sb = storedSupport(d); lo = Math.max(lo, sb[0] - 1); hi = Math.min(hi, sb[1] + 1); }
+    else if (d.family !== 'normal' && d.family !== 'gcomp' && d.family !== 'conv' && d.family !== 'empirical') lo = Math.max(lo, -1);
     if (d.family === 'gcomp') lo = Math.max(lo, -Math.ceil(3 * (d.shift || 0)) - 5);
     while (lo < hi) { var mid = Math.floor((lo + hi) / 2); if (cdfInt(d, mid) >= q) hi = mid; else lo = mid + 1; }
     return lo;
@@ -26154,6 +26204,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       case 'conv': o.parts = d.parts.map(function (p) { return scaleDist(p, f); }); break;
       case 'bernoulli': { var lam = -Math.log(Math.max(1e-9, 1 - d.p)); o.p = 1 - Math.exp(-lam * f); break; }
       case 'empirical': o.values = d.values.map(function (v) { return v * f; }); break;
+      case 'stored': return d;
     }
     return o;
   }
@@ -26216,6 +26267,27 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   function expectedValue(pWin, american, pPush) {
     var R = RC(); if (R) return R.expectedRoi(pWin, american, pPush || 0);
     var d = toDecimal(american); if (d == null || !isNum(pWin)) return null; var q = pPush || 0; return pWin * (d - 1) - Math.max(0, 1 - pWin - q);
+  }
+  /* THE DATA FACTORY'S VIEW of one prop (board row `fx`, board.factory;
+     docs/player-props/FACTORY.md): its walk-forward-validated distribution
+     priced at a line — and, given a price, the fair price and EV that
+     distribution implies. Evidence beside the engine, shared by the drawer
+     and the AI desk; it never sets the decision. */
+  function factoryView(fx, meta, line, side, american) {
+    if (!fx || !fx[1] || !meta || !Array.isArray(meta.models)) return null;
+    var d = copy(fx[1]); d.family = 'stored';
+    if (!validDist(d)) return null;
+    var m = meta.models[fx[0]] || [], sm = summary(d);
+    if (d.t === 'bern' && !isNum(line)) line = 0.5;
+    var pl = isNum(line) ? probLine(d, line) : null, sd = side === 'under' ? 'under' : 'over';
+    var pw = pl ? pl[sd] : null, pp = pl ? pl.push : null;
+    return {
+      model_version: m[0] || null, tier: m[1] || null, mae_skill: isNum(m[2]) ? m[2] : null, pit_dev: isNum(m[3]) ? m[3] : null, folds: m[4] || 0, as_of: fx[3] || meta.generated_at || null,
+      yes_no: d.t === 'bern', mean: sm ? sm.mean : null, median: sm ? sm.median : null, p10: sm ? sm.p10 : null, p90: sm ? sm.p90 : null,
+      line: isNum(line) ? line : null, side: sd, p_side: isNum(pw) ? r(pw, 4) : null, p_other: pl ? r(sd === 'over' ? pl.under : pl.over, 4) : null, p_push: isNum(pp) ? r(pp, 4) : null,
+      fair_american: isNum(pw) ? fairAmerican(pw, pp) : null,
+      american: isNum(american) ? american : null, ev: isNum(pw) && isNum(american) ? r(expectedValue(pw, american, pp || 0), 4) : null
+    };
   }
   function noVig(overAm, underAm, method) {
     method = method || 'proportional';
@@ -27258,7 +27330,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     validDist: validDist, cdfInt: cdfInt, registerShape: registerShape, shapes: function () { return SHAPES; }, pmfInt: pmfInt, mean: meanOf, variance: varOf, quantile: quantile, summary: summary,
     probLine: probLine, scaleDist: scaleDist, solveScale: solveScale, widenDist: widenDist,
     /* odds */
-    toDecimal: toDecimal, implied: implied, probToAmerican: probToAmerican, fairAmerican: fairAmerican, expectedValue: expectedValue,
+    toDecimal: toDecimal, implied: implied, probToAmerican: probToAmerican, fairAmerican: fairAmerican, expectedValue: expectedValue, factoryView: factoryView,
     noVig: noVig, validPrice: validPrice, priceBetter: priceBetter, stepPrice: stepPrice,
     /* quotes, pricing, decision */
     sideOf: sideOf, sideLabel: sideLabel, selectionText: selectionText, normalizeQuotes: normalizeQuotes, consensusOf: consensusOf,
@@ -27484,6 +27556,22 @@ const EDProps: any = (globalThis as any).EDProps;
       if (cand) L.push('Best value: ' + E.selectionText(row.m, cand.side, cand.line) + ' ' + am(cand.american) + ' at ' + E.bookName(cand.book) + ': P(win) ' + pct(cand.p_win) + ', fair ' + am(cand.fair_american) + ', edge ' + pp(cand.edge_pp) + ', EV ' + spct(cand.ev) + '.');
     }
     if (ev.n_quotes) L.push('EdgeDesk decision: ' + ev.decision_label + (ev.decision === 'BET' && ev.units ? ' ' + E.unitsText(ev.units) : '') + ' — ' + sentence(ev.caps && ev.caps.length ? ev.caps[ev.caps.length - 1].text : (ev.blocker_text || codeText(ev.code))) + '.' + (ev.trigger && ev.trigger.realistic && ev.trigger.text ? ' It ' + ev.trigger.text + '.' : ''));
+    /* the data factory's walk-forward-validated distribution, when the board
+       joined one for this prop (EDProps.factoryView): evidence beside the
+       decision, never the decision */
+    if (row.fx && board.factory && board.factory.state === 'JOINED' && typeof E.factoryView === 'function') {
+      var fl = cand ? cand.line : (ac ? ac.line : (yesno ? 0.5 : null)), fs = cand ? cand.side : (ac && ac.over < ac.under ? 'under' : 'over');
+      var fv = E.factoryView(row.fx, board.factory, fl, fs, cand ? cand.american : null);
+      var tier = fv ? ({ OUTCOME_VALIDATED: 'skill in every fold', OUTCOME_LEAN: 'positive skill on average', RESEARCH: 'research only' }[fv.tier] || 'research only') : null;
+      if (fv && num(fv.p_side)) {
+        var engP = cand ? cand.p_win : (ac ? (fs === 'over' ? ac.over : ac.under) : (yesno ? E.probLine(ev._dist.informed, 0.5).over : null));
+        L.push('The validated model (walk-forward, ' + tier + ') has ' + (yesno ? 'the Yes' : side(fs) + ' ' + fl) + ' at ' + pct(fv.p_side) +
+          (num(engP) ? (Math.abs(fv.p_side - engP) < 0.03 ? ', in line with the engine' : ((fv.p_side >= 0.5) === (engP >= 0.5) ? ', the same lean as the engine' : ', against the engine’s ' + pct(engP))) : '') +
+          (num(fv.ev) ? ' (EV ' + spct(fv.ev) + ' at ' + am(fv.american) + ')' : '') + '; it is evidence beside the decision, not the decision.');
+      } else if (fv && num(fv.median)) {
+        L.push('The validated model (walk-forward, ' + tier + ') has a median of ' + f1(fv.median) + ' (80% range ' + f1(fv.p10) + '–' + f1(fv.p90) + ').');
+      }
+    }
     /* a quote the reader named, priced on the same distribution */
     if (qt && num(qt.line) && (qt.side === 'over' || qt.side === 'under') && !yesno) {
       /* a captured price stands in for a missing one only while it is inside

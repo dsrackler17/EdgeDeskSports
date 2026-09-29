@@ -205,6 +205,28 @@ label with a sample floor. Tested against a real PostgreSQL by
 `Deploy intelligence` workflow's `apply_research_packets` input. The
 function reports its last write in `?probe=1 → packet_health`.
 
+### `props_factory.sql` — the player-prop data factory (`props` schema)
+The warehouse under the Player Props terminal (`docs/player-props/FACTORY.md`;
+the terminal's own live ledger is `player_props.sql`). The catalog (27
+canonical markets, 121 features, 15 quality rules, 20 walk-forward folds, 18
+pipeline jobs), the CFB→NFL identity bridge (`dim_player`, `player_id_map`,
+`bridge` with a generated `production_eligible`, `identity_review`), the
+historical facts (`dim_game`, `fact_player_game` with the Q001–Q004 checks,
+`fact_team_game`, `fact_corrections`), the point-in-time feature store
+(`fact_feature_snapshot`: `source_max_timestamp <= asof_at <= kickoff`,
+immutable), immutable `model_registry` / `model_prediction`, the backtest
+tables, and the lineage-checked historical quote store (`fact_prop_quote`,
+`fact_prop_listing`, `raw_odds_payloads`) that the Odds API historical
+backfill fills. **Lineage is required and never defaulted**: a quote is
+`observed` or `reconstructed`, a reconstructed one must name
+`edgedesk_reconstruction` as its provider, and a backtest decision can only
+stand on an observed pregame quote. `props.dist_probs()` carries the factory's
+distribution arithmetic. Loaded by `node football/props/factory/run.js sync`
+(psql + COPY through `tools/tennis/lib/pg.js`; `SUPABASE_DB_URL`), pasteable
+as `parts/props_factory.part*-of-*.sql`; add `props` to the served schemas
+with `expose_schemas.sql`. Tested against a real PostgreSQL by
+`football/props/factory/sql.test.js` (twice, idempotent).
+
 ### `cfb_lab.sql` — the CFB Live Model Lab, in Postgres
 The database half of the lab (`docs/cfb-lab/SCHEMA.md`, `docs/cfb-lab/METRICS.md`):
 thirteen `cfb_lab_` tables in `public` (predictions, market quotes, openers and

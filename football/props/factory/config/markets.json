@@ -1,0 +1,843 @@
+{
+ "schema": "edgedesk_props_markets_v1",
+ "source": "EdgeDesk_Player_Props_Historical_Data_Factory.xlsx sheet 03_Prop_Catalog; provider keys from The Odds API betting-markets reference",
+ "rules": [
+  "Provider labels are normalised HERE and nowhere else: the rest of EdgeDesk reads market_key only.",
+  "A provider market key missing from provider_map is stored in the raw payload and quarantined as UNMAPPED_MARKET; it is never guessed.",
+  "modeled=false markets are captured and shown with market data only: no model probability, no fair price, no EV."
+ ],
+ "markets": [
+  {
+   "market_key": "pass_yards",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "passing_yards",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Core continuous prop",
+   "settle_stats": [
+    "passing_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_tds",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "passing_tds",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Count distribution",
+   "settle_stats": [
+    "passing_tds"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_completions",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "completions",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Volume + efficiency",
+   "settle_stats": [
+    "completions"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_attempts",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "attempts",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Highly role/game-script dependent",
+   "settle_stats": [
+    "attempts"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_interceptions",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "interceptions",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Low-count discrete",
+   "settle_stats": [
+    "interceptions"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_longest_completion",
+   "group": "passing",
+   "positions": [
+    "QB"
+   ],
+   "target": "longest_completion",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Tail-sensitive",
+   "settle_stats": [
+    "longest_completion"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "rush_yards",
+   "group": "rushing",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "target": "rushing_yards",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Core continuous prop",
+   "settle_stats": [
+    "rushing_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "rush_attempts",
+   "group": "rushing",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "target": "carries",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Usage prop",
+   "settle_stats": [
+    "carries"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "rush_tds",
+   "group": "rushing",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "target": "rushing_tds",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Count distribution",
+   "settle_stats": [
+    "rushing_tds"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "longest_rush",
+   "group": "rushing",
+   "positions": [
+    "QB",
+    "RB",
+    "WR"
+   ],
+   "target": "longest_rush",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Tail-sensitive",
+   "settle_stats": [
+    "longest_rush"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "receiving_yards",
+   "group": "receiving",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "receiving_yards",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Core continuous prop",
+   "settle_stats": [
+    "receiving_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "receptions",
+   "group": "receiving",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "receptions",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Target + catch model",
+   "settle_stats": [
+    "receptions"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "targets",
+   "group": "receiving",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "targets",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Not offered everywhere",
+   "settle_stats": [
+    "targets"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "receiving_tds",
+   "group": "receiving",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "receiving_tds",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Count distribution",
+   "settle_stats": [
+    "receiving_tds"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "longest_reception",
+   "group": "receiving",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "longest_reception",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Tail-sensitive",
+   "settle_stats": [
+    "longest_reception"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "anytime_td",
+   "group": "scoring",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "any_touchdown",
+   "bet_type": "YESNO",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Binary scoring probability; define passing TD exclusion by book",
+   "settle_stats": [
+    "rushing_tds",
+    "receiving_tds"
+   ],
+   "family": "binary",
+   "model": "td_poisson",
+   "modeled": true,
+   "settle_note": "Passing TDs do not settle an anytime-TD wager; rushing + receiving (+ return) TDs do. Return TDs are not in the historical box for both leagues and are excluded, which the market note states."
+  },
+  {
+   "market_key": "first_td",
+   "group": "scoring",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "first_touchdown",
+   "bet_type": "YESNO",
+   "priority": "P2",
+   "cfb": true,
+   "nfl": true,
+   "notes": "High variance; lineup/drive-order sensitive",
+   "settle_stats": [],
+   "family": "binary",
+   "model": null,
+   "modeled": false,
+   "settle_note": "Needs drive order; catalogued and captured, never modeled."
+  },
+  {
+   "market_key": "pass_rush_yards",
+   "group": "combo",
+   "positions": [
+    "QB"
+   ],
+   "target": "pass_plus_rush_yards",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Strong QB market",
+   "settle_stats": [
+    "passing_yards",
+    "rushing_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "rush_rec_yards",
+   "group": "combo",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "rush_plus_receiving_yards",
+   "bet_type": "OU",
+   "priority": "P0",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Useful for hybrid usage",
+   "settle_stats": [
+    "rushing_yards",
+    "receiving_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "pass_rush_rec_yards",
+   "group": "combo",
+   "positions": [
+    "QB",
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "total_offense_yards",
+   "bet_type": "OU",
+   "priority": "P1",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Provider-specific naming",
+   "settle_stats": [
+    "passing_yards",
+    "rushing_yards",
+    "receiving_yards"
+   ],
+   "family": "continuous",
+   "model": "ratio",
+   "modeled": true
+  },
+  {
+   "market_key": "receptions_rush_attempts",
+   "group": "combo",
+   "positions": [
+    "RB",
+    "WR",
+    "TE"
+   ],
+   "target": "receptions_plus_carries",
+   "bet_type": "OU",
+   "priority": "P2",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Provider-specific",
+   "settle_stats": [
+    "receptions",
+    "carries"
+   ],
+   "family": "count",
+   "model": "nb",
+   "modeled": true
+  },
+  {
+   "market_key": "kicking_points",
+   "group": "kicking",
+   "positions": [
+    "K"
+   ],
+   "target": "kicking_points",
+   "bet_type": "OU",
+   "priority": "P2",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Can add after offensive markets stabilize",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  },
+  {
+   "market_key": "field_goals_made",
+   "group": "kicking",
+   "positions": [
+    "K"
+   ],
+   "target": "field_goals_made",
+   "bet_type": "OU",
+   "priority": "P2",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Discrete",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  },
+  {
+   "market_key": "extra_points_made",
+   "group": "kicking",
+   "positions": [
+    "K"
+   ],
+   "target": "extra_points_made",
+   "bet_type": "OU",
+   "priority": "P2",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Often low edge",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  },
+  {
+   "market_key": "def_interceptions",
+   "group": "defense",
+   "positions": [
+    "DB",
+    "LB"
+   ],
+   "target": "defensive_interceptions",
+   "bet_type": "OU",
+   "priority": "P3",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Historical player stat quality varies",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  },
+  {
+   "market_key": "sacks",
+   "group": "defense",
+   "positions": [
+    "DL",
+    "LB"
+   ],
+   "target": "sacks",
+   "bet_type": "OU",
+   "priority": "P3",
+   "cfb": true,
+   "nfl": true,
+   "notes": "Provider/stat attribution variance",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  },
+  {
+   "market_key": "tackles_assists",
+   "group": "defense",
+   "positions": [
+    "LB",
+    "DB",
+    "DL"
+   ],
+   "target": "tackles_assists",
+   "bet_type": "OU",
+   "priority": "P3",
+   "cfb": false,
+   "nfl": true,
+   "notes": "NFL first; CFB historical consistency weaker",
+   "settle_stats": [],
+   "family": "count",
+   "model": null,
+   "modeled": false
+  }
+ ],
+ "provider_map": [
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_yds",
+   "market_key": "pass_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_yds_alternate",
+   "market_key": "pass_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_tds",
+   "market_key": "pass_tds",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_tds_alternate",
+   "market_key": "pass_tds",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_completions",
+   "market_key": "pass_completions",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_completions_alternate",
+   "market_key": "pass_completions",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_attempts",
+   "market_key": "pass_attempts",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_attempts_alternate",
+   "market_key": "pass_attempts",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_interceptions",
+   "market_key": "pass_interceptions",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_interceptions_alternate",
+   "market_key": "pass_interceptions",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_longest_completion",
+   "market_key": "pass_longest_completion",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_longest_completion_alternate",
+   "market_key": "pass_longest_completion",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_yds",
+   "market_key": "rush_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_yds_alternate",
+   "market_key": "rush_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_attempts",
+   "market_key": "rush_attempts",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_attempts_alternate",
+   "market_key": "rush_attempts",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_tds",
+   "market_key": "rush_tds",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_tds_alternate",
+   "market_key": "rush_tds",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_longest",
+   "market_key": "longest_rush",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_longest_alternate",
+   "market_key": "longest_rush",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_yds",
+   "market_key": "receiving_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_yds_alternate",
+   "market_key": "receiving_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_receptions",
+   "market_key": "receptions",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_receptions_alternate",
+   "market_key": "receptions",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_tds",
+   "market_key": "receiving_tds",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_tds_alternate",
+   "market_key": "receiving_tds",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_longest",
+   "market_key": "longest_reception",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_reception_longest_alternate",
+   "market_key": "longest_reception",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_anytime_td",
+   "market_key": "anytime_td",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_1st_td",
+   "market_key": "first_td",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_rush_yds",
+   "market_key": "pass_rush_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_rush_yds_alternate",
+   "market_key": "pass_rush_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_reception_yds",
+   "market_key": "rush_rec_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_rush_reception_yds_alternate",
+   "market_key": "rush_rec_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_rush_reception_yds",
+   "market_key": "pass_rush_rec_yards",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pass_rush_reception_yds_alternate",
+   "market_key": "pass_rush_rec_yards",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_kicking_points",
+   "market_key": "kicking_points",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_kicking_points_alternate",
+   "market_key": "kicking_points",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_field_goals",
+   "market_key": "field_goals_made",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_field_goals_alternate",
+   "market_key": "field_goals_made",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pats",
+   "market_key": "extra_points_made",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_pats_alternate",
+   "market_key": "extra_points_made",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_defensive_interceptions",
+   "market_key": "def_interceptions",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_defensive_interceptions_alternate",
+   "market_key": "def_interceptions",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_sacks",
+   "market_key": "sacks",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_sacks_alternate",
+   "market_key": "sacks",
+   "is_alternate": true
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_tackles_assists",
+   "market_key": "tackles_assists",
+   "is_alternate": false
+  },
+  {
+   "provider": "the-odds-api",
+   "provider_market_key": "player_tackles_assists_alternate",
+   "market_key": "tackles_assists",
+   "is_alternate": true
+  }
+ ]
+}

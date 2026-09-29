@@ -98,6 +98,20 @@ function otherBoard() {
   ok('an EXPERIMENTAL market says so and carries no units', NFL.stages.rush_yds.stage !== 'EXPERIMENTAL' || (/EXPERIMENTAL/.test(a.out.text) && !(a.out.evaluation.units > 0)), a.out.text);
   ok('the answer is research, not a pick', /Research, not picks\.$/.test(a.out.text));
 
+  /* the data factory's validated distribution, when the board joined one (TEST FIXTURE row) */
+  {
+    const FXB = JSON.parse(JSON.stringify(NFL));
+    FXB.factory = { state: 'JOINED', generated_at: OBS, models: [['nfl_rb_rush_yards_v1.2025', 'OUTCOME_VALIDATED', 0.1, 0.02, 3]] };
+    const fr = FXB.props.find((r) => r.p === row.p && r.m === row.m && r.g === row.g);
+    fr.fx = [0, { t: 'cdf', x: [9.5, 40.5, 60.5, 80.5, 100.5, 140.5, 220.5], p: [0, 0.1, 0.3, 0.55, 0.78, 0.95, 1], int: true }, null, OBS];
+    const fa = ask('Should I bet Bijan Robinson over 84.5 rushing yards?', { boards: { nfl: FXB, cfb: otherBoard() } });
+    const fvv = EDP.factoryView(fr.fx, FXB.factory, cand.line, cand.side, cand.american);
+    ok('a joined factory projection is stated beside the decision, priced at the same line and price', fa.out && fa.out.text.indexOf('The validated model (walk-forward, skill in every fold) has ' + (cand.side === 'over' ? 'Over' : 'Under') + ' ' + cand.line + ' at ' + (100 * fvv.p_side).toFixed(1) + '%') >= 0
+      && /evidence beside the decision, not the decision/.test(fa.out.text) && fa.out.evaluation.decision === page.decision, fa.out && fa.out.text);
+    ok('…and the critic accepts every number in it', K.critic(fa.out.text, fa.out).ok !== false);
+    ok('without a joined projection the answer does not mention it', a.out.text.indexOf('validated model') < 0);
+  }
+
   /* a named quote at an exact price is priced on the same distribution */
   const b = ask('Research Bijan Robinson rushing yards under 84.5 -108');
   const pr = EDP.probLine(page._dist.informed, 84.5), d0 = EDP.toDecimal(-108);

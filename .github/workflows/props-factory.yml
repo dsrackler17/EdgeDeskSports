@@ -1,0 +1,136 @@
+# EdgeDesk Player Props — THE DATA FACTORY (football/props/factory/).
+#
+# The history, identity, point-in-time features and walk-forward-validated
+# models under the Player Props terminal. The terminal (player-props.yml)
+# owns live prices, the board, decisions and grading; this workflow feeds it
+# the factory's distributions (football/props/factory/<league>/projections.json),
+# which the board build joins by the terminal's own ids.
+#
+#   project  (every 3 hours in season): refresh the season in progress, then
+#            project every upcoming game with the champion models and publish
+#            the projections; mirror to Supabase when SB_DB_URL is set.
+#   weekly   (Tuesday): the walk-forward backtest (last three folds per
+#            league), summarize, and — only when a new season opens — train
+#            the new immutable model versions.
+#   backfill (manual): The Odds API historical player props into the
+#            lineage-checked quote store (needs ODDS_API_KEY with historical
+#            access), for market backtests.
+#   apply_sql(manual): apply supabase/props_factory.sql.
+#   test     (manual, and every pull request touching the factory): the
+#            factory suites and the SQL contract only; nothing is fetched,
+#            published or mirrored.
+name: Props factory
+
+on:
+  pull_request:
+    paths:
+      - 'football/props/factory/**'
+      - 'supabase/props_factory.sql'
+      - '.github/workflows/props-factory.yml'
+  schedule:
+    - cron: '47 */3 * 8-12,1 *'   # project, August through January
+    - cron: '23 8 * * 2'          # weekly validation
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'project | weekly | backfill | apply_sql | test'
+        required: false
+        default: 'project'
+      league:
+        description: 'nfl | cfb | (blank = both)'
+        required: false
+        default: ''
+      backfill_from:
+        description: 'backfill: first kickoff date (YYYY-MM-DD), 2023-05-03 or later'
+        required: false
+        default: '2025-09-01'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: props-factory-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  factory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MODE: ${{ github.event_name == 'pull_request' && 'test' || github.event.inputs.mode || (github.event.schedule == '23 8 * * 2' && 'weekly' || 'project') }}
+      LEAGUE_ARG: ${{ github.event.inputs.league && format('--league {0}', github.event.inputs.league) || '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Restore the factory cache (raw history, ledgers)
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/cache@v4
+        with:
+          path: .cache/props
+          key: props-factory-${{ github.run_id }}
+          restore-keys: |
+            props-factory-
+
+      - name: Factory suites (kernel, leakage, identity, odds, export)
+        run: |
+          node football/props/factory/dist.test.js
+          node football/props/factory/leakage.test.js
+          node football/props/factory/identity.test.js
+          node football/props/factory/odds.test.js
+          node football/props/factory/export.test.js
+
+      - name: Factory SQL contract against a real PostgreSQL
+        if: ${{ env.MODE == 'test' || env.MODE == 'weekly' || env.MODE == 'apply_sql' }}
+        run: node football/props/factory/sql.test.js
+
+      - name: Apply supabase/props_factory.sql
+        if: ${{ env.MODE == 'apply_sql' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set: nothing applied"; exit 1; fi
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/props_factory.sql
+
+      - name: History (the season in progress is refetched; completed seasons are cached)
+        if: ${{ env.MODE == 'project' || env.MODE == 'weekly' || env.MODE == 'backfill' }}
+        run: node --max-old-space-size=12288 football/props/factory/run.js history $LEAGUE_ARG
+
+      - name: Walk-forward validation
+        if: ${{ env.MODE == 'weekly' }}
+        run: |
+          node --max-old-space-size=12288 football/props/factory/run.js backtest --offline --last-n 3 $LEAGUE_ARG
+          node football/props/factory/run.js summarize $LEAGUE_ARG
+
+      - name: Train (new model versions only; the live season is the holdout)
+        if: ${{ env.MODE == 'weekly' }}
+        run: node --max-old-space-size=12288 football/props/factory/run.js train --offline $LEAGUE_ARG
+
+      - name: Historical prop backfill (manual, budgeted)
+        if: ${{ env.MODE == 'backfill' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: node --max-old-space-size=8192 football/props/factory/run.js backfill --network --offline --from "${{ github.event.inputs.backfill_from }}" --max-games 25 $LEAGUE_ARG
+
+      - name: Project upcoming games for the terminal
+        if: ${{ env.MODE == 'project' || env.MODE == 'weekly' }}
+        run: node --max-old-space-size=12288 football/props/factory/run.js project --offline $LEAGUE_ARG
+
+      - name: Publish
+        if: ${{ env.MODE == 'project' || env.MODE == 'weekly' }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh main "props factory: ${{ env.MODE }} run" -- \
+            football/props/factory/nfl football/props/factory/cfb football/props/factory/models football/props/factory/validation \
+            football/props/factory/identity football/props/factory/coverage.json football/props/factory/status.json
+
+      - name: Mirror to Supabase (when SB_DB_URL is set and the contract is applied)
+        if: ${{ env.MODE == 'project' || env.MODE == 'backfill' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then echo "SB_DB_URL not set: the database mirror is skipped" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          node --max-old-space-size=12288 football/props/factory/run.js sync --offline $LEAGUE_ARG
