@@ -36,12 +36,25 @@ const CAPTURE_ARMED = ['/functions/v1/capture',
 /* The packet ledger present, as the same kind of default: the cases about it
    list their own entry, which is matched first. */
 const PACKETS_APPLIED = ['/rest/v1/research_packets', { status: 200, body: '[]' }];
+/* props_cron's GET health probe serving this checkout's build, the same kind
+   of default again. */
+const PROPS_BUILD = D.expectedFunctionBuild('props_cron');
+const propsCron = (over) => ['/functions/v1/props_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'props_cron', build: PROPS_BUILD, configured: { has_token: true }, health: [] }, over || {})) }];
+const PROPS_CURRENT = propsCron();
+/* editorial_cron's public GET probe serving this checkout's build. */
+const ED_BUILD = D.expectedFunctionBuild('editorial_cron');
+const editorialCron = (over) => ['/functions/v1/editorial_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'editorial_cron', build: ED_BUILD, configured: { has_token: true } }, over || {})) }];
+const EDITORIAL_CURRENT = editorialCron();
 
 /** Answer every URL from a table of {match: response}. */
+const SENT = [];
 function net(table) {
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, init) => {
     const u = String(url);
-    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED]) {
+    SENT.push({ url: u, method: (init && init.method) || 'GET' });
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT, EDITORIAL_CURRENT]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -312,6 +325,156 @@ const OK_BOARD = signals(40, 144);
     a = D.annotations(s);
     chk('a clean run still emits a verdict notice and no errors',
       a.length === 1 && /^::notice::VERDICT: DEPLOYED AND CURRENT$/.test(a[0]), a);
+  }
+
+  /* --- AUTO-DEPLOY FIXES STALE FUNCTIONS AND NOTHING ELSE ---------------
+     The doctor workflow deploys on its own what --auto-deploy names. Each
+     finding a deploy would NOT fix is pinned here as naming nothing, above
+     all the board's own STALE, which shares the word and not the remedy. */
+  {
+    const ledger = [['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }]];
+    const staleFn = ['?probe=1', { status: 200, body: probeBody({ build: 'edgedesk_ai-2026-09-03-r5-presentation' }) }];
+    const okFn = ['?probe=1', { status: 200, body: probeBody() }];
+    const staleCap = ['/functions/v1/capture', { status: 401, body: JSON.stringify({ ok: false,
+      build: 'capture-v11-player-props-r1', error: 'unauthorized', reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+    const run = async (table) => (net([...table, ...OK_ARTIFACTS]), D.doctor(OPTS));
+
+    let s = await run([okFn, staleCap, ...ledger, OK_BOARD]);
+    let p = D.deployPlan(s);
+    chk('production 2026-09-29 exactly: a stale capture plans a capture deploy and nothing else',
+      p.capture && !p.edgedesk_ai && p.other.length === 0, p);
+    eq('and with --auto-deploy the doctor step passes, leaving the verdict to the re-check',
+      D.exitCode(s, { autoDeploy: true }), 0);
+    eq('but without it the same finding still fails the step', D.exitCode(s), 1);
+    let a = D.annotations(s, { autoDeploy: true });
+    chk('a stale function being deployed is a ::warning:: that says so, never an ::error::',
+      a.some((l) => l.startsWith('::warning::') && /deployed capture matches/.test(l) && /auto-deploying capture/.test(l))
+      && !a.some((l) => l.startsWith('::error::')), a);
+    chk('and the verdict notice counts it as fixed by this run',
+      /^::notice::VERDICT: ACTION NEEDED — 1 check\(s\) need action \(1 fixed by this run's auto-deploy\)$/.test(a[a.length - 1]),
+      a[a.length - 1]);
+    chk('without --auto-deploy the same check is the ::error:: it always was, fix line included',
+      D.annotations(s).some((l) => l.startsWith('::error::') && /deployed capture matches/.test(l) && /fix: supabase functions deploy capture/.test(l)));
+
+    s = await run([staleFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale edgedesk_ai build plans an edgedesk_ai deploy', p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+
+    s = await run([staleFn, staleCap, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('both stale plans both, each named once', p.edgedesk_ai && p.capture && p.functions.length === 2, p);
+
+    s = await run([okFn, ...ledger, signals(2345, 60)]);
+    p = D.deployPlan(s);
+    chk('a STALE BOARD deploys nothing: it is a scheduler, not a build',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('the board is being captured') >= 0, p);
+    eq('so it still fails the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 1);
+
+    s = await run([['?probe=1', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('NOT_DEPLOYED deploys nothing: a 404 is as likely a wrong SB_URL as a missing function',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('edgedesk_ai deployed') >= 0, p);
+
+    s = await run([staleFn, ['recommendation_ledger', { status: 404, body: '{"message":"relation \\"public.recommendation_ledger\\" does not exist"}' }], OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale build beside a missing table still deploys the build',
+      p.edgedesk_ai && p.other.indexOf('recommendation_ledger applied') >= 0, p);
+    eq('but the step fails, because the migration is still a person\'s job', D.exitCode(s, { autoDeploy: true }), 1);
+    a = D.annotations(s, { autoDeploy: true });
+    chk('and only the migration is an ::error::',
+      a.filter((l) => l.startsWith('::error::')).length === 1
+      && a.some((l) => l.startsWith('::error::') && /recommendation_ledger applied/.test(l)), a);
+
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a current deployment plans nothing', p.functions.length === 0 && p.other.length === 0, p);
+    eq('and passes either way', D.exitCode(s, { autoDeploy: true }) + D.exitCode(s), 0);
+
+    /* props_cron, the Player Props scheduler. Deployed with --no-verify-jwt
+       (pg_cron sends no JWT); its GET carries BUILD, and the build it was
+       first deployed with carried none. */
+    const PC = 'deployed props_cron matches this checkout';
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('a props_cron serving this checkout is CURRENT', stateOf(s, PC), 'CURRENT');
+
+    s = await run([okFn, propsCron({ build: 'props_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older props_cron build is STALE', stateOf(s, PC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans a props_cron deploy and nothing else', p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+    chk('and is annotated as being deployed',
+      D.annotations(s, { autoDeploy: true }).some((l) => l.startsWith('::warning::') && /auto-deploying props_cron/.test(l)));
+
+    s = await run([okFn, propsCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: a props_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, PC), 'STALE');
+    chk('and says so rather than naming a build it does not have', /predates its build stamp/.test(detailOf(s, PC)), detailOf(s, PC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on props_cron is NOT_DEPLOYED', stateOf(s, 'props_cron deployed'), 'NOT_DEPLOYED');
+    chk('which is never auto-deployed', !D.deployPlan(s).props_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    net([okFn, ['/functions/v1/props_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, ...OK_ARTIFACTS, OK_BOARD]);
+    s = await D.doctor({ url: 'https://p.test', key: '', site: 'https://s.test' });
+    eq('without a key the platform answers for props_cron, so its build is UNKNOWN', stateOf(s, PC), 'UNKNOWN');
+    chk('and nothing is deployed on a guess', !D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 200, body: '{"ok":true}' }], ...ledger, OK_BOARD]);
+    eq('a 200 that is not props_cron\'s own probe is UNKNOWN, not STALE', stateOf(s, PC), 'UNKNOWN');
+
+    /* production 2026-09-29 21:04: redeployed with verification ON, it turned
+       away the probe's key and every pg_cron tick alike */
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 401, body: '{"code":"UNAUTHORIZED_INVALID_JWT_FORMAT","message":"Invalid JWT"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on props_cron WITH a key is UNKNOWN', stateOf(s, PC), 'UNKNOWN');
+    chk('and points at JWT verification, which also stops the scheduler', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === PC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).props_cron);
+    s = await run([okFn, propsCron({ build: 'props_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    chk('a stale props_cron is fixed by a deploy with --no-verify-jwt', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === PC) || {}).fix || ''));
+
+    /* editorial_cron, the editorial scheduler. Deployed with --no-verify-jwt:
+       its GET is public and carries BUILD, and a POST to it dispatches the
+       editorial workflow, so the doctor must only ever GET it. */
+    const EC = 'deployed editorial_cron matches this checkout';
+    SENT.length = 0;
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('an editorial_cron serving this checkout is CURRENT', stateOf(s, EC), 'CURRENT');
+    const toEd = SENT.filter((x) => x.url.indexOf('/functions/v1/editorial_cron') >= 0);
+    chk('the doctor asks editorial_cron exactly once, with a GET: a POST would dispatch the editorial workflow',
+      toEd.length === 1 && toEd[0].method === 'GET', toEd);
+    chk('and every request the doctor sends anywhere is a GET', SENT.every((x) => x.method === 'GET'),
+      SENT.filter((x) => x.method !== 'GET'));
+
+    s = await run([okFn, editorialCron({ build: 'editorial_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older editorial_cron build is STALE', stateOf(s, EC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans an editorial_cron deploy and nothing else',
+      p.editorial_cron && !p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+
+    s = await run([okFn, editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: an editorial_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, EC), 'STALE');
+    chk('and says so', /predates its build stamp/.test(detailOf(s, EC)), detailOf(s, EC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).editorial_cron);
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on editorial_cron is NOT_DEPLOYED', stateOf(s, 'editorial_cron deployed'), 'NOT_DEPLOYED');
+    chk('which is never auto-deployed', !D.deployPlan(s).editorial_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on editorial_cron is UNKNOWN', stateOf(s, EC), 'UNKNOWN');
+    chk('and points at JWT verification, the likely cause', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === EC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).editorial_cron);
+
+    s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('all four stale at once plans all four, and nothing else',
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && p.functions.length === 4 && p.other.length === 0, p);
   }
 
   /* ---- everything deployed and current -------------------------------- */

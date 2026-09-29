@@ -5,6 +5,7 @@
 //  DEPLOY:  supabase functions deploy props_cron --no-verify-jwt
 //           (pg_cron sends no JWT; Refresh and status check the reader's
 //           session themselves — see supabase/player_props_cron.sql)
+//  BUILD:   props_cron-2026-09-29-r2   (authoritative value: `export const BUILD` below)
 //  CRON:    every 5 minutes (supabase/player_props_cron.sql)
 // ============================================================
 // WHY THIS EXISTS. On 2026-09-29 the Props page sat on "Sportsbook prices:
@@ -58,6 +59,13 @@
 //                         record has not moved for this long
 //   PROPS_REFRESH_USER_COOLDOWN_S / _GLOBAL_COOLDOWN_S   300 / 120
 // ============================================================
+
+/* WHICH CODE IS ANSWERING. The GET health probe returns this, so the
+   Intelligence doctor (tools/intelligence/deploy_doctor.js) can tell a
+   deployment that is serving this file from one serving an older one, and
+   deploy it when they differ. Bump it with every change to this file, or
+   the change is never shipped on its own. */
+export const BUILD = "props_cron-2026-09-29-r2";
 
 function config() {
   return {
@@ -258,7 +266,7 @@ export async function handle(req: Request): Promise<Response> {
   const c = config();
   if (req.method === 'GET') {
     const rows = await readHealth(c);
-    return json({ ok: true, service: 'props_cron', configured: { repo: c.ghRepo, workflow: c.workflow, ref: c.ref, debounce_seconds: c.debounceSeconds, fallback_minutes: c.fallbackMinutes, has_token: !!c.ghToken },
+    return json({ ok: true, service: 'props_cron', build: BUILD, configured: { repo: c.ghRepo, workflow: c.workflow, ref: c.ref, debounce_seconds: c.debounceSeconds, fallback_minutes: c.fallbackMinutes, has_token: !!c.ghToken },
       health: (rows || []).map((r) => ({ league: r.league, health: r.health, next_due_at: r.next_due_at, last_dispatch_at: r.last_dispatch_at, rate_limited_until: r.rate_limited_until })) });
   }
   let body: Record<string, unknown> = {};
