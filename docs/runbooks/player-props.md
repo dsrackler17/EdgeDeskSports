@@ -144,8 +144,10 @@ through localStorage.
 | `npm run props:capture` | Capture prices (needs `ODDS_API_KEY` in the environment; budgeted as above). |
 | `npm run props:grade` | Grade finished games and write `performance.json`. |
 | `npm run props:backtest` | Walk-forward distribution backtest, writes `football/props/nfl/calibration.json`. |
+| `npm run props:correlation` | Same-game correlation from the game logs, writes `football/props/nfl/correlation.json`. |
+| `node football/props/verify_ledger.js --league all --base HEAD` | Proves the ledgers only grew since the last commit (the hourly job runs it before publishing). |
 | `npm run props:sync` | Insert-only copy to Supabase. |
-| `npm run props:test` | Kernel and pipeline suites (offline). |
+| `npm run props:test` | Kernel, pipeline and AI-desk suites (offline). |
 | `npm run props:sql` | Both SQL files against a throwaway PostgreSQL. |
 | `npm run props:e2e` | The page in Chromium, desktop and a 390 px phone. |
 
@@ -166,7 +168,20 @@ prints which were adopted.
 This measures whether the distributions are honest about outcomes. It says
 nothing about beating a price: no historical prop prices exist in this repo.
 Re-run it after each season with the `backtest` input of the Player props
-workflow.
+workflow. That input also re-runs `correlation.js`.
+
+The backtest also scores a naive baseline, the player's own last eight games,
+on the same rows. Its out-of-sample half decides each market's **validation
+stage** (DESIGN.md §8):
+
+- A market that passes every gate is TRACKING.
+- Anything else is EXPERIMENTAL: capped at LEAN, with no units.
+- The live record in `performance.json` decides RESEARCH GRADE and
+  PRODUCTION, automatically.
+- Research → Lab → **Player props validation** lists every market's gates.
+
+Nothing is promoted by hand. To see why a market is held, open that view, or
+the drawer's *Validation stage* section.
 
 ## Reading what the page says
 
@@ -179,6 +194,9 @@ workflow.
 | **UNMAPPED** row | A book's player name did not resolve to exactly one player on the two rosters. | See `board.unmapped[]` for the reason. The resolver (`build_board.js` `resolveName`) already handles suffixes, punctuation and initials; an ambiguous name stays unmapped by design. |
 | `board.quotes.unjoined_events` | A priced event did not join a scheduled game. | Usually a team-name or kickoff mismatch. The NFL joins by team name within 18 h; CFB joins through `_intelligence.js`. |
 | Probability source **MODEL-ESTIMATED** | Fewer than 200 settled props exist. | Nothing: units are capped at 0.25U until the ledger earns more. |
+| `STAGE_EXPERIMENTAL` (LEAN, no units) | The market has not passed its walk-forward gates. | Nothing. It is promoted automatically when the evidence passes (Lab → Player props validation). |
+| `PLAYER_EXPOSURE` / `CORRELATED_EXPOSURE` | The stake was cut because the player already carries 1U, or the game's correlated stake reached 2U. A cut to zero is a LEAN. | Nothing. It is the cap working (DESIGN.md §13). |
+| The hourly job fails at "The ledgers only grew" | A committed ledger row was edited, removed or reordered, or a row fails its id, kickoff or grade check. | Read the listed lines. Never edit a published ledger. Restore it with `git checkout <file>` and rebuild. |
 
 The probability source is promoted by `grade.js`, never by hand:
 
