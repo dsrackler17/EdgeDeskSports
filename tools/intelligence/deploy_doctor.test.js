@@ -314,6 +314,71 @@ const OK_BOARD = signals(40, 144);
       a.length === 1 && /^::notice::VERDICT: DEPLOYED AND CURRENT$/.test(a[0]), a);
   }
 
+  /* --- AUTO-DEPLOY FIXES STALE FUNCTIONS AND NOTHING ELSE ---------------
+     The doctor workflow deploys on its own what --auto-deploy names. Each
+     finding a deploy would NOT fix is pinned here as naming nothing, above
+     all the board's own STALE, which shares the word and not the remedy. */
+  {
+    const ledger = [['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }]];
+    const staleFn = ['?probe=1', { status: 200, body: probeBody({ build: 'edgedesk_ai-2026-09-03-r5-presentation' }) }];
+    const okFn = ['?probe=1', { status: 200, body: probeBody() }];
+    const staleCap = ['/functions/v1/capture', { status: 401, body: JSON.stringify({ ok: false,
+      build: 'capture-v11-player-props-r1', error: 'unauthorized', reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+    const run = async (table) => (net([...table, ...OK_ARTIFACTS]), D.doctor(OPTS));
+
+    let s = await run([okFn, staleCap, ...ledger, OK_BOARD]);
+    let p = D.deployPlan(s);
+    chk('production 2026-09-29 exactly: a stale capture plans a capture deploy and nothing else',
+      p.capture && !p.edgedesk_ai && p.other.length === 0, p);
+    eq('and with --auto-deploy the doctor step passes, leaving the verdict to the re-check',
+      D.exitCode(s, { autoDeploy: true }), 0);
+    eq('but without it the same finding still fails the step', D.exitCode(s), 1);
+    let a = D.annotations(s, { autoDeploy: true });
+    chk('a stale function being deployed is a ::warning:: that says so, never an ::error::',
+      a.some((l) => l.startsWith('::warning::') && /deployed capture matches/.test(l) && /auto-deploying capture/.test(l))
+      && !a.some((l) => l.startsWith('::error::')), a);
+    chk('and the verdict notice counts it as fixed by this run',
+      /^::notice::VERDICT: ACTION NEEDED — 1 check\(s\) need action \(1 fixed by this run's auto-deploy\)$/.test(a[a.length - 1]),
+      a[a.length - 1]);
+    chk('without --auto-deploy the same check is the ::error:: it always was, fix line included',
+      D.annotations(s).some((l) => l.startsWith('::error::') && /deployed capture matches/.test(l) && /fix: supabase functions deploy capture/.test(l)));
+
+    s = await run([staleFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale edgedesk_ai build plans an edgedesk_ai deploy', p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+
+    s = await run([staleFn, staleCap, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('both stale plans both, each named once', p.edgedesk_ai && p.capture && p.functions.length === 2, p);
+
+    s = await run([okFn, ...ledger, signals(2345, 60)]);
+    p = D.deployPlan(s);
+    chk('a STALE BOARD deploys nothing: it is a scheduler, not a build',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('the board is being captured') >= 0, p);
+    eq('so it still fails the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 1);
+
+    s = await run([['?probe=1', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('NOT_DEPLOYED deploys nothing: a 404 is as likely a wrong SB_URL as a missing function',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('edgedesk_ai deployed') >= 0, p);
+
+    s = await run([staleFn, ['recommendation_ledger', { status: 404, body: '{"message":"relation \\"public.recommendation_ledger\\" does not exist"}' }], OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale build beside a missing table still deploys the build',
+      p.edgedesk_ai && p.other.indexOf('recommendation_ledger applied') >= 0, p);
+    eq('but the step fails, because the migration is still a person\'s job', D.exitCode(s, { autoDeploy: true }), 1);
+    a = D.annotations(s, { autoDeploy: true });
+    chk('and only the migration is an ::error::',
+      a.filter((l) => l.startsWith('::error::')).length === 1
+      && a.some((l) => l.startsWith('::error::') && /recommendation_ledger applied/.test(l)), a);
+
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a current deployment plans nothing', p.functions.length === 0 && p.other.length === 0, p);
+    eq('and passes either way', D.exitCode(s, { autoDeploy: true }) + D.exitCode(s), 0);
+  }
+
   /* ---- everything deployed and current -------------------------------- */
   net([['?probe=1', { status: 200, body: probeBody() }],
     ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
