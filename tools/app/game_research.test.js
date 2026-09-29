@@ -436,7 +436,13 @@ chk('the summary is not inside a collapsible section', /var body=fbGxSummary\(u,
 /* the bettor decision layer (lib/edgedesk_decision.js) puts EDGEDESK ACTION
    above the summary; the research below it is collapsed ONLY in beginner mode,
    which the reader turns on, and "VIEW FULL RESEARCH" opens it */
-chk('EDGEDESK ACTION renders above the research summary', /body=fbDecCardHTML\(dec\)\+'<div data-edd-research="/.test(CARD) && CARD.indexOf('body=fbDecCardHTML(dec)') > CARD.indexOf('var body=fbGxSummary(u,p,gid)'));
+chk('EDGEDESK ACTION renders above the research summary', /body=fbDecCardHTML\(dec\)\+fbGxPropsSec\(u\)\+'<div data-edd-research="/.test(CARD) && CARD.indexOf('body=fbDecCardHTML(dec)') > CARD.indexOf('var body=fbGxSummary(u,p,gid)'));
+/* PLAYER PROP RESEARCH beside the decision, open, and outside the collapsible
+   research, so beginner mode never hides it (tools/opportunity/matchup_props.e2e.js
+   opens the real card) */
+chk('PLAYER PROP RESEARCH sits between the decision and the collapsible research, open by default',
+  /function fbGxPropsSec\(u\)\{[\s\S]{0,200}fbGxSec\(gid,'props','Player prop research',fbPropsBody\('cfb',gid,u\.t\),true,/.test(APP)
+  && CARD.indexOf("fbPropsBody('cfb',g.game_id)") < 0);
 chk('the research is collapsed only in the reader-chosen beginner mode', /window\.EDDecisionUI\.beginner\(\)\?'edd-collapsed':''/.test(CARD));
 chk('drivers, risk, the cases and the scale default open',
   /'drivers',[\s\S]{0,80}?,true\)/.test(CARD) && /'wrong',[\s\S]{0,80}?,true\)/.test(CARD)

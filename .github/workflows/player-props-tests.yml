@@ -30,6 +30,7 @@ on:
       - 'supabase/player_props*.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
+      - 'research/cfb/**'
       - '.github/workflows/player-props*.yml'
   push:
     branches: [main]
@@ -83,3 +84,5 @@ jobs:
         run: node tools/props/props_ui.e2e.js
       - name: The connected research journey in a real browser (matchup props, Add to Card, the combined Card, a phone)
         run: node tools/opportunity/opportunity_ui.e2e.js
+      - name: PLAYER PROP RESEARCH on every matchup page in a real browser (the CFB research page, the app's FBS and NFL cards)
+        run: node tools/opportunity/matchup_props.e2e.js

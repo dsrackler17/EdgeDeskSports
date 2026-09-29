@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <link rel="stylesheet" href="/research/cfb/terminal.css?v=20260928b">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929f">
 </head>
 <body>
 <!-- THE CFB RESEARCH TERMINAL.
@@ -61,6 +62,18 @@ try{ window.EDReport.configure({
   key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
   version:'cfb-terminal-2026-09', surface:'cfb-terminal'}); }catch(e){}
 </script>
-<script src="/research/cfb/terminal.js?v=20260929a"></script>
+<!-- PLAYER PROP RESEARCH on every game page: the app's own prop kernel,
+     opportunity layer and section renderer (the same files, the same
+     versions), reading football/props/cfb/summary.json. EDDecision is loaded
+     so the kernel reads the same decision thresholds the app does. -->
+<script src="/lib/research_core.js?v=20260925p"></script>
+<script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
+<script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
+<script src="/lib/edgedesk_market.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision.js?v=20260929b"></script>
+<script src="/lib/edgedesk_props.js?v=20260929e"></script>
+<script src="/lib/edgedesk_opportunity.js?v=20260929e"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929f"></script>
+<script src="/research/cfb/terminal.js?v=20260929c"></script>
 </body>
 </html>

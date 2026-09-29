@@ -2875,7 +2875,7 @@ body.focus .dk-focusnote{display:block}
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929e">
-<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929e">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929f">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3858,7 +3858,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
 <script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20260929e"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20260929f"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
 <script src="/lib/edgedesk_props.js?v=20260929e"></script>
@@ -3866,7 +3866,7 @@ window.mcRefresh=function(){
      Research, the Props page, the Card and the AI desk read the same thing
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260929e"></script>
-<script src="/lib/edgedesk_props_ui.js?v=20260929e"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260929f"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -48352,7 +48352,7 @@ function fbGameCardNfl(u){
   var p=fbPredict('nfl',fbNflGameReq(g),mkt,fbNum(g.season));
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'"><div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div></div>'
-      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
+      +'<div class="gd-nodata">'+fbEsc(p.status)+': '+fbEsc(p.reason||(p.missing||[]).join(', '))+'</div>'+fbPropsSecHTML('nfl',g.game_id,u.t)+'</div>';
   var mdl=p.model;
   var cov=p.cover,ov=p.over;
   var lines='';
@@ -48390,7 +48390,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
-    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id)+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
+    +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
 /* ---- week scan, grading and CSV export (NFL) --------------------------------
@@ -53301,17 +53301,22 @@ window.fbGxToggle=function(gid,id){
   var el=document.getElementById('gxs-'+String(k).replace(/[^a-zA-Z0-9]/g,'_'));
   if(el){el.classList.toggle('open',FB_GX_OPEN[k]);
     var b=el.querySelector('.gx-sec-h');if(b){b.setAttribute('aria-expanded',String(FB_GX_OPEN[k]));
-      var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}
-    /* the player-prop section reads its board only once it is opened */
-    if(FB_GX_OPEN[k]&&id==='props'&&window.EDPropsUI&&EDPropsUI.wake){try{EDPropsUI.wake(el);}catch(_){}}}
+      var tw=b.querySelector('.tw');if(tw)tw.textContent=FB_GX_OPEN[k]?'▾':'▸';}}
 };
 /* PLAYER PROP RESEARCH on a game card (NFL and FBS): lib/edgedesk_props_ui.js
-   over the Player Props board, the same evaluation the Props page runs. The
-   board is fetched once, and only when a reader opens the section. */
-function fbPropsBody(lg,gid){try{return window.EDPropsUI&&EDPropsUI.gameSection?EDPropsUI.gameSection(lg,gid,true):'';}catch(_){return '';}}
-function fbPropsSecHTML(lg,gid){var b=fbPropsBody(lg,gid);return b?'<details class="qev-more fb-props" ontoggle="if(this.open&&window.EDPropsUI)EDPropsUI.wake(this)"><summary>Player prop research</summary>'+b+'</details>':'';}
+   gameSection. It is on every card and open: it reads the league's small
+   summary (football/props/<lg>/summary.json) at once and says the game's
+   state — research-grade props, none meeting the threshold, markets not
+   released, pricing unavailable, or outside the capture window. The 1-2 MB
+   board is fetched only when the reader asks for every prop ("Load player
+   props"). It is never left out: a module that did not load is said. */
+function fbPropsBody(lg,gid,ko){
+  try{if(window.EDPropsUI&&EDPropsUI.gameSection)return EDPropsUI.gameSection(lg,gid,true,{kickoff:ko});}catch(_){}
+  return '<div class="pp pp-gsec"><div class="pp-rsec-h"><b>PLAYER PROP RESEARCH</b></div><div class="pp-pstate warn"><b>Player prop research unavailable</b><p class="pp-note">The player-prop module (lib/edgedesk_props_ui.js) did not load, so this game’s prop state cannot be read. Nothing is shown in its place.</p></div></div>';
+}
+function fbPropsSecHTML(lg,gid,ko){return '<details class="qev-more fb-props" open><summary>Player prop research</summary>'+fbPropsBody(lg,gid,ko)+'</details>';}
 window.fbPropsSecHTML=fbPropsSecHTML; /* the NFL card's section, for tools/props/props_ui.e2e.js */
-var FB_GX_DEFAULT={props:false,why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
+var FB_GX_DEFAULT={props:true,why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
   research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
@@ -54766,7 +54771,7 @@ function fbP4Card(u){
     +fbMineActs('p4',g.game_id,g.home_team,g.away_team,u.t)+fbTermLink(g.game_id,rvH)+'</div>';
   if(p.status!=='PREDICTED')
     return '<div class="mdl-card">'+head+'<div class="gd-nodata">'+fbEsc(p.status)+': '
-      +fbEsc(p.reason||(p.missing||[]).join(', '))+'</div></div>';
+      +fbEsc(p.reason||(p.missing||[]).join(', '))+'</div><div style="padding:0 12px 12px">'+fbGxPropsSec(u)+'</div></div>';
   var m=p.model,sc=p.scores,mk=p.market,ex=p.explanation;
   var h=fbEsc(g.home_team),a=fbEsc(g.away_team);
   var L='';
@@ -54880,7 +54885,6 @@ function fbP4Card(u){
       'answers built only from typed evidence — fact, model, market, history, uncertainty, hypothetical')
     +fbGxSec(gid,'watch','Follow · what changed',fbGxWatch(u,p),false,
       'a timeline of captured changes for games you follow')
-    +fbGxSec(gid,'props','Player prop research',fbPropsBody('cfb',g.game_id),false,'EdgeDesk’s player-prop projections and any priced leads')
     +fbGxSec(gid,'detail','Model and market detail',L,false,'spreads, totals, moneyline, outcome range')
     +fbGxSec(gid,'edr','EdgeDesk rating · research context',edr,false,'not the number this line is priced from')
     +fbGxSec(gid,'quality','Data quality and methodology',compl+why,false,'the engine’s own notes')
@@ -54889,8 +54893,14 @@ function fbP4Card(u){
      full research below it, untouched — collapsed only when the reader chose
      beginner mode, and one tap ("VIEW FULL RESEARCH") away even then */
   var dec=null;try{dec=fbDecisionCfb(u,p);}catch(_){dec=null;}
-  body=fbDecCardHTML(dec)+'<div data-edd-research="'+fbEsc(gid)+'" class="'+(dec&&window.EDDecisionUI&&window.EDDecisionUI.beginner()?'edd-collapsed':'')+'">'+body+'</div>';
+  body=fbDecCardHTML(dec)+fbGxPropsSec(u)+'<div data-edd-research="'+fbEsc(gid)+'" class="'+(dec&&window.EDDecisionUI&&window.EDDecisionUI.beginner()?'edd-collapsed':'')+'">'+body+'</div>';
   return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+body+'</div></div>';
+}
+/* PLAYER PROP RESEARCH beside the game's decision, open, and outside the
+   beginner-mode collapse: the prop state is never missing from the card */
+function fbGxPropsSec(u){
+  var gid=String(u.g.game_id);
+  return fbGxSec(gid,'props','Player prop research',fbPropsBody('cfb',gid,u.t),true,'EdgeDesk’s player-prop projections and any priced leads');
 }
 function fbP4EdgeTag(cls){
   if(!cls)return '';

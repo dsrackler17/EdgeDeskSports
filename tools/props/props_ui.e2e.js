@@ -85,7 +85,9 @@ async function buildFixture() {
   /* a small graded record so the performance view has something real to draw */
   const rows = r.ledger_rows.slice(0, 3).map((x) => Object.assign({}, x, { game_id: '2026_03_ATL_GB', kickoff: '2026-09-25T00:15:00.000Z' }));
   const perf = G.report('nfl', 2026, G.grade(ds, rows, [], NOW), rows, NOW);
-  return { board: r.board, players: r.players, perf };
+  /* the per-league summary written with every board build (football/props/build_summary.js) */
+  const summary = require(path.join(ROOT, 'football', 'props', 'build_summary.js')).summarize(r.board, null);
+  return { board: r.board, players: r.players, perf, summary };
 }
 
 (async function main() {
@@ -93,7 +95,7 @@ async function buildFixture() {
   try { pw = require('playwright'); } catch (_) { try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; } }
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const FX = await buildFixture();
-  const served = { '/football/props/nfl/board.json': JSON.stringify(FX.board), '/football/props/nfl/players.json': JSON.stringify(FX.players), '/football/props/nfl/performance.json': JSON.stringify(FX.perf) };
+  const served = { '/football/props/nfl/board.json': JSON.stringify(FX.board), '/football/props/nfl/players.json': JSON.stringify(FX.players), '/football/props/nfl/performance.json': JSON.stringify(FX.perf), '/football/props/nfl/summary.json': JSON.stringify(FX.summary) };
   /* the college record is UNPUBLISHED in this run, whatever the repository
      holds today: the record page's empty state is what is being proven */
   const absent = { '/football/props/cfb/performance.json': 1 };
@@ -317,10 +319,12 @@ async function buildFixture() {
     await ctx.close();
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }, ''));
     await page.waitForFunction(() => typeof fbPropsSecHTML === 'function' && window.EDPropsUI, null, { timeout: 15000 });
-    const lazy = await page.evaluate((g) => { const d = document.createElement('div'); d.id = 'gcTest'; d.innerHTML = fbPropsSecHTML('nfl', g); document.body.prepend(d); return d.textContent; }, gid);
-    chk('the card section is lazy: the board is not read until it opens', /Load player props/.test(lazy) && await page.evaluate(() => !EDPropsUI.state.boards.nfl), lazy);
-    await page.evaluate(() => { const d = document.querySelector('#gcTest details'); d.open = true; });
-    await page.waitForSelector('#gcTest .pp-gfoot', { timeout: 15000 });
+    await page.evaluate((g) => { const d = document.createElement('div'); d.id = 'gcTest'; d.innerHTML = fbPropsSecHTML('nfl', g); document.body.prepend(d); }, gid);
+    await page.waitForSelector('#gcTest .pp-gsec .pp-gfoot', { timeout: 15000 });
+    const lazy = await page.evaluate(() => ({ open: document.querySelector('#gcTest details').open, t: document.querySelector('#gcTest').textContent }));
+    chk('the card section is open on the summary alone: PLAYER PROP RESEARCH says the state, the board is not read until asked', lazy.open && /PLAYER PROP RESEARCH/.test(lazy.t) && /Load player props/.test(lazy.t) && await page.evaluate(() => !EDPropsUI.state.boards.nfl), lazy);
+    await page.click('#gcTest button:has-text("Load player props")');
+    await page.waitForFunction(() => /props projected/.test((document.querySelector('#gcTest .pp-gsec') || {}).textContent || ''), null, { timeout: 15000 });
     const card = await page.evaluate(() => document.querySelector('#gcTest .pp-gsec').textContent);
     chk('opened, it shows the priced leads with the page\'s decision and EV, and the headline projections', /EV/.test(card) && /(LEAN|BET)/.test(card) && /Median/.test(card) && /props projected/.test(card), card.slice(0, 400));
     chk('no horizontal scroll with the card section on a phone', await noHScroll(page));

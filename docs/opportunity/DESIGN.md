@@ -112,7 +112,7 @@ The page reads the summary through `eventFromSummary(summary, gid, now)`,
 which re-judges each price's age **now**: a price past the 90-minute window
 takes the decision DOWN to NO DECISION · STALE_QUOTE (the kernel's own rule)
 and the prop leaves the research grade. The full board is loaded only when a
-reader opens a game's prop research.
+reader asks for every prop of a game ("Load player props").
 
 ## 6. Game model → prop context (no double counting)
 
@@ -173,9 +173,21 @@ record promotes it.
   **Add to Card** for the game.
 - **TOP PLAYER PROP RESEARCH** on the Research board and the desk: the league
   leaders from the same ranking.
-- **Matchup → PLAYER PROP RESEARCH**: the top opportunities in full, then QB,
-  RB, WR / TE and TD groups; every row has Research prop · Add to Card ·
-  Compare books · View player.
+- **Matchup → PLAYER PROP RESEARCH** (`EDPropsUI.gameSection`) on EVERY
+  matchup: the app's NFL card, the app's FBS card (beside the EDGEDESK ACTION
+  card, outside the beginner-mode collapse) and the canonical CFB research
+  page (`research/cfb/#/game/<id>`). Open, from the summary, and never left
+  out — it always names the game's state: A research-grade props (up to four
+  in full, Research prop · Add to Card, "View all N props"); B "N props
+  evaluated. No player props currently meet EdgeDesk's research threshold."
+  (View all props); C markets not released; D PLAYER PROP PRICING
+  UNAVAILABLE (capture failed or off); E outside the prop capture window, or
+  not on the board (with why). "Load player props" then re-prices every
+  priced prop in place: the top opportunities, QB, RB, WR / TE and TD groups
+  and the headline projections. On the research page (no Props terminal, no
+  Card UI) the links open the app's Player Props page and Add to Card writes
+  the same device Card, uploaded by the app once the reader is signed in
+  there. `tools/opportunity/matchup_props.e2e.js` opens the real pages.
 
 ## 9. The Card
 

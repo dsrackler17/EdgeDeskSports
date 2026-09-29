@@ -129,8 +129,13 @@ async function fixture() {
     /* ------------------------------------------------ the matchup section */
     console.log('matchup');
     let { ctx, page, errors } = await open({ width: 1440, height: 900 });
-    await page.evaluate((g) => { const d = document.createElement('div'); d.id = 'mx'; d.style.maxWidth = '860px'; d.innerHTML = fbPropsSecHTML('nfl', g); document.body.prepend(d); d.querySelector('details').open = true; }, GID);
-    await page.waitForSelector('#mx .pp-gfoot', { timeout: 20000 });
+    await page.evaluate((g) => { const d = document.createElement('div'); d.id = 'mx'; d.style.maxWidth = '860px'; d.innerHTML = fbPropsSecHTML('nfl', g); document.body.prepend(d); }, GID);
+    /* open from the summary alone, the top opportunities already listed; the board loads on request */
+    await page.waitForSelector('#mx .pp-rsec-h.sub', { timeout: 20000 });
+    const first = await page.evaluate(() => ({ open: document.querySelector('#mx details').open, cards: document.querySelectorAll('#mx .pp-rc').length, board: !!EDPropsUI.state.boards.nfl, t: document.querySelector('#mx .pp-gsec').textContent.replace(/\s+/g, ' ') }));
+    chk('the section is open on the summary alone: TOP PROP OPPORTUNITIES listed, the board not read', first.open && first.cards >= 1 && !first.board && /PLAYER PROP RESEARCH/.test(first.t) && /View all \d+ props/.test(first.t), first);
+    await page.click('#mx button:has-text("Load player props")');
+    await page.waitForSelector('#mx .pp-ogrp', { timeout: 20000 });
     const mx = await page.evaluate(() => document.querySelector('#mx .pp-gsec').textContent.replace(/\s+/g, ' '));
     chk('PLAYER PROP RESEARCH opens with the top prop opportunities', /PLAYER PROP RESEARCH/.test(mx) && /TOP PROP OPPORTUNITIES/.test(mx), mx.slice(0, 300));
     ['EdgeDesk projection', 'Market line', 'Best price', 'Fair probability', 'Break-even', 'EV', 'Edge', 'Confidence', 'Books at line', 'Quote age', 'Research score'].forEach((k) => chk('a research card shows ' + k, mx.indexOf(k) >= 0));
