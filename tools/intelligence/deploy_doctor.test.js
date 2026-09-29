@@ -462,8 +462,18 @@ const OK_BOARD = signals(40, 144);
     chk('and is deployed like any other stale build', D.deployPlan(s).editorial_cron);
 
     s = await run([okFn, ['/functions/v1/editorial_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
-    eq('a 404 on editorial_cron is NOT_DEPLOYED', stateOf(s, 'editorial_cron deployed'), 'NOT_DEPLOYED');
-    chk('which is never auto-deployed', !D.deployPlan(s).editorial_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+    /* PRODUCTION 2026-09-29, run 69: editorial_cron answered 404 while
+       editorial.yml was dispatched every ten minutes by the SQL poke
+       (README option A). An absent function is the documented install, and
+       calling it NOT_DEPLOYED turned every doctor run red for nothing. */
+    eq('a 404 on editorial_cron is NOT_INSTALLED, not NOT_DEPLOYED', stateOf(s, 'editorial_cron deployed'), 'NOT_INSTALLED');
+    chk('and names the SQL poke that schedules instead',
+      /editorial_poke/.test(detailOf(s, 'editorial_cron deployed')), detailOf(s, 'editorial_cron deployed'));
+    eq('so the verdict is unaffected', s.verdict, 'DEPLOYED AND CURRENT');
+    chk('it is never auto-deployed, and passes the step either way',
+      !D.deployPlan(s).editorial_cron && D.exitCode(s, { autoDeploy: true }) === 0 && D.exitCode(s) === 0);
+    chk('and it is neither an ::error:: nor a ::warning::',
+      !D.annotations(s).some((l) => /editorial_cron/.test(l)), D.annotations(s));
 
     s = await run([okFn, ['/functions/v1/editorial_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
     eq('a 401 on editorial_cron is UNKNOWN', stateOf(s, EC), 'UNKNOWN');

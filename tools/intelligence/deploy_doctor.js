@@ -390,8 +390,16 @@ async function doctor(opts) {
       if (ec.status === 0) {
         add('deployed editorial_cron matches this checkout', 'UNKNOWN', ec.error || 'no response');
       } else if (ec.status === 404) {
-        add('editorial_cron deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/editorial_cron`,
-          'Run the Deploy editorial scheduler workflow, or: supabase functions deploy editorial_cron --no-verify-jwt');
+        /* NOT A FAILURE. The editorial scheduler has two installs and the
+           README says to pick one: this function (option B), or the SQL poke
+           public.editorial_poke() that pg_cron runs itself (option A).
+           Production runs option A — on 2026-09-29 this answered 404 while
+           editorial.yml was being dispatched every ten minutes — so an absent
+           function is the documented setup, not a deploy nobody ran. Nothing
+           to compare, so nothing to deploy, and the verdict is unaffected. */
+        add('editorial_cron deployed', 'NOT_INSTALLED',
+          'no editorial_cron function (HTTP 404). Expected when the editorial scheduler is the SQL poke, '
+          + 'public.editorial_poke() (tools/editorial/README.md option A); the README says not to install both.');
       } else if (!ec.ok || !j || j.service !== 'editorial_cron') {
         add('deployed editorial_cron matches this checkout', 'UNKNOWN',
           `HTTP ${ec.status} from editorial_cron${ec.ok ? ', but not its health probe' : ''}`,
