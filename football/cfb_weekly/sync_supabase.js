@@ -65,15 +65,25 @@ function columns() {
   return COLS;
 }
 
+/* a column the ledger row names differently: the game performance rows carry
+   their rule as perf_version (weekly/perf.py PERF_VERSION), the table's
+   not-null column is rule_version. Renamed on the way out only: the ledger's
+   natural keys and content hashes are left exactly as written. */
+const COLUMN_SOURCE = {
+  cfb_game_performance: { rule_version: 'perf_version' },
+};
+
 /* typed columns from the row, the whole row as payload */
 function shape(table, row) {
   const cols = columns()[table];
   if (!cols) throw new Error('supabase/cfb_weekly.sql has no table ' + table);
+  const src = COLUMN_SOURCE[table] || {};
   const o = {};
   for (const c of cols) {
     if (c === 'recorded_at') continue;
     if (c === 'payload') o.payload = row;
     else if (row[c] !== undefined) o[c] = row[c];
+    else if (src[c] && row[src[c]] !== undefined) o[c] = row[src[c]];
   }
   return o;
 }
