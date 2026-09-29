@@ -26,9 +26,9 @@
 # other than main's, and asks for those two functions only. It never applies a
 # migration. For those two functions, merging to main is the decision: the
 # doctor was red for two days on 2026-09-27..29 with nothing wrong but a deploy
-# nobody had run. It calls with `verify`, which makes the closing doctor run
-# below decide the job, so the doctor's run is green only when production
-# answers with the new build.
+# nobody had run. The doctor asks the deployment again once every deploy it
+# started has landed, so its run is green only when production answers with
+# the new build.
 #
 # ---------------------------------------------------------------------------
 # SECRETS IT NEEDS. Neither is used anywhere else in this repository, so both
@@ -103,10 +103,6 @@ on:
         default: false
       deploy_capture:
         description: 'Deploy supabase/functions/capture'
-        type: boolean
-        default: false
-      verify:
-        description: 'Fail the job when the closing doctor run still says ACTION NEEDED'
         type: boolean
         default: false
 
@@ -383,18 +379,12 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # THE ONLY HONEST CONFIRMATION IS THE DEPLOYMENT'S OWN ANSWER.
-      # With `verify` (the doctor's auto-deploy) that answer decides the job,
-      # annotated, so a deploy that did not take — a failed test gate, a
-      # missing token — is a red run that says why. By hand it only reports.
+      # It only reports. When the Intelligence doctor called this, its own
+      # verify job gives the answer that decides the run, after every deploy
+      # it started has landed.
       - name: Ask production what it is now running
         if: always()
         env:
           SB_URL: ${{ secrets.SB_URL }}
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
-          VERIFY: ${{ inputs.verify && 'yes' || '' }}
-        run: |
-          if [ -n "$VERIFY" ]; then
-            node tools/intelligence/deploy_doctor.js --annotate
-          else
-            node tools/intelligence/deploy_doctor.js || true
-          fi
+        run: node tools/intelligence/deploy_doctor.js || true
