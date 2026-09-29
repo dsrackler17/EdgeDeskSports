@@ -234,3 +234,14 @@ body.ed-reduce-motion .pp-skel{animation:none}
   .pp-flt .pp-fg{flex:none;flex-wrap:nowrap}
   .pp-strip{font-size:11px}
 }
+
+/* the market's validation stage (EDProps.stageOf) */
+.pp-stage{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;border:1px solid var(--border,#332a1b);border-radius:5px;padding:1px 5px;vertical-align:1px;white-space:nowrap}
+.pp-stage.exp{color:var(--warn,#d99a2b);border-color:rgba(217,154,43,.45)}
+.pp-stage.trk{color:var(--accent,#2fa79a);border-color:rgba(47,167,154,.45)}
+.pp-stage.rg{color:var(--pos,#76bd3e);border-color:rgba(118,189,62,.45)}
+.pp-stage.prod{color:var(--gold,#e3b84d);border-color:rgba(227,184,77,.5)}
+.pp-gates summary{cursor:pointer;font-size:12px;color:var(--dim,#aa9c87);margin:4px 0}
+.pp-gate{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(51,42,27,.5)}
+.pp-gate .ok{color:var(--pos,#76bd3e)}.pp-gate .no{color:var(--neg,#e26044)}.pp-gate .na{color:var(--faint,#958a7a)}
+.pp-gate i{font-style:normal;color:var(--faint,#958a7a);font-size:11px}

@@ -155,6 +155,10 @@ async function build(opts) {
   const calibFile = readJson(league === 'cfb' ? C.leaguePaths('nfl', season).calibration : P.calibration) || readJson(P.calibration);
   const perf = readJson(P.performance);
   const cal = calibState(perf);
+  /* each market's stage from its evidence (EDProps.stageOf): the NFL backtest
+     and the live record. College has no backtest of its own (it borrows the
+     NFL's multipliers), so every college market stays EXPERIMENTAL. */
+  const stages = EDP.stageTable(league === 'nfl' ? calibFile : null, perf);
   const quotesFeed = opts.quotes || readJson(P.quotes);
   const linesFeed = opts.lines || readJson(P.lines);
   const capState = readJson(P.capture_state);
@@ -269,7 +273,7 @@ async function build(opts) {
           quotes: mq.map((q) => ({ book: q.book, line: q.line, side: q.side, american: q.american, quoted_at: q.quoted_at, captured_at: q.captured_at, alt: q.alt })),
           history: hist.length >= 3 ? { values: hist } : null
         };
-        const ev = EDP.evaluate(input, { now, calibration: cal });
+        const ev = EDP.evaluate(input, { now, calibration: cal, stages });
         if (ev.anchor && input.projection) input.projection.anchor = ev.anchor;
         const kind = matchupKind(m);
         const line = ev.consensus.line != null ? ev.consensus.line : (ev.informed ? Math.floor(ev.informed.median) + 0.5 : null);
@@ -313,7 +317,7 @@ async function build(opts) {
       Object.keys(B.markets).forEach((m) => {
         const input = { id: league + '|' + g.game_id + '|' + k + '|' + m, market: m, kickoff: g.kickoff, game_status: started ? 'in_progress' : 'scheduled', mapped: false, projection: null,
           quotes: B.markets[m].map((q) => ({ book: q.book, line: q.line, side: q.side, american: q.american, quoted_at: q.quoted_at, captured_at: q.captured_at, alt: q.alt })) };
-        const ev = EDP.evaluate(input, { now, calibration: cal });
+        const ev = EDP.evaluate(input, { now, calibration: cal, stages });
         props.push({ id: input.id, g: g.game_id, p: null, name: B.name, m, s: null, k: matchupKind(m), x: { st: input.game_status, mp: 0, dist: null }, q: input.quotes.map(packQ), e: compactEval(ev), fl: ['UNMAPPED'] });
         nProps++; nPriced++;
       });
@@ -347,6 +351,7 @@ async function build(opts) {
     schema: BOARD_SCHEMA, league, season, generated_at: new Date(now).toISOString(), engine: EDP.VERSION, model_version: M.MODEL_VERSION, config: EDP.CONFIG.version,
     decision_config: EDP.decisionConfig().source,
     probability: EDP.calibrationOf(cal), market_weight: EDP.CONFIG.market_weight,
+    stages: Object.keys(stages).reduce((o, k) => { if (props.some((x) => x.m === k)) o[k] = stages[k]; return o; }, {}),
     calibration: calibFile ? { mode: calibFile.mode, season_tested: calibFile.season_tested, generated_at: calibFile.generated_at, borrowed: league === 'cfb', n_scored: calibFile.n_scored,
       markets: Object.keys(calibFile.markets || {}).reduce((o, k) => { const c = calibFile.markets[k]; const oos = calibFile.out_of_sample && calibFile.out_of_sample.before ? calibFile.out_of_sample : null; o[k] = { f: c.f, mean_mult: c.mean_mult, n: c.n, adopted: c.adopted !== false, cover50: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].cover50 : oos.after[k].cover50) : null, ece: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].calibration.ece : oos.after[k].calibration.ece) : null }; return o; }, {}) } : null,
     capture: capState ? { last_run: capState.last_run, last_attempt: capState.last_attempt, stopped: capState.stopped || null, requests_remaining: capState.requests_remaining, bookmakers: capState.bookmakers, events_polled: capState.events_polled }
@@ -390,7 +395,7 @@ function ledgerRow(kind, input, ev, g, p, key) {
     schema: 'edgedesk_player_props_evaluation_v1', kind, evaluation_id: 'ppe_' + EDP.hash([kind, key, c && c.american, c && c.book, ev.evaluated_at]), selection_key: key,
     prop_id: input.id, league: input.sport, season: g.season, week: g.week, game_id: g.game_id, kickoff: g.kickoff, player_id: input.player_id, player_name: input.player_name,
     team: input.team, opp: input.opp, position: p.pg, market: input.market, evaluated_at: ev.evaluated_at,
-    decision: ev.decision, code: ev.code, units: ev.units, confidence: ev.confidence ? ev.confidence.score : null, probability_source: ev.probability_source,
+    decision: ev.decision, code: ev.code, units: ev.units, confidence: ev.confidence ? ev.confidence.score : null, probability_source: ev.probability_source, stage: ev.stage || null,
     side: c ? c.side : null, line: c ? c.line : null, american: c ? c.american : null, book: c ? c.book : null, p_side: c ? r4(c.p_win / Math.max(1e-9, 1 - (c.p_push || 0))) : null, p_raw: c ? c.p_raw : null,
     ev: c ? c.ev : null, ev_raw: c ? c.ev_raw : null, edge_pp: c ? c.edge_pp : null,
     consensus: ev.consensus ? { line: ev.consensus.line, over: ev.consensus.over, under: ev.consensus.under, novig_over: ev.consensus.novig_over, n_books: ev.consensus.n_books } : null,

@@ -181,8 +181,11 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('player context is per player and game', Object.keys(board.players).every((k) => /@/.test(k)));
   chk('the page re-prices a row to the same decision the build wrote', (() => {
     const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js')); U.state.clock = () => NOW; U._prepBoard(board);
-    return priced.every((r) => { const e = EDP.compact(EDP.evaluate(U._inputOf(board, r), { now: NOW, calibration: { state: board.probability.state } })); return e.d === r.e.d && JSON.stringify(e.cand) === JSON.stringify(r.e.cand); });
+    return priced.every((r) => { const e = EDP.compact(EDP.evaluate(U._inputOf(board, r), { now: NOW, calibration: { state: board.probability.state }, stages: board.stages })); return e.d === r.e.d && JSON.stringify(e.cand) === JSON.stringify(r.e.cand); });
   })());
+  chk('the board carries each of its markets\' validation stage, derived from evidence', board.stages && Object.keys(board.stages).length > 0 && Object.keys(board.stages).every((m) => EDP.STAGES.indexOf(board.stages[m].stage) >= 0 && Array.isArray(board.stages[m].gates)));
+  chk('an EXPERIMENTAL market never carries units on the board', priced.every((r) => !(board.stages[r.m] && board.stages[r.m].stage === 'EXPERIMENTAL' && r.e.u > 0)));
+  chk('every frozen record carries its market\'s stage', b1.ledger_rows.every((x) => EDP.STAGES.indexOf(x.stage) >= 0));
   chk('qualified records: one per BET/LEAN selection', b1.ledger_rows.length > 0 && b1.ledger_rows.every((x) => x.kind === 'qualified' && ['BET', 'LEAN'].indexOf(x.decision) >= 0), b1.ledger_rows.length);
   fs.writeFileSync(path.join(BP.dir, 'pregame_state.json'), JSON.stringify(b1.pregame));
   fs.mkdirSync(BP.season_dir, { recursive: true });

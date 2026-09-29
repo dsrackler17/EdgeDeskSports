@@ -312,5 +312,38 @@ const UI = require('../../lib/edgedesk_props_ui.js');
   UI.state.clock = null;
 }
 
+/* --------------------------------------------------------------- stages */
+section('stages (walk-forward gates, never assigned)');
+{
+  const oos = { n: 1400, bias_pct: 1.2, mae: 14, log_score: -4.4, cover50: 0.49, pit_mean: 0.502, pit_var: 0.0835, calibration: { n: 4200, brier: 0.24, ece: 0.012 },
+    baseline: { n: 1200, log_score_model: -4.41, log_score_baseline: -4.62, beats: true } };
+  const bt = (o) => ({ backtest: { mode: 'BACKTEST', disclosure: 'shapes include the tested season', oos: Object.assign({}, oos, o || {}) } });
+  chk('no evidence: EXPERIMENTAL', E.stageOf({}, 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('every out-of-sample gate passed: TRACKING', E.stageOf(bt(), 'rec_yds').stage === 'TRACKING', E.stageOf(bt(), 'rec_yds').gates.filter((g) => !g.pass).map((g) => g.id));
+  chk('losing to the naive last-8 baseline keeps it EXPERIMENTAL', E.stageOf(bt({ baseline: Object.assign({}, oos.baseline, { beats: false }) }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('no baseline measured keeps it EXPERIMENTAL (an unmeasured gate never passes)', E.stageOf(bt({ baseline: null }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('a too-narrow distribution (PIT variance) keeps it EXPERIMENTAL', E.stageOf(bt({ pit_var: 0.11 }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('50% coverage outside [0.45, 0.55] keeps it EXPERIMENTAL', E.stageOf(bt({ cover50: 0.41 }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('ECE above 0.03 keeps it EXPERIMENTAL', E.stageOf(bt({ calibration: { n: 900, ece: 0.041 } }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('a small out-of-sample n keeps it EXPERIMENTAL', E.stageOf(bt({ n: 250 }), 'rec_yds').stage === 'EXPERIMENTAL');
+  chk('a tail market (longest reception) stays EXPERIMENTAL whatever its backtest', E.stageOf(bt(), 'rec_long').stage === 'EXPERIMENTAL' && E.isTailMarket('rec_long') && E.isTailMarket('first_td') && !E.isTailMarket('rec_yds'));
+  const live = { n: 260, ece: 0.021, brier: 0.238, market_brier: 0.240, clv_pp: 0.4, clv_n: 80 };
+  chk('RESEARCH GRADE needs 200 settled, live ECE, Brier vs the market and CLV ≥ 0', E.stageOf(Object.assign(bt(), { live }), 'rec_yds').stage === 'RESEARCH_GRADE'
+    && E.stageOf(Object.assign(bt(), { live: Object.assign({}, live, { clv_pp: -0.3 }) }), 'rec_yds').stage === 'TRACKING'
+    && E.stageOf(Object.assign(bt(), { live: Object.assign({}, live, { brier: 0.252 }) }), 'rec_yds').stage === 'TRACKING');
+  chk('PRODUCTION needs 500 settled, ECE ≤ 0.02 and positive CLV on 100+ closes', E.stageOf(Object.assign(bt(), { live: Object.assign({}, live, { n: 640, ece: 0.015, clv_n: 150 }) }), 'rec_yds').stage === 'PRODUCTION'
+    && E.stageOf(Object.assign(bt(), { live: Object.assign({}, live, { n: 640, ece: 0.025, clv_n: 150 }) }), 'rec_yds').stage === 'RESEARCH_GRADE');
+  const table = E.stageTable({ mode: 'BACKTEST', disclosure: 'x', out_of_sample: { after: { rush_yds: oos, rec_long: oos } } }, null);
+  chk('stageTable: a market with the evidence is TRACKING, one without is EXPERIMENTAL', table.rush_yds.stage === 'TRACKING' && table.rec_long.stage === 'EXPERIMENTAL' && table.pass_yds.stage === 'EXPERIMENTAL');
+  chk('stageTable: no backtest at all (college) — every market EXPERIMENTAL', Object.values(E.stageTable(null, null)).every((x) => x.stage === 'EXPERIMENTAL'));
+  const bet = E.evaluate(prop({ quotes: two }), { now: NOW, stages: { rush_yds: { stage: 'TRACKING' } } });
+  chk('a TRACKING market keeps its BET (still capped by the probability source)', bet.decision === 'BET' && bet.stage === 'TRACKING' && bet.units === 0.25, [bet.decision, bet.stage]);
+  const exp = E.evaluate(prop({ quotes: two }), { now: NOW, stages: { rush_yds: { stage: 'EXPERIMENTAL' } } });
+  chk('an EXPERIMENTAL market caps a BET at LEAN, with no units, and says why', exp.decision === 'LEAN' && exp.code === 'STAGE_EXPERIMENTAL' && exp.units === 0 && exp.caps.some((c) => c.code === 'STAGE_EXPERIMENTAL'), [exp.decision, exp.code]);
+  const missing = E.evaluate(prop({ quotes: two }), { now: NOW, stages: {} });
+  chk('a market missing from the stage table is EXPERIMENTAL', missing.stage === 'EXPERIMENTAL' && missing.decision === 'LEAN');
+  chk('without a stage table the kernel is unchanged (older callers)', E.evaluate(prop({ quotes: two }), OPTS).decision === 'BET' && E.evaluate(prop({ quotes: two }), OPTS).stage === null);
+}
+
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + 'player props kernel — ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { failures.forEach((m) => console.log('  ✗ ' + m)); process.exit(1); }
