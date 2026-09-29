@@ -531,11 +531,13 @@ workflow name, `422` a workflow on that ref that predates the `source` input.
 
 **B · The edge function** (`supabase/editorial_cron.sql` + `supabase/functions/editorial_cron/`).
 Same behaviour, but the token lives in Supabase secrets rather than in Vault,
-and deploying needs the CLI:
+and deploying needs the CLI or the **Deploy editorial scheduler** workflow.
+Once deployed, the Intelligence doctor redeploys it on its own whenever
+`main` carries a different `BUILD`:
 
 ```
 1  Enable pg_cron and pg_net          Supabase dashboard → Database → Extensions
-2  supabase functions deploy editorial_cron --no-verify-jwt
+2  supabase functions deploy editorial_cron --no-verify-jwt   (or run Deploy editorial scheduler)
 3  supabase secrets set EDITORIAL_GH_TOKEN=<PAT with actions:write on this repo>
 4  psql -f supabase/editorial_runtime.sql
 5  psql -f supabase/editorial_cron.sql   (see its header for the two settings)

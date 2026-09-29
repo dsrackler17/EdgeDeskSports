@@ -25,6 +25,8 @@
 
    Run: node tools/intelligence/deploy_doctor.js
         SB_URL=... SB_ANON=... node tools/intelligence/deploy_doctor.js --json
+        ... --auto-deploy   also name the stale functions a deploy would fix
+                            (as $GITHUB_OUTPUT step outputs); deploys nothing
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -50,9 +52,11 @@ function expectedBuild() {
     at all, and it is worth asking: capture is deployed by hand, and a board that
     stopped filling because the fix for it was merged and never deployed looks
     exactly like a board that stopped filling for any other reason. */
-function expectedCaptureBuild() {
+function expectedCaptureBuild() { return expectedFunctionBuild('capture'); }
+
+function expectedFunctionBuild(name) {
   try {
-    const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'capture', 'index.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', name, 'index.ts'), 'utf8');
     const m = /export const BUILD = "([^"]+)"/.exec(src);
     return m ? m[1] : null;
   } catch (_) { return null; }
@@ -338,6 +342,78 @@ async function doctor(opts) {
     }
   }
 
+  /* ---- props_cron: the Player Props scheduler --------------------------
+     Deployed with JWT verification ON, so without a key the platform answers
+     for it and nothing here is known. With one, its GET is a read-only
+     health probe (it never ticks: a tick is a POST) that carries BUILD. A
+     deployment answering WITHOUT a build predates the stamp, which is itself
+     a checkout that was never deployed. */
+  {
+    const wantProps = expectedFunctionBuild('props_cron');
+    if (wantProps) {
+      const pc = await get(`${url}/functions/v1/props_cron`, key ? { apikey: key, authorization: 'Bearer ' + key } : {}, 8000);
+      let j = null; try { j = JSON.parse(pc.text); } catch (_) { /* below */ }
+      if (pc.status === 0) {
+        add('deployed props_cron matches this checkout', 'UNKNOWN', pc.error || 'no response');
+      } else if (pc.status === 404) {
+        add('props_cron deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/props_cron`,
+          'Run the Deploy player props pipeline workflow (deploy_function), or: supabase functions deploy props_cron');
+      } else if (!pc.ok || !j || j.service !== 'props_cron') {
+        add('deployed props_cron matches this checkout', 'UNKNOWN',
+          `HTTP ${pc.status} from props_cron${pc.ok ? ', but not its health probe' : ''}`,
+          pc.status === 401 && !key ? 'Pass SB_ANON so the probe can be reached.' : null);
+      } else {
+        const serving = String(j.build || '');
+        add('deployed props_cron matches this checkout',
+          serving === wantProps ? 'CURRENT' : 'STALE',
+          serving === wantProps ? `both are ${wantProps}`
+            : serving ? `deployed ${serving}, this checkout would deploy ${wantProps}`
+              : `the deployed props_cron predates its build stamp, this checkout would deploy ${wantProps}`,
+          serving === wantProps ? null : 'supabase functions deploy props_cron');
+      }
+    }
+  }
+
+  /* ---- editorial_cron: the editorial system's scheduler ----------------
+     Deployed with --no-verify-jwt, and its GET is a public, read-only health
+     probe carrying BUILD, so this sends no credential at all. ONLY a GET: a
+     POST to editorial_cron dispatches the editorial workflow. A deployment
+     answering WITHOUT a build predates the stamp. */
+  {
+    const wantEd = expectedFunctionBuild('editorial_cron');
+    if (wantEd) {
+      const ec = await get(`${url}/functions/v1/editorial_cron`, {}, 8000);
+      let j = null; try { j = JSON.parse(ec.text); } catch (_) { /* below */ }
+      if (ec.status === 0) {
+        add('deployed editorial_cron matches this checkout', 'UNKNOWN', ec.error || 'no response');
+      } else if (ec.status === 404) {
+        /* NOT A FAILURE. The editorial scheduler has two installs and the
+           README says to pick one: this function (option B), or the SQL poke
+           public.editorial_poke() that pg_cron runs itself (option A).
+           Production runs option A — on 2026-09-29 this answered 404 while
+           editorial.yml was being dispatched every ten minutes — so an absent
+           function is the documented setup, not a deploy nobody ran. Nothing
+           to compare, so nothing to deploy, and the verdict is unaffected. */
+        add('editorial_cron deployed', 'NOT_INSTALLED',
+          'no editorial_cron function (HTTP 404). Expected when the editorial scheduler is the SQL poke, '
+          + 'public.editorial_poke() (tools/editorial/README.md option A); the README says not to install both.');
+      } else if (!ec.ok || !j || j.service !== 'editorial_cron') {
+        add('deployed editorial_cron matches this checkout', 'UNKNOWN',
+          `HTTP ${ec.status} from editorial_cron${ec.ok ? ', but not its health probe' : ''}`,
+          ec.status === 401 ? 'editorial_cron refused a GET: it may have been deployed with JWT verification on, '
+            + 'which also refuses a pg_cron call without a valid JWT. Deploy it with --no-verify-jwt.' : null);
+      } else {
+        const serving = String(j.build || '');
+        add('deployed editorial_cron matches this checkout',
+          serving === wantEd ? 'CURRENT' : 'STALE',
+          serving === wantEd ? `both are ${wantEd}`
+            : serving ? `deployed ${serving}, this checkout would deploy ${wantEd}`
+              : `the deployed editorial_cron predates its build stamp, this checkout would deploy ${wantEd}`,
+          serving === wantEd ? null : 'supabase functions deploy editorial_cron --no-verify-jwt');
+      }
+    }
+  }
+
   /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
   for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
     const a = await get(site + p, { accept: 'application/json' });
@@ -363,9 +439,57 @@ async function doctor(opts) {
     }
   }
 
-  const bad = out.checks.filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
+  const bad = out.checks.filter(needsAction);
   out.verdict = bad.length ? 'ACTION NEEDED' : out.checks.some((c) => c.state === 'UNKNOWN') ? 'INCOMPLETE' : 'DEPLOYED AND CURRENT';
   return out;
+}
+
+function needsAction(c) { return /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state); }
+
+/* WHICH FAILURES A DEPLOY FIXES, AND ONLY THOSE.
+ *
+ * The Intelligence doctor workflow deploys on its own when it finds merged
+ * code that is not running (--auto-deploy). That is safe for exactly one kind
+ * of finding: a function answering with a build other than the one this
+ * checkout carries. Deploying the checkout is the whole fix for those, and the
+ * deploy workflows run the function's own tests before they ship anything.
+ *
+ * Everything else is left to a person, because a deploy is not its fix:
+ * "the board is being captured" is also STALE but means a scheduler is not
+ * firing, NOT_DEPLOYED is as likely a wrong SB_URL as a missing function, and
+ * a missing table is a migration. Matching on the check's NAME rather than its
+ * state is what keeps a stale board from redeploying capture four times a
+ * day. */
+const AUTO_DEPLOYABLE = {
+  'deployed build matches this checkout': 'edgedesk_ai',
+  'deployed capture matches this checkout': 'capture',
+  'deployed props_cron matches this checkout': 'props_cron',
+  'deployed editorial_cron matches this checkout': 'editorial_cron',
+};
+
+function deployPlan(r) {
+  const bad = (r.checks || []).filter(needsAction);
+  const fixes = (c) => c.state === 'STALE' && AUTO_DEPLOYABLE[c.name];
+  const functions = [...new Set(bad.filter(fixes).map((c) => AUTO_DEPLOYABLE[c.name]))];
+  return {
+    edgedesk_ai: functions.includes('edgedesk_ai'),
+    capture: functions.includes('capture'),
+    props_cron: functions.includes('props_cron'),
+    editorial_cron: functions.includes('editorial_cron'),
+    functions,
+    /* What still needs a person after the deploy, by check name. */
+    other: bad.filter((c) => !fixes(c)).map((c) => c.name),
+  };
+}
+
+/* The step's exit code. With --auto-deploy, a run whose ONLY findings are
+   stale functions exits 0: the deploy jobs that follow ship them, the verify
+   job asks the deployment again, and that second answer decides the run. Anything a deploy
+   does not fix still fails here, on the step that printed it. */
+function exitCode(r, opts) {
+  if (r.verdict !== 'ACTION NEEDED') return 0;
+  const plan = deployPlan(r);
+  return opts && opts.autoDeploy && plan.functions.length && !plan.other.length ? 0 : 1;
 }
 
 /* GitHub workflow-command lines for one doctor result.
@@ -382,35 +506,53 @@ async function doctor(opts) {
  * readable without opening anything. A check the doctor could not determine is
  * a `::warning::` and never an error: UNKNOWN means nobody asked the question
  * successfully, which is not the same as a failure and must not be dressed up
- * as one. */
-function annotations(r) {
+ * as one. Nor is a stale function this run is about to deploy (autoDeploy):
+ * it is a ::warning:: saying so, and the verify job's re-check is where an
+ * error belongs if the deploy does not take. */
+function annotations(r, opts) {
   const out = [];
-  const one = (level, c) =>
+  const autoDeploy = !!(opts && opts.autoDeploy);
+  const one = (level, c, fix) =>
     `::${level}::${c.name} — ${String(c.state)}`
     + (c.detail ? ': ' + c.detail : '')
-    + (c.fix ? ' | fix: ' + c.fix : '');
-  const bad = (r.checks || []).filter((c) => /NOT_DEPLOYED|NOT_APPLIED|STALE|MISSING|ABSENT|EMPTY|FAILING/.test(c.state));
+    + (fix ? ' | fix: ' + fix : '');
+  const bad = (r.checks || []).filter(needsAction);
   const unknown = (r.checks || []).filter((c) => c.state === 'UNKNOWN');
-  bad.forEach((c) => out.push(one('error', c)));
-  unknown.forEach((c) => out.push(one('warning', c)));
+  const deploying = (c) => autoDeploy && c.state === 'STALE' && AUTO_DEPLOYABLE[c.name];
+  bad.forEach((c) => out.push(deploying(c)
+    ? one('warning', c, null) + ` | auto-deploying ${AUTO_DEPLOYABLE[c.name]} in this run`
+    : one('error', c, c.fix)));
+  unknown.forEach((c) => out.push(one('warning', c, c.fix)));
   /* The verdict last, so it is the line nearest the summary. A run that found
      nothing wrong still says so — silence reads the same as not having run. */
+  const nDeploying = bad.filter(deploying).length;
   out.push(`::notice::VERDICT: ${r.verdict}`
     + (bad.length ? ` — ${bad.length} check(s) need action` : '')
+    + (nDeploying ? ` (${nDeploying} fixed by this run's auto-deploy)` : '')
     + (unknown.length ? `, ${unknown.length} undetermined` : ''));
   return out;
 }
 
-module.exports = { doctor, expectedBuild, expectedCaptureBuild, annotations };
+module.exports = { doctor, expectedBuild, expectedCaptureBuild, expectedFunctionBuild, annotations, deployPlan, exitCode };
 
 if (require.main === module) {
   doctor().then((r) => {
+    /* --auto-deploy: say which functions a deploy would fix, as step outputs
+       the doctor workflow's deploy jobs read. This file still deploys
+       nothing; it only answers the question. */
+    const autoDeploy = process.argv.includes('--auto-deploy');
+    const plan = deployPlan(r);
+    if (autoDeploy && process.env.GITHUB_OUTPUT) {
+      fs.appendFileSync(process.env.GITHUB_OUTPUT,
+        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\ndeploy_props_cron=${plan.props_cron}\n`
+        + `deploy_editorial_cron=${plan.editorial_cron}\n`);
+    }
     if (process.argv.includes('--json')) {
       console.log(JSON.stringify(r, null, 1));
       /* --json USED TO EXIT 0 WHATEVER IT FOUND. A caller that asked for the
          machine-readable form and then trusted the exit code was told every
          run was fine. Same verdict, same code, both forms. */
-      process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+      process.exit(exitCode(r, { autoDeploy }));
     }
     console.log('EDGEDESK DEPLOYMENT DOCTOR — merged is not deployed\n');
     console.log('this checkout would deploy: ' + r.expected_build + '\n');
@@ -420,11 +562,15 @@ if (require.main === module) {
       if (c.fix) console.log('                 fix: ' + c.fix);
     });
     console.log('\n  VERDICT: ' + r.verdict);
+    if (autoDeploy && plan.functions.length) {
+      console.log('  AUTO-DEPLOY: ' + plan.functions.join(', ')
+        + ' — this run deploys ' + (plan.functions.length > 1 ? 'them' : 'it') + ' and asks the deployment again');
+    }
     /* One line per failing check, in the form GitHub renders against the run
        itself, so the runs list says WHAT is wrong without anyone opening a
        step. Off unless asked for, so the other callers of this file
        (deploy-intelligence.yml runs it too) do not sprout annotations. */
-    if (process.argv.includes('--annotate')) annotations(r).forEach((l) => console.log(l));
-    process.exit(r.verdict === 'ACTION NEEDED' ? 1 : 0);
+    if (process.argv.includes('--annotate')) annotations(r, { autoDeploy }).forEach((l) => console.log(l));
+    process.exit(exitCode(r, { autoDeploy }));
   }).catch((e) => { console.error('CRASH', (e && e.stack) || e); process.exit(2); });
 }

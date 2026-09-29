@@ -4,7 +4,10 @@
 #
 # Its own workflow because Deploy intelligence is at GitHub's ten-input limit,
 # and because "merged" and "running" must never be two silent facts again (see
-# the header of deploy-intelligence.yml). MANUAL ON PURPOSE.
+# the header of deploy-intelligence.yml). MANUAL ON PURPOSE, with the same one
+# narrow exception: the Intelligence doctor calls it (workflow_call) to deploy
+# props_cron when production answers with a build other than main's. That
+# call never applies the SQL.
 #
 # SECRETS (the same ones Deploy intelligence uses):
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
@@ -29,6 +32,15 @@ on:
         default: true
       apply_cron:
         description: 'Apply supabase/player_props_cron.sql (the five-minute pg_cron poke; needs pg_cron + pg_net)'
+        type: boolean
+        default: false
+  # The Intelligence doctor's auto-deploy. The function only: apply_sql and
+  # apply_cron are not declared here, so they read as empty and both SQL
+  # steps stay skipped.
+  workflow_call:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/props_cron'
         type: boolean
         default: false
 

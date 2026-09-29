@@ -250,6 +250,17 @@ const FN = path.join(__dirname, '..', '..', 'supabase', 'functions', 'editorial_
   chk('with the body', /workflow_dispatch trigger/.test(String(out.detail)), out.detail);
   eq('and it did not retry', SEEN.filter(s => s.url.endsWith('/dispatches')).length, 1);
 
+  section('7. GET SAYS WHICH BUILD IS ANSWERING, AND DOES NOTHING ELSE');
+  /* The deployment doctor compares this build with the checkout's and
+     deploys on a mismatch, so it has to be the file's own value. */
+  reset();
+  const p = mod.probe();
+  chk('the probe carries the build, and it is the file\'s own',
+    /^editorial_cron-/.test(p.build) && p.build === mod.BUILD, JSON.stringify(p));
+  chk('it names the service the doctor checks for', p.service === 'editorial_cron', JSON.stringify(p));
+  chk('it never shows the token', JSON.stringify(p).indexOf(ENV.EDITORIAL_GH_TOKEN) < 0, JSON.stringify(p));
+  eq('and it makes no request at all: no settings read, no dispatch', SEEN.length, 0);
+
   /* ------------------------------------------------------------------ */
   console.log('\n' + (fail ? 'FAIL' : 'PASS') + ' | editorial cron | '
     + pass + ' passed' + (fail ? ', ' + fail + ' failed' : ' assertions'));

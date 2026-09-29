@@ -1,0 +1,75 @@
+# Deploy supabase/functions/editorial_cron: option B of the editorial
+# scheduler (tools/editorial/README.md), which pg_cron would call every ten
+# minutes to poke editorial.yml.
+#
+# PRODUCTION DOES NOT RUN IT. As of 2026-09-29 the scheduler is option A, the
+# SQL poke public.editorial_poke(), and the README says not to install both;
+# the Intelligence doctor reports the absent function as NOT_INSTALLED and
+# never deploys it. This is the deploy path for the day option B is chosen:
+# before it, the function's header carried a manual
+# `supabase functions deploy editorial_cron --no-verify-jwt` and nothing else.
+#
+# MANUAL ON PURPOSE, with the same one narrow exception as Deploy
+# intelligence: the Intelligence doctor calls it (workflow_call) when
+# production answers with an editorial_cron build other than main's.
+#
+# SECRETS (the same ones Deploy intelligence uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
+name: Deploy editorial scheduler
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-editorial-cron
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # editorial_cron.test.js imports the deployed file itself against a
+      # mocked network: the pause, the debounce, the missing token and the
+      # 422 fallback are this build's own behaviour, not a copy's.
+      - name: The scheduler must pass its tests before it ships
+        run: node tools/editorial/editorial_cron.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — editorial_cron cannot be deployed from CI."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt, as the function's own header says. Its GET is the
+      # public health probe the Intelligence doctor reads with no credential;
+      # with verification on, the platform would refuse that probe before the
+      # function ever saw it.
+      - name: Deploy editorial_cron
+        if: ${{ steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy editorial_cron \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
