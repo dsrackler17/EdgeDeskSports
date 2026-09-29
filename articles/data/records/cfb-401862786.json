@@ -21,8 +21,8 @@
   "game_time": "2026-10-02T01:00:00.000Z",
   "game_when_label": "2026-10-02 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T12:42:08.023Z",
-  "generated_at": "2026-09-29T12:42:08.023Z",
+  "updated_at": "2026-09-29T18:37:50.143Z",
+  "generated_at": "2026-09-29T18:37:50.143Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and BetRivers on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings and Pinnacle on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T23:30:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
       "home": {
         "team": "Tulsa",
@@ -321,9 +321,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-27T00:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
-      "generated_at": "2026-09-29T10:24:51.404Z",
+      "generated_at": "2026-09-29T17:47:03.624Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1444,12 +1444,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "stale",
-          "text": "odds is 17h old",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "North Texas — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1569,10 +1563,10 @@
       "difference": "12.3 points",
       "difference_n": 12.267300196586925,
       "total_model": "60.1",
-      "total_market": "57.5",
-      "book": "captured · Hard Rock Bet",
-      "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "17 hours old",
+      "total_market": "58.0",
+      "book": "captured · DraftKings",
+      "captured": "2026-09-29T18:00:11.47+00:00",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1590,7 +1584,7 @@
         "key": "MARKET_FAULT",
         "label": "MARKET FAULT",
         "rule": "market",
-        "means": "EdgeDesk and the market are 12.3 pts toward North Texas, but the market data cannot carry a verified disagreement: captured 16.7 h ago (limit 12 h at this size); 0 books behind the consensus (at least 2 required at this size)."
+        "means": "EdgeDesk and the market are 12.3 pts toward North Texas, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1598,9 +1592,8 @@
         "raw_market_gap": -12.27,
         "verified_market_gap": null,
         "calibrated_gap": -13.23,
-        "root_cause": "STALE_MARKET",
+        "root_cause": "THIN_MARKET",
         "failed": [
-          "MARKET.quote_fresh",
           "MARKET.book_count",
           "TEAM_STATE.state_stability"
         ],
@@ -1625,8 +1618,8 @@
         "market_line_text": "Tulsa -1.5",
         "market_home_margin": 1.5,
         "favorite_differs": true,
-        "source": "captured · Hard Rock Bet",
-        "as_of": "2026-09-28T20:00:03.386+00:00",
+        "source": "captured · DraftKings",
+        "as_of": "2026-09-29T18:00:11.47+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1637,11 +1630,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 83,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "83 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 83,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1667,13 +1660,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 15,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.3,
+            "score": 13.2,
             "max": 15
           },
           {
@@ -1697,7 +1690,7 @@
             "text": "up to +3"
           },
           {
-            "action": "Confirm North Texas’s starting QB (Tayven Jackson)",
+            "action": "Resolve Tulsa’s starter conflict",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1735,8 +1728,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "North Texas",
+          "side": "away",
+          "line": 1.5,
+          "price_american": null,
+          "book": "DraftKings",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "North Texas +1.5 (price not captured) at DraftKings"
+        },
+        "other": {
+          "team": "Tulsa",
+          "side": "home",
+          "line": -1.5,
+          "price_american": null,
+          "book": "DraftKings",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Tulsa -1.5 (price not captured) at DraftKings"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1938,7 +1951,7 @@
       "EdgeDesk’s line is Tulsa +10.8 on a neutral read of the two teams, before any book is consulted. Projected total 60.1.",
       "Tulsa wins 23% of the time in EdgeDesk’s simulation, North Texas 77%.",
       "Eight games in ten land between -32.8 and +9.2 for Tulsa. A single result inside that band tells you nothing new about either team.",
-      "The market has Tulsa -1.5 at captured · Hard Rock Bet, 12.3 points from EdgeDesk’s number.",
+      "The market has Tulsa -1.5 at captured · DraftKings, 12.3 points from EdgeDesk’s number.",
       "North Texas quarterback: Tayven Jackson — started the last game; no announcement for this one.",
       "Tulsa quarterback: Dexter Williams II — started the last game; no announcement for this one."
     ],
@@ -1953,6 +1966,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T12:42:08.023Z"
+    "at": "2026-09-29T18:37:50.143Z"
   }
 }

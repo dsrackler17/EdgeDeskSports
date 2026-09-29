@@ -23,11 +23,11 @@
   "game_time": "2026-10-04T20:05:00.000Z",
   "game_when_label": "2026-10-04 20:05 UTC",
   "published_at": null,
-  "updated_at": "2026-09-28T21:12:19.786Z",
-  "generated_at": "2026-09-29T12:42:08.023Z",
+  "updated_at": "2026-09-29T18:37:50.143Z",
+  "generated_at": "2026-09-29T18:37:50.143Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
-  "model_status_note": "EdgeDesk differs from the market by 3.9 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
+  "model_status_note": "EdgeDesk differs from the market by 4.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Minnesota Vikings -6.6",
@@ -43,8 +43,8 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 47 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Caesars and Hard Rock Bet on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 48 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Pinnacle and BetOnline.ag on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
     "game": {
@@ -117,11 +117,11 @@
         "note": "Quoted from the perspective of Minnesota Vikings, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 47 absorbed 2026 games.",
-      "sample_games": 47,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 48 absorbed 2026 games.",
+      "sample_games": 48,
       "seeded": true,
       "status": "INVESTIGATE",
-      "status_note": "EdgeDesk differs from the market by 3.9 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
+      "status_note": "EdgeDesk differs from the market by 4.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -372,14 +372,14 @@
               "h": {
                 "v": "−0.019",
                 "n": -0.019220542895981883,
-                "rank": "#20 of 32",
-                "rank_n": 20,
+                "rank": "#21 of 32",
+                "rank_n": 21,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.046594962740206455,
-                "rank_gap": 8
+                "rank_gap": 7
               }
             },
             {
@@ -836,7 +836,7 @@
           "team": "Minnesota Vikings",
           "label": "run offence",
           "v": "−0.019",
-          "rank": "#20 of 32",
+          "rank": "#21 of 32",
           "note": null
         },
         "def": {
@@ -848,7 +848,7 @@
         },
         "complete": true,
         "net": -0.01146854289598188,
-        "read": "Minnesota Vikings’ run offence rates −0.019 (#20 of 32) and Miami Dolphins’ run defence rates +0.008 (#17 of 32). Added the way the model adds them, this pairing sits −0.011 from the league mean, which favours Miami Dolphins."
+        "read": "Minnesota Vikings’ run offence rates −0.019 (#21 of 32) and Miami Dolphins’ run defence rates +0.008 (#17 of 32). Added the way the model adds them, this pairing sits −0.011 from the league mean, which favours Miami Dolphins."
       },
       {
         "title": "Miami Dolphins pass protection vs Minnesota Vikings pass rush",
@@ -1012,7 +1012,7 @@
           },
           {
             "k": "Active room",
-            "a": "Malik Willis, Kyle McCord",
+            "a": "Malik Willis, Kyle McCord, Brady Cook",
             "h": "Carson Wentz, Kyler Murray",
             "note": "who is rostered at the position — identity only"
           }
@@ -1091,7 +1091,7 @@
         ],
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
-          "The ratings behind this projection are the trained seeds plus 47 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 48 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1133,12 +1133,6 @@
           "label": "the model does not beat the closing line",
           "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
           "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "early-season sample",
-          "text": "Only 47 games of this season have been absorbed into the ratings, so the trained seeds still carry most of the weight. An early number is a prior with a little evidence on top of it, not a season’s worth of evidence.",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1172,23 +1166,23 @@
     "market": {
       "available": true,
       "model": "Minnesota Vikings -6.6",
-      "market": "Minnesota Vikings -10.5",
-      "difference": "3.9 points",
+      "market": "Minnesota Vikings -11.0",
+      "difference": "4.4 points",
       "total_model": "39.9",
-      "total_market": "39.0",
-      "total_difference": "0.9 points",
-      "book": "Caesars",
+      "total_market": "38.5",
+      "total_difference": "1.4 points",
+      "book": "Pinnacle",
       "capture_age": "1 hour old",
       "stale": false,
       "classification": "INVESTIGATE",
-      "classification_note": "EdgeDesk differs from the market by 3.9 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
+      "classification_note": "EdgeDesk differs from the market by 4.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
       "reference": null,
       "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Minnesota Vikings 23, Miami Dolphins 17.",
     "state": {
       "label": "INVESTIGATE",
-      "note": "EdgeDesk differs from the market by 3.9 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
+      "note": "EdgeDesk differs from the market by 4.4 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1241,7 +1235,7 @@
         {
           "k": "Run offence · EPA per carry",
           "a": "−0.066  #28 of 32",
-          "h": "−0.019  #20 of 32",
+          "h": "−0.019  #21 of 32",
           "note": null
         },
         {
@@ -1319,11 +1313,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 47 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 48 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T12:42:08.023Z"
+    "at": "2026-09-29T18:37:50.143Z"
   }
 }

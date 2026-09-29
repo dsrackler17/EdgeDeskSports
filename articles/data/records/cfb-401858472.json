@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T20:15:00.000Z",
   "game_when_label": "2026-10-03 20:15 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T12:42:08.023Z",
-  "generated_at": "2026-09-29T12:42:08.023Z",
+  "updated_at": "2026-09-29T18:37:50.143Z",
+  "generated_at": "2026-09-29T18:37:50.143Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and BetMGM on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T18:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
       "home": {
         "team": "Illinois",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
-      "generated_at": "2026-09-29T10:24:51.404Z",
+      "generated_at": "2026-09-29T17:47:03.624Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1433,19 +1433,13 @@
         {
           "sev": "MEDIUM",
           "label": "market disagreement",
-          "text": "The market disagrees by 5.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "text": "The market disagrees by 4.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
           "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "stale",
-          "text": "odds is 17h old",
           "widening": null
         },
         {
@@ -1513,6 +1507,12 @@
           "label": "missing",
           "text": "away injury report not supplied",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "low confidence",
+          "text": "rivalry situational effect is in the number but rests on a thin sample",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1571,14 +1571,14 @@
       "available": true,
       "model": "Illinois -14.8",
       "model_raw": "Illinois -14.8",
-      "market": "Illinois -9.5",
-      "difference": "5.3 points",
-      "difference_n": 5.327079317022259,
+      "market": "Illinois -10.5",
+      "difference": "4.3 points",
+      "difference_n": 4.327079317022259,
       "total_model": "57.4",
-      "total_market": "60.5",
-      "book": "captured · Hard Rock Bet",
-      "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "17 hours old",
+      "total_market": "61.5",
+      "book": "captured · FanDuel",
+      "captured": "2026-09-29T18:00:11.47+00:00",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1596,7 +1596,7 @@
         "key": "WORTH_RESEARCHING",
         "label": "WORTH RESEARCHING",
         "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 5.3 pts toward Illinois, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "means": "EdgeDesk differs from the market by 4.3 pts toward Illinois, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "disagreement": null,
       "fair": {
@@ -1610,14 +1610,14 @@
       },
       "market_gap": {
         "available": true,
-        "points": 5.33,
+        "points": 4.33,
         "toward_team": "Illinois",
-        "text": "5.3 pts toward Illinois",
-        "market_line_text": "Illinois -9.5",
-        "market_home_margin": 9.5,
+        "text": "4.3 pts toward Illinois",
+        "market_line_text": "Illinois -10.5",
+        "market_home_margin": 10.5,
         "favorite_differs": false,
-        "source": "captured · Hard Rock Bet",
-        "as_of": "2026-09-28T20:00:03.386+00:00",
+        "source": "captured · FanDuel",
+        "as_of": "2026-09-29T18:00:11.47+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1628,11 +1628,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Purdue’s availability report is not due yet",
-        "score": 86,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1658,7 +1658,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 15,
             "max": 15
           },
           {
@@ -1679,18 +1679,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Purdue)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
             "action": "Re-read availability inside the filing window (Illinois)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1720,14 +1720,34 @@
           {
             "kind": "market",
             "key": "market_gap",
-            "points": 5.33,
-            "text": "The market is 5.3 pts away from EdgeDesk’s number, toward Illinois (market: Illinois -9.5)"
+            "points": 4.33,
+            "text": "The market is 4.3 pts away from EdgeDesk’s number, toward Illinois (market: Illinois -10.5)"
           }
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Illinois",
+          "side": "home",
+          "line": -10.5,
+          "price_american": null,
+          "book": "FanDuel",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Illinois -10.5 (price not captured) at FanDuel"
+        },
+        "other": {
+          "team": "Purdue",
+          "side": "away",
+          "line": 10.5,
+          "price_american": null,
+          "book": "FanDuel",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Purdue +10.5 (price not captured) at FanDuel"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1929,7 +1949,7 @@
       "EdgeDesk’s line is Illinois -14.8 on a neutral read of the two teams, before any book is consulted. Projected total 57.4.",
       "Illinois wins 84% of the time in EdgeDesk’s simulation, Purdue 16%.",
       "Eight games in ten land between -7.2 and +34.8 for Illinois. A single result inside that band tells you nothing new about either team.",
-      "The market has Illinois -9.5 at captured · Hard Rock Bet, 5.3 points from EdgeDesk’s number.",
+      "The market has Illinois -10.5 at captured · FanDuel, 4.3 points from EdgeDesk’s number.",
       "Purdue quarterback: Ryan Browne — started the last game; no announcement for this one.",
       "Illinois quarterback: Katin Houser — started the last game; no announcement for this one."
     ],
@@ -1944,6 +1964,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T12:42:08.023Z"
+    "at": "2026-09-29T18:37:50.143Z"
   }
 }

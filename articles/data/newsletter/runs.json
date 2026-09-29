@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_newsletter_runs_v1",
-  "kept": 64,
+  "kept": 69,
   "max": 500,
   "runs": [
     {
@@ -888,7 +888,73 @@
         "games": 0,
         "content_hash": null
       }
+    },
+    {
+      "at": "2026-09-29T18:37:46.529Z",
+      "run_id": "nl_qjbk52kx",
+      "sport": "CFB",
+      "phase": "market",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "quotes": 56,
+        "signals_read": 1000,
+        "refused": {},
+        "wrote": "articles/data/market/2026-week-05.json"
+      }
+    },
+    {
+      "at": "2026-09-29T18:37:46.529Z",
+      "run_id": "nl_qjbk52kx",
+      "sport": "NFL",
+      "phase": "market",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "quotes": 16,
+        "signals_read": 424,
+        "refused": {},
+        "wrote": "articles/data/market/2026-week-04.json"
+      }
+    },
+    {
+      "at": "2026-09-29T18:37:53.620Z",
+      "run_id": "nl_k0cukloe",
+      "sport": "CFB",
+      "phase": "build",
+      "edition_key": "CFB:0:W00:2026-09-28",
+      "ok": false,
+      "reason": "edition_stale",
+      "detail": {
+        "games": 0,
+        "content_hash": null
+      }
+    },
+    {
+      "at": "2026-09-29T18:37:53.620Z",
+      "run_id": "nl_k0cukloe",
+      "sport": "NFL",
+      "phase": "build",
+      "edition_key": "NFL:2026:W04:2026-09-29",
+      "ok": true,
+      "reason": null,
+      "detail": {
+        "games": 10,
+        "content_hash": "ed_f40e8ac6"
+      }
+    },
+    {
+      "at": "2026-09-29T18:37:53.620Z",
+      "run_id": "nl_k0cukloe",
+      "sport": "NFL",
+      "phase": "send",
+      "edition_key": "NFL:2026:W04:2026-09-29",
+      "ok": false,
+      "reason": "sending_disabled",
+      "detail": {
+        "counts": null
+      }
     }
   ],
-  "generated_at": "2026-09-28T20:07:01.042Z"
+  "generated_at": "2026-09-29T18:37:53.620Z"
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T16:00:00.000Z",
   "game_when_label": "2026-10-03 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T12:42:08.023Z",
-  "generated_at": "2026-09-29T12:42:08.023Z",
+  "updated_at": "2026-09-29T18:37:50.143Z",
+  "generated_at": "2026-09-29T18:37:50.143Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetRivers and Pinnacle on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetOnline.ag and BetRivers on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T23:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
       "home": {
         "team": "Kansas",
@@ -315,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-19T16:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
-      "generated_at": "2026-09-29T10:24:51.404Z",
+      "generated_at": "2026-09-29T17:47:03.624Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1418,12 +1418,6 @@
         },
         {
           "sev": "MEDIUM",
-          "label": "stale",
-          "text": "odds is 17h old",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
           "label": "Middle Tennessee — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1486,6 +1480,12 @@
           "sev": "LOW",
           "label": "missing",
           "text": "home injury report not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "away injury report not supplied",
           "widening": null
         }
       ],
@@ -1550,9 +1550,9 @@
       "difference_n": 1.5541440241676767,
       "total_model": "52.4",
       "total_market": "50.5",
-      "book": "captured · BetRivers",
-      "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "17 hours old",
+      "book": "captured · BetOnline.ag",
+      "captured": "2026-09-29T18:00:11.47+00:00",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1590,8 +1590,8 @@
         "market_line_text": "Kansas -18.0",
         "market_home_margin": 18,
         "favorite_differs": false,
-        "source": "captured · BetRivers",
-        "as_of": "2026-09-28T20:00:03.386+00:00",
+        "source": "captured · BetOnline.ag",
+        "as_of": "2026-09-29T18:00:11.47+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1602,11 +1602,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "82 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.5 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 82,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1632,7 +1632,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 14.5,
             "max": 15
           },
           {
@@ -1662,9 +1662,9 @@
             "text": "up to +4"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1700,8 +1700,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Kansas",
+          "side": "home",
+          "line": -18,
+          "price_american": null,
+          "book": "BetOnline.ag",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Kansas -18.0 (price not captured) at BetOnline.ag"
+        },
+        "other": {
+          "team": "Middle Tennessee",
+          "side": "away",
+          "line": 18,
+          "price_american": null,
+          "book": "BetOnline.ag",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Middle Tennessee +18.0 (price not captured) at BetOnline.ag"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1903,7 +1923,7 @@
       "EdgeDesk’s line is Kansas -19.6 on a neutral read of the two teams, before any book is consulted. Projected total 52.4.",
       "Kansas wins 90% of the time in EdgeDesk’s simulation, Middle Tennessee 10%.",
       "Eight games in ten land between -3.4 and +40.6 for Kansas. A single result inside that band tells you nothing new about either team.",
-      "The market has Kansas -18.0 at captured · BetRivers, 1.6 points from EdgeDesk’s number.",
+      "The market has Kansas -18.0 at captured · BetOnline.ag, 1.6 points from EdgeDesk’s number.",
       "Middle Tennessee quarterback: Roman Gagliano — started the last game; no announcement for this one.",
       "Kansas quarterback: Isaiah Marshall — started the last game; no announcement for this one."
     ],
@@ -1918,6 +1938,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T12:42:08.023Z"
+    "at": "2026-09-29T18:37:50.143Z"
   }
 }

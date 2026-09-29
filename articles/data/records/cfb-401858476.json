@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T00:00:00.000Z",
   "game_when_label": "2026-10-03 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T12:42:08.023Z",
-  "generated_at": "2026-09-29T12:42:08.023Z",
+  "updated_at": "2026-09-29T18:37:50.143Z",
+  "generated_at": "2026-09-29T18:37:50.143Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetMGM and BetOnline.ag on 2026-09-28, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Pinnacle and Caesars on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -255,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T21:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
       "home": {
         "team": "Northwestern",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T00:00:00.000Z",
-        "retrieved_at": "2026-09-29T10:24:07.336Z"
+        "retrieved_at": "2026-09-29T17:46:22.716Z"
       },
-      "generated_at": "2026-09-29T10:24:51.404Z",
+      "generated_at": "2026-09-29T17:47:03.624Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1438,19 +1438,13 @@
         {
           "sev": "MEDIUM",
           "label": "market disagreement",
-          "text": "The market disagrees by 3.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "text": "The market disagrees by 3.9 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
           "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "stale",
-          "text": "odds is 17h old",
           "widening": null
         },
         {
@@ -1512,6 +1506,12 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "home injury report not supplied",
+          "widening": null
         }
       ],
       "unmeasured": [
@@ -1570,14 +1570,14 @@
       "available": true,
       "model": "Northwestern -1.0",
       "model_raw": "Northwestern -0.9",
-      "market": "Northwestern +2.5",
-      "difference": "3.4 points",
-      "difference_n": 3.358820648910385,
+      "market": "Northwestern +3.0",
+      "difference": "3.9 points",
+      "difference_n": 3.858820648910385,
       "total_model": "48.8",
-      "total_market": "46.0",
-      "book": "captured · BetMGM",
-      "captured": "2026-09-28T20:00:03.386+00:00",
-      "capture_age": "17 hours old",
+      "total_market": "45.5",
+      "book": "captured · Pinnacle",
+      "captured": "2026-09-29T18:00:11.47+00:00",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1595,7 +1595,7 @@
         "key": "WORTH_RESEARCHING",
         "label": "WORTH RESEARCHING",
         "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 3.4 pts toward Northwestern, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "means": "EdgeDesk differs from the market by 3.9 pts toward Northwestern, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "disagreement": null,
       "fair": {
@@ -1609,14 +1609,14 @@
       },
       "market_gap": {
         "available": true,
-        "points": 3.36,
+        "points": 3.86,
         "toward_team": "Northwestern",
-        "text": "3.4 pts toward Northwestern",
-        "market_line_text": "Penn State -2.5",
-        "market_home_margin": -2.5,
+        "text": "3.9 pts toward Northwestern",
+        "market_line_text": "Penn State -3.0",
+        "market_home_margin": -3,
         "favorite_differs": true,
-        "source": "captured · BetMGM",
-        "as_of": "2026-09-28T20:00:03.386+00:00",
+        "source": "captured · Pinnacle",
+        "as_of": "2026-09-29T18:00:11.47+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": "Measured from the raw margin (Northwestern -0.86), not from the one-point display line."
@@ -1627,13 +1627,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
-        "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
+        "pct": 80,
+        "tier": "STRONG",
+        "text": "80 · STRONG",
         "sub": "main deduction: the projection flips favorite in 25% of sensitivity runs",
-        "score": 79,
-        "grade": "ADEQUATE",
-        "grade_label": "ADEQUATE",
+        "score": 80,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1657,7 +1657,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 15,
             "max": 15
           },
           {
@@ -1687,9 +1687,9 @@
             "text": "up to +3"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1713,14 +1713,34 @@
           {
             "kind": "market",
             "key": "market_gap",
-            "points": 3.36,
-            "text": "The market is 3.4 pts away from EdgeDesk’s number, toward Northwestern (market: Penn State -2.5)"
+            "points": 3.86,
+            "text": "The market is 3.9 pts away from EdgeDesk’s number, toward Northwestern (market: Penn State -3.0)"
           }
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Northwestern",
+          "side": "home",
+          "line": 3,
+          "price_american": null,
+          "book": "Pinnacle",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Northwestern +3.0 (price not captured) at Pinnacle"
+        },
+        "other": {
+          "team": "Penn State",
+          "side": "away",
+          "line": -3,
+          "price_american": null,
+          "book": "Pinnacle",
+          "captured_at": "2026-09-29T18:00:11.47+00:00",
+          "text": "Penn State -3.0 (price not captured) at Pinnacle"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1922,7 +1942,7 @@
       "EdgeDesk’s line is Northwestern -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Northwestern +0.86, and the one-point line is a display floor. Projected total 48.8.",
       "Northwestern wins 52% of the time in EdgeDesk’s simulation, Penn State 48%.",
       "Eight games in ten land between -22.1 and +21.9 for Northwestern. A single result inside that band tells you nothing new about either team.",
-      "The market has Northwestern +2.5 at captured · BetMGM, 3.4 points from EdgeDesk’s number.",
+      "The market has Northwestern +3.0 at captured · Pinnacle, 3.9 points from EdgeDesk’s number.",
       "Penn State quarterback: Rocco Becht — started the last game; no announcement for this one.",
       "Northwestern quarterback: Aidan Chiles — started the last game; no announcement for this one."
     ],
@@ -1937,6 +1957,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T12:42:08.023Z"
+    "at": "2026-09-29T18:37:50.143Z"
   }
 }
