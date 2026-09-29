@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-09-29T01:30:38.308Z",
-  "open": 7,
-  "count": 7,
+  "generated_at": "2026-09-29T01:40:04.103Z",
+  "open": 8,
+  "count": 8,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -223,6 +223,35 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:passing:driver",
+      "sport": "NFL",
+      "category": "passing",
+      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-29T01:40:04.103Z",
+      "updated_at": "2026-09-29T01:40:04.103Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_HOU_IND:contradicted:passing",
+          "game_id": "2026_03_HOU_IND",
+          "season": 2026,
+          "week": 3,
+          "team": "Houston Texans",
+          "expectation": "2 published claims said the same thing: Net passing EPA — Houston Texans by 2.3 points — worth -2.3 of the EdgeDesk number, in Houston Texans’s favour. Indianapolis Colts’ pass offence rates +0.007 (#17 of 32) and Houston Texans’ pass defence rates −0.189 (#3 of 32). Added the way the model adds them, this pairing sits −0.182 from the league mean, which favours Houston Texans.",
+          "result": "Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211. Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211.",
+          "severity": "high",
+          "at": "2026-09-29T01:40:04.103Z"
         }
       ],
       "occurrences": 1,
