@@ -227,6 +227,15 @@ footer a:hover{color:var(--text)}
   </div>
 </section>
 
+<section class="sec" id="player-props">
+  <div class="wrap">
+    <span class="ey">Player props · CFB and NFL · graded after every game</span>
+    <h2>Every frozen player-prop entry, and how it graded</h2>
+    <p class="sub">An entry is frozen only when an <b>observed</b> sportsbook quote clears the LEAN or BET bar before kickoff: the book, the line, the price and the capture time are written once and never edited. After the game it is graded against the official box score at that frozen price, flat one unit, with closing-line value against the same book's last pregame quote. Every segment is shown, the bad ones included, and a segment under 100 graded entries says so. This page calculates nothing: every figure is copied from record/props/summary.json.</p>
+    <div id="propsRec"><div class="edrec-empty">Loading the player-prop record…</div></div>
+  </div>
+</section>
+
 <section class="sec">
   <div class="wrap">
     <span class="ey">Method check</span>
@@ -4290,6 +4299,59 @@ footer a:hover{color:var(--text)}
   if(typeof document!=='undefined'&&document.getElementById('labPub')) window.EDLABPUB.load();
 })();
 /*__EDLAB_PUB_END__*/
+</script>
+<script>
+/*__EDPROPS_REC_START__*/
+/* ===========================================================================
+   PLAYER PROPS — the public record (football/props/record.js writes
+   record/props/summary.json, edgedesk_props_record_summary_v1). Pure: data
+   in, HTML out; football/props/record_section.test.js runs this block.
+   =========================================================================== */
+(function(){
+  'use strict';
+  var D='—', FILE='./record/props/summary.json';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function pc(x){ return isNum(x)?(100*x).toFixed(1)+'%':D; }
+  function sg(x,k){ return isNum(x)?(x>0?'+':'')+x.toFixed(k):D; }
+  function kpi(n,l,s){ return '<div class="kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>'; }
+  function rec(s){ return (s.wins||0)+'-'+(s.losses||0)+'-'+(s.pushes||0); }
+  var SEGS=[['by_league','League'],['by_market','Market'],['by_position','Position'],['by_edge_bucket','Edge at entry'],['by_confidence','Confidence'],['by_price','Price'],['by_sportsbook','Sportsbook'],['by_decision','Decision'],['by_model_version','Model version']];
+  function table(label,rows){
+    if(!rows||!rows.length) return '';
+    return '<details class="edlab-week"><summary>'+esc(label)+'<span class="m">'+rows.length+' segments</span></summary><div class="edlab-scroll"><table class="edlab-t"><thead><tr><th class="l">'+esc(label)+'</th><th>Entries</th><th>Graded</th><th>W-L-P</th><th>Void</th><th>Units</th><th>ROI</th><th>Mean EV</th><th>Mean CLV</th><th class="l">Sample</th></tr></thead><tbody>'
+      +rows.map(function(r){ return '<tr><td class="l">'+esc(r.segment)+'</td><td>'+(r.n||0)+'</td><td>'+(r.graded||0)+'</td><td>'+rec(r)+'</td><td>'+(r.voids||0)+'</td><td>'+sg(r.units_flat,2)+'</td><td>'+pc(r.roi_flat)+'</td><td>'+pc(r.mean_ev)+'</td><td>'+pc(r.mean_clv_price)+'</td><td class="l">'+(r.sufficient_sample?'100+ graded':'<small>under 100 graded</small>')+'</td></tr>'; }).join('')
+      +'</tbody></table></div></details>';
+  }
+  function emptyHTML(){
+    return '<div class="edrec-empty"><b style="color:var(--text)">No player-prop entry has been frozen yet.</b><br>An entry needs an observed sportsbook quote that qualifies before kickoff. Until prop quotes are being captured, Research › Props shows the model alone and nothing reaches this record.</div>';
+  }
+  function sectionHTML(sum){
+    if(!sum||typeof sum!=='object'||sum.schema!=='edgedesk_props_record_summary_v1') return emptyHTML()+'<div class="edrec-note">The player-prop record file has not been published yet, so there is nothing to show rather than something made up.</div>';
+    var t=sum.total||{n:0,graded:0};
+    if(!t.n) return emptyHTML()+'<div class="edrec-note">'+esc(sum.rule||'')+'</div>';
+    return '<div class="kpis">'
+      +kpi(String(t.n),'entries frozen','LEAN and BET, observed quotes only')
+      +kpi(String(t.graded||0),'graded so far','settled against the box score')
+      +kpi(rec(t),'won-lost-push','at the frozen price')
+      +kpi(sg(t.units_flat,2),'units, flat 1 unit per entry','voids are not staked')
+      +kpi(pc(t.roi_flat),'return on units staked','ROI · flat')
+      +kpi(pc(t.mean_clv_price),'closing-line value, on average','price CLV vs the same book')
+      +'</div>'+SEGS.map(function(s){ return table(s[1],sum[s[0]]); }).join('')
+      +'<div class="edrec-note">'+esc(sum.rule||'')+(t.sufficient_sample?'':' The record has fewer than 100 graded entries: no conclusion should be drawn from it yet.')+'</div>';
+  }
+  window.EDPROPSREC={
+    sectionHTML:sectionHTML, emptyHTML:emptyHTML, table:table,
+    render:function(sum){ var el=document.getElementById('propsRec'); if(el) el.innerHTML=sectionHTML(sum); },
+    load:function(url){
+      return fetch(url||FILE,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw new Error('summary.json '+r.status); return r.json(); })
+        .then(function(d){ window.EDPROPSREC.render(d); return d; })
+        .catch(function(){ window.EDPROPSREC.render(null); return null; });
+    }
+  };
+  if(typeof document!=='undefined'&&document.getElementById('propsRec')) window.EDPROPSREC.load();
+})();
+/*__EDPROPS_REC_END__*/
 </script>
 <script>
 /* EdgeDesk sports (lib/edgedesk_sports.js, inlined by tools/presentation/inline.js):

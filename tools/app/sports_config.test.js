@@ -83,8 +83,8 @@ const APP = read('app.html');
 /* the tab strip is a <nav> (it was a <div> before the Research UI refinement) */
 const nav = (APP.match(/<(nav|div) class="stseg research-sub"[^\n]*?<\/\1>/) || [''])[0];
 const subs = (nav.match(/data-sub="([a-z]+)"/g) || []).map((x) => x.slice(10, -1));
-chk('the Research tabs are Desk, the configured coverage, Stats and Lab',
-  JSON.stringify(subs) === JSON.stringify(['rdesk'].concat(S.RESEARCH_COVERAGE.map((c) => c.id), ['stats', 'lab'])), subs);
+chk('the Research tabs are Desk, the configured coverage, Props, Stats and Lab',
+  JSON.stringify(subs) === JSON.stringify(['rdesk'].concat(S.RESEARCH_COVERAGE.map((c) => c.id), ['props', 'stats', 'lab'])), subs);
 S.RETIRED.forEach((r) => r.modules.forEach((m) => {
   chk('no Research tab for retired module ' + m, subs.indexOf(m) < 0);
   lacks(APP, 'id="v-' + m + '"', 'no panel for retired module ' + m);

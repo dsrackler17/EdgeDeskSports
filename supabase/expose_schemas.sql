@@ -1,5 +1,9 @@
 /* ===========================================================================
-   EXPOSE mlbhist AND cbb TO THE API.
+   EXPOSE mlbhist, cbb AND props TO THE API.
+
+   props (supabase/player_props.sql, the CFB + NFL player-prop factory) joins
+   the list the same way: its readable views (v_player_props_board,
+   v_prop_record_summary, the ai_* functions) are served from the props schema.
 
    WHY THIS FILE EXISTS. Running mlb_pitcher_history.sql, mlb_offense_history.sql
    and college_baseball.sql builds every table, view, function and policy, and
@@ -41,7 +45,7 @@
 
 -- The complete set of schemas PostgREST will serve.
 alter role authenticator set pgrst.db_schemas =
-  'public, graphql_public, ufc, cfb, wta, tennis, collective, mlbhist, cbb';
+  'public, graphql_public, ufc, cfb, wta, tennis, collective, mlbhist, cbb, props';
 
 -- Pick it up now rather than at the next restart.
 notify pgrst, 'reload config';
@@ -96,5 +100,21 @@ with checks as (
   union all select 5,
     'exposing a schema did not widen who may read what',
     'ok (this file grants nothing; every table keeps the RLS it was created with)'
+
+  union all select 6,
+    'PostgREST is told to serve props (player props)',
+    case when exists (
+      select 1 from pg_db_role_setting s
+      join pg_roles r on r.oid = s.setrole
+      where r.rolname = 'authenticator'
+        and exists (select 1 from unnest(s.setconfig) c where c like 'pgrst.db_schemas=%' and c like '%props%')
+    ) then 'ok' else 'CHECK THIS — the setting did not take' end
+
+  union all select 7,
+    'a reader may reach the player-prop board',
+    case when not exists (select 1 from pg_namespace where nspname = 'props')
+         then 'ok (props is not installed yet: run supabase/player_props.sql, then this file again)'
+         when has_schema_privilege('anon', 'props', 'usage')
+         then 'ok' else 'CHECK THIS — re-run supabase/player_props.sql; it grants this' end
 )
 select n, guarantee, result from checks order by n;

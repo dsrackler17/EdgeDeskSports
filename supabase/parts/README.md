@@ -35,6 +35,11 @@ Independent of all of the above, the CFB Live Model Lab:
    rating refresh engine: run table, state tables and its pg_cron dispatch;
    independent of `cfb_lab`)
 
+Independent of all of the above, the CFB + NFL player-prop factory:
+
+8. `player_props.part1-of-*.sql` … the last part, then `expose_schemas.sql`
+   (unsplit) so PostgREST serves the `props` schema
+
 The last part of each file prints that file's report. Every row of the
 `guarantee` column must read `ok` (for `cfb_lab`, every row of `status`).
 

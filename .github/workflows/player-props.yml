@@ -1,0 +1,150 @@
+# EdgeDesk Player Props — the CFB + NFL player-prop data factory (football/props/).
+#
+#   live     (every 3 hours in season): refresh the season in progress, capture
+#            observed prop quotes (only with vars.PROPS_CAPTURE == 'on' and the
+#            ODDS_API_KEY secret), score every upcoming game, freeze qualifying
+#            pregame entries, settle finished ones, publish the board and the
+#            research cards, mirror to Supabase when SB_DB_URL is set.
+#   weekly   (Tuesday): the walk-forward backtest (last three folds per league)
+#            and, only when a new season opens, training the new model versions
+#            (a model version is immutable; the live season is never trained on).
+#   backfill (manual): The Odds API historical player props, budgeted.
+#   apply_sql(manual): apply supabase/player_props.sql to the database.
+#   test     (manual, and every pull request touching the factory): the
+#            props suites and the SQL contract only — nothing is fetched,
+#            captured, published or mirrored.
+#
+# Raw provider downloads and the change-only quote/listing/prediction ledgers
+# live in .cache/props (restored between runs); the durable, immutable copy of
+# quotes, listings, predictions and the record is Supabase (props schema). The
+# repository receives only the prepared artifacts the site reads.
+name: Player props
+
+on:
+  pull_request:
+    paths:
+      - 'football/props/**'
+      - 'lib/player_props*'
+      - 'supabase/player_props.sql'
+      - 'record.html'
+      - '.github/workflows/player-props.yml'
+  schedule:
+    - cron: '17 */3 * 8-12,1 *'   # live, August through January
+    - cron: '41 7 * * 2'          # weekly validation
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'live | weekly | backfill | apply_sql | test'
+        required: false
+        default: 'live'
+      league:
+        description: 'nfl | cfb | (blank = both)'
+        required: false
+        default: ''
+      backfill_from:
+        description: 'backfill: first kickoff date (YYYY-MM-DD), 2023-05-03 or later'
+        required: false
+        default: '2025-09-01'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: player-props-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  props:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MODE: ${{ github.event_name == 'pull_request' && 'test' || github.event.inputs.mode || (github.event.schedule == '41 7 * * 2' && 'weekly' || 'live') }}
+      LEAGUE_ARG: ${{ github.event.inputs.league && format('--league {0}', github.event.inputs.league) || '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Restore the props cache (raw history, ledgers)
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/cache@v4
+        with:
+          path: .cache/props
+          key: props-${{ github.run_id }}
+          restore-keys: |
+            props-
+
+      - name: Props suites (kernel, leakage, identity, odds, desk, page, record)
+        run: |
+          node football/props/props.test.js
+          node football/props/leakage.test.js
+          node football/props/identity.test.js
+          node football/props/odds.test.js
+          node football/props/desk.test.js
+          node football/props/ui.test.js
+          node football/props/record_section.test.js
+
+      - name: Props SQL contract against a real PostgreSQL
+        if: ${{ env.MODE == 'test' || env.MODE == 'weekly' || env.MODE == 'apply_sql' }}
+        run: node football/props/sql.test.js
+
+      - name: Apply supabase/player_props.sql
+        if: ${{ env.MODE == 'apply_sql' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$PGURL" ]; then echo "::error::SB_DB_URL is not set: nothing applied"; exit 1; fi
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/player_props.sql
+
+      - name: History (the season in progress is refetched; completed seasons are cached)
+        if: ${{ env.MODE == 'live' || env.MODE == 'weekly' || env.MODE == 'backfill' }}
+        run: node --max-old-space-size=12288 football/props/run.js history $LEAGUE_ARG
+
+      - name: Walk-forward validation
+        if: ${{ env.MODE == 'weekly' }}
+        run: |
+          node --max-old-space-size=12288 football/props/run.js backtest --offline --last-n 3 $LEAGUE_ARG
+          node football/props/run.js summarize $LEAGUE_ARG
+
+      - name: Train (new model versions only; the live season is the holdout)
+        if: ${{ env.MODE == 'weekly' }}
+        run: node --max-old-space-size=12288 football/props/run.js train --offline $LEAGUE_ARG
+
+      - name: Capture observed prop quotes (opt-in, budgeted)
+        if: ${{ env.MODE == 'live' && vars.PROPS_CAPTURE == 'on' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "::warning::PROPS_CAPTURE is on but the ODDS_API_KEY secret is empty: no prop quote was captured"
+            echo "Player props: NOT captured (ODDS_API_KEY missing)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            node --max-old-space-size=8192 football/props/run.js capture --network --offline $LEAGUE_ARG ${{ vars.PROPS_CAPTURE_ALT == 'on' && '--alt' || '' }}
+          fi
+
+      - name: Historical prop backfill (manual, budgeted)
+        if: ${{ env.MODE == 'backfill' }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: node --max-old-space-size=8192 football/props/run.js backfill --network --offline --from "${{ github.event.inputs.backfill_from }}" --max-games 25 $LEAGUE_ARG
+
+      - name: Score, freeze and settle
+        if: ${{ env.MODE == 'live' }}
+        run: node --max-old-space-size=12288 football/props/run.js record --offline $LEAGUE_ARG
+
+      - name: Publish
+        if: ${{ env.MODE == 'live' || env.MODE == 'weekly' }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh main "player props: ${{ env.MODE }} run" -- \
+            football/props/published football/props/models football/props/validation football/props/identity record/props
+
+      - name: Mirror to Supabase (when SB_DB_URL is set and the contract is applied)
+        if: ${{ env.MODE == 'live' || env.MODE == 'backfill' }}
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then echo "SB_DB_URL not set: the database mirror is skipped" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          node --max-old-space-size=12288 football/props/run.js sync --offline $LEAGUE_ARG
