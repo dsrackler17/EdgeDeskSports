@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-09-29T22:07:29.249Z",
+ "generated_at": "2026-09-29T23:07:34.804Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -183,7 +183,7 @@
    "started_at": "2026-09-29T18:05:03.611Z",
    "completed_at": "2026-09-29T18:07:27.710Z",
    "last_published_at": "2026-09-29T18:07:27.710Z",
-   "age_minutes": 240,
+   "age_minutes": 300,
    "stage_groups": {
     "score_ingestion_status": "OK",
     "pbp_status": "OK",
@@ -279,7 +279,7 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-29T22:07:21.000Z",
+     "last_success": "2026-09-29T23:07:26.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -288,7 +288,7 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-29T22:07:21.000Z",
+     "last_success": "2026-09-29T23:07:26.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -298,19 +298,19 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-09-29T22:07:21.000Z",
+   "newest_quote_at": "2026-09-29T23:07:26.000Z",
    "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 0,
-   "games_marked_stale": 4,
-   "games_this_week": 60,
+   "games_marked_stale": 5,
+   "games_this_week": 61,
    "rule": "decisions fail closed (MARKET_STALE) past 180 min (decision policy cfb_decision_policy_v1); football projections still display"
   },
   "pbp_age": {
    "status": "OK",
    "pbp_status": "HEALTHY",
    "last_success": "2026-09-29T18:05:03.611Z",
-   "age_minutes": 242,
+   "age_minutes": 303,
    "coverage": 1,
    "error_rate": 0,
    "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0393",
@@ -319,7 +319,7 @@
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-09-29T22:07:21.000Z",
+   "lab_last_run_at": "2026-09-29T23:07:26.000Z",
    "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
@@ -1215,11 +1215,11 @@
    ],
    "degraded_count": 66,
    "lab_data_quality": {
-    "GREEN": 30,
-    "YELLOW": 36,
+    "GREEN": 31,
+    "YELLOW": 35,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-09-29T22:07:26.125Z",
+   "canonical_projections_as_of": "2026-09-29T23:07:31.922Z",
    "canonical_by_level": {
     "2": 63,
     "NOT_PRICED": 3
@@ -1228,7 +1228,7 @@
   "predictions": {
    "status": "OK",
    "v21_current_generated_at": "2026-09-29T18:05:03Z",
-   "v21_current_age_minutes": 242,
+   "v21_current_age_minutes": 303,
    "v21_rows": 66,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 1,
@@ -1237,17 +1237,17 @@
      "model_version": "edgedesk_cfb_p4_v1.0.0",
      "label": "V1",
      "role": "champion",
-     "snapshots": 68,
-     "latest_snapshot_at": "2026-09-29T01:07:18.000Z",
+     "snapshots": 70,
+     "latest_snapshot_at": "2026-09-29T23:07:26.000Z",
      "upcoming_games": 66,
-     "avg_confidence_upcoming": 79
+     "avg_confidence_upcoming": 79.1
     },
     {
      "model_version": "edgedesk_cfb_v2.0.0",
      "label": "V2 · candidate 001",
      "role": "candidate",
-     "snapshots": 123,
-     "latest_snapshot_at": "2026-09-29T18:08:21.000Z",
+     "snapshots": 125,
+     "latest_snapshot_at": "2026-09-29T23:07:26.000Z",
      "upcoming_games": 63,
      "avg_confidence_upcoming": 78.3
     },
@@ -1255,24 +1255,24 @@
      "model_version": "edgedesk_cfb_v2.1.0",
      "label": "V2.1 · hardened",
      "role": "challenger",
-     "snapshots": 123,
-     "latest_snapshot_at": "2026-09-29T18:08:21.000Z",
+     "snapshots": 125,
+     "latest_snapshot_at": "2026-09-29T23:07:26.000Z",
      "upcoming_games": 63,
      "avg_confidence_upcoming": 78.5
     }
    ],
-   "lab_games_this_week": 60
+   "lab_games_this_week": 61
   },
   "bet_decisions": {
    "status": "OK",
    "betting_enabled": false,
    "policy": "cfb_decision_policy_v1",
    "policy_status": "SHADOW",
-   "decision_rows": 182,
+   "decision_rows": 186,
    "by_role_status": {
     "CURRENT:LEAN": 11,
-    "CHALLENGER:RESEARCH": 17,
-    "CURRENT:PASS": 80,
+    "CHALLENGER:RESEARCH": 19,
+    "CURRENT:PASS": 82,
     "CHALLENGER:PASS": 74
    },
    "shadow_counts": {
@@ -1291,7 +1291,7 @@
   "warnings": {
    "status": "OK",
    "warnings": [],
-   "anomaly_rows": 57,
+   "anomaly_rows": 58,
    "anomaly_baseline_weeks": 1
   },
   "incidents": {
@@ -1307,7 +1307,7 @@
     "status": "OK",
     "detail": "connected: 17.6, postgres",
     "observed": {
-     "now": "2026-09-29T22:07:29.249+00:00",
+     "now": "2026-09-29T23:07:34.804+00:00",
      "in_season": true
     }
    },
@@ -1330,19 +1330,19 @@
    {
     "check_name": "latest_team_state",
     "status": "OK",
-    "detail": "newest team state as of 2026-09-29 12:00:00+00 (607 min old), 1190 rows",
+    "detail": "newest team state as of 2026-09-29 12:00:00+00 (668 min old), 1190 rows",
     "observed": {
      "rows": 1190,
      "as_of": "2026-09-29T12:00:00+00:00",
-     "age_minutes": 607
+     "age_minutes": 668
     }
    },
    {
     "check_name": "odds_freshness",
     "status": "OK",
-    "detail": "newest odds_api quote 7 min old; games within 48 h: f",
+    "detail": "newest odds_api quote 68 min old; games within 48 h: f",
     "observed": {
-     "age_minutes": 7,
+     "age_minutes": 68,
      "newest_quote": "2026-09-29T22:00:02.478+00:00",
      "games_within_48h": false
     }
@@ -1350,11 +1350,11 @@
    {
     "check_name": "pbp_freshness",
     "status": "OK",
-    "detail": "PBP HEALTHY at 2026-09-29 18:05:03.611+00; last successful ingestion 242 min ago",
+    "detail": "PBP HEALTHY at 2026-09-29 18:05:03.611+00; last successful ingestion 303 min ago",
     "observed": {
      "as_of": "2026-09-29T18:05:03.611+00:00",
      "status": "HEALTHY",
-     "age_minutes": 242,
+     "age_minutes": 303,
      "last_success": "2026-09-29T18:05:03.611+00:00"
     }
    },
