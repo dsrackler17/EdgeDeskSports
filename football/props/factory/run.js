@@ -212,7 +212,15 @@ function reconcilePredictions(scored, ledgerRows) {
 
 async function stageSync(wh, a) {
   const db = require('./db.js');
-  return db.sync(wh, a);
+  const s = await db.sync(wh, a);
+  /* a skipped mirror is said where the run is read (the log, an annotation,
+     the step summary), not failed: the projections are already published */
+  if (s && s.skipped) {
+    log('database mirror skipped: ' + s.skipped);
+    if (process.env.GITHUB_ACTIONS) console.log('::warning title=Props factory database mirror skipped::' + s.skipped);
+    if (process.env.GITHUB_STEP_SUMMARY) { try { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, 'Database mirror skipped: ' + s.skipped + '\n'); } catch (_) {} }
+  }
+  return s;
 }
 
 /* ------------------------------------------------------------ main */
