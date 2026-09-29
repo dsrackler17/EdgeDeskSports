@@ -215,8 +215,14 @@ const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
   chk('every printed prop carries its price and the time it was captured', Object.values(S.props.items).every((p) => p.price && typeof p.price.american === 'number' && isFinite(Date.parse(p.price.captured_at))));
   chk('every college game EV carries the exact quote it is for', Object.values(S.game_ev).every((e) => e.selection && typeof e.price === 'number' && e.book && isFinite(Date.parse(e.captured_at)) && 'calibrated_ev' in e && 'raw_ev' in e));
   chk('the landing page no longer needs the 6 MB ratings file', !!S.ratings && Array.isArray(S.ratings.top) && S.ratings.top.length <= 5);
-  const rebuilt = BH.build({ now: S.generated_at });
-  chk('build_home is deterministic over the committed artifacts', JSON.stringify(Object.assign({}, rebuilt, { generated_at: null })) === JSON.stringify(Object.assign({}, S, { generated_at: null })));
+  /* the committed file is a snapshot: other jobs (cfb-terminal.yml, hourly)
+     move its inputs between player-props.yml rebuilds, so it is NOT compared
+     with a rebuild — the build itself must be deterministic, and a rebuild
+     must have the committed file's shape */
+  const a1 = BH.build({ now: S.generated_at }), a2 = BH.build({ now: S.generated_at });
+  chk('build_home is deterministic: the same artifacts, the same file', JSON.stringify(a1) === JSON.stringify(a2));
+  chk('a rebuild has the committed file\'s shape', a1.schema === S.schema && JSON.stringify(Object.keys(a1)) === JSON.stringify(Object.keys(S)) && JSON.stringify(Object.keys(a1.props)) === JSON.stringify(Object.keys(S.props)));
+  chk('a rebuild keeps its own limits', a1.props.top.length <= BH.LIMITS.top && a1.props.top.every((id) => a1.props.items[id]) && Buffer.byteLength(JSON.stringify(a1)) < 64 * 1024);
   const noRead = BH.build({ now: S.generated_at, read: () => null });
   chk('with no artifacts it writes an empty board, not an invented one', noRead.props.top.length === 0 && Object.keys(noRead.props.items).length === 0 && Object.keys(noRead.game_ev).length === 0);
 

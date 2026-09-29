@@ -98,6 +98,18 @@ NFL.games.forEach((g) => {
   });
 });
 
+/* A PROBE GAME with a real props block (tools/home/fixtures/props_block.json),
+   research-grade with a fresh market, so the board always carries props and
+   their fields are checked whatever the committed slate holds today (on a
+   day when only one game has prop opportunities, none reach the top eight). */
+const PROBE = readJson('tools/home/fixtures/props_block.json');
+rows.push({
+  game_key: 'cfb|probe-' + PROBE.game_id, sport: 'cfb', game_id: 'probe-' + PROBE.game_id, home: PROBE.home, away: PROBE.away, kickoff_at: new Date(NOW + 3 * 3600e3).toISOString(),
+  status: 'RESEARCH', projected: true, fair_home_line: -7.5, fair_total: null, market_home_line: -2.5, market_kind: 'live', market_book: 'draftkings',
+  market_captured_at: new Date(NOW - 25 * 60e3).toISOString(), market_stale: false, gap_pts: 5, reliability_score: 80, research_label: 'WORTH_RESEARCHING',
+  research_grade: true, key_reason: null, state: { fair: {}, market: {}, gap: {}, priority: { uncertainty: [] }, props: PROBE.props }
+});
+
 const db = PG.start('homeboard');
 if (db.skip) { console.log('NOTE | ' + db.skip + ' — LIVE layer skipped'); process.exit(T.done()); }
 const lit = PG.lit;
@@ -149,8 +161,9 @@ try {
   chk('at most 8 games', r.games.length > 0 && r.games.length <= 8, r.games.length);
   chk('at most 3 props a game', r.games.every((g) => !g.props || !g.props.top || g.props.top.length <= 3));
   const withProps = r.games.filter((g) => g.props && g.props.top && g.props.top.length);
-  chk('props carry the fields the page prints (price, capture time, projection, probability, EV, decision)', withProps.length === 0 || withProps.every((g) => g.props.top.every((p) =>
-    p.player && p.player.name && p.market && p.selection && p.price && p.price.captured_at && p.projection && typeof p.ev === 'number' && p.decision)), JSON.stringify(withProps[0] && withProps[0].props.top[0]).slice(0, 400));
+  chk('the probe game\'s props reach the board', withProps.some((g) => /^cfb\|probe-/.test(g.game_key)), r.games.map((g) => g.game_key));
+  chk('props carry the fields the page prints (price, capture time, projection, probability, EV, decision)', withProps.length > 0 && withProps.every((g) => g.props.top.every((p) =>
+    p.player && p.player.name && p.market && p.selection && p.price && p.price.captured_at && p.projection && typeof p.ev === 'number' && p.decision)), JSON.stringify((withProps[0] && withProps[0].props.top[0]) || null).slice(0, 400));
 
   /* 3 · the four words */
   const words = new Set(r.games.map((g) => g.status));
@@ -220,7 +233,7 @@ try {
     console.log('wrote tools/home/fixtures/public_home_board.json (' + fx.games.length + ' games)');
   }
 } catch (e) {
-  chk('the live layer ran', false, String(e.message).slice(0, 1500));
+  chk('the live layer ran', false, String(e.message).slice(0, 1500) + ' ' + String(e.stack).split('\n').slice(1, 4).join(' / '));
 } finally {
   db.stop();
 }
