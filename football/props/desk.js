@@ -171,9 +171,20 @@
       : 'This market is ' + P().STAGE_LABEL[st.stage] + ' (it passed its walk-forward gates).';
   }
 
+  /* the board's exposure caps now (EDProps.boardExposure over every priced
+     row re-evaluated at this moment), as the build and the page apply them */
+  function keyOf(board, r) { return r.key || r.id || (board.league + '|' + r.g + '|' + r.p + '|' + r.m); }
+  function exposureMap(board, now, evs) {
+    var E = P(), byKey = {};
+    if (evs) evs.forEach(function (x) { byKey[keyOf(board, x.r)] = E.compact(x.ev); });
+    else (board.props || []).forEach(function (r) { if (r.p && r.q && r.q.length) { try { byKey[keyOf(board, r)] = E.compact(E.boardEval(board, r, now)); } catch (e) { /* the build's row stands */ } } });
+    return E.boardExposure(board, byKey) || {};
+  }
+
   /* ---------------------------------------------------------- the answers */
   function propText(board, row, now, qt) {
     var E = P(), ev = E.boardEval(board, row, now), ctx = E.boardCtx(board, row) || {};
+    if (ev.decision === 'BET' && ev.units > 0) ev = E.applyExposure(ev, exposureMap(board, now)[keyOf(board, row)]);
     var inf = ev.informed, c = ev.consensus || {}, ac = ev.at_consensus, cand = ev.candidate, L = [];
     L.push(ctx.name + ' — ' + lower(row.m) + ' (' + matchup(board, row.g) + ').' + (stageText(board, row.m) ? ' ' + stageText(board, row.m) : ''));
     if (!inf) { L.push('EdgeDesk has no usable projection for it (' + (ev.blocker_text || 'no distribution') + '), so there is no fair line and no edge to state.'); return { text: L.join(' '), ev: ev }; }
@@ -249,6 +260,8 @@
       var priced = b.props.filter(function (r) { return r.q && r.q.length && r.p; });
       if (!priced.length) { L.push('No sportsbook player-prop prices are captured for ' + name + ' right now, so EdgeDesk has no prop EV to rank; its projections and fair lines are on the Props page.'); return; }
       var evs = priced.map(function (r) { return { r: r, ev: E.boardEval(b, r, now) }; });
+      var xp = exposureMap(b, now, evs);
+      evs.forEach(function (x) { var a = xp[keyOf(b, x.r)]; if (a) x.ev = E.applyExposure(x.ev, a); });
       var act = evs.filter(function (x) { return (x.ev.decision === 'BET' || x.ev.decision === 'LEAN') && x.ev.candidate; }).sort(function (a, c) { return (c.ev.value_score || 0) - (a.ev.value_score || 0); }).slice(0, 5);
       var watch = evs.filter(function (x) { return x.ev.decision === 'WATCH' && x.ev.candidate; }).sort(function (a, c) { return (c.ev.candidate.ev || 0) - (a.ev.candidate.ev || 0); }).slice(0, 3);
       var who = function (x) { var ctx = E.boardCtx(b, x.r) || {}; return ctx.name || '—'; };

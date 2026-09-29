@@ -345,5 +345,47 @@ section('stages (walk-forward gates, never assigned)');
   chk('without a stage table the kernel is unchanged (older callers)', E.evaluate(prop({ quotes: two }), OPTS).decision === 'BET' && E.evaluate(prop({ quotes: two }), OPTS).stage === null);
 }
 
+/* --------------------------------------------------- same-game correlation */
+section('same-game correlation, the joint Monte Carlo and exposure caps');
+{
+  /* a hand-made model (test data): the shape football/props/correlation.js writes */
+  const model = { same_player: { 'QB|pass_tds|pass_yds': [0.43, 1000] }, teammate: { 'QB:pass_yds|WR:rec_yds': [0.30, 2800], 'RB:rush_yds|WR:rec_yds': [-0.10, 2000] }, opponent: { 'QB:pass_yds|QB:pass_yds': [0.09, 540] } };
+  const L = (o) => Object.assign({ g: 'G1', team: 'ATL', side: 'over' }, o);
+  const qb = L({ p: 'qb', pos: 'QB', m: 'pass_yds' }), wr = L({ p: 'wr', pos: 'WR', m: 'rec_yds' }), rb = L({ p: 'rb', pos: 'RB', m: 'rush_yds' });
+  chk('teammates read the teammate table, in either order', E.legCorr(model, qb, wr) === 0.30 && E.legCorr(model, wr, qb) === 0.30);
+  chk('one player\'s two markets read the same-player table', E.legCorr(model, qb, L({ p: 'qb', pos: 'QB', m: 'pass_tds' })) === 0.43);
+  chk('opponents read the opponent table', E.legCorr(model, qb, L({ p: 'qb2', pos: 'QB', m: 'pass_yds', team: 'NO' })) === 0.09);
+  chk('different games, or a pair the model does not list, are independent', E.legCorr(model, qb, Object.assign({}, wr, { g: 'G2' })) === 0 && E.legCorr(model, qb, L({ p: 'k', pos: 'K', m: 'fg_made' })) === 0 && E.legCorr(null, qb, wr) === 0);
+  chk('an Under flips the sign of a selection\'s correlation', E.selCorr(model, qb, Object.assign({}, wr, { side: 'under' })) === -0.30 && E.selCorr(model, Object.assign({}, qb, { side: 'under' }), Object.assign({}, wr, { side: 'under' })) === 0.30);
+  const legs = [Object.assign({}, qb, { p_win: 0.55, p_push: 0 }), Object.assign({}, wr, { p_win: 0.52, p_push: 0 })];
+  const j1 = E.jointSim(legs, model, { sims: 20000 }), j2 = E.jointSim(legs, model, { sims: 20000 });
+  chk('jointSim is seeded: the same legs give the same answer', j1.p_all === j2.p_all && j1.seed === j2.seed);
+  chk('…each leg keeps its own probability (the copula adds only the dependence)', Math.abs(j1.p_each[0] - 0.55) < 0.015 && Math.abs(j1.p_each[1] - 0.52) < 0.015, j1.p_each);
+  chk('…positively correlated Overs win together more often than independence says', j1.p_all > j1.p_indep + 0.02 && j1.lift > 1, [j1.p_all, j1.p_indep]);
+  const jn = E.jointSim([legs[0], Object.assign({}, legs[1], { side: 'under' })], model, { sims: 20000 });
+  chk('…and an Over with a correlated Under less often', jn.p_all < jn.p_indep - 0.02, [jn.p_all, jn.p_indep]);
+  const j0 = E.jointSim([legs[0], Object.assign({}, legs[1], { g: 'G2' })], model, { sims: 20000 });
+  chk('…and two games are independent', Math.abs(j0.p_all - j0.p_indep) < 0.015, [j0.p_all, j0.p_indep]);
+  /* an inconsistent set of pairwise estimates still factorises */
+  const bad = { teammate: { 'QB:pass_yds|WR:rec_yds': [0.95, 1], 'QB:pass_yds|TE:rec_yds': [0.95, 1], 'TE:rec_yds|WR:rec_yds': [-0.95, 1] } };
+  const jb = E.jointSim([Object.assign({}, qb, { p_win: 0.5 }), Object.assign({}, wr, { p_win: 0.5 }), L({ p: 'te', pos: 'TE', m: 'rec_yds', p_win: 0.5 })], bad, { sims: 2000 });
+  chk('an impossible correlation matrix is shrunk until it factorises, and says by how much', jb && jb.shrink > 0 && jb.p_all >= 0, jb && jb.shrink);
+  /* exposure */
+  const it = (o) => Object.assign({ units: 1, value: 50 }, L(o));
+  const x1 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'qb', pos: 'QB', m: 'pass_tds', value: 80 })], model);
+  chk('one player carries at most 1U across his props: the lower-value one gives way', !x1.a && x1.b && x1.b.units === 0 && x1.b.code === 'PLAYER_EXPOSURE', x1);
+  const x2 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80 }), it({ key: 'c', p: 'wr2', pos: 'WR', m: 'rec_yds', value: 70 })], model);
+  chk('a game\'s correlated stake stops at 2U: the third correlated Over is cut, rounded DOWN to the grid', !x2.a && !x2.b && x2.c && x2.c.code === 'CORRELATED_EXPOSURE' && x2.c.units < 1 && [0, 0.25, 0.5, 0.75].indexOf(x2.c.units) >= 0, x2);
+  const x3 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80, side: 'under' }), it({ key: 'c', p: 'rb', pos: 'RB', m: 'rush_yds', value: 70 })], model);
+  chk('offsetting selections hedge each other: three 1U bets fit under the 2U correlated cap', Object.keys(x3).length === 0, x3);
+  const x4 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds' }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', g: 'G2' }), it({ key: 'c', p: 'rb', pos: 'RB', m: 'rush_yds', g: 'G3' })], model);
+  chk('bets in different games never cap each other', Object.keys(x4).length === 0);
+  const ev = E.evaluate(prop({ quotes: two }), OPTS);
+  const capped = E.applyExposure(ev, { units: 0, from: ev.units, code: 'CORRELATED_EXPOSURE', text: 't' });
+  chk('a BET cut to zero units becomes a LEAN with the exposure code, and the original is not touched', ev.decision === 'BET' && capped.decision === 'LEAN' && capped.code === 'CORRELATED_EXPOSURE' && capped.units === 0 && capped.caps.some((c) => c.code === 'CORRELATED_EXPOSURE') && ev.units > 0, [ev.decision, capped.decision]);
+  const cc = E.exposeCompact(E.compact(ev), { units: 0.5, from: 1, code: 'PLAYER_EXPOSURE', text: 't' });
+  chk('the compact row carries the capped units and what it was capped from', cc.u === 0.5 && cc.d === 'BET' && cc.xp[0] === 'PLAYER_EXPOSURE' && cc.xp[1] === 1);
+}
+
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + 'player props kernel — ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { failures.forEach((m) => console.log('  ✗ ' + m)); process.exit(1); }

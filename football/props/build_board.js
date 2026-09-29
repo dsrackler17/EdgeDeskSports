@@ -159,6 +159,12 @@ async function build(opts) {
      and the live record. College has no backtest of its own (it borrows the
      NFL's multipliers), so every college market stays EXPERIMENTAL. */
   const stages = EDP.stageTable(league === 'nfl' ? calibFile : null, perf);
+  /* how props in one game move together (football/props/correlation.js);
+     college borrows the NFL's. It caps the correlated stake across a game's
+     BETs (EDProps.exposure) and drives the page's same-game Monte Carlo. */
+  const corrFile = readJson(league === 'cfb' ? C.leaguePaths('nfl', season).correlation : P.correlation);
+  const correlation = corrFile && corrFile.schema === 'edgedesk_player_props_correlation_v1'
+    ? { seasons: corrFile.seasons, generated_at: corrFile.generated_at, n_games: corrFile.n_games, borrowed: league !== 'nfl', same_player: corrFile.same_player, teammate: corrFile.teammate, opponent: corrFile.opponent } : null;
   const quotesFeed = opts.quotes || readJson(P.quotes);
   const linesFeed = opts.lines || readJson(P.lines);
   const capState = readJson(P.capture_state);
@@ -201,6 +207,9 @@ async function build(opts) {
   const ledger = readJsonl(P.evaluations);
   const qualifiedSeen = new Set(ledger.filter((x) => x.kind === 'qualified').map((x) => x.selection_key));
   const newRows = [];
+  /* the decision records wait until every BET is on the board: the exposure
+     caps across a game can lower a stake, and the record freezes the capped one */
+  const pending = [];
   const resolved = [];
   /* timestamps are stored once and referenced by index */
   const times = [], timeIx = {};
@@ -298,12 +307,7 @@ async function build(opts) {
         props.push(rec);
         any = true; nProps++; if (input.quotes.length) nPriced++;
         gMarkets[m] = (gMarkets[m] || 0) + 1;
-        /* the decision records */
-        if (input.quotes.length && ev.candidate && (ev.decision === 'BET' || ev.decision === 'LEAN')) {
-          const sk = input.id + '|' + ev.candidate.side + '|' + ev.candidate.line + '|' + ev.decision;
-          if (!qualifiedSeen.has(sk)) { qualifiedSeen.add(sk); newRows.push(ledgerRow('qualified', input, ev, g, p, sk)); }
-        }
-        if (input.quotes.length && !started && ev.at_consensus) finals.push(ledgerRow('final', input, ev, g, p, input.id));
+        if (input.quotes.length) pending.push({ input, ev, g, p, rec, started });
       }
       if (any) {
         playersCtx[pid + '@' + g.game_id] = pctx;
@@ -334,6 +338,19 @@ async function build(opts) {
       n_props: nProps, n_priced: nPriced, markets: Object.keys(gMarkets).sort() });
   }
 
+  /* the exposure caps across every BET on the board, then the decision
+     records from the capped evaluations */
+  const expo = EDP.boardExposure({ league, props, players: playersCtx, correlation }, null);
+  pending.forEach(({ input, ev: ev0, g, p, rec, started }) => {
+    const adj = expo[input.id], ev = adj ? EDP.applyExposure(ev0, adj) : ev0;
+    if (adj) rec.e = EDP.exposeCompact(rec.e, adj);
+    if (ev.candidate && (ev.decision === 'BET' || ev.decision === 'LEAN')) {
+      const sk = input.id + '|' + ev.candidate.side + '|' + ev.candidate.line + '|' + ev.decision;
+      if (!qualifiedSeen.has(sk)) { qualifiedSeen.add(sk); newRows.push(ledgerRow('qualified', input, ev, g, p, sk)); }
+    }
+    if (!started && ev.at_consensus) finals.push(ledgerRow('final', input, ev, g, p, input.id));
+  });
+
   /* the frozen pregame record: when a game starts, its last pregame evaluation of every priced prop is final */
   const pre = readJson(path.join(P.dir, 'pregame_state.json')) || { rows: {} };
   const keepPre = {};
@@ -352,6 +369,7 @@ async function build(opts) {
     decision_config: EDP.decisionConfig().source,
     probability: EDP.calibrationOf(cal), market_weight: EDP.CONFIG.market_weight,
     stages: Object.keys(stages).reduce((o, k) => { if (props.some((x) => x.m === k)) o[k] = stages[k]; return o; }, {}),
+    correlation, exposure: EDP.CONFIG.exposure,
     calibration: calibFile ? { mode: calibFile.mode, season_tested: calibFile.season_tested, generated_at: calibFile.generated_at, borrowed: league === 'cfb', n_scored: calibFile.n_scored,
       markets: Object.keys(calibFile.markets || {}).reduce((o, k) => { const c = calibFile.markets[k]; const oos = calibFile.out_of_sample && calibFile.out_of_sample.before ? calibFile.out_of_sample : null; o[k] = { f: c.f, mean_mult: c.mean_mult, n: c.n, adopted: c.adopted !== false, cover50: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].cover50 : oos.after[k].cover50) : null, ece: oos && oos.after[k] ? (c.adopted === false ? oos.before[k].calibration.ece : oos.after[k].calibration.ece) : null }; return o; }, {}) } : null,
     capture: capState ? { last_run: capState.last_run, last_attempt: capState.last_attempt, stopped: capState.stopped || null, requests_remaining: capState.requests_remaining, bookmakers: capState.bookmakers, events_polled: capState.events_polled }
@@ -396,6 +414,7 @@ function ledgerRow(kind, input, ev, g, p, key) {
     prop_id: input.id, league: input.sport, season: g.season, week: g.week, game_id: g.game_id, kickoff: g.kickoff, player_id: input.player_id, player_name: input.player_name,
     team: input.team, opp: input.opp, position: p.pg, market: input.market, evaluated_at: ev.evaluated_at,
     decision: ev.decision, code: ev.code, units: ev.units, confidence: ev.confidence ? ev.confidence.score : null, probability_source: ev.probability_source, stage: ev.stage || null,
+    exposure_cap: ev.exposure ? { code: ev.exposure.code, from_units: ev.exposure.from } : null,
     side: c ? c.side : null, line: c ? c.line : null, american: c ? c.american : null, book: c ? c.book : null, p_side: c ? r4(c.p_win / Math.max(1e-9, 1 - (c.p_push || 0))) : null, p_raw: c ? c.p_raw : null,
     ev: c ? c.ev : null, ev_raw: c ? c.ev_raw : null, edge_pp: c ? c.edge_pp : null,
     consensus: ev.consensus ? { line: ev.consensus.line, over: ev.consensus.over, under: ev.consensus.under, novig_over: ev.consensus.novig_over, n_books: ev.consensus.n_books } : null,

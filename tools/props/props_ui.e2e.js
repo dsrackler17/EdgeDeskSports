@@ -60,6 +60,9 @@ async function buildFixture() {
   const feed = CAP.buildQuotesFeed({ league: 'nfl', now: NOW, polled: [{ id: ev.id, commence_time: ev.commence_time, home_team: ev.home_team, away_team: ev.away_team, books: p.books, quotes: p.quotes }], observed_at: OBS });
   const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'edp-ui-'));
   const paths = {}; Object.entries(require(path.join(ROOT, 'football', 'props', 'config.js')).leaguePaths('nfl', 2026)).forEach(([k, v]) => { paths[k] = v.replace(path.join(ROOT, 'football', 'props'), tmp); });
+  /* the committed same-game correlation model, as the scheduled build reads it */
+  fs.mkdirSync(path.dirname(paths.correlation), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, 'football', 'props', 'nfl', 'correlation.json'), paths.correlation);
   const r = await B.build({ league: 'nfl', season: 2026, now: NOW - 5 * 60000, dataset: ds, quotes: feed, lines: null, paths });
   r.board.capture = { last_run: OBS, last_attempt: OBS, bookmakers: p.books, events_polled: 1, requests_remaining: 480 };
   /* a small graded record so the performance view has something real to draw */
@@ -170,6 +173,8 @@ async function buildFixture() {
     const secs = await page.evaluate(() => Array.from(document.querySelectorAll('#ppDrawer .pp-sec h4')).map((h) => h.firstChild.textContent.trim()));
     ['Price', 'Alternate lines', 'EdgeDesk projection', 'Probability', 'EV', 'Why EdgeDesk likes / dislikes it', 'History', 'Usage', 'Game context', 'Role', 'Uncertainty'].forEach((s) => chk('the drawer has ' + s, secs.indexOf(s) >= 0, secs));
     chk('the drawer has the opponent matchup', secs.some((s) => /^Matchup/.test(s)), secs);
+    const corr = await page.evaluate(() => { const h = Array.from(document.querySelectorAll('#ppDrawer .pp-sec')).find((x) => x.querySelector('h4') && /^Same-game correlation/.test(x.querySelector('h4').textContent)); return h ? { text: h.textContent, rows: h.querySelectorAll('tbody tr').length } : null; });
+    chk('the drawer shows the props this one moves with, each pair simulated jointly', corr && corr.rows >= 1 && /Both win/.test(corr.text) && /If independent/.test(corr.text) && /10,000-run/.test(corr.text), corr);
     chk('the price table names every book and the consensus', await page.evaluate(() => /DraftKings/.test(document.getElementById('ppDrawer').textContent) && /Consensus/.test(document.getElementById('ppDrawer').textContent)));
     chk('hit rates are labelled context, not probability', await page.evaluate(() => /context only/i.test(document.getElementById('ppDrawer').textContent)));
     chk('usage says what no public feed carries', await page.evaluate(() => /not in feed|Not in any public feed/.test(document.getElementById('ppDrawer').textContent)));
@@ -177,6 +182,7 @@ async function buildFixture() {
     chk('"price any line" prices a typed line and price', /EV [+−]/.test(await page.textContent('#ppCOut')), await page.textContent('#ppCOut'));
     chk('the distribution chart is drawn', await page.evaluate(() => { const c = document.getElementById('ppDist'); return !!c && c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0); }));
     await shot(page, 'desktop_drawer');
+    if (SHOTS) { const el = await page.$('#ppDrawer .pp-corr'); if (el) { await el.scrollIntoViewIfNeeded(); await (await el.evaluateHandle((x) => x.closest('.pp-sec'))).asElement().screenshot({ path: path.join(SHOTS, 'desktop_drawer_correlation.png') }); } }
     await page.click('[data-pp-act="close"]');
     /* stars → My Props */
     await page.click('.pp-row .pp-star');

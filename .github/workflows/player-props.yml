@@ -23,7 +23,9 @@
 #      SB_URL / SB_SERVICE_ROLE are set — insert-only, idempotent, optional.
 #
 # workflow_dispatch can also re-run the walk-forward distribution backtest
-# (football/props/backtest.js) that writes football/props/nfl/calibration.json.
+# (football/props/backtest.js) that writes football/props/nfl/calibration.json,
+# and with it the same-game correlation model (football/props/correlation.js)
+# that writes football/props/nfl/correlation.json.
 name: Player props
 
 on:
@@ -76,6 +78,10 @@ jobs:
       - name: Walk-forward distribution backtest (on request)
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
         run: node football/props/backtest.js --league nfl --season "${{ github.event.inputs.backtest }}" --write
+
+      - name: Same-game correlation from the game logs (with the backtest, on request)
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
+        run: node football/props/correlation.js --season "${{ github.event.inputs.backtest }}" --write
 
       - name: Capture sportsbook prop prices (opt-in, budgeted)
         if: ${{ vars.PROPS_CAPTURE == 'on' }}
