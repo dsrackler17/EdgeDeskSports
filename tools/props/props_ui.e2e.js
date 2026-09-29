@@ -20,7 +20,12 @@
      - the performance view; the college board loads beside it
      - two hours later every price reads STALE and nothing is decided
      - a phone: cards, collapsed filters, a full-screen drawer
-     - #playerprops/nfl/<prop> opens that prop
+     - #playerprops/nfl/<prop> opens that prop; /player/<id> opens a player
+       (usage, recent games, only his props; an unknown id is said);
+       /game/<id> opens a game
+     - the game-card section reads nothing until opened, then shows the
+       leads and the headline projections and links into the game
+     - the Lab's Player props validation view and the public record section
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
    Run:  node tools/props/props_ui.e2e.js [--shots <dir>]
@@ -229,6 +234,77 @@ async function buildFixture() {
     await page.waitForSelector('#ppDrawer .pp-sec', { timeout: 15000 });
     chk('#playerprops/nfl/<prop> opens that prop\'s research', await page.evaluate((k) => EDPropsUI.state.drawer === k, pk));
     await ctx.close();
+
+    /* ---------------------------------------------------------- a player */
+    console.log('player');
+    const pr0 = FX.board.props.find((x) => x.q.length && x.p), pid = pr0.p, gid = pr0.g, pname = FX.board.players[pid + '@' + gid].name;
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl/player/' + encodeURIComponent(pid)));
+    await page.waitForSelector('.pp-player', { timeout: 15000 });
+    chk('#playerprops/nfl/player/<id> opens that player: who he is and his usage', await page.evaluate((n) => { const el = document.querySelector('.pp-player'); return el.textContent.indexOf(n) >= 0 && /Usage/.test(el.textContent) && /Recent games/.test(el.textContent); }, pname));
+    await page.waitForFunction(() => document.querySelector('.pp-player table'), null, { timeout: 15000 });
+    chk('…with his recent game log from players.json', await page.evaluate(() => document.querySelectorAll('.pp-player table tbody tr').length >= 1));
+    chk('…and only his props below it', await page.evaluate((p) => EDPropsUI._visible().length > 0 && EDPropsUI._visible().every((r) => r.r.p === p), pid));
+    chk('no horizontal scroll with the player panel', await noHScroll(page));
+    await shot(page, 'desktop_player');
+    await page.click('.pp-player .pp-btn[data-pp-act="player"]');
+    chk('"All players" clears the player and its link', await page.evaluate(() => !EDPropsUI.state.player && !/\/player\//.test(location.hash)));
+    chk('no page errors on the player view', errors.length === 0, errors);
+    await ctx.close();
+    ({ ctx, page, errors } = await open({ width: 390, height: 844 }, '#playerprops/nfl/player/00-0000000'));
+    await page.waitForSelector('.pp-player', { timeout: 15000 });
+    chk('a player not on the board is said, not invented (phone)', await page.evaluate(() => /no props on the current NFL board/.test(document.querySelector('.pp-player').textContent)));
+    chk('no horizontal scroll on the phone player view', await noHScroll(page));
+    await ctx.close();
+
+    /* ---------------------------------------------------------- a game, and the game-card section */
+    console.log('game');
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl/game/' + encodeURIComponent(gid)));
+    await page.waitForFunction(() => EDPropsUI.state.boards.nfl && EDPropsUI._visible && EDPropsUI._visible().length > 0, null, { timeout: 15000 });
+    chk('#playerprops/nfl/game/<id> opens that game\'s props', await page.evaluate((g) => EDPropsUI.state.game === g && EDPropsUI._visible().every((r) => r.g.game_id === g), gid));
+    await ctx.close();
+    ({ ctx, page, errors } = await open({ width: 390, height: 844 }, ''));
+    await page.waitForFunction(() => typeof fbPropsSecHTML === 'function' && window.EDPropsUI, null, { timeout: 15000 });
+    const lazy = await page.evaluate((g) => { const d = document.createElement('div'); d.id = 'gcTest'; d.innerHTML = fbPropsSecHTML('nfl', g); document.body.prepend(d); return d.textContent; }, gid);
+    chk('the card section is lazy: the board is not read until it opens', /Load player props/.test(lazy) && await page.evaluate(() => !EDPropsUI.state.boards.nfl), lazy);
+    await page.evaluate(() => { const d = document.querySelector('#gcTest details'); d.open = true; });
+    await page.waitForSelector('#gcTest .pp-gfoot', { timeout: 15000 });
+    const card = await page.evaluate(() => document.querySelector('#gcTest .pp-gsec').textContent);
+    chk('opened, it shows the priced leads with the page\'s decision and EV, and the headline projections', /EV/.test(card) && /(LEAN|BET)/.test(card) && /Median/.test(card) && /props projected/.test(card), card.slice(0, 400));
+    chk('no horizontal scroll with the card section on a phone', await noHScroll(page));
+    await page.evaluate(() => { window.scrollTo(0, 0); }); await shot(page, 'phone_game_card_section');
+    await page.click('#gcTest .pp-gfoot .pp-btn');
+    await page.waitForFunction(() => !document.getElementById('v-pprops').classList.contains('hide') && EDPropsUI._visible && EDPropsUI._visible().length > 0, null, { timeout: 15000 });
+    chk('"All props for this game" opens the Props page on that game', await page.evaluate((g) => EDPropsUI.state.game === g && location.hash === '#playerprops/nfl/game/' + encodeURIComponent(g), gid));
+    chk('no page errors from the card section', errors.length === 0, errors);
+    await ctx.close();
+
+    /* ---------------------------------------------------------- the Lab and the public record */
+    console.log('lab and record');
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, ''));
+    await page.waitForFunction(() => window.EDPropsUI && EDPropsUI.lab, null, { timeout: 15000 });
+    await page.evaluate(() => { const d = document.createElement('div'); d.id = 'labTest'; document.body.prepend(d); EDPropsUI.lab(d); });
+    await page.waitForSelector('#labTest .pp-lab', { timeout: 15000 });
+    const lab = await page.evaluate(() => ({ text: document.querySelector('#labTest .pp-lab').textContent, tags: document.querySelectorAll('#labTest .pp-stage').length, rows: document.querySelectorAll('#labTest tbody tr').length }));
+    chk('the Lab lists every scored market with its stage and gates', lab.rows >= 10 && lab.tags >= lab.rows && /Walk-forward/.test(lab.text) && /Beats the naive last-8 baseline/.test(lab.text), lab);
+    chk('…and says college markets are EXPERIMENTAL without a backtest', /College football/.test(lab.text) && /EXPERIMENTAL/.test(lab.text));
+    chk('the Lab registers the Player props validation tool', await page.evaluate(() => /Player props validation/.test(document.documentElement.innerHTML)));
+    chk('no page errors from the Lab view', errors.length === 0, errors);
+    await page.evaluate(() => { window.scrollTo(0, 0); }); await shot(page, 'desktop_lab');
+    await ctx.close();
+    {
+      const rctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+      await rctx.route('**/*', (route) => (route.request().url().startsWith('http://127.0.0.1') ? route.continue() : route.fulfill({ status: 204, body: '' })));
+      const rp = await rctx.newPage(); const rerr = []; rp.on('pageerror', (e) => rerr.push(String(e)));
+      await rp.goto(`http://127.0.0.1:${port}/record.html`, { waitUntil: 'domcontentloaded' });
+      await rp.waitForFunction(() => document.getElementById('propsPub') && !/Loading/.test(document.getElementById('propsPub').textContent), null, { timeout: 15000 });
+      const rec = await rp.evaluate(() => document.getElementById('propsPub').textContent);
+      chk('the public record copies the NFL props record from performance.json', /NFL/.test(rec) && /Bets \(W-L-P\)/.test(rec) && /Closing-line value/.test(rec), rec.slice(0, 300));
+      chk('…and an unpublished college record is the empty state, not a number', /No college football player prop has been graded yet/.test(rec), rec.slice(-300));
+      chk('no horizontal scroll on the record page (phone)', await rp.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1));
+      chk('no page errors on the record page', rerr.length === 0, rerr);
+      if (SHOTS) await (await rp.$('#player-props')).screenshot({ path: path.join(SHOTS, 'phone_record_props.png') });
+      await rctx.close();
+    }
   } catch (e) {
     chk('the browser run completed', false, String(e && e.stack || e).slice(0, 800));
   } finally {

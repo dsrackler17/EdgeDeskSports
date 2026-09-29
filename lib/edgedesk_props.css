@@ -245,3 +245,28 @@ body.ed-reduce-motion .pp-skel{animation:none}
 .pp-gate{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(51,42,27,.5)}
 .pp-gate .ok{color:var(--pos,#76bd3e)}.pp-gate .no{color:var(--neg,#e26044)}.pp-gate .na{color:var(--faint,#958a7a)}
 .pp-gate i{font-style:normal;color:var(--faint,#958a7a);font-size:11px}
+
+/* ---- the player panel (#playerprops/<league>/player/<id>) */
+.pp-player{border:1px solid var(--pp-line);border-radius:10px;background:var(--surface);margin:0 0 10px;overflow:hidden}
+.pp-player .pp-dh{position:static}
+.pp-player .pp-kv{padding:10px 12px 0}
+.pp-player .pp-kv .v{white-space:normal;font-size:12px;line-height:1.45}
+.pp-player .pp-tw{overflow-x:auto;margin:0 12px}
+.pp-player>.pp-note{padding:6px 12px 10px;margin:0}
+.pp-subh{margin:12px 12px 6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:800}
+@media (max-width:760px){.pp-player .pp-kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---- the game-card section ("Player prop research" on an NFL or FBS card) */
+.pp-gsec{font-size:12px}
+.pp-gsec .pp-tw{overflow-x:auto;margin:6px 0}
+.pp-gleads{display:flex;flex-direction:column;gap:6px;margin:0 0 6px}
+.pp-glead{white-space:normal;text-align:left;line-height:1.45;font-weight:500;color:var(--text)}
+.pp-gfoot{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;margin-top:6px}
+
+/* ---- the Lab view (Player props validation) */
+.pp-lab h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:16px 0 8px}
+.pp-lab .pp-tw{overflow-x:auto;border:1px solid var(--pp-line);border-radius:10px;background:var(--surface)}
+.pp-lab .pp-t td{white-space:normal;vertical-align:top}
+.pp-lab .pp-gates{min-width:180px}
+.pp-lab .pp-gate{font-family:inherit}
+.pp-lab .pp-t td:last-child,.pp-lab .pp-t th:last-child{text-align:left}
