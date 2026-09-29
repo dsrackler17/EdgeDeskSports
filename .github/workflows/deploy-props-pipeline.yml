@@ -12,16 +12,15 @@
 # And ONE secret on the Supabase side, set once by the account owner:
 #   supabase secrets set PROPS_GH_TOKEN=<a token with actions:write on this repository>
 # (EDITORIAL_GH_TOKEN is used when PROPS_GH_TOKEN is unset.) The scheduler SQL
-# reads the database settings edgedesk.project_url / edgedesk.service_key that
-# supabase/editorial_cron.sql documents; without them the job no-ops and its
-# report says CHECK THIS.
+# needs no database setting and no key: it calls the project's own props_cron
+# URL, which runs with JWT verification off (below).
 name: Deploy player props pipeline
 
 on:
   workflow_dispatch:
     inputs:
       deploy_function:
-        description: 'Deploy supabase/functions/props_cron (JWT verification ON)'
+        description: 'Deploy supabase/functions/props_cron (JWT verification OFF: pg_cron sends no JWT)'
         type: boolean
         default: true
       apply_sql:
@@ -29,7 +28,7 @@ on:
         type: boolean
         default: true
       apply_cron:
-        description: 'Apply supabase/player_props_cron.sql (the five-minute pg_cron poke; needs pg_cron + pg_net and the two database settings)'
+        description: 'Apply supabase/player_props_cron.sql (the five-minute pg_cron poke; needs pg_cron + pg_net)'
         type: boolean
         default: false
 
@@ -77,9 +76,15 @@ jobs:
         with:
           version: latest
 
-      # JWT verification stays ON: pg_cron sends the service key and the page
-      # sends the reader's session, both valid JWTs; a caller with neither is
-      # turned away before the function runs.
+      # --no-verify-jwt IS LOAD-BEARING, as it is for capture in
+      # deploy-intelligence.yml. On 2026-09-29 this project's gateway answered
+      # every pg_cron poke with 401 "Invalid JWT" (the anon key, verified byte
+      # for byte), and Supabase refuses the edgedesk.* database settings a
+      # service key would have lived in. Deployed with verification ON, the
+      # five-minute scheduler is rejected before props_cron sees it and prices
+      # wait for someone to press Refresh. Nothing is opened: Refresh and
+      # status check the reader's session themselves (getUser), and a tick
+      # dispatches only when a game is due, outside a four-minute debounce.
       - name: Deploy props_cron
         if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
         env:
@@ -87,7 +92,7 @@ jobs:
         run: |
           supabase functions deploy props_cron \
             --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
-            --no-verify-jwt=false
+            --no-verify-jwt
 
       - name: Apply supabase/player_props_pipeline.sql
         if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
@@ -107,4 +112,4 @@ jobs:
           sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
           out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/player_props_cron.sql)
           echo "$out" | tail -8
-          if echo "$out" | grep -q 'CHECK THIS'; then echo "::warning::player_props_cron.sql: set edgedesk.project_url / edgedesk.service_key (see supabase/editorial_cron.sql) or the job no-ops"; fi
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::player_props_cron.sql: a report row says CHECK THIS"; exit 1; fi

@@ -2,7 +2,9 @@
 //  FILE:    supabase/functions/props_cron/index.ts
 //  TYPE:    Edge Function (deployed) — the Player Props price pipeline's
 //           PRIMARY scheduler, and the page's "refresh prices now".
-//  DEPLOY:  supabase functions deploy props_cron     (JWT verification ON)
+//  DEPLOY:  supabase functions deploy props_cron --no-verify-jwt
+//           (pg_cron sends no JWT; Refresh and status check the reader's
+//           session themselves — see supabase/player_props_cron.sql)
 //  CRON:    every 5 minutes (supabase/player_props_cron.sql)
 // ============================================================
 // WHY THIS EXISTS. On 2026-09-29 the Props page sat on "Sportsbook prices:

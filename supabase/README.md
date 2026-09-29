@@ -538,9 +538,12 @@ service role writes. Tested by `tools/props/props_pipeline_sql.test.js`.
 pg_cron calls `functions/props_cron` every five minutes. The function
 dispatches `player-props.yml` only when a game is due, a refresh is waiting, or
 the health record has gone quiet. GitHub's own schedule stays as the backup.
-It needs pg_cron and pg_net, `player_props_pipeline.sql` first, the two
-`edgedesk.*` database settings `editorial_cron.sql` documents, and
-`supabase secrets set PROPS_GH_TOKEN=…`. Re-running replaces the job.
+It needs pg_cron and pg_net, `player_props_pipeline.sql` first,
+`props_cron` deployed with "Enforce JWT verification" off
+(`--no-verify-jwt`), and `supabase secrets set PROPS_GH_TOKEN=…`. It reads no
+database setting and sends no key (Supabase refuses `alter database … set
+edgedesk.*`). Re-running replaces the job; five minutes later
+`player_props_pipeline_health.scheduler_tick_at` shows the ticks arriving.
 
 ### `lock_rule.sql` — the Collective's 30-minute lock
 Every game locks 30 minutes before kickoff. Each model's latest live submission

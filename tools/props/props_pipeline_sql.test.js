@@ -35,7 +35,11 @@ chk('PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(SQL));
 chk('under the SQL editor paste limit (18 KB)', Buffer.byteLength(SQL) <= 18000, Buffer.byteLength(SQL));
 chk('the database execution window is the kernel\'s (EDProps FRESHNESS)', new RegExp('player_props_executable_max_minutes\\(\\)\\s*returns integer language sql immutable as \\$\\$ select ' + EDP.FRESHNESS.executable_max_minutes + ' \\$\\$').test(SQL));
 const CRON_SQL = fs.readFileSync(CRON, 'utf8');
-chk('the scheduler file: no meta-commands, replaces its own job, names both settings', !/^\\/m.test(CRON_SQL) && /cron\.unschedule\('player_props_dispatch'\)/.test(CRON_SQL) && /edgedesk\.project_url/.test(CRON_SQL) && /edgedesk\.service_key/.test(CRON_SQL) && /\*\/5 \* \* \* \*/.test(CRON_SQL));
+chk('the scheduler file: no meta-commands, replaces its own job, every five minutes', !/^\\/m.test(CRON_SQL) && /cron\.unschedule\('player_props_dispatch'\)/.test(CRON_SQL) && /\*\/5 \* \* \* \*/.test(CRON_SQL));
+/* Supabase refuses `alter database postgres set edgedesk.*` (42501), so a job
+   that reads those settings can never be configured: the URL is the project's
+   own, and props_cron runs with JWT verification off, so no key is sent */
+chk('the scheduler file reads no database setting and calls props_cron at the project URL', !/current_setting\(/.test(CRON_SQL) && /url\s*:= 'https:\/\/iattxbkbufslbauoumga\.supabase\.co\/functions\/v1\/props_cron'/.test(CRON_SQL));
 chk('the scheduler file commits no key', !/eyJ[A-Za-z0-9_-]{10,}/.test(CRON_SQL) && !/service_role_key\s*=\s*'[^<]/.test(CRON_SQL));
 
 const db = PG.start('ppipe');
@@ -107,6 +111,26 @@ try {
   db.service("insert into public.player_prop_quotes (quote_key, event_id, sport_key, commence_time, player_name, player_key, market, source_market, side, point, book_key, decimal_odds, captured_at) values ('k4', 'ev2', 'americanfootball_nfl', now() - interval '1 hour', 'X', 'x', 'player_rush_yds', 'player_rush_yds', 'Over', 50.5, 'draftkings', 1.9, now() - interval '2 minutes');");
   chk('a started game has no executable price, however fresh', db.as(A, "select count(*) from public.player_prop_executable_quotes where event_id = 'ev2';") === '0');
   chk('an old quote is never deleted (history retained)', db.sql("select count(*) from public.player_prop_quotes;") === '4');
+
+  /* ── the scheduler file, against stand-ins for pg_cron and pg_net ────── */
+  db.sql(`create schema if not exists cron;
+    create table if not exists cron.job (jobid serial, jobname text, schedule text, command text, active boolean default true);
+    create or replace function cron.schedule(n text, s text, c text) returns bigint language sql as $$ insert into cron.job (jobname, schedule, command) values (n, s, c) returning jobid::bigint $$;
+    create or replace function cron.unschedule(n text) returns boolean language sql as $$ delete from cron.job where jobname = n returning true $$;
+    create schema if not exists net;
+    create table if not exists net.posted (url text, body jsonb, headers jsonb, timeout_ms integer);
+    create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds integer default 5000) returns bigint
+      language sql as $$ insert into net.posted values (url, body, headers, timeout_milliseconds); select 1::bigint $$;
+    insert into cron.job (jobname, schedule, command) values ('player_props_dispatch', '*/5 * * * *', 'select current_setting(''edgedesk.project_url'', true)');`);
+  const cronDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ppcron-')), cronFile = path.join(cronDir, 'cron.sql');
+  fs.writeFileSync(cronFile, CRON_SQL.replace(/^create extension if not exists pg_(cron|net);$/mg, ''));
+  out = db.applyFileAtomic(cronFile);
+  chk('the scheduler file applies over the old settings-reading job; every report row ok', !/CHECK THIS/.test(out) && (out.match(/\|ok/g) || []).length === 2, out.slice(-400));
+  out = db.applyFileAtomic(cronFile);
+  chk('…and a second time: still exactly one job', !/CHECK THIS/.test(out) && db.sql("select count(*) from cron.job where jobname = 'player_props_dispatch';") === '1');
+  db.sql("do $$ begin execute (select command from cron.job where jobname = 'player_props_dispatch'); end $$;");
+  chk('a tick posts to props_cron with no authorization header, and waits up to 30 s', db.sql("select url || '|' || (headers ? 'authorization')::text || '|' || timeout_ms || '|' || (body->>'source') from net.posted;") === 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/props_cron|false|30000|supabase_cron');
+  fs.rmSync(cronDir, { recursive: true, force: true });
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e && e.stack || e).slice(0, 800));
 } finally { db.stop(); }
