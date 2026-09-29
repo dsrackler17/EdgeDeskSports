@@ -45,6 +45,7 @@ const M = require('./model.js');
 const B = require('./build_board.js');
 const G = require('./grade.js');
 const SY = require('./sync_supabase.js');
+const V = require('./verify_ledger.js');
 const { fakePgrest } = require(path.join(ROOT, 'tools', 'lib', 'fake_pgrest.js'));
 
 let pass = 0, fail = 0; const failures = [];
@@ -193,6 +194,15 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const again = await B.build({ league: 'nfl', season: 2026, now: NOW + 60000, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   chk('a rebuild writes no duplicate qualified record', again.ledger_rows.filter((x) => x.kind === 'qualified').length === 0, again.ledger_rows.length);
   const stale = await B.build({ league: 'nfl', season: 2026, now: Date.parse(OBS) + 2 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
+  {
+    /* the ledger the build froze verifies, and only ever growing verifies */
+    const text = fs.readFileSync(BP.evaluations, 'utf8');
+    chk('the frozen ledger verifies: ids from content, evaluated before kickoff', V.checkEvaluations('', text, 'evaluations.jsonl').length === 0, V.checkEvaluations('', text, 'evaluations.jsonl'));
+    const more = text + JSON.stringify(Object.assign({}, b1.ledger_rows[0], { kind: 'qualified', selection_key: 'extra', evaluated_at: new Date(NOW + 1000).toISOString(), evaluation_id: V.evaluationId(Object.assign({}, b1.ledger_rows[0], { kind: 'qualified', selection_key: 'extra', evaluated_at: new Date(NOW + 1000).toISOString() })) })) + '\n';
+    chk('appending to the published ledger passes', V.checkEvaluations(text, more, 'evaluations.jsonl').length === 0, V.checkEvaluations(text, more, 'evaluations.jsonl'));
+    const edited = text.replace(/"american":(-?\d+)/, (m0, a) => '"american":' + (Number(a) - 5));
+    chk('editing a published price is caught (prefix and id)', V.checkEvaluations(text, edited, 'evaluations.jsonl').length >= 2, V.checkEvaluations(text, edited, 'evaluations.jsonl'));
+  }
   chk('two hours after the capture every price is STALE · NO DECISION', stale.board.props.filter((x) => x.q.length && x.p).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'STALE_QUOTE'));
   const after = await B.build({ league: 'nfl', season: 2026, now: Date.parse(EVENT.commence_time) + 5 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   const finals = after.ledger_rows.filter((x) => x.kind === 'final');
@@ -222,6 +232,12 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('CLV against the frozen close: bought 84.5, closed 86.5 → +2', byId.w.clv.available && byId.w.clv.line_clv === 2 && byId.w.clv.beat_close === true, byId.w.clv);
   chk('the final row is graded for calibration at the consensus line', byId.f1.result === (RUSH3 > 86.5 ? 'WIN' : 'LOSS') && byId.f1.p_over === 0.61);
   chk('grading is idempotent: settled rows are never re-graded', G.grade(ds, rows, graded, NOW).length === 0);
+  {
+    const rtext = graded.map((x) => JSON.stringify(x)).join('\n') + '\n';
+    chk('every grade refers to an evaluation on file, once, after its kickoff', V.checkResults('', rtext, rows, 'results.jsonl').length === 0, V.checkResults('', rtext, rows, 'results.jsonl'));
+    chk('a grade of an evaluation that is not on file is caught', V.checkResults('', rtext, rows.filter((x) => x.evaluation_id !== 'w'), 'results.jsonl').some((p) => /not on file/.test(p)));
+    chk('a grade repeated is caught', V.checkResults('', rtext + JSON.stringify(graded[0]) + '\n', rows, 'results.jsonl').some((p) => /second time/.test(p)));
+  }
   const rep = G.report('nfl', 2026, graded, rows, NOW);
   chk('the report counts bets (BET only) and keeps LEAN apart', rep.summary.n === 3 && rep.lean.n === 1, [rep.summary, rep.lean]);
   chk('the report carries breakdowns and the calibration table', rep.breakdown.market.length && rep.breakdown.ev_bucket.length && rep.calibration.table.length === 5);
