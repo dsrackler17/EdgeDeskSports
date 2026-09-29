@@ -81,7 +81,7 @@ async function buildFixture() {
     factory.n++;
   });
   const r = await B.build({ league: 'nfl', season: 2026, now: NOW - 5 * 60000, dataset: ds, quotes: feed, lines: null, paths, factory });
-  r.board.capture = { last_run: OBS, last_attempt: OBS, bookmakers: p.books, events_polled: 1, requests_remaining: 480 };
+  r.board.capture = { status: 'SUCCESS', reason: 'QUOTES_WRITTEN', last_run: OBS, last_success_at: OBS, last_attempt: OBS, completed_at: OBS, bookmakers: p.books, books_returned: p.books, events_polled: 1, events_checked: 1, requests_remaining: 480 };
   /* a small graded record so the performance view has something real to draw */
   const rows = r.ledger_rows.slice(0, 3).map((x) => Object.assign({}, x, { game_id: '2026_03_ATL_GB', kickoff: '2026-09-25T00:15:00.000Z' }));
   const perf = G.report('nfl', 2026, G.grade(ds, rows, [], NOW), rows, NOW);
@@ -152,7 +152,7 @@ async function buildFixture() {
     await page.click('.bottomnav button[data-v="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
     chk('the Props seat opens the Player Props view', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && document.querySelector('.bottomnav button[data-v="pprops"]').classList.contains('on')));
-    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Prices captured/.test(document.querySelector('.pp-strip').textContent)));
+    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: LIVE · captured/.test(document.querySelector('.pp-strip').textContent)));
     chk('the probability source is printed', await page.evaluate(() => /MODEL-ESTIMATED/.test(document.querySelector('.pp-strip').textContent)));
     const nBest = await page.evaluate(() => EDPropsUI._visible().length);
     chk('Best Value lists the priced props, ranked', nBest >= 15 && await page.evaluate(() => { const v = EDPropsUI._visible(); const R = { BET: 4, LEAN: 3, WATCH: 2, PASS: 1, NO_DECISION: 0 }; return v.every((r, i) => i === 0 || R[v[i - 1].decision] >= R[r.decision]); }), nBest);
@@ -239,6 +239,28 @@ async function buildFixture() {
     chk('two hours on, the capture strip warns the prices are stale', await page.evaluate(() => /STALE/.test(document.querySelector('.pp-strip').textContent)));
     chk('and no stale price is decided on', await page.evaluate(() => EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p).every((r) => r.decision === 'NO_DECISION')));
     await ctx.close();
+
+    /* the capture's status reaches the page as itself: a provider answer with
+       no markets, a failed capture and a capture that never ran each say so */
+    console.log('capture status');
+    const boardPath = '/football/props/nfl/board.json', live = served[boardPath];
+    const unpriced = (capture) => JSON.stringify(Object.assign({}, FX.board, { capture, props: FX.board.props.map((x) => Object.assign({}, x, { q: [] })), counts: Object.assign({}, FX.board.counts, { priced: 0 }) }));
+    const stripAndEmpty = async (capture) => {
+      served[boardPath] = unpriced(capture);
+      const o = await open({ width: 1440, height: 900 }, '#playerprops/nfl');
+      await o.page.waitForSelector('.pp-strip');
+      await o.page.waitForSelector('.pp-empty');
+      const t = await o.page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, warn: (document.querySelector('.pp-warnbox') || {}).textContent || '', empty: document.querySelector('.pp-empty').textContent }));
+      await o.ctx.close();
+      return t;
+    };
+    const tNo = await stripAndEmpty({ status: 'NO_MARKETS', reason: 'MARKETS_NOT_RELEASED', why: 'The Odds API answered for 1 NFL event (HTTP 200) with no player market from any of the 10 books asked.', last_run: OBS, last_success_at: null, completed_at: OBS, events_checked: 1 });
+    chk('NO_MARKETS: the strip says markets are not released, and shows the provider evidence', /markets not released yet/.test(tNo.strip) && /Sportsbooks have not released/.test(tNo.warn) && /HTTP 200/.test(tNo.warn) && /Waiting for sportsbooks to release player markets/.test(tNo.empty), tNo);
+    const tErr = await stripAndEmpty({ status: 'ERROR', reason: 'EVENT_INDEX_FAILED', why: 'The Odds API event index for NFL failed (HTTP 401): no prop was requested.', error_message: 'event index HTTP 401: invalid key', last_run: null, last_success_at: null, completed_at: OBS });
+    chk('ERROR: the strip says the capture failed, with the provider\'s error — not "not released"', /capture error/.test(tErr.strip) && /capture failed/.test(tErr.warn) && /HTTP 401: invalid key/.test(tErr.warn) && !/not released/.test(tErr.strip + tErr.warn + tErr.empty), tErr);
+    const tNot = await stripAndEmpty({ status: 'NOT_RUN', reason: 'NO_STATE_FILE', state: 'NOT_CAPTURED', why: 'The prop capture has never run for this league.', last_run: null, last_success_at: null });
+    chk('NOT_RUN: the strip says not captured yet and the empty state does not claim the books are late', /not captured yet/.test(tNot.strip) && /never run/.test(tNot.warn) && /have not been captured yet/.test(tNot.empty) && !/release/.test(tNot.empty), tNot);
+    served[boardPath] = live;
 
     /* ---------------------------------------------------------- phone */
     console.log('phone');

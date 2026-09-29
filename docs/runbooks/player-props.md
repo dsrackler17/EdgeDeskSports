@@ -40,17 +40,50 @@ an EV or a decision. To capture prices:
 1. **Add the repository secret `ODDS_API_KEY`** (Settings → Secrets and
    variables → Actions). This is the same key the CFB alternates capture uses
    (`READ_ALT_CAPTURE`), so both draw on one credit balance.
-2. **Set the repository variable `PROPS_CAPTURE` to `on`.** Anything else
-   means the capture step does not run and spends nothing.
+2. **Set the repository variable `PROPS_CAPTURE` to `on`.** `on`, `true`,
+   `1` and `yes` in any case all count. Anything else, unset included, means
+   the capture spends nothing and records `NOT_RUN`. The workflow maps both
+   into the capture step's environment explicitly (repository variables and
+   secrets are not shell variables on their own), and the step always runs:
+   its log opens with `ODDS_API_KEY present: true|false`,
+   `PROPS_CAPTURE raw: "…"` and `PROPS_CAPTURE parsed enabled: true|false`.
+   The key itself is never printed.
 3. Optionally, **tune the budget** with the repository variables below.
 4. Run **Actions → Player props → Run workflow** once, or wait for the hourly
-   schedule (minute 23, August–January).
+   schedule (minute 23, August–January). GitHub's scheduler skips hours on
+   this repository (see `capture.yml`), so after changing the variable or the
+   secret, run it by hand rather than waiting.
 
-The page's status strip then changes from *not captured yet* to *prices
-captured N min ago*.
+The page's status strip then changes from *not captured yet* to
+*Sportsbook prices: LIVE · captured N min ago*, or to whichever status the
+run actually ended in (below).
+
+### What the capture records
+
+Every run writes `football/props/<league>/capture_state.json`, whatever
+happens, and the board and page read its `status`:
+
+| Status | Meaning |
+|---|---|
+| `NOT_RUN` | The capture did not execute: `PROPS_CAPTURE` is off, or no state file has been published. |
+| `RUNNING` | A run started and did not finish (it crashed). Never read as success. |
+| `SUCCESS` | Every event request answered and prices were written. |
+| `PARTIAL` | Prices were written, but a request failed or the run stopped early (budget, credit floor, 401/429). |
+| `NO_MARKETS` | The provider answered, but no book has posted a requested player market (`MARKETS_NOT_RELEASED`), or no event kicks off inside the window (`NO_EVENTS_IN_WINDOW`). |
+| `ERROR` | Nothing was written: no key, the event index failed, every request failed, a 401/429, or the credit floor. `error_message` has the provider's own answer. |
+
+The state also records, per run: events discovered / in the window / due /
+queried, the event ids, each request's HTTP status, books, markets, outcomes,
+normalized quotes, cost and remaining credits, the books and markets that
+came back, quotes written, credits spent and `x-requests-remaining`. The
+step's log prints the same per event, and the run's summary page shows a
+table. The board build then logs how many captured quotes were joined to a
+game and matched to a player, with examples of unmatched names. Raw quotes
+are kept in `quotes.json` before any name is matched.
 
 | Variable | Default | What it does |
 |---|---|---|
+| `PROPS_WINDOW_H` | 96 | Only events kicking off inside this many hours are asked for. A manual run can override it (`window_h` input). |
 | `PROPS_LEAGUES` | `nfl,cfb` | Which leagues to capture. Set `nfl` to leave college unpriced. |
 | `PROPS_MARKET_GROUPS` | NFL `core,long,alt`, CFB `core,alt` | Groups from `football/props/config.js`: `core` (11), `long` (3), `td` (4), `alt` (6), `kick` (2), `defense` (3). |
 | `PROPS_BOOKMAKERS` | 10 books: eight US books, Pinnacle and BetOnline (`football/props/config.js`) | Up to ten books count as one region. Eleven or more count as two. |
@@ -187,8 +220,12 @@ the drawer's *Validation stage* section.
 
 | The page shows | Meaning | What to do |
 |---|---|---|
-| **Waiting for sportsbook prices** | No capture has run. | Turn prices on (above). |
-| **STALE** in the status strip; **Stale prices** notice after 3 h | The last capture is over 90 minutes old. | Check the capture step's log and `capture_state.json` for `stopped` (budget, floor, 401/429). |
+| **Sportsbook prices: not captured yet** / **Waiting for sportsbook prices** | `NOT_RUN`: no capture has run, or `PROPS_CAPTURE` is off. | Turn prices on (above) and run the workflow by hand. |
+| **Sportsbook prices: markets not released yet** | `NO_MARKETS`: The Odds API answered (HTTP 200) and no requested book has posted a player market for the events asked. | Nothing: books post props through the week. The notice quotes the provider's answer. |
+| **no game inside the capture window** | `NO_MARKETS` / `NO_EVENTS_IN_WINDOW`: no event kicks off inside `PROPS_WINDOW_H`. | Nothing, or widen the window. |
+| **Sportsbook prices: capture error** | `ERROR`: the notice shows `error_message` (the HTTP status and the provider's body). | Fix what it names: a 401 is the key, a 422 a market or book key, a 429 the quota. |
+| **PARTIAL** beside the prices | Some requests failed or the run stopped early. | Read `error_message` in `capture_state.json`. |
+| **STALE** in the status strip; **Stale prices** notice after 3 h | The last capture that wrote prices is over 90 minutes old. | Check the capture step's log and `capture_state.json` for `status`, `stopped` (budget, floor, 401/429) and `error_message`. |
 | `STALE_QUOTE` on a prop | That book's price is older than 90 minutes, so it decides nothing. | Nothing: it clears on the next capture. |
 | `PRICE_ANOMALY` (WATCH) | EV ≥ 15% or edge ≥ 12 pp with no second book within 12 cents. | Check the book by hand. This is usually a stale or mistyped line. |
 | **UNMAPPED** row | A book's player name did not resolve to exactly one player on the two rosters. | See `board.unmapped[]` for the reason. The resolver (`build_board.js` `resolveName`) already handles suffixes, punctuation and initials; an ambiguous name stays unmapped by design. |
@@ -222,7 +259,7 @@ a new column on the player logs. The model reads it only where
 
 ## Turning it off
 
-- **Stop spending:** set `PROPS_CAPTURE` to anything but `on`. The board keeps
+- **Stop spending:** set `PROPS_CAPTURE` to anything but `on` / `true` / `1` / `yes`. The board keeps
   building from the free feeds. The last prices age into STALE and then
   decide nothing.
 - **Stop the job:** disable the Player props workflow. The last committed

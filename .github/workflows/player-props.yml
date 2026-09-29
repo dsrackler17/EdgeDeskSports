@@ -3,8 +3,9 @@
 # Every hour in football season:
 #   1. the kernel and the pipeline suites must pass before anything is written;
 #   2. the prop capture (football/props/capture.js) asks The Odds API for player
-#      markets — ONLY when the repository variable PROPS_CAPTURE is 'on' and the
-#      ODDS_API_KEY secret exists. It is budgeted: each event is re-polled only
+#      markets — ONLY when the repository variable PROPS_CAPTURE is on (on, true,
+#      1 or yes, any case) and the ODDS_API_KEY secret exists; the step always
+#      runs and records its outcome in capture_state.json either way. It is budgeted: each event is re-polled only
 #      when its own interval has passed (8 h beyond 36 h of kickoff, 3 h inside
 #      it, every run inside six hours), it stops before the credit floor and
 #      never passes PROPS_MAX_CREDITS in one run (docs/runbooks/player-props.md
@@ -42,6 +43,10 @@ on:
         description: 'Capture even inside the interval (still budgeted; needs PROPS_CAPTURE=on)'
         required: false
         default: 'false'
+      window_h:
+        description: 'Only events kicking off inside this many hours (empty = PROPS_WINDOW_H or 96)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -83,26 +88,36 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.backtest != '' }}
         run: node football/props/correlation.js --season "${{ github.event.inputs.backtest }}" --write
 
+      # This step ALWAYS runs. It used to carry `if: vars.PROPS_CAPTURE == 'on'`,
+      # which skipped it silently — no log line, no state file — whenever the
+      # variable was unset, spelled differently ('true', 'on '), or set after
+      # the last run, so the page could only say "has not run". Repository
+      # variables and secrets are NOT shell variables: each is mapped into the
+      # environment here, explicitly. capture.js normalizes PROPS_CAPTURE
+      # (on / true / 1 / yes, any case), prints whether the key is present
+      # (never the key), and writes capture_state.json on EVERY outcome —
+      # NOT_RUN, NO_MARKETS, SUCCESS, PARTIAL or ERROR — which the board and
+      # the page read instead of guessing from zero rows.
       - name: Capture sportsbook prop prices (opt-in, budgeted)
-        if: ${{ vars.PROPS_CAPTURE == 'on' }}
         env:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          PROPS_CAPTURE: ${{ vars.PROPS_CAPTURE }}
           PROPS_BOOKMAKERS: ${{ vars.PROPS_BOOKMAKERS }}
           PROPS_MARKET_GROUPS: ${{ vars.PROPS_MARKET_GROUPS }}
           PROPS_MAX_CREDITS: ${{ vars.PROPS_MAX_CREDITS }}
           PROPS_MIN_INTERVAL_H: ${{ vars.PROPS_MIN_INTERVAL_H }}
           PROPS_FAR_INTERVAL_H: ${{ vars.PROPS_FAR_INTERVAL_H }}
+          PROPS_WINDOW_H: ${{ github.event.inputs.window_h || vars.PROPS_WINDOW_H }}
           PROPS_LEAGUES: ${{ vars.PROPS_LEAGUES }}
+          FORCE_CAPTURE: ${{ github.event.inputs.force_capture }}
         run: |
-          if [ -z "$ODDS_API_KEY" ]; then
-            echo "::warning::PROPS_CAPTURE is on but the ODDS_API_KEY secret is empty: no prop price was captured"
-            echo "PROPS_CAPTURE is on but ODDS_API_KEY is empty — nothing captured." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
+          echo "event: ${{ github.event_name }} · ref: ${{ github.ref_name }}"
+          echo "ODDS_API_KEY present: $([ -n "$ODDS_API_KEY" ] && echo true || echo false)"
+          echo "PROPS_CAPTURE raw: '${PROPS_CAPTURE}'"
           FORCE=""
-          if [ "${{ github.event.inputs.force_capture }}" = "true" ]; then FORCE="--force"; fi
+          if [ "$FORCE_CAPTURE" = "true" ]; then FORCE="--force"; fi
           for LG in $(echo "${PROPS_LEAGUES:-nfl,cfb}" | tr ',' ' '); do
-            node football/props/capture.js --network --league "$LG" $FORCE || echo "::warning::$LG prop capture failed; the board keeps its last prices and ages them"
+            node football/props/capture.js --network --league "$LG" $FORCE || echo "::warning::$LG prop capture crashed; capture_state.json keeps what it last recorded and the board ages the last prices"
           done
 
       - name: Build the NFL board
@@ -134,6 +149,10 @@ jobs:
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        # only main writes the production ledger; a run dispatched on a branch
+        # (to test a change) prints what it would have inserted
         run: |
-          node football/props/sync_supabase.js --league nfl || echo "::warning::prop ledger sync failed (apply supabase/player_props.sql)"
-          node football/props/sync_supabase.js --league cfb || echo "::warning::college prop ledger sync failed"
+          DRY=""
+          if [ "$GITHUB_REF_NAME" != "main" ]; then DRY="--dry-run"; echo "branch run ($GITHUB_REF_NAME): the production ledger is not written"; fi
+          node football/props/sync_supabase.js --league nfl $DRY || echo "::warning::prop ledger sync failed (apply supabase/player_props.sql)"
+          node football/props/sync_supabase.js --league cfb $DRY || echo "::warning::college prop ledger sync failed"
