@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-09-29T12:07:39.890Z",
+ "generated_at": "2026-09-29T12:10:35.291Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -177,13 +177,13 @@
   "last_weekly_run": {
    "status": "OK",
    "detail": null,
-   "run_id": "cfbw_1d272003b761ca7527d22e02",
-   "mode": "weekly",
+   "run_id": "cfbw_d63350f5d6b0f74ff6abea48",
+   "mode": "freeze",
    "run_status": "PUBLISHED",
-   "started_at": "2026-09-28T18:05:59.952Z",
-   "completed_at": "2026-09-28T18:08:14.748Z",
-   "last_published_at": "2026-09-28T18:08:14.748Z",
-   "age_minutes": 1079,
+   "started_at": "2026-09-29T12:07:43.769Z",
+   "completed_at": "2026-09-29T12:09:45.866Z",
+   "last_published_at": "2026-09-29T12:09:45.866Z",
+   "age_minutes": 1,
    "stage_groups": {
     "score_ingestion_status": "OK",
     "pbp_status": "OK",
@@ -193,7 +193,7 @@
     "model_lab_status": "OK"
    },
    "errors": [],
-   "runs_recorded": 3
+   "runs_recorded": 4
   },
   "source_health": {
    "status": "WARNING",
@@ -202,7 +202,7 @@
      "source": "schedule",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T18:05:59.952Z",
+     "last_success": "2026-09-29T12:07:43.769Z",
      "age_minutes": null,
      "coverage": 1,
      "error_rate": null,
@@ -213,7 +213,7 @@
      "source": "pbp",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T18:05:59.952Z",
+     "last_success": "2026-09-29T12:07:43.769Z",
      "age_minutes": null,
      "coverage": 1,
      "error_rate": 0,
@@ -224,8 +224,8 @@
      "source": "roster",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T18:05:59.952Z",
-     "age_minutes": 8,
+     "last_success": "2026-09-29T12:07:43.769Z",
+     "age_minutes": 1090,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -236,7 +236,7 @@
      "origin": "weekly engine",
      "status": "DEGRADED",
      "last_success": null,
-     "age_minutes": 264,
+     "age_minutes": 391,
      "coverage": 0,
      "error_rate": null,
      "critical": true,
@@ -246,8 +246,8 @@
      "source": "qb_status",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T18:05:59.952Z",
-     "age_minutes": 16,
+     "last_success": "2026-09-29T12:07:43.769Z",
+     "age_minutes": 103,
      "coverage": 0.9233,
      "error_rate": null,
      "critical": true,
@@ -257,8 +257,8 @@
      "source": "market",
      "origin": "weekly engine",
      "status": "HEALTHY",
-     "last_success": "2026-09-28T18:05:59.952Z",
-     "age_minutes": 59,
+     "last_success": "2026-09-29T12:07:43.769Z",
+     "age_minutes": 60,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -268,8 +268,8 @@
      "source": "weather",
      "origin": "weekly engine",
      "status": "NOT_USED_BY_MODEL",
-     "last_success": "2026-09-28T18:05:59.952Z",
-     "age_minutes": 15,
+     "last_success": "2026-09-29T12:07:43.769Z",
+     "age_minutes": 103,
      "coverage": null,
      "error_rate": null,
      "critical": true,
@@ -279,7 +279,7 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-29T12:07:32.000Z",
+     "last_success": "2026-09-29T12:10:27.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -288,7 +288,7 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-09-29T12:07:32.000Z",
+     "last_success": "2026-09-29T12:10:27.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -298,19 +298,19 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-09-29T12:07:32.000Z",
+   "newest_quote_at": "2026-09-29T12:10:27.000Z",
    "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 0,
-   "games_marked_stale": 30,
+   "games_marked_stale": 4,
    "games_this_week": 60,
    "rule": "decisions fail closed (MARKET_STALE) past 180 min (decision policy cfb_decision_policy_v1); football projections still display"
   },
   "pbp_age": {
    "status": "OK",
    "pbp_status": "HEALTHY",
-   "last_success": "2026-09-28T18:05:59.952Z",
-   "age_minutes": 1082,
+   "last_success": "2026-09-29T12:07:43.769Z",
+   "age_minutes": 3,
    "coverage": 1,
    "error_rate": 0,
    "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0393",
@@ -319,13 +319,13 @@
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-09-29T12:07:32.000Z",
+   "lab_last_run_at": "2026-09-29T12:10:27.000Z",
    "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
   "degraded_games": {
    "status": "OK",
-   "v21_rows": 62,
+   "v21_rows": 66,
    "degraded": [
     {
      "game_id": "401871049",
@@ -524,7 +524,6 @@
       "QB_UNSETTLED",
       "EARLY_SEASON",
       "NO_PLAYER_DATA",
-      "NO_ADVANCED_PBP",
       "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
@@ -568,7 +567,6 @@
       "QB_UNSETTLED",
       "EARLY_SEASON",
       "NO_PLAYER_DATA",
-      "NO_ADVANCED_PBP",
       "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ],
@@ -702,7 +700,6 @@
       "DEGRADED_AVAILABILITY",
       "EARLY_SEASON",
       "NO_PLAYER_DATA",
-      "NO_ADVANCED_PBP",
       "MARKET_DEGRADED"
      ],
      "fallback_level": 2,
@@ -1166,28 +1163,75 @@
      ],
      "fallback_level": 2,
      "reason": null
+    },
+    {
+     "game_id": "401870766",
+     "home": "Liberty",
+     "away": "Sam Houston",
+     "modes": [
+      "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
+    },
+    {
+     "game_id": "401871052",
+     "home": "Western Kentucky",
+     "away": "Missouri State",
+     "modes": [
+      "QB_UNSETTLED",
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
+    },
+    {
+     "game_id": "401862794",
+     "home": "UTSA",
+     "away": "South Florida",
+     "modes": [
+      "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
+    },
+    {
+     "game_id": "401869933",
+     "home": "Arkansas State",
+     "away": "South Alabama",
+     "modes": [
+      "QB_UNSETTLED",
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ],
+     "fallback_level": 2,
+     "reason": null
     }
    ],
-   "degraded_count": 62,
+   "degraded_count": 66,
    "lab_data_quality": {
     "GREEN": 30,
     "YELLOW": 36,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-09-29T12:07:37.457Z",
+   "canonical_projections_as_of": "2026-09-29T12:10:32.240Z",
    "canonical_by_level": {
-    "2": 59,
-    "3": 4,
+    "2": 63,
     "NOT_PRICED": 3
    }
   },
   "predictions": {
    "status": "OK",
-   "v21_current_generated_at": "2026-09-28T18:05:59Z",
-   "v21_current_age_minutes": 1082,
-   "v21_rows": 62,
+   "v21_current_generated_at": "2026-09-29T12:07:43Z",
+   "v21_current_age_minutes": 3,
+   "v21_rows": 66,
    "v21_mode": "shadow",
-   "frozen_snapshot_files": 0,
+   "frozen_snapshot_files": 1,
    "lab_models": [
     {
      "model_version": "edgedesk_cfb_p4_v1.0.0",
@@ -1202,19 +1246,19 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "label": "V2 · candidate 001",
      "role": "candidate",
-     "snapshots": 61,
-     "latest_snapshot_at": "2026-09-29T01:07:18.000Z",
-     "upcoming_games": 59,
-     "avg_confidence_upcoming": 79.1
+     "snapshots": 121,
+     "latest_snapshot_at": "2026-09-29T12:10:27.000Z",
+     "upcoming_games": 63,
+     "avg_confidence_upcoming": 78.3
     },
     {
      "model_version": "edgedesk_cfb_v2.1.0",
      "label": "V2.1 · hardened",
      "role": "challenger",
-     "snapshots": 61,
-     "latest_snapshot_at": "2026-09-29T01:07:18.000Z",
-     "upcoming_games": 59,
-     "avg_confidence_upcoming": 79.4
+     "snapshots": 121,
+     "latest_snapshot_at": "2026-09-29T12:10:27.000Z",
+     "upcoming_games": 63,
+     "avg_confidence_upcoming": 78.5
     }
    ],
    "lab_games_this_week": 60
@@ -1224,13 +1268,18 @@
    "betting_enabled": false,
    "policy": "cfb_decision_policy_v1",
    "policy_status": "SHADOW",
-   "decision_rows": 0,
-   "by_role_status": {},
+   "decision_rows": 78,
+   "by_role_status": {
+    "CURRENT:LEAN": 1,
+    "CHALLENGER:RESEARCH": 1,
+    "CURRENT:PASS": 38,
+    "CHALLENGER:PASS": 38
+   },
    "shadow_counts": {
     "BET": 0,
     "LEAN": 0,
     "REVIEW": 0,
-    "PASS": 0
+    "PASS": 59
    },
    "bets": 0,
    "rule": "a BET while the policy has betting disabled is a fail-safe breach (CRITICAL); an unusual BET count is reviewed, never auto-cancelled",
