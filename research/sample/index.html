@@ -107,14 +107,16 @@ h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)
 </header>
 <main class="wrap" id="main"><div class="empty">Loading EdgeDesk’s research…</div></main>
 
-<script src="/lib/edgedesk_pricing.js?v=20260926g"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260929p"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 (function () {
   'use strict';
   var X = window.EDPricing;
-  var CTA_LINE = X ? X.CTA_LINE : '7-day free trial. $79.99/month after trial. Cancel anytime.';
+  /* the price is written in one file; if it failed to load, say no figure
+     rather than a second copy of one that can go stale */
+  var CTA_LINE = X ? X.CTA_LINE : '7-day free trial. Cancel anytime.';
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function num(x) { return typeof x === 'number' && isFinite(x) ? x : null; }

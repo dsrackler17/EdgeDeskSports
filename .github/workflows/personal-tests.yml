@@ -21,6 +21,8 @@ on:
       - 'lib/edgedesk_personal.css'
       - 'lib/edgedesk_share_card.js'
       - 'lib/edgedesk_pricing.js'
+      - 'tools/billing/**'
+      - 'terms.html'
       - 'lib/research_core.js'
       - 'supabase/personal_research.sql'
       - 'supabase/bettor_decisions.sql'
@@ -65,6 +67,17 @@ jobs:
         run: node tools/personal/personal.test.js
       - name: One source for the offer, the books, the page wiring, no tout language
         run: node tools/personal/personal_wiring.test.js
+      # The offer's other half: what Stripe is asked about the payment links
+      # (every wrong price, mode and trial must fail), and the paywall,
+      # settings card and checkout agreeing on who has already paid.
+      - name: The Stripe offer verifier fails every link that sells something else
+        run: node tools/billing/verify_stripe_offer.test.js
+      - name: A comped account is paid; the paywall, settings and checkout agree
+        run: node tools/billing/comp_entitlement.test.js
+      - name: The Stripe webhook grants access by status, never by price
+        run: node tools/billing/stripe_webhook.test.js
+      - name: A subscriber's life through the real webhook and paywall, on either price
+        run: node tools/billing/subscriber_lifecycle.test.js
       - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
         run: node tools/personal/growth.test.js
       - name: The AI desk answers the reader's research from their own rows
