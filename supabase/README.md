@@ -170,6 +170,16 @@ Signed-in readers can read; only the service role writes, through
 `football/props/sync_supabase.js`. Views: `player_prop_ledger_quotes_latest`,
 `player_prop_line_movement`, `player_prop_performance`.
 
+**Upgrading from the first release.** That release named the ledger
+`player_prop_quotes`, which is now capture's table. Re-running this file on
+such a database renames the ledger in place, with its rows, key, indexes,
+constraints, trigger, policy and view. It recognises the ledger by shape (it
+has `game_id`, not `quote_key`), so capture's table is never touched. Run it
+before `capture_v11_player_props.sql`, which refuses to start while the old
+ledger holds the name. `tools/props/player_props_sql.test.js` tests the
+upgrade from the exact first-release file
+(`tools/props/fixtures/player_props_first_release.sql`).
+
 ### `player_props_watchlist.sql` — a reader's starred props, players and games
 Run after `player_props.sql` (it stops with a message naming that file
 otherwise). One row per (user, kind, item). Readers select, insert and delete
@@ -429,6 +439,10 @@ sequence.
 Run after `capture_v9_qualification.sql` and **before** deploying capture v11.
 Capture checks for `player_prop_quotes` first and buys no prop market without
 it.
+
+If a first-release Player Props ledger still holds the name
+`player_prop_quotes`, this file stops and applies nothing. Its error says to run
+`player_props.sql` first, which renames the ledger.
 
 `signals` gains `participant`, `participant_key`, `is_player_prop` (not null,
 default false) and `source_market`, with two indexes. They are written only on

@@ -32,6 +32,19 @@
 
 begin;
 
+-- ── 0. THE NAME player_prop_quotes MUST BE FREE (or already capture's) ──────
+-- The first release of supabase/player_props.sql used this name for its
+-- ledger. Creating over it would silently keep the ledger and then fail on the
+-- first column capture writes, so this stops with the fix instead.
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'player_prop_quotes' and column_name = 'game_id')
+     and not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'player_prop_quotes' and column_name = 'quote_key') then
+    raise exception 'public.player_prop_quotes is the Player Props LEDGER from the first release of supabase/player_props.sql. '
+      'Run the current supabase/player_props.sql first: it renames that table to player_prop_ledger_quotes. Then run this file again.';
+  end if;
+end $$;
+
 -- ── 1. SIGNALS: the player on a player row ───────────────────────────────────
 alter table public.signals
   add column if not exists participant     text,

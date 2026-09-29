@@ -307,6 +307,16 @@ values ('e1|spreads|A|-3.5','americanfootball_nfl','spreads','A',-3.5, now()-int
   const v11mig = path.join(HOME, 'v11.sql');
   fs.copyFileSync(V11_PATH, v11mig);
   if (asPostgres) cp.execSync(`chmod a+r ${v11mig}`);
+  /* The name must be free or already capture's: a first-release Player Props
+     ledger at player_prop_quotes stops the file with the fix, and nothing of it
+     is applied. */
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "create table public.player_prop_quotes (quote_id text primary key, game_id text)"`);
+  let v11stop = '';
+  try { psql('edt', `-v ON_ERROR_STOP=1 -f ${v11mig}`); } catch (e) { v11stop = String(e.stderr || e.stdout || e.message); }
+  const partial = psql('edt', `-tAc "select count(*) from information_schema.columns where table_name='signals' and column_name='participant'"`).trim();
+  chk('v11 · refuses to build over a first-release ledger, names player_props.sql, applies nothing',
+    /player_props\.sql/.test(v11stop) && partial === '0', [v11stop.slice(0, 300), partial]);
+  psql('edt', `-q -v ON_ERROR_STOP=1 -c "alter table public.player_prop_quotes rename to player_prop_ledger_quotes"`);
   const V11_ROWS = (V11.match(/union all select \d+/g) || []).length + 1;
   chk('v11 · the report has checks to run', V11_ROWS >= 16, V11_ROWS);
   const v1 = psql('edt', `-v ON_ERROR_STOP=1 -f ${v11mig}`);

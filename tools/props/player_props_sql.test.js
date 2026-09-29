@@ -21,6 +21,9 @@ const T = PG.kit('player props SQL');
 const chk = T.chk;
 const FILE = path.join(PG.ROOT, 'supabase', 'player_props.sql');
 const WATCH = path.join(PG.ROOT, 'supabase', 'player_props_watchlist.sql');
+/* the file exactly as PR #408 merged it, when the ledger was player_prop_quotes */
+const FIRST_RELEASE = path.join(__dirname, 'fixtures', 'player_props_first_release.sql');
+const CAPTURE_V11 = path.join(PG.ROOT, 'supabase', 'capture_v11_player_props.sql');
 const SQL = fs.readFileSync(FILE, 'utf8'), WSQL = fs.readFileSync(WATCH, 'utf8');
 
 /* ── STATIC: the folder's conventions ──────────────────────────────────── */
@@ -107,6 +110,39 @@ try {
   db.as(A, "delete from public.player_prop_watchlist where item_key = '00-0038542';");
   chk('the owner un-stars', db.as(A, 'select count(*) from public.player_prop_watchlist;') === '2');
   chk('anon reads no stars', db.mustFail(() => db.anon('select count(*) from public.player_prop_watchlist;')) !== null || db.anon('select count(*) from public.player_prop_watchlist;') === '0');
+
+  /* ── the upgrade from the first release ─────────────────────────────────
+     A database that applied the first release has its ledger at
+     player_prop_quotes, the name capture v11's current-quote table needs. */
+  db.sql('drop table public.player_prop_ledger_quotes cascade;');   /* test only: back to a first-release database */
+  db.applyFileAtomic(FIRST_RELEASE);
+  chk('upgrade · the first release put its ledger at player_prop_quotes', db.sql("select to_regclass('public.player_prop_quotes') is not null;") === 't');
+  db.service(`insert into public.player_prop_quotes (quote_id, sport, game_id, player_key, player_name, market, line, side, book, american, captured_at) values ('old1','nfl','g1','name:x','X','rush_yds',70.5,'over','fanduel',-110,now());`);
+  db.sql('create table if not exists public.signals (sig_key text primary key, event_id text, sport_key text, market text, commence_time timestamptz);');
+  const refused = db.mustFail(() => db.applyFileAtomic(CAPTURE_V11));
+  chk('upgrade · capture v11 will not build over a first-release ledger, and names the fix',
+    /player_props\.sql/.test(refused || '') && db.sql("select count(*) from information_schema.columns where table_name = 'signals' and column_name = 'participant';") === '0',
+    refused && refused.slice(0, 300));
+  out = db.applyFileAtomic(FILE);
+  chk('upgrade · the current file renames the ledger in place; every report row ok', !/CHECK THIS/.test(out), out.slice(-600));
+  chk('upgrade · its rows moved with it', db.sql("select count(*) from public.player_prop_ledger_quotes where quote_id = 'old1';") === '1');
+  chk('upgrade · the name player_prop_quotes is free', db.sql("select to_regclass('public.player_prop_quotes') is null;") === 't');
+  chk('upgrade · no constraint, index or view keeps the old name',
+    db.sql("select count(*) from pg_constraint where conname like 'player\\_prop\\_quotes%';") === '0'
+    && db.sql("select count(*) from pg_class where relname like 'player\\_prop\\_quotes%';") === '0');
+  chk('upgrade · one write-once trigger and one read policy, under the ledger name',
+    db.sql("select string_agg(tgname, ',') from pg_trigger where tgrelid = 'public.player_prop_ledger_quotes'::regclass and not tgisinternal;") === 'player_prop_ledger_quotes_frozen_trg'
+    && db.sql("select string_agg(polname, ',') from pg_policy where polrelid = 'public.player_prop_ledger_quotes'::regclass;") === 'player_prop_ledger_quotes_read');
+  chk('upgrade · the renamed ledger is still write-once', db.mustFail(() => db.service("update public.player_prop_ledger_quotes set american = -120 where quote_id = 'old1';")) !== null);
+  chk('upgrade · a signed-in reader still reads it', db.as(A, "select count(*) from public.player_prop_ledger_quotes where quote_id = 'old1';") === '1');
+  out = db.applyFileAtomic(CAPTURE_V11);
+  chk('upgrade · capture v11 then creates its own player_prop_quotes', !/CHECK THIS/.test(out)
+    && db.sql("select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'player_prop_quotes' and column_name = 'quote_key';") === '1', out.slice(-600));
+  out = db.applyFileAtomic(FILE);
+  chk('upgrade · re-running player_props.sql leaves capture\'s table alone', !/CHECK THIS/.test(out)
+    && db.sql("select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'player_prop_quotes' and column_name = 'quote_key';") === '1'
+    && db.sql("select count(*) from public.player_prop_ledger_quotes;") === '1',
+    [out.slice(-700), db.sql("select count(*) from public.player_prop_ledger_quotes;")]);
 } catch (e) {
   chk('the live layer ran without an unexpected error', false, String(e && e.stack || e).slice(0, 800));
 } finally { db.stop(); }
