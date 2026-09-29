@@ -152,6 +152,32 @@ signed-in readers. Views: `bettor_decision_transitions`,
 50 settled bets) and `user_bet_clv`. Tested against a real PostgreSQL by
 `tools/bettor/bettor_sql.test.js`; the design is `docs/bettor-decision/DESIGN.md`.
 
+### `player_props.sql` — the Player Props ledger
+Needs nothing else first. Four tables, all write-once and never deleted:
+
+- `player_prop_quotes`: every captured sportsbook price. It is change-only by
+  its identity (sport, game, player, market, line, side, book, capture time),
+  and a line must be a half point.
+- `player_prop_projections`: the distribution each record priced.
+- `player_prop_evaluations`: `qualified` rows (the first BET or LEAN of a
+  selection) and `final` rows (the last pregame evaluation). These are
+  refused at or after kickoff, and units appear only on a BET.
+- `player_prop_results`: settlement, units and CLV.
+
+Signed-in readers can read; only the service role writes, through
+`football/props/sync_supabase.js`. Views: `player_prop_quotes_latest`,
+`player_prop_line_movement`, `player_prop_performance`.
+
+### `player_props_watchlist.sql` — a reader's starred props, players and games
+Run after `player_props.sql` (it stops with a message naming that file
+otherwise). One row per (user, kind, item). Readers select, insert and delete
+only their own rows, and a row cannot be edited. Without this file the Props
+page keeps stars in the browser.
+
+Both files end in a report whose rows each say `ok`. Both are tested against a
+real PostgreSQL by `tools/props/player_props_sql.test.js`
+(`npm run props:sql`). The design is in `docs/player-props/DESIGN.md` §9.
+
 ### `research_packets.sql` — the prediction ledger of EdgeDesk Intelligence
 One row per normalised research packet the desk built before kickoff: the
 projection and its version, the price it was compared against (and the
