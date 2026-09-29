@@ -11,7 +11,7 @@
   ],
   "title": "Minnesota Vikings vs. New Orleans Saints: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Minnesota Vikings vs. New Orleans Saints 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Minnesota Vikings at New Orleans Saints at New Orleans Saints -2.3 with a 40.3 fair total. New Orleans Saints wins 59% of simulations. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices Minnesota Vikings at New Orleans Saints at New Orleans Saints -2.3 with a 40.3 fair total. New Orleans Saints wins 58% of simulations. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "New Orleans Saints carries the stronger EdgeDesk offensive profile (#19 in EPA per play), while Minnesota Vikings owns the more favourable defensive matchup (#1 in EPA allowed per play). EdgeDesk’s independent projection makes it New Orleans Saints -2.3…",
   "home_team": "New Orleans Saints",
   "away_team": "Minnesota Vikings",
@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T19:56:56.515Z",
-  "generated_at": "2026-09-29T19:56:56.515Z",
+  "updated_at": "2026-09-29T22:42:06.611Z",
+  "generated_at": "2026-09-29T22:42:06.611Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk differs from the market by 4.8 points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.",
@@ -66,11 +66,11 @@
       "New Orleans Saints carries the stronger EdgeDesk offensive profile (#19 in EPA per play), while Minnesota Vikings owns the more favourable defensive matchup (#1 in EPA allowed per play).",
       "EdgeDesk’s independent projection makes it New Orleans Saints -2.3 with a fair total of 40.3 — approximately a one-score game, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is New Orleans Saints pass offence vs Minnesota Vikings pass defence, which sits −0.278 from the league mean once the two ratings are combined the way the model combines them.",
-      "The largest uncertainty is quarterback information: Minnesota Vikings and New Orleans Saints have no confirmed starter on file, which materially affects how much confidence the exact number deserves."
+      "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": 2.347471941556221,
+      "fair_spread": 2.2520481728078723,
       "fair_spread_text": "New Orleans Saints -2.3",
       "favourite": "New Orleans Saints",
       "underdog": "Minnesota Vikings",
@@ -91,21 +91,21 @@
       "win_prob": {
         "home": "New Orleans Saints",
         "away": "Minnesota Vikings",
-        "home_pct": 59,
-        "away_pct": 41,
-        "home_text": "59%",
-        "away_text": "41%",
+        "home_pct": 58,
+        "away_pct": 42,
+        "home_text": "58%",
+        "away_text": "42%",
         "bounded": false,
         "bounded_note": null,
         "favourite": "New Orleans Saints",
-        "favourite_pct": 59,
-        "favourite_text": "59%"
+        "favourite_pct": 58,
+        "favourite_text": "58%"
       },
       "moneyline": {
         "home": "New Orleans Saints",
         "away": "Minnesota Vikings",
-        "home_odds": "-142",
-        "away_odds": "+142",
+        "home_odds": "-140",
+        "away_odds": "+140",
         "note": "EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it."
       },
       "outcome_range": {
@@ -174,6 +174,12 @@
           "points_n": 0.17065833333333333,
           "text": "Point in the season — New Orleans Saints by 0.2 points",
           "favours": "New Orleans Saints"
+        },
+        {
+          "points": "-0.1",
+          "points_n": -0.09542376874834885,
+          "text": "Quarterback adjustment — Minnesota Vikings by 0.1 points",
+          "favours": "Minnesota Vikings"
         }
       ],
       "total_rows": [
@@ -976,32 +982,32 @@
         "rows": [
           {
             "k": "Confirmation",
-            "a": "STARTER NOT CONFIRMED",
-            "h": "STARTER NOT CONFIRMED",
+            "a": "STARTER CONFIRMED",
+            "h": "STARTER CONFIRMED",
             "note": "from the schedule feed’s own starter id"
           },
           {
             "k": "Quarterback",
-            "a": "not named — nobody has confirmed a starter",
-            "h": "not named — nobody has confirmed a starter",
+            "a": "Kyler Murray",
+            "h": "Tyler Shough",
             "note": null
           },
           {
             "k": "Roster check",
-            "a": "nothing to check until a starter is named",
-            "h": "nothing to check until a starter is named",
+            "a": "on the active roster",
+            "h": "on the active roster",
             "note": null
           },
           {
             "k": "Learned sample",
-            "a": "no starter to look up",
-            "h": "no starter to look up",
+            "a": "86 learned starts",
+            "h": "10 learned starts",
             "note": "starts the QB layer has actually absorbed"
           },
           {
             "k": "Model adjustment",
-            "a": "0.0 — an absence, not an average",
-            "h": "0.0 — an absence, not an average",
+            "a": "+0.051 rating units against this team’s own QB baseline",
+            "h": "+0.034 rating units against this team’s own QB baseline",
             "note": "this quarterback against his own team’s QB baseline. With no confirmed starter the term contributes nothing, which is not a claim that the position is league average"
           },
           {
@@ -1012,9 +1018,8 @@
           }
         ],
         "reads": [
-          "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Minnesota Vikings’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Minnesota Vikings contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Carson Wentz, Kyler Murray.",
-          "New Orleans Saints’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for New Orleans Saints contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Zach Wilson, Spencer Rattler, Tyler Shough.",
+          "The quarterback difference is worth -0.1 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
+          "Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1118,18 +1123,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "Minnesota Vikings — starting quarterback unknown",
-          "text": "No confirmed starter id for Minnesota Vikings. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
-          "label": "New Orleans Saints — starting quarterback unknown",
-          "text": "No confirmed starter id for New Orleans Saints. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "availability not on file",
           "text": "NFL injury report — not loaded in this session.",
           "widening": null
@@ -1138,18 +1131,6 @@
           "sev": "HIGH",
           "label": "the model does not beat the closing line",
           "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "home QB starter unknown",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "away QB starter unknown",
           "widening": null
         }
       ],
@@ -1326,7 +1307,7 @@
     },
     "notes": [
       "EdgeDesk’s line is New Orleans Saints -2.3 with a fair total of 40.3, before any book is consulted.",
-      "New Orleans Saints wins 59% of the time in EdgeDesk’s distribution, Minnesota Vikings 41%."
+      "New Orleans Saints wins 58% of the time in EdgeDesk’s distribution, Minnesota Vikings 42%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
@@ -1336,6 +1317,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T19:56:56.515Z"
+    "at": "2026-09-29T22:42:06.611Z"
   }
 }

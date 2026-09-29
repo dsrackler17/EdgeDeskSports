@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:00:00.000Z",
   "game_when_label": "2026-10-03 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T19:56:56.515Z",
-  "generated_at": "2026-09-29T19:56:56.515Z",
+  "updated_at": "2026-09-29T22:42:06.611Z",
+  "generated_at": "2026-09-29T22:42:06.611Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetRivers and theScore Bet on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -1400,6 +1400,12 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 4.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
           "widening": null
@@ -1521,14 +1527,14 @@
       "available": true,
       "model": "Rice +8.1",
       "model_raw": "Rice +8.1",
-      "market": "Rice +11.0",
-      "difference": "2.9 points",
-      "difference_n": 2.8888632761645763,
+      "market": "Rice +12.5",
+      "difference": "4.4 points",
+      "difference_n": 4.388863276164576,
       "total_model": "58.3",
       "total_market": "56.5",
-      "book": "captured · BetRivers",
-      "captured": "2026-09-29T18:00:11.47+00:00",
-      "capture_age": "2 hours old",
+      "book": "captured · theScore Bet",
+      "captured": "2026-09-29T22:00:02.478+00:00",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1546,7 +1552,7 @@
         "key": "WORTH_RESEARCHING",
         "label": "WORTH RESEARCHING",
         "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 2.9 pts toward Rice, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "means": "EdgeDesk differs from the market by 4.4 pts toward Rice, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "disagreement": null,
       "fair": {
@@ -1560,14 +1566,14 @@
       },
       "market_gap": {
         "available": true,
-        "points": 2.89,
+        "points": 4.39,
         "toward_team": "Rice",
-        "text": "2.9 pts toward Rice",
-        "market_line_text": "UTSA -11.0",
-        "market_home_margin": -11,
+        "text": "4.4 pts toward Rice",
+        "market_line_text": "UTSA -12.5",
+        "market_home_margin": -12.5,
         "favorite_differs": false,
-        "source": "captured · BetRivers",
-        "as_of": "2026-09-29T18:00:11.47+00:00",
+        "source": "captured · theScore Bet",
+        "as_of": "2026-09-29T22:00:02.478+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1578,11 +1584,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "87 · STRONG",
+        "text": "88 · STRONG",
         "sub": "main deduction: UTSA’s availability report is not due yet",
-        "score": 87,
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1608,7 +1614,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 15,
             "max": 15
           },
           {
@@ -1629,18 +1635,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (UTSA)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Re-read availability inside the filing window (Rice)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Fetch the venue forecast",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1676,20 +1682,20 @@
         "focus": {
           "team": "Rice",
           "side": "home",
-          "line": 11,
+          "line": 12.5,
           "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-09-29T18:00:11.47+00:00",
-          "text": "Rice +11.0 (price not captured) at BetRivers"
+          "book": "theScore Bet",
+          "captured_at": "2026-09-29T22:00:02.478+00:00",
+          "text": "Rice +12.5 (price not captured) at theScore Bet"
         },
         "other": {
           "team": "UTSA",
           "side": "away",
-          "line": -11,
+          "line": -12.5,
           "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-09-29T18:00:11.47+00:00",
-          "text": "UTSA -11.0 (price not captured) at BetRivers"
+          "book": "theScore Bet",
+          "captured_at": "2026-09-29T22:00:02.478+00:00",
+          "text": "UTSA -12.5 (price not captured) at theScore Bet"
         },
         "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
@@ -1893,7 +1899,7 @@
       "EdgeDesk’s line is Rice +8.1 on a neutral read of the two teams, before any book is consulted. Projected total 58.3.",
       "Rice wins 29% of the time in EdgeDesk’s simulation, UTSA 71%.",
       "Eight games in ten land between -30.1 and +11.9 for Rice. A single result inside that band tells you nothing new about either team.",
-      "The market has Rice +11.0 at captured · BetRivers, 2.9 points from EdgeDesk’s number.",
+      "The market has Rice +12.5 at captured · theScore Bet, 4.4 points from EdgeDesk’s number.",
       "UTSA quarterback: Owen McCown — started the last game; no announcement for this one.",
       "Rice quarterback: Jacurri Brown — started the last game; no announcement for this one."
     ],
@@ -1909,6 +1915,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T19:56:56.515Z"
+    "at": "2026-09-29T22:42:06.611Z"
   }
 }
