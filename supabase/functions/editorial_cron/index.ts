@@ -2,6 +2,8 @@
 //  FILE:    supabase/functions/editorial_cron/index.ts
 //  TYPE:    Edge Function (deployed) — the editorial system's PRIMARY scheduler
 //  DEPLOY:  supabase functions deploy editorial_cron --no-verify-jwt
+//           (or the Deploy editorial scheduler workflow)
+//  BUILD:   editorial_cron-2026-09-29-r1   (authoritative value: `export const BUILD` below)
 //  CRON:    every 10 minutes (see supabase/editorial_cron.sql)
 // ============================================================
 // WHY THIS EXISTS. The editorial dispatcher has to notice a publication window
@@ -49,6 +51,13 @@
 //   EDITORIAL_WORKFLOW    defaults to editorial.yml
 //   EDITORIAL_DEBOUNCE_S  defaults to 300
 // ============================================================
+
+// WHICH CODE IS ANSWERING. The GET health probe returns this, so the
+// Intelligence doctor (tools/intelligence/deploy_doctor.js) can tell a
+// deployment serving this file from one serving an older one, and deploy it
+// when they differ. Bump it with every change to this file, or the change is
+// never shipped on its own.
+export const BUILD = "editorial_cron-2026-09-29-r1";
 
 // CONFIGURATION IS READ PER CALL, not once at module load. An edge instance is
 // long-lived, so a rotated EDITORIAL_GH_TOKEN takes effect on the next
@@ -201,6 +210,19 @@ export async function run(): Promise<Result> {
   };
 }
 
+// The GET health probe. Read-only: it says which build is answering and how
+// it is configured, never the token itself.
+export function probe() {
+  const c = config();
+  return {
+    ok: true,
+    service: 'editorial_cron',
+    build: BUILD,
+    configured: { repo: c.ghRepo, workflow: c.workflow, ref: c.ref,
+      debounce_seconds: c.debounceSeconds, has_token: !!c.ghToken },
+  };
+}
+
 // The deployed file is imported directly by tools/editorial/editorial_cron.test.js
 // under Node's type stripping with a Deno shim, so the tests exercise THIS
 // code rather than a copy. Node has no Deno.serve, so the server is only
@@ -208,15 +230,7 @@ export async function run(): Promise<Result> {
 if (typeof (Deno as unknown as { serve?: unknown })?.serve === 'function') {
 Deno.serve(async (req) => {
   // GET is a health probe; POST actually schedules.
-  if (req.method === 'GET') {
-    const c = config();
-    return Response.json({
-      ok: true,
-      service: 'editorial_cron',
-      configured: { repo: c.ghRepo, workflow: c.workflow, ref: c.ref,
-        debounce_seconds: c.debounceSeconds, has_token: !!c.ghToken },
-    });
-  }
+  if (req.method === 'GET') return Response.json(probe());
   try {
     const out = await run();
     return Response.json(out, { status: out.ok ? 200 : 503 });

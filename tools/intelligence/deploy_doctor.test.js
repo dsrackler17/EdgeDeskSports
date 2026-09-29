@@ -42,12 +42,19 @@ const PROPS_BUILD = D.expectedFunctionBuild('props_cron');
 const propsCron = (over) => ['/functions/v1/props_cron', { status: 200, body: JSON.stringify(Object.assign(
   { ok: true, service: 'props_cron', build: PROPS_BUILD, configured: { has_token: true }, health: [] }, over || {})) }];
 const PROPS_CURRENT = propsCron();
+/* editorial_cron's public GET probe serving this checkout's build. */
+const ED_BUILD = D.expectedFunctionBuild('editorial_cron');
+const editorialCron = (over) => ['/functions/v1/editorial_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'editorial_cron', build: ED_BUILD, configured: { has_token: true } }, over || {})) }];
+const EDITORIAL_CURRENT = editorialCron();
 
 /** Answer every URL from a table of {match: response}. */
+const SENT = [];
 function net(table) {
-  globalThis.fetch = async (url) => {
+  globalThis.fetch = async (url, init) => {
     const u = String(url);
-    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT]) {
+    SENT.push({ url: u, method: (init && init.method) || 'GET' });
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT, EDITORIAL_CURRENT]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -416,6 +423,47 @@ const OK_BOARD = signals(40, 144);
 
     s = await run([okFn, ['/functions/v1/props_cron', { status: 200, body: '{"ok":true}' }], ...ledger, OK_BOARD]);
     eq('a 200 that is not props_cron\'s own probe is UNKNOWN, not STALE', stateOf(s, PC), 'UNKNOWN');
+
+    /* editorial_cron, the editorial scheduler. Deployed with --no-verify-jwt:
+       its GET is public and carries BUILD, and a POST to it dispatches the
+       editorial workflow, so the doctor must only ever GET it. */
+    const EC = 'deployed editorial_cron matches this checkout';
+    SENT.length = 0;
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('an editorial_cron serving this checkout is CURRENT', stateOf(s, EC), 'CURRENT');
+    const toEd = SENT.filter((x) => x.url.indexOf('/functions/v1/editorial_cron') >= 0);
+    chk('the doctor asks editorial_cron exactly once, with a GET: a POST would dispatch the editorial workflow',
+      toEd.length === 1 && toEd[0].method === 'GET', toEd);
+    chk('and every request the doctor sends anywhere is a GET', SENT.every((x) => x.method === 'GET'),
+      SENT.filter((x) => x.method !== 'GET'));
+
+    s = await run([okFn, editorialCron({ build: 'editorial_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older editorial_cron build is STALE', stateOf(s, EC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans an editorial_cron deploy and nothing else',
+      p.editorial_cron && !p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+
+    s = await run([okFn, editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: an editorial_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, EC), 'STALE');
+    chk('and says so', /predates its build stamp/.test(detailOf(s, EC)), detailOf(s, EC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).editorial_cron);
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on editorial_cron is NOT_DEPLOYED', stateOf(s, 'editorial_cron deployed'), 'NOT_DEPLOYED');
+    chk('which is never auto-deployed', !D.deployPlan(s).editorial_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on editorial_cron is UNKNOWN', stateOf(s, EC), 'UNKNOWN');
+    chk('and points at JWT verification, the likely cause', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === EC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).editorial_cron);
+
+    s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('all four stale at once plans all four, and nothing else',
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && p.functions.length === 4 && p.other.length === 0, p);
   }
 
   /* ---- everything deployed and current -------------------------------- */

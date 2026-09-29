@@ -374,6 +374,38 @@ async function doctor(opts) {
     }
   }
 
+  /* ---- editorial_cron: the editorial system's scheduler ----------------
+     Deployed with --no-verify-jwt, and its GET is a public, read-only health
+     probe carrying BUILD, so this sends no credential at all. ONLY a GET: a
+     POST to editorial_cron dispatches the editorial workflow. A deployment
+     answering WITHOUT a build predates the stamp. */
+  {
+    const wantEd = expectedFunctionBuild('editorial_cron');
+    if (wantEd) {
+      const ec = await get(`${url}/functions/v1/editorial_cron`, {}, 8000);
+      let j = null; try { j = JSON.parse(ec.text); } catch (_) { /* below */ }
+      if (ec.status === 0) {
+        add('deployed editorial_cron matches this checkout', 'UNKNOWN', ec.error || 'no response');
+      } else if (ec.status === 404) {
+        add('editorial_cron deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/editorial_cron`,
+          'Run the Deploy editorial scheduler workflow, or: supabase functions deploy editorial_cron --no-verify-jwt');
+      } else if (!ec.ok || !j || j.service !== 'editorial_cron') {
+        add('deployed editorial_cron matches this checkout', 'UNKNOWN',
+          `HTTP ${ec.status} from editorial_cron${ec.ok ? ', but not its health probe' : ''}`,
+          ec.status === 401 ? 'editorial_cron refused a GET: it may have been deployed with JWT verification on, '
+            + 'which also refuses a pg_cron call without a valid JWT. Deploy it with --no-verify-jwt.' : null);
+      } else {
+        const serving = String(j.build || '');
+        add('deployed editorial_cron matches this checkout',
+          serving === wantEd ? 'CURRENT' : 'STALE',
+          serving === wantEd ? `both are ${wantEd}`
+            : serving ? `deployed ${serving}, this checkout would deploy ${wantEd}`
+              : `the deployed editorial_cron predates its build stamp, this checkout would deploy ${wantEd}`,
+          serving === wantEd ? null : 'supabase functions deploy editorial_cron --no-verify-jwt');
+      }
+    }
+  }
+
   /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
   for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
     const a = await get(site + p, { accept: 'application/json' });
@@ -424,6 +456,7 @@ const AUTO_DEPLOYABLE = {
   'deployed build matches this checkout': 'edgedesk_ai',
   'deployed capture matches this checkout': 'capture',
   'deployed props_cron matches this checkout': 'props_cron',
+  'deployed editorial_cron matches this checkout': 'editorial_cron',
 };
 
 function deployPlan(r) {
@@ -434,6 +467,7 @@ function deployPlan(r) {
     edgedesk_ai: functions.includes('edgedesk_ai'),
     capture: functions.includes('capture'),
     props_cron: functions.includes('props_cron'),
+    editorial_cron: functions.includes('editorial_cron'),
     functions,
     /* What still needs a person after the deploy, by check name. */
     other: bad.filter((c) => !fixes(c)).map((c) => c.name),
@@ -502,7 +536,8 @@ if (require.main === module) {
     const plan = deployPlan(r);
     if (autoDeploy && process.env.GITHUB_OUTPUT) {
       fs.appendFileSync(process.env.GITHUB_OUTPUT,
-        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\ndeploy_props_cron=${plan.props_cron}\n`);
+        `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\ndeploy_props_cron=${plan.props_cron}\n`
+        + `deploy_editorial_cron=${plan.editorial_cron}\n`);
     }
     if (process.argv.includes('--json')) {
       console.log(JSON.stringify(r, null, 1));
