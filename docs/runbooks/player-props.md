@@ -106,10 +106,11 @@ are kept in `quotes.json` before any name is matched.
 | `PROPS_MARKET_GROUPS` | NFL `core,long,alt`, CFB `core,alt` | Groups from `football/props/config.js`: `core` (11), `long` (3), `td` (4), `alt` (6), `kick` (2), `defense` (3). |
 | `PROPS_BOOKMAKERS` | 10 books: eight US books, Pinnacle and BetOnline (`football/props/config.js`) | Up to ten books count as one region. Eleven or more count as two. |
 | `PROPS_MAX_CREDITS` | 800 | The most one run may spend, per league. |
-| `PROPS_MAX_EVENTS` | 16 | Games per run per league, nearest kickoff first. |
+| `PROPS_MAX_EVENTS` | 64 | Games per run per league, nearest kickoff first. A manual refresh re-prices a full college Saturday in one run. |
 | `PROPS_CADENCE` | `1.5:15,6:30,24:60,48:120,*:360` | Each game's re-poll clock: hours to kickoff : minutes between polls. |
 | `PROPS_FRESH_MIN` / `PROPS_AGING_MIN` / `PROPS_STALE_MIN` | 15 / 30 / 90 | Quote age states (FRESH / AGING / STALE; EXPIRED beyond). |
-| `PROPS_EXEC_MAX_MIN` | 30 | The oldest a quote may be and still price an EV, a decision or a stake. |
+| `PROPS_EXEC_MAX_MIN` | 30 | The oldest a quote may be and still price a RECORDED decision (the ledger, the desk, the opportunity layer). |
+| `PROPS_LATEST_MAX_MIN` | 1440 | The Props page decides every prop on its game's newest capture up to this old, and shows each price's age. |
 | `PROPS_LOW_CREDITS` / `PROPS_CRITICAL_CREDITS` | 5000 / 1500 | Credit pacing: games more than 6 h out are polled half as often below the first; only games inside 6 h are polled below the second. |
 
 `PROPS_MIN_INTERVAL_H` and `PROPS_FAR_INTERVAL_H` are gone; `PROPS_CADENCE`
@@ -176,12 +177,13 @@ pacing takes some away:
 
 A college game with few markets posted costs far less than its ceiling (the
 provider bills markets returned). To spend less, lengthen the far tiers, for
-example `PROPS_CADENCE=1.5:15,6:30,24:90,*:480`. Every quote is still judged by
-the 30-minute execution window, so a slower clock means more of the week reads
-*on schedule* (between checks, prices for reference) and needs **Refresh prices**.
+example `PROPS_CADENCE=1.5:15,6:30,24:90,*:480`. The Props page decides every
+prop on its game's latest capture (up to `PROPS_LATEST_MAX_MIN`) and shows the
+price's age, so a slower clock means older prices on the board, not a dark one.
+The recorded decisions still use the 30-minute execution window.
 
 These are ceilings. A book that posts no props for a small college game
-returns fewer markets. The per-run cap (`max_events` 16, nearest kickoff
+returns fewer markets. The per-run cap (`max_events` 64, nearest kickoff
 first) also limits a crowded Saturday.
 
 - **Small plan:** NFL `core` only (`PROPS_LEAGUES=nfl`,

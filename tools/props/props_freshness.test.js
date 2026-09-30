@@ -115,6 +115,33 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   ev = E.evaluate(prop({ quotes: two(10), event: { polled_ok_at: at(10), attempted_at: at(3), failed: true } }), OPTS);
   chk('…but a quote still inside the window stays executable after a later failed check', ev.decision === 'BET' && ev.candidate, ev.decision);
 
+  /* ------------------------------------------------------------ latest */
+  section('the latest price: what the Props page is decided on (latestCfg)');
+  const LF = E.latestCfg();
+  chk('latestCfg is the same thresholds with the latest-price rule on — never the default', LF.latest === true && LF.executable_max_minutes === E.FRESHNESS.executable_max_minutes && LF.latest_max_minutes === 1440 && !E.FRESHNESS.latest && E.latestCfg(LF) === LF);
+  chk('the board\'s thresholds never carry the switch (freshnessSnapshot)', !('latest' in E.freshnessSnapshot()) && E.freshnessSnapshot().latest_max_minutes === 1440);
+  const XL = (min, latestMin) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), { now: NOW, kickoff: KICK, freshness: LF, latest_at: at(latestMin == null ? min : latestMin) });
+  x = XL(180);
+  chk('a 3-hour quote from the game\'s newest capture is decided on — labelled latest, its age kept', x.executable && x.latest === true && x.state === 'EXPIRED' && x.age_minutes === 180 && /3 h old/.test(x.text), x);
+  x = XL(300, 170);
+  chk('…but a quote from an EARLIER capture than the prop\'s newest is not (a book missing from the last answer)', !x.executable && x.reason === 'EXPIRED' && /earlier capture/.test(x.text), x);
+  x = XL(25 * 60);
+  chk('…nor a newest capture past latest_max_minutes (a feed down for a day)', !x.executable && /24-hour latest-price limit/.test(x.text), x);
+  chk('…and a started game is closed under either rule', E.isExecutableQuote(Q('dk', 84.5, 'over', -105, 180), { now: NOW, kickoff: at(1), freshness: LF, latest_at: at(180) }).reason === 'GAME_STARTED');
+  chk('PROPS_LATEST_MAX_MIN overrides the limit', C.freshnessFromEnv({ PROPS_LATEST_MAX_MIN: '600' }).latest_max_minutes === 600 && !E.isExecutableQuote(Q('dk', 84.5, 'over', -105, 700), { now: NOW, freshness: E.latestCfg({ latest_max_minutes: 600 }) }).executable);
+  const LOPTS = { now: NOW, freshness: LF };
+  ev = E.evaluate(prop({ quotes: two(200) }), LOPTS);
+  const evStrict = E.evaluate(prop({ quotes: two(200) }), OPTS);
+  chk('only 200-minute-old quotes: the execution window waits, the latest-price rule decides — BET, with EV and stake', evStrict.code === 'STALE_QUOTE' && ev.decision === 'BET' && ev.candidate && ev.units > 0 && ev.price_basis === 'LATEST' && E.compact(ev).lt === 1, [evStrict.code, ev.decision, ev.price_basis]);
+  chk('…its candidate carries the capture time and the EXPIRED age state (the page tags it)', ev.candidate.captured_at === at(200) && ev.candidate.fresh === 'EXPIRED', ev.candidate);
+  chk('…and an older price costs confidence and value (never ranked as if current)', ev.confidence.score < E.evaluate(prop({ quotes: two(5) }), OPTS).confidence.score && ev.value_score < E.evaluate(prop({ quotes: two(5) }), OPTS).value_score);
+  ev = E.evaluate(prop({ quotes: two(90).concat([Q('br', 84.5, 'over', 150, 300), Q('br', 84.5, 'under', -190, 300)]) }), LOPTS);
+  chk('a +150 left over from an earlier capture beside the newest −105: never the candidate under the latest rule', ev.candidate && ev.candidate.book !== 'br' && ev.ladder.every((r) => r.book !== 'br'), ev.candidate);
+  ev = E.evaluate(prop({ quotes: two(26 * 60) }), LOPTS);
+  chk('a newest capture 26 hours old: WAIT FOR PRICE under both rules, and the text names the limit', ev.code === 'STALE_QUOTE' && ev.decision_label === 'WAIT FOR PRICE' && /24 hours/.test(ev.blocker_text), [ev.code, ev.blocker_text]);
+  ev = E.evaluate(prop({ quotes: two(2) }), LOPTS);
+  chk('a current price is the same decision under either rule, and not labelled LATEST', ev.decision === E.evaluate(prop({ quotes: two(2) }), OPTS).decision && !ev.price_basis && !E.compact(ev).lt);
+
   /* ------------------------------------------------------------ injuries */
   section('injury report freshness (15)');
   const inj = (h) => E.injuryFreshness(new Date(NOW - h * 3600e3).toISOString(), NOW);
@@ -317,6 +344,7 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   chk('the page keeps no private age limit: it asks isExecutableQuote / quoteFreshness with the board\'s thresholds', !/age\s*>\s*\d+/.test(ui) && !/90-minute|> 90\b/.test(ui) && /isExecutableQuote\(/.test(ui) && /freshCfg\(b\.freshness/.test(ui));
   chk('the opportunity layer asks the same rule', /isExecutableQuote\(/.test(opp) && !/90-minute/.test(opp) && !/fresh === 'STALE'/.test(opp));
   chk('the AI desk asks the same rule', /isExecutableQuote\(/.test(desk) && !/90-minute/.test(desk));
+  chk('the page reads the board by the latest-price rule (latestCfg), and only the page does: the desk and the opportunity layer keep the execution window', /latestCfg\(/.test(ui) && !/latestCfg|latest: true/.test(opp) && !/latestCfg|latest: true/.test(desk));
   chk('the SQL execution window is the kernel\'s', new RegExp('select ' + E.FRESHNESS.executable_max_minutes + ' \\$\\$').test(read('supabase/player_props_pipeline.sql')));
   chk('the inlined AI-desk copy of the kernel is in sync (tools/presentation/inline.js)', read('supabase/functions/edgedesk_ai/index.ts').indexOf('function isExecutableQuote(q, ctx)') >= 0);
 

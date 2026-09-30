@@ -69,10 +69,67 @@ values onto the board as `board.freshness`, so the page and the desk judge by
 the build's numbers. `supabase/player_props_pipeline.sql` mirrors the window
 (`player_props_executable_max_minutes()`), and a test pins the two equal.
 
+## The latest price: what the Props page is decided on (2026-09-30)
+
+The execution window above is right for a *recorded* decision. It is wrong
+for the page a reader opens to see what to bet. Games more than a day out are
+re-priced every 2–6 hours by design, so with a 30-minute window the board sat
+on *WAIT FOR PRICE* for almost the whole week. Every row had prices, and none
+had a decision.
+
+So the board is read by a second, explicit rule: `EDProps.latestCfg(F)`, the
+same thresholds with the **latest-price rule** switched on. Under it,
+`isExecutableQuote(q, { …, latest_at })` also accepts a quote past the window
+when both of these hold:
+
+- it belongs to the prop's newest capture: it is within
+  `executable_max_minutes` of `latest_at`, the prop's newest quote. A book
+  missing from the last answer keeps an older quote, and that quote is
+  refused;
+- that capture is no older than `latest_max_minutes`. The default is 1,440
+  (24 h), and `PROPS_LATEST_MAX_MIN` overrides it.
+
+Such a quote returns `latest: true`. An evaluation decided on one carries
+`price_basis: 'LATEST'`, and its compact form carries `lt: 1`.
+
+Who reads which:
+
+| Reader | Rule |
+|---|---|
+| the Props page's rows, the game panel, the drawer | latest price (`board.props[].l`, else `e`; the drawer runs `boardEval(…, { latest: true })`) |
+| the build's decision record, `evaluations.jsonl`, the P&L ledger | execution window (`e`) |
+| `summary.json`, the opportunity layer, the AI desk, the game cards | execution window |
+
+Nothing is recorded, graded or recommended by the desk on an old price. The
+page shows every price's age beside it: green while current, dimmer as it
+ages. The decision stands and the age is said.
+
+**The build does the work, not the browser.** For each prop still waiting on
+the execution window, `build_board.js` also evaluates it on the latest-price
+rule. It ships that evaluation as `l`, stores its market anchor as `x.al`, and
+applies the exposure caps across what the page shows. The page paints the
+board lit at once and re-prices nothing. A combined-yards anchor can take
+seconds to solve, and the board no longer reshuffles a second after it loads.
+The page re-judges only what the clock changes: kickoff (*GAME STARTED*) and a
+newest capture past `latest_max_minutes` (*WAIT FOR PRICE*).
+
+**The page keeps itself current.** Every build writes
+`football/props/<lg>/stamp.json`, a few bytes naming the board as written. The
+page reads it every minute past the CDN cache, every 10 s while a refresh
+lands. It swaps in a newer board without a click and keeps the reader's
+filters, scroll and open prop. A published site without a stamp re-reads the
+board every five minutes.
+
+**Pick a game, see the play.** Selecting a game opens its top plays first: its
+BET and LEAN props, best first, each with price, book, the price's age, EV
+and stake. With none, it shows the closest WATCH props. The sidebar names each
+game's top play.
+
 ## Model opinion vs. the current market
 
 A prop with no executable price keeps its research. Only the price-dependent
-numbers wait.
+numbers wait. On the Props page this now happens only when a game's newest
+capture is older than `latest_max_minutes`, or when it has never been priced.
 
 | Stays | Waits |
 |---|---|
@@ -116,8 +173,11 @@ overrides it):
 | final | archived to `closes.jsonl` |
 
 Games far from kickoff are checked less often by design, to save credits.
-Between checks their last prices are reference only. The page says this once,
-and **Refresh prices** captures current ones on demand.
+Between checks the Props page decides them on their latest capture and shows
+each price's age. The recorded decisions treat those prices as reference only.
+**Refresh prices** captures current ones for every game on demand. One run
+takes up to `PROPS_MAX_EVENTS` games (default 64, enough for a full college
+Saturday) within the per-run credit cap.
 
 Credit pacing: below `PROPS_LOW_CREDITS` (5,000), games more than 6 h out are
 polled half as often. Below `PROPS_CRITICAL_CREDITS` (1,500), only games
@@ -186,7 +246,9 @@ inside 6 h are polled. The hard floor and the per-run cap are unchanged.
    10 min.
 3. The page shows *Refreshing prices…* with the button disabled. It polls
    `{action: 'status'}`, then reloads `board.json?t=…` past the CDN cache
-   until the board carries the new capture.
+   until the board carries the new capture. Its live check reads `stamp.json`
+   every 10 s meanwhile, so the new board usually lands before the status
+   does.
 4. It then says what happened:
    - *Fresh prices captured (N quotes)*;
    - nothing to re-buy;
@@ -207,10 +269,11 @@ page at view time:
 | DELAYED | fewer than 50 % on target |
 | OUTAGE | fewer than 50 % on target **and** one of: the provider is refusing (401 / 429), the capture is failing, or no check has run for 60 min past when one was due. Capture switched off or no key is always OUTAGE |
 
-The page also counts the prices that are executable right now. When the
-pipeline is on schedule but fewer than half the rows are executable, because
-games are far out and between checks, the strip reads *between scheduled
-checks* and one calm note explains it.
+The page also counts the prices inside the execution window right now. When
+the pipeline is on schedule but fewer than half the rows are inside it,
+because games are far out and between checks, the strip reads *on schedule*
+with the next check. One calm note says the board is decided on each game's
+latest capture.
 
 ## What an operator reads
 

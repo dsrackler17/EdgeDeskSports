@@ -19,11 +19,17 @@
      - My Props (a star), All Props (projection-only rows say NO MARKET)
      - the performance view; the college board loads beside it
      - two hours later (between scheduled checks) the strip says "on schedule"
-       and when the next check is, with no banner; nothing is decided; a
-       new week's injury report not out yet is said plainly, not flagged STALE
+       and when the next check is, with no banner; the board STAYS LIT —
+       every prop decided on its game's latest capture, each price tagged
+       with its age, the drawer agreeing; a day with no capture and it
+       waits (WAIT FOR PRICE, research kept); a new week's injury report
+       not out yet is said plainly, not flagged STALE
+     - picking a game opens its TOP PLAYS (BET / LEAN, best first); the
+       sidebar names each game's top play
+     - a newly published board is swapped in by itself (stamp.json), keeping
+       the open prop — no click
      - a phone: cards, collapsed filters, a full-screen drawer; two hours
-       on, stale cards keep their line and last prices (no EV, no decision)
-       in the last capture's order
+       on, cards stay decided with their price's age, ranked by decision
      - #playerprops/nfl/<prop> opens that prop; /player/<id> opens a player
        (usage, recent games, only his props; an unknown id is said);
        /game/<id> opens a game
@@ -164,7 +170,8 @@ async function buildFixture() {
     await page.click('.bottomnav button[data-v="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
     chk('the Props seat opens the Player Props view', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && document.querySelector('.bottomnav button[data-v="pprops"]').classList.contains('on')));
-    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: current · updated \d+ min ago · \d+ books · [\d,]+ current prices/.test(document.querySelector('.pp-strip').textContent)));
+    chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: current · updated \d+ min ago · \d+ books/.test(document.querySelector('.pp-strip').textContent) && !/current prices/.test(document.querySelector('.pp-strip').textContent)));
+    chk('the header says the page keeps itself current (no refresh needed to see new prices)', await page.evaluate(() => /auto-updating/.test(document.querySelector('.pp-live').textContent)));
     chk('healthy: no banner at all (nothing to explain)', await page.evaluate(() => !document.querySelector('.pp-banner') && !document.querySelector('.pp-warnbox')));
     chk('the header says when the PRICES were captured, not only when the board was built', await page.evaluate(() => /Prices updated\s*\d+ min ago/.test(document.querySelector('.pp-upd').textContent)));
     chk('the probability source is printed', await page.evaluate(() => /MODEL-ESTIMATED/.test(document.querySelector('.pp-strip').textContent)));
@@ -172,7 +179,8 @@ async function buildFixture() {
     chk('Best Value lists the priced props, ranked', nBest >= 15 && await page.evaluate(() => { const v = EDPropsUI._visible(); const R = { BET: 4, LEAN: 3, WATCH: 2, PASS: 1, NO_DECISION: 0 }; return v.every((r, i) => i === 0 || R[v[i - 1].decision] >= R[r.decision]); }), nBest);
     chk('no horizontal scroll on a 1440 px desktop', await noHScroll(page));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
-    chk('the page re-priced every prop itself', await page.evaluate(() => Object.keys(EDPropsUI.state.evals.nfl).length === EDPropsUI.state.boards.nfl.props.length));
+    chk('the board paints as the build decided it: no page-wide re-pricing pass (nothing reshuffles after load)', await page.evaluate(() => Object.keys(EDPropsUI.state.evals.nfl || {}).length === 0));
+    chk('every decided price carries its age tag', await page.evaluate(() => { const v = EDPropsUI._visible().filter((r) => r.cand); return v.length > 0 && v.every((r) => r.capAt) && document.querySelectorAll('.pp-row .pp-age').length > 0; }));
     const cats = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-cats .pp-tab')).map((b) => b.textContent.replace(/\d+/g, '').trim()));
     chk('market tabs list only categories that carry data', cats.indexOf('Kicking & defence') < 0 && cats.indexOf('Rushing') >= 0 && cats[0] === 'All', cats);
     await shot(page, 'desktop_board');
@@ -231,8 +239,17 @@ async function buildFixture() {
     await page.click('.pp-mode[data-v="all"]');
     chk('All Props includes EdgeDesk-only projections labelled NO MARKET', await page.evaluate(() => EDPropsUI._visible().some((r) => !r.priced && r.code === 'NO_MARKET')));
     /* a game from the sidebar */
+    chk('the sidebar names each priced game\'s top play', await page.evaluate(() => { const g = document.querySelector('.pp-gm[data-v="2026_04_ATL_NO"] .pk'); return !!g && /(BET|LEAN)/.test(g.textContent) && /[+−-]\d{3}/.test(g.textContent); }));
     await page.click('.pp-gm[data-v="2026_04_ATL_NO"]');
     chk('a game in the sidebar filters the board to it', await page.evaluate(() => { const v = EDPropsUI._visible(); return v.length > 0 && v.every((r) => r.g.game_id === '2026_04_ATL_NO'); }));
+    const gf = await page.evaluate(() => { const s = document.querySelector('.pp-gf'); const plays = Array.from(document.querySelectorAll('.pp-gf .pp-play')); const R = { BET: 4, LEAN: 3 }; const rows = EDPropsUI._rowsOf('nfl').filter((r) => r.g.game_id === '2026_04_ATL_NO' && r.cand && R[r.decision]);
+      return s ? { text: s.textContent.replace(/\s+/g, ' '), n: plays.length, top: plays[0] ? plays[0].getAttribute('data-v') : null, decs: plays.map((p) => p.querySelector('.pp-dec').textContent), best: rows.length, allLit: plays.every((p) => /EV [+−]/.test(p.textContent) && p.querySelector('.pp-age')) } : null; });
+    chk('…and opens with the game\'s TOP PLAYS: its BET and LEAN props, best first, each with price, book, age and EV', !!gf && /TOP PLAYS/.test(gf.text) && gf.n === Math.min(5, gf.best) && gf.n > 0 && gf.decs.every((d, i) => i === 0 || !(d === 'BET' && gf.decs[i - 1] !== 'BET')) && gf.allLit, gf);
+    await shot(page, 'desktop_game_top_plays');
+    await page.click('.pp-gf .pp-play');
+    await page.waitForSelector('#ppDrawer .pp-sec');
+    chk('…and a play opens its research, agreeing with the play', await page.evaluate((k) => EDPropsUI.state.drawer === k && /(BET|LEAN)/.test(document.querySelector('#ppDrawer .pp-dec').textContent), gf && gf.top));
+    await page.click('[data-pp-act="close"]');
     /* performance */
     await page.click('.pp-mode[data-v="perf"]');
     await page.waitForSelector('.pp-perf');
@@ -262,20 +279,35 @@ async function buildFixture() {
     chk('two hours on (between the far game\'s checks): no banner, and the strip says "on schedule" and how old the last prices are — never "0 current prices"', /Sportsbook prices: on schedule/.test(st2.shown) && /last 2\.\d h ago/.test(st2.shown) && !/current prices/.test(st2.shown) && !st2.banner && st2.health === 'HEALTHY', st2.shown + ' || ' + st2.banner);
     const fold = await page.evaluate(() => { const d = document.querySelector('.pp-strip .pp-sched'); return d ? { open: d.open, h: d.querySelector('span').getBoundingClientRect().height, vis: d.querySelector('span').checkVisibility ? d.querySelector('span').checkVisibility() : null } : null; });
     chk('…its explanation is folded away until asked for', !!fold && !fold.open && (fold.h === 0 || fold.vis === false), fold);
-    chk('…and its ⓘ explains the price clock: reference only, nothing decided, Refresh prices', /every 1 h inside 24 h, 2 h inside 48 h, 6 h beyond/.test(st2.sched) && /reference only/.test(st2.sched) && /nothing is decided on a price older than 30 minutes/.test(st2.sched) && /Refresh prices/.test(st2.sched), st2.sched);
-    chk('and no stale price is decided on', st2.rows.length > 0 && st2.rows.every((r) => r.decision === 'NO_DECISION' && r.wait && !r.cand && !r.units));
+    chk('…and its ⓘ explains the price clock: every prop decided on its latest capture, each price with its age, Refresh prices', /every 1 h inside 24 h, 2 h inside 48 h, 6 h beyond/.test(st2.sched) && /decided on its game's latest capture \(up to 24 h old\)/.test(st2.sched) && /shows its age/.test(st2.sched) && /Refresh prices/.test(st2.sched), st2.sched);
+    chk('THE BOARD STAYS LIT: two hours on, every priced prop is still decided on its game\'s latest capture — nothing waits', st2.rows.length > 0 && st2.rows.every((r) => !r.wait) && st2.rows.some((r) => r.cand && (r.decision === 'BET' || r.decision === 'LEAN')) && st2.rows.filter((r) => r.cand).every((r) => r.latest && !r.live), st2.rows.filter((r) => r.wait).length);
     chk('no STALE pill on any row', st2.pills === 0, st2.pills);
     await shot(page, 'desktop_between_checks');
-    const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row')).filter((row) => /WAIT FOR PRICE/.test(row.textContent)).slice(0, 5).map((row) => { const c = row.children; return { best: c[6].textContent, proj: c[7].textContent, fair: c[8].textContent, ev: c[11].textContent, stake: c[15].textContent, over: c[4].className, dec: c[14].textContent }; }));
-    chk('a waiting row: decision WAIT FOR PRICE and its last price "O 212.5 +105 MGM" — its age is the strip\'s, not repeated on every row', cells.length > 0 && cells.every((c) => /WAIT FOR PRICE/.test(c.dec) && /^(O|U|Yes|No)[^+−-]*[+−-]\d+ \w+$/.test(c.best)), cells.slice(0, 2));
-    chk('…and the reference price still carries its age where it is read closely (the tooltip)', await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row .best b.pp-last')).slice(0, 5).every((x) => /Last seen .* 2\.\d h ago — reference only/.test(x.title))));
-    chk('…its research stays (projection and fair line), its price-dependent numbers wait (EV, stake)', cells.every((c) => /\d/.test(c.proj) && /\d/.test(c.fair) && c.ev === '—' && c.stake === '—'), cells.slice(0, 2));
-    chk('…and its last Over / Under prices are styled as reference, never as live numbers', cells.every((c) => /pp-ref/.test(c.over)), cells.map((c) => c.over).slice(0, 2));
+    const cells = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row')).filter((row) => /\b(BET|LEAN|WATCH|PASS)\b/.test(row.children[14].textContent)).slice(0, 5).map((row) => { const c = row.children; return { best: c[6].textContent, age: (c[6].querySelector('.pp-age') || {}).textContent || '', ageCls: (c[6].querySelector('.pp-age') || {}).className || '', ageTip: (c[6].querySelector('.pp-age') || {}).title || '', ev: c[11].textContent, dec: c[14].textContent, decTip: c[14].querySelector('.pp-dec').title }; }));
+    chk('a lit row: its decision, its best price and book, and the price\'s age ("2.2h") beside it', cells.length > 0 && cells.every((c) => /^(O|U|Yes|No)/.test(c.best) && /[+−-]\d+/.test(c.best) && /^2\.\dh$/.test(c.age) && /expired/.test(c.ageCls) && /captured 2\.\d h ago/.test(c.ageTip)), cells.slice(0, 2));
+    chk('…with its EV, and the decision says what price it was decided on', cells.every((c) => /[+−]\d/.test(c.ev) && /latest capture \(2\.\d h ago\)/.test(c.decTip)), cells.slice(0, 2));
     await page.click('.pp-row');
     await page.waitForSelector('#ppDrawer .pp-sec');
     const dw = await page.evaluate(() => document.getElementById('ppDrawer').textContent);
+    await shot(page, 'desktop_latest_drawer');
+    chk('the drawer decides the same prop on the same latest capture, and says so: price age, next check, Refresh', !/WAIT FOR CURRENT MARKET/.test(dw) && /Decided on this game's latest capture \(price 2\.\d h ago\)/.test(dw) && /Refresh prices re-checks now/.test(dw) && /\blatest\b/.test(dw), dw.slice(0, 600));
+    chk('…and the row agrees with it', await page.evaluate(() => { const r = EDPropsUI._rowsOf('nfl').find((x) => x.key === EDPropsUI.state.drawer); return !!r && document.querySelector('#ppDrawer .pp-dec').textContent === document.querySelector('.pp-row.sel .pp-dec').textContent; }));
+    await ctx.close();
+    /* a day later with nothing captured (the feed down): past the latest-price
+       limit a prop waits again — research stays, the price-dependent numbers go */
+    console.log('a day without a capture');
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 25 * 3600e3));
+    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+    const wcells = await page.evaluate(() => Array.from(document.querySelectorAll('.pp-row')).filter((row) => /WAIT FOR PRICE/.test(row.textContent)).slice(0, 5).map((row) => { const c = row.children; return { best: c[6].textContent, proj: c[7].textContent, fair: c[8].textContent, ev: c[11].textContent, stake: c[15].textContent, over: c[4].className, dec: c[14].textContent }; }));
+    chk('a newest capture 25 h old: WAIT FOR PRICE, with its last price "O 212.5 +105 MGM"', wcells.length > 0 && wcells.every((c) => /WAIT FOR PRICE/.test(c.dec) && /^(O|U|Yes|No)[^+−-]*[+−-]\d+ \w+/.test(c.best)), wcells.slice(0, 2));
+    chk('…its research stays (projection and fair line), its price-dependent numbers wait (EV, stake)', wcells.every((c) => /\d/.test(c.proj) && /\d/.test(c.fair) && c.ev === '—' && c.stake === '—'), wcells.slice(0, 2));
+    chk('…and its last Over / Under prices are styled as reference, never as live numbers', wcells.every((c) => /pp-ref/.test(c.over)), wcells.map((c) => c.over).slice(0, 2));
+    await page.click('.pp-row');
+    await page.waitForSelector('#ppDrawer .pp-sec');
+    const dw2 = await page.evaluate(() => document.getElementById('ppDrawer').textContent);
     await shot(page, 'desktop_wait_drawer');
-    chk('the drawer keeps the model opinion beside the dead market: projection, last line, last quote, PRICE EXPIRED/STALE, WAIT FOR CURRENT MARKET', /Projection/.test(dw) && /Last observed line/.test(dw) && /Last quote\s*2\.\d h ago/.test(dw) && /PRICE (EXPIRED|STALE)/.test(dw) && /WAIT FOR CURRENT MARKET/.test(dw) && /\(reference\)/.test(dw), dw.slice(0, 600));
+    chk('the drawer keeps the model opinion beside the dead market: projection, last line, last quote, PRICE EXPIRED, WAIT FOR CURRENT MARKET, the 24-hour limit', /Projection/.test(dw2) && /Last observed line/.test(dw2) && /Last quote\s*1 d ago/.test(dw2) && /PRICE EXPIRED/.test(dw2) && /WAIT FOR CURRENT MARKET/.test(dw2) && /older than 24 hours/.test(dw2) && /\(reference\)/.test(dw2), dw2.slice(0, 600));
+    chk('no page errors a day on', errors.length === 0, errors);
     await ctx.close();
     /* the same two hours, with the scheduler's next check ahead and the new
        week's injury report not published yet (Monday, Tuesday) */
@@ -299,14 +331,15 @@ async function buildFixture() {
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
     const d3 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner.delayed') || {}).textContent || '' }));
     await shot(page, 'desktop_delayed');
-    chk('past its check target: DELAYED — "temporarily unavailable", last capture, recovery running, no stale decision', /prices delayed/.test(d3.strip) && /Current sportsbook pricing temporarily unavailable/.test(d3.banner) && /Last successful capture: 2\.\d h ago/.test(d3.banner) && /Automatic recovery is running/.test(d3.banner) && /No stale quote will generate a betting decision/.test(d3.banner), d3);
+    chk('past its check target: DELAYED — "temporarily unavailable", last capture, recovery running, no stale decision', /prices delayed/.test(d3.strip) && /Current sportsbook pricing temporarily unavailable/.test(d3.banner) && /Last successful capture: 2\.\d h ago/.test(d3.banner) && /Automatic recovery is running/.test(d3.banner) && /Every prop stays decided on its game's latest capture \(up to 24 h old\), each price with its age/.test(d3.banner), d3);
+    chk('…and the board stays lit through it', await page.evaluate(() => EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p).every((r) => !r.wait)));
     await ctx.close();
     /* nothing has even tried for five hours: OUTAGE, and it says the capture is overdue */
     ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 5 * 3600e3));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
     const d5 = await page.evaluate(() => (document.querySelector('.pp-banner.outage') || {}).textContent || '');
     await shot(page, 'desktop_outage');
-    chk('no capture attempt for five hours: OUTAGE, naming the overdue capture', /Current sportsbook pricing is unavailable/.test(d5) && /overdue/.test(d5) && /Model projections remain available/.test(d5), d5);
+    chk('no capture attempt for five hours: OUTAGE, naming the overdue capture', /Current sportsbook pricing is unavailable/.test(d5) && /overdue/.test(d5) && /decided on its game's latest capture/.test(d5), d5);
     chk('no page errors across the freshness states', errors.length === 0, errors);
     await ctx.close();
 
@@ -379,6 +412,32 @@ async function buildFixture() {
     await ctx.close();
     propsCron = null;
 
+    /* ---------------------------------------------------------- live
+       a newly published board arrives by itself: the page reads the small
+       stamp.json past the CDN cache and swaps the board in, keeping the
+       reader's open prop — nothing to press */
+    console.log('live');
+    const stampPath = '/football/props/nfl/stamp.json';
+    served[stampPath] = JSON.stringify({ schema: 'edgedesk_player_props_stamp_v1', league: 'nfl', board_generated_at: FX.board.generated_at });
+    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl'));
+    await page.waitForSelector('.pp-row', { timeout: 15000 });
+    await page.click('.pp-row');
+    await page.waitForSelector('#ppDrawer .pp-sec');
+    const openKey = await page.evaluate(() => EDPropsUI.state.drawer);
+    const newer = new Date(NOW + 90000).toISOString();
+    served[boardPath] = JSON.stringify(Object.assign({}, FX.board, { generated_at: newer }));
+    served[stampPath] = JSON.stringify({ schema: 'edgedesk_player_props_stamp_v1', league: 'nfl', board_generated_at: newer });
+    seenUrls.length = 0;
+    await page.evaluate(() => { EDPropsUI.state.checkedAt = Object.assign(EDPropsUI.state.checkedAt || {}, { nfl: 0 }); });
+    const swapped = await page.waitForFunction((t) => EDPropsUI.state.boards.nfl.generated_at === t, newer, { timeout: 25000 }).then(() => true, () => false);
+    chk('a newly published board is swapped in by itself on the next minute\'s check — no click', swapped);
+    chk('…found through the small stamp, past the CDN cache', seenUrls.some((u) => /\/football\/props\/nfl\/stamp\.json\?t=\d+/.test(u)), seenUrls.filter((u) => /stamp|board/.test(u)));
+    chk('…keeping the reader\'s open prop', await page.evaluate((k) => EDPropsUI.state.drawer === k && !!document.querySelector('#ppDrawer .pp-sec'), openKey));
+    chk('…and the header says new prices loaded', /new prices loaded/.test(await page.textContent('.pp-live')));
+    chk('no page errors in the live update', errors.length === 0, errors);
+    served[boardPath] = live; delete served[stampPath];
+    await ctx.close();
+
     /* ---------------------------------------------------------- phone */
     console.log('phone');
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }, '#playerprops'));
@@ -396,8 +455,8 @@ async function buildFixture() {
     chk('no page errors on the phone', errors.length === 0, errors);
     await ctx.close();
 
-    /* a phone two hours on: stale cards keep their line and last prices (never
-       an EV or a decision) and keep the last capture's order, not A-to-Z QBs */
+    /* a phone two hours on: cards stay decided on the latest capture, each
+       price with its age, ranked by decision — never a wall of WAIT FOR PRICE */
     console.log('phone, stale');
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }, '#playerprops', NOW + 2 * 3600e3));
     await page.waitForSelector('.pp-card', { timeout: 15000 });
@@ -408,11 +467,10 @@ async function buildFixture() {
       return { txt: cards.map((c) => c.textContent.replace(/\s+/g, ' ')), dec: v.map((r) => r.decision), line: v.map((r) => r.refLine), cap: v.map((r) => r.capValue),
         note: (document.querySelector('.pp-cnote') || {}).textContent || '', tile: getComputedStyle(document.querySelector('.pp-card .g > span')).backgroundColor };
     });
-    chk('stale phone cards are not decided', sc.dec.length > 0 && sc.dec.every((d) => d === 'NO_DECISION'), sc.dec);
-    chk('…yet show the last line and each side\'s last price, labelled as the LAST ones, waiting for a price', sc.txt.every((t) => /WAIT FOR PRICE/.test(t) && /Last line\s*\d/.test(t) && /Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t) && !/STALE PRICE/.test(t)), sc.txt.filter((t) => !/Last (Over|Under|Yes|No)\s*[+−-]?\d/.test(t)));
-    chk('…and the list says once, calmly, that no EV or decision comes until a current price (not a footer on every card)', /Between price checks/.test(sc.note) && /No EV or decision until a current price/.test(sc.note) && sc.txt.every((t) => !/no EV or decision until a current price/.test(t)), [sc.note, sc.txt[0]]);
-    chk('…never an EV figure', sc.txt.every((t) => !/EV\s*[+−-]\d/.test(t)), sc.txt.slice(0, 2));
-    chk('…listed in the last capture\'s order, and the list says so', sc.cap.every((x, i) => i === 0 || sc.cap[i - 1] >= x) && sc.cap[0] > 0 && /ranked and priced as of the last check \(2\.\d h ago/.test(sc.note), [sc.cap, sc.note]);
+    const RK = { BET: 4, LEAN: 3, WATCH: 2, PASS: 1, NO_DECISION: 0 };
+    chk('phone cards two hours on stay decided (BET / LEAN first), never WAIT FOR PRICE', sc.dec.length > 0 && sc.dec.every((d) => d !== 'NO_DECISION') && ['BET', 'LEAN'].indexOf(sc.dec[0]) >= 0 && sc.dec.every((d, i) => i === 0 || RK[sc.dec[i - 1]] >= RK[d]), sc.dec);
+    chk('…each with its best price and that price\'s age, and an EV figure', sc.txt.every((t) => !/WAIT FOR PRICE/.test(t) && /Best price\s*2\.\dh\s*(O|U|Yes|No)/.test(t) && /EV\s*[+−-]\d/.test(t)), sc.txt.slice(0, 2));
+    chk('…and the list says once, calmly, what the prices are (not a footer on every card)', /Latest prices/.test(sc.note) && /decided on its game's latest capture \(2\.\d h ago/.test(sc.note) && /shows its age/.test(sc.note) && sc.txt.every((t) => !/until a new capture/.test(t)), [sc.note, sc.txt[0]]);
     chk('the card tiles are styled (the tile rule matches the card\'s spans)', sc.tile && sc.tile !== 'rgba(0, 0, 0, 0)', sc.tile);
     chk('a collapsed games pane on a phone is one button', await page.evaluate(() => !document.getElementById('ppGSearch') && document.querySelectorAll('.pp-side .pp-chip').length === 1));
     chk('no horizontal scroll on a stale phone board', await noHScroll(page));
