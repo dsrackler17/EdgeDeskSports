@@ -145,7 +145,6 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .st.research{color:var(--obs);border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.07)}
 .st.watch{color:var(--est);border-color:rgba(217,164,65,.45)}
 .st.pass{color:var(--dim);border-color:var(--line2)}
-.st.incomplete{color:var(--neg);border-color:rgba(226,102,75,.4)}
 .ck{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line2);border-radius:5px;padding:2px 7px;color:var(--dim);white-space:nowrap}
 .ck.ok{color:var(--val);border-color:rgba(124,193,66,.32)}
 .ck.warn{color:var(--est);border-color:rgba(217,164,65,.34)}
@@ -265,7 +264,6 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
 .tiles>div{background:var(--panel);padding:14px 14px 13px;min-width:0}
 .tiles .n{display:block;font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:6px}
 .tiles .n.research{color:var(--obs)}.tiles .n.watch{color:var(--est)}.tiles .n.t{font-size:15px}
-.tiles .n.stale{color:var(--neg)}
 @media(max-width:1080px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tiles .n{font-size:19px}.tiles>div{padding:12px}.tiles>div:last-child:nth-child(odd){grid-column:1/-1}}
 .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
@@ -642,7 +640,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <div class="sec-head rv">
       <span class="ey">Today on EdgeDesk</span>
       <h2>The current slate, as EdgeDesk has it right now.</h2>
-      <p class="lede">EdgeDesk re-prices the NFL and FBS slate as markets move. Every figure below is read from its stored research, with the time it was captured &mdash; and it says when a price is stale or the data is thin.</p>
+      <p class="lede">EdgeDesk re-prices the NFL and FBS slate as markets move. Every figure below is read from its stored research, with the book and the time its price was captured.</p>
     </div>
     <div class="sec-body">
       <div class="tiles" id="lpTiles" aria-label="The board right now" hidden>
@@ -661,7 +659,6 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <span><span class="st research">RESEARCH</span> clears EdgeDesk&rsquo;s research gates &mdash; worth opening, not a bet</span>
         <span><span class="st watch">WATCH</span> a real disagreement that hasn&rsquo;t cleared them</span>
         <span><span class="st pass">PASS</span> model and market agree, or the price leaves no value</span>
-        <span><span class="st incomplete">DATA INCOMPLETE</span> something is missing or stale &mdash; and it says what</span>
       </div>
       <div class="board-cta">
         <button type="button" class="btn primary" onclick="startSubscribe()" data-cta="board_trial">Open every game in the terminal <span class="ar" aria-hidden="true">&rarr;</span></button>
@@ -1164,7 +1161,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
      board's view model (supabase/home_board.sql + football/home/board.json) -->
 <script src="/lib/edgedesk_track.js?v=20260930a"></script>
-<script src="/lib/edgedesk_home.js?v=20260930a"></script>
+<script src="/lib/edgedesk_home.js?v=20260930b"></script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -2292,7 +2289,9 @@ function gameAction(g, label){
 function stChip(x){ return '<span class="st '+e(x.tone)+'" title="'+e(x.status_note||'')+'">'+e(x.status_label)+'</span>'; }
 function ageSpan(text, state){
   if(!text) return '';
-  var cls=state==='EXPIRED'||state==='STALE'||state===true?'stale':(state==='AGING'?'aging':'');
+  /* FRESH, AGING and a price on its kickoff schedule read plainly; a prop
+     past its 30-minute window is amber; red is kept for an expired price */
+  var cls=state==='EXPIRED'||state===true?'stale':(state==='STALE'?'aging':'');
   return '<span class="age '+cls+'">'+e(text)+'</span>';
 }
 function supCls(p){ return p.supports===true?'pos':(p.supports===false?'neg':''); }
@@ -2302,12 +2301,18 @@ function propRow(p){
     +'<small>'+e(p.selection||'')+(p.odds_text?' &middot; '+e(p.odds_text)+(p.book?' '+e(p.book):''):'')+(p.age_text?' &middot; '+e(p.age_text):'')+'</small></span>'
     +'<span class="nums">Mkt <b>'+e(p.line_text||'—')+'</b> &middot; ED <b>'+e(p.projection_text||'—')+'</b>'+(p.difference_text?' &middot; <span class="d '+cls+'">'+e(p.difference_text)+'</span>':'')+'</span></div>';
 }
+/* a game's EV is printed only at a quote inside the execution window */
 function evLine(g){
-  var v=g.ev; if(!v||!v.calibrated_text) return '';
+  var v=g.ev; if(!v||!v.calibrated_text||v.stale) return '';
   var cls=v.calibrated>0?'pos':(v.calibrated<0?'neg':'');
   return '<p class="ev">EdgeDesk EV <b class="'+cls+'">'+e(v.calibrated_text)+'</b> (calibrated) at <b>'+e(v.selection||'')+'</b>'
-    +(v.price_text?' '+e(v.price_text):'')+(v.book?' &middot; '+e(v.book):'')+(v.age_text?' &middot; '+ageSpan('captured '+v.age_text, v.stale):'')
-    +(v.stale?' &middot; <span class="age stale">not a current price</span>':'')+'</p>';
+    +(v.price_text?' '+e(v.price_text):'')+(v.book?' &middot; '+e(v.book):'')+(v.age_text?' &middot; '+ageSpan('captured '+v.age_text, ''):'')+'</p>';
+}
+/* where a market came from and when, in neutral type: only current markets
+   are listed here, so nothing on this page is flagged as stale */
+function marketSrc(g, prefix){
+  if(g.market_age_text) return ageSpan((prefix||'')+g.market_age_text, '');
+  return g.market_note?ageSpan('market: '+g.market_note, ''):'';
 }
 function gameBlock(g, full){
   var h='<div class="opp'+(full?'':' compact')+'">'
@@ -2317,12 +2322,10 @@ function gameBlock(g, full){
     +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(g.fair_text||'—')+'</span></div>'
     +'<div><span class="l">Difference</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>';
   if(full){
-    h+='<p class="ev">'+(g.market_book?e(g.market_book)+' &middot; ':'')+(g.market_age_text?ageSpan('market captured '+g.market_age_text, g.market_stale):(g.market_note?ageSpan('market: '+g.market_note,'AGING'):''))
-      +(g.status==='DATA_INCOMPLETE'&&g.status_note?' &middot; '+e(g.status_note):'')+'</p>';
+    h+='<p class="ev">'+(g.market_book?e(g.market_book)+' &middot; ':'')+marketSrc(g, 'market captured ')+'</p>';
     h+=evLine(g);
     var ps=g.props.filter(function(p){ return p.status!=='DATA_INCOMPLETE'; }).slice(0,2);
     if(ps.length){ h+='<div class="opp-k">Player props</div>'+ps.map(propRow).join(''); }
-    else if(g.props_empty){ h+='<p class="ev">'+e(g.props_empty)+'</p>'; }
     h+=gameAction(g);
   }
   return h+'</div>';
@@ -2354,10 +2357,10 @@ function renderPreview(V){
   var body=$('lpPrevBody'), tag=$('lpPrevTag'), foot=$('lpPrevFoot'); if(!body) return;
   body.classList.remove('loading');
   var items=V.preview;
-  if(!items.length&&V.games.length){
-    /* live games, none clearing the research gates: say so, show the two
+  if(!items.length&&V.listed_games.length){
+    /* current games, none clearing the research gates: say so, show the two
        widest disagreements with their honest labels, promote nothing */
-    items=V.games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,2).map(function(g){ return {kind:'game',game:g}; });
+    items=V.listed_games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,2).map(function(g){ return {kind:'game',game:g}; });
     body.innerHTML='<div class="opp"><p class="ev" style="margin:0"><b>No game clears EdgeDesk&rsquo;s research gates right now.</b> PASS is a normal answer. The widest current disagreements:</p></div>'
       +items.map(function(x,i){ return gameBlock(x.game, i===0); }).join('');
   }else if(items.length){
@@ -2365,46 +2368,53 @@ function renderPreview(V){
   }else{
     body.classList.add('ill');
     if(tag){ tag.textContent='Example'; tag.className='tag'; }
-    if(foot) foot.textContent='Example layout. No live game or player prop is on EdgeDesk’s board right now; the live preview returns as soon as the slate does.';
+    if(foot) foot.textContent=V.games.length
+      ?'Example layout. The live preview returns with the next sportsbook price capture; every game is in the terminal now.'
+      :'Example layout. No live game or player prop is on EdgeDesk’s board right now; the live preview returns as soon as the slate does.';
     return;
   }
   if(tag){
     if(V.times.stale){ tag.textContent='Last update'+(V.times.updated_text?' · '+V.times.updated_text:''); tag.className='tag'; }
     else{ tag.textContent='Live'+(V.times.updated_text?' · '+V.times.updated_text:''); tag.className='tag live'; }
   }
-  if(foot) foot.textContent='Read from EdgeDesk’s stored research. Each price shows when it was captured; a stale price is labelled, never shown as current. Research, not picks.';
+  if(foot) foot.textContent='Read from EdgeDesk’s stored research. Each price shows its book and when it was captured, and EV is shown only on a current price. Research, not picks.';
   try{ window.EDPricing&&EDPricing.apply(body); }catch(err){}
 }
 function renderToday(V){
   var tiles=$('lpTiles'), board=$('lpBoard'), empty=$('lpBoardEmpty'), src=$('lpBoardSrc'); if(!board) return;
   var c=V.counts, t=V.times;
-  var vals={games_analyzed:n(c.games_analyzed), game_research:n(c.game_research), prop_research:n(c.prop_research),
-    watching:n(c.watching), passes:n(c.passes), model:t.model_text, odds:t.odds_text};
+  /* a count of zero is hidden, as it is in the hero */
+  var pos=function(v){ return typeof v==='number'&&v>0?n(v):null; };
+  var vals={games_analyzed:pos(c.games_analyzed), game_research:pos(c.game_research), prop_research:pos(c.prop_research),
+    watching:pos(c.watching), passes:pos(c.passes), model:t.model_text, odds:t.odds_text};
   var any=false;
   if(tiles){
     [].forEach.call(tiles.querySelectorAll('[data-k]'), function(d){
       var v=vals[d.getAttribute('data-k')];
       d.hidden=v==null; if(v!=null){ d.querySelector('.n').textContent=v; any=true; }
-      if(d.getAttribute('data-k')==='model') d.querySelector('.n').classList.toggle('stale', !!t.model_stale);
     });
     tiles.hidden=!any;
   }
-  var games=V.games.slice(0,6);
+  /* only games with a current market are listed; the rest are in the terminal */
+  var games=V.listed_games.slice(0,6);
   if(!games.length){
     board.innerHTML='';
-    if(empty){ empty.hidden=false; empty.innerHTML=V.ok?'<b>No upcoming NFL or FBS games are on EdgeDesk&rsquo;s board right now.</b> The board fills as the next slate is priced'+(t.model_text?' &middot; last model update '+e(t.model_text):'')+'.'
-      :'<b>The live board couldn&rsquo;t be reached just now.</b> Nothing is wrong with your connection to the terminal &mdash; this page reads a public summary, and it will be back on the next visit.'; }
+    if(empty){ empty.hidden=false; empty.innerHTML=!V.ok
+      ?'<b>The live board couldn&rsquo;t be reached just now.</b> Nothing is wrong with your connection to the terminal &mdash; this page reads a public summary, and it will be back on the next visit.'
+      :(V.games.length
+        ?'<b>The board refreshes with the next sportsbook capture.</b> EdgeDesk has priced '+(n(c.games_analyzed)||'the')+' upcoming NFL and FBS games; each is listed here beside its market once a current price is on file, and every one is in the terminal now.'
+        :'<b>No upcoming NFL or FBS games are on EdgeDesk&rsquo;s board right now.</b> The board fills as the next slate is priced'+(t.model_text?' &middot; last model update '+e(t.model_text):'')+'.'); }
   }else{
     if(empty) empty.hidden=true;
     board.innerHTML=games.map(function(g){
-      var note=g.status==='DATA_INCOMPLETE'?g.status_note:(g.key_reason||'');
+      var note=g.key_reason||'';
       var pr=g.props_count>0?(g.props_count+' player prop'+(g.props_count===1?'':'s')+' at research grade'):(g.props_total>0?(n(g.props_total)+' player props tracked'):'');
       return '<article class="gc '+e(g.tone)+'"><div class="gc-hd"><div><b>'+e(g.matchup)+'</b><span class="w">'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+'</span></div>'+stChip(g)+'</div>'
         +'<div class="cells c3"><div><span class="l">EdgeDesk</span><span class="v mdl">'+e(g.fair_text||'—')+'</span></div>'
         +'<div><span class="l">Market</span><span class="v">'+e(g.market_text||'—')+'</span></div>'
         +'<div><span class="l">Gap</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>'
         +(note?'<p class="note">'+e(String(note).slice(0,170))+'</p>':'')
-        +'<div class="foot"><span>'+(g.market_book?e(g.market_book)+' &middot; ':'')+(g.market_age_text?ageSpan(g.market_age_text, g.market_stale):(g.market_note?ageSpan('market: '+g.market_note,'AGING'):''))+'</span>'+(pr?'<span class="pr">'+e(pr)+'</span>':'')+'</div></article>';
+        +'<div class="foot"><span>'+(g.market_book?e(g.market_book)+' &middot; ':'')+marketSrc(g)+'</span>'+(pr?'<span class="pr">'+e(pr)+'</span>':'')+'</div></article>';
     }).join('');
   }
   if(src) src.textContent=(t.model_at?'Research state as of '+new Date(t.model_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'. ':'')
@@ -2413,8 +2423,8 @@ function renderToday(V){
 function renderConnected(V){
   var body=$('lpConnBody'), tag=$('lpConnTag'), name=$('lpConnName'), foot=$('lpConnFoot'); if(!body) return;
   var g=null;
-  V.games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })&&(x.status==='RESEARCH'||x.status==='WATCH')) g=x; });
-  V.games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })) g=x; });
+  V.listed_games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })&&(x.status==='RESEARCH'||x.status==='WATCH')) g=x; });
+  V.listed_games.forEach(function(x){ if(!g&&x.props.some(function(p){ return p.status!=='DATA_INCOMPLETE'; })) g=x; });
   if(!g) return;                                     /* the labelled example stays */
   var ps=g.props.filter(function(p){ return p.status!=='DATA_INCOMPLETE'; }).slice(0,4);
   body.innerHTML='<div class="gr-k">Game research</div>'
@@ -2431,10 +2441,13 @@ function renderConnected(V){
 }
 function renderProps(V){
   var rows=$('lpPropRows'), tag=$('lpPropTag'); if(!rows) return;
-  var ps=V.props.slice(0,8);
+  /* only props with a current price are listed; the rest are in the terminal */
+  var ps=V.listed_props.slice(0,8);
   if(!ps.length){
-    rows.innerHTML='<tr><td class="pl" colspan="8">No player prop clears EdgeDesk&rsquo;s research threshold right now &mdash; a normal result. Props are priced as sportsbooks post them, and the table fills when they do.</td></tr>';
-    if(tag){ tag.textContent='Nothing qualifies'; tag.className='tag'; }
+    rows.innerHTML=V.props.length
+      ?'<tr><td class="pl" colspan="8">Player-prop prices refresh on a schedule set by how close each game is to kickoff; this table lists them as soon as current prices are on file. Every tracked prop is in the terminal now.</td></tr>'
+      :'<tr><td class="pl" colspan="8">No player prop clears EdgeDesk&rsquo;s research threshold right now &mdash; a normal result. Props are priced as sportsbooks post them, and the table fills when they do.</td></tr>';
+    if(tag){ tag.textContent=V.props.length?'Refreshing':'Nothing qualifies'; tag.className='tag'; }
     return;
   }
   rows.innerHTML=ps.map(function(p){
@@ -2446,12 +2459,15 @@ function renderProps(V){
       +'<td data-l="EdgeDesk">'+e(p.projection_text||'—')+'</td>'
       +'<td data-l="Difference" class="'+cls+'" title="'+(p.supports===true?'The projection leans the way the selection is priced':(p.supports===false?'The projection leans against the selection':''))+'">'+e(p.difference_text||'—')+'</td>'
       +'<td data-l="Best odds">'+e(p.odds_text||'—')+(p.book?'<small style="display:block;color:var(--faint);font-size:10.5px">'+e(p.book)+'</small>':'')+'</td>'
-      +'<td data-l="EdgeDesk EV" class="'+(p.ev==null?'':(p.ev>0?'pos':'neg'))+'">'+e(p.ev_text||'—')+(p.ev_text&&p.ev_label?'<small style="display:block;color:var(--faint);font-size:10.5px">'+e(p.ev_label)+'</small>':'')+'</td>'
+      +'<td data-l="EdgeDesk EV" class="'+(p.ev==null?'':(p.ev>0?'pos':'neg'))+'"'+(p.price_state==='SCHEDULED'?' title="'+e(p.status_note||'')+'"':'')+'>'+e(p.ev_text||'—')
+      +(p.ev_text&&p.ev_label?'<small style="display:block;color:var(--faint);font-size:10.5px">'+e(p.ev_label)+'</small>':'')
+      +(!p.ev_text&&p.price_state==='SCHEDULED'?'<small style="display:block;color:var(--faint);font-size:10.5px">on a fresh price</small>':'')+'</td>'
       +'<td class="stc" data-l="Status">'+stChip(p)+(p.age_text?' '+ageSpan(p.age_text, p.price_state):'')+'</td>'
       +'</tr>';
   }).join('');
   var fresh=ps.filter(function(p){ return p.price_state==='FRESH'||p.price_state==='AGING'; }).length;
-  if(tag){ tag.textContent=fresh?'Live':'Prices ageing'; tag.className='tag'+(fresh?' live':''); }
+  var newest=ps.reduce(function(m,p){ return p.age_min!=null&&(m==null||p.age_min<m)?p.age_min:m; }, null);
+  if(tag){ tag.textContent=fresh?'Live':('Priced '+(H.ageText(newest)||'earlier')); tag.className='tag'+(fresh?' live':''); }
 }
 function renderPriceExample(V){
   var host=$('lpPriceEx'); if(!host) return;

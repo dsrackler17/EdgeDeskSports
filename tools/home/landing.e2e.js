@@ -21,8 +21,14 @@
              from lib/edgedesk_pricing.js
    FUNNEL  landing_view on load; cta_clicked for the hero; the live board and
            pricing seen when scrolled to — each once, in batched ed_track calls
-   STALE   market and prop prices hours old: no RESEARCH label anywhere, no
-           EV printed for an expired price, the ageing is labelled
+   MIDWEEK first kickoff 60 h out, game markets 4 h old, prop prices 2 h
+           old — on the capture's schedule: the board, the preview and the
+           prop table are filled, nothing reads DATA INCOMPLETE, no age is
+           red, and no EV is printed on a price past 90 minutes
+   STALE   every capture a day old: no captured price is listed as current —
+           no RESEARCH, no DATA INCOMPLETE, no EV; what stays is an NFL
+           consensus reference (it has no capture time) and it says so, and the
+           prop table says its prices refresh on schedule
    DOWN    both reads fail: the example card says "Example", the stats hide,
            the board says it could not be reached — nothing pretends to be live
 
@@ -47,14 +53,14 @@ function chk(name, ok, detail) {
 }
 
 /* every capture/compute time moved so the newest is `newestAgoMs` before now;
-   kickoffs stay in the future */
+   kickoffs stay in the future, the first `kickH` hours out (5 by default) */
 const TIME_KEYS = /"(captured_at|last_success_at|evaluated_at|computed_at|model_updated_at|market_updated_at|quotes_updated_at|prop_quotes_updated_at|as_of|generated_at|summary_at|first_seen_at)":"([^"]+)"/g;
-function shift(obj, newestAgoMs) {
+function shift(obj, newestAgoMs, kickH) {
   const s = JSON.stringify(obj);
   const ts = [...s.matchAll(TIME_KEYS)].map((m) => Date.parse(m[2])).filter(isFinite);
   const d = (Date.now() - newestAgoMs) - Math.max(...ts);
   const kicks = [...s.matchAll(/"(kickoff_at|kickoff)":"([^"]+)"/g)].map((m) => Date.parse(m[2])).filter(isFinite);
-  const kd = (Date.now() + 5 * 3600e3) - Math.min(...kicks);
+  const kd = (Date.now() + (kickH || 5) * 3600e3) - Math.min(...kicks);
   return JSON.parse(s.replace(TIME_KEYS, (m, k, v) => { const t = Date.parse(v); return isFinite(t) ? '"' + k + '":"' + new Date(t + d).toISOString() + '"' : m; })
     .replace(/"(kickoff_at|kickoff)":"([^"]+)"/g, (m, k, v) => { const t = Date.parse(v); return isFinite(t) ? '"' + k + '":"' + new Date(t + kd).toISOString() + '"' : m; }));
 }
@@ -64,7 +70,8 @@ const STAT = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'home', 'boa
    newest is 4 minutes old (FRESH), which the page must print as such */
 function scenario(kind) {
   if (kind === 'live') return { rpc: shift(RPC, 15 * 60e3), stat: shift(STAT, 4 * 60e3) };
-  if (kind === 'stale') return { rpc: shift(RPC, 5 * 3600e3), stat: shift(STAT, 4 * 3600e3) };
+  if (kind === 'midweek') return { rpc: shift(RPC, 4 * 3600e3, 60), stat: shift(STAT, 2 * 3600e3, 60) };
+  if (kind === 'stale') return { rpc: shift(RPC, 26 * 3600e3), stat: shift(STAT, 26 * 3600e3) };
   return { rpc: null, stat: null };
 }
 
@@ -223,28 +230,54 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     await S.ctx.close();
   }
 
-  /* STALE */
+  /* MIDWEEK: prices on the capture's schedule, hours old */
+  for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+    const S = await open(vp, 'midweek');
+    const r = await S.page.evaluate(() => ({
+      chips: [...document.querySelectorAll('#lpPrevBody .st, #lpBoard .st, #lpPropRows .st, #lpConnBody .st')].map((s) => s.textContent.trim()),
+      prevChips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()),
+      boardCards: document.querySelectorAll('#lpBoard > *').length,
+      propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
+      ev: [...document.querySelectorAll('#lpPropRows td[data-l="EdgeDesk EV"]')].map((t) => t.textContent.trim()),
+      red: document.querySelectorAll('#lpPrevBody .age.stale, #lpBoard .age.stale, #lpPropRows .age.stale, #lpConnBody .age.stale').length,
+      text: ['lpPrevBody', 'lpBoard', 'lpPropRows'].map((id) => document.getElementById(id).innerText).join('\n'),
+      propTag: document.getElementById('lpPropTag').textContent
+    }));
+    chk(vp.width + ' midweek: nothing on the page reads DATA INCOMPLETE', r.chips.length > 0 && r.chips.indexOf('DATA INCOMPLETE') < 0 && !/DATA INCOMPLETE/.test(r.text), r.chips);
+    chk(vp.width + ' midweek: no age is printed in red', r.red === 0, r.red);
+    chk(vp.width + ' midweek: no stale-price warnings in the copy', !/not a current price|is stale|execution window/i.test(r.text), (r.text.match(/not a current price|is stale|execution window/i) || [])[0]);
+    chk(vp.width + ' midweek: the preview holds RESEARCH / WATCH games', r.prevChips.length >= 2 && r.prevChips.every((c) => c === 'RESEARCH' || c === 'WATCH'), r.prevChips);
+    chk(vp.width + ' midweek: the board is filled', r.boardCards > 0, r.boardCards);
+    chk(vp.width + ' midweek: the prop table is filled, eight cells a row', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
+    chk(vp.width + ' midweek: no EV on a price past 90 minutes, and it says why', r.ev.length > 0 && r.ev.every((t) => /^—/.test(t)) && r.ev.some((t) => /on a fresh price/.test(t)), r.ev);
+    chk(vp.width + ' midweek: the prop table is not called live', r.propTag !== 'Live' && /^Priced /.test(r.propTag), r.propTag);
+    chk(vp.width + ' midweek: no script errors', S.errors.length === 0, S.errors);
+    if (SHOTS) await S.page.screenshot({ path: path.join(SHOTS, 'landing-midweek-' + vp.width + '.png'), fullPage: false });
+    await S.ctx.close();
+  }
+
+  /* STALE: nothing current */
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     const S = await open(vp, 'stale');
     const r = await S.page.evaluate(() => ({
       chips: [...document.querySelectorAll('#lpPrevBody .st, #lpBoard .st, #lpPropRows .st')].map((s) => s.textContent.trim()),
       ev: [...document.querySelectorAll('#lpPropRows td[data-l="EdgeDesk EV"]')].map((t) => t.textContent.trim()),
-      stale: document.querySelectorAll('#lpPrevBody .age.stale, #lpBoard .age.stale, #lpPropRows .age.stale').length,
-      prevText: document.getElementById('lpPrevBody').innerText, propTag: document.getElementById('lpPropTag').textContent,
+      rows: document.getElementById('lpPropRows').innerText, propTag: document.getElementById('lpPropTag').textContent,
+      cards: [...document.querySelectorAll('#lpBoard > article')].map((a) => a.innerText),
+      prevText: document.getElementById('lpPrevBody').innerText,
       priceEx: document.getElementById('lpPriceEx').innerText,
       prevTag: document.getElementById('lpPrevTag').textContent, prevLive: document.getElementById('lpPrevTag').classList.contains('live'),
       upd: (() => { const li = document.querySelector('#lpStats li[data-k="updated"]'); return { old: li.classList.contains('old'), text: li.textContent }; })(),
       research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })()
     }));
-    chk(vp.width + ' stale: the preview is not called live', !r.prevLive && /^Last update/.test(r.prevTag), r.prevTag);
-    chk(vp.width + ' stale: "Last update 5 h ago", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
+    chk(vp.width + ' stale: the preview is not called live', !r.prevLive && /^(Last update|Example)/.test(r.prevTag), r.prevTag);
+    chk(vp.width + ' stale: "Last update", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
     chk(vp.width + ' stale: the research-grade headline does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);
-    chk(vp.width + ' stale: no RESEARCH label on a stale price', r.chips.length > 0 && r.chips.indexOf('RESEARCH') < 0, r.chips);
-    chk(vp.width + ' stale: games with stale markets are DATA INCOMPLETE', r.chips.indexOf('DATA INCOMPLETE') >= 0);
-    chk(vp.width + ' stale: no EV printed for an expired price', r.ev.every((t) => t === '—'), r.ev);
-    chk(vp.width + ' stale: the ageing is labelled', r.stale > 0 && r.propTag !== 'Live', [r.stale, r.propTag]);
-    chk(vp.width + ' stale: what the preview still labels WATCH is a market that never had a capture time, and it says so',
-      /No game clears/.test(r.prevText) || /Example/.test(r.prevText) || /consensus reference, not a captured quote/.test(r.prevText), r.prevText.slice(0, 300));
+    chk(vp.width + ' stale: no RESEARCH on a stale price, and no wall of DATA INCOMPLETE', r.chips.indexOf('RESEARCH') < 0 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
+    chk(vp.width + ' stale: every game still listed is a consensus reference, and says so',
+      r.cards.every((t) => /consensus reference, not a captured quote/.test(t)) && (/Example/.test(r.prevTag) || /consensus reference, not a captured quote/.test(r.prevText)), r.cards.map((t) => t.slice(0, 60)));
+    chk(vp.width + ' stale: the prop table says its prices refresh on schedule', /refresh on a schedule/.test(r.rows) && r.propTag !== 'Live', [r.rows.slice(0, 80), r.propTag]);
+    chk(vp.width + ' stale: no EV printed', r.ev.length === 0, r.ev);
     chk(vp.width + ' stale: no "right now" EV example from a stale quote', !/Right now:/.test(r.priceEx));
     chk(vp.width + ' stale: no script errors', S.errors.length === 0, S.errors);
     if (SHOTS) await S.page.screenshot({ path: path.join(SHOTS, 'landing-stale-' + vp.width + '.png'), fullPage: false });

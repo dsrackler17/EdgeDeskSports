@@ -7,9 +7,12 @@
 
      1  nothing is fabricated: no data → no number (null, never 0); a count
         of zero is hidden, not printed as a claim
-     2  staleness is judged at VIEW time: a game market older than 3 h is
-        DATA INCOMPLETE; a prop price is FRESH ≤15 min, AGING ≤30, STALE ≤90
-        (research-grade → WATCH), EXPIRED beyond (→ DATA INCOMPLETE, no EV)
+     2  staleness is judged at VIEW time against the capture's schedule by
+        hours to kickoff: a game market is listed up to 3 h old near kickoff
+        (6 · 12 · 24 h as kickoff recedes); a prop price is FRESH ≤15 min,
+        AGING ≤30, STALE ≤90 (research-grade → WATCH), then on schedule up to
+        1.5 capture cadences (WATCH at most, no EV), DATA INCOMPLETE beyond;
+        listed_games / listed_props never carry DATA INCOMPLETE
      3  the hero preview holds only RESEARCH / WATCH, 2-4 items, nothing
         promoted to fill space
      4  the four public words are the only words; never BET / LOCK / PICK
@@ -77,9 +80,16 @@ chk('the fair and market lines are the numbers given', /7\.7/.test(v.games[0].fa
 chk('one minus sign everywhere', v.games[0].fair_text.indexOf('-') < 0 && v.games[0].fair_text.indexOf('−') > 0, v.games[0].fair_text);
 
 /* ── 2 staleness at view time ─────────────────────────────────────────── */
+v = H.build(rpc([game('cfb|1', { kickoff_at: ahead(3), market: { home_line: 14, book: 'fanduel', captured_at: ago(200) } })]), null, NOW);
+chk('near kickoff, a game market older than 3 h is DATA INCOMPLETE, and says why', v.games[0].status === 'DATA_INCOMPLETE' && /stale/.test(v.games[0].status_note) && v.games[0].market_stale === true, v.games[0]);
+chk('…and is never listed', v.listed_games.length === 0 && v.live === false);
 v = H.build(rpc([game('cfb|1', { market: { home_line: 14, book: 'fanduel', captured_at: ago(200) } })]), null, NOW);
-chk('a game market older than 3 h is DATA INCOMPLETE, and says why', v.games[0].status === 'DATA_INCOMPLETE' && /stale/.test(v.games[0].status_note) && v.games[0].market_stale === true, v.games[0]);
-v = H.build(rpc([game('cfb|1', { market: { home_line: 14, captured_at: ago(200) } }), game('cfb|2', { status: 'WATCH', market: { home_line: 3, captured_at: ago(300) } }), game('cfb|3')],
+chk('30 h out, the same 200-minute-old market is on schedule: its status stands, its age is printed plainly', v.games[0].status === 'RESEARCH' && v.games[0].market_stale === false && v.games[0].market_age_text === '3 h ago' && v.listed_games.length === 1, v.games[0]);
+v = H.build(rpc([game('cfb|1', { market: { home_line: 14, captured_at: ago(13 * 60) } })]), null, NOW);
+chk('…but 13 h old it is overdue (12 h window from 24 to 72 h out)', v.games[0].status === 'DATA_INCOMPLETE' && v.listed_games.length === 0);
+chk('game windows by hours to kickoff: 3 · 6 · 12 · 24 h, the strictest when kickoff is unknown',
+  [2, 12, 30, 100].map((h) => H.gameWindow(ahead(h), NOW)).join() === '180,360,720,1440' && H.gameWindow(null, NOW) === 180);
+v = H.build(rpc([game('cfb|1', { kickoff_at: ahead(3), market: { home_line: 14, captured_at: ago(200) } }), game('cfb|2', { kickoff_at: ahead(3), status: 'WATCH', market: { home_line: 3, captured_at: ago(300) } }), game('cfb|3')],
   { games_analyzed: 3, game_research: 2, watching: 1, passes: 0, data_incomplete: 0 }, { model_updated_at: ago(10), market_updated_at: ago(20) }), null, NOW);
 chk('the headline counts follow a view-time downgrade (never "2 research-grade" over a board showing one)', v.counts.game_research === 1 && v.counts.watching === 0 && v.counts.data_incomplete === 2, v.counts);
 v = H.build(rpc([game('cfb|1')], { games_analyzed: 1 }, { model_updated_at: ago(240), market_updated_at: ago(200) }), null, NOW);
@@ -94,7 +104,17 @@ chk('a fresh research-grade LEAN is RESEARCH with its EV', pv.status === 'RESEAR
 pv = H.propView(prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(45) } }), NOW);
 chk('the same prop at 45 min is WATCH, with a re-check note', pv.status === 'WATCH' && /re-check/.test(pv.status_note) && pv.price_state === 'STALE');
 pv = H.propView(prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW);
-chk('at 2 h it is DATA INCOMPLETE and no EV is printed', pv.status === 'DATA_INCOMPLETE' && pv.ev === null && pv.ev_text === null && /Stale price/.test(pv.status_note), pv);
+chk('at 2 h, 30 h before kickoff, it is on the capture\'s schedule: WATCH, no EV, and says why', pv.status === 'WATCH' && pv.price_state === 'SCHEDULED' && pv.ev === null && pv.ev_text === null && pv.ev_raw_text === null && /normal schedule/.test(pv.status_note), pv);
+pv = H.propView(prop('a', { matchup: { home: 'Iowa', away: 'Ohio State', kickoff: ahead(3) }, price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW);
+chk('at 2 h, 3 h before kickoff, it is DATA INCOMPLETE and no EV is printed', pv.status === 'DATA_INCOMPLETE' && pv.ev === null && pv.ev_text === null && /Stale price/.test(pv.status_note), pv);
+pv = H.propView(prop('a', { price: { american: -110, book: 'draftkings', captured_at: ago(240) } }), NOW);
+chk('at 4 h, 30 h before kickoff, the capture is overdue: DATA INCOMPLETE', pv.status === 'DATA_INCOMPLETE' && pv.ev_text === null);
+pv = H.propView(prop('a', { matchup: null, price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW, ahead(72));
+chk('a prop without its own kickoff is judged by its game\'s', pv.status === 'WATCH' && pv.price_state === 'SCHEDULED');
+chk('…and without any kickoff, by the strictest window', H.propView(prop('a', { matchup: null, price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW).status === 'DATA_INCOMPLETE');
+chk('prop windows by hours to kickoff follow the capture cadence: 90 · 90 · 90 · 180 · 540 min',
+  [1, 4, 12, 30, 100].map((h) => H.propWindow(ahead(h), NOW)).join() === '90,90,90,180,540');
+chk('an on-schedule PASS stays PASS, its EV still withheld', (function () { const x = H.propView(prop('a', { decision: 'PASS', price: { american: -110, book: 'draftkings', captured_at: ago(120) } }), NOW); return x.status === 'PASS' && x.ev_text === null; })());
 pv = H.propView(prop('a', { price: { book: 'draftkings', captured_at: ago(5) } }), NOW);
 chk('no price → DATA INCOMPLETE ("No sportsbook price is on file")', pv.status === 'DATA_INCOMPLETE' && /No sportsbook price/.test(pv.status_note));
 pv = H.propView(prop('a', { ev: null }), NOW);
@@ -125,6 +145,9 @@ chk('…games first, then research-grade props, at most 4', v.preview.length <= 
 v = H.build(rpc([game('cfb|3', { status: 'PASS' })]), null, NOW);
 chk('a board of PASSes previews nothing rather than promoting one', v.preview.length === 0 && v.live === true);
 chk('the board sorts RESEARCH, WATCH, PASS, DATA INCOMPLETE', H.build(rpc(g4.slice().reverse()), null, NOW).games.map((g) => g.status).join() === 'RESEARCH,WATCH,PASS,DATA_INCOMPLETE');
+v = H.build(rpc(g4), { schema: 'edgedesk_home_static/1', props: { counts: {}, items: { a: prop('a'), x: prop('x', { price: { american: -110, captured_at: ago(600) } }) }, top: ['a', 'x'], by_game: {} } }, NOW);
+chk('what is listed leaves DATA INCOMPLETE out, games and props alike', v.listed_games.map((g) => g.status).join() === 'RESEARCH,WATCH,PASS' && v.listed_props.map((p) => p.id).join() === 'a' && v.props.length === 2, [v.listed_games.map((g) => g.status), v.listed_props.map((p) => p.id)]);
+chk('a college book arrives as "captured · pinnacle" and reads as the book', H.bookName('captured · pinnacle') === 'Pinnacle' && H.bookName('captured · ') === null && H.bookName('fanduel') === 'FanDuel');
 
 /* ── 4 words and links ────────────────────────────────────────────────── */
 chk('the four public words are the only words', Object.keys(H.STATUS).join() === 'RESEARCH,WATCH,PASS,DATA_INCOMPLETE' && !/\b(BET|LOCK|PICK)\b/.test(JSON.stringify(H.STATUS).replace(/not a bet|never a pick/gi, '')));
