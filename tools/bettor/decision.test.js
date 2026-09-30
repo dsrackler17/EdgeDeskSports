@@ -108,12 +108,18 @@ chk('the model agrees with the market = PASS (market aligned)', noEdge.decision 
 
 const huge = dec({ model: model(-1, 2), market: { fault: true, fault_reason: 'one book, stale consensus' }, research: { status: 'MARKET_FAULT', gap_pts: 5.5 } });
 chk('huge raw EV + market fault ≠ BET', huge.decision !== 'BET' && huge.raw_ev_pct > 30, { d: huge.decision, raw: huge.raw_ev_pct });
-chk('…it is WATCH · PRICE ANOMALY until the market re-verifies', huge.decision === 'WATCH' && huge.action_reason_code === 'PRICE_ANOMALY' && huge.waiting_on.length === 1, { d: huge.decision, c: huge.action_reason_code });
+/* audit 2026-09-30 #8: past 25% raw EV on a main-line spread the decision is
+   WATCH · IMPLAUSIBLE EV ("check data") first; the open price anomaly stays */
+chk('…past the 25% implausible-EV bound it is WATCH · IMPLAUSIBLE EV, the price anomaly still open', huge.decision === 'WATCH' && huge.action_reason_code === 'IMPLAUSIBLE_EV' && (huge.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), { d: huge.decision, c: huge.action_reason_code });
+const faultPx = dec({ model: model(2.5, 3.5), market: { fault: true, fault_reason: 'one book, stale consensus' }, research: { status: 'MARKET_FAULT', gap_pts: 4 } });
+chk('…under the bound, an attractive price on a market fault is WATCH · PRICE ANOMALY until the market re-verifies', faultPx.decision === 'WATCH' && faultPx.action_reason_code === 'PRICE_ANOMALY' && faultPx.waiting_on.length === 1 && faultPx.raw_ev_pct < 25, { d: faultPx.decision, c: faultPx.action_reason_code, w: faultPx.waiting_on, raw: faultPx.raw_ev_pct });
 const faultQuiet = dec({ model: model(6.5, 6.5), market: { fault: true }, research: { status: 'MARKET_FAULT', gap_pts: 0.2 } });
 chk('a market fault with no priced opportunity is PASS — the wager is still evaluable', faultQuiet.decision === 'PASS' && faultQuiet.evaluation_status === 'EVALUABLE');
-const inv = dec({ model: model(-6, 1), research: { status: 'INVESTIGATE', gap_pts: 12.5, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
-chk('huge gap + unverified market = WATCH · PRICE ANOMALY', inv.decision === 'WATCH' && inv.action_reason_code === 'PRICE_ANOMALY' && inv.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: inv.decision, c: inv.action_reason_code });
-chk('WATCH never carries units', inv.recommended_units === 0 && huge.recommended_units === 0);
+const inv = dec({ model: model(2.5, 3.5), research: { status: 'INVESTIGATE', gap_pts: 4, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
+chk('an unverified gap on an attractive price = WATCH · PRICE ANOMALY', inv.decision === 'WATCH' && inv.action_reason_code === 'PRICE_ANOMALY' && inv.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: inv.decision, c: inv.action_reason_code });
+const invBig = dec({ model: model(-6, 1), research: { status: 'INVESTIGATE', gap_pts: 12.5, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
+chk('huge gap + unverified market (+61% raw EV) = WATCH · IMPLAUSIBLE EV, the gap check still failed', invBig.decision === 'WATCH' && invBig.action_reason_code === 'IMPLAUSIBLE_EV' && invBig.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: invBig.decision, c: invBig.action_reason_code });
+chk('WATCH never carries units', inv.recommended_units === 0 && huge.recommended_units === 0 && invBig.recommended_units === 0);
 chk('WATCH says what EdgeDesk is waiting on and when it re-checks', inv.waiting_on.length > 0 && /re-evaluates/.test(inv.next_check) && /verification/.test(inv.watch.trigger));
 
 const oneSided = dec({ quotes: [q('away', 6.5, -102)] });
@@ -140,7 +146,7 @@ chk('football confidence under the floor caps at LEAN, never NO DECISION', lowCo
 const dataFault = dec({ integrity: { data_fault: true, data_fault_reason: 'inverted spread' } });
 chk('a DATA FAULT is still a hard blocker (NO DECISION)', dataFault.decision === 'NO_DECISION' && dataFault.action_reason_code === 'DATA_FAULT');
 const guardFault = dec({ model: model(-20, -18), integrity: { data_fault: true, data_fault_kind: 'GUARD', data_fault_reason: 'gap past the 21-point guard' }, research: { status: 'DATA_FAULT', gap_pts: 26.5 } });
-chk('…but a gap-guard “fault” is a suspicion: WATCH · PRICE ANOMALY', guardFault.decision === 'WATCH' && guardFault.action_reason_code === 'PRICE_ANOMALY', { d: guardFault.decision, c: guardFault.action_reason_code });
+chk('…but a gap-guard “fault” is a suspicion: WATCH with the price anomaly open (named IMPLAUSIBLE EV at a 26-pt gap), never NO DECISION', guardFault.decision === 'WATCH' && guardFault.action_reason_code === 'IMPLAUSIBLE_EV' && (guardFault.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), { d: guardFault.decision, c: guardFault.action_reason_code });
 const verified = dec({ model: model(4, 6.5), research: { status: 'VERIFIED_MAJOR', gap_pts: 7.5, verification: 'PASSED' } });
 chk('VERIFIED MAJOR DISAGREEMENT never implies BET', verified.decision !== 'BET', verified.decision);
 const worth = dec({ model: model(4, 6.5), research: { status: 'WORTH_RESEARCHING', gap_pts: 5 } });
@@ -235,10 +241,14 @@ section('6. anomalies, orientation, duplicates, schedule');
 const extremeIn = { model: model(-4, 1), research: { status: 'VERIFIED_MAJOR', gap_pts: 10.5, verification: 'PASSED' } };
 const extreme = dec(extremeIn);
 chk('an extreme gap triggers price verification', extreme.anomaly && extreme.anomaly.triggered && extreme.anomaly.triggers.some((t) => t.code === 'LARGE_GAP'), extreme.anomaly && extreme.anomaly.triggers);
-chk('…every check cleared, it proceeds, capped — a ridiculous edge is never a bigger stake', extreme.decision === 'BET' && extreme.anomaly.cleared && extreme.recommended_units <= 0.5 && extreme.warnings.some((w) => w.code === 'ANOMALY_CLEARED'), { d: extreme.decision, u: extreme.recommended_units, checks: extreme.anomaly.checks.filter((c) => c.status !== 'PASS') });
+/* audit 2026-09-30 #8: a 10.5-pt CFB gap is +50% raw EV on the main line —
+   no verification clears that; under the 25% bound a cleared anomaly proceeds */
+chk('…a verified 10.5-pt gap past the 25% raw-EV bound is WATCH · IMPLAUSIBLE EV, never a stake', extreme.decision === 'WATCH' && extreme.action_reason_code === 'IMPLAUSIBLE_EV' && extreme.recommended_units === 0, { d: extreme.decision, c: extreme.action_reason_code, u: extreme.recommended_units });
+const extremeOk = dec({ model: model(2.5, 3.5) });
+chk('…under the bound, every check cleared, it proceeds, capped — a ridiculous edge is never a bigger stake', extremeOk.anomaly && extremeOk.anomaly.triggered && extremeOk.decision === 'BET' && extremeOk.anomaly.cleared && extremeOk.recommended_units <= 0.5 && extremeOk.warnings.some((w) => w.code === 'ANOMALY_CLEARED'), { d: extremeOk.decision, u: extremeOk.recommended_units, checks: extremeOk.anomaly && extremeOk.anomaly.checks.filter((c) => c.status !== 'PASS') });
 const flip = dec(Object.assign({}, extremeIn, { anomaly: { favorite_flip: true, circuit_breaker: { triggered: true, level: 'SEVERE', verified: true } } }));
 chk('a SEVERE circuit-breaker extreme is capped at the smallest tier', flip.decision !== 'BET' || flip.recommended_units === 0.25, { d: flip.decision, u: flip.recommended_units });
-const cbOpen = dec(Object.assign({}, extremeIn, { anomaly: { circuit_breaker: { triggered: true, level: 'REVIEW', verified: false } } }));
+const cbOpen = dec({ model: model(2.5, 3.5), anomaly: { circuit_breaker: { triggered: true, level: 'REVIEW', verified: false } } });
 chk('an unverified circuit breaker holds the bet at WATCH · PRICE ANOMALY', cbOpen.decision === 'WATCH' && cbOpen.action_reason_code === 'PRICE_ANOMALY', { d: cbOpen.decision });
 const disagree = dec({ quotes: mainQuotes(6.5, -102).concat(mainQuotes(3.5, -110, -110, 'DraftKings')) });
 chk('multiple books disagreeing trigger verification and hold the bet (WATCH)', disagree.decision === 'WATCH' && disagree.anomaly.triggers.some((t) => t.code === 'BOOK_DISPERSION') && disagree.anomaly.checks.some((c) => c.code === 'BOOK_AGREEMENT' && c.status === 'FAIL'), { d: disagree.decision, t: disagree.anomaly && disagree.anomaly.triggers });

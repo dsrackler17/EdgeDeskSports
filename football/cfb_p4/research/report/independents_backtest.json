@@ -1,0 +1,96 @@
+{
+ "schema": "edgedesk_cfb_independents_backtest_v1",
+ "generated_by": "football/cfb_p4/research/independents_backtest.js",
+ "question": "Does removing the \"FBS Independents\" conference strength from games between an independent and a conference team move the fair margin closer to the result?",
+ "held_out_seasons": "2014-2025",
+ "games": 522,
+ "games_changed": 295,
+ "max_abs_change_pts": 11.732,
+ "mae_old_reading": 13.376,
+ "mae_shipped": 13.185,
+ "delta": -0.192,
+ "delta_ci95": [
+  -0.409,
+  0.033
+ ],
+ "improved_seasons": 8,
+ "seasons": 12,
+ "mean_abs_gap_to_close_old": 4.914,
+ "mean_abs_gap_to_close_shipped": 4.8,
+ "by_season": [
+  {
+   "season": 2014,
+   "games": 39,
+   "mae_old": 14.05,
+   "mae_new": 14.109
+  },
+  {
+   "season": 2015,
+   "games": 33,
+   "mae_old": 11.359,
+   "mae_new": 10.989
+  },
+  {
+   "season": 2016,
+   "games": 40,
+   "mae_old": 9.603,
+   "mae_new": 10.115
+  },
+  {
+   "season": 2017,
+   "games": 43,
+   "mae_old": 12.985,
+   "mae_new": 12.89
+  },
+  {
+   "season": 2018,
+   "games": 52,
+   "mae_old": 15.019,
+   "mae_new": 14.263
+  },
+  {
+   "season": 2019,
+   "games": 54,
+   "mae_old": 13.607,
+   "mae_new": 13.558
+  },
+  {
+   "season": 2020,
+   "games": 39,
+   "mae_old": 15.033,
+   "mae_new": 14.946
+  },
+  {
+   "season": 2021,
+   "games": 64,
+   "mae_old": 13.482,
+   "mae_new": 12.559
+  },
+  {
+   "season": 2022,
+   "games": 58,
+   "mae_old": 12.977,
+   "mae_new": 13.042
+  },
+  {
+   "season": 2023,
+   "games": 40,
+   "mae_old": 15.699,
+   "mae_new": 15.842
+  },
+  {
+   "season": 2024,
+   "games": 36,
+   "mae_old": 13.838,
+   "mae_new": 13.675
+  },
+  {
+   "season": 2025,
+   "games": 24,
+   "mae_old": 11.397,
+   "mae_new": 11.161
+  }
+ ],
+ "reading": "A negative delta is a smaller error. The fix is a correction of what the term measures (an independent has no conference), not a fitted improvement: it ships because a group average over unrelated programmes is not a strength of either team, and this record says it does not make the number worse. A 95% interval that includes 0 is reported as not significant.",
+ "significant": false
+}

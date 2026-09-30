@@ -450,5 +450,70 @@ section('13. totals and moneylines wait for validation');
   chk('moneyline EV at 61% vs −125 is +9.8% (spec example)', mv.ev_available && (100 * mv.expected_value).toFixed(1) === '9.8' && (100 * mv.break_even_probability).toFixed(1) === '55.6', mv);
 }
 
+section('14. audit 2026-09-30: the EV is priced from the displayed projection, and an implausible EV is data to check');
+{
+  /* #4 root cause: the NFL margin pmf is keyed by spread and its centre sits
+     inside its key (key 9.0: median 6.94), so a model at SEA -9.2 was priced
+     from a distribution centred at SEA -6.9 and LAC +7 came out +EV. The
+     table is now read BY its median, so the distribution's median IS the
+     displayed fair margin. */
+  const medOf = (fair) => Q.distributionCentre((t) => EF.dist.coverProbSpread('nfl', fair, t)).median;
+  const fairs = [-11.5, -9.24, 9.24, 7.97, 3, 0.8, -13.9, 6.25, 13, -2];
+  chk('NFL: the priced distribution\'s median is the fair margin exactly (inside, mirrored and past the table)', fairs.every((f) => near(medOf(f), f, 1e-3)), fairs.map((f) => [f, medOf(f)]));
+  const sides = [[-11.5, 10], [9.24, -7], [-9.24, 7], [2.2, -1.5], [-2.9, 2.5], [6.9, -6.5], [12.6, -12]];
+  chk('NFL: a projection 0.4+ pts past the line on one side covers it more than half the time (the side rule holds by construction)',
+    sides.every(([f, hl]) => { const X = f > -hl ? 'home' : 'away'; const p = Q.sideProb((t) => EF.dist.coverProbSpread('nfl', f, t), X, X === 'home' ? hl : -hl); return p.cover > 0.5; }), sides);
+  chk('NFL: the spikes stay on the numbers games end on — an away favourite by 9.2 keeps its mass at -3 and -7 (mirrored table)', EF.dist.coverProbSpread('nfl', -9.24, -3).push > 0.06 && EF.dist.coverProbSpread('nfl', -9.24, -7).push > 0.05 && /mirrored/.test(EF.dist.coverProbSpread('nfl', -9.24, 3).method));
+  chk('NFL: integer margins stay integral — a half-point line never pushes', fairs.every((f) => EF.dist.coverProbSpread('nfl', f, 6.5).push === 0 && EF.dist.coverProbSpread('nfl', f, 2.5).push === 0));
+  const c9 = EF.dist.coverProbSpread('nfl', 9.24, 7);
+  chk('NFL: the key-number shape is kept (a push at 7 keeps real mass) and the basis still names the table', c9.push > 0.05 && c9.basis === 'margin_pmf_by_spread' && near(c9.centred_on, 9.24) && c9.method === 'median_matched', c9);
+  /* the audit game: LAC @ SEA, model SEA -9.24, market SEA -7 at -110 both sides */
+  const nflM = (fair, cover) => ({ sport: 'NFL', available: true, model_version: 'edgedesk_football_v1.0.0', fair_home_margin: fair, home_cover: cover || ((t) => EF.dist.coverProbSpread('nfl', fair, t)), tail: { validated_within_pts: 0 } });
+  const SEA = { game_id: 's1', home: 'Seattle Seahawks', away: 'Los Angeles Chargers' };
+  const sq = (side, line, am, extra) => Object.assign({ game_id: 's1', side, line, american: am, book: 'DraftKings', captured_at: FRESH, fresh: true, n_books: 3 }, extra || {});
+  const G = Q.evaluateGame(nflM(9.24), [sq('home', -7, -110), sq('away', 7, -110)], ctx({ game: SEA }));
+  const lac = G.sides.away.quotes[0], sea = G.sides.home.quotes[0];
+  chk('LAC @ SEA: the side the model is against (LAC +7) no longer prices +EV; SEA -7 does', lac.expected_value < 0 && sea.expected_value > 0, [lac.expected_value_pct, sea.expected_value_pct]);
+  chk('…and the side invariant is checked and holds', G.side_invariant && G.side_invariant.checked && G.side_invariant.ok && G.side_invariant.model_side === 'home', G.side_invariant);
+  /* the invariant fails LOUDLY when the projection feeding EV is not the displayed one */
+  const errs = []; const ce = console.error; console.error = (...a) => errs.push(a.join(' '));
+  let Gx; try { Gx = Q.evaluateGame(nflM(9.24, (t) => EF.dist.coverProbSpread('nfl', 5, t)), [sq('home', -7, -110), sq('away', 7, -110)], ctx({ game: SEA })); } finally { console.error = ce; }
+  chk('a displayed SEA -9.2 priced from a SEA -5 distribution fails the invariant (the projection feeding EV is not the displayed one)', Gx.side_invariant && Gx.side_invariant.ok === false && Gx.side_invariant.kind === 'PROJECTION_MISMATCH' && /EV SIDE CONTRADICTION/.test(Gx.side_invariant.reason), Gx.side_invariant);
+  /* the pre-fix engine, reproduced: the table keyed 9.0 read as-is (mean 7.97) under a displayed SEA -9.24 */
+  const tab = window.EDFootballParams.nfl.margin_pmf_by_spread['9.0'];
+  const oldCover = (t) => { let w = 0, p = 0, tot = 0; Object.keys(tab).forEach((k) => { const m = parseInt(k, 10), v = tab[k]; tot += v; if (m === t) p += v; else if (m > t) w += v; }); return { win: w / tot, push: p / tot, lose: 1 - (w + p) / tot }; };
+  let Gold; console.error = () => {};
+  try { Gold = Q.evaluateGame(nflM(9.24, oldCover), [sq('home', -7, -110), sq('away', 7, -110)], ctx({ game: SEA })); } finally { console.error = ce; }
+  chk('the self-check would have caught the audit: the pre-fix table under SEA -9.24 is centred 2.3 pts off the displayed projection', Gold.side_invariant.ok === false && Gold.side_invariant.kind === 'PROJECTION_MISMATCH' && Gold.side_invariant.mean_check.off_pts > 2, Gold.side_invariant.mean_check);
+  /* a raw side violation with the distribution centred right: a plus-money price on the side the model is against */
+  let Gp; console.error = () => {};
+  try { Gp = Q.evaluateGame(nflM(9.24), [sq('home', -7, -110), sq('away', 7, 150)], ctx({ game: SEA })); } finally { console.error = ce; }
+  chk('the side rule itself: SEA -9.2 displayed, yet LAC +7 (+150) is +EV at the same number — flagged (kind SIDE)', Gp.side_invariant.ok === false && Gp.side_invariant.kind === 'SIDE' && Gp.side_invariant.model_side === 'home', Gp.side_invariant);
+  /* a key number: model 0.6 past a +2.5 dog — with the median-centred table the dog now covers, so the rule applies (no abstention) */
+  const PIT = { game_id: 's1', home: 'Cleveland Browns', away: 'Pittsburgh Steelers' };
+  const Gk = Q.evaluateGame(nflM(-1.9), [sq('home', 2.5, -110), sq('away', -2.5, -105)], ctx({ game: PIT }));
+  chk('at a key number the side rule applies and holds (the median-centred table has the dog covering)', Gk.side_invariant.ok && !Gk.side_invariant.ambiguous && Gk.side_invariant.model_side === 'home' && Gk.side_invariant.mean_check.off_pts < 1e-3, Gk.side_invariant);
+  /* a curve whose median is off the displayed number but whose sport is not checked by centre (college): the side rule abstains where ambiguous */
+  const Gc2 = Q.evaluateGame(Object.assign(model({ fair: 7.3 }), { home_cover: normalCover(5.5, 14) }), [q('home', -6.5, -110), q('away', 6.5, -110)], ctx());
+  chk('a college curve off its displayed number is not centre-checked; the side rule abstains where the curve itself disagrees, and says so', Gc2.side_invariant.ok && Gc2.side_invariant.ambiguous === true && Gc2.side_invariant.mean_check.checked === false, Gc2.side_invariant);
+  chk('…raises a HIGH flag and logs an error (fail loudly)', Gx.flags.some((f) => f.code === 'EV_SIDE_CONTRADICTION' && f.severity === 'HIGH') && errs.length > 0, [Gx.flags.map((f) => f.code), errs.length]);
+  let Gc; console.error = (...a) => errs.push(a.join(' '));
+  try { Gc = Q.evaluateGame(Object.assign(nflM(9.24), { adjusted: { available: true, label: 'BLENDED', version: 't', maturity: 'SHADOW', side_prob: (sd, l) => Q.sideProb((t) => EF.dist.coverProbSpread('nfl', 5, t), sd, l) } }), [sq('home', -7, -110), sq('away', 7, -110)], ctx({ game: SEA })); } finally { console.error = ce; }
+  chk('…a CALIBRATED probability on the other side of the line fails it too (kind SIDE)', Gc.side_invariant && Gc.side_invariant.ok === false && Gc.side_invariant.kind === 'SIDE' && /calibrated/.test(Gc.side_invariant.reason), Gc.side_invariant);
+  const Gin = Q.evaluateGame(nflM(7.3), [sq('home', -7, -110), sq('away', 7, 120)], ctx({ game: SEA }));
+  chk('inside half a point the check does not apply (the shape at a key number decides)', Gin.side_invariant && Gin.side_invariant.ok && Gin.side_invariant.model_side == null, Gin.side_invariant);
+  const Galt = Q.evaluateGame(nflM(9.24), [sq('home', -7, -110), sq('away', 7, -110), sq('away', 10.5, -250, { market_type: 'alternate_spread', n_books: 1 })], ctx({ game: SEA }));
+  chk('a better number on the other side (LAC +10.5) may price +EV without breaking the invariant', Galt.side_invariant.ok, Galt.side_invariant);
+
+  /* #8: raw EV above 25% on a main-line spread is data to check */
+  const big = Q.evaluateGame(model({ fair: -2 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('a +30% raw EV on the main line is IMPLAUSIBLE: "implausible EV, check data", flagged', big.implausible_ev && big.implausible_ev.raw_ev > 0.25 && /^implausible EV, check data/.test(big.implausible_ev.reason) && big.flags.some((f) => f.code === 'IMPLAUSIBLE_EV'), big.implausible_ev);
+  const ok = Q.evaluateGame(model({ fair: 2.5 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('+21% raw is under the bound: not flagged (the price review owns 20-25%)', ok.implausible_ev === null && ok.sides.away.quotes[0].expected_value > 0.2, [ok.implausible_ev, ok.sides.away.quotes[0].expected_value]);
+  const alt = Q.evaluateGame(model({ fair: 2.5 }), [q('away', 6.5, -102), q('home', -6.5, -118), q('away', 13.5, 150, { market_type: 'alternate_spread' })], ctx());
+  chk('an ALTERNATE past 25% is not the main-line guard\'s business (the tail rules own it)', alt.implausible_ev === null || alt.implausible_ev.line !== 13.5, alt.implausible_ev);
+  chk('the bound is the exported constant (25%)', Q.IMPLAUSIBLE_RAW_EV === 0.25);
+}
+
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');
 if (fail) { failures.forEach((f) => console.log('  ✗ ' + f)); process.exit(1); }

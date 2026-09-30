@@ -2,12 +2,12 @@
 /* ============================================================================
    THE PRESS BRIEF, HELD TO THE BOARD.
 
-   The brief restates two of app.html's rules in Node so it can print them:
-   which status a game gets, and how a projected score is split. A restatement
-   drifts. These checks pin both to the page they were copied from — by reading
-   `fbP4StatusFor` and `fbGxScore` out of app.html and asserting the thresholds
-   and the arithmetic still match — so the printed document and the screen
-   cannot tell a reader two different things about the same game.
+   A game's STATUS is the board's own word, read from the slate CSV
+   (board_status, EDCanon.boardWord of the one research classifier) — the
+   brief classifies nothing (audit 2026-09-30 #6: its old copy of the rule was
+   a second classifier). The SCORE split is still restated from app.html's
+   `fbGxScore`, and these checks pin it to the page, so the printed document
+   and the screen cannot tell a reader two different things about one game.
 
    The rest holds what a press document must never do: publish a score it
    cannot split, print a market column with no market in it, or lose the
@@ -46,9 +46,18 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
   ok('parity: the board declares a Power 4 guard bound', !!guard);
   if (guard) eq('parity: and the brief uses the same one', PB.GUARD_P4_GAME, +guard[1]);
 
-  ok('parity: the board escalates to INVESTIGATE at a 7-point gap',
-    /gap>=7\)return\s*\{t:'INVESTIGATE'/.test(statusSrc.replace(/\s+/g, '')),
-    'the 7-point rung moved in app.html and press_brief.js still prints 7');
+  /* the board's status is the canon's word — no rung of its own to copy */
+  ok('parity: the board\'s status is EDCanon.boardWord of the one research status (no classifier of its own)',
+    /C\.boardWord\(st\)/.test(statusSrc.replace(/\s+/g, '')) && !/gap>=7\)return\s*\{t:/.test(statusSrc.replace(/\s+/g, '')));
+  const CANON = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+  ok('parity: the brief presents every board word the canon can produce', CANON.BOARD_WORDS.every((w) => !!PB.BRIEF_STATUS[w]),
+    CANON.BOARD_WORDS.filter((w) => !PB.BRIEF_STATUS[w]).join(', '));
+  ok('parity: the thresholds the brief quotes are the canon\'s', PB.GUARD_P4_GAME === CANON.THRESHOLDS.guard_gap
+    && PB.MIN_CONFIDENCE === CANON.THRESHOLDS.min_confidence && PB.MIN_RESEARCH_GAP === CANON.THRESHOLDS.research_gap);
+  const brief = fs.readFileSync(path.join(__dirname, 'press_brief.js'), 'utf8');
+  const sf = brief.slice(brief.indexOf('function statusFor('), brief.indexOf('/* ------------------------------------------------------------ the slate */'));
+  ok('parity: statusFor reads the board word and compares no gap, confidence or threshold (it classifies nothing)',
+    sf.length > 100 && /board_status/.test(sf) && !/spread_gap|confidence|MIN_|GUARD_|>=|<=/.test(sf), sf.slice(0, 200));
 
   const conf = APP.match(/min_confidence\s*!=\s*null\s*\?\s*MP\.min_confidence\s*:\s*(\d+)/);
   ok('parity: the board declares a confidence floor', !!conf);
@@ -100,32 +109,27 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
 /* 3. THE STATUS SAYS WHAT THE EVIDENCE SUPPORTS                     */
 /* ---------------------------------------------------------------- */
 (function status() {
+  const CANON = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
   const g = (o) => Object.assign({ data_status: 'PREDICTED', confidence: 60, spread_gap: 0 }, o);
-  eq('status: no projection at all is awaiting data', PB.statusFor(g({ data_status: 'INSUFFICIENT_DATA' })).key, 'AWAITING');
-  eq('status: below the confidence floor is thin data', PB.statusFor(g({ confidence: 34.9 })).key, 'THIN');
-  eq('status: at the floor it is not', PB.statusFor(g({ confidence: 35 })).key, 'AGREE');
-  eq('status: thin data outranks a large gap',
-    PB.statusFor(g({ confidence: 10, spread_gap: 18 })).key, 'THIN');
-  eq('status: no market number is no market', PB.statusFor(g({ spread_gap: null })).key, 'NO_MARKET');
-  eq('status: a 1.9-point gap is agreement', PB.statusFor(g({ spread_gap: 1.9 })).key, 'AGREE');
-  eq('status: a 2-point gap is review', PB.statusFor(g({ spread_gap: 2 })).key, 'REVIEW');
-  eq('status: a 6.9-point gap is still review', PB.statusFor(g({ spread_gap: 6.9 })).key, 'REVIEW');
-  eq('status: a 7-point gap is investigate', PB.statusFor(g({ spread_gap: 7 })).key, 'INVESTIGATE');
-  eq('status: the sign of the gap does not matter', PB.statusFor(g({ spread_gap: -7 })).key, 'INVESTIGATE');
-  eq('status: 21 points is still investigate', PB.statusFor(g({ spread_gap: 21 })).key, 'INVESTIGATE');
-  eq('status: past the guard bound it is a data fault', PB.statusFor(g({ spread_gap: 21.1 })).key, 'FAULT');
+  const cases = { 'AWAITING DATA': 'AWAITING', 'THIN DATA': 'THIN', 'NO MARKET': 'NO_MARKET', 'STALE QUOTE': 'NO_MARKET', 'AGREEMENT': 'AGREE', 'RESEARCH': 'REVIEW',
+    'INVESTIGATE': 'INVESTIGATE', 'DATA FAULT': 'FAULT', 'MARKET FAULT': 'FAULT', 'VERIFIED MAJOR DISAGREEMENT': 'VERIFIED' };
+  Object.keys(cases).forEach((w) => eq('status: the board word ' + w + ' prints as ' + cases[w], PB.statusFor(g({ board_status: w })).key, cases[w]));
   ok('status: every status explains itself in words a reader can use',
-    ['AWAITING', 'THIN', 'NO_MARKET', 'AGREE', 'REVIEW', 'INVESTIGATE', 'FAULT'].every(k => {
-      const cases = { AWAITING: { data_status: 'X' }, THIN: { confidence: 5 }, NO_MARKET: { spread_gap: null },
-        AGREE: { spread_gap: 0 }, REVIEW: { spread_gap: 3 }, INVESTIGATE: { spread_gap: 9 }, FAULT: { spread_gap: 30 } };
-      const st = PB.statusFor(g(cases[k]));
-      return st.key === k && typeof st.means === 'string' && st.means.length > 30 && st.label && st.glyph;
-    }));
-  ok('status: a data fault is called a data fault and explicitly not an edge',
-    /probable data fault/.test(PB.statusFor(g({ spread_gap: 30 })).means)
-    && /not as an edge/.test(PB.statusFor(g({ spread_gap: 30 })).means));
+    Object.keys(cases).every((w) => { const st = PB.statusFor(g({ board_status: w, spread_gap: 9 })); return typeof st.means === 'string' && st.means.length > 30 && st.label && st.glyph && st.word === w; }));
+  /* THE BRIEF CLASSIFIES NOTHING: no word, no status — whatever the gap */
+  eq('status: a row without a board word is UNCLASSIFIED, never computed from its gap', PB.statusFor(g({ spread_gap: 30 })).key, 'UNCLASSIFIED');
+  ok('status: …and it says how to get the word', /does not classify games itself/.test(PB.statusFor(g({ spread_gap: 3 })).means));
+  eq('status: an unknown word is UNCLASSIFIED too', PB.statusFor(g({ board_status: 'LOOKS GOOD' })).key, 'UNCLASSIFIED');
+  /* the old copy's failure: a 3-point gap it called Review, on a programme in
+     a regime change the board holds at INVESTIGATE (audit 2026-09-30 #1/#6) */
+  const regimeGame = CANON.researchStatus({ projected: true, market: 'FRESH', confidence: 70, reliability: 80, gap: 3, fair_margin: 3, market_margin: 0,
+    regime: { home: { regime_change: true, team: 'Iowa State', games_played: 4, min_games_for_research: 6 } } });
+  eq('status: the brief prints the board\'s INVESTIGATE for a regime-change game the old copy called Review', PB.statusFor(g({ spread_gap: 3, board_status: CANON.boardWord(regimeGame) })).key, 'INVESTIGATE');
+  ok('status: a data fault past the guard is called a data fault and explicitly not an edge',
+    /probable data fault/.test(PB.statusFor(g({ board_status: 'DATA FAULT', spread_gap: 30 })).means)
+    && /not as an edge/.test(PB.statusFor(g({ board_status: 'DATA FAULT', spread_gap: 30 })).means));
   ok('status: and neither is a large-gap investigate',
-    /missing information/.test(PB.statusFor(g({ spread_gap: 12 })).means));
+    /missing information/.test(PB.statusFor(g({ board_status: 'INVESTIGATE', spread_gap: 12 })).means));
 })();
 
 /* ---------------------------------------------------------------- */
@@ -147,7 +151,7 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
         qb_status: 'home QB unknown', data_status: 'PREDICTED',
         drivers: ['A driver'], counter: 'A counterargument', unavailable: ['Home starting quarterback'],
         notes: [], model_version: 'edgedesk_cfb_p4_v1.0.0', ratings_basis: 'test',
-        score: PB.projectedScore(8.4, 57.3), status: PB.statusFor({ data_status: 'PREDICTED', confidence: 39, spread_gap: null }) },
+        score: PB.projectedScore(8.4, 57.3), status: PB.statusFor({ data_status: 'PREDICTED', confidence: 39, spread_gap: null, board_status: 'NO MARKET' }) },
       { game_id: '2', season: 2026, week: 2, kickoff: '2026-09-13 00:00', venue: '',
         home: 'Big State', away: 'Tiny College', home_conf: '', away_conf: '', neutral: false,
         margin: 50.2, total: null, home_line: -50.2, win_prob: 100,
@@ -157,7 +161,7 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
         qb_status: '', data_status: 'PREDICTED',
         drivers: [], counter: '', unavailable: [], notes: [],
         model_version: 'edgedesk_cfb_p4_v1.0.0', ratings_basis: 'test',
-        score: PB.projectedScore(50.2, null), status: PB.statusFor({ data_status: 'PREDICTED', confidence: 8, spread_gap: null }) }
+        score: PB.projectedScore(50.2, null), status: PB.statusFor({ data_status: 'PREDICTED', confidence: 8, spread_gap: null, board_status: 'THIN DATA' }) }
     ]
   };
   const html = PB.buildHtml(slate, R);
@@ -223,8 +227,9 @@ function eq(name, a, b) { ok(name, a === b, 'got ' + JSON.stringify(a) + ', expe
   ok('architecture: it calls no Edge Function', !/functions\/v1\/|supabase\.co\/functions/.test(src));
   ok('architecture: it fetches nothing itself — every input is a committed artifact or the exporter',
     !/\bfetch\s*\(/.test(src) && !/https?:\/\//.test(src.replace(/https?:\/\/[^\s'"`]*gambler/gi, '')));
-  ok('architecture: it names the app functions it restates, so the parity check has a target',
-    /fbP4StatusFor/.test(src) && /fbGxScore/.test(src));
+  ok('architecture: it names the app function it restates (the score), so the parity check has a target',
+    /fbGxScore/.test(src));
+  ok('architecture: and it reads the status from the one classifier\'s word (lib/edgedesk_canon.js)', /edgedesk_canon\.js/.test(src) && /board_status/.test(src));
 })();
 
 /* ---------------------------------------------------------------- */

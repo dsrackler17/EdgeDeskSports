@@ -57,9 +57,41 @@ const isNum = (x) => typeof x === 'number' && isFinite(x);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const r3 = (x) => isNum(x) ? Math.round(x * 1000) / 1000 : null;
 const r1 = (x) => isNum(x) ? Math.round(x * 10) / 10 : null;
-function weights(rows, cur, hl) {
-  const n = rows.length;
-  return rows.map((row, i) => Math.pow(0.5, (n - 1 - i) / hl) * (row.s < cur ? P.prior_season_weight : 1));
+function weights(rows, cur, hl, psw) {
+  const n = rows.length, prior = isNum(psw) ? psw : P.prior_season_weight;
+  return rows.map((row, i) => Math.pow(0.5, (n - 1 - i) / hl) * (row.s < cur ? prior : 1));
+}
+
+/* REGIME CHANGE (college; audit 2026-09-30 #1, #7d). A programme with a new
+   head coach and a turned-over roster (football/coaching/regime.json) carries
+   usage and volume priors from a system that left. The props model applies
+   the SAME fitted curve the game model does (football/cfb_p4/regime_curve.js,
+   fitted walk-forward on team ratings): at g games played, last season's
+   weight is scaled by w_regime(g) / w_standard(g), where w_standard is the
+   game model's learned prior-weight curve (params blend.prior_weight_by_week).
+   It is borrowed, not fitted on props — college props have no backtest of
+   their own — so the prop also carries the REGIME_CHANGE cap (no BET before
+   the team has played the curve's min_games_for_research). */
+let REGIME_LIB;
+function regimeLib() {
+  if (REGIME_LIB === undefined) {
+    let curve = null, standard = null;
+    try { curve = require(path.join(__dirname, '..', 'cfb_p4', 'regime_curve.js')); } catch (e) { curve = null; }
+    try { const Pp = require(path.join(__dirname, '..', 'cfb_p4', 'params.js')); standard = Pp && Pp.blend ? Pp.blend.prior_weight_by_week || null : null; } catch (e) { standard = null; }
+    REGIME_LIB = { curve: curve && curve.curve ? curve : null, standard };
+  }
+  return REGIME_LIB;
+}
+function regimeState(rec, gamesPlayed) {
+  if (!rec || rec.regime_change !== true) return null;
+  const L = regimeLib(), g = Math.max(0, isNum(gamesPlayed) ? gamesPlayed : 0);
+  const std = L.standard ? L.standard[String(clamp(Math.round(g), 0, 15))] : null;
+  const cv = L.curve ? L.curve.curve : null;
+  const w = cv && isNum(std) ? Math.min(std, cv.w0 * Math.exp(-cv.lambda * g)) : null;
+  return { regime_change: true, team: rec.team || rec.key || null, reason: rec.reason || null, games_played: g,
+    min_games_for_research: isNum(rec.min_games_for_research) ? rec.min_games_for_research : (L.curve && isNum(L.curve.min_games_for_research) ? L.curve.min_games_for_research : null),
+    standard_weight: isNum(std) ? r3(std) : null, regime_weight: isNum(w) ? r3(w) : null,
+    prior_scale: isNum(w) && isNum(std) && std > 0 ? w / std : 1, curve_version: L.curve ? L.curve.version || null : null };
 }
 function wsum(rows, w, f) { let s = 0; for (let i = 0; i < rows.length; i++) { const v = f(rows[i]); if (isNum(v)) s += w[i] * v; } return s; }
 function shrinkRate(num, den, k, prior) { return (num + k * prior) / (den + k); }
@@ -104,7 +136,9 @@ function prepare(ds, cutoff, opts) {
   const team = {};
   Object.keys(teamRows).forEach((t) => {
     const rows = teamRows[t]; if (!rows.length) return;
-    const w = weights(rows, cur, P.hl_team), n = w.reduce((a, b) => a + b, 0);
+    /* a regime-change programme's prior-season volume is scaled by the regime curve */
+    const rg = regimeState((ds.regime || {})[t], rows.filter((r) => r.s === cur).length);
+    const w = weights(rows, cur, P.hl_team, rg ? P.prior_season_weight * rg.prior_scale : null), n = w.reduce((a, b) => a + b, 0);
     const sh = (f, lg) => (wsum(rows, w, f) + P.k_team_games * lg) / (n + P.k_team_games);
     const neutralN = wsum(rows, w, (r) => r.n_neutral), neutralDb = wsum(rows, w, (r) => r.db_neutral);
     const proe = wsum(rows, w, (r) => r.proe_n) / Math.max(1, neutralN);
@@ -117,7 +151,7 @@ function prepare(ds, cutoff, opts) {
       sack_rate: shrinkRate(wsum(rows, w, (r) => r.sk), wsum(rows, w, (r) => r.db), P.k_db_sack, league.sack_rate),
       rush_td_frac: (rushTd + 6 * league.rush_td_frac) / (rushTd + passTd + 6),
       rz_dr: wsum(rows, w, (r) => r.rz_dr) / n, gl_dr: wsum(rows, w, (r) => r.gl_dr) / n, rz_att: wsum(rows, w, (r) => r.rz_att) / n,
-      last_gid: rows[rows.length - 1].gid
+      last_gid: rows[rows.length - 1].gid, regime: rg
     };
   });
   /* each defence: what its opponents did against it */
@@ -233,12 +267,84 @@ function absencesFor(ctx, tm, game) {
   });
   return out;
 }
-function statusFor(ctx, id, game) {
+/* THE REPORT ON FILE IS A TEAM'S OWN (audit 2026-09-30 #7). Teams publish
+   on their own game's schedule: on the Wednesday of week 4 the Thursday
+   teams (PIT, CLE) had their week-4 report on file and the other thirty were
+   still on week 3. "On file" used to mean "any team has a report for this
+   week", so every Sunday team read as reported; and a teammate the week-3
+   report had OUT was absent from this week's list — so he read as BACK. */
+function teamReportWeek(inj, tm) {
+  if (!inj || !tm) return null;
+  if (inj.team_week && inj.team_week[tm] != null) return inj.team_week[tm];
+  let w = null;
+  Object.keys(inj.by_player || {}).forEach((id) => { const y = inj.by_player[id]; if (y.team === tm && y.week != null && (w == null || y.week > w)) w = y.week; });
+  return w;
+}
+function statusFor(ctx, id, game, tm) {
   if (ctx.opts.absent) return { status: null, practice: null, on_file: true };
   const inj = ctx.ds.injuries || {}, x = (inj.by_player || {})[id];
-  const reportWeek = !!(inj.published && game && Object.values(inj.by_player || {}).some((y) => y.week === game.week));
-  if (!x || !game || x.week !== game.week) return { status: null, practice: null, injury: null, on_file: reportWeek };
+  const team = tm || (x && x.team) || ((ctx.ds.players || {})[id] || {}).team || null;
+  const reportWeek = !!(inj.published && game && teamReportWeek(inj, team) === game.week);
+  if (!x || !game || x.week !== game.week) {
+    const o = { status: null, practice: null, injury: null, on_file: reportWeek };
+    /* the player himself was listed on an EARLIER report and his team has not
+       filed this week's: his status is pending, not clean */
+    if (x && game && !reportWeek && x.team === team && x.week != null && x.week < game.week) {
+      const st = String(x.status || '').toUpperCase();
+      if (st === 'OUT' || st === 'DOUBTFUL' || st === 'QUESTIONABLE') o.pending = { status: st, week: x.week, injury: x.injury || null };
+    }
+    return o;
+  }
   return { status: x.status ? String(x.status).toUpperCase() : null, practice: x.practice || null, injury: x.injury || null, on_file: true };
+}
+/* teammates the LAST report on file listed OUT or DOUBTFUL, on a team whose
+   report for this game's week is not yet published: neither out nor back.
+   They are never read as returned (no dilution) nor as out (no share moved);
+   the prop carries the open question instead (teammate_uncertain). */
+const SHARE_POS = { QB: 1, RB: 1, WR: 1, TE: 1 };
+function pendingFor(ctx, tm, game) {
+  const out = {};
+  if (ctx.opts.absent || !game) return out;
+  const inj = ctx.ds.injuries || {};
+  if (!inj.published) return out;
+  const wk = teamReportWeek(inj, tm);
+  if (wk == null || wk >= game.week) return out;
+  Object.keys(inj.by_player || {}).forEach((id) => {
+    const x = inj.by_player[id];
+    if (x.team !== tm || x.week !== wk) return;
+    const st = String(x.status || '').toUpperCase();
+    if (st !== 'OUT' && st !== 'DOUBTFUL') return;
+    const q = ctx.ds.players[id], pos = (q && q.pg) || String(x.position || '').toUpperCase();
+    if (!SHARE_POS[pos]) return;
+    out[id] = { status: st, week: wk, name: (q && q.name) || x.name || id, pos };
+  });
+  return out;
+}
+/* THE OPPONENT'S DEFENSIVE AVAILABILITY (audit 2026-09-30 #7c). Not a model
+   input: the projection's defensive factors are the defence's season-to-date
+   rates, whoever played. What the latest report on file lists as OUT or
+   DOUBTFUL on defence travels with the prop as a warning
+   (OPP_DEFENSE_UNMODELED, lib/edgedesk_props.js). A league with no
+   availability feed (college) returns null: nothing is known to flag. */
+const DEF_POS = /^(DE|DT|NT|DL|EDGE|LB|ILB|OLB|MLB|CB|DB|S|FS|SS|SAF)$/;
+function defenceAvailability(ctx, tm, game) {
+  if (!ctx || ctx.opts.absent || ctx.caps.injuries === false || !game) return null;
+  const inj = ctx.ds.injuries || {};
+  if (!inj.published) return null;
+  const wk = teamReportWeek(inj, tm);
+  if (wk == null) return { out: [], report_week: null, report_on_file: false };
+  const out = [];
+  Object.keys(inj.by_player || {}).forEach((id) => {
+    const x = inj.by_player[id];
+    if (x.team !== tm || x.week !== wk) return;
+    const st = String(x.status || '').toUpperCase();
+    if (st !== 'OUT' && st !== 'DOUBTFUL') return;
+    const q = ctx.ds.players[id], pos = String(x.position || (q && q.pg) || '').toUpperCase();
+    if (!DEF_POS.test(pos)) return;
+    out.push({ name: x.name || (q && q.name) || id, pos, status: st });
+  });
+  out.sort((a, b) => (a.status === b.status ? 0 : a.status === 'OUT' ? -1 : 1) || a.name.localeCompare(b.name));
+  return { out, report_week: wk, report_on_file: wk === game.week };
 }
 
 /* ------------------------------------------------------------ environment */
@@ -285,9 +391,11 @@ function projectPlayer(ctx, pid, game, markets, opts) {
   const step = (label, value, note) => steps.push({ label, value: isNum(value) ? r3(value) : value, note: note || null });
   const curGames = onTeam.filter((x) => x.l.s === cur && playedIn(x.l)).length;
   const priorGames = hist.filter((x) => x.l.s < cur && playedIn(x.l)).length;
-  const status = statusFor(ctx, pid, game);
+  const status = statusFor(ctx, pid, game, tm);
   const outs = absencesFor(ctx, tm, game);
   delete outs[pid];
+  const pending = pendingFor(ctx, tm, game);
+  delete pending[pid];
 
   /* ---- team volume */
   const oppPace = D ? Math.sqrt(D.plays / lg.plays) : 1;
@@ -296,7 +404,8 @@ function projectPlayer(ctx, pid, game, markets, opts) {
   const dbRate = clamp(baseRate - P.script_pass_rate_per_pt * env.margin + env.pass_rate_adj, 0.38, 0.78);
   const dropbacks = plays * dbRate, designed = plays - dropbacks;
   const sackRate = D ? (T.sack_rate + D.sack_rate) / 2 : T.sack_rate;
-  step('Team plays per game', plays, 'recency-weighted, shrunk to league ' + r1(lg.plays) + '; opponent pace ×' + r3(oppPace));
+  step('Team plays per game', plays, 'recency-weighted, shrunk to league ' + r1(lg.plays) + '; opponent pace ×' + r3(oppPace)
+    + (T.regime ? '; REGIME CHANGE: last season weighted ×' + r3(T.regime.prior_scale) + ' (regime curve at ' + T.regime.games_played + ' games)' : ''));
   step('Dropback rate', dbRate, 'neutral ' + r3(T.neutral_db) + ', script ' + (env.margin >= 0 ? '−' : '+') + r3(Math.abs(P.script_pass_rate_per_pt * env.margin)) + (env.pass_rate_adj ? ', wind ' + env.pass_rate_adj : ''));
   const teamTds = env.implied * lg.td_per_pt;
   const teamRushTd = teamTds * T.rush_td_frac, teamPassTd = teamTds - teamRushTd;
@@ -317,14 +426,19 @@ function projectPlayer(ctx, pid, game, markets, opts) {
   const dp = P.depth_prior[pg] || null;
   const prior = (kind) => {
     const pr = hist.filter((x) => x.l.s < cur && x.l.tm === tm);
-    if (pr.length >= 4) { const st = shareStats(pr, cur, kind === 'car' ? numCar : numTgt, kind === 'car' ? denCar : denTgt); if (isNum(st.share)) return { v: st.share * snapRatio, src: 'last season on ' + tm + (snapRatio !== 1 ? ' × snap-share change ' + r3(snapRatio) : '') }; }
+    if (pr.length >= 4) { const st = shareStats(pr, cur, kind === 'car' ? numCar : numTgt, kind === 'car' ? denCar : denTgt); if (isNum(st.share)) return { v: st.share * snapRatio, src: 'last season on ' + tm + (snapRatio !== 1 ? ' × snap-share change ' + r3(snapRatio) : ''), last_season: true }; }
     if (dp && rank) { const arr = dp[kind]; return { v: arr[Math.min(rank, arr.length) - 1] || 0, src: 'depth chart ' + pg + rank }; }
     return { v: dp ? dp[kind][Math.min(3, dp[kind].length) - 1] || 0 : 0, src: 'position prior' };
   };
+  /* the prior's weight, k / (n + k); last season's usage on a regime-change
+     programme is scaled by the regime curve (regimeState above) */
+  const RG = T.regime || null;
   const shrinkShare = (st, kind) => {
     const pr = prior(kind), n = st.n || 0;
-    const blended = isNum(st.share) ? (st.share * n + pr.v * P.k_share_games) / (n + P.k_share_games) : pr.v;
-    return { v: blended, prior: pr };
+    if (!isNum(st.share)) return { v: pr.v, prior: pr };
+    let pw = P.k_share_games / (n + P.k_share_games);
+    if (RG && pr.last_season && RG.prior_scale < 1) { pw *= RG.prior_scale; pr.src += ', regime change ×' + r3(RG.prior_scale); }
+    return { v: st.share * (1 - pw) + pr.v * pw, prior: pr };
   };
   let carShare = shrinkShare(car, 'car'), tgtShare = shrinkShare(tgt, 'tgt');
   /* ---- teammates OUT: their share moves to who is left (projected, not observed) */
@@ -358,7 +472,10 @@ function projectPlayer(ctx, pid, game, markets, opts) {
   /* ---- a teammate back from absence dilutes a recent share */
   let returned = null;
   teamPlayers(ctx, tm).forEach((q) => {
-    if (returned || q.team !== tm || q.id === pid || q.pg !== pg || outs[q.id]) return;
+    /* a teammate whose status is PENDING (last week's report had him out,
+       this week's is not on file) is not back: the dilution waits for the
+       report (audit 2026-09-30 #7 — Pierce, IND, week 4) */
+    if (returned || q.team !== tm || q.id === pid || q.pg !== pg || outs[q.id] || pending[q.id]) return;
     const qh = history(ctx, q).filter((x) => x.l.tm === tm && x.l.s === cur);
     const lastTeam = (ctx.teamRows[tm] || []).filter((r) => r.s === cur).slice(-2).map((r) => r.gid);
     if (lastTeam.length < 2 || qh.length < 1) return;
@@ -556,8 +673,12 @@ function projectPlayer(ctx, pid, game, markets, opts) {
   return {
     ok: true, player_id: pid, team: tm, opp: env.opp, pg, model_version: MODEL_VERSION, cutoff: ctx.cutoff,
     env, status, sample_games: curGames, prior_games: priorGames, role_stability: roleStability, completeness,
-    qb_change: qbChange, qb_unconfirmed: qbChange ? !qbChange.confirmed : false, teammate_uncertain: Object.keys(outs).some((k) => outs[k] === 'DOUBTFUL'),
+    qb_change: qbChange, qb_unconfirmed: qbChange ? !qbChange.confirmed : false,
+    teammate_uncertain: Object.keys(outs).some((k) => outs[k] === 'DOUBTFUL') || Object.keys(pending).length > 0,
     teammates_out: teammatesOut, teammate_returned: returned, depth_rank: rank,
+    teammates_pending: Object.keys(pending).map((k) => pending[k]).sort((a, b) => a.name.localeCompare(b.name)),
+    regime: RG ? { regime_change: true, team: RG.team, reason: RG.reason, games_played: RG.games_played, min_games_for_research: RG.min_games_for_research,
+      standard_weight: RG.standard_weight, regime_weight: RG.regime_weight, prior_scale: r3(RG.prior_scale), curve_version: RG.curve_version } : null,
     shares: { car: { now: r3(car.l3), season: r3(car.season), projected: r3(carShare.v) }, tgt: { now: r3(tgt.l3), season: r3(tgt.season), projected: r3(tgtShare.v) }, snaps: snapsSt ? { now: r3(snapsSt.l3), season: r3(snapsSt.season), last: r3(snapsSt.last) } : null },
     efficiency: { ypc: r3(ypc), catch_rate: r3(catchRate * catchOpp), ypr: r3(ypr), opp_factor_ypc: r3(ypcOpp), opp_factor_ypr: r3(yprOpp) },
     volume: { plays: r1(plays), db_rate: r3(dbRate), dropbacks: r1(dropbacks), designed_runs: r1(designed), carries: r3(carVol), targets: r3(tgtVol), receptions: r3(recVol) },
@@ -612,4 +733,5 @@ function defaultMarkets(pg, proj) {
   return [];
 }
 
-module.exports = { MODEL_VERSION, PARAMS: P, prepare, projectPlayer, environment, history, shareStats, statOf, defaultMarkets, playedIn, tdDist, absencesFor, statusFor };
+module.exports = { MODEL_VERSION, PARAMS: P, prepare, projectPlayer, environment, history, shareStats, statOf, defaultMarkets, playedIn, tdDist, absencesFor, statusFor,
+  pendingFor, teamReportWeek, defenceAvailability, regimeState };

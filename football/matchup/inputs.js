@@ -158,6 +158,15 @@ function load(opts) {
   /* the one mapping, shared with the board (football/matchup/contract.js) */
   out.coaching_for = function (key) { return CONTRACT.coachingFor(out.coaching, key); };
 
+  /* THE REGIME-CHANGE RECORD (football/coaching/build_regime.js), read the way
+     the board reads it: a season mismatch is no regime at all, and says so */
+  const regime = readJson(path.join(ROOT, 'football', 'coaching', 'regime.json'), null);
+  out.regime = (regime && +regime.season === +season && regime.by_team) || {};
+  out.regime_as_of = regime ? (regime.generated_at || null) : null;
+  if (!regime) out.problems.push('football/coaching/regime.json is missing — run node football/coaching/build_regime.js; no programme is priced on the regime curve');
+  else if (+regime.season !== +season) out.problems.push('football/coaching/regime.json is for ' + regime.season + ', not ' + season + ' — ignored');
+  out.regime_for = function (key) { return CONTRACT.regimeFor(out.regime, key); };
+
   const gen = readJson(path.join(ROOT, 'football', 'venues', 'resolved.json'), null);
   /* THE ONE MERGE, shared with the board (football/matchup/contract.js
      mergeVenues): trained table, then the supplement, then the generated

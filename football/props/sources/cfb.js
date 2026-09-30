@@ -157,8 +157,13 @@ async function load(opts) {
     if (f) g.forecast = f;
   });
   const shapes = readJson('football/props/nfl/shapes.json');
+  /* each programme's regime-change record (football/coaching/regime.json,
+     audit 2026-09-30 #1/#7d): read by model.js prepare (the usage and volume
+     priors) and carried to each prop (the REGIME_CHANGE cap) */
+  const rg = readJson('football/coaching/regime.json');
+  const regime = rg && rg.season === season && rg.by_team ? rg.by_team : null;
   return {
-    ok: true, league: 'cfb', season, built_at: new Date().toISOString(), schedule: sched, players, teams, depth: {},
+    ok: true, league: 'cfb', season, built_at: new Date().toISOString(), schedule: sched, players, teams, depth: {}, regime,
     injuries: { published: false, by_player: {}, note: 'no official college availability feed exists (football/availability/current.json)' },
     slate: null, event_fits: shapes && shapes.fits ? shapes.fits : {}, shape_league: 'nfl', shapes_borrowed: !!(shapes && shapes.fits),
     caps: { targets: false, snaps: false, pbp: false, injuries: false, depth: false }, feeds, team_names: names

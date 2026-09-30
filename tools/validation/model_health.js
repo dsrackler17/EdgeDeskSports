@@ -129,7 +129,7 @@ function distributionAudit() {
   /* the distribution each league's DECISION path actually reads, and how */
   const TABLES = [
     ['NFL', () => global.window.EDFootballParams.nfl, 'football/params.js nfl.margin_pmf_by_spread', 'football/pricing/lines_nfl.json',
-      'Read directly by football/engine.js coverProbSpread: the NFL raw (MODEL-ESTIMATED) cover probabilities inherit this centre.', true],
+      'football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.', false],
     ['CFB', () => global.window.EDCfbP4Params.distributions, 'football/cfb_p4/params.js distributions.margin_pmf_by_spread', 'football/pricing/lines_cfb.json',
       'The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (the integer shift leaves up to ±0.5 pt).', false]
   ];

@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-09-30T17:07:40.216Z",
+ "generated_at": "2026-09-30T17:12:58.821Z",
  "board_generated_at": "2026-09-30T17:07:39.001Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
@@ -20,20 +20,20 @@
    "game": "West Virginia @ Iowa State",
    "kickoff": "2026-10-03T16:00:00.000Z",
    "named": true,
-   "edgedesk": "Iowa State -10.1",
+   "edgedesk": "Iowa State -8.9",
    "market": "Iowa State -3.5",
    "books": 1,
-   "gap": 6.57,
+   "gap": 5.37,
    "gap_class": "MODERATE",
    "favorite_flip": false,
-   "research_status": "WORTH_RESEARCHING",
-   "research_label": "WORTH RESEARCHING",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
    "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
    "requirements": null,
    "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status WORTH RESEARCHING."
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401858247",
@@ -46,8 +46,8 @@
    "gap": 7.8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -99,21 +99,21 @@
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401862786",
    "game": "North Texas @ Tulsa",
    "kickoff": "2026-10-02T01:00:00.000Z",
    "named": true,
-   "edgedesk": "North Texas -10.8",
+   "edgedesk": "North Texas -9.2",
    "market": "Tulsa -1.5",
    "books": 1,
-   "gap": 12.27,
+   "gap": 10.74,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
@@ -151,7 +151,7 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-2.4 pts) lifts the gap over 10: without it the gap is 9.8 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-2.4 pts) lifts the gap over 10: without it the gap is 8.3 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
@@ -161,25 +161,45 @@
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 13.2"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 11.8"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; current team states fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; current team states fail."
+  },
+  {
+   "game_id": "401858245",
+   "game": "Pittsburgh @ Virginia Tech",
+   "kickoff": "2026-10-02T23:00:00.000Z",
+   "named": false,
+   "edgedesk": "Virginia Tech -0.8",
+   "market": "Virginia Tech -3.0",
+   "books": 1,
+   "gap": 2.21,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401858252",
    "game": "Syracuse @ UConn",
    "kickoff": "2026-10-03T16:00:00.000Z",
    "named": true,
-   "edgedesk": "UConn -12.2",
+   "edgedesk": "UConn -7.8",
    "market": "Syracuse -6.5",
    "books": 0,
-   "gap": 18.67,
+   "gap": 14.25,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "NO_MARKET",
-   "research_label": "STALE MARKET",
+   "research_status": "DATA_FAULT",
+   "research_label": "DATA FAULT",
    "decision_status": "NO_DECISION",
    "gate_status": "NOT RUN",
    "root_cause": null,
@@ -231,7 +251,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+   "verdict": "DATA FAULT is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
    "game_id": "401856705",
@@ -324,66 +344,20 @@
    "game": "Marshall @ James Madison",
    "kickoff": "2026-10-03T19:45:00.000Z",
    "named": true,
-   "edgedesk": "James Madison -25.8",
+   "edgedesk": "James Madison -24.6",
    "market": "James Madison -18.5",
    "books": 0,
-   "gap": 7.28,
-   "gap_class": "MAJOR",
+   "gap": 6.05,
+   "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
    "research_label": "STALE MARKET",
    "decision_status": "NO_DECISION",
-   "gate_status": "NOT RUN",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "current team states",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    }
-   ],
+   "requirements": null,
    "consistent": true,
-   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+   "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
   },
   {
    "game_id": "401858249",
@@ -410,10 +384,10 @@
    "game": "Temple @ South Florida",
    "kickoff": "2026-10-03T23:30:00.000Z",
    "named": true,
-   "edgedesk": "South Florida -16.1",
+   "edgedesk": "South Florida -14.9",
    "market": "South Florida -6.5",
    "books": 0,
-   "gap": 9.61,
+   "gap": 8.41,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",

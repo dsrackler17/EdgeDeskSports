@@ -186,7 +186,12 @@ section('execution: the ladder IS the decision, and moves one way');
   chk('on a BET, best execution is the BET’s own quote (' + bets + ' BETs): one answer, never two', bets > 5 && bestIsBet === bets, bestIsBet + '/' + bets);
   const d = decide(-11.5, board(10));
   chk('the ladder shows transition points only (≤ 7 rows per axis)', d.ladder.by_line.length <= 7 && d.ladder.by_price.length <= 7, d.ladder);
-  chk('the ladder names its axis and marks now', /At -110: .*\(now\)/.test(d.ladder.summary), d.ladder.summary);
+  /* the axis is the evaluated quote's own price (audit 2026-09-30 #4: on the
+     median-centred NFL distribution the model's side, Buffalo -10 at -108, is
+     the one evaluated — it used to be Miami +10 at -110, the side the model is
+     against) */
+  const axis = 'At ' + (d.selected_odds > 0 ? '+' : '') + d.selected_odds + ':';
+  chk('the ladder names its axis and marks now', d.ladder.summary.indexOf(axis) === 0 && /\(now\)/.test(d.ladder.summary.split('|')[0]), [axis, d.ladder.summary]);
   chk('WATCH → BET appears on the line axis', /WATCH/.test(d.ladder.summary_line || '') && /BET 0\.25U/.test(d.ladder.summary_line || ''), d.ladder.summary_line);
   chk('the ladder is computed from the rules, with its caveat', /holding the rest of the market/.test(d.ladder.caveat));
 }
@@ -217,8 +222,10 @@ section('engine: one anomalous sportsbook cannot create a BET');
   /* the market deals Miami −10 at three books; Caesars alone deals −6.5 */
   const agreeing = [qq('home', -10, -110), qq('away', 10, -110), qq('home', -10, -110, 'FanDuel'), qq('away', 10, -110, 'FanDuel'), qq('home', -10, -110, 'BetMGM'), qq('away', 10, -110, 'BetMGM')];
   const outlier = [qq('home', -6.5, -110, 'Caesars'), qq('away', 6.5, -110, 'Caesars')];
-  /* the model makes Miami by 12: only the off-market −6.5 would qualify */
-  const d = decide(12, agreeing.concat(outlier)), alone = decide(12, agreeing);
+  /* the model makes Miami by 10: only the off-market −6.5 would qualify
+     (on the median-centred NFL distribution, audit 2026-09-30 #4, Miami -10
+     itself carries an edge from about Miami by 10.5) */
+  const d = decide(10, agreeing.concat(outlier)), alone = decide(10, agreeing);
   chk('only the off-market quote would qualify: not a BET', d.decision !== 'BET', [d.decision_display, d.action && d.action.selection]);
   chk('… WATCH · PRICE ANOMALY on it', d.decision === 'WATCH' && d.action_reason_code === 'PRICE_ANOMALY', [d.decision_display, d.action_reason_code]);
   const c = (d.candidates || []).filter((x) => x.book === 'Caesars' && x.side === 'home')[0];
@@ -229,8 +236,9 @@ section('engine: one anomalous sportsbook cannot create a BET');
   chk('BOOK ON MARKET fails; the other books’ agreement does not', (d.anomaly.checks || []).some((x) => x.code === 'BOOK_ON_MARKET' && x.status === 'FAIL') && (d.anomaly.checks || []).some((x) => x.code === 'BOOK_AGREEMENT' && x.status === 'PASS'), d.anomaly.checks);
   chk('without the outlier the same model is not a BET either', alone.decision !== 'BET');
   chk('the outlier is never the best execution', !(d.best_execution && d.best_execution.best && d.best_execution.best.book === 'Caesars'), d.best_execution);
-  /* the model makes Miami by 9: the agreeing books decide, the outlier changes nothing */
-  for (const fair of [8, 9, 10, 11]) {
+  /* the model makes Miami by 8, 9 or 11: the agreeing books decide (at 11 on their own
+     edge), the outlier changes nothing */
+  for (const fair of [7, 8, 9, 11]) {
     const w = decide(fair, agreeing.concat(outlier)), wo = decide(fair, agreeing);
     chk('fair ' + fair + ': the agreeing books decide as if the outlier were absent', w.decision === wo.decision && w.recommended_units === wo.recommended_units && (w.bet_price || w.reference_quote || {}).book !== 'Caesars', [w.decision_display, wo.decision_display]);
   }
@@ -239,11 +247,33 @@ section('engine: one anomalous sportsbook cannot create a BET');
 section('engine: the model must agree with itself');
 {
   /* EdgeDesk makes Miami +11.5; the market deals +10. The NFL raw distribution
-     is off-centre here (the distribution audit) and says +10 covers ~59%. */
+     USED to be off-centre here (the table's median sat ~2 pts inside its key)
+     and said +10 covered ~59% — the model contradicting itself, capped at
+     WATCH · MODEL CONFLICT. Audit 2026-09-30 #4 reads the table by its median,
+     so the distribution now agrees with its own fair line: Buffalo, the
+     projection's side, is the side evaluated, and Miami +10 covers under 50%. */
   const d = decide(-11.5, board(10));
-  chk('a fair line on the other side of the number with cover > 50% is WATCH · MODEL CONFLICT, never a BET', d.decision === 'WATCH' && d.action_reason_code === 'MODEL_CONFLICT', [d.decision_display, d.action_reason_text]);
-  chk('… and it says what it saw', /Miami Dolphins \+10 against a fair \+11\.5, model cover \d/.test(d.action_reason_text), d.action_reason_text);
-  chk('the ladder applies the rule at every number: +11 (inside the band) is where it would bet', /\+11 BET/.test(d.ladder.summary_line || ''), d.ladder.summary_line);
+  const miami = (d.candidates || []).filter((x) => x.side === 'home' && x.line === 10)[0];
+  chk('the audit fix: at fair +11.5 against +10 the projection\'s side is the one evaluated, and +10 covers under 50%', d.side_key === 'away' && miami && miami.cover_probability < 0.5 && d.action_reason_code !== 'MODEL_CONFLICT', [d.decision_display, d.side_key, miami && miami.cover_probability]);
+  /* THE GUARD STILL STANDS where a distribution is off-centre by design: a
+     college curve (conditioned at the market, not centred on the displayed
+     number) whose own cover sits on the other side of its fair line */
+  const cfbOff = (fair, centre, quotes) => D.decide({ sport: 'CFB', game: { game_id: 'g', home: 'Miami Dolphins', away: 'Buffalo Bills', kickoff: KICK },
+    model: { sport: 'CFB', available: true, model_version: 'cfb_test', fair_home_margin: fair, home_cover: (t) => { let w = 0, p = 0; for (let k = -90; k <= 90; k++) { const pk = Math.exp(-0.5 * Math.pow((k - centre) / 14, 2)); if (Math.abs(k - t) < 1e-9) p += pk; else if (k > t) w += pk; } let z = 0; for (let k = -90; k <= 90; k++) z += Math.exp(-0.5 * Math.pow((k - centre) / 14, 2)); return { win: w / z, push: p / z, lose: 1 - (w + p) / z }; },
+      tail: { validated_within_pts: 3 }, projection_timestamp: '2026-10-04T06:00:00Z', adjusted: { available: false } },
+    quotes, now: Date.parse(NOW), qb: { known: true }, availability: { known: true }, reliability: { score: 85 }, confidence: { score: 80 }, projection: { stability: 'STABLE' } });
+  const c1 = cfbOff(-11.5, -7.5, board(10));
+  chk('a fair line on the other side of the number with cover > 50% is WATCH · MODEL CONFLICT, never a BET', c1.decision === 'WATCH' && c1.action_reason_code === 'MODEL_CONFLICT', [c1.decision_display, c1.action_reason_text]);
+  chk('… and it says what it saw', /Miami Dolphins \+(10|9\.5) against a fair \+11\.5, model cover \d/.test(c1.action_reason_text), c1.action_reason_text);
+  chk('the ladder applies the rule at every number: inside the band (+11) it is no conflict', !/\+11 WATCH/.test(c1.ladder.summary_line || '') || /\+11 (BET|LEAN)/.test(c1.ladder.summary_line || ''), c1.ladder && c1.ladder.summary_line);
+  /* an NFL distribution off its displayed number is no longer a WATCH: the
+     projection feeding EV is not the displayed one, and that fails loudly */
+  const off = (() => { const ce = console.error; console.error = () => {}; try {
+    return D.decide({ sport: 'NFL', game: { game_id: 'g', home: 'Miami Dolphins', away: 'Buffalo Bills', kickoff: KICK },
+      model: Object.assign(nflModel(-11.5), { home_cover: (t) => E.dist.coverProbSpread('nfl', -8.5, t) }), quotes: board(10), now: Date.parse(NOW),
+      qb: { known: true }, availability: { known: true }, reliability: { score: 85 }, confidence: { score: 80 }, projection: { stability: 'STABLE' } });
+  } finally { console.error = ce; } })();
+  chk('an NFL distribution centred 3 pts off the displayed projection = NO DECISION · EV SIDE CONTRADICTION', off.decision === 'NO_DECISION' && off.blocker_codes[0] === 'EV_SIDE_CONTRADICTION', [off.decision_display, off.blocker_codes]);
   chk('inside the aligned band there is no conflict (+10.5 fair vs +10)', decide(-10.5, board(10)).action_reason_code !== 'MODEL_CONFLICT');
   const alt = decide(-10, board(10).concat([qq('home', 6.5, 260, 'DraftKings', { market_type: 'alternate_spread' })]));
   const c = (alt.candidates || []).filter((x) => x.line === 6.5)[0];

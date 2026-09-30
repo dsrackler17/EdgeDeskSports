@@ -70,7 +70,12 @@ chk('the NFL schedule feed is the board’s own',
 /* a replayed quote has to be in the shape the module's own reader reads */
 has(APP, "r.market==='spreads'", 'the module reads a spread row by market name');
 has(APP, "r.market==='totals'", 'and a total row the same way');
-has(APP, 'out.spread_line=-(+r.point)', 'and the sign convention a replayed quote must honour');
+/* the sign convention a replayed quote must honour: a home row's point is
+   the home line, an away row's is negated onto it, and spread_line is the
+   home line negated (home -3 -> spread_line +3). The reader takes the
+   consensus of the rows now, not the first one (audit 2026-09-30 #3) */
+has(APP, "v:side==='home'?+r.point:(+r.point===0?0:-(+r.point))", 'and the sign convention a replayed quote must honour (home line; away negated onto it)');
+has(APP, 'out.spread_line=ms.v===0?0:-ms.v', 'and spread_line is the consensus home line, negated');
 
 /* ======================================================================== */
 section('1b. PUBLISHING A BRIEF AS AN ARTICLE — the wiring, statically');

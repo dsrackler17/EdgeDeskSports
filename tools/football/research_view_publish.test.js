@@ -135,6 +135,8 @@ if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.er
 const win = BOOT.win, T = win.__FBTEST;
 const E = M.loadEngine(win, ROOT);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win, { filename: 'lib/cfb_research_view.js' });
+/* the one research classifier the view delegates to, as the page loads it (audit 2026-09-30 #6) */
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win, { filename: 'lib/edgedesk_canon.js' });
 const HOME = 'Duke', AWAY = 'Wake Forest', HK = E.normKey(HOME), AK = E.normKey(AWAY);
 /* a staged board stands for a complete load (see cfb_research_view_ui.test.js) */
 function stage(target, o) {

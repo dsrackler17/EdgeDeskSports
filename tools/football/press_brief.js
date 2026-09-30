@@ -17,12 +17,17 @@
      football/rankings/health.json   the pipeline run record and its coverage
      football/rankings/history.json  the weekly series behind every Δ
 
-   THE STATUS AND THE SCORE ARE THE PAGE'S OWN RULES, COPIED.
-   `statusFor()` and `projectedScore()` below reproduce `fbP4StatusFor` and
-   `fbGxScore` from app.html exactly, thresholds included, so the printed brief
-   and the screen cannot say different things about the same game. If the app's
-   rule changes, this file has to change with it — tools/football/press_brief.test.js
-   holds them together.
+   THE STATUS IS THE BOARD'S, READ — NOT RECOMPUTED (audit 2026-09-30 #6).
+   The slate CSV carries the board's word for every game (board_status:
+   football/cfb_p4/export_csv.js and the board's own "CSV (raw)" download both
+   write EDCanon.boardWord of lib/edgedesk_canon.js researchStatus, the one
+   research classifier). `statusFor()` only presents that word; a row without
+   it is printed UNCLASSIFIED, never classified here. It used to be a copy of
+   the page's rule, and a copy is a second classifier: it had no stale-market,
+   orientation, regime-change or implausible-EV rule, so it could print "In
+   agreement" or "Review" where the board said INVESTIGATE or DATA FAULT.
+   `projectedScore()` still reproduces `fbGxScore` from app.html exactly —
+   tools/football/press_brief.test.js holds the two together.
 
    A SCORE IS ONLY PUBLISHED WHERE THE MODEL PUBLISHED A TOTAL. A margin
    without a total cannot be split into a score, and the brief says so on the
@@ -78,11 +83,12 @@ function num1(v) { return isNum(v) ? v.toFixed(1) : '—'; }
 function pct(v) { return isNum(v) ? Math.round(v) + '%' : '—'; }
 
 /* ------------------------------------------------------------ the rules */
-/* Copied from app.html. See the header: these two functions are the reason
-   the brief and the board cannot disagree. */
-const GUARD_P4_GAME = 21;      /* FB_GUARD.p4.game */
-const MIN_CONFIDENCE = 35;     /* EDCfbP4Params.market.min_confidence */
-const MIN_RESEARCH_GAP = 2;    /* EDCfbP4Params.market.min_research_gap */
+/* the one research classifier's thresholds (quoted in the brief's text; the
+   brief classifies nothing with them) */
+const CANON = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+const GUARD_P4_GAME = CANON.THRESHOLDS.guard_gap;          /* FB_GUARD.p4.game */
+const MIN_CONFIDENCE = CANON.THRESHOLDS.min_confidence;    /* EDCfbP4Params.market.min_confidence */
+const MIN_RESEARCH_GAP = CANON.THRESHOLDS.research_gap;    /* EDCfbP4Params.market.min_research_gap */
 /* the rankings board's own floor, read from the shared config rather than
    restated here, so the brief cannot quote a number the engine has changed */
 const RANK_MIN_CONFIDENCE = (() => {
@@ -100,39 +106,52 @@ function projectedScore(margin, total) {
   return { home, away };
 }
 
+/* the board's words (EDCanon.BOARD_WORDS) as the brief prints them */
+const BRIEF_STATUS = {
+  'AWAITING DATA': { key: 'AWAITING', label: 'Awaiting data', tone: 'muted', glyph: '·' },
+  'THIN DATA': { key: 'THIN', label: 'Thin data', tone: 'muted', glyph: '~' },
+  'NO MARKET': { key: 'NO_MARKET', label: 'No market', tone: 'muted', glyph: '·' },
+  'STALE QUOTE': { key: 'NO_MARKET', label: 'Stale quote', tone: 'muted', glyph: '·' },
+  'DATA FAULT': { key: 'FAULT', label: 'Data fault', tone: 'critical', glyph: '!' },
+  'MARKET FAULT': { key: 'FAULT', label: 'Market fault', tone: 'critical', glyph: '!' },
+  'INVESTIGATE': { key: 'INVESTIGATE', label: 'Investigate', tone: 'serious', glyph: '▲' },
+  'RESEARCH': { key: 'REVIEW', label: 'Review', tone: 'warning', glyph: '◐' },
+  'VERIFIED MAJOR DISAGREEMENT': { key: 'VERIFIED', label: 'Verified disagreement', tone: 'serious', glyph: '◆' },
+  'AGREEMENT': { key: 'AGREE', label: 'In agreement', tone: 'good', glyph: '○' }
+};
+function statusMeans(word, g) {
+  const gap = isNum(g.spread_gap) ? Math.abs(g.spread_gap) : null;
+  const gt = gap == null ? '' : gap.toFixed(1);
+  switch (word) {
+    case 'AWAITING DATA': return 'the model has not produced a projection for this game yet';
+    case 'THIN DATA': return 'EdgeDesk does not have enough reliable information to price this matchup confidently'
+      + (isNum(g.confidence) && g.confidence < MIN_CONFIDENCE ? ' — its own confidence is ' + Math.round(g.confidence) + '%, below the ' + MIN_CONFIDENCE + '% floor it requires' : '')
+      + '. Read the number as provisional, not as a disagreement with anyone.';
+    case 'NO MARKET': return 'no market number has joined this game, so there is nothing to agree or disagree with. The projection stands on its own until a quote lands.';
+    case 'STALE QUOTE': return 'the only market number on file is too old to be a current price, so there is nothing current to agree or disagree with. The projection stands on its own until a fresh quote lands.';
+    case 'DATA FAULT': return gap != null && gap > GUARD_P4_GAME
+      ? 'the model and market disagree by ' + gt + ' points, past the ' + GUARD_P4_GAME + '-point guard bound. Treat this as a probable data fault — a bad join, a sign flip, a missing starter — not as an edge.'
+      : 'the board flagged this game as a probable data fault (a gap that nearly closes when one side is flipped, or a failed integrity check). Treat it as a data problem to resolve, not as an edge.';
+    case 'MARKET FAULT': return 'the market number the gap is measured against does not agree with the prices captured beside it, or could not be verified. The disagreement is not measured against a price that exists — not an edge.';
+    case 'INVESTIGATE': return gap != null && gap >= 7
+      ? 'the model and market disagree by ' + gt + ' points. With this model’s record a gap this size is far more often missing information than a mispriced game — find out what the model has not been told.'
+      : 'the board holds this game for checking before it reads as research (a regime change at one programme, or a price too good to be plausible) — find out what the model has not been told.';
+    case 'RESEARCH': return 'EdgeDesk differs from the market by ' + gt + ' points — enough to justify deeper research, not validated as an edge.';
+    case 'VERIFIED MAJOR DISAGREEMENT': return 'a ' + gt + '-point disagreement that passed every integrity check. Still research, not a pick.';
+    case 'AGREEMENT': return 'EdgeDesk and the market are effectively in agreement' + (gap != null ? ', ' + gt + ' points apart' : '') + ', inside the ' + MIN_RESEARCH_GAP + '-point research threshold.';
+    default: return '';
+  }
+}
+/* THE BOARD'S WORD, PRESENTED. g.board_status is the slate CSV's column. */
 function statusFor(g) {
-  if (g.data_status !== 'PREDICTED') {
-    return { key: 'AWAITING', label: 'Awaiting data', tone: 'muted', glyph: '·',
-      means: 'the model has not produced a projection for this game yet' };
+  const word = g && typeof g.board_status === 'string' ? g.board_status.trim().toUpperCase() : '';
+  const b = BRIEF_STATUS[word];
+  if (!b) {
+    return { key: 'UNCLASSIFIED', label: 'Not classified', tone: 'muted', glyph: '?', word: null,
+      means: 'the slate file carries no board status for this game' + (word ? ' (unknown word "' + word + '")' : ' (no board_status column)')
+        + ', and the brief does not classify games itself. Regenerate the slate with football/cfb_p4/export_csv.js, or download it from the board.' };
   }
-  if (!isNum(g.confidence) || g.confidence < MIN_CONFIDENCE) {
-    return { key: 'THIN', label: 'Thin data', tone: 'muted', glyph: '~',
-      means: 'EdgeDesk does not have enough reliable information to price this matchup confidently'
-        + (isNum(g.confidence) ? ' — its own confidence is ' + Math.round(g.confidence) + '%, below the '
-          + MIN_CONFIDENCE + '% floor it requires' : '')
-        + '. Read the number as provisional, not as a disagreement with anyone.' };
-  }
-  if (!isNum(g.spread_gap)) {
-    return { key: 'NO_MARKET', label: 'No market', tone: 'muted', glyph: '·',
-      means: 'no market number has joined this game, so there is nothing to agree or disagree with. The projection stands on its own until a quote lands.' };
-  }
-  const gap = Math.abs(g.spread_gap);
-  if (gap > GUARD_P4_GAME) {
-    return { key: 'FAULT', label: 'Data fault', tone: 'critical', glyph: '!',
-      means: 'the model and market disagree by ' + gap.toFixed(1) + ' points, past the ' + GUARD_P4_GAME
-        + '-point guard bound. Treat this as a probable data fault — a bad join, a sign flip, a missing starter — not as an edge.' };
-  }
-  if (gap >= 7) {
-    return { key: 'INVESTIGATE', label: 'Investigate', tone: 'serious', glyph: '▲',
-      means: 'the model and market disagree by ' + gap.toFixed(1) + ' points. With this model’s record a gap this size is far more often missing information than a mispriced game — find out what the model has not been told.' };
-  }
-  if (gap >= MIN_RESEARCH_GAP) {
-    return { key: 'REVIEW', label: 'Review', tone: 'warning', glyph: '◐',
-      means: 'EdgeDesk differs from the market by ' + gap.toFixed(1) + ' points — enough to justify deeper research, not validated as an edge.' };
-  }
-  return { key: 'AGREE', label: 'In agreement', tone: 'good', glyph: '○',
-    means: 'EdgeDesk and the market are effectively in agreement, ' + gap.toFixed(1)
-      + ' points apart, inside the ' + MIN_RESEARCH_GAP + '-point research threshold.' };
+  return Object.assign({ word }, b, { means: statusMeans(word, g) });
 }
 
 /* ------------------------------------------------------------ the slate */
@@ -175,7 +194,9 @@ function loadSlate() {
       counter: r.counterargument_1 || '',
       unavailable: (r.unavailable_inputs || '').split(';').map(s => s.trim()).filter(Boolean),
       notes: (r.data_quality_notes || '').split(';').map(s => s.trim()).filter(Boolean),
-      model_version: r.model_version, ratings_basis: r.ratings_basis
+      model_version: r.model_version, ratings_basis: r.ratings_basis,
+      /* the board's own word for the game (EDCanon.boardWord) */
+      board_status: r.board_status || ''
     };
     g.score = projectedScore(margin, total);
     g.status = statusFor(g);
@@ -431,7 +452,7 @@ function buildHtml(slate, R) {
   const generatedAt = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
   const withScore = games.filter(g => g.score).length;
-  const flagged = games.filter(g => ['INVESTIGATE', 'FAULT'].indexOf(g.status.key) >= 0);
+  const flagged = games.filter(g => ['INVESTIGATE', 'FAULT', 'UNCLASSIFIED'].indexOf(g.status.key) >= 0);
   const thin = games.filter(g => g.status.key === 'THIN');
   const H = [];
 
@@ -522,11 +543,13 @@ function buildHtml(slate, R) {
   <table><thead><tr><th style="width:78pt">Status</th><th>What it means for a story</th></tr></thead><tbody>
   <tr><td>${chip({ tone: 'good', glyph: '○', label: 'In agreement' })}</td><td>Model and market are within ${MIN_RESEARCH_GAP} points. There is no disagreement here to write about.</td></tr>
   <tr><td>${chip({ tone: 'warning', glyph: '◐', label: 'Review' })}</td><td>They differ by ${MIN_RESEARCH_GAP}+ points — enough to look at, not validated as anything.</td></tr>
-  <tr><td>${chip({ tone: 'serious', glyph: '▲', label: 'Investigate' })}</td><td>They differ by 7+ points. <b>Worth reporting out:</b> find what the model has not been told.</td></tr>
-  <tr><td>${chip({ tone: 'critical', glyph: '!', label: 'Data fault' })}</td><td>Past the ${GUARD_P4_GAME}-point guard bound. Treated as a probable data error, never as an edge.</td></tr>
+  <tr><td>${chip({ tone: 'serious', glyph: '▲', label: 'Investigate' })}</td><td>They differ by 7+ points, or the board holds the game for a check first (a regime change at one programme, an implausible price). <b>Worth reporting out:</b> find what the model has not been told.</td></tr>
+  <tr><td>${chip({ tone: 'critical', glyph: '!', label: 'Data fault' })}</td><td>Past the ${GUARD_P4_GAME}-point guard bound, a gap that nearly closes with one side flipped, or a failed integrity check. Treated as a probable data error, never as an edge.</td></tr>
+  <tr><td>${chip({ tone: 'critical', glyph: '!', label: 'Market fault' })}</td><td>The market number does not agree with the prices captured beside it. Not a price that exists — never an edge.</td></tr>
   <tr><td>${chip({ tone: 'muted', glyph: '~', label: 'Thin data' })}</td><td>Confidence below the ${MIN_CONFIDENCE}% floor. The model says it does not know enough — quote the uncertainty, not the number.</td></tr>
-  <tr><td>${chip({ tone: 'muted', glyph: '·', label: 'No market' })}</td><td>No book number joined this game, so there is nothing to compare the projection with.</td></tr>
-  </tbody></table>`);
+  <tr><td>${chip({ tone: 'muted', glyph: '·', label: 'No market' })}</td><td>No book number joined this game, so there is nothing to compare the projection with. <i>Stale quote</i>: the only number on file is too old to be a price.</td></tr>
+  </tbody></table>
+  <p class="note">Every status is the board's own (the same word the website and its CSV show for the game); this brief prints it and classifies nothing.</p>`);
 
   if (!slate.has_market) {
     H.push(`<div class="band" style="margin-top:10pt"><b>No market numbers in this run.</b>
@@ -1052,7 +1075,7 @@ function main() {
 }
 
 module.exports = { statusFor, projectedScore, CATEGORIES, buildHtml, rankingsBrief, loadSlate, loadRankings,
-  GUARD_P4_GAME, MIN_CONFIDENCE, MIN_RESEARCH_GAP, kickoff };
+  GUARD_P4_GAME, MIN_CONFIDENCE, MIN_RESEARCH_GAP, BRIEF_STATUS, kickoff };
 if (require.main === module) {
   try { process.exit(main()); }
   catch (e) { console.error('PRESS BRIEF FAILED:', e && e.stack || e); process.exit(1); }

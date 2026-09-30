@@ -281,11 +281,17 @@ function parseDepth(text) {
 function readInjuries(season) {
   try {
     const j = JSON.parse(fs.readFileSync(path.join(C.ROOT, 'football', 'injuries', 'nfl_' + season + '.json'), 'utf8'));
-    const by = {};
-    Object.keys(j.teams || {}).forEach((t) => (j.teams[t].players || []).forEach((p) => {
-      if (p.gsis_id) by[p.gsis_id] = { status: p.status || null, practice: p.practice || null, injury: p.injury || null, team: t, week: j.teams[t].week };
-    }));
-    return { published: j.published !== false, retrieved_at: j.retrieved_at || null, latest_week: j.latest_week || null, by_player: by, teams: Object.keys(j.teams || {}) };
+    const by = {}, teamWeek = {};
+    Object.keys(j.teams || {}).forEach((t) => {
+      /* the week of the report on file for THIS team (audit 2026-09-30 #7):
+         teams publish on their own game's schedule, so on a Wednesday the
+         Thursday teams are on week N while everyone else is still on N-1 */
+      if (j.teams[t].week != null) teamWeek[t] = j.teams[t].week;
+      (j.teams[t].players || []).forEach((p) => {
+        if (p.gsis_id) by[p.gsis_id] = { status: p.status || null, practice: p.practice || null, injury: p.injury || null, team: t, week: j.teams[t].week, name: p.name || null, position: p.position || null };
+      });
+    });
+    return { published: j.published !== false, retrieved_at: j.retrieved_at || null, latest_week: j.latest_week || null, by_player: by, team_week: teamWeek, teams: Object.keys(j.teams || {}) };
   } catch (e) { return { published: false, retrieved_at: null, by_player: {}, teams: [], error: e.message }; }
 }
 function readSlate() {

@@ -30,6 +30,7 @@
      node tools/football/build_nfl_slate.js --offline         # cached feeds only
      node tools/football/build_nfl_slate.js --check           # build, compare, write nothing
      node tools/football/build_nfl_slate.js --lookahead 10    # days (default: the module's own)
+     node tools/football/build_nfl_slate.js --reprice         # the pricing block only, over the committed games
    Exit 0 = written or current; 1 = the artifact differs (--check); 2 = the
    feeds could not be read at all (reported, never a pass).
    ========================================================================== */
@@ -402,8 +403,25 @@ function pricingBlock(games) {
       ev_unavailable_reason: 'no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time' })) });
 }
 
+/* --reprice: re-run ONLY the pricing block over the committed artifact's own
+   games with the current kernel (supabase/functions/edgedesk_ai/_pricing.js)
+   and validation record, fetching nothing. For a kernel change (audit
+   2026-09-30 #4: the blend is held at the market line when it would cross it
+   against the projection) the published fair lines must move with the code
+   that computes them, and the projections and reference lines must not. */
+function reprice() {
+  if (!fs.existsSync(OUT)) { console.error('--reprice: ' + path.relative(ROOT, OUT) + ' is not present'); process.exit(2); }
+  const art = JSON.parse(fs.readFileSync(OUT, 'utf8'));
+  art.pricing = pricingBlock(art.games || []);
+  art.pricing_repriced_at = new Date().toISOString();
+  fs.writeFileSync(OUT, JSON.stringify(art, null, 1) + '\n');
+  const held = (art.pricing.rows || []).filter((r) => r.side === 'home' && r.fair_status === 'BLENDED_HELD').length;
+  console.log('repriced ' + path.relative(ROOT, OUT) + ': ' + ((art.pricing.rows || []).length / 2) + ' games' + (held ? ', ' + held + ' held at the market line' : ''));
+}
+
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes('--reprice')) { reprice(); return; }
   const check = args.includes('--check');
   const offline = args.includes('--offline');
   const li = args.indexOf('--lookahead');
@@ -425,5 +443,5 @@ async function main() {
   fs.writeFileSync(OUT, text);
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso };
+module.exports = { build, pricingBlock, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso };
 if (require.main === module) main();

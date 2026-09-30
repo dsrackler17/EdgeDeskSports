@@ -100,6 +100,116 @@
     out.sort(function (a, b) { return a[0] - b[0]; });
     return out;
   }
+  /* THE DISTRIBUTION THE EV IS PRICED FROM IS CENTRED ON THE DISPLAYED
+     PROJECTION (audit 2026-09-30 #4). margin_pmf_by_spread is a kernel-
+     smoothed table of final margins keyed by spread, and its centre sits well
+     inside its key: key 9.0 has median 6.94 (mean 7.97), key 7.0 median 5.74.
+     The engine read the table AT the fair spread's key, so a model at SEA
+     -9.2 was priced from a distribution whose median was SEA -6.9 — Seattle
+     covered -7 less than half the time, and LAC +7 came out +EV while the
+     displayed model sat 2.2 points past the market on Seattle.
+
+     "Centred" is the MEDIAN, because a spread is won by landing on one side
+     of a number: at the median neither side of that number is favoured, so a
+     projection past the market line on one side prices that side over 50%
+     and the EV can no longer sit on the other side (at equal prices). The
+     mean is not that point here — the table's mean sits 1-2.5 pts outside
+     its median at big spreads — and a mean-centred shape still priced
+     Buffalo -10 under 50% with the model at Buffalo -11.5.
+
+     The table is read BY ITS MEDIAN: the two adjacent keys whose medians
+     bracket the fair margin are mixed so the mixture's median (every whole
+     margin spread evenly over its unit bin, the convention under which "the
+     median" and "no edge at a half-point or a whole-point line" coincide)
+     lands on it exactly. Every key's spikes sit at the same ABSOLUTE margins
+     (3, 7, 10, 14 — the numbers games actually end on), so a mixture of
+     neighbours keeps them where they are; shifting a table would carry its 7
+     to 8. The away side's medians only reach -7.2 (the home side's reach
+     +10.6), so an away favourite past 7.2 reads the MIRRORED home-favourite
+     mixture — spikes on -3, -7, -10 — and only past 10.6 either way is the
+     extreme table moved onto the fair margin by a mixture of the two
+     neighbouring whole-point shifts, the one place a spike moves. Outside
+     the table's key range the pooled residual stands, as before. */
+  var CENTRE_ROWS = {}, CENTRE_MEMO = {}, CENTRE_MEMO_N = 0;
+  /* P(margin <= x) with each whole margin's mass spread evenly over [k-1/2, k+1/2) */
+  function contCdf(es, tot, x) {
+    var acc = 0, i;
+    for (i = 0; i < es.length; i++) {
+      var k = es[i][0], p = es[i][1] / tot;
+      if (k + 0.5 <= x) acc += p;
+      else if (k - 0.5 < x) { acc += p * (x - (k - 0.5)); }
+    }
+    return acc;
+  }
+  function contMedian(es, tot) {
+    var lo = es[0][0] - 1, hi = es[es.length - 1][0] + 1, i;
+    for (i = 0; i < 60; i++) { var m = (lo + hi) / 2; if (contCdf(es, tot, m) < 0.5) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  function tableRows(sport, sp) {
+    var tab = sp.margin_pmf_by_spread, c = CENTRE_ROWS[sport];
+    if (c && c.tab === tab) return c.rows;
+    var rows = [], k, i;
+    for (k in tab) if (tab.hasOwnProperty(k)) {
+      var es = pmfEntries(tab[k]), tot = 0;
+      for (i = 0; i < es.length; i++) tot += es[i][1];
+      if (tot > 0.5) rows.push({ key: +k, tot: tot, entries: es, median: contMedian(es, tot) });
+    }
+    rows.sort(function (a, b) { return a.median - b.median; });
+    CENTRE_ROWS[sport] = { tab: tab, rows: rows };
+    CENTRE_MEMO = {}; CENTRE_MEMO_N = 0;
+    return rows;
+  }
+  function shiftedMix(row, lo, f) {
+    var by = {}, out = [], i, k;
+    for (i = 0; i < row.entries.length; i++) {
+      var w = row.entries[i][1] / row.tot;
+      by[row.entries[i][0] + lo] = (by[row.entries[i][0] + lo] || 0) + w * (1 - f);
+      if (f > 0) by[row.entries[i][0] + lo + 1] = (by[row.entries[i][0] + lo + 1] || 0) + w * f;
+    }
+    for (k in by) if (by.hasOwnProperty(k)) out.push([parseInt(k, 10), by[k]]);
+    out.sort(function (a, b) { return a[0] - b[0]; });
+    return out;
+  }
+  function centredOn(sport, sp, fair) {
+    var rows = tableRows(sport, sp), mk = sport + '|' + fair;
+    if (!rows.length) return null;
+    if (CENTRE_MEMO[mk]) return CENTRE_MEMO[mk];
+    var out, i, lo0 = rows[0].median, hi0 = rows[rows.length - 1].median;
+    if ((fair < lo0 || fair > hi0) && -fair >= lo0 && -fair <= hi0) {
+      /* past one side's range but inside the other's: the mirrored table (a
+         home favourite by 9 read as an away favourite by 9), so the spikes
+         land on -3, -7, -10 rather than being shifted off them */
+      var mir = centredOn(sport, sp, -fair);
+      out = { entries: mir.entries.map(function (e) { return [-e[0], e[1]]; }).sort(function (a, b) { return a[0] - b[0]; }),
+        method: 'mirrored_' + mir.method, keys: mir.keys.map(function (k) { return -k; }) };
+    } else if (fair <= lo0 || fair >= hi0) {
+      /* past both ranges: the extreme table, as it is or mirrored, whose
+         median is nearest, moved the rest of the way by a two-shift mixture */
+      var opts = [{ R: rows[0], sgn: 1 }, { R: rows[rows.length - 1], sgn: 1 }, { R: rows[0], sgn: -1 }, { R: rows[rows.length - 1], sgn: -1 }];
+      opts.sort(function (a, b) { return Math.abs(fair - a.sgn * a.R.median) - Math.abs(fair - b.sgn * b.R.median); });
+      var R = opts[0].R, sg = opts[0].sgn, Rm = sg > 0 ? R : { key: -R.key, tot: R.tot, median: -R.median,
+        entries: R.entries.map(function (e) { return [-e[0], e[1]]; }).sort(function (a, b) { return a[0] - b[0]; }) };
+      var lo = Math.floor(fair - Rm.median);
+      var F1 = contCdf(Rm.entries, Rm.tot, fair - lo), F2 = contCdf(Rm.entries, Rm.tot, fair - lo - 1);
+      var f = F1 - F2 > 1e-12 ? (F1 - 0.5) / (F1 - F2) : 0;
+      out = { entries: shiftedMix(Rm, lo, Math.max(0, Math.min(1, f))), method: sg > 0 ? 'extreme_key_shifted' : 'mirrored_extreme_key_shifted', keys: [Rm.key] };
+    } else {
+      for (i = 0; i < rows.length - 1; i++) if (rows[i + 1].median >= fair) break;
+      var A = rows[i], B = rows[i + 1];
+      var FA = contCdf(A.entries, A.tot, fair), FB = contCdf(B.entries, B.tot, fair);
+      var w = FA - FB > 1e-12 ? (FA - 0.5) / (FA - FB) : 0, by = {}, list = [], k, j;
+      w = Math.max(0, Math.min(1, w));
+      for (j = 0; j < A.entries.length; j++) by[A.entries[j][0]] = (by[A.entries[j][0]] || 0) + (1 - w) * A.entries[j][1] / A.tot;
+      for (j = 0; j < B.entries.length; j++) by[B.entries[j][0]] = (by[B.entries[j][0]] || 0) + w * B.entries[j][1] / B.tot;
+      for (k in by) if (by.hasOwnProperty(k)) list.push([parseInt(k, 10), by[k]]);
+      list.sort(function (a, b) { return a[0] - b[0]; });
+      out = { entries: list, method: 'median_matched', keys: [A.key, B.key] };
+    }
+    if (CENTRE_MEMO_N > 2048) { CENTRE_MEMO = {}; CENTRE_MEMO_N = 0; }
+    CENTRE_MEMO[mk] = out; CENTRE_MEMO_N++;
+    return out;
+  }
   var dist = {
     winProb: function (sport, fairSpread) {
       var sp = sportParams(sport);
@@ -118,18 +228,14 @@
       var tab = sp.margin_pmf_by_spread, rng = sp.pmf_spread_range;
       var win = 0, push = 0, tot = 0, i, es;
       if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
-        var key = (Math.round(fairSpread * 2) / 2).toFixed(1);
-        if (key === '-0.0') key = '0.0';
-        var pmf = tab[key] || tab[Math.round(fairSpread).toFixed(1)];
-        if (pmf) {
-          es = pmfEntries(pmf);
-          for (i = 0; i < es.length; i++) {
-            tot += es[i][1];
-            if (Math.abs(es[i][0] - line) < 1e-9) push += es[i][1];
-            else if (es[i][0] > line) win += es[i][1];
+        var ce = centredOn(sport, sp, fairSpread);
+        if (ce) {
+          for (i = 0; i < ce.entries.length; i++) {
+            if (Math.abs(ce.entries[i][0] - line) < 1e-9) push += ce.entries[i][1];
+            else if (ce.entries[i][0] > line) win += ce.entries[i][1];
           }
-          if (tot > 0.5) return { win: win / tot, push: push / tot,
-            lose: 1 - (win + push) / tot, basis: 'margin_pmf_by_spread' };
+          return { win: win, push: push, lose: 1 - (win + push), basis: 'margin_pmf_by_spread',
+            centred_on: fairSpread, method: ce.method, table_keys: ce.keys };
         }
       }
       var need = line - fairSpread;               // resid must exceed this
@@ -183,14 +289,9 @@
       var tab = sp.margin_pmf_by_spread, rng = sp.pmf_spread_range;
       var es = null, shift = 0, basis = null, tot = 0, i;
       if (tab && rng && fairSpread >= rng[0] && fairSpread <= rng[1]) {
-        var key = (Math.round(fairSpread * 2) / 2).toFixed(1);
-        if (key === '-0.0') key = '0.0';
-        var pmf = tab[key] || tab[Math.round(fairSpread).toFixed(1)];
-        if (pmf) {
-          es = pmfEntries(pmf);
-          for (i = 0; i < es.length; i++) tot += es[i][1];
-          if (tot > 0.5) basis = 'margin_pmf_by_spread'; else es = null;
-        }
+        /* the same median-centred shape coverProbSpread prices from */
+        var ce2 = centredOn(sport, sp, fairSpread);
+        if (ce2) { es = ce2.entries; tot = 1; basis = 'margin_pmf_by_spread'; }
       }
       if (!es) {
         es = pmfEntries(sp.margin_resid_pmf);

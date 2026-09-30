@@ -580,10 +580,26 @@ const STATUS_CASES = [
   [{ status: 'PREDICTED', model: { fair_spread: 3 }, edge: { spread: { recommendation: 'RESEARCH_LEAN' } } }, { spread_line: 2, stale: true }, 'STALE QUOTE'],
   [{ status: 'PREDICTED', model: { fair_spread: 30 }, edge: { spread: { recommendation: 'RESEARCH_LEAN' } } }, { spread_line: -3 }, 'DATA FAULT'],
   [{ status: 'PREDICTED', model: { fair_spread: 12 }, edge: { spread: { recommendation: 'RESEARCH_LEAN' } } }, { spread_line: 2 }, 'INVESTIGATE'],
-  [{ status: 'PREDICTED', model: { fair_spread: 3 }, edge: { spread: { recommendation: 'RESEARCH_LEAN' } } }, { spread_line: 2 }, 'RESEARCH']
+  /* audit 2026-09-30 #6: the board word is the canonical status. A projection
+     with no unit behind it has no measured reliability, and unmeasured is not
+     a pass: THIN DATA — never the old "RESEARCH for every gap under 7" */
+  [{ status: 'PREDICTED', model: { fair_spread: 3 }, scores: { confidence: 70 }, edge: { spread: { recommendation: 'RESEARCH_LEAN' } } }, { spread_line: 2 }, 'THIN DATA']
 ];
 STATUS_CASES.forEach(([p, m, want]) => {
   eq('status: ' + want, A.fbP4StatusFor(p, m).t, want);
+});
+/* Pitt @ Virginia Tech (audit 2026-09-30 #6): a 1-point gap read RESEARCH on
+   the board while the research view beside it said MARKET ALIGNED. On a real
+   board row, with its unit, the board word is the view's label, word for word */
+chk('a real row: a 1-pt gap is never RESEARCH on the board, and the word is the canonical status\'s', () => {
+  const r = ROWS.find((x) => x.p && x.p.status === 'PREDICTED' && x.u);
+  const m = Object.assign({}, r.mkt || {}, { spread_line: r.p.model.fair_spread - 1, stale: false, spread_fault: null, consensus_fault: null });
+  const st = A.fbP4StatusFor(r.p, m, r.u), C = A.EDCanon;
+  return st.t !== 'RESEARCH' && st.t === C.boardWord({ key: st.key, rule: st.rule });
+});
+chk('every canonical board word is offered as a filter', () => {
+  const src = slice('var FBP4_STATUSES=', 'var FBP4_SORTS=');
+  return A.EDCanon.BOARD_WORDS.every((w) => src.indexOf("'" + w + "'") >= 0);
 });
 chk('every status the board can show is offered as a filter', () => {
   const src = slice('var FBP4_STATUSES=', 'var FBP4_SORTS=');

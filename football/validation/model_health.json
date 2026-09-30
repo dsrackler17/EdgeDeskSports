@@ -5401,8 +5401,8 @@
     "source": "football/params.js nfl.margin_pmf_by_spread vs football/pricing/lines_nfl.json",
     "kernel_bandwidth": 3,
     "conditioning": null,
-    "effect": "Read directly by football/engine.js coverProbSpread: the NFL raw (MODEL-ESTIMATED) cover probabilities inherit this centre.",
-    "centre_used_by_decisions": true,
+    "effect": "football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
+    "centre_used_by_decisions": false,
     "rows": [
      {
       "closing_expected_margin": -7.5,
@@ -6223,10 +6223,10 @@
   "alerts": [
    {
     "code": "DISTRIBUTION_CENTRE_DRIFT",
-    "severity": "RESEARCH_ALERT",
+    "severity": "INFO",
     "league": "NFL",
-    "text": "WARNING: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). Read directly by football/engine.js coverProbSpread: the NFL raw (MODEL-ESTIMATED) cover probabilities inherit this centre.",
-    "note": "This is a research alert, not an automatic change. Decisions on this raw distribution are already capped as MODEL-ESTIMATED (0.25U); the market-anchored blend is the decision probability where one is loaded."
+    "text": "NOTE: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
+    "note": "This is a research alert, not an automatic change."
    },
    {
     "code": "DISTRIBUTION_CENTRE_DRIFT",
@@ -6426,10 +6426,10 @@
   {
    "source": "distribution audit",
    "code": "DISTRIBUTION_CENTRE_DRIFT",
-   "severity": "RESEARCH_ALERT",
+   "severity": "INFO",
    "league": "NFL",
-   "text": "WARNING: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). Read directly by football/engine.js coverProbSpread: the NFL raw (MODEL-ESTIMATED) cover probabilities inherit this centre.",
-   "note": "This is a research alert, not an automatic change. Decisions on this raw distribution are already capped as MODEL-ESTIMATED (0.25U); the market-anchored blend is the decision probability where one is loaded."
+   "text": "NOTE: NFL learned margin distribution is off-centre at 17 of 37 closing numbers (worst: at -6 its mean is -5.01 while 117 games closing there averaged -9.09), consistent with kernel smoothing (bandwidth 3). football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.",
+   "note": "This is a research alert, not an automatic change."
   },
   {
    "source": "distribution audit",

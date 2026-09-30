@@ -31,6 +31,9 @@ const NOW = Date.parse('2026-10-04T12:00:00Z'), FRESH = '2026-10-04T11:50:00Z', 
 const qq = (side, line, am, book, extra) => Object.assign({ game_id: 'g', side, line, american: am, book: book || 'DraftKings', captured_at: FRESH, fresh: true, n_books: 1 }, extra || {});
 function nflModel(fair) { return { sport: 'NFL', available: true, model_version: 'edgedesk_football_v1.0.0', fair_home_margin: fair, home_cover: (t) => E.dist.coverProbSpread('nfl', fair, t), tail: { validated_within_pts: 0 }, adjusted: { available: false } }; }
 const board = (hl) => [qq('home', hl, -110), qq('away', -hl, -110), qq('home', hl, -112, 'FanDuel'), qq('away', -hl, -108, 'FanDuel')];
+/* the fixtures' fair margins moved with audit 2026-09-30 #4: the NFL table is
+   now read by its median, so Miami +10 against a fair +7 is the BET (it was
+   +8 on the off-centre table) and +8.5 the WATCH */
 function decide(fair, quotes, extra) {
   return D.decide(Object.assign({ sport: 'NFL', game: { game_id: 'g', home: 'Miami Dolphins', away: 'Buffalo Bills', kickoff: KICK }, model: nflModel(fair), quotes, now: NOW,
     qb: { known: true }, availability: { known: true }, reliability: { score: 85 }, confidence: { score: 80 }, projection: { stability: 'STABLE' } }, extra || {}));
@@ -78,23 +81,23 @@ section('WHY NOT? — deterministic, from the gates');
   chk('LEAN because the edge is positive but under the threshold', c({ decision: 'LEAN', action_reason_code: 'LEAN_EDGE', caps: [] }) === 'LEAN because the edge is positive but under the betting threshold');
   /* a real engine decision: one off-market book */
   const ag = [qq('home', -10, -110), qq('away', 10, -110), qq('home', -10, -110, 'FanDuel'), qq('away', 10, -110, 'FanDuel'), qq('home', -10, -110, 'BetMGM'), qq('away', 10, -110, 'BetMGM'), qq('home', -6.5, -110, 'Caesars'), qq('away', 6.5, -110, 'Caesars')];
-  const mf = decide(12, ag);
+  const mf = decide(10, ag);   /* Miami by 10: only the off-market -6.5 qualifies (median-centred NFL distribution, audit 2026-09-30 #4) */
   const w = X.whyNot(mf);
   chk('one book off a live market: WATCH because the quote is inconsistent with the consensus (real engine decision)', w.headline === 'WATCH because the quote is inconsistent with the consensus' && w.reasons.some((r) => r.code === 'QUOTE_OUTLIER'), w);
   chk('… and the market state it sat in was LIVE, so the headline never says MARKET FAULT', mf.market_state && mf.market_state.key === 'LIVE_MARKET', mf.market_state);
   chk('MARKET FAULT leads only when the market state is MARKET FAULT', X.whyNot(Object.assign({}, mf, { market_state: { key: 'MARKET_FAULT' } })).headline === 'MARKET FAULT because the quote is inconsistent with the consensus');
-  const bet = decide(-8, board(10));
+  const bet = decide(-7, board(10));
   const wb = X.whyNot(bet);
   chk('a BET answers what caps its stake', bet.decision === 'BET' && /^BET/.test(wb.headline) && wb.reasons.some((r) => r.code === 'SIZE_CAPPED' && /MODEL-ESTIMATED probability cap/.test(r.text)), wb);
 }
 section('gates: explicit, and the binding one is marked');
 {
-  const bet = decide(-8, board(10));
+  const bet = decide(-7, board(10));
   const G = X.gates(bet), by = (k) => G.filter((g) => g.key === k)[0];
   chk('evaluable, market verified, fresh, price passes', by('EVALUABLE').status === 'PASS' && by('MARKET_VERIFIED').status === 'PASS' && by('QUOTE_FRESH').status === 'PASS' && by('PRICE').status === 'PASS', G);
   chk('a model-estimated probability caps the stake at 0.25U', by('PROBABILITY_SOURCE').status === 'CAP' && by('PROBABILITY_SOURCE').effect === 'stake ≤ 0.25U');
   chk('confidence and reliability say they are not win probabilities', /not a win probability/.test(by('RELIABILITY').text) && /not a win probability/.test(by('DECISION_CONFIDENCE').text));
-  const qb = decide(-8, board(10), { qb: { known: true, unresolved_critical: true, detail: 'contested' } });
+  const qb = decide(-7, board(10), { qb: { known: true, unresolved_critical: true, detail: 'contested' } });
   const Gq = X.gates(qb);
   chk('a QB cap binds as the QB gate', qb.decision === 'WATCH' && Gq.filter((g) => g.binding).map((g) => g.key).join() === 'QB', Gq.filter((g) => g.binding));
   const nd = X.gates({ decision: 'NO_DECISION', evaluation_status: 'NOT_EVALUABLE', action_reason_text: 'x' });
@@ -102,35 +105,35 @@ section('gates: explicit, and the binding one is marked');
 }
 section('WHAT CHANGES MY MIND?');
 {
-  const bet = decide(-8, board(10));
+  const bet = decide(-7, board(10));
   const W = X.whatChanges(bet);
   chk('five answers: price, QB, availability, model, market', ['price', 'qb', 'availability', 'model', 'market'].every((k) => W[k] && typeof W[k].text === 'string' && !BAD.test(W[k].text)), W);
   chk('a BET says where it stops', /^Stops being a BET/.test(W.price.text), W.price);
-  const watch = decide(-14, board(10));
+  const watch = decide(-8.5, board(10));
   const Ww = X.whatChanges(watch);
   chk('a non-BET says where it starts (from the ladder)', watch.decision !== 'BET' ? /^Becomes BET at|No nearby price|already clears/.test(Ww.price.text) : true, [watch.decision_display, Ww.price]);
-  const qb = decide(-8, board(10), { qb: { known: true, unresolved_critical: true } });
+  const qb = decide(-7, board(10), { qb: { known: true, unresolved_critical: true } });
   chk('a QB cap: confirming the starter would change it', X.whatChanges(qb).qb.would_change === true && /lifts the WATCH cap, and the price already qualifies/.test(X.whatChanges(qb).qb.text), X.whatChanges(qb).qb);
 }
 section('the main risk: one, in priority order');
 {
   chk('an open anomaly outranks everything', X.mainRisk({ decision: 'WATCH', anomaly: { open: true }, market: { anomaly: { text: 'PRICE ANOMALY — X' } }, caps: [{ code: 'QB_UNRESOLVED', text: 'qb' }] }).code === 'PRICE_UNVERIFIED');
   chk('then the quarterback', X.mainRisk({ decision: 'WATCH', caps: [{ code: 'QB_UNRESOLVED', text: 'The starting quarterback is unresolved.' }], warnings: [] }).code === 'QB');
-  chk('a model-estimated BET names the missing calibration', X.mainRisk(decide(-8, board(10))).code === 'MODEL_ESTIMATED');
+  chk('a model-estimated BET names the missing calibration', X.mainRisk(decide(-7, board(10))).code === 'MODEL_ESTIMATED');
   chk('with nothing else, the unvalidated rules', X.mainRisk({ decision: 'BET', probability_source: 'calibrated', market: { freshness: 'FRESH', verification_status: 'VERIFIED' }, market_quality: 'VERIFIED', reliability_score: 90, warnings: [], caps: [] }).code === 'RULES_UNVALIDATED');
 }
 section('reliability breakdown: measured components only');
 {
-  const d = decide(-8, board(10), { context: CONTEXT });
+  const d = decide(-7, board(10), { context: CONTEXT });
   const R = X.reliabilityBreakdown(d);
   chk('the headline and the measured components', R.available && R.headline === 'RELIABILITY 88 · STRONG' && R.components.map((c) => c.text).join(' | ') === 'Team data 95% | QB EXPECTED | Availability 60%', R);
   chk('… with the main deduction and the note', /perturbation/.test(R.main_deduction) && /not a win probability/.test(R.note));
-  const none = X.reliabilityBreakdown(decide(-8, board(10)));
+  const none = X.reliabilityBreakdown(decide(-7, board(10)));
   chk('no components published: it says so, invents none', none.available === false && /not published/.test(none.text) && !none.components, none);
 }
 section('break the number: against measured uncertainty');
 {
-  const d = decide(-8, board(10), { context: CONTEXT });
+  const d = decide(-7, board(10), { context: CONTEXT });
   const S = X.sensitivity(d);
   chk('a cushion in points, with the drivers ranked by SD', S.available && S.edge_cushion_pts > 0 && S.drivers[0].label === 'Miami Dolphins rating' && S.drivers[0].sds_to_break > 0, S);
   chk('the joint SD is the terminal’s own', S.joint_sd === 2.05 && S.joint_basis === 'all measured dimensions jointly');
@@ -146,7 +149,7 @@ section('break the number: against measured uncertainty');
   chk('the largest driver needs under 1 SD to break it', thin.drivers[0].sds_to_break < 1, thin.drivers[0]);
   const wideC = X.sensitivity(curve([[6, -0.01, 'PASS'], [6.5, 0.01, 'WATCH'], [7, 0.03, 'LEAN'], [7.5, 0.05, 'BET'], [8, 0.06, 'BET'], [9, 0.07, 'BET'], [10, 0.09, 'BET']]));
   chk('a cushion past 1.28 SD survives conservative perturbations', wideC.verdict === 'SURVIVES_CONSERVATIVE' && /Even under conservative perturbations/.test(wideC.text) && wideC.edge_cushion_pts > 2.62, wideC);
-  const un = X.sensitivity(decide(-8, board(10)));
+  const un = X.sensitivity(decide(-7, board(10)));
   chk('no measured drivers: the cushion, and an honest “not measured”', un.available && un.verdict === 'UNMEASURED_INPUTS' && /No measured input uncertainty/.test(un.text), un);
   chk('NO DECISION has nothing to perturb', X.sensitivity({ decision: 'NO_DECISION' }).available === false);
   const near = X.sensitivity(decide(-10.5, board(10), { context: CONTEXT }));
@@ -155,18 +158,18 @@ section('break the number: against measured uncertainty');
 }
 section('scenarios: base, conservative, aggressive');
 {
-  const d = decide(-8, board(10), { context: CONTEXT });
+  const d = decide(-7, board(10), { context: CONTEXT });
   const Sc = X.scenarios(d);
   const rk = (s) => ({ PASS: 0, WATCH: 1, LEAN: 2 }[s] != null ? { PASS: 0, WATCH: 1, LEAN: 2 }[s] : (/^BET/.test(s) ? 3 : -1));
   chk('three rows, each fair line one SD apart', Sc.available && Sc.rows.map((r) => r.key).join() === 'base,conservative,aggressive' && Math.abs(Sc.rows[1].fair_line - Sc.rows[0].fair_line - 2.05) < 0.051 && Math.abs(Sc.rows[0].fair_line - Sc.rows[2].fair_line - 2.05) < 0.051, Sc.rows);
   chk('conservative never reads stronger than base, aggressive never weaker', rk(Sc.rows[1].state_at_current_price) <= rk(Sc.rows[0].state_at_current_price) && rk(Sc.rows[2].state_at_current_price) >= rk(Sc.rows[0].state_at_current_price), Sc.rows);
   chk('the base scenario at the current price is the decision', /^BET/.test(Sc.rows[0].state_at_current_price) === (d.decision === 'BET'), [Sc.rows[0], d.decision]);
   chk('it says it is not a forecast', /not a forecast/.test(Sc.note));
-  chk('no measured uncertainty: no scenarios', X.scenarios(decide(-8, board(10))).available === false);
+  chk('no measured uncertainty: no scenarios', X.scenarios(decide(-7, board(10))).available === false);
 }
 section('provenance: source, updated, pricing impact');
 {
-  const d = decide(-8, board(10), { context: CONTEXT });
+  const d = decide(-7, board(10), { context: CONTEXT });
   const P = X.provenance(d, '2026-10-04T12:00:00Z');
   const qb = P.filter((p) => p.key === 'qb')[0], pq = P.filter((p) => p.key === 'x')[0], quote = P.filter((p) => p.key === 'quote')[0];
   chk('QB · nflverse · updated 10m ago · pricing impact yes', qb.source === 'nflverse' && qb.updated === '10m ago' && qb.pricing_impact === 'yes', qb);
@@ -175,18 +178,18 @@ section('provenance: source, updated, pricing impact');
 }
 section('the watchlist row and meaningful alerts');
 {
-  const w = decide(-14, board(10)), b = decide(-8, board(10));
+  const w = decide(-8.5, board(10)), b = decide(-7, board(10));
   const row = X.watchRow(b, { transitions: [{ from: 'WATCH', to: 'BET', label: 'WATCH → BET / PRICE IMPROVED', at: 'x', text: 't' }] });
   chk('a watch row: decision, last change, best price, trigger, kickoff, unresolved concern', row.display && row.last_change.label === 'WATCH → BET / PRICE IMPROVED' && /DraftKings/.test(row.best_price) && row.kickoff && row.unresolved && row.one_line, row);
-  chk('the fixtures: WATCH at −14, BET at −8', w.decision === 'WATCH' && b.decision === 'BET', [w.decision_display, b.decision_display]);
+  chk('the fixtures: WATCH at −8.5, BET at −7 (the median-centred NFL distribution, audit 2026-09-30 #4)', w.decision === 'WATCH' && b.decision === 'BET', [w.decision_display, b.decision_display]);
   const a = X.alerts(w, b);
   chk('reaching the BET trigger alerts once, with the one-line answer', a.length >= 1 && a[0].kind === 'BET_TRIGGERED' && /clears EdgeDesk’s current threshold/.test(a[0].text), a);
   chk('the reverse alerts that the BET is invalid', X.alerts(b, w).some((x) => x.kind === 'BET_INVALID'));
-  chk('the same state at a wiggling price is silence', X.alerts(b, decide(-8.1, board(10))).length === 0, X.alerts(b, decide(-8.1, board(10))));
+  chk('the same state at a wiggling price is silence', X.alerts(b, decide(-7.1, board(10))).length === 0, X.alerts(b, decide(-7.1, board(10))));
   const km = X.alerts(decide(-8, board(2.5)), decide(-8, board(3.5)));
   chk('the market moving through 3 alerts', km.some((x) => x.kind === 'KEY_NUMBER'), km);
-  chk('EdgeDesk’s number moving 1+ NFL pts alerts', X.alerts(decide(-8, board(10)), decide(-9.1, board(10))).some((x) => x.kind === 'FAIR_MOVED'));
-  chk('a QB resolving alerts', X.alerts(decide(-8, board(10), { qb: { known: true, unresolved_critical: true } }), b).some((x) => x.kind === 'QB_CONFIRMED'));
+  chk('EdgeDesk’s number moving 1+ NFL pts alerts', X.alerts(decide(-7, board(10)), decide(-8.1, board(10))).some((x) => x.kind === 'FAIR_MOVED'));
+  chk('a QB resolving alerts', X.alerts(decide(-7, board(10), { qb: { known: true, unresolved_critical: true } }), b).some((x) => x.kind === 'QB_CONFIRMED'));
   chk('reliability moving 10+ alerts; 5 does not', X.alerts(Object.assign({}, b, { reliability_score: 70 }), Object.assign({}, b, { reliability_score: 82 })).some((x) => x.kind === 'RELIABILITY') && !X.alerts(Object.assign({}, b, { reliability_score: 77 }), Object.assign({}, b, { reliability_score: 82 })).some((x) => x.kind === 'RELIABILITY'));
   const keys = X.alerts(w, b).map((x) => x.key);
   chk('every alert carries a dedupe key', keys.every((k) => typeof k === 'string' && k.length > 5) && new Set(keys).size === keys.length);

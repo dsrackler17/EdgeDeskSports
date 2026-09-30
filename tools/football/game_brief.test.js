@@ -53,6 +53,11 @@ const BOOT = M.boot();
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win;
 M.loadEngine(win, ROOT);
+/* the one research classifier, as the page's <script> tag loads it: the
+   brief's research state is the board's canonical status (audit 2026-09-30
+   #6), and without it the page fails closed to AWAITING DATA */
+if (APP.indexOf('<script src="/lib/edgedesk_canon.js?v=') < 0) { console.error('app.html no longer loads lib/edgedesk_canon.js'); process.exit(1); }
+require('vm').runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win, { filename: 'lib/edgedesk_canon.js' });
 
 /* One game, staged on the board, then built and rendered exactly as the app
    does it: EDBRIEF.researchFor() -> window.fbBriefGame() -> P.snapshot() ->
