@@ -134,7 +134,7 @@ footer a:hover{color:var(--text)}
 .edlab-rules dt{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);padding-top:3px}
 .edlab-rules dd{margin:0;color:var(--dim);overflow-wrap:anywhere}
 .edlab-rules dd b{color:var(--text);font-weight:600}
-.edlab-sl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(227,184,77,.4);border-radius:6px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.edlab-sl{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);border:1px solid rgba(227,184,77,.4);border-radius:6px;padding:0 5px;white-space:nowrap}
 .edlab-week{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-top:12px;overflow:hidden}
 .edlab-week>summary{cursor:pointer;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;padding:11px 14px;font-weight:800;font-size:14px;letter-spacing:-.01em}
 .edlab-week>summary{list-style:none}
@@ -4214,7 +4214,9 @@ footer a:hover{color:var(--text)}
   function ln(x){ if(!isNum(x)) return D; var q=Math.abs(x*4-Math.round(x*4))<1e-9&&Math.abs(x*2-Math.round(x*2))>1e-9; return sg(x,q?2:1); }
   function pc(x){ return isNum(x)?tidy((100*x).toFixed(1),1)+'%':D; }
   function it(x){ return isNum(x)?String(Math.round(x)):D; }
-  function sl(label){ return label?'<span class="edlab-sl">'+esc(label)+'</span>':''; }
+  /* the space is the gap and the line break: glued to the word before it, a
+     nowrap label cannot wrap and runs out of a narrow tile */
+  function sl(label){ return label?' <span class="edlab-sl">'+esc(label)+'</span>':''; }
   function when(t){
     var v=Date.parse(t); if(!isFinite(v)) return D;
     try { return new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(v))+' ET'; }
