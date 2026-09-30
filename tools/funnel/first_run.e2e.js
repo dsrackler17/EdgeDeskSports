@@ -21,6 +21,13 @@
      5  Hide is remembered on the account (first_run_done_at)
      6  an account older than two weeks never sees it
      7  at 390 px nothing is wider than the screen
+     8  on a slate where no prop qualifies, the prop card says so and lists
+        none
+
+   The published board (/football/home/board.json) is answered from
+   tools/funnel/fixtures/home_board.json, a real publish with research-grade
+   props, with its times moved relative to the browser's clock — not from the
+   committed file, whose props the pipeline replaces every run.
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
 
@@ -92,13 +99,33 @@ function rows() {
   });
 }
 
-/* the committed static file, moved so its newest price is 4 minutes old */
-function shiftedStat() {
-  const s = fs.readFileSync(path.join(ROOT, 'football', 'home', 'board.json'), 'utf8');
+/* the published board (football/home/board.json) is answered from a committed
+   fixture (tools/funnel/fixtures/home_board.json), never the live snapshot: a
+   data commit with nothing research-grade (props.items {}) is a valid slate,
+   and the panel's prop card would then be empty for reasons of the day's
+   data. Moved so its newest price is 4 minutes old and its first kickoff a
+   day out. */
+const BOARD = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'home_board.json'), 'utf8'));
+const BOARD_PLAYERS = Object.values(BOARD.props.items).map((p) => p.player.name);
+function shiftedStat(board) {
+  const s = JSON.stringify(board);
   const re = /"(captured_at|last_success_at|evaluated_at|generated_at|summary_at)":"([^"]+)"/g;
   const ts = [...s.matchAll(re)].map((m) => Date.parse(m[2])).filter(isFinite);
   const d = (Date.now() - 4 * 60e3) - Math.max(...ts);
-  return s.replace(re, (m, k, v) => '"' + k + '":"' + new Date(Date.parse(v) + d).toISOString() + '"');
+  const ko = /"(kickoff_at|kickoff)":"([^"]+)"/g;
+  const ks = [...s.matchAll(ko)].map((m) => Date.parse(m[2])).filter(isFinite);
+  const kd = ks.length ? (Date.now() + 24 * 3600e3) - Math.min(...ks) : 0;
+  return s.replace(re, (m, k, v) => '"' + k + '":"' + new Date(Date.parse(v) + d).toISOString() + '"')
+    .replace(ko, (m, k, v) => '"' + k + '":"' + new Date(Date.parse(v) + kd).toISOString() + '"');
+}
+/* the same board on a slate where no prop qualifies, as a data commit can
+   publish it: no items, no top lists, zero research-grade */
+function nothingQualifies(board) {
+  const b = JSON.parse(JSON.stringify(board));
+  b.props.items = {}; b.props.top = [];
+  Object.values(b.props.counts).forEach((c) => { c.research_grade = 0; });
+  Object.values(b.props.by_game).forEach((g) => { g.research_grade = 0; delete g.top; });
+  return b;
 }
 
 function makeDb(createdAt) {
@@ -160,9 +187,9 @@ function makeDb(createdAt) {
     else { console.log('SKIPPED: no Chromium'); site.srv.close(); process.exit(0); }
   }
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
-  const STAT = shiftedStat();
+  const STAT = shiftedStat(BOARD);
 
-  async function open(viewport, createdDaysAgo) {
+  async function open(viewport, createdDaysAgo, stat) {
     const created = new Date(Date.now() - createdDaysAgo * 864e5).toISOString();
     const db = makeDb(created);
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1 });
@@ -176,7 +203,7 @@ function makeDb(createdAt) {
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) {
-        if (/\/football\/home\/board\.json/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: STAT });
+        if (/\/football\/home\/board\.json/.test(url)) return route.fulfill({ status: 200, contentType: 'application/json', body: stat || STAT });
         return route.continue();
       }
       const m = /supabase\.co\/rest\/v1\/([^?]+)\??(.*)$/.exec(url);
@@ -222,7 +249,8 @@ function makeDb(createdAt) {
     chk(w + ': largest disagreements, widest first, with market and capture time', r.dis && r.dis.length === 3 && /West Virginia @ Iowa State/.test(r.dis[0]) && /40 min ago/.test(r.dis[0]), r.dis);
     chk(w + ': an NFL consensus market says what it is', r.dis.some((t) => /consensus reference, not a captured quote/.test(t)), r.dis);
     chk(w + ': research-grade games are the research-grade rows', r.games && r.games.length === 2 && r.games.every((t) => /RESEARCH/.test(t)), r.games);
-    chk(w + ': research-grade props come from the published board, each with its price and age', r.props && r.props.length > 0 && r.props.every((t) => /RESEARCH|WATCH/.test(t) && /min ago|just now/.test(t)), r.props);
+    chk(w + ': research-grade props come from the published board, each with its price and age', r.props && r.props.length > 0 && r.props.every((t) => /RESEARCH|WATCH/.test(t) && /min ago|just now/.test(t)
+      && BOARD_PLAYERS.some((n) => t.indexOf(n + ' · ') === 0)), r.props);
     chk(w + ': an incomplete game says why', r.inc && r.inc.length === 1 && /Tulsa @ Rice/.test(r.inc[0]) && /No current sportsbook market/.test(r.inc[0]), r.inc);
     chk(w + ': a moved market says how far and which way', r.chg && r.chg.length === 1 && /moved 1\.5 pts toward EdgeDesk/.test(r.chg[0]), r.chg);
     chk(w + ': five steps, the first already done by viewing the panel', r.steps.length === 5, r.steps);
@@ -297,6 +325,21 @@ function makeDb(createdAt) {
     const has = await S.page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !!(h && h.textContent.trim()); });
     chk('an account older than two weeks goes straight to the terminal', !has && S.db.events.some((e) => e.event === 'terminal_opened') && !S.db.events.some((e) => e.event === 'first_run_viewed'));
     chk('older account: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
+  }
+
+  /* 8 a slate where no prop qualifies: the panel says so, and invents none */
+  {
+    const S = await open({ width: 390, height: 844 }, 1, shiftedStat(nothingQualifies(BOARD)));
+    const shown = await eventually(() => S.page.evaluate(() => { const h = document.getElementById('edFirstRun'); return !!(h && h.querySelector('.edfr-grid')); }), 30000);
+    const r = shown ? await S.page.evaluate(() => {
+      const c = [...document.querySelectorAll('#edFirstRun .edfr-card')].find((x) => x.querySelector('h4').textContent.indexOf('Research-grade player') === 0);
+      return c ? { head: c.querySelector('h4').textContent, items: c.querySelectorAll('.edfr-item').length, empty: (c.querySelector('.edfr-empty') || {}).textContent || '' } : null;
+    }) : null;
+    chk('nothing qualifies: the panel still opens on the games', shown, S.errors);
+    chk('nothing qualifies: the prop card lists no prop and says none clears the threshold', r && r.items === 0 && /No player prop clears the research threshold right now\./.test(r.empty), r);
+    chk('nothing qualifies: and claims no count', r && r.head === 'Research-grade player props', r);
+    chk('nothing qualifies: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 
