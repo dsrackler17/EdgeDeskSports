@@ -210,34 +210,43 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
   .hero .microcta>span::before{display:none}
 }
 /* THE HERO ON A PHONE: a compact first screen, not the desktop column squeezed.
-   One spacing rhythm top to bottom — headline 12 · copy 20 · CTAs 10 · offer 12
-   · stats 16 · preview 20 — so the header, the headline, the copy, both CTAs,
-   the offer and the live stats sit on one iPhone screen. Desktop and tablet
-   (above 560 px) are untouched. After the 1180 px block, which it overrides. */
+   Written for a first visit from a social link, where the in-app browser's bars
+   leave ~550 px (iPhone SE) to ~660 px (iPhone 15) of page: before any scroll
+   it says what EdgeDesk is (eyebrow, headline), what it does and that it covers
+   player props (the copy), what it costs (the offer), where to tap (the CTAs)
+   and that the data is live (the freshness tile, first in the stats).
+   One spacing rhythm: headline 10 · copy 16 · CTAs 8 · offer 10 · stats 12 ·
+   preview 20. Desktop and tablet (above 560 px) are untouched. After the
+   1180 px block, which it overrides. */
 @media(max-width:560px){
-  .hero{padding:18px 0 40px}
+  .hero{padding:14px 0 40px}
   .hero-in{gap:20px}
   .hero .ey{font-size:10px;letter-spacing:.14em}
-  .hero h1{font-size:clamp(30px,8.8vw,38px);line-height:1.05;margin-top:10px;letter-spacing:-.035em;text-wrap:balance}
-  .hero .sub{font-size:15px;line-height:1.5;margin-top:12px}
-  .hero .cta{margin-top:20px;gap:10px}
-  .hero .cta .btn.lg{flex:1 1 100%;min-height:46px;padding:11px 16px;font-size:15px;border-radius:11px}
+  .hero h1{font-size:clamp(30px,8.8vw,38px);line-height:1.03;margin-top:8px;letter-spacing:-.035em;text-wrap:balance}
+  .hero .sub{font-size:15px;line-height:1.45;margin-top:10px}
+  .hero .cta{margin-top:16px;gap:8px}
+  .hero .cta .btn.lg{flex:1 1 100%;min-height:44px;padding:10px 16px;font-size:15px;border-radius:11px}
   /* the offer: two centred lines, "7 days free · Then $49.99/month" over
      "Cancel anytime · 21+" (the ::after is a line break between the pairs) */
-  .hero .microcta{display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin-top:12px;font-size:11.5px;line-height:1.65;text-align:center}
+  .hero .microcta{display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin-top:10px;font-size:11.5px;line-height:1.5;text-align:center}
   .hero .microcta::after{content:"";flex-basis:100%;height:0;order:2}
   .hero .microcta>span{padding:0 9px;order:1}
   .hero .microcta>span:nth-child(n+3){order:3}
   .hero .microcta>span:nth-child(even)::before{display:block;content:"";position:absolute;left:-2px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:var(--faint)}
   .hero .microcta [data-ed-price="price"]{color:var(--text)}
   /* the live stats: a 2×2 grid of small terminal tiles, label over number
-     like the board's tiles; the freshness tile keeps its colour and dot */
-  .hero .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:16px;min-height:0}
+     like the board's tiles; the freshness tile keeps its colour and dot.
+     Freshness and player props lead, so the first row alone answers "is this
+     live?" and "does it cover props?" on the smallest screen */
+  .hero .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;min-height:0}
+  .hero .stats li.upd{order:-2}
+  .hero .stats li[data-k="props_tracked"]{order:-1}
   .hero .stats li{display:grid;grid-template-columns:minmax(0,1fr);align-content:center;gap:2px 6px;min-width:0;padding:6px 10px 7px;border-radius:9px;font-size:9px;line-height:1.3;letter-spacing:.06em;text-transform:uppercase}
   .hero .stats li b{order:1;grid-column:1/-1;font-size:17px;line-height:1.15;letter-spacing:-.01em;text-transform:none;overflow-wrap:anywhere}
   .hero .stats li.upd{grid-template-columns:auto minmax(0,1fr);background:rgba(124,193,66,.05)}
   .hero .stats li.upd.old{background:rgba(217,164,65,.05)}
-  /* an odd number of tiles: the freshness tile, always last, takes the row */
+  /* an odd number of tiles: the freshness tile (last in the markup, first on
+     screen) takes the whole first row */
   .hero .stats li.upd:nth-child(odd of :not([hidden])){grid-column:1/-1}
 }
 @media(max-width:359px){

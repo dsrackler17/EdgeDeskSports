@@ -240,6 +240,30 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     await S.ctx.close();
   }
 
+  /* A FIRST VISIT FROM A SOCIAL LINK: an iPhone SE inside X's in-app browser
+     leaves about 548 px of page. Before any scroll the hero must say what
+     EdgeDesk is, what it does, that it covers player props, what it costs,
+     where to tap, and — from the freshness tile, not a claim — that it is live. */
+  {
+    const S = await open({ width: 375, height: 548 }, 'live', { search: '?utm_source=x&utm_medium=social' });
+    const r = await S.page.evaluate(() => {
+      const H = window.innerHeight, upd = document.querySelector('#lpStats li.upd');
+      const bottom = (el) => (el && !el.hidden ? Math.round(el.getBoundingClientRect().bottom) : null);
+      const sub = document.querySelector('.hero .sub');
+      return { H, what: bottom(document.querySelector('.hero h1')), does: bottom(sub), props: /player props/.test(sub.textContent),
+        cost: bottom(document.querySelector('.hero .microcta')), price: document.querySelector('.hero .microcta').textContent,
+        tap: bottom(document.getElementById('heroBoard')), live: bottom(upd), liveText: upd ? upd.textContent.replace(/\s+/g, ' ').trim() : '' };
+    });
+    const above = (b) => b !== null && b <= r.H;
+    chk('first visit, 375×548: what EdgeDesk is (eyebrow and headline) above the fold', above(r.what), r);
+    chk('first visit: what it does, player props named, above the fold', above(r.does) && r.props, r);
+    chk('first visit: the price and trial above the fold', above(r.cost) && /\$49\.99/.test(r.price) && /7 days free/.test(r.price), r);
+    chk('first visit: the primary call to action above the fold', above(r.tap), r);
+    chk('first visit: the live freshness tile above the fold', above(r.live) && /^Updated \d+ min ago$/.test(r.liveText), r);
+    chk('first visit: no script errors', S.errors.length === 0, S.errors);
+    await S.ctx.close();
+  }
+
   /* utm first-touch */
   {
     const S = await open({ width: 390, height: 844 }, 'live', { search: '?utm_source=Reddit&utm_medium=social&utm_campaign=wk5&email=x@y.z' });
