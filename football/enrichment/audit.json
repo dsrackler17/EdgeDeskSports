@@ -1,15 +1,15 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-30T16:47:13.371Z",
+ "generated_at": "2026-09-30T17:16:40.663Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-30T16:47:13.371Z",
-  "reliability_generated_at": "2026-09-30T16:47:13.371Z",
-  "enrichment_generated_at": "2026-09-30T16:06:46.535Z",
+  "at": "2026-09-30T17:16:40.663Z",
+  "reliability_generated_at": "2026-09-30T17:16:40.663Z",
+  "enrichment_generated_at": "2026-09-30T17:16:30.931Z",
   "counts": {
    "games": 109,
    "mean": 84.5,
-   "median": 87,
+   "median": 86,
    "by_band": {
     "STRONG": 88,
     "LOW": 3,
@@ -19,7 +19,7 @@
    "missing_qb_status": 215,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 24,
+   "games_lacking_injury_information": 26,
    "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 109,
@@ -112,12 +112,12 @@
   "games": {
    "401856705": {
     "game": "Vanderbilt @ Georgia",
-    "score": 87,
+    "score": 84,
     "grade": "STRONG",
     "fam": {
      "stability": 3.5,
-     "availability": 4.6,
-     "qb_status": 2,
+     "availability": 6,
+     "qb_status": 4,
      "qb_identity": 1.2,
      "rating_sample": 1.4,
      "transfer_turnover": 0.3
@@ -127,8 +127,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401856706": {
@@ -1143,12 +1143,12 @@
    },
    "401858479": {
     "game": "Michigan State @ Wisconsin",
-    "score": 89,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "stability": 1.8,
-     "qb_status": 2,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
@@ -1158,8 +1158,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858480": {
@@ -2485,15 +2485,15 @@
   }
  },
  "previous": {
-  "at": "2026-09-30T16:06:55.486Z",
+  "at": "2026-09-30T16:47:13.371Z",
   "counts": {
    "games": 109,
-   "mean": 84.4,
+   "mean": 84.5,
    "median": 87,
    "by_band": {
-    "STRONG": 86,
+    "STRONG": 88,
     "LOW": 3,
-    "ADEQUATE": 17,
+    "ADEQUATE": 15,
     "CAUTION": 3
    },
    "missing_qb_status": 215,
@@ -2509,47 +2509,13 @@
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+0.1 mean reliability (84.4 → 84.5)",
-  "4 games moved ADEQUATE → STRONG"
- ],
+ "what_improved": [],
  "what_degraded": [
-  "2 games moved STRONG → ADEQUATE"
+  "-1 median reliability (87 → 86)",
+  "+2 games lacking injury information (24 → 26)"
  ],
- "why": [
-  "Florida @ Missouri: ADEQUATE → STRONG (79 → 84); largest change: favorite_flips 0 pts",
-  "Ole Miss @ Vanderbilt: ADEQUATE → STRONG (79 → 83); largest change: favorite_flips +2.3 pts",
-  "Michigan @ Minnesota: STRONG → ADEQUATE (81 → 79); largest change: favorite_flips -1.9 pts",
-  "Fresno State @ Washington State: STRONG → ADEQUATE (84 → 79); largest change: favorite_flips -1.1 pts",
-  "Washington State @ Utah State: ADEQUATE → STRONG (79 → 82); largest change: favorite_flips +1.9 pts",
-  "South Florida @ UTSA: ADEQUATE → STRONG (79 → 80); largest change: favorite_flips 0 pts"
- ],
+ "why": [],
  "history": [
-  {
-   "at": "2026-09-25T20:01:36.423Z",
-   "counts": {
-    "games": 129,
-    "mean": 80.9,
-    "median": 84,
-    "by_band": {
-     "VERY_STRONG": 14,
-     "ADEQUATE": 18,
-     "STRONG": 77,
-     "LOW": 16,
-     "CAUTION": 4
-    },
-    "missing_qb_status": 209,
-    "qb_conflicts_open": 9,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 57,
-    "unrated_meaningful_absences": 356,
-    "fcs_games_thin_data": 16,
-    "games_under_two_market_sources": 129,
-    "stale_evidence_records": 48,
-    "provider_failures": 6,
-    "provider_failures_attributable_to_run": 3
-   }
-  },
   {
    "at": "2026-09-25T20:08:19.426Z",
    "counts": {
@@ -3979,6 +3945,30 @@
     "qb_conflicts_open": 6,
     "qb_confirmed": 0,
     "games_lacking_injury_information": 24,
+    "unrated_meaningful_absences": 30,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 109,
+    "stale_evidence_records": 52,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-30T17:16:40.663Z",
+   "counts": {
+    "games": 109,
+    "mean": 84.5,
+    "median": 86,
+    "by_band": {
+     "STRONG": 88,
+     "LOW": 3,
+     "ADEQUATE": 15,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 215,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 26,
     "unrated_meaningful_absences": 30,
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 109,
