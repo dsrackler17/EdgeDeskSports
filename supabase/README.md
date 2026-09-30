@@ -594,6 +594,29 @@ database setting and sends no key (Supabase refuses `alter database … set
 edgedesk.*`). Re-running replaces the job; five minutes later
 `player_props_pipeline_health.scheduler_tick_at` shows the ticks arriving.
 
+### `research_state_cron.sql` — the primary research-state scheduler
+`game_research_state` (what the landing page and the terminal read) is written
+only by `.github/workflows/research-state.yml`, and GitHub's hourly cron ran it
+every five to eight hours on 2026-09-28/29. This file has pg_cron call
+`functions/research_cron` every five minutes. The function dispatches the
+workflow when the newest `computed_at` is older than 55 minutes, or 25 minutes
+while a kickoff is inside 24 hours, and never twice inside one cadence.
+GitHub's own schedule stays as the backup. The file creates
+`research_state_scheduler` (one row: the last tick, what it decided and why,
+and the last dispatch, which is the debounce; service role only) and an index
+on `game_research_state (computed_at desc)`.
+
+Run order: `personal_research.sql`, then deploy `research_cron` with JWT
+verification off (the **Deploy research scheduler** workflow, or
+`supabase functions deploy research_cron --no-verify-jwt`), then this file. It
+needs pg_cron and pg_net. It reads no database setting and sends no key. The
+function takes the GitHub token from `RESEARCH_GH_TOKEN`, then
+`PROPS_GH_TOKEN`, then `EDITORIAL_GH_TOKEN`. Supabase secrets are shared across
+the project, so the token `props_cron` already holds is enough. Report rows 1-4
+should say `ok`. Re-running replaces the job. Five minutes later,
+`select * from research_state_scheduler;` shows the ticks arriving. Tested by
+`tools/personal/research_cron_sql.test.js` and `research_cron.test.js`.
+
 ### `lock_rule.sql` — the Collective's 30-minute lock
 Every game locks 30 minutes before kickoff. Each model's latest live submission
 received before the lock is the one the board, the consensus and the grader use.

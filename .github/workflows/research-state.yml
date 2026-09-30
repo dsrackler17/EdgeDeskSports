@@ -16,12 +16,26 @@
 # Without them the job refuses to run rather than pretending it wrote.
 # Requires supabase/personal_research.sql (and, for the affiliate step,
 # supabase/affiliates.sql) to have been run once in the SQL editor.
+#
+# WHO RUNS IT. GitHub's hourly cron alone ran this every five to eight hours
+# (2026-09-28/29: 01:09, 07:34, 15:55, 22:15, 02:16, 08:59, 16:06, 21:00 UTC),
+# and the landing page's game lines are only as fresh as the last run. So:
+#
+#   pg_cron (5 min) ─► supabase/functions/research_cron ─► workflow_dispatch
+#                      (dispatches when the newest research state is older
+#                       than 55 min, or 25 min inside 24 h of a kickoff;
+#                       never twice inside one cadence)
+#   the schedule below ─────────────────────────────────► (backup)
+#
+# Installed by supabase/research_state_cron.sql and the Deploy research
+# scheduler workflow. The run name says which one woke a run.
 name: Personal research state
+run-name: Personal research state · ${{ inputs.source || github.event_name }}
 
 on:
   schedule:
-    # Thirty-eight past the hour: after the capture day tier (:26) has landed
-    # new quotes and before the next one.
+    # THE BACKUP. Thirty-eight past the hour: after the capture day tier has
+    # landed new quotes and before the next one.
     - cron: '38 * * * *'
   workflow_dispatch:
     inputs:
@@ -29,6 +43,10 @@ on:
         description: 'Run one step only: states, alerts, grade or affiliates (blank = all)'
         required: false
         default: ''
+      source:
+        description: 'Who asked for this run (research_cron sends supabase_cron)'
+        required: false
+        default: 'manual'
 
 permissions:
   contents: read

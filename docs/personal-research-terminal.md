@@ -81,8 +81,14 @@ GETs on the capture tables, and:
    carries the final — the result of wagered journal entries;
 4. calls `affiliate_reconcile()` to replay the Stripe ledger idempotently.
 
-Scheduled by `.github/workflows/research-state.yml` at :38 every hour. It spends
-no odds-provider credit.
+Run by `.github/workflows/research-state.yml`. Its primary scheduler is
+`supabase/functions/research_cron`, which pg_cron calls every five minutes
+(`supabase/research_state_cron.sql`). It dispatches the workflow when the newest
+state is older than 55 minutes, or 25 minutes while a kickoff is inside 24 hours,
+and never twice inside one cadence. The workflow's own `38 * * * *` cron is the
+backup: on its own it fired every five to eight hours (2026-09-28/29), and game
+lines fell off the landing page between runs. The job spends no odds-provider
+credit.
 
 **Research-grade** = the game clears every gate of the research-priority order
 (a projection, a current market, no data fault, no thin data, no stale quote,
@@ -112,6 +118,7 @@ RELIABILITY or LIMITED DATA.
 2. Insert the owner into `public.affiliate_admins` if report row 7 says none yet.
 3. In the Stripe dashboard, add **`charge.refunded`** (and optionally `invoice.paid`) to the webhook endpoint's events. Nothing else changes on the webhook.
 4. GitHub → Actions → "Personal research state" → Run workflow once (it uses the existing `SB_URL` / `SB_SERVICE_ROLE` secrets).
+   Then install its scheduler: GitHub → Actions → "Deploy research scheduler" → Run workflow (deploys `research_cron` with JWT verification off), and paste `supabase/research_state_cron.sql` into the SQL editor (report rows 1-4 `ok`). No new secret is needed when `PROPS_GH_TOKEN` or `EDITORIAL_GH_TOKEN` is already set in Supabase.
 5. Redeploy `edgedesk_ai` through "Deploy intelligence" (build `edgedesk_ai-2026-09-25-r17-mine`). Optional: `EDGEDESK_MINE_NARRATE=1` lets the model rephrase personal answers under the critic; default is EdgeDesk's own words.
 6. Set the commission rate and program terms in `/admin/affiliates/` (default 25% for 12 months, 30-day hold, program by invitation).
 

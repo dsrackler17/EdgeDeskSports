@@ -38,6 +38,11 @@ on:
       - 'supabase/referral_codes.sql'
       - 'supabase/functions/edgedesk_ai/_mine.js'
       - 'tools/personal/**'
+      - 'supabase/functions/research_cron/**'
+      - 'supabase/research_state_cron.sql'
+      - '.github/workflows/research-state.yml'
+      - '.github/workflows/deploy-research-cron.yml'
+      - 'lib/edgedesk_home.js'
       - 'research/sample/**'
       - 'admin/growth/**'
       - 'admin/affiliates/**'
@@ -67,6 +72,11 @@ jobs:
         run: node tools/personal/personal.test.js
       - name: One source for the offer, the books, the page wiring, no tout language
         run: node tools/personal/personal_wiring.test.js
+      # research_cron is research-state.yml's primary scheduler; this imports
+      # the deployed file and replays whole days against the landing page's
+      # own freshness windows.
+      - name: The research-state scheduler dispatches on cadence, never stampedes, keeps game lines on the board
+        run: node tools/personal/research_cron.test.js
       # The offer's other half: what Stripe is asked about the payment links
       # (every wrong price, mode and trial must fail), and the paywall,
       # settings card and checkout agreeing on who has already paid.
@@ -107,3 +117,7 @@ jobs:
         run: node tools/bettor/bettor_sql.test.js
       - name: Trial activation, acquisition attribution and public samples
         run: node tools/personal/growth_sql.test.js
+      - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
+        env:
+          RESEARCH_CRON_SQL_REQUIRED: '1'
+        run: node tools/personal/research_cron_sql.test.js

@@ -47,6 +47,11 @@ const ED_BUILD = D.expectedFunctionBuild('editorial_cron');
 const editorialCron = (over) => ['/functions/v1/editorial_cron', { status: 200, body: JSON.stringify(Object.assign(
   { ok: true, service: 'editorial_cron', build: ED_BUILD, configured: { has_token: true } }, over || {})) }];
 const EDITORIAL_CURRENT = editorialCron();
+/* research_cron's public GET probe serving this checkout's build. */
+const RS_BUILD = D.expectedFunctionBuild('research_cron');
+const researchCron = (over) => ['/functions/v1/research_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'research_cron', build: RS_BUILD, configured: { has_token: true }, scheduler: null }, over || {})) }];
+const RESEARCH_CURRENT = researchCron();
 
 /** Answer every URL from a table of {match: response}. */
 const SENT = [];
@@ -54,7 +59,7 @@ function net(table) {
   globalThis.fetch = async (url, init) => {
     const u = String(url);
     SENT.push({ url: u, method: (init && init.method) || 'GET' });
-    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT, EDITORIAL_CURRENT]) {
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT, EDITORIAL_CURRENT, RESEARCH_CURRENT]) {
       if (u.indexOf(frag) >= 0) {
         if (res.throw) throw new Error(res.throw);
         return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
@@ -470,10 +475,50 @@ const OK_BOARD = signals(40, 144);
       (s.checks.find((c) => c.name === EC) || {}).fix || ''));
     chk('and deploys nothing on a guess', !D.deployPlan(s).editorial_cron);
 
+    /* research_cron, the research-state job's scheduler. Deployed with
+       --no-verify-jwt like editorial_cron, but it has no other install: a 404
+       means research-state.yml is back on GitHub's schedule alone. */
+    const RC = 'deployed research_cron matches this checkout';
+    SENT.length = 0;
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('a research_cron serving this checkout is CURRENT', stateOf(s, RC), 'CURRENT');
+    const toRs = SENT.filter((x) => x.url.indexOf('/functions/v1/research_cron') >= 0);
+    chk('the doctor asks research_cron exactly once, with a GET and no credential: a POST is a tick that can dispatch research-state.yml',
+      toRs.length === 1 && toRs[0].method === 'GET', toRs);
+
+    s = await run([okFn, researchCron({ build: 'research_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older research_cron build is STALE', stateOf(s, RC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans a research_cron deploy and nothing else',
+      p.research_cron && !p.editorial_cron && !p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+    chk('and is annotated as being deployed',
+      D.annotations(s, { autoDeploy: true }).some((l) => l.startsWith('::warning::') && /auto-deploying research_cron/.test(l)));
+
+    s = await run([okFn, researchCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('a research_cron answering with no build predates the stamp, so it is STALE', stateOf(s, RC), 'STALE');
+
+    s = await run([okFn, ['/functions/v1/research_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on research_cron is NOT_DEPLOYED (there is no other install)', stateOf(s, 'research_cron deployed'), 'NOT_DEPLOYED');
+    chk('which names the deploy workflow and the SQL, and is never auto-deployed',
+      /Deploy research scheduler/.test((s.checks.find((c) => c.name === 'research_cron deployed') || {}).fix || '')
+      && /research_state_cron\.sql/.test((s.checks.find((c) => c.name === 'research_cron deployed') || {}).fix || '')
+      && !D.deployPlan(s).research_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    s = await run([okFn, ['/functions/v1/research_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on research_cron is UNKNOWN', stateOf(s, RC), 'UNKNOWN');
+    chk('and points at JWT verification, which also refuses every tick', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === RC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).research_cron);
+
     s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
     p = D.deployPlan(s);
     chk('all four stale at once plans all four, and nothing else',
-      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && p.functions.length === 4 && p.other.length === 0, p);
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && !p.research_cron && p.functions.length === 4 && p.other.length === 0, p);
+    s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), researchCron({ build: undefined }), ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('all five stale at once plans all five, and nothing else',
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && p.research_cron && p.functions.length === 5 && p.other.length === 0, p);
   }
 
   /* ---- everything deployed and current -------------------------------- */

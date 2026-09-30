@@ -1,0 +1,118 @@
+# Deploy the Personal research state job's PRIMARY scheduler: the
+# research_cron edge function, and (optionally) supabase/research_state_cron.sql,
+# the scheduler record and the five-minute pg_cron poke.
+#
+# WHY IT EXISTS. research-state.yml writes public.game_research_state, which the
+# landing page and the terminal read, and GitHub's hourly cron ran it every five
+# to eight hours on 2026-09-28/29. research_cron dispatches it instead: hourly,
+# every half hour inside 24 h of a kickoff (see the function's header).
+#
+# MANUAL ON PURPOSE, with the same one narrow exception as Deploy player props
+# pipeline: the Intelligence doctor calls it (workflow_call) to deploy
+# research_cron when production answers with a build other than main's. That
+# call never applies the SQL.
+#
+# SECRETS (the same ones Deploy intelligence uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste it into the SQL editor)
+# And a GitHub token on the Supabase side, which is usually already there:
+# research_cron reads RESEARCH_GH_TOKEN, then PROPS_GH_TOKEN, then
+# EDITORIAL_GH_TOKEN, and Supabase secrets are shared by every function in the
+# project, so the token props_cron holds serves. Only if none is set:
+#   supabase secrets set RESEARCH_GH_TOKEN=<a token with actions:write on this repository>
+name: Deploy research scheduler
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/research_cron (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply supabase/research_state_cron.sql (scheduler record + five-minute pg_cron poke; needs pg_cron, pg_net and personal_research.sql)'
+        type: boolean
+        default: false
+  # The Intelligence doctor's auto-deploy. The function only: apply_sql is not
+  # declared here, so it reads as empty and the SQL step stays skipped.
+  workflow_call:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/research_cron'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-research-cron
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # research_cron.test.js imports the deployed file itself against a mocked
+      # network: the cadence, the debounce, the missing token and the 422
+      # fallback are this build's own behaviour, not a copy's.
+      - name: The scheduler and its SQL must pass before anything ships
+        env:
+          RESEARCH_CRON_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/personal/research_cron.test.js
+          node tools/personal/research_cron_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — research_cron cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — the SQL cannot be applied from CI (paste supabase/research_state_cron.sql into the SQL editor instead)."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING, as for props_cron: this project's
+      # gateway refuses pg_cron's anon key with 401 "Invalid JWT", and Supabase
+      # refuses the edgedesk.* database settings a service key would have lived
+      # in. Deployed with verification ON, every five-minute tick is rejected
+      # before research_cron sees it, and the job is back on GitHub's schedule.
+      # Nothing is opened: a GET is a read-only probe, and a POST can at most
+      # cause the one dispatch per cadence the schedule would have made anyway.
+      - name: Deploy research_cron
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy research_cron \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Apply supabase/research_state_cron.sql
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_state_cron.sql)
+          echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::research_state_cron.sql: a report row says CHECK THIS"; exit 1; fi
