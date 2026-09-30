@@ -221,6 +221,52 @@ It remains DATA FAULT ("possible orientation flip", first pass #5) at a stale ca
 - the fit's windows, significance flags and unfitted list;
 - the slate and terminal wiring.
 
+### #5 — A closing-line-value validation report
+
+**What was missing.** The existing movement validation (`football/validation/movement_cfb.json`) tests CFBD's pregame
+Elo, not EdgeDesk's own number. The scorecard has 6 packets and no reading. Nothing answered whether the market moves
+toward EdgeDesk between the opener and the close.
+
+**Change.** `tools/football/clv_report.js` writes `football/validation/clv_report.json`. Nothing is fitted, and the
+market is never an input. Per game, on home margins:
+- side = sign(fair − open), with no side under 0.5 pt;
+- CLV points = side × (close − open);
+- CLV probability = the cover probability of that side at the opener, on a distribution centred at the close, minus
+  the same at the close.
+
+Each sample reports games, the rate at which moved lines moved toward EdgeDesk (two-sided binomial p), mean CLV with a
+bootstrap 95% CI, per season and per gap bucket. Samples under 100 moved games read "too small to read".
+
+**Result.**
+
+| sample | games | moved toward EdgeDesk | p | mean CLV (pts) | CLV (prob) |
+|---|---|---|---|---|---|
+| **CFB replay 2022-2025**, the engine's held-out window (hyperparameters tuned 2018-2021) | 2,843 | **52.9%** of 2,492 | **0.005** | **+0.21** [+0.14, +0.27] | +0.53 pp |
+| …gap 0.5-2 | 737 | 53.2% | 0.11 | +0.16 [+0.05, +0.30] | +0.41 pp |
+| …gap 2-4 | 846 | 51.2% | 0.56 | +0.10 [+0.02, +0.19] | +0.28 pp |
+| …gap 4-7 | 795 | 52.1% | 0.27 | +0.21 [+0.08, +0.33] | +0.54 pp |
+| …gap 7+ | 465 | **56.6%** | **0.009** | **+0.47** [+0.26, +0.67] | +1.19 pp |
+| CFB replay 2021 (in-sample for the engine's tune; never pooled) | 686 | 50.8% | 0.74 | +0.12 [+0.01, +0.22] | +0.25 pp |
+| CFB 2026 live (frozen record numbers vs the Model Lab's earliest capture) | 68 | 45.1% of 51 | 0.58 | +0.04 [−0.26, +0.35] | too small to read |
+| NFL 2026 live (EdgeDesk's own opener ledger; no historical NFL openers exist) | 29 | 71.4% of 21 | 0.08 | +0.45 [−0.26, +1.16] | too small to read |
+
+- By season 2022-2025 the toward-rate is 50.3%, 54.0%, 52.6% and 54.2%.
+- The college engine's pregame number has shown small, positive, statistically significant CLV on its held-out window,
+  concentrated in the 7+ gaps.
+- **This is a replay, not a record.** The replay's state is the one at kickoff, which also holds other games played
+  between the opener and kickoff.
+- The two live 2026 samples are too small to say anything yet.
+
+**Tests.** `tools/football/clv_report.test.js` (16 checks, in `football:audit:test`) covers:
+- the sign conventions;
+- no side under 0.5 pt;
+- a missing line is no CLV;
+- the NFL price value;
+- the summary arithmetic and the floor;
+- the artifact's windows (headline 2022-2025, 2021 apart);
+- that the market is not an input and nothing is fitted;
+- that each reading follows its own numbers.
+
 ### #6 — Re-run both boards live: not possible from this environment
 
 The live capture host (`iattxbkbufslbauoumga.supabase.co`) is denied by this environment's network policy. So are The
