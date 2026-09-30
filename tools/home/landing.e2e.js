@@ -7,7 +7,12 @@
      * public_home_board()        tools/home/fixtures/public_home_board.json
                                   (the real SQL's answer over the committed
                                   slate, written by home_sql.test.js)
-     * /football/home/board.json  the committed file
+     * /football/home/board.json  tools/home/fixtures/static_board.json
+                                  (the board as build_home.js published it at
+                                  2026-09-30T00:46Z, commit 2be399f, with
+                                  research-grade NFL props — never the
+                                  committed file, whose props every prop run
+                                  replaces)
    with every capture time moved relative to the browser's clock, so "live"
    means live NOW and "stale" means stale NOW.
 
@@ -18,13 +23,20 @@
              fold and at least 44 px tall; the stats ("worth researching" a
              clear minority of the slate), the preview (two RESEARCH/WATCH game
              markets and one player prop — on a phone the prop second, so the
-             first two cards are both pillars), the board and the prop table
-             filled from the data; no "0" headline; no tout words; the price
+             first two cards are both pillars; the prop the published board's
+             research-grade one), the board and the prop table filled from
+             the data; the pricing example the current college game EV; no
+             "0" headline; no tout words; the price
              and trial from lib/edgedesk_pricing.js; the hero copy 14 px on a
              phone and as it was on desktop; a visitor's second hero button
              is "See how it works"
    FUNNEL  landing_view on load; cta_clicked for the hero; the live board and
            pricing seen when scrolled to — each once, in batched ed_track calls
+   NOTHING QUALIFIES  the same board with no research-grade prop (props.items
+           {}, as a prop run can publish it): the preview's prop is a game's
+           own, shown in full with its book and capture; the prop table lists
+           only the games' props; no research-grade prop count beyond what is
+           listed
    MIDWEEK first kickoff 60 h out, game markets 4 h old, prop prices 2 h
            old — on the capture's schedule: the board, the preview and the
            prop table are filled, nothing reads DATA INCOMPLETE, no age is
@@ -69,11 +81,27 @@ function shift(obj, newestAgoMs, kickH) {
     .replace(/"(kickoff_at|kickoff)":"([^"]+)"/g, (m, k, v) => { const t = Date.parse(v); return isFinite(t) ? '"' + k + '":"' + new Date(t + kd).toISOString() + '"' : m; }));
 }
 const RPC = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'public_home_board.json'), 'utf8'));
-const STAT = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'home', 'board.json'), 'utf8'));
-/* the prop prices in the committed file are a snapshot; for the LIVE case the
+/* the published board is a committed fixture, never football/home/board.json:
+   a prop run with nothing research-grade publishes props.items {} (a valid
+   slate), and the preview's prop would then be a game's own, or the board's,
+   for reasons of the day's data. Both are tested, each on purpose. */
+const STAT = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'static_board.json'), 'utf8'));
+const BOARD_PLAYERS = Object.values(STAT.props.items).map((p) => p.player.name);
+const GAME_PLAYERS = [].concat(...RPC.games.map((g) => (g.props && g.props.top || []).map((p) => p.player.name)));
+/* the same board on a slate where no prop qualifies, as a prop run can
+   publish it: no items, no top lists, zero research-grade */
+function nothingQualifies(board) {
+  const b = JSON.parse(JSON.stringify(board));
+  b.props.items = {}; b.props.top = [];
+  Object.values(b.props.counts).forEach((c) => { c.research_grade = 0; });
+  Object.values(b.props.by_game).forEach((g) => { g.research_grade = 0; delete g.top; });
+  return b;
+}
+/* the prop prices in the fixture are a snapshot; for the LIVE case the
    newest is 4 minutes old (FRESH), which the page must print as such */
 function scenario(kind) {
   if (kind === 'live') return { rpc: shift(RPC, 15 * 60e3), stat: shift(STAT, 4 * 60e3) };
+  if (kind === 'none') return { rpc: shift(RPC, 15 * 60e3), stat: shift(nothingQualifies(STAT), 4 * 60e3) };
   if (kind === 'midweek') return { rpc: shift(RPC, 4 * 3600e3, 60), stat: shift(STAT, 2 * 3600e3, 60) };
   if (kind === 'stale') return { rpc: shift(RPC, 26 * 3600e3), stat: shift(STAT, 26 * 3600e3) };
   return { rpc: null, stat: null };
@@ -157,6 +185,13 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     return out.slice(0, 6);
   }, page.viewportSize().width);
 
+  /* a preview prop card in full: player and prop type, line, projection,
+     difference, status, and a source line "<odds> <book> · captured <age>",
+     whichever book it is */
+  const propCardFull = (P) => P.kicker === 'Player prop' && / · /.test(P.head) && P.cells.length === 3 && P.cells.every((v) => v !== '—')
+    && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /[+\u2212]\d{3,} [A-Z][A-Za-z .]+ · captured \d+ (min|h) ago/.test(P.text);
+  const propOf = (players, P) => players.some((n) => P.head.indexOf(n + ' · ') === 0);
+
   const WIDTHS = [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
   for (const vp of WIDTHS) {
     const w = vp.width;
@@ -190,6 +225,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
         propStatus: [...document.querySelectorAll('#lpPropRows .st')].map((s) => s.textContent.trim()),
         text: document.body.innerText,
         boardText: document.getElementById('lpBoard').innerText, nflOnBoard: /NFL ·/.test(document.getElementById('lpBoard').innerText),
+        priceEx: document.getElementById('lpPriceEx').innerText,
         priceText: [...document.querySelectorAll('#pricing [data-ed-price="price"]')].map((x) => x.textContent.trim()),
         trialText: [...document.querySelectorAll('[data-ed-price="trial"]')].map((x) => x.textContent.trim())
       };
@@ -207,11 +243,12 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       : (w === 1280 ? r.subFont === '18.5px' && r.subLine === '28.675px' : r.subFont !== '14px'), [r.subFont, r.subLine]);
     chk(w + ': the game markets are RESEARCH / WATCH, each with its market, EdgeDesk number, difference and book',
       r.games.every((g) => (g.chip === 'RESEARCH' || g.chip === 'WATCH') && g.kicker === 'Game market' && g.cells.length === 3 && g.cells.every((v) => v !== '—') && /captured/.test(g.text)), r.games.map((g) => [g.chip, g.cells]));
-    const P = r.props[0] || { cells: [], text: '' };
-    /* the source line reads "<odds> <book> · captured <age>", whichever book it is */
-    chk(w + ': the player prop shows player and prop type, line, projection, difference, status, book and capture',
-      P.kicker === 'Player prop' && / · /.test(P.head) && P.cells.length === 3 && P.cells.every((v) => v !== '—') && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /[+\u2212]\d{3,} [A-Z][A-Za-z .]+ · captured \d+ (min|h) ago/.test(P.text), P);
+    const P = r.props[0] || { head: '', cells: [], text: '' };
+    chk(w + ': the player prop shows player and prop type, line, projection, difference, status, book and capture', propCardFull(P), P);
+    /* the board's research-grade props sort ahead of the games' own WATCHes */
+    chk(w + ': the player prop is the published board\'s, research-grade on a current price', P.chip === 'RESEARCH' && propOf(BOARD_PLAYERS, P) && /captured \d+ min ago/.test(P.text), P);
     chk(w + ': the player prop names its game, with no stray separator', / @ /.test(P.where) && !/^\s*·/.test(P.where), P.where);
+    chk(w + ': the pricing example is the current college game EV', /Right now:/.test(r.priceEx) && /calibrated EdgeDesk EV/.test(r.priceEx), r.priceEx.slice(-300));
     chk(w + ': the preview never labels a card DATA INCOMPLETE', r.chips.length === 3 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
     chk(w + ': the hero count reads "worth researching" and stays a clear minority of the games analyzed',
       r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
@@ -289,6 +326,47 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     await S.page.waitForTimeout(1800);
     const lv = S.events.find((e) => e.event === 'landing_view');
     chk('utm: landing_view carries the cleaned campaign, never the rest of the query', lv && lv.utm_source === 'reddit' && lv.utm_medium === 'social' && lv.utm_campaign === 'wk5' && !/x@y|email/.test(JSON.stringify(S.events)), lv);
+    await S.ctx.close();
+  }
+
+  /* NOTHING QUALIFIES: the published board holds no research-grade prop, as a
+     prop run can leave it. The prop slot is a game's own prop, in full; the
+     board invents none and counts none it does not list. */
+  for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+    const w = vp.width;
+    const S = await open(vp, 'none');
+    const r = await S.page.evaluate(() => {
+      const el = document.querySelector('#lpPrevBody .opp[data-kind="prop"]');
+      const tile = document.querySelector('#lpTiles [data-k="prop_research"]');
+      const worth = document.querySelector('#lpStats li[data-k="research"]');
+      return {
+        prevTag: document.getElementById('lpPrevTag').textContent,
+        kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((x) => x.getAttribute('data-kind')),
+        prop: el ? { chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
+          kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
+          where: (el.querySelector('.opp-hd .w') || {}).textContent || '', text: el.innerText } : null,
+        propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
+        tablePlayers: [...document.querySelectorAll('#lpPropRows td.pl')].map((td) => td.firstChild.textContent.trim()),
+        tableResearch: [...document.querySelectorAll('#lpPropRows .st')].filter((s) => s.textContent.trim() === 'RESEARCH').length,
+        propResearch: tile.hidden ? null : +tile.querySelector('.n').textContent.replace(/,/g, ''),
+        worth: worth.hidden ? null : worth.textContent.replace(/\s+/g, ' ').trim(),
+        analyzed: (() => { const li = document.querySelector('#lpStats li[data-k="games_analyzed"]'); return li.hidden ? null : +li.querySelector('b').textContent.replace(/,/g, ''); })()
+      };
+    });
+    const P = r.prop || { head: '', cells: [], text: '' };
+    const order = w <= 560 ? 'game,prop,game' : 'game,game,prop';
+    chk(w + ' nothing qualifies: the preview is still live, two game markets and one player prop, ' + order, /^Live/.test(r.prevTag) && r.kinds.join() === order, [r.prevTag, r.kinds]);
+    chk(w + ' nothing qualifies: the player prop shows player and prop type, line, projection, difference, status, book and capture', propCardFull(P), P);
+    chk(w + ' nothing qualifies: and it is a game\'s own prop, naming its game', propOf(GAME_PLAYERS, P) && / @ /.test(P.where) && !/^\s*·/.test(P.where), [P.head, P.where]);
+    chk(w + ' nothing qualifies: the prop table lists only the games\' own props, eight cells a row',
+      r.propRows.length > 0 && r.propRows.every((n) => n === 8) && r.tablePlayers.every((n) => GAME_PLAYERS.indexOf(n) >= 0), [r.propRows, r.tablePlayers]);
+    chk(w + ' nothing qualifies: no research-grade prop count beyond the RESEARCH props listed', r.propResearch === null || r.propResearch <= r.tableResearch, [r.propResearch, r.tableResearch]);
+    chk(w + ' nothing qualifies: "worth researching" stays a clear minority of the games analyzed',
+      r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
+    const ov = await overflowing(S.page);
+    chk(w + ' nothing qualifies: nothing wider than the screen', ov.length === 0, ov);
+    chk(w + ' nothing qualifies: no script errors', S.errors.length === 0, S.errors);
+    if (SHOTS) await S.page.screenshot({ path: path.join(SHOTS, 'landing-none-' + w + '.png'), fullPage: false });
     await S.ctx.close();
   }
 
