@@ -12,14 +12,15 @@
 # boolean, exactly as the function's own probe does.
 #
 # AND WHEN WHAT IS MERGED IS NOT WHAT IS RUNNING, IT DEPLOYS IT. If production
-# serves an edgedesk_ai, capture, props_cron or editorial_cron build other
-# than this checkout's (STALE), the deploy jobs below call Deploy intelligence,
-# Deploy player props pipeline and Deploy editorial scheduler for exactly
-# those functions: their tests first, then the deploy, then the verify job
-# asks the deployment again and that answer decides the run. Only on main, so
-# a branch never ships itself, and never a migration or any other finding:
-# deploy_doctor.js deployPlan() names the four checks a deploy fixes and
-# nothing else. A manual run can switch it off with auto_deploy.
+# serves an edgedesk_ai, capture, props_cron, editorial_cron or research_cron
+# build other than this checkout's (STALE), the deploy jobs below call Deploy
+# intelligence, Deploy player props pipeline, Deploy editorial scheduler and
+# Deploy research scheduler for exactly those functions: their tests first,
+# then the deploy, then the verify job asks the deployment again and that
+# answer decides the run. Only on main, so a branch never ships itself, and
+# never a migration or any other finding: deploy_doctor.js deployPlan() names
+# the five checks a deploy fixes and nothing else. A manual run can switch it
+# off with auto_deploy.
 #
 # SECRETS: the ones the newsletter workflow already holds.
 #   SB_URL           optional; defaults to the project the rest of the repo uses
@@ -36,7 +37,7 @@ on:
   workflow_dispatch:
     inputs:
       auto_deploy:
-        description: "Deploy edgedesk_ai / capture / props_cron / editorial_cron if the deployed build is STALE (main only)"
+        description: "Deploy edgedesk_ai / capture / props_cron / editorial_cron / research_cron if the deployed build is STALE (main only)"
         type: boolean
         default: true
       probe_answer:
@@ -77,6 +78,7 @@ jobs:
       deploy_capture: ${{ steps.ask.outputs.deploy_capture }}
       deploy_props_cron: ${{ steps.ask.outputs.deploy_props_cron }}
       deploy_editorial_cron: ${{ steps.ask.outputs.deploy_editorial_cron }}
+      deploy_research_cron: ${{ steps.ask.outputs.deploy_research_cron }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -189,6 +191,14 @@ jobs:
     uses: ./.github/workflows/deploy-editorial-cron.yml
     secrets: inherit
 
+  deploy_research:
+    needs: doctor
+    if: ${{ !cancelled() && needs.doctor.outputs.deploy_research_cron == 'true' }}
+    uses: ./.github/workflows/deploy-research-cron.yml
+    with:
+      deploy_function: true
+    secrets: inherit
+
   # THE SECOND DOCTOR RUN, AND THE ONE THAT DECIDES A RUN THAT DEPLOYED.
   # The deployment changed, so the first answer is out of date. This waits for
   # EVERY deploy job: each asking on its own would find another's function
@@ -196,8 +206,8 @@ jobs:
   # so a deploy that did not take (a failed test gate, a missing token) is a
   # red run that says why.
   verify:
-    needs: [deploy, deploy_props, deploy_editorial]
-    if: ${{ !cancelled() && (needs.deploy.result != 'skipped' || needs.deploy_props.result != 'skipped' || needs.deploy_editorial.result != 'skipped') }}
+    needs: [deploy, deploy_props, deploy_editorial, deploy_research]
+    if: ${{ !cancelled() && (needs.deploy.result != 'skipped' || needs.deploy_props.result != 'skipped' || needs.deploy_editorial.result != 'skipped' || needs.deploy_research.result != 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

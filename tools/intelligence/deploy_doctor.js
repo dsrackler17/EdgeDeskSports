@@ -414,6 +414,38 @@ async function doctor(opts) {
     }
   }
 
+  /* ---- research_cron: the research-state job's scheduler ---------------
+     Deployed with --no-verify-jwt, and its GET is a public, read-only health
+     probe carrying BUILD, so this sends no credential. ONLY a GET: a POST is
+     a tick, which can dispatch research-state.yml. Unlike editorial_cron
+     there is no other install, so a 404 is a function nobody deployed. */
+  {
+    const wantRs = expectedFunctionBuild('research_cron');
+    if (wantRs) {
+      const rc = await get(`${url}/functions/v1/research_cron`, {}, 8000);
+      let j = null; try { j = JSON.parse(rc.text); } catch (_) { /* below */ }
+      if (rc.status === 0) {
+        add('deployed research_cron matches this checkout', 'UNKNOWN', rc.error || 'no response');
+      } else if (rc.status === 404) {
+        add('research_cron deployed', 'NOT_DEPLOYED', `HTTP 404 from ${url}/functions/v1/research_cron, so research-state.yml runs only when GitHub's schedule fires`,
+          'Run the Deploy research scheduler workflow, or: supabase functions deploy research_cron --no-verify-jwt; then supabase/research_state_cron.sql');
+      } else if (!rc.ok || !j || j.service !== 'research_cron') {
+        add('deployed research_cron matches this checkout', 'UNKNOWN',
+          `HTTP ${rc.status} from research_cron${rc.ok ? ', but not its health probe' : ''}`,
+          rc.status === 401 ? 'research_cron refused a GET: it was deployed with JWT verification on, which also refuses '
+            + 'every pg_cron tick. Deploy it with --no-verify-jwt.' : null);
+      } else {
+        const serving = String(j.build || '');
+        add('deployed research_cron matches this checkout',
+          serving === wantRs ? 'CURRENT' : 'STALE',
+          serving === wantRs ? `both are ${wantRs}`
+            : serving ? `deployed ${serving}, this checkout would deploy ${wantRs}`
+              : `the deployed research_cron predates its build stamp, this checkout would deploy ${wantRs}`,
+          serving === wantRs ? null : 'supabase functions deploy research_cron --no-verify-jwt');
+      }
+    }
+  }
+
   /* ---- 4. the artifacts the desk reads over HTTP ----------------------- */
   for (const [label, p] of [['FBS slate', '/football/fbs/slate.json'], ['availability', '/football/availability/current.json']]) {
     const a = await get(site + p, { accept: 'application/json' });
@@ -465,6 +497,7 @@ const AUTO_DEPLOYABLE = {
   'deployed capture matches this checkout': 'capture',
   'deployed props_cron matches this checkout': 'props_cron',
   'deployed editorial_cron matches this checkout': 'editorial_cron',
+  'deployed research_cron matches this checkout': 'research_cron',
 };
 
 function deployPlan(r) {
@@ -476,6 +509,7 @@ function deployPlan(r) {
     capture: functions.includes('capture'),
     props_cron: functions.includes('props_cron'),
     editorial_cron: functions.includes('editorial_cron'),
+    research_cron: functions.includes('research_cron'),
     functions,
     /* What still needs a person after the deploy, by check name. */
     other: bad.filter((c) => !fixes(c)).map((c) => c.name),
@@ -545,7 +579,7 @@ if (require.main === module) {
     if (autoDeploy && process.env.GITHUB_OUTPUT) {
       fs.appendFileSync(process.env.GITHUB_OUTPUT,
         `deploy_edgedesk_ai=${plan.edgedesk_ai}\ndeploy_capture=${plan.capture}\ndeploy_props_cron=${plan.props_cron}\n`
-        + `deploy_editorial_cron=${plan.editorial_cron}\n`);
+        + `deploy_editorial_cron=${plan.editorial_cron}\ndeploy_research_cron=${plan.research_cron}\n`);
     }
     if (process.argv.includes('--json')) {
       console.log(JSON.stringify(r, null, 1));

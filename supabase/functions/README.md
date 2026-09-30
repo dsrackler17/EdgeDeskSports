@@ -1,6 +1,6 @@
 # Edge Functions
 
-68 functions are deployed. **Eight** of them live here now (plus `props_cron`, new, shipped by `.github/workflows/deploy-props-pipeline.yml`); the other 60 exist
+68 functions are deployed. **Eight** of them live here now (plus `props_cron`, new, shipped by `.github/workflows/deploy-props-pipeline.yml`, and `research_cron`, new, shipped by `.github/workflows/deploy-research-cron.yml`); the other 60 exist
 only as deployed artifacts, which means they cannot be reviewed, diffed, tested
 or restored, and nobody can answer "what does this one do?" without opening the
 dashboard.
@@ -55,6 +55,12 @@ Evidence from the shipped front end, not from the naming.
 |---|---|
 | `newsletter` | the whole public door: `/subscribe`, `/confirm`, `/unsubscribe` (GET page and the RFC 8058 one-click POST), `/preferences`, `/webhook` (signature-verified provider events) and `/dispatch` (operator only, and the caller's own token is checked against `newsletter_is_admin()` before the GitHub token is touched). Deployed `--no-verify-jwt`: a mail client posting a one-click unsubscribe carries no session, and neither does a provider webhook. |
 | `newsletter_cron` | the newsletter's primary scheduler. Pokes `newsletter.yml` by `workflow_dispatch`; it does not send anything itself, for the reason `editorial_cron` does not publish anything itself. |
+
+**Called by pg_cron only**
+
+| function | what for |
+|---|---|
+| `research_cron` | the Personal research state job's primary scheduler (`supabase/research_state_cron.sql`, every five minutes). It dispatches `research-state.yml`, which writes `game_research_state` for the landing page and the terminal, when the newest state is older than 55 min (25 min inside 24 h of a kickoff), never twice inside one cadence. It never writes a state itself. JWT verification OFF (`--no-verify-jwt`): pg_cron sends no JWT. Its GET is a public health probe carrying `BUILD`. It reads `RESEARCH_GH_TOKEN`, then `PROPS_GH_TOKEN`, then `EDITORIAL_GH_TOKEN`. |
 
 The newsletter pipeline itself is `tools/newsletter/`, run by
 `.github/workflows/newsletter.yml`; it reaches the database over PostgREST with
