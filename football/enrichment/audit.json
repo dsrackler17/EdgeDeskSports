@@ -1,28 +1,28 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-29T22:28:27.015Z",
+ "generated_at": "2026-09-29T23:53:08.440Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-29T22:28:27.015Z",
-  "reliability_generated_at": "2026-09-29T22:28:27.015Z",
-  "enrichment_generated_at": "2026-09-29T22:28:19.640Z",
+  "at": "2026-09-29T23:53:08.440Z",
+  "reliability_generated_at": "2026-09-29T23:53:08.440Z",
+  "enrichment_generated_at": "2026-09-29T23:53:01.232Z",
   "counts": {
-   "games": 66,
-   "mean": 83.9,
-   "median": 86.5,
+   "games": 67,
+   "mean": 84,
+   "median": 87,
    "by_band": {
-    "STRONG": 51,
+    "STRONG": 52,
     "LOW": 3,
     "ADEQUATE": 11,
     "CAUTION": 1
    },
-   "missing_qb_status": 131,
+   "missing_qb_status": 133,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 15,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 66,
+   "games_under_two_market_sources": 67,
    "stale_evidence_records": 70,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
@@ -599,6 +599,27 @@
      "qb_status": 2,
      "qb_identity": 1.1,
      "rating_sample": 1.4,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401858254": {
+    "game": "Florida State @ Louisville",
+    "score": 88,
+    "grade": "STRONG",
+    "fam": {
+     "stability": 2.7,
+     "availability": 4.6,
+     "qb_status": 2,
+     "rating_sample": 1.4,
+     "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -1556,7 +1577,7 @@
   }
  },
  "previous": {
-  "at": "2026-09-29T17:47:45.796Z",
+  "at": "2026-09-29T22:28:27.015Z",
   "counts": {
    "games": 66,
    "mean": 83.9,
@@ -1574,17 +1595,23 @@
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 66,
-   "stale_evidence_records": 76,
+   "stale_evidence_records": 70,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "-6 stale evidence records (76 → 70)"
+  "+0.1 mean reliability (83.9 → 84)",
+  "+0.5 median reliability (86.5 → 87)"
  ],
- "what_degraded": [],
- "why": [],
+ "what_degraded": [
+  "+2 QB statuses missing (131 → 133)",
+  "+1 games under two market sources (66 → 67)"
+ ],
+ "why": [
+  "the slate itself changed: 1 game entered the window, 0 left it (kicked off or rolled out)"
+ ],
  "history": [
   {
    "at": "2026-09-25T19:38:31.100Z",
@@ -2925,6 +2952,30 @@
     "unrated_meaningful_absences": 0,
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 66,
+    "stale_evidence_records": 70,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-29T23:53:08.440Z",
+   "counts": {
+    "games": 67,
+    "mean": 84,
+    "median": 87,
+    "by_band": {
+     "STRONG": 52,
+     "LOW": 3,
+     "ADEQUATE": 11,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 133,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 67,
     "stale_evidence_records": 70,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0

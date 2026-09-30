@@ -62,9 +62,10 @@ chk('the consent version moved with the terms', /var CONSENT_VERSION="arl-2026-0
 chk('the retired $79.99 links are refused by name', X.RETIRED_LINKS.length === 2 && X.RETIRED_LINKS.every((u) => X.validLink(u) === ''));
 chk('a configured link, if any, is a Stripe checkout link and not a retired one',
   [X.CHECKOUT_LINK, X.RESUBSCRIBE_LINK].every((u) => u === '' || X.validLink(u) === u), [X.CHECKOUT_LINK, X.RESUBSCRIBE_LINK]);
-if (!X.CHECKOUT_LINK || !X.RESUBSCRIBE_LINK)
-  console.log('NOTE  lib/edgedesk_pricing.js has no ' + (!X.CHECKOUT_LINK ? 'CHECKOUT_LINK' : 'RESUBSCRIBE_LINK') +
-    ' yet: checkout stays closed until the $49.99 payment links are pasted there (tools/billing/verify_stripe_offer.js).');
+if (!X.CHECKOUT_LINK)
+  console.log('NOTE  lib/edgedesk_pricing.js has no CHECKOUT_LINK yet: the trial checkout stays closed until the $49.99 trial link is pasted there (tools/billing/verify_stripe_offer.js).');
+if (!X.RESUBSCRIBE_LINK)
+  console.log('NOTE  lib/edgedesk_pricing.js has no RESUBSCRIBE_LINK yet: a lapsed reader is asked to email support until the no-trial $49.99 link is pasted there.');
 const ctaSpans = IDX.match(/data-ed-price="cta">([^<]+)</g) || [];
 chk('the landing page carries the offer on at least four CTAs', ctaSpans.length >= 4, ctaSpans.length);
 chk('every static CTA text equals the one source (no-JS readers see the same words)',
