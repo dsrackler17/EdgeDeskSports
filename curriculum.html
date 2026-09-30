@@ -31,6 +31,9 @@ nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.86);backdrop-filt
 .nlink{font-size:14px;color:var(--dim);font-weight:500}
 .nlink:hover{color:var(--text)}
 @media(max-width:760px){.hideS{display:none}}
+/* narrower than a 375 px phone: the page label gives way (the hero names the page)
+   and the gaps and button tighten, so the nav fits without a sideways scroll */
+@media(max-width:374px){.logo small{display:none}.nav-in{gap:8px}.nav-in .btn{padding:9px 11px}}
 
 .hero{padding:74px 0 40px;border-bottom:1px solid var(--border)}
 h1{font-size:clamp(30px,5.2vw,52px);line-height:1.06;letter-spacing:-.035em;font-weight:800;margin:14px 0 0;max-width:19ch}
