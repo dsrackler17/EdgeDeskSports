@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:30:00.000Z",
   "game_when_label": "2026-10-03 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-30T09:35:34.622Z",
-  "generated_at": "2026-09-30T09:35:34.622Z",
+  "updated_at": "2026-09-30T17:58:21.981Z",
+  "generated_at": "2026-09-30T17:58:21.981Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
       "home": {
         "team": "Colorado",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
-      "generated_at": "2026-09-30T02:46:55.743Z",
+      "generated_at": "2026-09-30T17:16:05.729Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1387,7 +1387,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 12h old",
+          "text": "odds is 20h old",
           "widening": null
         },
         {
@@ -1506,9 +1506,9 @@
       "difference_n": 2.67465250910978,
       "total_model": "51.6",
       "total_market": "50.5",
-      "book": "captured · Hard Rock Bet",
+      "book": "captured consensus (stale) · 2 books · best at Hard Rock Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "12 hours old",
+      "capture_age": "20 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1523,10 +1523,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 2.7 pts toward Texas Tech, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1546,9 +1546,9 @@
         "market_line_text": "Texas Tech -13.5",
         "market_home_margin": -13.5,
         "favorite_differs": false,
-        "source": "captured · Hard Rock Bet",
+        "source": "captured consensus (stale) · 2 books · best at Hard Rock Bet",
         "as_of": "2026-09-29T22:00:02.478+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1588,7 +1588,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1609,18 +1609,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Texas Tech)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Re-read availability inside the filing window (Colorado)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Confirm Colorado’s starting QB (Julian Lewis)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1859,7 +1859,7 @@
       "EdgeDesk’s line is Colorado +16.2 on a neutral read of the two teams, before any book is consulted. Projected total 51.6.",
       "Colorado wins 14% of the time in EdgeDesk’s simulation, Texas Tech 86%.",
       "Eight games in ten land between -38.2 and +3.8 for Colorado. A single result inside that band tells you nothing new about either team.",
-      "The market has Colorado +13.5 at captured · Hard Rock Bet, 2.7 points from EdgeDesk’s number.",
+      "The market has Colorado +13.5 at captured consensus (stale) · 2 books · best at Hard Rock Bet, 2.7 points from EdgeDesk’s number.",
       "Texas Tech quarterback: Will Hammond — started the last game; no announcement for this one.",
       "Colorado quarterback: Julian Lewis — started the last game (did not finish week 4; no injury report on file); no announcement for this one."
     ],
@@ -1874,6 +1874,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-30T09:35:34.622Z"
+    "at": "2026-09-30T17:58:21.981Z"
   }
 }

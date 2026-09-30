@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-30T09:35:34.622Z",
-  "generated_at": "2026-09-30T09:35:34.622Z",
+  "updated_at": "2026-09-30T17:58:21.981Z",
+  "generated_at": "2026-09-30T17:58:21.981Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -261,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T22:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
       "home": {
         "team": "Georgia State",
@@ -351,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T18:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
-      "generated_at": "2026-09-30T02:46:55.743Z",
+      "generated_at": "2026-09-30T17:16:05.729Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1469,7 +1469,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 12h old",
+          "text": "odds is 20h old",
           "widening": null
         },
         {
@@ -1600,9 +1600,9 @@
       "difference_n": 3.4089961268640954,
       "total_model": "54.4",
       "total_market": "52.5",
-      "book": "captured · Pinnacle",
+      "book": "captured consensus (stale) · 2 books · best at Pinnacle",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "12 hours old",
+      "capture_age": "20 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1617,10 +1617,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 3.4 pts toward Georgia State, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1640,9 +1640,9 @@
         "market_line_text": "Georgia State -1.0",
         "market_home_margin": 1,
         "favorite_differs": false,
-        "source": "captured · Pinnacle",
+        "source": "captured consensus (stale) · 2 books · best at Pinnacle",
         "as_of": "2026-09-29T22:00:02.478+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1682,7 +1682,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1953,7 +1953,7 @@
       "EdgeDesk’s line is Georgia State -4.4 on a neutral read of the two teams, before any book is consulted. Projected total 54.4.",
       "Georgia State wins 62% of the time in EdgeDesk’s simulation, Old Dominion 38%.",
       "Eight games in ten land between -17.6 and +24.4 for Georgia State. A single result inside that band tells you nothing new about either team.",
-      "The market has Georgia State -1.0 at captured · Pinnacle, 3.4 points from EdgeDesk’s number.",
+      "The market has Georgia State -1.0 at captured consensus (stale) · 2 books · best at Pinnacle, 3.4 points from EdgeDesk’s number.",
       "Old Dominion quarterback: Ryan Huff — started the last game; no announcement for this one.",
       "Georgia State quarterback: Cameran Brown — started the last game; no announcement for this one."
     ],
@@ -1968,6 +1968,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-30T09:35:34.622Z"
+    "at": "2026-09-30T17:58:21.981Z"
   }
 }
