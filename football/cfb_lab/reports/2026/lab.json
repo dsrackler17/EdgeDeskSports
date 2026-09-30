@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-30T02:07:21.000Z",
+ "generated_at": "2026-09-30T03:07:30.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,10 +46,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 74,
-    "latest_snapshot_at": "2026-09-30T01:07:33.000Z",
-    "upcoming_games": 67,
-    "avg_confidence_upcoming": 79
+    "snapshots": 78,
+    "latest_snapshot_at": "2026-09-30T03:07:30.000Z",
+    "upcoming_games": 71,
+    "avg_confidence_upcoming": 78.8
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 67,
+   "games": 71,
    "counts": {
     "GREEN": 31,
-    "YELLOW": 36,
+    "YELLOW": 40,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 36,
+     "YELLOW": 40,
      "RED": 0
     },
     "pbp_freshness": {
@@ -570,19 +570,71 @@
      ],
      "kickoff": "2026-10-09T23:00:00.000Z",
      "matchup": "Florida State @ Louisville"
+    },
+    {
+     "game_id": "401858487",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T01:00:00.000Z",
+     "matchup": "Iowa @ Washington"
+    },
+    {
+     "game_id": "401860922",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T01:00:00.000Z",
+     "matchup": "Washington State @ Utah State"
+    },
+    {
+     "game_id": "401864519",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T01:00:00.000Z",
+     "matchup": "Wyoming @ San José State"
+    },
+    {
+     "game_id": "401856826",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T02:15:00.000Z",
+     "matchup": "Iowa State @ BYU"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-09-30T02:07:21.000Z",
-    "quotes_total": 3220,
+    "last_quote_at": "2026-09-30T03:07:30.000Z",
+    "quotes_total": 3250,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 840,
-   "live_predictions": 330,
-   "quotes": 3220,
+   "predictions": 844,
+   "live_predictions": 334,
+   "quotes": 3250,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
