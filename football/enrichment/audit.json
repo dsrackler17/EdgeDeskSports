@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-30T00:06:38.916Z",
+ "generated_at": "2026-09-30T02:47:34.357Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-30T00:06:38.916Z",
-  "reliability_generated_at": "2026-09-30T00:06:38.916Z",
-  "enrichment_generated_at": "2026-09-30T00:06:31.605Z",
+  "at": "2026-09-30T02:47:34.357Z",
+  "reliability_generated_at": "2026-09-30T02:47:34.357Z",
+  "enrichment_generated_at": "2026-09-30T02:47:27.647Z",
   "counts": {
-   "games": 67,
+   "games": 71,
    "mean": 84,
    "median": 87,
    "by_band": {
-    "STRONG": 51,
+    "STRONG": 54,
     "LOW": 3,
-    "ADEQUATE": 12,
+    "ADEQUATE": 13,
     "CAUTION": 1
    },
-   "missing_qb_status": 133,
+   "missing_qb_status": 139,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 16,
-   "unrated_meaningful_absences": 0,
+   "games_lacking_injury_information": 15,
+   "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 67,
-   "stale_evidence_records": 70,
+   "games_under_two_market_sources": 71,
+   "stale_evidence_records": 67,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -417,6 +417,28 @@
      "away": "NOT_DUE_YET"
     }
    },
+   "401856826": {
+    "game": "Iowa State @ BYU",
+    "score": 87,
+    "grade": "STRONG",
+    "fam": {
+     "stability": 2.8,
+     "availability": 4.6,
+     "qb_status": 2,
+     "rating_sample": 1.7,
+     "starters": 0.6,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
    "401858245": {
     "game": "Pittsburgh @ Virginia Tech",
     "score": 87,
@@ -717,13 +739,12 @@
    },
    "401858476": {
     "game": "Penn State @ Northwestern",
-    "score": 78,
-    "grade": "ADEQUATE",
+    "score": 85,
+    "grade": "STRONG",
     "fam": {
      "favorite_flips": 6,
      "stability": 3,
-     "availability": 6,
-     "qb_status": 4,
+     "attribution": 3,
      "rating_sample": 1.7,
      "qb_identity": 0.9,
      "transfer_turnover": 0.6
@@ -733,8 +754,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858477": {
@@ -789,6 +810,28 @@
      "rating_sample": 1.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401858487": {
+    "game": "Iowa @ Washington",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "fam": {
+     "favorite_flips": 6,
+     "stability": 3.5,
+     "availability": 4.6,
+     "qb_status": 2,
+     "rating_sample": 1.4,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.3
     },
     "qb": {
      "home": "EXPECTED",
@@ -873,6 +916,29 @@
      "qb_status": 2,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401860922": {
+    "game": "Washington State @ Utah State",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "fam": {
+     "favorite_flips": 6,
+     "stability": 3.1,
+     "availability": 4.6,
+     "qb_identity": 1.7,
+     "qb_status": 2,
+     "qb_conflict": 0.9,
+     "rating_sample": 1.4,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1131,6 +1197,29 @@
     },
     "qb": {
      "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_DUE_YET",
+     "away": "NOT_DUE_YET"
+    }
+   },
+   "401864519": {
+    "game": "Wyoming @ San José State",
+    "score": 88,
+    "grade": "STRONG",
+    "fam": {
+     "availability": 4.6,
+     "favorite_flips": 1.1,
+     "qb_conflict": 1,
+     "qb_status": 2,
+     "stability": 0.7,
+     "rating_sample": 1.4,
+     "qb_identity": 0.8,
+     "transfer_turnover": 0.6
+    },
+    "qb": {
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -1577,21 +1666,21 @@
   }
  },
  "previous": {
-  "at": "2026-09-29T23:53:08.440Z",
+  "at": "2026-09-30T00:06:38.916Z",
   "counts": {
    "games": 67,
    "mean": 84,
    "median": 87,
    "by_band": {
-    "STRONG": 52,
+    "STRONG": 51,
     "LOW": 3,
-    "ADEQUATE": 11,
+    "ADEQUATE": 12,
     "CAUTION": 1
    },
    "missing_qb_status": 133,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 15,
+   "games_lacking_injury_information": 16,
    "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 67,
@@ -1601,13 +1690,19 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
+ "what_improved": [
+  "-1 games lacking injury information (16 → 15)",
+  "-3 stale evidence records (70 → 67)",
+  "1 game moved ADEQUATE → STRONG"
+ ],
  "what_degraded": [
-  "+1 games lacking injury information (15 → 16)",
-  "1 game moved STRONG → ADEQUATE"
+  "+6 QB statuses missing (133 → 139)",
+  "+30 unrated meaningful absences (0 → 30)",
+  "+4 games under two market sources (67 → 71)"
  ],
  "why": [
-  "Penn State @ Northwestern: STRONG → ADEQUATE (81 → 78); largest change: qb_status -2 pts; home availability NOT_DUE_YET → PROVIDER_FAILED, away availability NOT_DUE_YET → PROVIDER_FAILED"
+  "the slate itself changed: 4 games entered the window, 0 left it (kicked off or rolled out)",
+  "Penn State @ Northwestern: ADEQUATE → STRONG (78 → 85); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL"
  ],
  "history": [
   {
@@ -2998,6 +3093,30 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 67,
     "stale_evidence_records": 70,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-30T02:47:34.357Z",
+   "counts": {
+    "games": 71,
+    "mean": 84,
+    "median": 87,
+    "by_band": {
+     "STRONG": 54,
+     "LOW": 3,
+     "ADEQUATE": 13,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 139,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 15,
+    "unrated_meaningful_absences": 30,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 71,
+    "stale_evidence_records": 67,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
