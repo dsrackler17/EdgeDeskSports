@@ -269,6 +269,23 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     chk('editing a published price is caught (prefix and id)', V.checkEvaluations(text, edited, 'evaluations.jsonl').length >= 2, V.checkEvaluations(text, edited, 'evaluations.jsonl'));
   }
   chk('two hours after the capture every price is STALE · NO DECISION', stale.board.props.filter((x) => x.q.length && x.p).every((x) => x.e.d === 'NO_DECISION' && x.e.c === 'STALE_QUOTE'));
+  {
+    /* THE RESEARCH BOARD'S READING: the same props decided on the game's latest
+       capture (EDProps.latestCfg), shipped as `l` — the record stays on `e` */
+    const sp = stale.board.props.filter((x) => x.q.length && x.p && x.x.dist);
+    const same = (x) => { const r = b1.board.props.find((y) => y.g === x.g && y.p === x.p && y.m === x.m); return r && (r.l || r.e); };
+    chk('two hours on, every priced prop is ALSO decided on its latest capture (l), labelled LATEST', sp.length > 0 && sp.every((x) => x.l && x.l.lt === 1 && x.l.d !== 'NO_DECISION' && x.l.cand), sp.filter((x) => !x.l).length);
+    chk('…to the decision it had while current (same price, same candidate)', sp.every((x) => { const s0 = same(x); return s0 && s0.d === x.l.d && JSON.stringify(s0.cand) === JSON.stringify(x.l.cand); }), sp.filter((x) => { const s0 = same(x); return !s0 || s0.d !== x.l.d; }).map((x) => [x.m, x.l.d, same(x) && same(x).d]).slice(0, 4));
+    chk('…and its market anchor rides along (x.al), so the page never solves it again', sp.filter((x) => x.l.cons && x.l.cons[5] > 0).every((x) => x.x.al && x.x.al.sig));
+    chk('…while nothing is recorded on the old price (no qualified record from a stale build)', stale.ledger_rows.every((x) => x.kind !== 'qualified'), stale.ledger_rows.map((x) => x.kind));
+    chk('a current board ships no l where it would repeat e', b1.board.props.filter((x) => x.l).every((x) => JSON.stringify(x.l) !== JSON.stringify(x.e)));
+    const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js'));
+    const sb = JSON.parse(JSON.stringify(stale.board)); U.state.clock = () => Date.parse(OBS) + 2 * 3600e3; U._prepBoard(sb);
+    const re = sp.slice(0, 6).map((x) => { const r = sb.props.find((y) => y.g === x.g && y.p === x.p && y.m === x.m); return [EDP.compact(EDP.boardEval(sb, r, Date.parse(OBS) + 2 * 3600e3, { latest: true })), x.l]; });
+    chk('the page\'s drawer (boardEval latest) re-derives the build\'s latest reading', re.every((p) => p[0].d === p[1].d && JSON.stringify(p[0].cand) === JSON.stringify(p[1].cand)), re.map((p) => [p[0].d, p[1].d]));
+    U.state.clock = null;
+    chk('the stamp names the board as written (the page polls it)', B.stampOf(stale.board, 'nfl').board_generated_at === stale.board.generated_at && B.stampOf(stale.board, 'nfl').schema === 'edgedesk_player_props_stamp_v1');
+  }
   const after = await B.build({ league: 'nfl', season: 2026, now: Date.parse(EVENT.commence_time) + 5 * 3600e3, dataset: loadDs(), quotes: feed, lines: null, paths: BP });
   const finals = after.ledger_rows.filter((x) => x.kind === 'final');
   chk('once the game starts its last pregame evaluations are frozen as final', finals.length > 0 && finals.every((x) => x.game_id === '2026_04_ATL_NO' && x.frozen_at), finals.length);

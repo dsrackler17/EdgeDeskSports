@@ -26360,6 +26360,16 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
        FUTURE    capture time ahead of the clock      a clock fault: refused
        UNKNOWN   no capture time                      refused
 
+     THE LATEST PRICE (latestCfg). The research board decides every prop on
+     its game's newest capture, however long ago the scheduled clock last
+     asked (a game days out is re-priced every few hours), and prints each
+     price's age beside it. A quote counts when it belongs to that capture
+     (within executable_max_minutes of the prop's newest quote) and is no
+     older than latest_max_minutes. Only a reader that asks for it judges
+     this way — the Props page and its drawer. The build's decision record,
+     the ledger, the AI desk and the opportunity layer keep the execution
+     window: nothing is recorded or recommended on an old price.
+
      Every number is configurable (configureFreshness / opts.freshness / a
      board's own `freshness` block written by the build from its environment);
      none is repeated anywhere else. */
@@ -26368,6 +26378,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     quote: { fresh_minutes: 15, aging_minutes: 30, stale_minutes: 90, future_tolerance_minutes: 5 },
     /* the oldest a quote may be and still price an EV, a decision or a stake */
     executable_max_minutes: 30,
+    /* the oldest a game's newest capture may be and still decide the research
+       board (latestCfg): the price is shown with its age */
+    latest_max_minutes: 1440,
     /* a provider stamp this far ahead of the capture is a clock fault */
     provider_future_tolerance_minutes: 5,
     /* injury / availability reports (the NFL sync runs every six hours) */
@@ -26410,6 +26423,13 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (over._merged) return over;
     var c = mergeCfg(FRESHNESS, over); c._merged = true; return c;
   }
+  /* the same thresholds with the LATEST-PRICE rule on (see above): what the
+     research board and its drawer judge a price by */
+  function latestCfg(over) {
+    var F = freshCfg(over);
+    if (F.latest === true) return F;
+    var c = mergeCfg(F, { latest: true }); c._merged = true; return c;
+  }
   /* replaces the defaults for this process (the build and capture read their
      environment once, through football/props/config.js) */
   function configureFreshness(over) {
@@ -26419,7 +26439,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     return FRESHNESS;
   }
   /* the effective thresholds as plain data (a board carries them) */
-  function freshnessSnapshot() { var c = JSON.parse(JSON.stringify(FRESHNESS, function (k, v) { return v === Infinity ? null : v; })); delete c._merged; return c; }
+  function freshnessSnapshot() { var c = JSON.parse(JSON.stringify(FRESHNESS, function (k, v) { return v === Infinity ? null : v; })); delete c._merged; delete c.latest; return c; }
   function ageText(m) { return !isNum(m) ? 'age unknown' : m < 1 ? 'just now' : m < 60 ? Math.round(m) + ' min old' : m < 1440 ? r(m / 60, 1) + ' h old' : r(m / 1440, 1) + ' d old'; }
   function quoteFreshness(q, now, over) {
     var F = freshCfg(over), Q = F.quote;
@@ -26449,7 +26469,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
        GAME_STARTED      kickoff has passed: pregame prices are closed
        MARKET_CLOSED     the book has pulled this market since the quote
        BOOK_SUSPENDED    the provider marks this book / market suspended
-       STALE / EXPIRED   older than the execution window
+       STALE / EXPIRED   older than the execution window (with the latest-price
+                         rule on: from an earlier capture than the prop's
+                         newest, ctx.latest_at, or older than latest_max_minutes)
 
      A LATER failed poll does not retroactively invalidate a quote still inside
      the window: the quote was a real, observed price, and the age limit is what
@@ -26474,7 +26496,15 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (mk === 'closed' || mk === 'removed') return no('MARKET_CLOSED', 'the book has pulled this market');
     var pv = String(ctx.provider_status || q.provider_status || '').toLowerCase();
     if (pv === 'suspended') return no('BOOK_SUSPENDED', 'the provider marks this market suspended');
-    if (!f.executable_age) return no(f.state === 'EXPIRED' ? 'EXPIRED' : 'STALE');
+    if (!f.executable_age) {
+      if (!F.latest) return no(f.state === 'EXPIRED' ? 'EXPIRED' : 'STALE');
+      /* the latest-price rule: part of the prop's newest capture, and that
+         capture no older than latest_max_minutes */
+      var at0 = ms(q.captured_at || q.quoted_at), la = ctx.latest_at != null ? ms(ctx.latest_at) : at0;
+      if (!(f.age_minutes <= F.latest_max_minutes)) return no(f.state === 'EXPIRED' ? 'EXPIRED' : 'STALE', ageText(f.age_minutes) + ' — older than the ' + r(F.latest_max_minutes / 60, 1) + '-hour latest-price limit');
+      if (at0 == null || la == null || la - at0 > F.executable_max_minutes * 60000) return no(f.state === 'EXPIRED' ? 'EXPIRED' : 'STALE', ageText(f.age_minutes) + ' — from an earlier capture than this prop\'s latest');
+      return { executable: true, reason: null, state: f.state, age_minutes: f.age_minutes, text: ageText(f.age_minutes) + ' (latest capture)', latest: true };
+    }
     return { executable: true, reason: null, state: f.state, age_minutes: f.age_minutes, text: f.text };
   }
 
@@ -26851,7 +26881,12 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
   /* blockers that are about the PRICE alone: the projection, fair line and
      confidence stand, and the prop waits for a current market */
   var PRICE_BLOCKERS = { STALE_QUOTE: 1, NO_CURRENT_QUOTE: 1, PROVIDER_FAILURE: 1 };
-  function blockText(code, F) { return code === 'STALE_QUOTE' ? 'No captured price is inside the ' + freshCfg(F).executable_max_minutes + '-minute execution window: wait for a current price.' : BLOCK_TEXT[code]; }
+  function blockText(code, F) {
+    if (code !== 'STALE_QUOTE') return BLOCK_TEXT[code];
+    F = freshCfg(F);
+    return F.latest ? 'No price has been captured for this prop in the last ' + r(F.latest_max_minutes / 60, 1) + ' hours: wait for a current price.'
+      : 'No captured price is inside the ' + F.executable_max_minutes + '-minute execution window: wait for a current price.';
+  }
   /* the words a NO_DECISION reads as, by its first blocker */
   var NO_DECISION_LABEL = { STALE_QUOTE: 'WAIT FOR PRICE', NO_CURRENT_QUOTE: 'WAIT FOR PRICE', PROVIDER_FAILURE: 'WAIT FOR PRICE',
     NO_MARKET: 'NO MARKET', MARKET_CLOSED: 'MARKET CLOSED', GAME_STARTED: 'GAME STARTED', GAME_CANCELLED: 'GAME CANCELLED' };
@@ -26878,8 +26913,13 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
        executable one ever reaches the consensus, the ladder, the best price,
        the EV, the decision or the stake */
     var xctx = { now: now, kickoff: prop.kickoff, game_status: prop.game_status, market_status: prop.market_status, provider_status: prop.provider_status, freshness: FC };
+    /* the latest-price rule judges each quote against the prop's newest capture
+       (a capture stamped in the future is a clock fault, never the newest) */
+    if (FC.latest) quotes.forEach(function (q) { var t = ms(q.captured_at); if (t != null && t <= now + FC.quote.future_tolerance_minutes * 60000 && (xctx.latest_at == null || t > xctx.latest_at)) xctx.latest_at = t; });
     quotes.forEach(function (q) { q.exec = isExecutableQuote(q, xctx); });
     var fresh = quotes.filter(function (q) { return q.exec.executable; });
+    /* LATEST: decided on the game's newest capture, past the execution window */
+    if (fresh.some(function (q) { return q.exec.latest; })) out.price_basis = 'LATEST';
     var cons = consensusOf(quotes, now, false, xctx);
     out.price_status = priceStatus(quotes, { now: now, kickoff: prop.kickoff, game_status: prop.game_status, market_status: prop.market_status,
       market_closed_at: prop.market_closed_at || null, event: prop.event || null, freshness: FC });
@@ -26927,7 +26967,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
          shape; the market's centre is their median (books that disagree on
          the line still agree on where the distribution sits) */
       var sig = cons.mains.filter(function (b) { return b.novig; }).map(function (b) { return b.book + ':' + b.line + ':' + r(b.novig.over, 5); }).join(',');
-      var hint = P.anchor, implScale = null;
+      var hint = P.anchor && P.anchor.sig === sig ? P.anchor : (P.anchor2 && P.anchor2.sig === sig ? P.anchor2 : P.anchor), implScale = null;
       if (hint && isNum(hint.scale) && hint.sig === sig) implScale = hint.scale;
       else if (sig && !out.blockers.length) {
         var scales = cons.mains.filter(function (b) { return b.novig; }).map(function (b) { return solveScale(distRaw, b.line, b.novig.over); }).filter(isNum);
@@ -27158,6 +27198,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     /* the model's view at the last line seen, while no price is executable */
     if (ev.at_reference) o.ref = [ev.at_reference.line, ev.at_reference.over, ev.at_reference.under, ev.at_reference.fair_over, ev.at_reference.fair_under];
     if (ev.waiting_for_price) o.wp = 1;
+    if (ev.price_basis === 'LATEST') o.lt = 1;
     return o;
   }
 
@@ -27649,7 +27690,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       id: r.key || r.id || (b.league + '|' + r.g + '|' + r.p + '|' + r.m), sport: b.league, game_id: r.g, player_id: r.p, market: r.m, kickoff: g.kickoff,
       game_status: g.status === 'scheduled' && ms(g.kickoff) != null && ms(g.kickoff) <= t ? 'in_progress' : (x.st || g.status),
       mapped: !!r.p && x.mp !== 0, player_status: pl ? pl.status : null, report_on_file: pl && pl.status ? pl.status.on_file : null,
-      projection: x.dist ? { dist: x.dist, sample_games: x.sg, prior_games: x.pg, role_stability: x.rs, completeness: x.cp, qb_change: !!x.qc, qb_unconfirmed: !!x.qu, teammate_uncertain: !!x.tu, anchor: x.an || null } : null,
+      projection: x.dist ? { dist: x.dist, sample_games: x.sg, prior_games: x.pg, role_stability: x.rs, completeness: x.cp, qb_change: !!x.qc, qb_unconfirmed: !!x.qu, teammate_uncertain: !!x.tu, anchor: x.an || null, anchor2: x.al || null } : null,
       quotes: (r.q || []).map(function (a) { return { book: a[0], line: a[1], side: a[2] === 'o' ? 'over' : 'under', american: a[3], quoted_at: times[a[4]] || null, captured_at: times[a[5]] || null, alt: !!a[6] }; }),
       history: x.h && x.h.length >= 3 ? { values: x.h } : null,
       /* the game's own price-check record (build_board.js games[].capture) and
@@ -27680,12 +27721,16 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     return factsFor({ market: r.m, player: ctx, env: ctx.env, lead: o.lead !== undefined ? o.lead : boardLead(b, r), league_implied: b.league_implied, line: o.line,
       consensus_price: o.consensus_price != null ? o.consensus_price : null, hist: o.hist || null, no_targets: !!(b.sources && b.sources.caps && b.sources.caps.targets === false) });
   }
-  function boardEval(b, r, now) {
+  /* o.latest: judged by the latest-price rule (latestCfg) — the research
+     board's reading; without it, the execution window */
+  function boardEval(b, r, now, o) {
     if (!b._shapes_registered) { Object.keys(b.shapes || {}).forEach(function (k) { registerShape(k, b.shapes[k]); }); b._shapes_registered = true; }
     var pr = b.probability;
     /* the board's own thresholds (the build's environment) so the page, the
        desk and the build judge every price by the same numbers */
-    return evaluate(boardInput(b, r, now), { now: now != null ? now : Date.now(), calibration: pr ? { state: pr.state, n: pr.n, ece: pr.ece } : null, market_weight: b.market_weight, stages: b.stages || null, freshness: b._fc || (b._fc = freshCfg(b.freshness || null)) });
+    var F = b._fc || (b._fc = freshCfg(b.freshness || null));
+    if (o && o.latest) F = b._lfc || (b._lfc = latestCfg(F));
+    return evaluate(boardInput(b, r, now), { now: now != null ? now : Date.now(), calibration: pr ? { state: pr.state, n: pr.n, ece: pr.ece } : null, market_weight: b.market_weight, stages: b.stages || null, freshness: F });
   }
 
   /* ======================================================= MOVEMENT
@@ -27718,7 +27763,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     sideOf: sideOf, sideLabel: sideLabel, selectionText: selectionText, normalizeQuotes: normalizeQuotes, consensusOf: consensusOf,
     freshnessOf: freshnessOf, evaluate: evaluate, compact: compact, confidence: confidence, calibrationOf: calibrationOf, sizing: sizing, valueScore: valueScore,
     /* freshness & executability — the one rule */
-    FRESHNESS: FRESHNESS, freshCfg: freshCfg, configureFreshness: configureFreshness, freshnessSnapshot: freshnessSnapshot, quoteFreshness: quoteFreshness,
+    FRESHNESS: FRESHNESS, freshCfg: freshCfg, latestCfg: latestCfg, configureFreshness: configureFreshness, freshnessSnapshot: freshnessSnapshot, quoteFreshness: quoteFreshness,
     isExecutableQuote: isExecutableQuote, priceStatus: priceStatus, PRICE_TEXT: PRICE_TEXT, systemHealth: systemHealth, injuryFreshness: injuryFreshness,
     cadenceFor: cadenceFor, retryDelay: retryDelay, noDecisionLabel: noDecisionLabel, PRICE_BLOCKERS: PRICE_BLOCKERS, ageText: ageText,
     triggerFor: triggerFor, stake: stake, evDollars: evDollars,

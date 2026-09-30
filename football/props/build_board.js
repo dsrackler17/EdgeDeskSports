@@ -242,6 +242,14 @@ async function build(opts) {
   /* the effective freshness thresholds (the kernel's, or this environment's
      overrides): written onto the board so every reader judges by them */
   const FRESH = EDP.freshCfg(opts.freshness || null);
+  /* THE RESEARCH BOARD'S READING (EDProps.latestCfg): a prop whose prices are
+     past the execution window — its game is between scheduled checks — is also
+     decided on its game's newest capture and shipped as `l`, so the page paints
+     every priced prop lit, with its price's age, without re-pricing anything.
+     `e` stays the execution-window evaluation: the decision record, the
+     summary, the desk and the ledger read only that. */
+  const LATEST = EDP.latestCfg(FRESH);
+  const latestEval = (input, ev) => (ev.waiting_for_price && input.quotes.length ? EDP.evaluate(input, { now, calibration: cal, stages, freshness: LATEST }) : null);
   const injAsOf = ds.injuries ? ds.injuries.retrieved_at || null : null;
   const injPublished = ds.injuries ? ds.injuries.published !== false : false;
   /* each game's own price-check record, from the capture's events_state */
@@ -348,6 +356,7 @@ async function build(opts) {
         if (!mq.length) { const mc = closedAt([p.name].concat(byPlayer[pid] ? [byPlayer[pid].name] : []), m); if (mc) { input.market_status = 'closed'; input.market_closed_at = mc; } }
         const ev = EDP.evaluate(input, { now, calibration: cal, stages, freshness: FRESH });
         if (ev.anchor && input.projection) input.projection.anchor = ev.anchor;
+        const evL = latestEval(input, ev);
         const kind = matchupKind(m);
         const line = ev.consensus.line != null ? ev.consensus.line : (ev.informed ? Math.floor(ev.informed.median) + 0.5 : null);
         const side = ev.candidate ? ev.candidate.side : (ev.at_consensus && ev.at_consensus.over >= ev.at_consensus.under ? 'over' : (ev.informed && line != null && ev.informed.mean > line ? 'over' : 'under'));
@@ -368,6 +377,11 @@ async function build(opts) {
         };
         if (!rec.fl.length) delete rec.fl;
         if (!rec.mv) delete rec.mv;
+        if (evL) {
+          rec.l = compactEval(evL);
+          /* its market anchor, so the page's drawer reuses it instead of solving it again */
+          if (evL.anchor && !(rec.x.an && rec.x.an.sig === evL.anchor.sig)) rec.x.al = evL.anchor;
+        }
         if (input.market_status === 'closed') rec.x.mc = input.market_closed_at;
         const fj = fx && !fx.stale ? factoryJoin(fx, fxUsed, g.game_id + '|' + pid + '|' + m, line, side) : null;
         if (fj) { rec.fx = fj; fxUsed.joined++; }
@@ -408,6 +422,19 @@ async function build(opts) {
   /* the exposure caps across every BET on the board, then the decision
      records from the capped evaluations */
   const expo = EDP.boardExposure({ league, props, players: playersCtx, correlation }, null);
+  /* the research board's exposure caps, over what it shows (l where the build
+     wrote one, e elsewhere); a row whose cap differs there gets its own l */
+  const keyOf = (x) => x.id || (league + '|' + x.g + '|' + x.p + '|' + x.m);
+  const shown = {};
+  props.forEach((x) => { if (x.l) shown[keyOf(x)] = x.l; });
+  if (Object.keys(shown).length) {
+    const expoL = EDP.boardExposure({ league, props, players: playersCtx, correlation }, shown);
+    props.forEach((x) => {
+      const k = keyOf(x), a = expoL[k];
+      if (x.l) { if (a) x.l = EDP.exposeCompact(x.l, a); }
+      else if (JSON.stringify(a || null) !== JSON.stringify(expo[k] || null)) x.l = a ? EDP.exposeCompact(x.e, a) : Object.assign({}, x.e);
+    });
+  }
   pending.forEach(({ input, ev: ev0, g, p, rec, started }) => {
     const adj = expo[input.id], ev = adj ? EDP.applyExposure(ev0, adj) : ev0;
     if (adj) rec.e = EDP.exposeCompact(rec.e, adj);
@@ -544,6 +571,24 @@ function writeIfChanged(file, obj) {
   return 'written';
 }
 
+/* stamp.json — a few bytes the page polls (every minute, past the CDN cache)
+   to learn that a new board is published, instead of re-reading a multi-MB
+   board to find out. It names the board AS WRITTEN: an unchanged board keeps
+   its generated_at, and so does its stamp. */
+function stampOf(board, league) {
+  const cap = (board && board.capture) || {};
+  return { schema: 'edgedesk_player_props_stamp_v1', league, board_generated_at: board ? board.generated_at : null,
+    prices_at: cap.last_success_at || cap.last_run || null, priced: board && board.counts ? board.counts.priced : null };
+}
+function writeStamp(P, league) {
+  const file = path.join(P.dir, 'stamp.json'), next = JSON.stringify(stampOf(readJson(P.board), league)) + '\n';
+  let prev = null; try { prev = fs.readFileSync(file, 'utf8'); } catch (e) { prev = null; }
+  if (prev === next) return 'unchanged';
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, next);
+  return 'written';
+}
+
 async function main() {
   /* this environment's threshold overrides, if any (config.js freshnessFromEnv) */
   const envFresh = C.freshnessFromEnv();
@@ -570,6 +615,7 @@ async function main() {
   console.log('[props board] board ' + writeIfChanged(P.board, B) + ', players ' + writeIfChanged(P.players, r.players) + ', pregame state ' + writeIfChanged(path.join(P.dir, 'pregame_state.json'), r.pregame));
   if (r.ledger_rows.length) { fs.mkdirSync(P.season_dir, { recursive: true }); fs.appendFileSync(P.evaluations, r.ledger_rows.map((x) => JSON.stringify(x)).join('\n') + '\n'); }
   if (r.shapes) console.log('[props board] shapes ' + writeIfChanged(path.join(P.dir, 'shapes.json'), r.shapes));
+  console.log('[props board] stamp ' + writeStamp(P, league));
   /* the per-event summary Research reads instead of the board (build_summary.js) */
   try {
     const SUM = require('./build_summary.js');
@@ -585,5 +631,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { build, captureBlock, compactEval, ledgerRow, nameIndex, resolveName, joinEvents, roleMarkets, matchupKind, BOARD_SCHEMA, PLAYERS_SCHEMA, LOG_COLS };
+module.exports = { build, captureBlock, compactEval, stampOf, ledgerRow, nameIndex, resolveName, joinEvents, roleMarkets, matchupKind, BOARD_SCHEMA, PLAYERS_SCHEMA, LOG_COLS };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props board] ' + (e.stack || e.message)); process.exit(1); });

@@ -38,7 +38,7 @@ const DEFAULT_GROUPS = { nfl: ['core', 'long', 'alt'], cfb: ['core', 'alt'] };
 const DEFAULTS = {
   bookmakers: 'draftkings,fanduel,betmgm,williamhill_us,espnbet,betrivers,hardrockbet,fanatics,pinnacle,betonlineag',
   window_h: 96,            /* only events kicking off inside this window */
-  max_events: 16,          /* per run; due events are taken nearest kickoff first */
+  max_events: 64,          /* per run; due events are taken nearest kickoff first (a full college Saturday fits one run) */
   slack_min: 3,            /* an event this close to its next poll is taken now (the scheduler ticks every 5 min) */
   min_remaining: 200,      /* stop before spending below this many provider credits */
   low_credits: 5000,       /* below this, events more than six hours out are polled half as often */
@@ -51,7 +51,7 @@ const DEFAULTS = {
 
 /* PROPS_CADENCE="1.5:15,6:30,24:60,48:120,*:360" (hours to kickoff : minutes
    between polls); PROPS_FRESH_MIN / PROPS_AGING_MIN / PROPS_STALE_MIN /
-   PROPS_EXEC_MAX_MIN (quote ages, minutes). Anything unset keeps the kernel's
+   PROPS_EXEC_MAX_MIN / PROPS_LATEST_MAX_MIN (quote ages, minutes). Anything unset keeps the kernel's
    default. Returns an override object for EDProps.configureFreshness, or null. */
 function parseCadence(raw) {
   if (!raw) return null;
@@ -74,6 +74,7 @@ function freshnessFromEnv(env) {
   if (n('PROPS_STALE_MIN') != null) q.stale_minutes = n('PROPS_STALE_MIN');
   if (Object.keys(q).length) o.quote = q;
   if (n('PROPS_EXEC_MAX_MIN') != null) o.executable_max_minutes = n('PROPS_EXEC_MAX_MIN');
+  if (n('PROPS_LATEST_MAX_MIN') != null) o.latest_max_minutes = n('PROPS_LATEST_MAX_MIN');
   const cad = parseCadence(env.PROPS_CADENCE);
   if (cad) o.cadence = cad;
   return Object.keys(o).length ? o : null;
