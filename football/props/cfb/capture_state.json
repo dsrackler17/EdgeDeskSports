@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "51 prop prices from 2 books across 1 of 1 events queried.",
+ "why": "171 prop prices from 3 books across 2 of 2 events queried.",
  "error_message": null,
- "started_at": "2026-09-30T15:00:54.044Z",
- "completed_at": "2026-09-30T15:00:54.389Z",
- "updated_at": "2026-09-30T15:00:54.389Z",
- "last_attempt": "2026-09-30T15:00:54.044Z",
- "duration_ms": 345,
+ "started_at": "2026-09-30T15:35:49.589Z",
+ "completed_at": "2026-09-30T15:35:50.149Z",
+ "updated_at": "2026-09-30T15:35:50.149Z",
+ "last_attempt": "2026-09-30T15:35:49.589Z",
+ "duration_ms": 560,
  "run": {
-  "id": "36733374147.1",
+  "id": "36737841696.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,12 +81,12 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-09-30T15:00:54.044Z",
- "last_success_at": "2026-09-30T15:00:54.044Z",
- "last_full_success_at": "2026-09-30T15:00:54.044Z",
+ "last_run": "2026-09-30T15:35:49.589Z",
+ "last_success_at": "2026-09-30T15:35:49.589Z",
+ "last_full_success_at": "2026-09-30T15:35:49.589Z",
  "polled_at": {
-  "b0998b3474fea9dee080784b8da01048": "2026-09-30T13:33:35.942Z",
-  "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T13:33:35.942Z",
+  "b0998b3474fea9dee080784b8da01048": "2026-09-30T15:35:49.589Z",
+  "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T15:35:49.589Z",
   "a39f3695781e9b2f76011e921d63b124": "2026-09-30T13:33:35.942Z",
   "e61c74f0e28b46ad83270a6234b425f4": "2026-09-30T13:33:35.942Z",
   "0469a451e58ca81723a7760d4bede173": "2026-09-30T13:33:35.942Z",
@@ -147,8 +147,8 @@
  },
  "events_state": {
   "b0998b3474fea9dee080784b8da01048": {
-   "polled_ok_at": "2026-09-30T13:33:35.942Z",
-   "attempted_at": "2026-09-30T13:33:35.942Z",
+   "polled_ok_at": "2026-09-30T15:35:49.589Z",
+   "attempted_at": "2026-09-30T15:35:49.589Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -161,11 +161,11 @@
    "books": 2,
    "markets": 1,
    "quotes": 43,
-   "next_due_at": "2026-09-30T15:33:35.942Z"
+   "next_due_at": "2026-09-30T17:35:49.589Z"
   },
   "3c64f3dd8efd756a90f09303e5517006": {
-   "polled_ok_at": "2026-09-30T13:33:35.942Z",
-   "attempted_at": "2026-09-30T13:33:35.942Z",
+   "polled_ok_at": "2026-09-30T15:35:49.589Z",
+   "attempted_at": "2026-09-30T15:35:49.589Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -177,8 +177,8 @@
    "away_team": "North Texas Mean Green",
    "books": 3,
    "markets": 7,
-   "quotes": 129,
-   "next_due_at": "2026-09-30T15:33:35.942Z"
+   "quotes": 128,
+   "next_due_at": "2026-09-30T17:35:49.589Z"
   },
   "a39f3695781e9b2f76011e921d63b124": {
    "polled_ok_at": "2026-09-30T13:33:35.942Z",
@@ -1155,8 +1155,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 37783,
-  "requests_used": 62217
+  "requests_remaining": 37720,
+  "requests_used": 62280
  },
  "pacing": {
   "factor": 1,
@@ -1166,65 +1166,89 @@
  "window_entry_at": "2026-10-06T19:30:00.000Z",
  "events_discovered": 61,
  "events_in_window": 59,
- "events_due": 1,
- "events_checked": 1,
- "events_polled": 1,
+ "events_due": 2,
+ "events_checked": 2,
+ "events_polled": 2,
  "events_failed": 0,
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "63dded0ee467d6f6d03c41673569238d"
+  "b0998b3474fea9dee080784b8da01048",
+  "3c64f3dd8efd756a90f09303e5517006"
  ],
  "books_returned": [
   "betonlineag",
-  "draftkings"
+  "draftkings",
+  "espnbet"
  ],
  "markets_returned": {
-  "player_anytime_td": 2
+  "player_anytime_td": 4,
+  "player_pass_yds": 1,
+  "player_pass_yds_alternate": 1,
+  "player_reception_yds": 1,
+  "player_reception_yds_alternate": 1,
+  "player_rush_yds": 1,
+  "player_rush_yds_alternate": 1
  },
- "outcomes_returned": 53,
- "quotes": 51,
- "quotes_normalized": 51,
- "quotes_written": 51,
+ "outcomes_returned": 180,
+ "quotes": 171,
+ "quotes_normalized": 171,
+ "quotes_written": 171,
  "refused": {
-  "team or defense entity, not a player": 2
+  "team or defense entity, not a player": 4,
+  "conflicting duplicate outcome": 4,
+  "duplicate outcome": 1
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 1,
- "requests_remaining": 37783,
- "requests_used": 62217,
+ "credits_spent": 8,
+ "requests_remaining": 37720,
+ "requests_used": 62280,
  "requests": [
   {
-   "event_id": "63dded0ee467d6f6d03c41673569238d",
-   "matchup": "Cincinnati Bearcats @ Arizona Wildcats",
-   "kickoff": "2026-10-04T03:00:00Z",
+   "event_id": "b0998b3474fea9dee080784b8da01048",
+   "matchup": "Western Kentucky Hilltoppers @ New Mexico State Aggies",
+   "kickoff": "2026-10-02T00:00:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 99,
+   "ms": 102,
    "books": 2,
    "markets": 1,
-   "outcomes": 53,
-   "quotes": 51,
+   "outcomes": 45,
+   "quotes": 43,
    "cost": 1,
-   "remaining": 37783
+   "remaining": 37727
+  },
+  {
+   "event_id": "3c64f3dd8efd756a90f09303e5517006",
+   "matchup": "North Texas Mean Green @ Tulsa Golden Hurricane",
+   "kickoff": "2026-10-02T01:00:00Z",
+   "http": 200,
+   "attempts": 1,
+   "ms": 211,
+   "books": 3,
+   "markets": 7,
+   "outcomes": 135,
+   "quotes": 128,
+   "cost": 7,
+   "remaining": 37720
   }
  ],
- "feed_quotes": 8222,
+ "feed_quotes": 8221,
  "feed_events": 59,
  "markets_closed": 6,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-09-30T15:33:35.942Z",
+ "next_due_at": "2026-09-30T16:00:52.016Z",
  "health": {
-  "now": "2026-09-30T15:00:54.044Z",
+  "now": "2026-09-30T15:35:49.589Z",
   "active_events": 59,
   "on_target": 59,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-09-30T15:00:54.044Z",
-  "last_attempt_at": "2026-09-30T15:00:54.044Z",
+  "last_success_at": "2026-09-30T15:35:49.589Z",
+  "last_attempt_at": "2026-09-30T15:35:49.589Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
