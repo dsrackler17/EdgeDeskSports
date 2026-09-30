@@ -20,6 +20,7 @@
    13 totals and moneylines stay unavailable until validated
    ========================================================================== */
 'use strict';
+const fs = require('fs');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 global.window = global.window || global;
@@ -505,14 +506,53 @@ section('14. audit 2026-09-30: the EV is priced from the displayed projection, a
   const Galt = Q.evaluateGame(nflM(9.24), [sq('home', -7, -110), sq('away', 7, -110), sq('away', 10.5, -250, { market_type: 'alternate_spread', n_books: 1 })], ctx({ game: SEA }));
   chk('a better number on the other side (LAC +10.5) may price +EV without breaking the invariant', Galt.side_invariant.ok, Galt.side_invariant);
 
-  /* #8: raw EV above 25% on a main-line spread is data to check */
-  const big = Q.evaluateGame(model({ fair: -2 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
-  chk('a +30% raw EV on the main line is IMPLAUSIBLE: "implausible EV, check data", flagged', big.implausible_ev && big.implausible_ev.raw_ev > 0.25 && /^implausible EV, check data/.test(big.implausible_ev.reason) && big.flags.some((f) => f.code === 'IMPLAUSIBLE_EV'), big.implausible_ev);
+  /* #8, σ-scaled in the follow-up: a main-line spread is implausible when it
+     sits more than PLAUSIBLE_Z widths of the game's own distribution from the
+     model; a large EV at a plausible gap is a LARGE EV (the decision layer's
+     stake brake), never "check data" */
+  const sd14 = Q.distributionSpread(normalCover(-2, 14));
+  chk('the width the bound is measured in is the distribution\'s own (σ 14 reads 14.0)', near(sd14, 14, 0.05), sd14);
+  const big = Q.evaluateGame(model({ fair: -8 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('a main line 14.5 pts from the model (1.04 σ, past the 0.96 bound) is IMPLAUSIBLE: "implausible EV, check data", flagged, σ-scaled',
+    big.implausible_ev && big.implausible_ev.basis === 'sigma_scaled' && big.implausible_ev.z > Q.PLAUSIBLE_Z.CFB && /^implausible EV, check data/.test(big.implausible_ev.reason)
+      && big.flags.some((f) => f.code === 'IMPLAUSIBLE_EV'), big.implausible_ev);
+  const wide = Q.evaluateGame(model({ fair: -2 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('+30% raw EV at an 8.5-pt gap (0.61 σ) is NOT implausible — the flat 25% bound called it a data error — but it is a LARGE EV',
+    wide.implausible_ev === null && wide.sides.away.quotes[0].expected_value > 0.25 && wide.large_ev && wide.large_ev.raw_ev > 0.25, [wide.implausible_ev, wide.large_ev]);
   const ok = Q.evaluateGame(model({ fair: 2.5 }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
-  chk('+21% raw is under the bound: not flagged (the price review owns 20-25%)', ok.implausible_ev === null && ok.sides.away.quotes[0].expected_value > 0.2, [ok.implausible_ev, ok.sides.away.quotes[0].expected_value]);
-  const alt = Q.evaluateGame(model({ fair: 2.5 }), [q('away', 6.5, -102), q('home', -6.5, -118), q('away', 13.5, 150, { market_type: 'alternate_spread' })], ctx());
-  chk('an ALTERNATE past 25% is not the main-line guard\'s business (the tail rules own it)', alt.implausible_ev === null || alt.implausible_ev.line !== 13.5, alt.implausible_ev);
-  chk('the bound is the exported constant (25%)', Q.IMPLAUSIBLE_RAW_EV === 0.25);
+  chk('+21% raw is neither implausible nor large', ok.implausible_ev === null && ok.large_ev === null && ok.sides.away.quotes[0].expected_value > 0.2, [ok.implausible_ev, ok.sides.away.quotes[0].expected_value]);
+  const alt = Q.evaluateGame(model({ fair: -8 }), [q('away', 6.5, -102), q('home', -6.5, -118), q('away', 20.5, 150, { market_type: 'alternate_spread' })], ctx());
+  chk('an ALTERNATE is not the main-line check\'s business (the tail rules own it)', alt.implausible_ev && alt.implausible_ev.line !== 20.5, alt.implausible_ev);
+  const other = Q.evaluateGame(Object.assign(model({ fair: -2 }), { sport: 'XFL' }), [q('away', 6.5, -102), q('home', -6.5, -118)], ctx());
+  chk('a sport with no fitted bound falls back to the flat 25% raw EV, and says so', other.implausible_ev && other.implausible_ev.basis === 'flat_fallback' && /fallback bound/.test(other.implausible_ev.reason));
+  const EVP = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'ev_plausibility.json'), 'utf8'));
+  chk('the bounds are the fitted ones (football/validation/ev_plausibility.json z*, q 0.995, fit 2021-2023)',
+    Q.PLAUSIBLE_Z.CFB === EVP.cfb.z_star && Q.PLAUSIBLE_Z.NFL === EVP.nfl.z_star && EVP.rules.q === 0.995 && EVP.cfb.fit_seasons === '2021-2023' && EVP.market_is_an_input === false, [Q.PLAUSIBLE_Z, EVP.cfb.z_star, EVP.nfl.z_star]);
+  chk('…and on its 2024-2025 holdout the bound flags under 1% of real games and leaves VERIFIED MAJOR reachable on 90%+ of real 7+ gaps, where the flat bound flagged ~20% and left almost none',
+    EVP.cfb.holdout.new_bound.false_positive_rate < 0.01 && EVP.cfb.holdout.new_bound.major_gaps_reachable > 0.9 && EVP.cfb.holdout.old_flat_25pct.false_positive_rate > 0.15
+      && EVP.cfb.holdout.old_flat_25pct.major_gaps_reachable < 0.1 && EVP.nfl.holdout.new_bound.major_gaps_reachable > 0.9);
+  chk('the fallback constant is still exported (25%)', Q.IMPLAUSIBLE_RAW_EV === 0.25);
+
+  /* VERIFIED MAJOR IS REACHABLE: a game that passes every gate with a 7+ gap on
+     a stable roster, priced from the shipped college distribution at −110 */
+  const C = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+  const PP = global.window.EDCfbP4Params;
+  [7, 7.5, 9, 11].forEach((gap) => {
+    const fair = 10 + gap, hc = Q.cfbConditionedCover(PP.distributions, fair, 10, 14.84, 14.633);
+    const Gm = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: fair, home_cover: hc, tail: { validated_within_pts: 0 } },
+      [q('home', -10, -110, { n_books: 6 }), q('away', 10, -110, { n_books: 6 })], ctx());
+    const stv = C.researchStatus({ projected: true, market: 'FRESH', gap, verification: 'VERIFIED', confidence: 75, reliability: 85,
+      fair_margin: fair, market_margin: 10, regime: null, implausible_ev: Gm.implausible_ev });
+    chk('a verified ' + gap + '-pt gap on a stable roster, every gate passed, at −110 (+' + (100 * Gm.best_ev_quote.expected_value).toFixed(0) + '% raw EV) reads VERIFIED MAJOR',
+      stv.key === 'VERIFIED_MAJOR' && Gm.implausible_ev === null && Gm.large_ev !== null, [stv.key, stv.rule, Gm.implausible_ev]);
+  });
+  const G16 = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: 26, home_cover: Q.cfbConditionedCover(PP.distributions, 26, 10, 14.84, 14.633), tail: { validated_within_pts: 0 } },
+    [q('home', -10, -110, { n_books: 6 }), q('away', 10, -110, { n_books: 6 })], ctx());
+  const s16 = C.researchStatus({ projected: true, market: 'FRESH', gap: 16, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: 26, market_margin: 10, implausible_ev: G16.implausible_ev });
+  chk('…and a 16-pt gap (past z* at this σ) is still INVESTIGATE "implausible EV, check data", even verified', s16.key === 'INVESTIGATE' && s16.rule === 'implausible_ev', [s16.key, s16.rule]);
+  const nflFair = 10, G7 = Q.evaluateGame(nflM(nflFair), [sq('home', -3, -110), sq('away', 3, -110)], ctx({ game: SEA }));
+  const s7 = C.researchStatus({ projected: true, market: 'FRESH', gap: 7, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: nflFair, market_margin: 3, implausible_ev: G7.implausible_ev });
+  chk('NFL too: a verified 7-pt gap at −110 reads VERIFIED MAJOR', s7.key === 'VERIFIED_MAJOR' && G7.implausible_ev === null, [s7.key, G7.implausible_ev]);
 }
 
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');

@@ -86,6 +86,193 @@ weights (0 differences). Georgia and Ohio State have zero magnitude (the same co
   decile);
 - `qbChangeOf`.
 
+### #2 — A σ-scaled EV plausibility check replaces the flat 25% guard (VERIFIED MAJOR is reachable)
+
+**Root cause.** The first fix bounded raw EV at a flat 25% on a main-line spread. EV is a price-dependent function of
+the gap measured in the game's own distribution width, so "25%" meant a different gap in every game. At −110 a
+college gap of about 6 points already prices past it.
+- A synthetic game that passed every gate read INVESTIGATE ("implausible EV") at every gap of 7+ pts, for any σ from
+  13 to 16.
+- On the 2024-2025 holdout the flat bound flagged **19.7%** of real college games and **26.0%** of NFL games.
+- It left VERIFIED MAJOR reachable on **2.6%** of real CFB 7+ gaps, and on **0%** of NFL ones.
+
+**Change.**
+- `lib/edgedesk_quote_ev.js` `implausibleEv(g, model)`: a main-line quote is implausible when
+  `z = |fair home margin − the quote's home margin| / σ` exceeds `PLAUSIBLE_Z[sport]`.
+  - σ is `distributionSpread(model.home_cover)`: half the central-68% width of the same distribution the EV is priced
+    from.
+  - Where no width can be read (no fitted sport), the flat 25% bound applies and says so.
+- `tools/football/ev_plausibility.js` fits z* as the declared 99.5th percentile of z over correctly-joined games in
+  2021-2023, from cold replays of both shipped engines. The market is never an input to a projection. It then scores
+  2024-2025 once. The result is `football/validation/ev_plausibility.json`: CFB z* = **0.960** (≈15.7 pts at the
+  typical σ 16.3), NFL z* = **0.997** (≈13.0 pts at σ 13.0).
+- **The stake is not loosened.** The flat 25% line is kept as `large_ev`, read only by the decision layer's new
+  `LARGE_EV` cap (WATCH, no stake). Every decision the old guard held at WATCH is still WATCH with 0 units. A plausible
+  large gap now reads VERIFIED MAJOR as a research status, and still carries no stake.
+- `lib/edgedesk_canon.js` prints the quote-EV layer's own reason. `lib/edgedesk_decision.js` words IMPLAUSIBLE_EV in σ
+  terms.
+
+**Holdout (2024-2025, never fitted).**
+
+| | CFB σ-scaled | CFB flat 25% | NFL σ-scaled | NFL flat 25% |
+|---|---|---|---|---|
+| real games flagged | 0.69% | 19.7% | 0.18% | 26.0% |
+| real 7+ gaps left reachable for VERIFIED MAJOR | 95.2% (of 229) | 2.6% | 98.4% (of 62) | 0% |
+| synthetic flipped side caught, with the orientation invariant and the 21-pt guard | 74.6% | 92.5% | 39.8% | 77.0% |
+| synthetic mis-joined market caught, same stack | 47.5% | 81.7% | 17.8% | 60.9% |
+| synthetic line off by 7 pts caught, same stack | 13.2% | 98.6% | 19.3% | 99.8% |
+
+**What this costs.** Most of the old guard's catch rate came from flagging one real game in five. A line that is wrong
+by 7 points cannot be told apart from a real 7-point disagreement by its size alone. That job belongs to the checks
+that look at the quote rather than the gap:
+- the market-consensus MARKET FAULT (first pass #2/#3);
+- the stale-capture rules;
+- the integrity gate that VERIFIED requires.
+
+This is stated, not tuned away.
+
+**Tests.**
+- `tools/football/quote_ev.test.js` §14 (rewritten for the new rule):
+  - the σ reading;
+  - a 1.04 σ gap is implausible;
+  - a +30% EV at 0.61 σ is not implausible, but is LARGE;
+  - an alternate is exempt;
+  - the flat fallback;
+  - the constants equal the fitted artifact, and the artifact's holdout numbers;
+  - **verified 7, 7.5, 9 and 11-pt college gaps at −110 read VERIFIED MAJOR**;
+  - a 16-pt gap is still "implausible EV, check data";
+  - an NFL 7-pt gap reads VERIFIED MAJOR.
+- `tools/bettor/football_decision.test.js` and `tools/bettor/decision.test.js`: six scenarios move from WATCH ·
+  IMPLAUSIBLE EV to WATCH · LARGE EV, all still with no stake. The gaps past z* stay IMPLAUSIBLE EV.
+
+### #3 — A disagreement explainer (North Texas @ Tulsa, Syracuse @ UConn)
+
+**What was missing.** A research label says how large a disagreement is and whether it passed the integrity gate. It
+never says why. The 2026-09-27 forensic report decomposes EdgeDesk's number, not the gap between it and the market.
+
+**Change.**
+- `lib/edgedesk_explainer.js` splits a gap into eight terms read off the engine's own projection:
+  - the rating scale;
+  - last season's share of the rating, `w·(long-run − this season − track offset)`, and that share on a turned-over
+    roster;
+  - the home-field constant;
+  - QB change;
+  - conference;
+  - matchup;
+  - the rest.
+
+  None of the terms comes from the market.
+- `tools/football/explainer_fit.js` fits how much of each term the closing market has historically taken out. It runs
+  OLS of `fair − close` on the terms over 2021-2023 FBS games (cold replay, `replay_rows.js --explainer`), scores
+  2024-2025 once, and ships a 2021-2025 refit (`football/validation/disagreement_explainer.json`).
+- Explained is the intercept plus Σ β·term. Unexplained is the rest.
+- `football/cfb_p4/engine.js` publishes the tracks' centres in `layers.strength.track_centres`, for display only; no
+  number reads them back.
+- `football/fbs/build_coverage.js` publishes the market-free terms in `disagreement_inputs.explainer_terms`.
+- `football/cfb_terminal/build.js` explains each game against the consensus it already shows (`games.json`
+  `disagreement_explainer`, and a compact form in `board.json`).
+
+**The fit (2021-2023, every term |t| ≥ 1.96).**
+
+| term | β | what it says |
+|---|---|---|
+| home field | +0.43 | the market gives about 1.8 pts less home edge than the engine's 4.08 constant |
+| QB change | +0.50 pts | the market prices a new starter the engine's (usually unavailable) QB term does not |
+| last season's share | −0.42 | the market leans on last season *more* than the engine's this-season track does |
+| …on a turned-over roster | +0.50 | …except on a turned-over roster, where it takes that back (net ≈ +0.08) |
+| conference | +0.19 | |
+| rating scale | −0.03 | |
+
+- Matchup and "other" are 0 in every replayed game, because the cold replay has no efficiency or injury feed. They
+  ship unfitted: shown, never discounted.
+- **Holdout 2024-2025: R² = 0.03.** Mean |gap| 3.92 against mean |unexplained| 3.67; for 7+ gaps, 9.85 against 8.74.
+  The measured terms explain a sliver of model-market disagreement, and the explainer says so rather than overstating
+  it.
+
+**Applied (terminal build of the committed 2026-09-30 captures, SNAPSHOT).**
+
+| North Texas @ Tulsa: gap 10.74 toward North Texas (market Tulsa −1.5, one book) | term | β | explains |
+|---|---|---|---|
+| last season's share | −7.56 | −0.36 | +2.74 (toward Tulsa) |
+| …on a turned-over roster (North Texas, index 0.86) | −4.84 | +0.48 | −2.33 (toward North Texas) |
+| home field | 4.08 | +0.39 | +1.60 |
+| rating scale | −10.89 | −0.02 | +0.21 |
+| matchup (unfitted) | −2.44 | — | 0 |
+| **unexplained** | | | **12.87 toward North Texas** |
+
+The measured terms, taken together, lean 2.1 pts toward Tulsa, so nothing measured explains this gap. Even on this
+season's centred track alone, North Texas rates about 4 pts better than Tulsa, and the market disagrees with that as
+well. What remains is the market's view of this season's North Texas.
+
+| Syracuse @ UConn: gap 14.25 toward UConn (market Syracuse −6.5, stale) | term | β | explains |
+|---|---|---|---|
+| home field | 4.08 | +0.39 | +1.60 |
+| last season's share | +2.60 | −0.36 | −0.94 |
+| …on a turned-over roster (UConn, index 0.87) | +0.58 | +0.48 | +0.28 |
+| **unexplained** | | | **13.47 toward UConn** |
+
+It remains DATA FAULT ("possible orientation flip", first pass #5) at a stale capture.
+
+**Tests.** `tools/football/explainer.test.js` (21 checks, added to `football:audit:test` and `cfb:test`):
+- the terms are exact pieces of an engine projection (prior share with the published offset, turnover index,
+  contributions, QB change), with no market argument;
+- explained + unexplained = the gap;
+- unfitted terms are shown, never discounted;
+- the fit's windows, significance flags and unfitted list;
+- the slate and terminal wiring.
+
+### #5 — A closing-line-value validation report
+
+**What was missing.** The existing movement validation (`football/validation/movement_cfb.json`) tests CFBD's pregame
+Elo, not EdgeDesk's own number. The scorecard has 6 packets and no reading. Nothing answered whether the market moves
+toward EdgeDesk between the opener and the close.
+
+**Change.** `tools/football/clv_report.js` writes `football/validation/clv_report.json`. Nothing is fitted, and the
+market is never an input. Per game, on home margins:
+- side = sign(fair − open), with no side under 0.5 pt;
+- CLV points = side × (close − open);
+- CLV probability = the cover probability of that side at the opener, on a distribution centred at the close, minus
+  the same at the close.
+
+Each sample reports games, the rate at which moved lines moved toward EdgeDesk (two-sided binomial p), mean CLV with a
+bootstrap 95% CI, per season and per gap bucket. Samples under 100 moved games read "too small to read".
+
+**Result.**
+
+| sample | games | moved toward EdgeDesk | p | mean CLV (pts) | CLV (prob) |
+|---|---|---|---|---|---|
+| **CFB replay 2022-2025**, the engine's held-out window (hyperparameters tuned 2018-2021) | 2,843 | **52.9%** of 2,492 | **0.005** | **+0.21** [+0.14, +0.27] | +0.53 pp |
+| …gap 0.5-2 | 737 | 53.2% | 0.11 | +0.16 [+0.05, +0.30] | +0.41 pp |
+| …gap 2-4 | 846 | 51.2% | 0.56 | +0.10 [+0.02, +0.19] | +0.28 pp |
+| …gap 4-7 | 795 | 52.1% | 0.27 | +0.21 [+0.08, +0.33] | +0.54 pp |
+| …gap 7+ | 465 | **56.6%** | **0.009** | **+0.47** [+0.26, +0.67] | +1.19 pp |
+| CFB replay 2021 (in-sample for the engine's tune; never pooled) | 686 | 50.8% | 0.74 | +0.12 [+0.01, +0.22] | +0.25 pp |
+| CFB 2026 live (frozen record numbers vs the Model Lab's earliest capture) | 68 | 45.1% of 51 | 0.58 | +0.04 [−0.26, +0.35] | too small to read |
+| NFL 2026 live (EdgeDesk's own opener ledger; no historical NFL openers exist) | 29 | 71.4% of 21 | 0.08 | +0.45 [−0.26, +1.16] | too small to read |
+
+- By season 2022-2025 the toward-rate is 50.3%, 54.0%, 52.6% and 54.2%.
+- The college engine's pregame number has shown small, positive, statistically significant CLV on its held-out window,
+  concentrated in the 7+ gaps.
+- **This is a replay, not a record.** The replay's state is the one at kickoff, which also holds other games played
+  between the opener and kickoff.
+- The two live 2026 samples are too small to say anything yet.
+
+**Tests.** `tools/football/clv_report.test.js` (16 checks, in `football:audit:test`) covers:
+- the sign conventions;
+- no side under 0.5 pt;
+- a missing line is no CLV;
+- the NFL price value;
+- the summary arithmetic and the floor;
+- the artifact's windows (headline 2022-2025, 2021 apart);
+- that the market is not an input and nothing is fitted;
+- that each reading follows its own numbers.
+
+### #6 — Re-run both boards live: not possible from this environment
+
+The live capture host (`iattxbkbufslbauoumga.supabase.co`) is denied by this environment's network policy. So are The
+Odds API, CollegeFootballData and the SBR odds archive. No board was re-run live. The before/after tables in the PR
+use the latest bot-committed captures, and every row is labelled SNAPSHOT with its capture time.
+
 ## 2026-09-30 — audit fixes: Week 5 CFB / Week 4 NFL board
 
 These fixes come from a manual audit of the Week 5 CFB / Week 4 NFL board. They are listed in the audit's priority order.

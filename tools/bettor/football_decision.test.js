@@ -149,7 +149,7 @@ chk('A: …the raw and the blended EV stay apart (raw far larger)', A2.raw_ev_pc
 /* audit 2026-09-30 #8: 8 pts off an NFL market is a +48% raw EV — past the
    implausible-EV bound, so it is WATCH whatever the blend says, never a stake */
 const A8 = nflDecide({ fair: 11, homeLine: -3, blendAt: -3 });
-chk('A: …an NFL model 8 pts off the market is an outlier past the implausible-EV bound: WATCH · IMPLAUSIBLE EV, no stake, the outlier still named', A8.decision === 'WATCH' && A8.action_reason_code === 'IMPLAUSIBLE_EV' && A8.recommended_units === 0 && A8.raw_ev_pct > 25 && A8.warning_codes.indexOf('MODEL_MARKET_OUTLIER') >= 0, brief(A8));
+chk('A: …an NFL model 8 pts off the market is inside the σ-scaled plausibility bound but past 25% raw EV: WATCH · LARGE EV, no stake, the outlier still named', A8.decision === 'WATCH' && A8.action_reason_code === 'LARGE_EV' && A8.recommended_units === 0 && A8.raw_ev_pct > 25 && A8.warning_codes.indexOf('MODEL_MARKET_OUTLIER') >= 0, brief(A8));
 chk('A: …both EVs are still reported on the capped decision (raw > 25%, blended far smaller)', A8.raw_ev_pct > A8.calibrated_ev_pct && A8.calibrated_ev_pct != null, brief(A8));
 
 section('B/C. small and negative NFL edges');
@@ -269,9 +269,10 @@ chk('K: a +EV outlier line 6.5 pts off the consensus is never the BET', !(outlie
 chk('K: …it is reviewed and fails consensus / corroboration checks', (outlier.anomaly && (outlier.anomaly.skipped_quotes || []).some((s) => /StaleBook/.test(s))) || (outlier.decision === 'WATCH' && outlier.action_reason_code === 'PRICE_ANOMALY'), outlier.anomaly);
 const giant = nflDecide({ fair: 12, homeLine: -3 });
 chk('K: a +40% raw EV triggers price verification', giant.anomaly && giant.anomaly.triggered && giant.anomaly.triggers.some((t) => t.code === 'EXTREME_RAW_EV'), giant.anomaly && giant.anomaly.triggers);
-/* audit 2026-09-30 #8: past 25% raw EV on a main-line spread no verification
-   clears it — the decision is WATCH · IMPLAUSIBLE EV, "check data" */
-chk('K: …past the 25% implausible-EV bound, verification cannot clear it: WATCH · IMPLAUSIBLE EV, no stake', giant.decision === 'WATCH' && giant.action_reason_code === 'IMPLAUSIBLE_EV' && giant.recommended_units === 0 && /implausible EV, check data/.test(giant.action_reason_text), brief(giant));
+/* audit 2026-09-30 #8, σ-scaled in the follow-up: past 25% raw EV on a main-line
+   spread no verification clears the STAKE brake — WATCH · LARGE EV; only a gap
+   past the σ-scaled bound is IMPLAUSIBLE EV ("check data") */
+chk('K: …past 25% raw EV (plausible in σ terms), verification cannot clear the stake brake: WATCH · LARGE EV, no stake', giant.decision === 'WATCH' && giant.action_reason_code === 'LARGE_EV' && giant.recommended_units === 0 && /LARGE EV: .*no stake at that size/.test(giant.action_reason_text), [brief(giant), giant.action_reason_text]);
 const verified = nflDecide({ fair: 6.5, homeLine: -3 });
 chk('K: under the bound, a verified +20% raw EV may be a BET — capped at the smallest tier, never boosted', verified.decision === 'BET' && verified.recommended_units <= 0.25 && verified.raw_ev_pct >= 20 && verified.raw_ev_pct < 25 && verified.warning_codes.indexOf('ANOMALY_CLEARED') >= 0, brief(verified));
 const guard = nflDecide({ fair: 18, homeLine: -3, guard: true });
@@ -300,7 +301,7 @@ chk('a one-sided quote is evaluated: LEAN · THIN MARKET, not NO DECISION', oneS
 const inv = cfb({ research: { status: 'INVESTIGATE', gap_pts: 4, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
 chk('an unverified gap is a price anomaly (WATCH), not NO DECISION', inv.decision === 'WATCH' && inv.action_reason_code === 'PRICE_ANOMALY', brief(inv));
 const invBig = cfb({ research: { status: 'INVESTIGATE', gap_pts: 12, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] }, model: cfbModel(-6, -1) });
-chk('an unverified 12-pt gap (+61% raw EV) is WATCH · IMPLAUSIBLE EV with the price anomaly still open, never NO DECISION', invBig.decision === 'WATCH' && invBig.action_reason_code === 'IMPLAUSIBLE_EV' && (invBig.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), brief(invBig));
+chk('an unverified 12-pt gap (+61% raw EV) is WATCH · LARGE EV with the price anomaly still open, never NO DECISION', invBig.decision === 'WATCH' && invBig.action_reason_code === 'LARGE_EV' && (invBig.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), brief(invBig));
 const unstable = cfb({ projection: { stability: 'UNSTABLE' } });
 chk('an unstable projection caps at LEAN', unstable.decision === 'LEAN' && unstable.action_reason_code === 'UNSTABLE_PROJECTION', brief(unstable));
 const lowRel = cfb({ reliability: { score: 50 } });

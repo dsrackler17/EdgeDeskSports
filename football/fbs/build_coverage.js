@@ -94,6 +94,7 @@ const RECOVERY = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const EPA = require(path.join(ROOT, 'football', 'fbs_epa', 'fbs_epa.js'));
 const REL = require(path.join(ROOT, 'lib', 'cfb_reliability.js'));
 const DIS = require(path.join(ROOT, 'lib', 'cfb_disagreement.js'));
+const EXPL = require(path.join(ROOT, 'lib', 'edgedesk_explainer.js'));
 const GE = require(path.join(ROOT, 'lib', 'game_evidence.js'));
 const ROI = require(path.join(ROOT, 'football', 'enrichment', 'roi.js'));
 const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
@@ -939,9 +940,14 @@ async function main() {
         const av = (side) => { const f = (asm && asm.contract || []).find(x => x.field === 'availability' && x.side === side); return { feed_state: f ? f.state : null }; };
         const qb = (side) => { const r = asm && asm.starters && asm.starters[side]; return r ? { status: r.status, player: r.player_name,
           availability: r.availability ? r.availability.state : null, change: false } : null; };
+        /* the disagreement explainer's market-free terms (lib/edgedesk_explainer.js):
+           the terminal joins its market and prints the breakdown */
+        const turnover = (name) => { const r = ctx.regime ? ctx.regime[FBS.normKey(name)] : null;
+          return r ? { features: r.magnitude ? r.magnitude.features : null, qb_change: r.qb_change == null ? null : r.qb_change } : null; };
         return { contract: DIS.version, projection: pr, qb: { home: qb('home'), away: qb('away') },
           roster: { home: av('home'), away: av('away') }, reliability: rel ? rel.score : null,
-          game: { home_fbs: !!m.home.is_fbs, away_fbs: !!m.away.is_fbs, venue: g.venue || null } };
+          game: { home_fbs: !!m.home.is_fbs, away_fbs: !!m.away.is_fbs, venue: g.venue || null },
+          explainer_terms: EXPL.termsFromProjection(p, { home: turnover(g.home_team), away: turnover(g.away_team) }) };
       })() : null
     };
   });

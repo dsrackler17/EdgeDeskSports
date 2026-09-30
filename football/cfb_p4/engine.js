@@ -2743,7 +2743,10 @@
              data-quality flag the research gate reads: it blocks WORTH
              RESEARCHING / VERIFIED MAJOR until the team has min_games_for_research
              games this season (lib/edgedesk_canon.js regimeBlock). */
-          regime: { home: H.blended.regime || null, away: A.blended.regime || null } },
+          regime: { home: H.blended.regime || null, away: A.blended.regime || null },
+          /* the two tracks' FBS centres at this kickoff (trackCentres): read by
+             the disagreement explainer (lib/edgedesk_explainer.js); no number here reads it back */
+          track_centres: strength.trackCentres(st) },
         talent: { home: H.talent, away: A.talent },
         situation: { venue_hfa: hfa, travel: travel, rivalry: riv,
           schedule_home: H.schedule, schedule_away: A.schedule,
