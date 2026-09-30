@@ -86,6 +86,71 @@ weights (0 differences). Georgia and Ohio State have zero magnitude (the same co
   decile);
 - `qbChangeOf`.
 
+### #2 — A σ-scaled EV plausibility check replaces the flat 25% guard (VERIFIED MAJOR is reachable)
+
+**Root cause.** The first fix bounded raw EV at a flat 25% on a main-line spread. EV is a price-dependent function of
+the gap measured in the game's own distribution width, so "25%" meant a different gap in every game. At −110 a
+college gap of about 6 points already prices past it.
+- A synthetic game that passed every gate read INVESTIGATE ("implausible EV") at every gap of 7+ pts, for any σ from
+  13 to 16.
+- On the 2024-2025 holdout the flat bound flagged **19.7%** of real college games and **26.0%** of NFL games.
+- It left VERIFIED MAJOR reachable on **2.6%** of real CFB 7+ gaps, and on **0%** of NFL ones.
+
+**Change.**
+- `lib/edgedesk_quote_ev.js` `implausibleEv(g, model)`: a main-line quote is implausible when
+  `z = |fair home margin − the quote's home margin| / σ` exceeds `PLAUSIBLE_Z[sport]`.
+  - σ is `distributionSpread(model.home_cover)`: half the central-68% width of the same distribution the EV is priced
+    from.
+  - Where no width can be read (no fitted sport), the flat 25% bound applies and says so.
+- `tools/football/ev_plausibility.js` fits z* as the declared 99.5th percentile of z over correctly-joined games in
+  2021-2023, from cold replays of both shipped engines. The market is never an input to a projection. It then scores
+  2024-2025 once. The result is `football/validation/ev_plausibility.json`: CFB z* = **0.960** (≈15.7 pts at the
+  typical σ 16.3), NFL z* = **0.997** (≈13.0 pts at σ 13.0).
+- **The stake is not loosened.** The flat 25% line is kept as `large_ev`, read only by the decision layer's new
+  `LARGE_EV` cap (WATCH, no stake). Every decision the old guard held at WATCH is still WATCH with 0 units. A plausible
+  large gap now reads VERIFIED MAJOR as a research status, and still carries no stake.
+- `lib/edgedesk_canon.js` prints the quote-EV layer's own reason. `lib/edgedesk_decision.js` words IMPLAUSIBLE_EV in σ
+  terms.
+
+**Holdout (2024-2025, never fitted).**
+
+| | CFB σ-scaled | CFB flat 25% | NFL σ-scaled | NFL flat 25% |
+|---|---|---|---|---|
+| real games flagged | 0.69% | 19.7% | 0.18% | 26.0% |
+| real 7+ gaps left reachable for VERIFIED MAJOR | 95.2% (of 229) | 2.6% | 98.4% (of 62) | 0% |
+| synthetic flipped side caught, with the orientation invariant and the 21-pt guard | 74.6% | 92.5% | 39.8% | 77.0% |
+| synthetic mis-joined market caught, same stack | 47.5% | 81.7% | 17.8% | 60.9% |
+| synthetic line off by 7 pts caught, same stack | 13.2% | 98.6% | 19.3% | 99.8% |
+
+**What this costs.** Most of the old guard's catch rate came from flagging one real game in five. A line that is wrong
+by 7 points cannot be told apart from a real 7-point disagreement by its size alone. That job belongs to the checks
+that look at the quote rather than the gap:
+- the market-consensus MARKET FAULT (first pass #2/#3);
+- the stale-capture rules;
+- the integrity gate that VERIFIED requires.
+
+This is stated, not tuned away.
+
+**Tests.**
+- `tools/football/quote_ev.test.js` §14 (rewritten for the new rule):
+  - the σ reading;
+  - a 1.04 σ gap is implausible;
+  - a +30% EV at 0.61 σ is not implausible, but is LARGE;
+  - an alternate is exempt;
+  - the flat fallback;
+  - the constants equal the fitted artifact, and the artifact's holdout numbers;
+  - **verified 7, 7.5, 9 and 11-pt college gaps at −110 read VERIFIED MAJOR**;
+  - a 16-pt gap is still "implausible EV, check data";
+  - an NFL 7-pt gap reads VERIFIED MAJOR.
+- `tools/bettor/football_decision.test.js` and `tools/bettor/decision.test.js`: six scenarios move from WATCH ·
+  IMPLAUSIBLE EV to WATCH · LARGE EV, all still with no stake. The gaps past z* stay IMPLAUSIBLE EV.
+
+### #6 — Re-run both boards live: not possible from this environment
+
+The live capture host (`iattxbkbufslbauoumga.supabase.co`) is denied by this environment's network policy. So are The
+Odds API, CollegeFootballData and the SBR odds archive. No board was re-run live. The before/after tables in the PR
+use the latest bot-committed captures, and every row is labelled SNAPSHOT with its capture time.
+
 ## 2026-09-30 — audit fixes: Week 5 CFB / Week 4 NFL board
 
 These fixes come from a manual audit of the Week 5 CFB / Week 4 NFL board. They are listed in the audit's priority order.

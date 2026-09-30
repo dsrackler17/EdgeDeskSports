@@ -1,0 +1,209 @@
+{
+ "schema": "edgedesk_ev_plausibility_v1",
+ "generated_at": "2026-09-30T18:23:12.285Z",
+ "rules": {
+  "q": 0.995,
+  "fit": [
+   2021,
+   2023
+  ],
+  "holdout": [
+   2024,
+   2025
+  ],
+  "min_flip_close": 3,
+  "min_misjoin_pts": 3,
+  "off_pts": 7,
+  "major_gap": 7,
+  "old_rule": {
+   "raw_ev": 0.25,
+   "price": -110
+  }
+ },
+ "definition": "implausible when |fair home margin − the quote’s home margin| exceeds z* × σ, σ = half the central-68% width of the distribution the EV is priced from (lib/edgedesk_quote_ev.js distributionSpread); z* = the q quantile of that ratio over correctly-joined games in the fit seasons",
+ "market_is_an_input": false,
+ "cfb": {
+  "sport": "CFB",
+  "fit_seasons": "2021-2023",
+  "fit_games": 2249,
+  "q": 0.995,
+  "z_star": 0.9601,
+  "z_quantiles_fit": {
+   "q50": 0.2051,
+   "q90": 0.5228,
+   "q99": 0.8737,
+   "q995": 0.9601,
+   "max": 1.3776
+  },
+  "typical_sigma": 16.346,
+  "gap_at_z_star_pts": 15.693,
+  "holdout": {
+   "seasons": "2024-2025",
+   "games": 1602,
+   "stack_alone": {
+    "false_positive_rate": 0.0069,
+    "data_errors": {
+     "flip": {
+      "cases": 1337,
+      "caught": 0,
+      "caught_with_the_stack": 0.7008
+     },
+     "misjoin": {
+      "cases": 1380,
+      "caught": 0,
+      "caught_with_the_stack": 0.3558
+     },
+     "off7": {
+      "cases": 1602,
+      "caught": 0,
+      "caught_with_the_stack": 0.0824
+     }
+    }
+   },
+   "new_bound": {
+    "false_positive_rate": 0.0069,
+    "false_positive_rate_with_the_stack": 0.0125,
+    "major_gaps": 229,
+    "major_gaps_reachable": 0.952,
+    "data_errors": {
+     "flip": {
+      "cases": 1337,
+      "caught": 0.5924,
+      "caught_with_the_stack": 0.7464
+     },
+     "misjoin": {
+      "cases": 1380,
+      "caught": 0.4246,
+      "caught_with_the_stack": 0.4754
+     },
+     "off7": {
+      "cases": 1602,
+      "caught": 0.0718,
+      "caught_with_the_stack": 0.1317
+     }
+    }
+   },
+   "old_flat_25pct": {
+    "false_positive_rate": 0.1973,
+    "false_positive_rate_with_the_stack": 0.1973,
+    "major_gaps_reachable": 0.0262,
+    "data_errors": {
+     "flip": {
+      "cases": 1337,
+      "caught": 0.9252,
+      "caught_with_the_stack": 0.9252
+     },
+     "misjoin": {
+      "cases": 1380,
+      "caught": 0.8167,
+      "caught_with_the_stack": 0.8167
+     },
+     "off7": {
+      "cases": 1602,
+      "caught": 0.9863,
+      "caught_with_the_stack": 0.9863
+     }
+    }
+   },
+   "z_quantiles": {
+    "q50": 0.191,
+    "q99": 0.8345,
+    "max": 1.177
+   }
+  }
+ },
+ "nfl": {
+  "sport": "NFL",
+  "fit_seasons": "2021-2023",
+  "fit_games": 854,
+  "q": 0.995,
+  "z_star": 0.9973,
+  "z_quantiles_fit": {
+   "q50": 0.2162,
+   "q90": 0.5375,
+   "q99": 0.9097,
+   "q995": 0.9973,
+   "max": 1.2685
+  },
+  "typical_sigma": 13.014,
+  "gap_at_z_star_pts": 12.978,
+  "holdout": {
+   "seasons": "2024-2025",
+   "games": 570,
+   "stack_alone": {
+    "false_positive_rate": 0.0105,
+    "data_errors": {
+     "flip": {
+      "cases": 430,
+      "caught": 0,
+      "caught_with_the_stack": 0.3442
+     },
+     "misjoin": {
+      "cases": 427,
+      "caught": 0,
+      "caught_with_the_stack": 0.1218
+     },
+     "off7": {
+      "cases": 570,
+      "caught": 0,
+      "caught_with_the_stack": 0.0649
+     }
+    }
+   },
+   "new_bound": {
+    "false_positive_rate": 0.0018,
+    "false_positive_rate_with_the_stack": 0.0123,
+    "major_gaps": 62,
+    "major_gaps_reachable": 0.9839,
+    "data_errors": {
+     "flip": {
+      "cases": 430,
+      "caught": 0.2163,
+      "caught_with_the_stack": 0.3977
+     },
+     "misjoin": {
+      "cases": 427,
+      "caught": 0.0843,
+      "caught_with_the_stack": 0.178
+     },
+     "off7": {
+      "cases": 570,
+      "caught": 0.1526,
+      "caught_with_the_stack": 0.193
+     }
+    }
+   },
+   "old_flat_25pct": {
+    "false_positive_rate": 0.2596,
+    "false_positive_rate_with_the_stack": 0.2596,
+    "major_gaps_reachable": 0,
+    "data_errors": {
+     "flip": {
+      "cases": 430,
+      "caught": 0.7698,
+      "caught_with_the_stack": 0.7698
+     },
+     "misjoin": {
+      "cases": 427,
+      "caught": 0.6089,
+      "caught_with_the_stack": 0.6089
+     },
+     "off7": {
+      "cases": 570,
+      "caught": 0.9982,
+      "caught_with_the_stack": 0.9982
+     }
+    }
+   },
+   "z_quantiles": {
+    "q50": 0.2128,
+    "q99": 0.8531,
+    "max": 1.467
+   }
+  }
+ },
+ "source": {
+  "cfb": "football/cfb_p4/research/replay_rows.js (cold replay of the shipped engine, cfbfastR schedules and closing archive)",
+  "nfl": "tools/football/validate_pricing.js replayNfl (cold replay of the shipped NFL engine, football/pricing/lines_nfl.json)"
+ }
+}
