@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-09-30T19:07:41.149Z",
- "board_generated_at": "2026-09-30T19:07:39.224Z",
+ "generated_at": "2026-09-30T19:36:56.190Z",
+ "board_generated_at": "2026-09-30T19:36:54.139Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,6 +15,26 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
+  {
+   "game_id": "401858473",
+   "game": "Ohio State @ Iowa",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": true,
+   "edgedesk": "Ohio State -7.7",
+   "market": "Ohio State -14.5",
+   "books": 1,
+   "gap": 6.81,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
   {
    "game_id": "401856822",
    "game": "West Virginia @ Iowa State",
@@ -100,26 +120,6 @@
    ],
    "consistent": true,
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401858245",
-   "game": "Pittsburgh @ Virginia Tech",
-   "kickoff": "2026-10-02T23:00:00.000Z",
-   "named": false,
-   "edgedesk": "Virginia Tech -0.8",
-   "market": "Virginia Tech -3.0",
-   "books": 1,
-   "gap": 2.21,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401862786",
@@ -318,26 +318,6 @@
    ],
    "consistent": true,
    "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
-  },
-  {
-   "game_id": "401858473",
-   "game": "Ohio State @ Iowa",
-   "kickoff": "2026-10-03T19:30:00.000Z",
-   "named": true,
-   "edgedesk": "Ohio State -7.7",
-   "market": "Ohio State -14.0",
-   "books": 0,
-   "gap": 6.31,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "NO_MARKET",
-   "research_label": "STALE MARKET",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
   },
   {
    "game_id": "401869962",

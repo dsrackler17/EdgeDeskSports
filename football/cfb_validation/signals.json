@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-09-30T19:07:41.149Z",
+ "generated_at": "2026-09-30T19:36:56.190Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 3,
+   "n": 4,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 12.91,
+   "average_gap": 11.63,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -83,10 +83,27 @@
     "favorite_flip": true,
     "closing_market": null,
     "final_margin": null
+   },
+   {
+    "game_id": "401858247",
+    "game": "California @ UNLV",
+    "week": 5,
+    "at": "2026-09-30T19:36:46.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 10.3,
+    "market_at_snapshot": 2.5,
+    "gap": 7.8,
+    "toward": "UNLV",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "outcomes": {
-   "BAD_INFORMATION": 3
+   "BAD_INFORMATION": 4
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -113,10 +130,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 3,
+   "n": 4,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 12.91,
+   "average_gap": 11.63,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -313,7 +330,7 @@
   }
  },
  "verdict_not_run": {
-  "n": 4,
-  "note": "4 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
+  "n": 3,
+  "note": "3 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
  }
 }
