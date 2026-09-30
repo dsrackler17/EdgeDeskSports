@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "88 prop prices from 2 books across 2 of 2 events queried.",
+ "why": "152 prop prices from 3 books across 1 of 2 events queried.",
  "error_message": null,
- "started_at": "2026-09-30T14:15:40.829Z",
- "completed_at": "2026-09-30T14:15:41.152Z",
- "updated_at": "2026-09-30T14:15:41.152Z",
- "last_attempt": "2026-09-30T14:15:40.829Z",
- "duration_ms": 323,
+ "started_at": "2026-09-30T14:30:40.103Z",
+ "completed_at": "2026-09-30T14:30:40.439Z",
+ "updated_at": "2026-09-30T14:30:40.439Z",
+ "last_attempt": "2026-09-30T14:30:40.103Z",
+ "duration_ms": 336,
  "run": {
-  "id": "36727681239.1",
+  "id": "36729579738.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,9 +81,9 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-09-30T14:15:40.829Z",
- "last_success_at": "2026-09-30T14:15:40.829Z",
- "last_full_success_at": "2026-09-30T14:15:40.829Z",
+ "last_run": "2026-09-30T14:30:40.103Z",
+ "last_success_at": "2026-09-30T14:30:40.103Z",
+ "last_full_success_at": "2026-09-30T14:30:40.103Z",
  "polled_at": {
   "b0998b3474fea9dee080784b8da01048": "2026-09-30T13:33:35.942Z",
   "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T13:33:35.942Z",
@@ -140,8 +140,8 @@
   "1d3756ab74c013c39510958b5a632b74": "2026-09-30T12:00:43.503Z",
   "9dcccf34095cde7b0fe36250bb5be6f6": "2026-09-30T12:00:43.503Z",
   "23025b717a93bdd8f30424e90a97d68f": "2026-09-30T13:30:45.319Z",
-  "4ec93b02d04c2a019ebd6f4ccd9f7af5": "2026-09-30T08:30:42.754Z",
-  "f73081099f845f23ea7f41ef09128cdd": "2026-09-30T08:30:42.754Z",
+  "4ec93b02d04c2a019ebd6f4ccd9f7af5": "2026-09-30T14:30:40.103Z",
+  "f73081099f845f23ea7f41ef09128cdd": "2026-09-30T14:30:40.103Z",
   "63dded0ee467d6f6d03c41673569238d": "2026-09-30T09:00:41.934Z",
   "4d9e59b57798afb31927c84e1f6dc25e": "2026-09-30T10:00:52.016Z"
  },
@@ -1082,8 +1082,8 @@
    "next_due_at": "2026-09-30T19:30:45.319Z"
   },
   "4ec93b02d04c2a019ebd6f4ccd9f7af5": {
-   "polled_ok_at": "2026-09-30T08:30:42.754Z",
-   "attempted_at": "2026-09-30T08:30:42.754Z",
+   "polled_ok_at": "2026-09-30T14:30:40.103Z",
+   "attempted_at": "2026-09-30T14:30:40.103Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -1093,19 +1093,19 @@
    "kickoff": "2026-10-04T02:30:00.000Z",
    "home_team": "Arizona State Sun Devils",
    "away_team": "Baylor Bears",
-   "books": 1,
-   "markets": 1,
-   "quotes": 21,
-   "next_due_at": "2026-09-30T14:30:42.754Z"
+   "books": 3,
+   "markets": 5,
+   "quotes": 152,
+   "next_due_at": "2026-09-30T20:30:40.103Z"
   },
   "f73081099f845f23ea7f41ef09128cdd": {
-   "polled_ok_at": "2026-09-30T08:30:42.754Z",
-   "attempted_at": "2026-09-30T08:30:42.754Z",
+   "polled_ok_at": "2026-09-30T14:30:40.103Z",
+   "attempted_at": "2026-09-30T14:30:40.103Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
    "last_error": null,
-   "empty_streak": 2,
+   "empty_streak": 3,
    "matchup": "Texas State Bobcats @ San Diego State Aztecs",
    "kickoff": "2026-10-04T02:30:00.000Z",
    "home_team": "San Diego State Aztecs",
@@ -1113,7 +1113,7 @@
    "books": 0,
    "markets": 0,
    "quotes": 0,
-   "next_due_at": "2026-09-30T14:30:42.754Z"
+   "next_due_at": "2026-09-30T20:30:40.103Z"
   },
   "63dded0ee467d6f6d03c41673569238d": {
    "polled_ok_at": "2026-09-30T09:00:41.934Z",
@@ -1155,8 +1155,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 37858,
-  "requests_used": 62142
+  "requests_remaining": 37839,
+  "requests_used": 62161
  },
  "pacing": {
   "factor": 1,
@@ -1170,76 +1170,82 @@
  "events_checked": 2,
  "events_polled": 2,
  "events_failed": 0,
- "events_no_markets": 0,
+ "events_no_markets": 1,
  "events_suspect_empty": 0,
  "event_ids": [
-  "0cdf52fe0d6bfe0664b76a2102f8b605",
-  "59abc1d6262d2ea6a72c4daad4c83af2"
+  "4ec93b02d04c2a019ebd6f4ccd9f7af5",
+  "f73081099f845f23ea7f41ef09128cdd"
  ],
  "books_returned": [
   "betonlineag",
-  "draftkings"
+  "draftkings",
+  "espnbet"
  ],
  "markets_returned": {
-  "player_anytime_td": 4
+  "player_anytime_td": 2,
+  "player_pass_tds_alternate": 1,
+  "player_pass_yds_alternate": 1,
+  "player_reception_yds_alternate": 1,
+  "player_rush_yds_alternate": 1
  },
- "outcomes_returned": 92,
- "quotes": 88,
- "quotes_normalized": 88,
- "quotes_written": 88,
+ "outcomes_returned": 155,
+ "quotes": 152,
+ "quotes_normalized": 152,
+ "quotes_written": 152,
  "refused": {
-  "team or defense entity, not a player": 4
+  "price not a valid American price": 1,
+  "team or defense entity, not a player": 2
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 2,
- "requests_remaining": 37858,
- "requests_used": 62142,
+ "credits_spent": 5,
+ "requests_remaining": 37839,
+ "requests_used": 62161,
  "requests": [
   {
-   "event_id": "0cdf52fe0d6bfe0664b76a2102f8b605",
-   "matchup": "Purdue Boilermakers @ Illinois Fighting Illini",
-   "kickoff": "2026-10-03T20:15:00Z",
+   "event_id": "4ec93b02d04c2a019ebd6f4ccd9f7af5",
+   "matchup": "Baylor Bears @ Arizona State Sun Devils",
+   "kickoff": "2026-10-04T02:30:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 44,
-   "books": 2,
-   "markets": 1,
-   "outcomes": 44,
-   "quotes": 42,
-   "cost": 1,
-   "remaining": 37859
+   "ms": 27,
+   "books": 3,
+   "markets": 5,
+   "outcomes": 155,
+   "quotes": 152,
+   "cost": 5,
+   "remaining": 37839
   },
   {
-   "event_id": "59abc1d6262d2ea6a72c4daad4c83af2",
-   "matchup": "Kentucky Wildcats @ South Carolina Gamecocks",
-   "kickoff": "2026-10-03T20:15:00Z",
+   "event_id": "f73081099f845f23ea7f41ef09128cdd",
+   "matchup": "Texas State Bobcats @ San Diego State Aztecs",
+   "kickoff": "2026-10-04T02:30:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 40,
-   "books": 2,
-   "markets": 1,
-   "outcomes": 48,
-   "quotes": 46,
-   "cost": 1,
-   "remaining": 37858
+   "ms": 55,
+   "books": 0,
+   "markets": 0,
+   "outcomes": 0,
+   "quotes": 0,
+   "cost": 0,
+   "remaining": 37839
   }
  ],
- "feed_quotes": 8085,
+ "feed_quotes": 8216,
  "feed_events": 59,
  "markets_closed": 6,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-09-30T14:30:42.754Z",
+ "next_due_at": "2026-09-30T15:00:41.934Z",
  "health": {
-  "now": "2026-09-30T14:15:40.829Z",
+  "now": "2026-09-30T14:30:40.103Z",
   "active_events": 59,
   "on_target": 59,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-09-30T14:15:40.829Z",
-  "last_attempt_at": "2026-09-30T14:15:40.829Z",
+  "last_success_at": "2026-09-30T14:30:40.103Z",
+  "last_attempt_at": "2026-09-30T14:30:40.103Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
