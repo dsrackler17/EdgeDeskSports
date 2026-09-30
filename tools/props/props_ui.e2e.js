@@ -29,7 +29,9 @@
        /game/<id> opens a game
      - the game-card section reads nothing until opened, then shows the
        leads and the headline projections and links into the game
-     - the Lab's Player props validation view and the public record section
+     - the Lab's Player props validation view and the public record section;
+       the record page never scrolls sideways at 375, 390, 430, 768 or
+       1440 px, and the Model Lab's sample labels stay inside their tiles
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
    Run:  node tools/props/props_ui.e2e.js [--shots <dir>]
@@ -485,18 +487,38 @@ async function buildFixture() {
     chk('no page errors from the Lab view', errors.length === 0, errors);
     await page.evaluate(() => { window.scrollTo(0, 0); }); await shot(page, 'desktop_lab');
     await ctx.close();
-    {
-      const rctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    /* the whole record page, once the props record and the Model Lab record
+       have both drawn: nothing reaches past the screen at any width */
+    for (const W of [375, 390, 430, 768, 1440]) {
+      const rctx = await browser.newContext({ viewport: { width: W, height: 844 } });
       await rctx.route('**/*', (route) => (route.request().url().startsWith('http://127.0.0.1') ? route.continue() : route.fulfill({ status: 204, body: '' })));
       const rp = await rctx.newPage(); const rerr = []; rp.on('pageerror', (e) => rerr.push(String(e)));
       await rp.goto(`http://127.0.0.1:${port}/record.html`, { waitUntil: 'domcontentloaded' });
       await rp.waitForFunction(() => document.getElementById('propsPub') && !/Loading/.test(document.getElementById('propsPub').textContent), null, { timeout: 15000 });
-      const rec = await rp.evaluate(() => document.getElementById('propsPub').textContent);
-      chk('the public record copies the NFL props record from performance.json', /NFL/.test(rec) && /Bets \(W-L-P\)/.test(rec) && /Closing-line value/.test(rec), rec.slice(0, 300));
-      chk('…and an unpublished college record is the empty state, not a number', /No college football player prop has been graded yet/.test(rec), rec.slice(-300));
-      chk('no horizontal scroll on the record page (phone)', await rp.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1));
-      chk('no page errors on the record page', rerr.length === 0, rerr);
-      if (SHOTS) await (await rp.$('#player-props')).screenshot({ path: path.join(SHOTS, 'phone_record_props.png') });
+      await rp.waitForFunction(() => document.getElementById('labPub') && !/Loading/.test(document.getElementById('labPub').textContent), null, { timeout: 15000 });
+      if (W === 390) {
+        const rec = await rp.evaluate(() => document.getElementById('propsPub').textContent);
+        chk('the public record copies the NFL props record from performance.json', /NFL/.test(rec) && /Bets \(W-L-P\)/.test(rec) && /Closing-line value/.test(rec), rec.slice(0, 300));
+        chk('…and an unpublished college record is the empty state, not a number', /No college football player prop has been graded yet/.test(rec), rec.slice(-300));
+      }
+      const wide = await rp.evaluate(() => {
+        const vw = document.documentElement.clientWidth, out = [];
+        document.querySelectorAll('body *').forEach((el) => {
+          const r = el.getBoundingClientRect(); if (!(r.width > 0) || r.right <= vw + 1 || out.length >= 5) return;
+          for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) if (/(auto|scroll|hidden|clip)/.test(getComputedStyle(p).overflowX) && p.getBoundingClientRect().right <= vw + 1) return;
+          out.push(el.tagName.toLowerCase() + '.' + el.className + ' ' + Math.round(r.right));
+        });
+        return { scrollWidth: document.documentElement.scrollWidth, clientWidth: vw, wide: out };
+      });
+      chk(W + 'px: no horizontal scroll on the record page', wide.scrollWidth <= wide.clientWidth + 1, wide);
+      /* a sample label that cannot wrap spills out of a narrow KPI tile */
+      const spill = await rp.evaluate(() => Array.from(document.querySelectorAll('#labPub .kpi .s .edlab-sl')).filter((el) => {
+        const t = el.closest('.s').getBoundingClientRect(), r = el.getBoundingClientRect();
+        return r.left < t.left - 0.5 || r.right > t.right + 0.5;
+      }).map((el) => el.closest('.kpi').querySelector('.l').textContent));
+      chk(W + 'px: the Model Lab\'s sample labels stay inside their tiles', !spill.length, spill);
+      chk(W + 'px: no page errors on the record page', rerr.length === 0, rerr);
+      if (SHOTS && W === 390) await (await rp.$('#player-props')).screenshot({ path: path.join(SHOTS, 'phone_record_props.png') });
       await rctx.close();
     }
   } catch (e) {
