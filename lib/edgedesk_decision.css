@@ -143,6 +143,11 @@ details>.edd-sech{cursor:pointer}.edd-sech small{color:var(--edd-faint);margin-l
 .edd-modal-b .edd-fld{margin:8px 0}
 .edd-radio{display:flex;flex-direction:column;gap:8px;margin:10px 0;font-size:13px}
 .edd-radio label{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+/* app.html sizes every input at width:100% with 11px padding; a radio or a
+   checkbox in these dialogs stays its own size, beside its label */
+.edd-modal-b .edd-radio input[type=radio],.edd-modal-b .edd-toggle input[type=checkbox]{width:18px;height:18px;flex:none;padding:0;margin:0;accent-color:var(--edd-lean)}
+.edd-modal-b .edd-toggle{align-items:flex-start;gap:10px}
+.edd-modal-b .edd-toggle input[type=checkbox]{margin-top:1px}
 .edd-unitnow{font-size:13px;margin:6px 0 10px}.edd-unitnow b{font-family:var(--edd-mono);color:var(--edd-bet)}
 .edd-legend>div{font-size:13px;line-height:1.5;margin:8px 0}.edd-legend .edd-badge{margin-right:6px;font-size:11px;min-width:96px;text-align:center}
 .edd-example{border:1px solid var(--edd-line);border-left:4px solid var(--edd-bet);border-radius:10px;padding:10px;margin:8px 0;font-size:13px}
