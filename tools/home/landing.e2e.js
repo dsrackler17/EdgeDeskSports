@@ -17,9 +17,12 @@
              box is measured instead); both hero calls to action above the
              fold and at least 44 px tall; the stats ("worth researching" a
              clear minority of the slate), the preview (two RESEARCH/WATCH game
-             markets and one player prop), the board and the prop table filled from
-             the data; no "0" headline; no tout words; the price and trial
-             from lib/edgedesk_pricing.js
+             markets and one player prop — on a phone the prop second, so the
+             first two cards are both pillars), the board and the prop table
+             filled from the data; no "0" headline; no tout words; the price
+             and trial from lib/edgedesk_pricing.js; the hero copy 14 px on a
+             phone and as it was on desktop; a visitor's second hero button
+             is "See how it works"
    FUNNEL  landing_view on load; cta_clicked for the hero; the live board and
            pricing seen when scrolled to — each once, in batched ed_track calls
    MIDWEEK first kickoff 60 h out, game markets 4 h old, prop prices 2 h
@@ -167,9 +170,11 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       const chips = [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim());
       const card = (el) => ({ chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
         kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
-        text: el.innerText, box: el.getBoundingClientRect().right });
+        where: (el.querySelector('.opp-hd .w') || {}).textContent || '', text: el.innerText, box: el.getBoundingClientRect().right });
       const worth = document.querySelector('#lpStats li[data-k="research"]');
+      const sub = getComputedStyle(document.querySelector('.hero .sub')), hs = document.getElementById('heroStart');
       return {
+        subFont: sub.fontSize, subLine: sub.lineHeight, second: { text: hs.textContent.trim(), href: hs.getAttribute('href') },
         kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
         games: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="game"]')].map(card),
         props: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="prop"]')].map(card),
@@ -193,12 +198,20 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(w + ': both hero calls to action above the fold', r.board && r.start && r.board.bottom <= r.vh && r.start.bottom <= r.vh, [r.board, r.start, r.vh]);
     chk(w + ': and at least 44 px tall', r.board.h >= 44 && r.start.h >= 44, [r.board.h, r.start.h]);
     chk(w + ': live stats shown, none of them a zero', r.stats.length >= 2 && r.stats.every((s) => s && s !== '0'), r.stats);
-    chk(w + ': the preview is live: two game markets, then one player prop', /^Live/.test(r.prevTag) && r.prevCount === 3 && r.kinds.join() === 'game,game,prop', [r.prevTag, r.kinds]);
+    /* a phone shows one of each pillar first; wider screens keep the column's order */
+    const order = w <= 560 ? 'game,prop,game' : 'game,game,prop';
+    chk(w + ': the preview is live: two game markets and one player prop, ' + order, /^Live/.test(r.prevTag) && r.prevCount === 3 && r.kinds.join() === order, [r.prevTag, r.kinds]);
+    chk(w + ': a visitor\'s second hero button is "See how it works", to the workflow', r.second.text === 'See how it works' && r.second.href === '#workflow', r.second);
+    chk(w + ': the hero copy is 14 px on 20 px lines on a phone (13.5 under 360), as it was above', w <= 560
+      ? (r.subFont === (w < 360 ? '13.5px' : '14px') && Math.abs(parseFloat(r.subLine) - parseFloat(r.subFont) * 1.43) < 0.1)
+      : (w === 1280 ? r.subFont === '18.5px' && r.subLine === '28.675px' : r.subFont !== '14px'), [r.subFont, r.subLine]);
     chk(w + ': the game markets are RESEARCH / WATCH, each with its market, EdgeDesk number, difference and book',
       r.games.every((g) => (g.chip === 'RESEARCH' || g.chip === 'WATCH') && g.kicker === 'Game market' && g.cells.length === 3 && g.cells.every((v) => v !== '—') && /captured/.test(g.text)), r.games.map((g) => [g.chip, g.cells]));
     const P = r.props[0] || { cells: [], text: '' };
+    /* the source line reads "<odds> <book> · captured <age>", whichever book it is */
     chk(w + ': the player prop shows player and prop type, line, projection, difference, status, book and capture',
-      P.kicker === 'Player prop' && / · /.test(P.head) && P.cells.length === 3 && P.cells.every((v) => v !== '—') && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /captured \d+ (min|h) ago/.test(P.text) && /ESPN BET|DraftKings|FanDuel|BetMGM|Caesars|Fanatics|BetRivers/.test(P.text), P);
+      P.kicker === 'Player prop' && / · /.test(P.head) && P.cells.length === 3 && P.cells.every((v) => v !== '—') && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /[+\u2212]\d{3,} [A-Z][A-Za-z .]+ · captured \d+ (min|h) ago/.test(P.text), P);
+    chk(w + ': the player prop names its game, with no stray separator', / @ /.test(P.where) && !/^\s*·/.test(P.where), P.where);
     chk(w + ': the preview never labels a card DATA INCOMPLETE', r.chips.length === 3 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
     chk(w + ': the hero count reads "worth researching" and stays a clear minority of the games analyzed',
       r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
@@ -252,7 +265,9 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       const sub = document.querySelector('.hero .sub');
       return { H, what: bottom(document.querySelector('.hero h1')), does: bottom(sub), props: /player props/.test(sub.textContent),
         cost: bottom(document.querySelector('.hero .microcta')), price: document.querySelector('.hero .microcta').textContent,
-        tap: bottom(document.getElementById('heroBoard')), live: bottom(upd), liveText: upd ? upd.textContent.replace(/\s+/g, ' ').trim() : '' };
+        tap: bottom(document.getElementById('heroBoard')), live: bottom(upd), liveText: upd ? upd.textContent.replace(/\s+/g, ' ').trim() : '',
+        next: bottom(document.getElementById('heroStart')), nextText: document.getElementById('heroStart').textContent.trim(),
+        second: (() => { const el = document.querySelectorAll('#lpPrevBody .opp[data-kind]')[1]; return el ? { kind: el.getAttribute('data-kind'), top: Math.round(el.getBoundingClientRect().top), text: el.innerText } : null; })() };
     });
     const above = (b) => b !== null && b <= r.H;
     chk('first visit, 375×548: what EdgeDesk is (eyebrow and headline) above the fold', above(r.what), r);
@@ -260,6 +275,10 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk('first visit: the price and trial above the fold', above(r.cost) && /\$49\.99/.test(r.price) && /7 days free/.test(r.price), r);
     chk('first visit: the primary call to action above the fold', above(r.tap), r);
     chk('first visit: the live freshness tile above the fold', above(r.live) && /^Updated \d+ min ago$/.test(r.liveText), r);
+    chk('first visit: "See how it works" above the fold, beside the board', above(r.next) && r.nextText === 'See how it works', r);
+    /* the research module's second card is a live player prop, so a short
+       scroll past the first game market shows both pillars */
+    chk('first visit: the preview\'s second card is a live player prop', r.second && r.second.kind === 'prop' && /Player prop/i.test(r.second.text) && /captured \d+ (min|h) ago/.test(r.second.text), r.second);
     chk('first visit: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
@@ -292,7 +311,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(vp.width + ' midweek: no age is printed in red', r.red === 0, r.red);
     chk(vp.width + ' midweek: no stale-price warnings in the copy', !/not a current price|is stale|execution window/i.test(r.text), (r.text.match(/not a current price|is stale|execution window/i) || [])[0]);
     chk(vp.width + ' midweek: the preview holds RESEARCH / WATCH games', r.prevChips.length >= 2 && r.prevChips.every((c) => c === 'RESEARCH' || c === 'WATCH'), r.prevChips);
-    chk(vp.width + ' midweek: a prop priced on schedule still takes the prop slot, with its age and no EV', r.kinds.join() === 'game,game,prop' && /captured \d+ h ago/.test(r.propCard) && !/EdgeDesk EV/.test(r.propCard), [r.kinds, r.propCard]);
+    chk(vp.width + ' midweek: a prop priced on schedule still takes the prop slot, with its age and no EV', r.kinds.join() === (vp.width <= 560 ? 'game,prop,game' : 'game,game,prop') && /captured \d+ h ago/.test(r.propCard) && !/EdgeDesk EV/.test(r.propCard), [r.kinds, r.propCard]);
     chk(vp.width + ' midweek: the board is filled', r.boardCards > 0, r.boardCards);
     chk(vp.width + ' midweek: the prop table is filled, eight cells a row', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
     chk(vp.width + ' midweek: no EV on a price past 90 minutes, and it says why', r.ev.length > 0 && r.ev.every((t) => /^—/.test(t)) && r.ev.some((t) => /on a fresh price/.test(t)), r.ev);

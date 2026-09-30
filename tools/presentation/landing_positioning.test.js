@@ -80,8 +80,10 @@ has(HERO, 'EdgeDesk analyzes every NFL and FBS matchup, compares its fair number
   'the subhead: prices games, compares with the market, props included, one terminal');
 chk('the primary action is "Explore today\'s board" and goes to the live board',
   /<a class="btn primary lg" id="heroBoard" href="#today"[^>]*>Explore today&rsquo;s board/.test(HERO));
-chk('the secondary action is "Start free trial" through the consented trial flow',
-  /<button type="button" class="btn ghost lg" id="heroStart" onclick="startSubscribe\(\)"[^>]*>Start free trial</.test(HERO));
+chk('for a visitor the secondary action is "See how it works", to the workflow section',
+  /<a class="btn ghost lg" id="heroStart" href="#workflow" data-track="hero_how_click" data-cta="hero_how">See how it works<\/a>/.test(HERO) && /<section class="sec" id="workflow">/.test(IDX));
+chk('an account is shown its next step there: the trial through the consented flow, or the terminal',
+  /heroNext\('Start free trial','#pricing','hero_trial_click','hero_trial',toPay\)/.test(IDX) && /heroNext\('Open the terminal →',APP_URL,'hero_app_click','hero_app',null\)/.test(IDX));
 /* the offer sits directly under the buttons — nobody hunts for what the trial becomes */
 const OFFER = (HERO.match(/<p class="microcta">([\s\S]*?)<\/p>/) || [])[1] || '';
 chk('the hero offer line is found', OFFER.length > 40);
@@ -267,7 +269,7 @@ chk('the nav CTA is "Start free trial"', /id="navSignup"[^>]*>Start free trial</
 has(NAV, 'id="navLogin"', 'Log in keeps the id bootAuthState rewrites');
 chk('the phone menu is a real disclosure', /aria-controls="navMenu"/.test(NAV) && /aria-expanded="false"/.test(NAV));
 const TRIAL = [...IDX.replace(/<script[\s\S]*?<\/script>/g, ' ').matchAll(/<button\b[^>]*onclick="startSubscribe\(\)"[^>]*>([^<]*)/g)].map(m => m[1].trim());
-chk('at least five trial buttons: nav, hero, board, pricing, close', TRIAL.length >= 5, TRIAL.join(' | '));
+chk('at least four trial buttons: nav, board, pricing, close', TRIAL.length >= 4, TRIAL.join(' | '));
 chk('and every one of them says "Start free trial" or opens the terminal', TRIAL.every(t => /^(?:Start free trial|Open every game in the terminal)$/.test(t)), TRIAL.join(' | '));
 [/>\s*Start researching/, />\s*Get started/i, />\s*Join now/i, />\s*Unlock/i, />\s*Try EdgeDesk/i, />\s*Subscribe\b/i, />\s*Begin research/i, />\s*Start 7 days free/]
   .forEach(re => chk('no competing CTA verb: ' + re, !re.test(IDX), (re.exec(IDX) || [])[0]));
