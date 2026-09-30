@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE LANDING PAGE, IN A REAL BROWSER, AT FIVE WIDTHS AND THREE STATES.
+   THE LANDING PAGE, IN A REAL BROWSER, AT SIX WIDTHS AND THREE STATES.
 
    index.html exactly as it ships, served locally; the two live reads it makes
    are answered from committed data:
@@ -11,7 +11,7 @@
    with every capture time moved relative to the browser's clock, so "live"
    means live NOW and "stale" means stale NOW.
 
-   LIVE    at 375 · 390 · 430 · 768 · 1280:
+   LIVE    at 320 · 375 · 390 · 430 · 768 · 1280:
              nothing wider than the screen (the page clips overflow-x, so a
              scrollWidth check would pass a broken layout — every element's
              box is measured instead); both hero calls to action above the
@@ -139,9 +139,11 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     return { ctx, page, events, errors };
   }
 
-  /* elements whose box leaves the screen, outside a deliberate scroller */
-  const overflowing = (page) => page.evaluate(() => {
-    const W = window.innerWidth, out = [];
+  /* elements whose box leaves the screen, outside a deliberate scroller —
+     measured against the configured viewport: on a phone the browser widens
+     window.innerWidth to fit whatever overflows, which would hide it */
+  const overflowing = (page) => page.evaluate((W) => {
+    const out = [];
     const clipped = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if (/(auto|scroll|hidden|clip)/.test(s.overflowX)) return true; } return false; };
     document.querySelectorAll('body *').forEach((el) => {
       if (el.closest('[hidden],dialog:not([open]),.modal:not(.open),noscript,script,style')) return;
@@ -150,9 +152,9 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       if ((r.right > W + 1 || r.left < -1) && !clipped(el)) out.push((el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0]) + ' ' + Math.round(r.left) + '→' + Math.round(r.right));
     });
     return out.slice(0, 6);
-  });
+  }, page.viewportSize().width);
 
-  const WIDTHS = [{ width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
+  const WIDTHS = [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
   for (const vp of WIDTHS) {
     const w = vp.width;
     let S;
