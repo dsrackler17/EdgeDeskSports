@@ -13,8 +13,10 @@
         AGING ≤30, STALE ≤90 (research-grade → WATCH), then on schedule up to
         1.5 capture cadences (WATCH at most, no EV), DATA INCOMPLETE beyond;
         listed_games / listed_props never carry DATA INCOMPLETE
-     3  the hero preview holds only RESEARCH / WATCH, 2-4 items, nothing
-        promoted to fill space
+     3  the hero preview is both pillars: two RESEARCH / WATCH game markets
+        and one player prop on a current price (a third game without one),
+        nothing promoted to fill space; the hero's count is GAMES worth
+        researching, each once, and only while it is selective
      4  the four public words are the only words; never BET / LOCK / PICK
      5  the tracker: known names only, one per entity per page load, no
         e-mail / token / query string ever leaves, batches of ≤25, and its
@@ -92,6 +94,7 @@ chk('game windows by hours to kickoff: 3 · 6 · 12 · 24 h, the strictest when 
 v = H.build(rpc([game('cfb|1', { kickoff_at: ahead(3), market: { home_line: 14, captured_at: ago(200) } }), game('cfb|2', { kickoff_at: ahead(3), status: 'WATCH', market: { home_line: 3, captured_at: ago(300) } }), game('cfb|3')],
   { games_analyzed: 3, game_research: 2, watching: 1, passes: 0, data_incomplete: 0 }, { model_updated_at: ago(10), market_updated_at: ago(20) }), null, NOW);
 chk('the headline counts follow a view-time downgrade (never "2 research-grade" over a board showing one)', v.counts.game_research === 1 && v.counts.watching === 0 && v.counts.data_incomplete === 2, v.counts);
+chk('…and so does the hero\'s "worth researching"', v.counts.worth_researching === 1, v.counts);
 v = H.build(rpc([game('cfb|1')], { games_analyzed: 1 }, { model_updated_at: ago(240), market_updated_at: ago(200) }), null, NOW);
 chk('nothing refreshed in 3 h: the board is not "live"', v.times.stale === true && v.times.updated_text === '3 h ago');
 chk('…and a fresh one is', H.build(rpc([game('cfb|1')], {}, { model_updated_at: ago(10) }), null, NOW).times.stale === false);
@@ -139,11 +142,58 @@ chk('a fresh capture whose printed props have aged to WATCH claims no research-g
 
 /* ── 3 the hero preview ───────────────────────────────────────────────── */
 const g4 = [game('cfb|1'), game('cfb|2', { status: 'WATCH' }), game('cfb|3', { status: 'PASS' }), game('cfb|4', { status: 'DATA_INCOMPLETE' })];
+const kinds = (x) => x.preview.map((i) => i.kind).join();
+const onlyProps = (items) => ({ schema: 'edgedesk_home_static/1', props: { counts: {}, items, top: Object.keys(items), by_game: {} } });
 v = H.build(rpc(g4), stat(30, 24), NOW);
-chk('the preview holds only RESEARCH and WATCH', v.preview.every((x) => (x.kind === 'game' ? x.game.status : x.prop.status).match(/^(RESEARCH|WATCH)$/)), v.preview.map((x) => x.kind));
-chk('…games first, then research-grade props, at most 4', v.preview.length <= 4 && v.preview[0].kind === 'game' && v.preview[0].game.status === 'RESEARCH' && v.preview.filter((x) => x.kind === 'prop').every((x) => x.prop.status === 'RESEARCH'));
+chk('the preview is both pillars: two game markets, then one player prop', kinds(v) === 'game,game,prop', kinds(v));
+chk('…the game markets are RESEARCH or WATCH, research first', v.preview[0].game.status === 'RESEARCH' && v.preview[1].game.status === 'WATCH');
+chk('…the prop is the strongest current one (RESEARCH, best research score)', v.preview[2].prop.id === 'b' && v.preview[2].prop.status === 'RESEARCH', v.preview[2].prop.id);
+const pp = v.preview[2].prop;
+chk('…and carries player, prop type, line, projection, difference, status, book and capture age',
+  pp.player === 'Player b' && pp.market === 'Receiving Yards' && pp.line_text === '44.5' && pp.projection_text === '38.2' && pp.difference_text === '−6.3'
+  && pp.status_label === 'RESEARCH' && pp.book === 'DraftKings' && pp.age_text === '8 min ago', pp);
+v = H.build(rpc([game('cfb|1'), game('cfb|2', { status: 'WATCH' }), game('cfb|5', { status: 'WATCH' }), game('cfb|6')]), null, NOW);
+chk('without a current prop, a third game takes the prop\'s slot', kinds(v) === 'game,game,game', kinds(v));
+v = H.build(rpc(g4.concat(game('cfb|5', { status: 'WATCH' }))), onlyProps({ x: prop('x', { price: { american: -110, book: 'draftkings', captured_at: ago(600) } }) }), NOW);
+chk('a DATA INCOMPLETE prop never fills the slot (a game does)', kinds(v) === 'game,game,game', kinds(v));
+v = H.build(rpc(g4), onlyProps({ k: prop('k', { matchup: { home: 'Iowa', away: 'Ohio State', kickoff: ago(20) } }) }), NOW);
+chk('a prop whose game has kicked off is not previewed', kinds(v) === 'game,game', kinds(v));
+v = H.build(rpc(g4), onlyProps({ n: prop('n', { projection: { mean: null } }) }), NOW);
+chk('a prop without EdgeDesk\'s projection is not previewed', kinds(v) === 'game,game', kinds(v));
+v = H.build(rpc(g4), onlyProps({ w: prop('w', { research_grade: false, research_score: 99 }), r: prop('r', { research_score: 50 }) }), NOW);
+chk('a RESEARCH prop takes the slot before a higher-scored WATCH', v.preview[2].prop.id === 'r', v.preview.map((i) => i.kind === 'prop' ? i.prop.id : i.kind));
+v = H.build(rpc(g4), onlyProps({ p: prop('p', { decision: 'PASS' }) }), NOW);
+chk('with nothing stronger, a current PASS prop is shown AS PASS, never relabelled', v.preview[2].kind === 'prop' && v.preview[2].prop.status_label === 'PASS');
 v = H.build(rpc([game('cfb|3', { status: 'PASS' })]), null, NOW);
 chk('a board of PASSes previews nothing rather than promoting one', v.preview.length === 0 && v.live === true);
+
+/* the hero's count: games worth researching, each once, and selective */
+const worthStat = (capMin, byGame) => ({ schema: 'edgedesk_home_static/1', props: {
+  counts: { cfb: { research_grade: 14, capture: { last_success_at: ago(capMin) } } },
+  items: { a: prop('a'), b: prop('b', { game_key: 'cfb|2' }) }, top: ['a', 'b'], by_game: byGame } });
+const three = [game('cfb|1'), game('cfb|2', { status: 'WATCH' }), game('cfb|3', { status: 'PASS' })];
+v = H.build(rpc(three, { games_analyzed: 30, game_research: 1 }), worthStat(5, { 'cfb|1': { research_grade: 3 }, 'cfb|2': { research_grade: 11 } }), NOW);
+chk('the hero count is in games: a RESEARCH game with its own props once, a game with eleven research-grade props once',
+  v.counts.worth_researching === 2 && v.counts.game_research + v.counts.prop_research === 15, v.counts);
+v = H.build(rpc(three, { games_analyzed: 30, game_research: 1 }), worthStat(5, { 'cfb|1': { research_grade: 3 }, 'cfb|9': { research_grade: 4 } }), NOW);
+chk('a fresh capture\'s per-game summary adds the games whose props are not printed', v.counts.worth_researching === 3, v.counts);
+v = H.build(rpc(three, { games_analyzed: 30, game_research: 1 }), worthStat(180, { 'cfb|1': { research_grade: 3 }, 'cfb|9': { research_grade: 4 } }), NOW);
+chk('a stale capture\'s summary is not read: only games with a prop RESEARCH now', v.counts.worth_researching === 2, v.counts);
+v = H.build(rpc(three, { games_analyzed: 30, game_research: 5 }), worthStat(5, { 'cfb|9': { research_grade: 4 } }), NOW);
+chk('RESEARCH games past the listed eight add only what no unlisted prop game could be (a floor)', v.counts.worth_researching === 6, v.counts);
+const onCard = prop('z', { game_key: undefined, matchup: undefined });
+v = H.build(rpc([game('cfb|1'), game('cfb|2', { status: 'WATCH', props: { top: [onCard] } }), game('cfb|3', { status: 'PASS' })], { games_analyzed: 30, game_research: 1 }), null, NOW);
+chk('a research-grade prop known only from its game\'s card (no game_key of its own) counts that game', v.counts.worth_researching === 2, v.counts);
+v = H.build(rpc(three, { games_analyzed: 30, game_research: 1 }), onlyProps({ k: prop('k', { game_key: 'cfb|7', matchup: { home: 'A', away: 'B', kickoff: ago(20) } }) }), NOW);
+chk('a prop whose game has kicked off adds no game', v.counts.worth_researching === 1, v.counts);
+v = H.build(rpc(three, { games_analyzed: 5, game_research: 1 }), worthStat(5, {}), NOW);
+chk('over a third of the games analyzed, the count is left out — never "most of the slate"', v.counts.worth_researching === null && v.counts.game_research === 1, v.counts);
+v = H.build(rpc(three, { games_analyzed: 6, game_research: 1 }), worthStat(5, {}), NOW);
+chk('…a third exactly still shows', v.counts.worth_researching === 2, v.counts);
+v = H.build(rpc(three, { game_research: 1 }), worthStat(5, {}), NOW);
+chk('without the games analyzed to compare with, it is left out', v.counts.worth_researching === null, v.counts);
+v = H.build(rpc([game('cfb|3', { status: 'PASS' })], { games_analyzed: 30, game_research: 0 }), null, NOW);
+chk('nothing worth researching is hidden (null), never "0 worth researching"', v.counts.worth_researching === null, v.counts);
 chk('the board sorts RESEARCH, WATCH, PASS, DATA INCOMPLETE', H.build(rpc(g4.slice().reverse()), null, NOW).games.map((g) => g.status).join() === 'RESEARCH,WATCH,PASS,DATA_INCOMPLETE');
 v = H.build(rpc(g4), { schema: 'edgedesk_home_static/1', props: { counts: {}, items: { a: prop('a'), x: prop('x', { price: { american: -110, captured_at: ago(600) } }) }, top: ['a', 'x'], by_game: {} } }, NOW);
 chk('what is listed leaves DATA INCOMPLETE out, games and props alike', v.listed_games.map((g) => g.status).join() === 'RESEARCH,WATCH,PASS' && v.listed_props.map((p) => p.id).join() === 'a' && v.props.length === 2, [v.listed_games.map((g) => g.status), v.listed_props.map((p) => p.id)]);

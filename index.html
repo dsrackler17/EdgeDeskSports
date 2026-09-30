@@ -582,7 +582,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- ============================ 1 · HERO ============================
      What EdgeDesk does in one line, the two actions, the offer under them,
      live statistics READ from the database (each hidden until it arrives),
-     and the live research preview. Nothing in the hero is typed in by hand:
+     and the live research preview: two game markets and one player prop,
+     both pillars in the first glance. Nothing in the hero is typed in by hand:
      the statistics and the preview come from public_home_board() and
      football/home/board.json through lib/edgedesk_home.js. When no live
      game exists the preview falls back to an example that SAYS it is one. -->
@@ -602,7 +603,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
            a user count, not an accuracy, not a profit. -->
       <ul class="stats" id="lpStats" aria-label="EdgeDesk right now">
         <li data-k="games_analyzed" hidden><b></b> games analyzed</li>
-        <li data-k="research" hidden><b></b> research-grade opportunities</li>
+        <li data-k="research" title="Games whose market or a player prop clears EdgeDesk&rsquo;s research gates right now, each counted once" hidden><b></b> worth researching</li>
         <li data-k="props_tracked" hidden><b></b> player props tracked</li>
         <li data-k="sportsbook_quotes" hidden><b></b> sportsbook quotes</li>
         <li data-k="updated" class="upd" hidden>Updated <b></b></li>
@@ -1161,7 +1162,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
      board's view model (supabase/home_board.sql + football/home/board.json) -->
 <script src="/lib/edgedesk_track.js?v=20260930a"></script>
-<script src="/lib/edgedesk_home.js?v=20260930b"></script>
+<script src="/lib/edgedesk_home.js?v=20260930c"></script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -2295,12 +2296,6 @@ function ageSpan(text, state){
   return '<span class="age '+cls+'">'+e(text)+'</span>';
 }
 function supCls(p){ return p.supports===true?'pos':(p.supports===false?'neg':''); }
-function propRow(p){
-  var cls=supCls(p);
-  return '<div class="pm"><span class="pwho">'+e(p.market)+' &middot; '+e(p.player)+(p.position?' ('+e(p.position)+')':'')
-    +'<small>'+e(p.selection||'')+(p.odds_text?' &middot; '+e(p.odds_text)+(p.book?' '+e(p.book):''):'')+(p.age_text?' &middot; '+e(p.age_text):'')+'</small></span>'
-    +'<span class="nums">Mkt <b>'+e(p.line_text||'—')+'</b> &middot; ED <b>'+e(p.projection_text||'—')+'</b>'+(p.difference_text?' &middot; <span class="d '+cls+'">'+e(p.difference_text)+'</span>':'')+'</span></div>';
-}
 /* a game's EV is printed only at a quote inside the execution window */
 function evLine(g){
   var v=g.ev; if(!v||!v.calibrated_text||v.stale) return '';
@@ -2314,37 +2309,41 @@ function marketSrc(g, prefix){
   if(g.market_age_text) return ageSpan((prefix||'')+g.market_age_text, '');
   return g.market_note?ageSpan('market: '+g.market_note, ''):'';
 }
+/* the hero's two pillars: a GAME MARKET card (the first one full, with its EV
+   and the way in) and a PLAYER PROP card — each with its book and the time
+   its price was captured */
 function gameBlock(g, full){
-  var h='<div class="opp'+(full?'':' compact')+'">'
-    +'<div class="opp-hd"><div><b>'+e(g.matchup)+'</b><span class="w">'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+'</span></div>'+stChip(g)+'</div>';
-  if(full) h+='<div class="opp-k">Game market</div>';
-  h+='<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(g.market_text||'—')+'</span></div>'
+  var src=(g.market_book?e(g.market_book)+' &middot; ':'')+marketSrc(g, 'market captured ');
+  var h='<div class="opp'+(full?'':' compact')+'" data-kind="game">'
+    +'<div class="opp-hd"><div><b>'+e(g.matchup)+'</b><span class="w">'+e(g.league_label)+(g.kickoff_text?' &middot; '+e(g.kickoff_text):'')+'</span></div>'+stChip(g)+'</div>'
+    +'<div class="opp-k">Game market</div>'
+    +'<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(g.market_text||'—')+'</span></div>'
     +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(g.fair_text||'—')+'</span></div>'
-    +'<div><span class="l">Difference</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>';
-  if(full){
-    h+='<p class="ev">'+(g.market_book?e(g.market_book)+' &middot; ':'')+marketSrc(g, 'market captured ')+'</p>';
-    h+=evLine(g);
-    var ps=g.props.filter(function(p){ return p.status!=='DATA_INCOMPLETE'; }).slice(0,2);
-    if(ps.length){ h+='<div class="opp-k">Player props</div>'+ps.map(propRow).join(''); }
-    h+=gameAction(g);
-  }
+    +'<div><span class="l">Difference</span><span class="v warn">'+e(g.gap_text||'—')+'</span></div></div>'
+    +(src?'<p class="ev">'+src+'</p>':'');
+  if(full) h+=evLine(g)+gameAction(g);
   return h+'</div>';
 }
 function propBlock(p){
   var cls=supCls(p);
-  return '<div class="opp compact"><div class="opp-hd"><div><b>'+e(p.player)+' &middot; '+e(p.market)+'</b>'
+  var src=[e(p.selection||''), p.odds_text?e(p.odds_text)+(p.book?' '+e(p.book):''):e(p.book||''), p.age_text?ageSpan('captured '+p.age_text, p.price_state):'']
+    .filter(Boolean).join(' &middot; ');
+  return '<div class="opp compact" data-kind="prop"><div class="opp-hd"><div><b>'+e(p.player)+' &middot; '+e(p.market)+'</b>'
     +'<span class="w">'+e(p.matchup?(p.matchup.away+' @ '+p.matchup.home):'')+(p.league?' &middot; '+e(p.league.toUpperCase()):'')+'</span></div>'+stChip(p)+'</div>'
+    +'<div class="opp-k">Player prop</div>'
     +'<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(p.line_text||'—')+'</span></div>'
     +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(p.projection_text||'—')+'</span></div>'
     +'<div><span class="l">Difference</span><span class="v '+(cls||'warn')+'">'+e(p.difference_text||'—')+'</span></div></div>'
-    +(p.ev_text?'<p class="ev">EdgeDesk EV <b class="'+(p.ev>0?'pos':'neg')+'">'+e(p.ev_text)+'</b>'+(p.ev_label?' ('+e(p.ev_label)+')':'')+' at '+e(p.selection||'')+' '+e(p.odds_text||'')+(p.book?' &middot; '+e(p.book):'')+(p.age_text?' &middot; '+ageSpan(p.age_text,p.price_state):'')+'</p>':'')
+    +(src?'<p class="ev">'+src+'</p>':'')
+    +(p.ev_text?'<p class="ev">EdgeDesk EV <b class="'+(p.ev>0?'pos':'neg')+'">'+e(p.ev_text)+'</b>'+(p.ev_label?' ('+e(p.ev_label)+')':'')+'</p>':'')
     +'</div>';
 }
 
 function renderStats(V){
   var host=$('lpStats'); if(!host) return;
-  var c=V.counts, research=(c.game_research||0)+(c.prop_research||0);
-  var vals={games_analyzed:n(c.games_analyzed), research:research>0?n(research):null, props_tracked:n(c.props_tracked),
+  var c=V.counts;
+  /* "worth researching" is the view model's selective count, in games */
+  var vals={games_analyzed:n(c.games_analyzed), research:n(c.worth_researching), props_tracked:n(c.props_tracked),
     sportsbook_quotes:n(c.sportsbook_quotes), updated:V.times.updated_text};
   [].forEach.call(host.querySelectorAll('li[data-k]'), function(li){
     var v=vals[li.getAttribute('data-k')];
@@ -2356,15 +2355,17 @@ function renderStats(V){
 function renderPreview(V){
   var body=$('lpPrevBody'), tag=$('lpPrevTag'), foot=$('lpPrevFoot'); if(!body) return;
   body.classList.remove('loading');
-  var items=V.preview;
-  if(!items.length&&V.listed_games.length){
-    /* current games, none clearing the research gates: say so, show the two
+  /* two game markets and one player prop (a third game when no prop is current) */
+  var items=V.preview, prop=items.filter(function(x){ return x.kind==='prop'; }), head='';
+  if(items.length===prop.length&&V.listed_games.length){
+    /* current games, none clearing the research gates: say so, show the
        widest disagreements with their honest labels, promote nothing */
-    items=V.listed_games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,2).map(function(g){ return {kind:'game',game:g}; });
-    body.innerHTML='<div class="opp"><p class="ev" style="margin:0"><b>No game clears EdgeDesk&rsquo;s research gates right now.</b> PASS is a normal answer. The widest current disagreements:</p></div>'
-      +items.map(function(x,i){ return gameBlock(x.game, i===0); }).join('');
-  }else if(items.length){
-    body.innerHTML=items.map(function(x,i){ return x.kind==='game'?gameBlock(x.game, i===0):propBlock(x.prop); }).join('');
+    head='<div class="opp"><p class="ev" style="margin:0"><b>No game clears EdgeDesk&rsquo;s research gates right now.</b> PASS is a normal answer. The widest current disagreements:</p></div>';
+    items=V.listed_games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,prop.length?2:3)
+      .map(function(g){ return {kind:'game',game:g}; }).concat(prop);
+  }
+  if(items.length){
+    body.innerHTML=head+items.map(function(x,i){ return x.kind==='game'?gameBlock(x.game, i===0):propBlock(x.prop); }).join('');
   }else{
     body.classList.add('ill');
     if(tag){ tag.textContent='Example'; tag.className='tag'; }
