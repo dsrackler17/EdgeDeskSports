@@ -1,5 +1,246 @@
 # Changelog
 
+## 2026-09-30 — second follow-up: corrected intervals, the NFL regime signal (#4), the NFL neutral site, the audit's CLV cuts (#5), the two root causes (#3)
+
+While this pass was in progress, #444 and #445 (another session) shipped items 1, 2, 3, 5 and 6 of the follow-up (the
+section below). This pass re-ran their reports rather than re-implementing them. It keeps their work and adds what was
+wrong or missing:
+- three of their reports' bootstrap intervals were too narrow, and two "significant" claims are not;
+- item 4 (an NFL regime signal) had not been done, and the NFL board priced Washington with a quarterback who is out;
+- the NFL engine applied its home field at neutral and international sites;
+- the CLV report did not have the cuts the audit asked for (2+ / 3+ / 5+, regime / not);
+- the root causes for North Texas @ Tulsa and Syracuse @ UConn.
+
+Every parameter below was fitted walk-forward. None was fitted on 2024-2025 before its holdout report. "Significant"
+means the 95% interval excludes zero. The market is never an input to a rating.
+
+### Corrected — the bootstrap intervals (items 1 and 5, and the first pass's #1)
+
+**Root cause.** `regime_backtest.js`, `regime_magnitude_backtest.js` and `clv_report.js` drew their resamples from
+`(seed * 1103515245 + 12345) % 2147483648` computed in doubles. The product passes 2^53, so the low bits are lost and the
+sequence falls into a cycle of about 10,466 draws. A 2,000-rep bootstrap of 500+ games therefore re-used the same few
+thousand indices, and every interval came out too narrow. It was found because one interval printed as [0.22, 0.32]
+around a point estimate of +0.32.
+
+**Change.** All three use an exact 32-bit generator, `seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0` (period
+2^32). Each report was re-run with `--write`. `regime_backtest.js` now records `significant` in the pooled record and in
+the shipped artifact.
+
+| claim | first published | corrected |
+|---|---|---|
+| first pass #1: v1 regime curve vs the standard curve, walk-forward 2014-2025 (`regime_curve.js` record) | −0.030 [−0.063, −0.006], significant | **−0.032 [−0.095, +0.033], not significant** |
+| #444 #1: v1 vs standard on the regime subset, 2024-2025 holdout | −0.106 [−0.229, −0.011], significant | **−0.106 [−0.226, +0.017], not significant** |
+| #444 #5: CFB CLV 2022-2025, all gaps | +0.21 [+0.14, +0.27] | +0.21 [+0.13, +0.29], still excludes zero |
+| #444 #5: CFB CLV 2022-2025, gap 2-4 | +0.10 [+0.02, +0.19] | +0.10 [−0.03, +0.23], now includes zero |
+| #444 #5: CFB CLV 2021 | +0.12 [+0.01, +0.22] | +0.12 [−0.01, +0.26], now includes zero |
+
+- The section below is corrected in place (the #1 table, the v1 sentence, the #5 table) and says so where it changed.
+- The first pass's MAE also reads 13.479 → 13.447 instead of 13.475 → 13.445. That is the fresh public download #444
+  verified against, not the generator.
+- **Nothing prices differently.** The v1 curve, N = 6 and the signal are unchanged. The magnitude refit was already a
+  CANDIDATE.
+- **The v1 regime curve still prices, and its gain is no longer significant.** Its point estimates still favour it, and it
+  cuts the standard curve's +1.68 bias on the regime subset to +0.94. Keeping or reverting it is raised in the PR as a
+  decision; this pass changes neither.
+- The same generator is in `tools/intelligence/validate_staking.js`, outside this audit. It is left for a separate change.
+
+### #4 — An NFL regime signal, and the starter the model prices (Washington without Jayden Daniels)
+
+**Root cause (Daniels).** nflverse `games.csv` pre-fills each upcoming game's quarterback with the club's usual starter,
+and it had not updated Washington's played week 3: it names Daniels, who left week 2 hurt and is OUT (elbow) on the
+week-3 report. The player game logs (`football/props/nfl/players.json`) show Mariota on 100% of the week-3 snaps and
+Daniels on 55% of week 2's. The board read the feed's starter, so it priced Washington with Daniels for weeks 4 and 5.
+
+**Change (the starter).**
+- `app.html` `fbNflReconcileStarters` reads the NFL injury report the research card already shows
+  (`football/injuries/nfl_<season>.json`). A named starter listed OUT or DOUBTFUL is not priced. The club's most recent
+  other starter is: the quarterback with the most starts this season, then last season, who is not himself OUT or
+  DOUBTFUL. QUESTIONABLE is not a substitution.
+- It runs over every unplayed game of the season, not only the board's window.
+- When the report is an earlier week's than the game, the substitution is stated as PENDING.
+- A club with nobody to name prices its carried quarterback level and says the starter is unknown.
+- The substitution is a data-quality note beside the number (`home_qb_note` / `away_qb_note`, `football/engine.js`),
+  never a number of its own.
+- `tools/football/build_nfl_slate.js` publishes the starter it priced, with its status (`SCHEDULE_FEED`,
+  `INJURY_REPORT_REPLACEMENT[_PENDING]`, `STARTER_UNKNOWN`) and the scheduled starter it replaced.
+
+**Change (the regime signal).** `football/research/nfl_regime.py` measures three events per team-game from `games.csv`,
+all known before kickoff:
+- `hc_new`: the head coach's tenure began this season, including a mid-season change;
+- `qb_new`: the starter is not last season's primary starter;
+- `qb_out`: the club has started 2+ games and this starter is not its regular starter so far.
+
+The NFL engine's quarterback layer already moves a club by its announced starter, so the signal is fitted on what is
+left: the out-of-sample residual (`nfl_oos.csv`, itself walk-forward). The fit is OLS on the home-minus-away signals,
+with `hc_new` and `qb_new` split at week 6. It is walk-forward from 2006, with validation 2016-2023. 2024 and 2025 were
+scored once, with the fit through 2023, which is the shipped fit. `football/nfl/regime_nfl.js` carries the fit and its
+record.
+
+| regime subset (either side: `hc_new` or `qb_new` in weeks 1-6, or `qb_out`) | games | MAE model → adjusted | Δ [95% CI] | bias (regime side) |
+|---|---|---|---|---|
+| validation 2016-2023 | 1,062 | 10.224 → 10.085 | −0.139 [−0.275, −0.012] | +1.30 → +0.09 |
+| **holdout 2024-2025** | 303 | 10.509 → 10.340 | **−0.169 [−0.394, +0.056]: not significant** | +1.29 → +0.17 |
+| …2024 | 146 | 10.681 → 10.299 | −0.382 [−0.708, −0.048] | |
+| …2025 | 157 | 10.350 → 10.378 | +0.028 [−0.280, +0.332] | |
+
+- Coefficients (points to the club's side): new head coach −1.49 (weeks 1-6), −0.90 (later); new starter +0.13, −0.73;
+  regular starter out −2.33.
+- **Not promoted.** The adjustment prices only if the holdout interval excludes zero, and it does not. The board shows the
+  signal per side and the adjustment the fit would make ("REGIME (not priced …)"), and adds nothing to the number.
+- When the most starts this season are tied, the fit's own rule picks the earliest starter as "regular". The card says the
+  starts are tied rather than naming a regular starter who is out.
+
+**Live effect (model side, `football/nfl/slate.json` rebuilt at 20:41Z against main's 18:27Z build).**
+- Colts @ Commanders (Tottenham): Colts by 0.80 → **Colts by 2.82**. Mariota for Daniels moves it +0.46 toward Washington
+  (the engine's quarterback table rates Mariota slightly above Daniels). The neutral site (below) moves it −2.48.
+- Giants @ Commanders: Washington by 2.49 → 2.95 (Mariota).
+- 21 of 30 games show an active regime side, all unpriced.
+
+### The NFL home field at neutral sites (found by item 3's home-field check)
+
+**Root cause.** The NFL spread intercept (2.48 pts) is the fitted home-field advantage. It was applied to the nominal home
+side of every game, including the international and neutral-site games nflverse marks `location = Neutral`.
+
+**Change.**
+- `football/engine.js` `nfl.predict` drops the intercept when `game.neutral === true`. The baseline term shows 0 and keeps
+  its fitted weight.
+- The board sets `neutral` from the feed's `location`, or from a verified international venue in
+  `football/venues/nfl_stadiums.json`. The feed marks 57 of its 58 international games Neutral, including the 12 earlier
+  games the Jaguars hosted. Only Eagles @ Jaguars (Tottenham, week 5) is marked Home. That game is priced neutral with a
+  SITE note saying why.
+- Without the venue table, only the feed's own designation counts.
+
+**Result** (`football/research/nfl_neutral_site.js`, the walk-forward predictions on the feed's 90 neutral-site games,
+2003-2025):
+- The nominal home side finished 3.00 pts under the number: CI [−6.02, −0.01].
+- Removing the intercept moved the MAE −0.28, CI [−0.75, +0.23]: **not significant**. This ships as a correction of what
+  the term means (a neutral site has no home team), not as a fitted gain.
+- Eagles @ Jaguars: Jaguars by 6.51 → 4.03. Colts @ Commanders: −2.48 of the move above.
+
+### #5 — The audit's cuts on the CLV report (2+ / 3+ / 5+, regime / not)
+
+**What was missing.** #444's report buckets by 0.5-2 / 2-4 / 4-7 / 7+ and has no regime split. The audit asked for 2+,
+3+ and 5+ against the opener, split regime / not and CFB / NFL.
+
+**Change.** Nothing is fitted and no cut is chosen here.
+- `tools/football/clv_report.js` adds `by_threshold` to every sample: cumulative 2+ / 3+ / 5+. Each is split by the v1
+  regime flag (either side's team-season fires the signal the shipped curve uses) and by games played against the curve's
+  own fitted research minimum (`min_games_for_research` = 6).
+- `football/cfb_p4/research/replay_rows.js` carries the flag and the projection's games-played count, on request only
+  (`regime: true`). Every other number in the report is byte-identical.
+
+| CFB replay 2022-2025 (the engine's held-out window) | 2+ | 3+ | 5+ |
+|---|---|---|---|
+| all: toward rate, CLV pts [95% CI] | 52.7%, +0.22 [+0.13, +0.32] | 52.8%, +0.23 [+0.12, +0.35] | 54.6%, +0.35 [+0.19, +0.51] |
+| regime-flagged | 50.2%, +0.04 [−0.13, +0.21] | 49.1%, +0.01 [−0.18, +0.20] | 50.9%, +0.11 [−0.14, +0.38] |
+| not flagged | 53.9%, +0.33 [+0.21, +0.45] | 55.1%, +0.37 [+0.23, +0.51] | 56.5%, +0.50 [+0.30, +0.72] |
+| before 6 games played (either side) | 50.1%, +0.08 [−0.04, +0.20] | 48.4%, +0.04 [−0.11, +0.18] | 50.3%, +0.12 [−0.07, +0.30] |
+| from 6 games | 55.1%, +0.35 [+0.22, +0.49] | 57.1%, +0.42 [+0.25, +0.59] | 59.4%, +0.61 [+0.35, +0.89] |
+
+- **Reading.** The close follows EdgeDesk only on settled games. A regime-flagged gap, or one before either side has
+  played six games, is followed at a coin flip at every size.
+- 2021 (the engine's tune season, never pooled) shows the same direction: before 6 games 45.5%, from 6 57.0% at 2+.
+- **NFL and CFB 2026:** 24 and 54 games at 2+, too small to read, with no flags on their rows. NFL history cannot be
+  measured: no opener archive exists.
+- **Leakage.** No readable cut is over 60% (the test holds it).
+  - The replay projects each game before absorbing it, and no market field enters a projection.
+  - Its state at kickoff also holds the week's earlier games, which the market also sees by the close.
+  - N = 6 was fitted in the first pass on 2014-2025 by another criterion, so this split is not an independent test of it.
+- **Proposed, not applied:** a WORTH RESEARCHING label at 5+ should require both sides to have played six games (the
+  curve's own N, which today gates regime-flagged teams only). A regime-flagged gap should not be researched on its size
+  alone. The 2-point threshold stays.
+
+### #3 — Root causes: North Texas @ Tulsa and Syracuse @ UConn
+
+The explainer's terms (#444) are exact additive pieces of the projection, so each term *is* the move a counterfactual
+re-projection makes with that factor turned off. Below, each is credited undiscounted, and only toward closing the gap.
+#444's explainer instead discounts each by how much the close has historically taken out. From the committed
+`football/fbs/slate.json` (`disagreement_inputs.explainer_terms`).
+
+**North Texas @ Tulsa.** EdgeDesk has North Texas by 9.24. The market has Tulsa −1.5 (one book, last capture). Gap:
+10.74 toward North Texas, of which 10.00 (93%) is explained.
+
+| factor | effect | share of the gap |
+|---|---|---|
+| North Texas's long-run 2025 rating, still weighted 69% at four games (regime curve; 80% standard) | 7.56 | 70% |
+| the matchup term: 2025 efficiency carried at half weight (`carry_eff` 0.5) | 2.44 | 23% |
+| home field above the fitted 2.58 (4.08 applied) | favours Tulsa; widens the gap | 0 |
+| conference | same conference | 0 |
+| unexplained | 0.74 | 7% |
+
+- **Root cause:** 2025 North Texas production is still counted as 2026, through the long-run prior and the matchup
+  term's efficiency carry.
+- On this season's centred track alone, North Texas is still 3.3 pts better than Tulsa.
+- **Baylor Hayes** is Tulsa's quarterback (slot 1 on its depth chart; Dexter Williams II started the last game). His
+  questionable status is **not read**: no availability record reached Tulsa's quarterbacks (UNKNOWN), and the college QB
+  term prices 0 pts. His status could not have caused this gap.
+- **North Texas's roster inputs are read correctly** after the coaching exodus. The regime record shows:
+  - a new head coach;
+  - returning roster share at the 8th percentile;
+  - returning production at the 1st;
+  - transfers out at the 87th.
+- EdgeDesk's own V2 has North Texas by 5.9, between V1 and the market.
+
+**Syracuse @ UConn.** EdgeDesk has UConn by 7.75. The market has Syracuse −6.5 (stale). Gap: 14.25 toward UConn, of which
+4.10 (29%) is explained.
+
+| factor | effect | share of the gap |
+|---|---|---|
+| UConn's long-run rating (new coach, 2nd-percentile returning production; weighted 69%) | 2.60 | 18% |
+| home field above the fitted 2.58 (Rentschler gets the league constant 4.08) | 1.50 | 11% |
+| conference (UConn is independent) | 0 | 0 |
+| unexplained | 10.15 | 71% |
+
+- Ruled out:
+  - **Misjoined results:** all 328 FBS results were checked against ESPN box scores before the network closed, and none
+    differ.
+  - **Schedule strength:** consistent. UConn's this-season number rests on 48-20 at Southern Miss and 14-38 vs Maryland.
+  - **Orientation:** the first pass's #5 holds it as DATA FAULT.
+- **Root cause:** the model, not the data. V1's margins-only rating still has UConn 1.3 pts better on this season's track
+  alone, and the market has Syracuse about 9 better on a neutral field. EdgeDesk's own V2, on efficiency, has Syracuse by
+  3.2: it sides with the market. The game stays DATA FAULT.
+
+**Not done in this pass: the "unexplained disagreement" DATA FAULT rule and the research page's "why EdgeDesk disagrees"
+section.** #444 put its explainer in the terminal's artifacts (`games.json`, `board.json`); no page renders it yet. With
+its discounted terms (holdout R² 0.03), the unexplained part averages 89% of a 7+ gap on its own holdout (8.74 of 9.85
+pts), so the rule would flag most large gaps. With the undiscounted terms above, North Texas @ Tulsa is 7% unexplained and
+Syracuse @ UConn 71%. Which explainer drives the rule is a decision, raised in the PR. Nothing is excluded from ranking
+until it is made.
+
+### #6 — Live re-run: still not possible
+
+At 2026-09-30T20:54Z this environment's network policy refused the capture host (`iattxbkbufslbauoumga.supabase.co`), The
+Odds API, ESPN and CollegeFootballData. nflverse (GitHub) was reachable, which is how the NFL slate was rebuilt. No
+market number here is reported as current. The Colts props group was not re-run.
+
+### Pre-existing failures on `main`, unchanged here
+
+- `football/cfb_terminal/tests.js`: the terminal build throws at `lib/cfb_terminal.js:1322` (`K.sd.toFixed` on a null
+  SD). Texas Southern @ Florida Atlantic has only one independent model number, so its agreement tier is null at an 18.8-pt
+  gap. The line is from 0314762b. A fail-closed guard is proposed separately.
+- `tools/bettor/decision_ui.e2e.js`: the NFL card reads "…ResearchLabPASS…", and the test's `\bPASS\b` finds no word
+  boundary after "Lab".
+- `football/cfb_validation/divergence_backtest.js` needs a local replay cache that is not in the repository.
+
+### Tests
+
+- `tools/football/nfl_regime.test.js` (60 checks, new):
+  - the fit's provenance: holdout never fitted, walk-forward, significance from the interval, promotion rule, no market
+    input, signals known before kickoff;
+  - the engine: the neutral site removes exactly the intercept and nothing else; the regime never reaches a number; the
+    notes are stated and never priced;
+  - the board helpers;
+  - the real slate builder on fixture feeds: OUT → PENDING replacement, DOUBTFUL → STARTER_UNKNOWN, QUESTIONABLE kept,
+    every unplayed game reconciled, both sides' regime, the Home-marked international venue priced neutral, an unreadable
+    injury report said;
+  - the committed slate and the neutral-site report.
+- `tools/football/clv_report.test.js` §4 (9 checks): the cuts are cumulative; the regime and games-played parts add up; the
+  minimum is the curve's; the 2026 samples say "not available"; no readable cut over 60%.
+- `tools/football/regime.test.js`: the curve's record states its significance from its interval, and says it is not
+  significant.
+- A 326-file sweep of every test the workflows and `package.json` run: 323 pass. The three above fail identically on
+  `main`.
+
 ## 2026-09-30 — CFB board market integrity: Step 1, the read-only audit
 
 Nothing on the board changed. The week-5 board said NO MARKET for games the providers were quoting. This adds
@@ -59,15 +300,17 @@ on seasons through 2025. The QB change and portal inflow were not inputs anywher
 
 | subset (games) | standard | v1 (ships) | v2 w_raw | v2 − standard | v2 − v1 |
 |---|---|---|---|---|---|
-| all FBS games (1,604) | 12.594 | 12.559 | 12.579 | −0.015 [−0.044, +0.022] | +0.020 [−0.008, +0.036] |
-| v1 regime subset (537) | 13.027 | 12.921 | 12.946 | −0.080 [−0.193, +0.017] | +0.025 [−0.056, +0.109] |
-| heavy turnover (284) | 12.719 | 12.662 | 12.619 | −0.101 [−0.246, +0.065] | −0.043 [−0.133, +0.048] |
+| all FBS games (1,604) | 12.594 | 12.559 | 12.579 | −0.015 [−0.055, +0.023] | +0.020 [−0.013, +0.053] |
+| v1 regime subset (537) | 13.027 | 12.921 | 12.946 | −0.080 [−0.181, +0.022] | +0.025 [−0.048, +0.099] |
+| heavy turnover (284) | 12.719 | 12.662 | 12.619 | −0.101 [−0.256, +0.050] | −0.043 [−0.146, +0.061] |
 | stable (80) | 13.536 | 13.536 | 13.542 | +0.006 | +0.006 |
 
 - Bias on the regime subset (+ = the model overrates the flagged team): standard **+1.68**, v1 +0.94, v2 +0.79.
   The standard curve's figure is about 2.3 standard errors from zero.
-- **v1 against the standard curve on the regime subset is significant: −0.106, 95% CI [−0.229, −0.011].** Its 2021-2023
-  refit gives the identical curve (w0 0.75, λ 0.02), so its sight of 2024-2025 did not change it.
+- **v1 against the standard curve on the regime subset: −0.106, 95% CI [−0.226, +0.017]. Not significant.** *(Corrected in
+  the second follow-up. This was first published as significant, CI [−0.229, −0.011], from a bootstrap whose generator
+  cycled; see that section. The table's intervals above are the corrected ones.)* Its 2021-2023 refit gives the identical
+  curve (w0 0.75, λ 0.02), so its sight of 2024-2025 did not change it.
 - **No v2 form is significantly different from v1, and v2's point estimates are slightly worse.** It is not promoted.
   `football/cfb_p4/regime_magnitude.js` ships as `CANDIDATE`, fitted on 2021-2025 as coach 0.25, returning production
   0.05, QB 0, portal inflow 0. That would put Iowa State's long-run weight at about 60% at four games (×0.74), not under 50%:
@@ -256,16 +499,18 @@ bootstrap 95% CI, per season and per gap bucket. Samples under 100 moved games r
 
 | sample | games | moved toward EdgeDesk | p | mean CLV (pts) | CLV (prob) |
 |---|---|---|---|---|---|
-| **CFB replay 2022-2025**, the engine's held-out window (hyperparameters tuned 2018-2021) | 2,843 | **52.9%** of 2,492 | **0.005** | **+0.21** [+0.14, +0.27] | +0.53 pp |
-| …gap 0.5-2 | 737 | 53.2% | 0.11 | +0.16 [+0.05, +0.30] | +0.41 pp |
-| …gap 2-4 | 846 | 51.2% | 0.56 | +0.10 [+0.02, +0.19] | +0.28 pp |
-| …gap 4-7 | 795 | 52.1% | 0.27 | +0.21 [+0.08, +0.33] | +0.54 pp |
-| …gap 7+ | 465 | **56.6%** | **0.009** | **+0.47** [+0.26, +0.67] | +1.19 pp |
-| CFB replay 2021 (in-sample for the engine's tune; never pooled) | 686 | 50.8% | 0.74 | +0.12 [+0.01, +0.22] | +0.25 pp |
-| CFB 2026 live (frozen record numbers vs the Model Lab's earliest capture) | 68 | 45.1% of 51 | 0.58 | +0.04 [−0.26, +0.35] | too small to read |
-| NFL 2026 live (EdgeDesk's own opener ledger; no historical NFL openers exist) | 29 | 71.4% of 21 | 0.08 | +0.45 [−0.26, +1.16] | too small to read |
+| **CFB replay 2022-2025**, the engine's held-out window (hyperparameters tuned 2018-2021) | 2,843 | **52.9%** of 2,492 | **0.005** | **+0.21** [+0.13, +0.29] | +0.53 pp |
+| …gap 0.5-2 | 737 | 53.2% | 0.11 | +0.16 [+0.02, +0.30] | +0.41 pp |
+| …gap 2-4 | 846 | 51.2% | 0.56 | +0.10 [−0.03, +0.23] | +0.28 pp |
+| …gap 4-7 | 795 | 52.1% | 0.27 | +0.21 [+0.06, +0.36] | +0.54 pp |
+| …gap 7+ | 465 | **56.6%** | **0.009** | **+0.47** [+0.23, +0.74] | +1.19 pp |
+| CFB replay 2021 (in-sample for the engine's tune; never pooled) | 686 | 50.8% | 0.74 | +0.12 [−0.01, +0.26] | +0.25 pp |
+| CFB 2026 live (frozen record numbers vs the Model Lab's earliest capture) | 68 | 45.1% of 51 | 0.58 | +0.04 [−0.24, +0.35] | too small to read |
+| NFL 2026 live (EdgeDesk's own opener ledger; no historical NFL openers exist) | 29 | 71.4% of 21 | 0.08 | +0.45 [−0.28, +1.14] | too small to read |
 
 - By season 2022-2025 the toward-rate is 50.3%, 54.0%, 52.6% and 54.2%.
+- *(Intervals corrected in the second follow-up: the report's bootstrap generator cycled, so the first-published
+  intervals were too narrow. The 2-4 bucket and the 2021 sample no longer exclude zero; the headline still does.)*
 - The college engine's pregame number has shown small, positive, statistically significant CLV on its held-out window,
   concentrated in the 7+ gaps.
 - **This is a replay, not a record.** The replay's state is the one at kickoff, which also holds other games played
@@ -338,6 +583,9 @@ Penn State or Virginia Tech, so their changes could not be dated.
 | mean \|fair − close\| | 4.249 | 4.206 |
 
 - The MAE change is −0.030, 95% CI [−0.063, −0.006], and 7 of 12 seasons improved.
+- **Corrected (second follow-up):** that interval came from a bootstrap whose generator cycled after ~10,466 draws.
+  Re-run with an exact generator it is −0.032, CI [−0.095, +0.033]: **not significant**. The artifact now records
+  `significant: false`.
 - The engine self-check re-projects 128 games; they match the counterfactual to 7e-15.
 
 **Tests.**

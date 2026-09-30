@@ -8,7 +8,7 @@
   var R = {
    "version": "cfb_regime_magnitude_v2",
    "generated_by": "football/cfb_p4/research/regime_magnitude_backtest.js",
-   "generated_at": "2026-09-30T18:08:57.518Z",
+   "generated_at": "2026-09-30T20:25:51.925Z",
    "engine_model_version": "edgedesk_cfb_p4_v1.0.0",
    "status": "CANDIDATE",
    "promoted": false,
@@ -36,24 +36,24 @@
     "all_vs_standard": {
      "delta_mae": -0.015,
      "ci95": [
-      -0.044,
-      0.022
+      -0.055,
+      0.023
      ],
      "significant": false
     },
     "all_vs_v1": {
      "delta_mae": 0.02,
      "ci95": [
-      -0.008,
-      0.036
+      -0.013,
+      0.053
      ],
      "significant": false
     },
     "regime_vs_v1": {
      "delta_mae": 0.025,
      "ci95": [
-      -0.056,
-      0.109
+      -0.048,
+      0.099
      ],
      "significant": false
     }
@@ -69,16 +69,16 @@
      "v2_vs_standard": {
       "delta_mae": -0.015,
       "ci95": [
-       -0.044,
-       0.022
+       -0.055,
+       0.023
       ],
       "significant": false
      },
      "v2_vs_v1": {
       "delta_mae": 0.02,
       "ci95": [
-       -0.008,
-       0.036
+       -0.013,
+       0.053
       ],
       "significant": false
      }
@@ -94,24 +94,24 @@
      "v1_vs_standard": {
       "delta_mae": -0.106,
       "ci95": [
-       -0.229,
-       -0.011
+       -0.226,
+       0.017
       ],
-      "significant": true
+      "significant": false
      },
      "v2_vs_standard": {
       "delta_mae": -0.08,
       "ci95": [
-       -0.193,
-       0.017
+       -0.181,
+       0.022
       ],
       "significant": false
      },
      "v2_vs_v1": {
       "delta_mae": 0.025,
       "ci95": [
-       -0.056,
-       0.109
+       -0.048,
+       0.099
       ],
       "significant": false
      }

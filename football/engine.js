@@ -500,9 +500,10 @@
          about the model rather than an attribution scheme invented for a
          page: they reconcile to the number the engine publishes, and
          football/tests.js holds them to 1e-9 against it. */
-      function lin(feats, names, w, terms) {
-        var s = w[w.length - 1], i, t;
-        if (terms) terms.push({ key: 'baseline', value: null, weight: w[w.length - 1], points: w[w.length - 1] });
+      function lin(feats, names, w, terms, intercept) {
+        var b = intercept == null ? w[w.length - 1] : intercept;
+        var s = b, i, t;
+        if (terms) terms.push({ key: 'baseline', value: null, weight: w[w.length - 1], points: b });
         for (i = 0; i < names.length; i++) {
           t = feats[names[i]] * w[i];
           s += t;
@@ -511,7 +512,18 @@
         return s;
       }
       var spreadTerms = [], ctxTerms = [], totalTerms = [];
-      var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread, spreadTerms);
+      /* A NEUTRAL SITE HAS NO HOME TEAM (second follow-up to the 2026-09-30
+         audit; found by the orientation/home-field check of item 3). The
+         spread intercept is the fitted home-field advantage; it was applied to
+         the nominal home side of every game, including the international and
+         neutral-site ones nflverse marks location = Neutral (Colts @
+         Commanders, week 4 2026, is at Tottenham Hotspur Stadium). Walk-
+         forward, 2003-2025, 90 neutral-site games: the nominal home side
+         finished 3.0 pts under the number on average; without the intercept
+         the MAE moved -0.28, 95% CI [-0.75, +0.23] — NOT significant on 90
+         games, so this ships as a correction of what the term means, not as a
+         fitted gain (football/research/report/nfl_neutral_site.json). */
+      var koerner = lin(F.spread, NFL_SPREAD_FEATS, sp.w_spread, spreadTerms, game && game.neutral === true ? 0 : null);
       var ctxAdj = lin(F.ctx, NFL_CTX_FEATS, sp.w_ctx, ctxTerms);
       var total = lin(F.total, NFL_TOTAL_FEATS, sp.w_total, totalTerms);
       return { koerner_spread: koerner, ctx_adj: ctxAdj,
@@ -661,6 +673,12 @@
     if (sport === 'nfl') {
       if (!input.game.home_qb_id) warn.push('home QB starter unknown');
       if (!input.game.away_qb_id) warn.push('away QB starter unknown');
+      /* a starter substitution forced by the injury report (app.html
+         fbNflReconcileStarters): stated beside the number, never a number */
+      if (typeof input.game.home_qb_note === 'string' && input.game.home_qb_note) warn.push(input.game.home_qb_note);
+      if (typeof input.game.away_qb_note === 'string' && input.game.away_qb_note) warn.push(input.game.away_qb_note);
+      /* the site designation the board resolved (a neutral site has no home field, nfl.predict) */
+      if (typeof input.game.site_note === 'string' && input.game.site_note) warn.push(input.game.site_note);
     }
     return { status: 'OK', missing: [], warnings: warn };
   }

@@ -363,7 +363,11 @@ function fitFamily(family, list) { return gridFit(list, family); }
 function bootCI(diffs, reps) {
   if (!diffs.length) return null;
   var seed = 20260930;
-  function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+  /* a 32-bit LCG in exact integer arithmetic (Math.imul, >>> 0). The earlier
+     (seed * 1103515245 + 12345) % 2^31 overflowed 2^53 in doubles, lost its low
+     bits and cycled after ~10,466 draws, so every resample of a few thousand
+     games re-read nearly the same sequence and the CI came out far too narrow */
+  function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
   var means = [], i, j, s;
   for (i = 0; i < (reps || 2000); i++) {
     s = 0; for (j = 0; j < diffs.length; j++) s += diffs[Math.floor(rnd() * diffs.length)];

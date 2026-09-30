@@ -93,9 +93,35 @@ function regimeInputs(DATA) {
   };
 }
 
-/* opts = { data, from, to, replayFrom, explainer } -> { rows, refused }.
+/* THE V1 REGIME FLAG per team-season: the signal the shipped regime curve
+   fires on (football/coaching/regime_signal.js, its default definition, as
+   research/regime_backtest.js reads it), from research/build_regime_history.py's
+   regime_history.csv. A team-season with no row is null (unknown), never false.
+   For reports that split by it (tools/football/clv_report.js); nothing prices
+   from it here. */
+function regimeFlags(DATA) {
+  var RS = require(path.join(HERE, '..', '..', 'coaching', 'regime_signal.js'));
+  var fr = path.join(DATA, 'out', 'regime_history.csv'), flag = {};
+  if (!fs.existsSync(fr)) throw new Error('missing ' + fr + ' — run build_regime_history.py');
+  readCsv(fr).forEach(function (r) {
+    if (String(r.fbs).toLowerCase() !== 'true' || !r.team) return;
+    flag[r.season + '|' + E.normKey(r.team)] = RS.fires({ new_hc: bool(r.new_hc), returning_share_pct: num(r.returning_share_pct),
+      returning_production_pct: num(r.returning_production_pct), transfers_out_pct: num(r.transfers_out_pct) }, RS.DEFAULT).fires === true;
+  });
+  return function (season, name) { var v = flag[season + '|' + E.normKey(name)]; return v == null ? null : v; };
+}
+
+/* each side's games played this season before the game, as the projection counted them */
+function gamesPlayed(out) {
+  var pb = out && out.layers && out.layers.strength && out.layers.strength.preseason_blend;
+  return pb ? { home: num(pb.home_games_played), away: num(pb.away_games_played) } : { home: null, away: null };
+}
+
+/* opts = { data, from, to, replayFrom, explainer, regime } -> { rows, refused }.
    explainer: also carry each game's explainer terms (lib/edgedesk_explainer.js
-   termsFromProjection — the function the live board uses) */
+   termsFromProjection — the function the live board uses)
+   regime: also carry each side's v1 regime flag and its games played this
+   season before the game (the projection's own count) */
 function replayRows(opts) {
   var DATA = path.resolve(String(opts.data)), FROM = opts.from, TO = opts.to, REPLAY_FROM = opts.replayFrom || 2004;
   var games = [];
@@ -123,6 +149,7 @@ function replayRows(opts) {
   var rows = [], season = REPLAY_FROM, refused = 0;
   var X = opts.explainer ? require(path.join(HERE, '..', '..', '..', 'lib', 'edgedesk_explainer.js')) : null;
   var RI = opts.explainer ? regimeInputs(DATA) : null;
+  var RF = opts.regime ? regimeFlags(DATA) : null;
   games.forEach(function (g) {
     if (g.season !== season) { E.ingest.seasonBreak(st); season = g.season; }
     if (!g.completed) return;
@@ -136,7 +163,9 @@ function replayRows(opts) {
           fair: out.model.fair_spread, sigma: num(unc.sigma), sigma_base: num(unc.sigma_base),
           open: mk.open != null ? mk.open : null, close: mk.close != null ? mk.close : null,
           margin: g.home_points - g.away_points,
-          terms: X ? X.termsFromProjection(out, { home: RI.side(g.season, g.home), away: RI.side(g.season, g.away) }) : undefined });
+          terms: X ? X.termsFromProjection(out, { home: RI.side(g.season, g.home), away: RI.side(g.season, g.away) }) : undefined,
+          regime: RF ? { home: RF(g.season, g.home), away: RF(g.season, g.away) } : undefined,
+          games_played: RF ? gamesPlayed(out) : undefined });
       } else refused++;
     }
     E.ingest.absorbGame(st, { home: g.home, away: g.away, home_fbs: g.home_fbs, away_fbs: g.away_fbs,

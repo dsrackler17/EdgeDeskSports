@@ -125,6 +125,10 @@ function loadNflEngine(win, root) {
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'engine.js'), 'utf8'), win, { filename: 'football/engine.js' });
   delete win.module;
   if (!win.EDFootball || !win.EDFootballParams) throw new Error('the football engine loaded but its globals are missing');
+  /* the NFL regime signal's record, as fbEnsureEngine loads it (shown beside
+     the number; it prices only when promoted) */
+  const regimeNfl = path.join(root, 'football', 'nfl', 'regime_nfl.js');
+  if (fs.existsSync(regimeNfl)) vm.runInContext(fs.readFileSync(regimeNfl, 'utf8'), win, { filename: 'football/nfl/regime_nfl.js' });
   return win.EDFootball;
 }
 

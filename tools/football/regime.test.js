@@ -92,8 +92,17 @@ section('2. the coach table walk-back');
 /* ======================================================================== */
 section('3. the fitted curve');
 chk('the curve artifact names its version, its signal and its N', CURVE.version === 'cfb_regime_curve_v1' && CURVE.signal && CURVE.signal.id === RS.DEFAULT.id && Number.isInteger(CURVE.min_games_for_research) && CURVE.min_games_for_research >= 1);
-chk('it was fitted walk-forward and its held-out record IMPROVED the error (delta < 0, the 95% interval below 0)',
-  CURVE.record && CURVE.record.walk_forward_window && CURVE.record.delta < 0 && CURVE.record.delta_ci95[1] < 0, CURVE.record);
+/* CORRECTED (second follow-up): this record was first published with a 95%
+   interval of [-0.063, -0.006]. Its bootstrap generator, (seed * 1103515245 +
+   12345) % 2^31 in doubles, cycled after ~10,466 draws, so every resample of
+   2,203 games re-read nearly the same sequence. Re-run with an exact 32-bit
+   generator the interval is [-0.095, +0.033]: the gain is NOT significant.
+   What is pinned now is the honest form: the record carries its interval and
+   a significance flag that agrees with it (a claim that is untrue fails). */
+chk('it was fitted walk-forward; its held-out record carries its interval and states its significance from it',
+  CURVE.record && CURVE.record.walk_forward_window && CURVE.record.delta < 0 && Array.isArray(CURVE.record.delta_ci95)
+    && CURVE.record.significant === (CURVE.record.delta_ci95[1] < 0), CURVE.record);
+chk('…and it says it plainly: the first-pass curve\'s gain is not significant (the interval includes zero)', CURVE.record.significant === false, CURVE.record);
 chk('w0 and lambda sit inside the grid the fit searched (never hand-tuned outside it)', CURVE.curve.w0 >= 0.2 && CURVE.curve.w0 <= 1 && CURVE.curve.lambda >= 0 && CURVE.curve.lambda <= 0.6);
 chk('the report the artifact cites exists', fs.existsSync(path.join(ROOT, CURVE.report)));
 chk('the regime weight never exceeds the standard curve at any game count', [0, 1, 3, 6, 10, 15].every((g) => { const std = 0.9 - 0.02 * g; const w = RS.weight(g, std, CURVE.curve); return w <= std + 1e-12; }));
