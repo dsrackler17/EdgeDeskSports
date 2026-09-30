@@ -19,7 +19,10 @@
                    evaluated before its kickoff (a "final" row is frozen at
                    kickoff but evaluated before it)
      results       each grades an evaluation that is on file, once, and no
-                   grade is stamped before that evaluation's kickoff
+                   grade is stamped before that evaluation's kickoff; a
+                   later row for the same evaluation is allowed only as a
+                   CORRECTION (correction: true, naming the grade it corrects
+                   and stamped after it) — football/props/grade.js correct()
 
    The checks are pure functions of text (checkPrefix, checkEvaluations,
    checkResults) so tools/props/ledger_verify.test.js runs them offline.
@@ -61,14 +64,17 @@ function checkEvaluations(prev, cur, rel) {
 }
 /* evals: the evaluation rows on file (for the ids and kickoffs they graded) */
 function checkResults(prev, cur, evals, rel) {
-  const problems = checkPrefix(prev, cur, rel), byId = {}, seen = new Set();
+  const problems = checkPrefix(prev, cur, rel), byId = {}, last = {};
   (evals || []).forEach((x) => { if (x && x.evaluation_id) byId[x.evaluation_id] = x; });
   parse(cur, rel, problems).forEach((x, i) => {
     if (!x) return;
     const at = rel + ':' + (i + 1), e = byId[x.evaluation_id];
     if (!e) { problems.push(at + ' grades an evaluation that is not on file (' + x.evaluation_id + ')'); return; }
-    if (seen.has(x.evaluation_id)) problems.push(at + ' grades ' + x.evaluation_id + ' a second time');
-    seen.add(x.evaluation_id);
+    const prevGrade = last[x.evaluation_id];
+    if (prevGrade && !x.correction) problems.push(at + ' grades ' + x.evaluation_id + ' a second time');
+    if (x.correction && !prevGrade) problems.push(at + ' corrects ' + x.evaluation_id + ', which has no grade to correct');
+    if (x.correction && prevGrade && (x.corrects !== prevGrade.graded_at || !(Date.parse(x.graded_at) > Date.parse(prevGrade.graded_at)))) problems.push(at + ' a correction must name the grade it corrects and come after it');
+    last[x.evaluation_id] = x;
     if (x.graded_at && Date.parse(x.graded_at) < Date.parse(e.kickoff)) problems.push(at + ' graded before its kickoff');
   });
   return problems;

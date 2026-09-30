@@ -242,6 +242,36 @@ the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
 - `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
 - `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
 
+## Profit & Loss — every recommendation at the price it was made
+
+The Record's **Profit & Loss** book answers one question: *if I had followed every
+EdgeDesk recommendation, how much would I be up or down?* It reads the ledgers the
+pipelines already keep: frozen player props, frozen game decisions and the football
+model record. It copies each recommendation and each settlement exactly as recorded,
+and prices them at the **American odds captured when the call was made**.
+
+- **Two strategies, never mixed:** flat 1u, and EdgeDesk's recommended stakes.
+- **ROI is net ÷ risked.**
+- **No entry price, no P&L.** The result still counts in the win/loss record, and EdgeDesk never assumes −110.
+- **Corrections update the same row**, and each one is logged on it.
+- **Nothing is deleted.**
+
+The book has:
+
+- summary cards;
+- the cumulative P&L with its running peak and drawdown;
+- breakdowns by league, market, prop type, side, book, model edge, grade, unit size, week and model version;
+- edge calibration and CLV against P&L;
+- player prop performance;
+- a searchable, auditable ledger.
+
+It renders in the app (Records → *Profit & Loss*, with dollars at the reader's own
+unit) and on the public `record.html#pnl` (units only).
+
+- **Design:** [`docs/pnl/DESIGN.md`](docs/pnl/DESIGN.md)
+- `npm run record:pnl` — rebuild `record/pnl/`; `record:pnl:test`, `record:pnl:sql`, `record:pnl:e2e` — the suites
+- `supabase/model_pnl.sql`, `supabase/model_pnl_analytics.sql` — the idempotent table, corrections audit, rollups and a reader's own dollars
+
 ## Player Props — the prop research terminal (NFL and CFB)
 
 The **Props** tab (`#playerprops`) prices player props the same way the
