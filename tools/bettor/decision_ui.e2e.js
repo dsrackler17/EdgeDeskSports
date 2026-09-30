@@ -13,8 +13,11 @@
      - the EdgeDesk Card page: counts, filters, sort, onboarding once, bankroll
        → dollars, beginner mode, BET PLACED against the frozen recommendation
      - a BET (built in the page by the real engine on a synthetic model — the
-       live slate has none) renders side, line, price, units, dollars and the
-       playable boundary, and the NFL card says NO DECISION with its reason
+       live CFB slate has none) renders side, line, price, units, dollars and
+       the playable boundary, and the NFL card decides on the same engine
+     - the replayed slates are today's committed data: the NFL decides, so its
+       live market can carry a BET of its own on any given day. The card checks
+       read today's live BETs first and hold the synthetic BET against them
      - a phone never scrolls sideways and the decision comes first
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
@@ -233,22 +236,36 @@ const BET_BUILDER = () => {
   });
   chk('the card page renders the header: BET and exposure first, LEAN and WATCH second, PASS and NO DECISION subdued', /EDGEDESK CARD/.test(cp.t) && cp.kpis.length === 4 && /BETS?/.test(cp.t) && /TOTAL EXPOSURE/.test(cp.t) && /Leans?/.test(cp.t) && /Watching/.test(cp.t) && /pass(es)?\s*·\s*\d+ no decision/.test(cp.t), cp);
   chk('every decided game appears exactly once under BET / LEAN / WATCHING / PASS / NO DECISION', cp.rows === cp.n && cp.n > 0, cp);
-  chk('an empty BET section says so plainly', /No current price clears EdgeDesk’s betting threshold/.test(await page.evaluate(() => document.getElementById('eddCardHost').textContent)));
+  /* today's live BETs (the NFL replay can qualify one), counted before the synthetic BET joins them */
+  const NONE_QUALIFIES = /No current price clears EdgeDesk’s betting threshold/;
+  const live = await page.evaluate(() => {
+    const U = window.EDDecisionUI, sm = U.summary(), h = document.getElementById('eddCardHost');
+    return { bets: sm.counts.BET, units: sm.total_units, dollars: sm.total_dollars, rows: h.querySelectorAll('.edd-r-bet').length, text: h.textContent,
+      games: U.mergedDecisions().filter((d) => d.decision === 'BET').map((d) => d.sport + ' ' + d.away + ' @ ' + d.home) };
+  });
+  /* the page's own card renderer on today's decisions without a BET: the empty state, every day */
+  const noBet = await page.evaluate(() => { const U = window.EDDecisionUI, h = document.createElement('div'); h.innerHTML = U.cardPageHTML(U.mergedDecisions().filter((d) => d.decision !== 'BET'), { no_health: true });
+    return { text: h.textContent, rows: h.querySelectorAll('.edd-r-bet').length }; });
+  chk('an empty BET section says so plainly', NONE_QUALIFIES.test(noBet.text) && noBet.rows === 0
+    && (live.bets === 0 ? NONE_QUALIFIES.test(live.text) : (!NONE_QUALIFIES.test(live.text) && live.rows === live.bets)), { live: { bets: live.bets, rows: live.rows, games: live.games }, noBetRows: noBet.rows });
 
   /* a BET, from the engine, on the card and as an action card */
   const bet = await page.evaluate((src) => { const f = eval('(' + src + ')'); const d = f(); window.EDDecisionUI.observe(d); return d; }, BET_BUILDER.toString());
   chk('the engine produces the synthetic BET in the page', bet && bet.decision === 'BET' && bet.recommended_units > 0, bet && { d: bet.decision, code: bet.action_reason_code, u: bet.recommended_units });
   await page.evaluate(() => window.show('card'));
   await page.waitForTimeout(300);
-  const cb = await page.evaluate(() => { const h = document.getElementById('eddCardHost'); const r = h.querySelector('.edd-r-bet'); return { row: r ? r.textContent.replace(/\s+/g, ' ') : null, kpi: h.querySelector('.edd-kpi-bet b').textContent, exp: h.querySelector('.edd-kpi-main').textContent.replace(/\s+/g, ' ') }; });
+  const cb = await page.evaluate(() => { const h = document.getElementById('eddCardHost'); const r = h.querySelector('.edd-r-bet[data-edd-open="e2e-bet"]'); return { row: r ? r.textContent.replace(/\s+/g, ' ') : null, kpi: h.querySelector('.edd-kpi-bet b').textContent, exp: h.querySelector('.edd-kpi-main').textContent.replace(/\s+/g, ' ') }; });
   chk('the BET row shows units, side, line, price, book, dollars and playable-to', cb.row && /0\.50U NC State \+6\.5 \(-102\) FanDuel \$12\.50/.test(cb.row) && /Playable to: [+−-]?\d/.test(cb.row), cb);
-  chk('the header counts the bet and its exposure in units and dollars', cb.kpi === '1' && /0\.50U/.test(cb.exp) && /\$12\.50/.test(cb.exp), cb);
+  /* today's live exposure plus the synthetic 0.50U, $12.50 on the reader's $25.00 unit */
+  const want = await page.evaluate((lv) => ({ n: String(lv.bets + 1), units: (Math.round((lv.units + 0.5) * 100) / 100).toFixed(2) + 'U', usd: '$' + window.EDBankroll.fmt(Math.round(((lv.dollars || 0) + 12.5) * 100) / 100) }), live);
+  chk('the header counts the bet and its exposure in units and dollars', cb.kpi === want.n && cb.exp.indexOf(want.units) >= 0 && cb.exp.indexOf(want.usd) >= 0, { cb, want, live: live.games });
   await page.click('[data-edd-act="filter"][data-edd-v="watching"]');
   const onlyWait = await page.evaluate(() => Array.from(document.querySelectorAll('#eddCardHost .edd-row')).every((r) => r.classList.contains('edd-r-watch')));
   chk('the Watching filter shows only WATCH rows', onlyWait);
   await page.click('[data-edd-act="filter"][data-edd-v="bets"]');
-  const onlyBet = await page.evaluate(() => { const rs = Array.from(document.querySelectorAll('#eddCardHost .edd-row')); return rs.length === 1 && rs[0].classList.contains('edd-r-bet'); });
-  chk('the Bets filter shows only BET rows', onlyBet);
+  const onlyBet = await page.evaluate(() => { const rs = Array.from(document.querySelectorAll('#eddCardHost .edd-row'));
+    return { n: rs.length, all: rs.every((r) => r.classList.contains('edd-r-bet')), synthetic: rs.some((r) => r.getAttribute('data-edd-open') === 'e2e-bet') }; });
+  chk('the Bets filter shows only BET rows', onlyBet.n === live.bets + 1 && onlyBet.all && onlyBet.synthetic, { onlyBet, live: live.games });
   await page.click('[data-edd-act="filter"][data-edd-v="all"]');
   /* the BET as an action card, then BET PLACED at a worse number */
   await page.evaluate(() => { const d = window.EDDecisionUI._state.registry['e2e-bet']; const host = document.createElement('div'); host.id = 'eddTestHost'; document.getElementById('v-card').appendChild(host); host.innerHTML = window.EDDecisionUI.actionCardHTML(d); });
