@@ -94,7 +94,10 @@ chk('the hero offer is the first .microcta, the one bootAuthState rewrites for a
 const STATS = (HERO.match(/<ul class="stats" id="lpStats"[\s\S]*?<\/ul>/) || [''])[0];
 ['games_analyzed', 'research', 'props_tracked', 'sportsbook_quotes', 'updated'].forEach(k =>
   chk('the statistic ' + k + ' exists and ships hidden', new RegExp('<li data-k="' + k + '"[^>]*hidden>').test(STATS)));
-['games analyzed', 'research-grade opportunities', 'player props tracked', 'sportsbook quotes', 'Updated'].forEach(t => has(STATS, t, 'the statistic reads "' + t + '"'));
+['games analyzed', 'worth researching', 'player props tracked', 'sportsbook quotes', 'Updated'].forEach(t => has(STATS, t, 'the statistic reads "' + t + '"'));
+lacks(STATS, 'research-grade opportunities', 'the hero no longer sums games and props into "research-grade opportunities"');
+chk('"worth researching" is the view model\'s selective count in games, not a games + props sum',
+  /research:n\(c\.worth_researching\)/.test(LANDING) && !/c\.game_research\|\|0\)\+\(c\.prop_research/.test(LANDING));
 chk('no statistic carries a number in the markup — they are READ', !/<b>\s*[\d,]+\s*<\/b>/.test(STATS) && !/\d+\s*(?:games|props|quotes)/.test(plain(STATS)));
 chk('the statistics are filled only from the view model, and a missing one stays hidden',
   /function renderStats\(V\)/.test(LANDING) && /if\(v\)\{ li\.querySelector\('b'\)\.textContent=v; li\.hidden=false; \} else li\.hidden=true;/.test(LANDING));

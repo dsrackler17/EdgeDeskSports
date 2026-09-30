@@ -15,8 +15,9 @@
              nothing wider than the screen (the page clips overflow-x, so a
              scrollWidth check would pass a broken layout — every element's
              box is measured instead); both hero calls to action above the
-             fold and at least 44 px tall; the stats, the preview (2-4 items,
-             RESEARCH/WATCH only), the board and the prop table filled from
+             fold and at least 44 px tall; the stats ("worth researching" a
+             clear minority of the slate), the preview (two RESEARCH/WATCH game
+             markets and one player prop), the board and the prop table filled from
              the data; no "0" headline; no tout words; the price and trial
              from lib/edgedesk_pricing.js
    FUNNEL  landing_view on load; cta_clicked for the hero; the live board and
@@ -162,7 +163,16 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       const stats = [...document.querySelectorAll('#lpStats li[data-k]')].filter((li) => !li.hidden).map((li) => li.querySelector('b').textContent.trim());
       const prev = [...document.querySelectorAll('#lpPrevBody .opp')];
       const chips = [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim());
+      const card = (el) => ({ chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
+        kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
+        text: el.innerText, box: el.getBoundingClientRect().right });
+      const worth = document.querySelector('#lpStats li[data-k="research"]');
       return {
+        kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
+        games: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="game"]')].map(card),
+        props: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="prop"]')].map(card),
+        worth: worth.hidden ? null : worth.textContent.replace(/\s+/g, ' ').trim(),
+        analyzed: (() => { const li = document.querySelector('#lpStats li[data-k="games_analyzed"]'); return li.hidden ? null : +li.querySelector('b').textContent.replace(/,/g, ''); })(),
         h1: document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim(),
         eyebrow: (document.querySelector('header .ey, header .eyebrow') || {}).textContent || '',
         board: box('heroBoard'), start: box('heroStart'), vh: window.innerHeight,
@@ -181,8 +191,15 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(w + ': both hero calls to action above the fold', r.board && r.start && r.board.bottom <= r.vh && r.start.bottom <= r.vh, [r.board, r.start, r.vh]);
     chk(w + ': and at least 44 px tall', r.board.h >= 44 && r.start.h >= 44, [r.board.h, r.start.h]);
     chk(w + ': live stats shown, none of them a zero', r.stats.length >= 2 && r.stats.every((s) => s && s !== '0'), r.stats);
-    chk(w + ': the preview is live with 2-4 items', /^Live/.test(r.prevTag) && r.prevCount >= 2 && r.prevCount <= 4, [r.prevTag, r.prevCount]);
-    chk(w + ': the preview labels are RESEARCH / WATCH only', r.chips.length > 0 && r.chips.every((c) => c === 'RESEARCH' || c === 'WATCH'), r.chips);
+    chk(w + ': the preview is live: two game markets, then one player prop', /^Live/.test(r.prevTag) && r.prevCount === 3 && r.kinds.join() === 'game,game,prop', [r.prevTag, r.kinds]);
+    chk(w + ': the game markets are RESEARCH / WATCH, each with its market, EdgeDesk number, difference and book',
+      r.games.every((g) => (g.chip === 'RESEARCH' || g.chip === 'WATCH') && g.kicker === 'Game market' && g.cells.length === 3 && g.cells.every((v) => v !== '—') && /captured/.test(g.text)), r.games.map((g) => [g.chip, g.cells]));
+    const P = r.props[0] || { cells: [], text: '' };
+    chk(w + ': the player prop shows player and prop type, line, projection, difference, status, book and capture',
+      P.kicker === 'Player prop' && / · /.test(P.head) && P.cells.length === 3 && P.cells.every((v) => v !== '—') && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /captured \d+ (min|h) ago/.test(P.text) && /ESPN BET|DraftKings|FanDuel|BetMGM|Caesars|Fanatics|BetRivers/.test(P.text), P);
+    chk(w + ': the preview never labels a card DATA INCOMPLETE', r.chips.length === 3 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
+    chk(w + ': the hero count reads "worth researching" and stays a clear minority of the games analyzed',
+      r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
     chk(w + ': the board and its tiles are filled', r.boardCards > 0 && r.tilesShown);
     chk(w + ': the prop table has rows of eight cells', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
     chk(w + ': prop statuses are the four public words', r.propStatus.every((s) => ['RESEARCH', 'WATCH', 'PASS', 'DATA INCOMPLETE'].includes(s)), r.propStatus);
@@ -236,6 +253,8 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     const r = await S.page.evaluate(() => ({
       chips: [...document.querySelectorAll('#lpPrevBody .st, #lpBoard .st, #lpPropRows .st, #lpConnBody .st')].map((s) => s.textContent.trim()),
       prevChips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()),
+      kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
+      propCard: (document.querySelector('#lpPrevBody .opp[data-kind="prop"]') || { innerText: '' }).innerText,
       boardCards: document.querySelectorAll('#lpBoard > *').length,
       propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
       ev: [...document.querySelectorAll('#lpPropRows td[data-l="EdgeDesk EV"]')].map((t) => t.textContent.trim()),
@@ -247,6 +266,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(vp.width + ' midweek: no age is printed in red', r.red === 0, r.red);
     chk(vp.width + ' midweek: no stale-price warnings in the copy', !/not a current price|is stale|execution window/i.test(r.text), (r.text.match(/not a current price|is stale|execution window/i) || [])[0]);
     chk(vp.width + ' midweek: the preview holds RESEARCH / WATCH games', r.prevChips.length >= 2 && r.prevChips.every((c) => c === 'RESEARCH' || c === 'WATCH'), r.prevChips);
+    chk(vp.width + ' midweek: a prop priced on schedule still takes the prop slot, with its age and no EV', r.kinds.join() === 'game,game,prop' && /captured \d+ h ago/.test(r.propCard) && !/EdgeDesk EV/.test(r.propCard), [r.kinds, r.propCard]);
     chk(vp.width + ' midweek: the board is filled', r.boardCards > 0, r.boardCards);
     chk(vp.width + ' midweek: the prop table is filled, eight cells a row', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
     chk(vp.width + ' midweek: no EV on a price past 90 minutes, and it says why', r.ev.length > 0 && r.ev.every((t) => /^—/.test(t)) && r.ev.some((t) => /on a fresh price/.test(t)), r.ev);
@@ -265,6 +285,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       rows: document.getElementById('lpPropRows').innerText, propTag: document.getElementById('lpPropTag').textContent,
       cards: [...document.querySelectorAll('#lpBoard > article')].map((a) => a.innerText),
       prevText: document.getElementById('lpPrevBody').innerText,
+      kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
       priceEx: document.getElementById('lpPriceEx').innerText,
       prevTag: document.getElementById('lpPrevTag').textContent, prevLive: document.getElementById('lpPrevTag').classList.contains('live'),
       upd: (() => { const li = document.querySelector('#lpStats li[data-k="updated"]'); return { old: li.classList.contains('old'), text: li.textContent }; })(),
@@ -274,6 +295,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(vp.width + ' stale: "Last update", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
     chk(vp.width + ' stale: the research-grade headline does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);
     chk(vp.width + ' stale: no RESEARCH on a stale price, and no wall of DATA INCOMPLETE', r.chips.indexOf('RESEARCH') < 0 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
+    chk(vp.width + ' stale: no prop on a stale price; a third game takes its slot', /Example/.test(r.prevTag) || r.kinds.join() === 'game,game,game', r.kinds);
     chk(vp.width + ' stale: every game still listed is a consensus reference, and says so',
       r.cards.every((t) => /consensus reference, not a captured quote/.test(t)) && (/Example/.test(r.prevTag) || /consensus reference, not a captured quote/.test(r.prevText)), r.cards.map((t) => t.slice(0, 60)));
     chk(vp.width + ' stale: the prop table says its prices refresh on schedule', /refresh on a schedule/.test(r.rows) && r.propTag !== 'Live', [r.rows.slice(0, 80), r.propTag]);
