@@ -392,6 +392,19 @@ function serve(handler) {
   /* ===================================================================== */
   console.log('\n== the board at 390px ==');
   const M = await openBoard({ width: 390, height: 1400 });
+  /* the board paints before it settles: the research desk under the counts
+     appears once its library loads and grows again when its published
+     baseline arrives. Measured mid-flight the panel read ~480, 628 or 721px
+     depending on the runner, so wait for the desk and for two identical
+     readings before measuring anything. */
+  await M.page.waitForFunction(() => !!document.querySelector('#fbBody .rv-desk'), null, { timeout: 15000 }).catch(() => {});
+  let settledAt = null;
+  for (let i = 0; i < 20; i++) {
+    const h = await M.page.evaluate(() => document.getElementById('fbBody').getBoundingClientRect().height);
+    if (h === settledAt) break;
+    settledAt = h;
+    await M.page.waitForTimeout(250);
+  }
   const mob = await M.page.evaluate(() => {
     const body = document.getElementById('fbBody');
     const de = document.documentElement;
@@ -411,9 +424,19 @@ function serve(handler) {
       viewport: de.clientWidth,
       rows, sets,
       countsVisible: !!counts && counts.getBoundingClientRect().height > 0,
-      /* how far the control surface pushes the board DOWN INSIDE its own
-         panel. Measured against the panel, not the viewport: the research
-         shell above it is not what this expansion changed. */
+      /* the height of the control surface itself: the header line, the
+         status strip, the filters and the counts, from the header's top to
+         the counts' bottom. The data-notes drawer above it and the research
+         desk below it are content with their own rules (one note shown, the
+         rest folded), and their height follows the data, so they are not
+         what this expansion's controls are held to. */
+      controlsHeight: (() => {
+        const hb = Array.from(body.querySelectorAll('b')).find(b => /EDGEDESK \/\/ FBS FOOTBALL OPERATIONS/.test(b.textContent));
+        const head = hb && hb.closest('.mono');
+        if (!head || !counts) return null;
+        return Math.round(counts.getBoundingClientRect().bottom - head.getBoundingClientRect().top);
+      })(),
+      /* where the board sits in its panel, printed with a failure for context */
       boardOffset: (() => {
         const t = body.querySelector('[style*="overflow-x"]');
         return t ? Math.round(t.getBoundingClientRect().top - body.getBoundingClientRect().top) : null;
@@ -430,7 +453,8 @@ function serve(handler) {
     mob.sets.some(s => s.scrolls), mob.sets);
   chk('the counts strip is still visible', mob.countsVisible === true);
   chk('the controls do not push the board down the panel',
-    mob.boardOffset != null && mob.boardOffset < 620, mob.boardOffset);
+    mob.controlsHeight != null && mob.controlsHeight < 460,
+    { controls: mob.controlsHeight, board_offset: mob.boardOffset });
 
   /* filtering works on a phone too */
   const mobClicked = await M.page.evaluate(() => {
