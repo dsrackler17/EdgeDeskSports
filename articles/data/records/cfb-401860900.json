@@ -21,8 +21,8 @@
   "game_time": "2026-10-04T02:30:00.000Z",
   "game_when_label": "2026-10-04 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-09-29T22:42:06.611Z",
-  "generated_at": "2026-09-29T22:42:06.611Z",
+  "updated_at": "2026-09-30T09:35:34.622Z",
+  "generated_at": "2026-09-30T09:35:34.622Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and Hard Rock Bet on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T22:00:00.000Z",
-        "retrieved_at": "2026-09-29T18:39:06.293Z"
+        "retrieved_at": "2026-09-30T02:46:10.197Z"
       },
       "home": {
         "team": "San Diego State",
@@ -315,9 +315,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-29T18:39:06.293Z"
+        "retrieved_at": "2026-09-30T02:46:10.197Z"
       },
-      "generated_at": "2026-09-29T18:39:05.404Z",
+      "generated_at": "2026-09-30T02:46:55.743Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1418,6 +1418,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 12h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Texas State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1540,7 +1546,7 @@
       "total_market": "58.5",
       "book": "captured · theScore Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "1 hour old",
+      "capture_age": "12 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1590,11 +1596,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "87 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.33 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 87,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1620,7 +1626,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 13.4,
             "max": 15
           },
           {
@@ -1641,18 +1647,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Texas State)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Re-read availability inside the filing window (San Diego State)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1682,28 +1688,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Texas State",
-          "side": "away",
-          "line": -4.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-09-29T22:00:02.478+00:00",
-          "text": "Texas State -4.5 (price not captured) at theScore Bet"
-        },
-        "other": {
-          "team": "San Diego State",
-          "side": "home",
-          "line": 4.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-09-29T22:00:02.478+00:00",
-          "text": "San Diego State +4.5 (price not captured) at theScore Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1915,11 +1901,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-29. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-29T22:42:06.611Z"
+    "at": "2026-09-30T09:35:34.622Z"
   }
 }
