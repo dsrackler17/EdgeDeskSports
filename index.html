@@ -216,14 +216,15 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
    player props (the copy), what it costs (the offer), where to tap (the CTAs)
    and that the data is live (the freshness tile, first in the stats).
    One spacing rhythm: headline 10 · copy 16 · CTAs 8 · offer 10 · stats 12 ·
-   preview 20. Desktop and tablet (above 560 px) are untouched. After the
+   preview 20. The copy is 14 px on 20 px lines: a little less height, the
+   same emphasis. Desktop and tablet (above 560 px) are untouched. After the
    1180 px block, which it overrides. */
 @media(max-width:560px){
   .hero{padding:14px 0 40px}
   .hero-in{gap:20px}
   .hero .ey{font-size:10px;letter-spacing:.14em}
   .hero h1{font-size:clamp(30px,8.8vw,38px);line-height:1.03;margin-top:8px;letter-spacing:-.035em;text-wrap:balance}
-  .hero .sub{font-size:15px;line-height:1.45;margin-top:10px}
+  .hero .sub{font-size:14px;line-height:1.43;margin-top:10px}
   .hero .cta{margin-top:16px;gap:8px}
   .hero .cta .btn.lg{flex:1 1 100%;min-height:44px;padding:10px 16px;font-size:15px;border-radius:11px}
   /* the offer: two centred lines, "7 days free · Then $49.99/month" over
@@ -250,7 +251,7 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
   .hero .stats li.upd:nth-child(odd of :not([hidden])){grid-column:1/-1}
 }
 @media(max-width:359px){
-  .hero .sub{font-size:14.5px}
+  .hero .sub{font-size:13.5px}
   .hero .microcta>span{padding:0 7px}
   .hero .stats li{padding:6px 9px 7px;letter-spacing:.02em}
   .hero .stats li b{font-size:16px}
@@ -650,7 +651,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      What EdgeDesk does in one line, the two actions, the offer under them,
      live statistics READ from the database (each hidden until it arrives),
      and the live research preview: two game markets and one player prop,
-     both pillars in the first glance. Nothing in the hero is typed in by hand:
+     both pillars in the first glance (on a phone the prop is the second card).
+     Visitors get "See how it works" beside the board; an account gets its
+     next step there instead. Nothing in the hero is typed in by hand:
      the statistics and the preview come from public_home_board() and
      football/home/board.json through lib/edgedesk_home.js. When no live
      game exists the preview falls back to an example that SAYS it is one. -->
@@ -662,7 +665,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <p class="sub">EdgeDesk analyzes every NFL and FBS matchup, compares its fair numbers with live sportsbook markets, and brings <b>game lines, player props, matchup research and uncertainty</b> into one terminal.</p>
       <div class="cta">
         <a class="btn primary lg" id="heroBoard" href="#today" data-track="hero_board_click" data-cta="hero_board">Explore today&rsquo;s board <span class="ar" aria-hidden="true">&rarr;</span></a>
-        <button type="button" class="btn ghost lg" id="heroStart" onclick="startSubscribe()" data-track="hero_trial_click" data-cta="hero_trial">Start free trial</button>
+        <a class="btn ghost lg" id="heroStart" href="#workflow" data-track="hero_how_click" data-cta="hero_how">See how it works</a>
       </div>
       <p class="microcta"><span><b><span data-ed-price="trial">7 days free</span></b></span><span>Then <span data-ed-price="price">$49.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
       <!-- LIVE STATISTICS: counts of what EdgeDesk holds right now. Real rows
@@ -2214,9 +2217,18 @@ async function handleAuthCallback(){
     var bl=document.getElementById('btmLogin');
     var hb=document.getElementById('heroBoard');
 
+    /* the hero's second button is "See how it works" for a visitor; an
+       account is shown its next step instead */
+    var heroNext=function(text,href,track,cta,go){
+      if(!hs) return;
+      hs.textContent=text; hs.setAttribute('href',href);
+      hs.setAttribute('data-track',track); hs.setAttribute('data-cta',cta);
+      hs.onclick=go?function(ev){ev.preventDefault();go();}:null;
+    };
+
     if(paid==='no'){
       if(su){su.textContent='Start free trial';su.onclick=toPay;}
-      if(hs){hs.textContent='Start free trial';hs.onclick=toPay;}
+      heroNext('Start free trial','#pricing','hero_trial_click','hero_trial',toPay);
       if(bl){bl.textContent=(u.email?'Start your free trial as '+u.email:'Start free trial');bl.onclick=toPay;}
       var sb=document.getElementById('subBtn');
       if(sb)sb.textContent='Start free trial →';
@@ -2228,7 +2240,7 @@ async function handleAuthCallback(){
         (ep?', then '+ep.PRICE_DISPLAY+'/'+ep.BILLING_PERIOD:'')+'. &middot; 21+ &middot; 1-800-GAMBLER';
     }else{
       if(su){su.textContent='Open the terminal';su.onclick=toApp;}
-      if(hs){hs.textContent='Open the terminal →';hs.onclick=toApp;}
+      heroNext('Open the terminal →',APP_URL,'hero_app_click','hero_app',null);
       if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open the terminal');bl.onclick=toApp;}
       /* a subscriber's board is the terminal's, not this page's preview */
       if(hb&&paid==='yes'){hb.setAttribute('href',APP_URL);hb.innerHTML='Open today&rsquo;s board <span class="ar" aria-hidden="true">&rarr;</span>';}
@@ -2395,8 +2407,9 @@ function propBlock(p){
   var cls=supCls(p);
   var src=[e(p.selection||''), p.odds_text?e(p.odds_text)+(p.book?' '+e(p.book):''):e(p.book||''), p.age_text?ageSpan('captured '+p.age_text, p.price_state):'']
     .filter(Boolean).join(' &middot; ');
+  var where=[p.matchup?p.matchup.away+' @ '+p.matchup.home:'', p.league?p.league.toUpperCase():''].filter(Boolean).join(' · ');
   return '<div class="opp compact" data-kind="prop"><div class="opp-hd"><div><b>'+e(p.player)+' &middot; '+e(p.market)+'</b>'
-    +'<span class="w">'+e(p.matchup?(p.matchup.away+' @ '+p.matchup.home):'')+(p.league?' &middot; '+e(p.league.toUpperCase()):'')+'</span></div>'+stChip(p)+'</div>'
+    +'<span class="w">'+e(where)+'</span></div>'+stChip(p)+'</div>'
     +'<div class="opp-k">Player prop</div>'
     +'<div class="cells c3"><div><span class="l">Market</span><span class="v">'+e(p.line_text||'—')+'</span></div>'
     +'<div><span class="l">EdgeDesk</span><span class="v mdl">'+e(p.projection_text||'—')+'</span></div>'
@@ -2419,10 +2432,14 @@ function renderStats(V){
   var upd=host.querySelector('li[data-k="updated"]');
   if(upd){ upd.classList.toggle('old', !!V.times.stale); upd.firstChild.nodeValue=V.times.stale?'Last update ':'Updated '; }
 }
+/* the phone breakpoint of the hero's own rules */
+var PHONE=window.matchMedia?window.matchMedia('(max-width:560px)'):null;
 function renderPreview(V){
   var body=$('lpPrevBody'), tag=$('lpPrevTag'), foot=$('lpPrevFoot'); if(!body) return;
   body.classList.remove('loading');
-  /* two game markets and one player prop (a third game when no prop is current) */
+  /* two game markets and one player prop (a third game when no prop is
+     current); on a phone the prop comes second, so the first two cards are
+     both pillars */
   var items=V.preview, prop=items.filter(function(x){ return x.kind==='prop'; }), head='';
   if(items.length===prop.length&&V.listed_games.length){
     /* current games, none clearing the research gates: say so, show the
@@ -2431,6 +2448,7 @@ function renderPreview(V){
     items=V.listed_games.slice().sort(function(a,b){ return (b.gap||0)-(a.gap||0); }).slice(0,prop.length?2:3)
       .map(function(g){ return {kind:'game',game:g}; }).concat(prop);
   }
+  if(PHONE&&PHONE.matches) items=H.pillarsFirst(items);
   if(items.length){
     body.innerHTML=head+items.map(function(x,i){ return x.kind==='game'?gameBlock(x.game, i===0):propBlock(x.prop); }).join('');
   }else{
@@ -2575,6 +2593,8 @@ function failAll(){
   }).catch(function(){ failAll(); });
   /* a subscriber's links point into the terminal once billing has answered */
   document.addEventListener('ed:paid', function(){ if(VIEW){ renderPreview(VIEW); } });
+  /* a phone turned to landscape, or a window resized, across the phone width reorders */
+  if(PHONE&&PHONE.addEventListener) PHONE.addEventListener('change', function(){ if(VIEW){ renderPreview(VIEW); } });
 })();
 
 /* ======================================================================

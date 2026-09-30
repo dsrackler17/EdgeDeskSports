@@ -15,8 +15,9 @@
         listed_games / listed_props never carry DATA INCOMPLETE
      3  the hero preview is both pillars: two RESEARCH / WATCH game markets
         and one player prop on a current price (a third game without one),
-        nothing promoted to fill space; the hero's count is GAMES worth
-        researching, each once, and only while it is selective
+        nothing promoted to fill space; on a phone the prop is the second
+        card; the hero's count is GAMES worth researching, each once, and
+        only while it is selective
      4  the four public words are the only words; never BET / LOCK / PICK
      5  the tracker: known names only, one per entity per page load, no
         e-mail / token / query string ever leaves, batches of ≤25, and its
@@ -166,6 +167,25 @@ v = H.build(rpc(g4), onlyProps({ p: prop('p', { decision: 'PASS' }) }), NOW);
 chk('with nothing stronger, a current PASS prop is shown AS PASS, never relabelled', v.preview[2].kind === 'prop' && v.preview[2].prop.status_label === 'PASS');
 v = H.build(rpc([game('cfb|3', { status: 'PASS' })]), null, NOW);
 chk('a board of PASSes previews nothing rather than promoting one', v.preview.length === 0 && v.live === true);
+
+/* on a phone: one of each pillar first, then the rest, nothing added or dropped */
+const ids = (items) => items.map((i) => i.kind === 'prop' ? 'p:' + i.prop.id : 'g:' + i.game.game_key).join();
+v = H.build(rpc(g4), stat(30, 24), NOW);
+chk('phone: a game market, then the player prop, then the second game', ids(H.pillarsFirst(v.preview)) === 'g:cfb|1,p:b,g:cfb|2', ids(H.pillarsFirst(v.preview)));
+chk('…the build\'s own order is left as it was (the desktop column)', kinds(v) === 'game,game,prop', kinds(v));
+v = H.build(rpc([game('cfb|1'), game('cfb|2', { status: 'WATCH' }), game('cfb|5', { status: 'WATCH' })]), null, NOW);
+chk('phone: without a current prop the three games stand', ids(H.pillarsFirst(v.preview)) === 'g:cfb|1,g:cfb|2,g:cfb|5', ids(H.pillarsFirst(v.preview)));
+v = H.build(rpc([game('cfb|3', { status: 'PASS' })]), stat(30, 24), NOW);
+chk('phone: a prop with no game market beside it stays alone, nothing promoted', ids(H.pillarsFirst(v.preview)) === 'p:b', ids(H.pillarsFirst(v.preview)));
+chk('phone: an empty preview stays empty', H.pillarsFirst([]).length === 0 && H.pillarsFirst(null).length === 0);
+
+/* a prop from a game's own block carries no matchup: it reads with its game's */
+const cardProp = prop('c'); delete cardProp.matchup;
+v = H.build(rpc([game('cfb|1', { home: 'Northwestern', away: 'Penn State', props: { top: [cardProp] } })]), null, NOW);
+const cm = (v.preview[1] && v.preview[1].prop.matchup) || {};
+chk('a game card\'s prop takes that game\'s matchup and kickoff', cm.away === 'Penn State' && cm.home === 'Northwestern' && cm.kickoff === ahead(30), cm);
+v = H.build(rpc([game('cfb|1', { kickoff_at: ago(20), props: { top: [cardProp] } })]), null, NOW);
+chk('…so a game card\'s prop is not previewed once its game has kicked off', !v.preview.some((i) => i.kind === 'prop'), kinds(v));
 
 /* the hero's count: games worth researching, each once, and selective */
 const worthStat = (capMin, byGame) => ({ schema: 'edgedesk_home_static/1', props: {
