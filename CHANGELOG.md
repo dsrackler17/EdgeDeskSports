@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-09-30 — CFB board market integrity: Step 1, the read-only audit
+
+Nothing on the board changed. The week-5 board said NO MARKET for games the providers were quoting. This adds
+the tools that measure where the quotes go missing, and a report
+(`docs/cfb-board-integrity/AUDIT.md`) with every root cause reproduced before any fix:
+
+- `tools/football/cfb_board_audit.js`: provider events → matched → shown with a market, Market vs the latest
+  consensus, false staleness, week scoping and duplicate teams, over the committed ledger and board.
+- `supabase/audits/cfb_board_market_audit.sql`: the same questions against production (`signals`, `cfb.games`,
+  `cfb.lines`, `cfb_lab_market_quotes`). It is one read-only `select`.
+- `tools/football/cfb_board_repro_app.js`: the board's own functions, lifted from `app.html`, on the rows each bug
+  needs.
+- `docs/cfb-board-integrity/FINDING_cover_probability_sd.md`: the "SD near 8" rows, investigated. The model is not
+  changed.
+
 ## 2026-09-30 — audit follow-up: verification of the first pass, and the second pass
 
 The first pass (the section below) was re-verified from its code and data before anything here was changed. Its
