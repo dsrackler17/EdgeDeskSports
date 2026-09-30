@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-29T23:53:08.440Z",
+ "generated_at": "2026-09-30T00:06:38.916Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -81,7 +81,7 @@
   "mean": 84,
   "median": 87,
   "percentiles": {
-   "p10": 79,
+   "p10": 78.6,
    "p25": 81.5,
    "p50": 87,
    "p75": 88,
@@ -98,12 +98,12 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 52
+    "n": 51
    },
    {
     "grade": "ADEQUATE",
     "label": "ADEQUATE",
-    "n": 11
+    "n": 12
    },
    {
     "grade": "CAUTION",
@@ -142,7 +142,7 @@
    },
    {
     "n": 8,
-    "mean": 86.9,
+    "mean": 86.5,
     "median": 88,
     "conference": "Big Ten"
    },
@@ -210,7 +210,7 @@
   "fbs_vs_fcs": {
    "fbs_fbs": {
     "n": 64,
-    "mean": 85.2,
+    "mean": 85.1,
     "median": 87
    },
    "fbs_fcs": {
@@ -240,7 +240,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.8,
+    "mean": 10.7,
     "max": 20
    },
    {
@@ -285,7 +285,7 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 67,
-    "points": 332.5
+    "points": 333.9
    },
    {
     "key": "stability",
@@ -297,7 +297,7 @@
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
     "games": 67,
-    "points": 171.5
+    "points": 173.5
    },
    {
     "key": "qb_identity",
@@ -381,10 +381,10 @@
  },
  "summary_without_evidence": {
   "games": 67,
-  "mean": 83.7,
+  "mean": 83.6,
   "median": 86,
   "percentiles": {
-   "p10": 78.2,
+   "p10": 77.6,
    "p25": 82,
    "p50": 86,
    "p75": 88,
@@ -401,12 +401,12 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 53
+    "n": 52
    },
    {
     "grade": "ADEQUATE",
     "label": "ADEQUATE",
-    "n": 9
+    "n": 10
    },
    {
     "grade": "CAUTION",
@@ -445,7 +445,7 @@
    },
    {
     "n": 8,
-    "mean": 86.9,
+    "mean": 86.5,
     "median": 88,
     "conference": "Big Ten"
    },
@@ -543,7 +543,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.8,
+    "mean": 10.7,
     "max": 20
    },
    {
@@ -588,7 +588,7 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 67,
-    "points": 332.5
+    "points": 333.9
    },
    {
     "key": "stability",
@@ -600,7 +600,7 @@
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
     "games": 67,
-    "points": 171.5
+    "points": 173.5
    },
    {
     "key": "qb_identity",
@@ -683,7 +683,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-29T23:53:01.232Z",
+  "artifact_generated_at": "2026-09-30T00:06:31.605Z",
   "games_with_evidence": 67,
   "summary": {
    "games": 67,
@@ -703,16 +703,16 @@
    },
    "availability": {
     "by_class": {
-     "NOT_DUE_YET": 90,
+     "NOT_DUE_YET": 88,
      "NOT_REQUIRED": 13,
      "NO_SOURCE": 3,
-     "PROVIDER_FAILED": 28
+     "PROVIDER_FAILED": 30
     },
     "fbs_teams_on_slate": 122,
     "teams_covered": 0,
     "fresh": 0,
     "stale": 0,
-    "unavailable": 23,
+    "unavailable": 25,
     "starters_known_pct": 0,
     "starters_known": 0,
     "starters_total": 3141,
@@ -944,15 +944,15 @@
     "key": "availability",
     "label": "Availability feed",
     "games_affected": 67,
-    "current_points_lost": 504,
-    "maximum_recoverable_points": 386,
+    "current_points_lost": 507.4,
+    "maximum_recoverable_points": 389,
     "games_recoverable": 54,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 231.6,
-    "enrichment_roi": 77.2,
+    "estimated_recoverable_points": 233.4,
+    "enrichment_roi": 77.8,
     "engineering_priority": 1
    },
    {
@@ -6778,11 +6778,11 @@
    "legacy_input_coverage": 0.731,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 81,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
-    "tier": "STRONG",
-    "raw": 81.4,
+    "score": 78,
+    "grade": "ADEQUATE",
+    "grade_label": "ADEQUATE",
+    "tier": "ADEQUATE",
+    "raw": 77.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -6791,7 +6791,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.1,
+      "score": 8.6,
       "max": 20
      },
      "projection_stability": {
@@ -6839,29 +6839,29 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Penn State’s absences cannot be assessed: no current availability read for this game",
+      "points": 3,
+      "reason": "every source that covers Penn State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Penn State’s absences cannot be assessed: no current availability read for this game",
       "family": "availability",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Northwestern’s absences cannot be assessed: no current availability read for this game",
+      "points": 3,
+      "reason": "every source that covers Northwestern failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Northwestern’s absences cannot be assessed: no current availability read for this game",
       "family": "availability",
       "action_key": "availability:home"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Penn State’s availability report is not due yet — nobody is assumed fit",
+      "points": 2,
+      "reason": "no source states whether Rocco Becht can play — silence is not health",
       "family": "qb_status",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Northwestern’s availability report is not due yet — nobody is assumed fit",
+      "points": 2,
+      "reason": "no source states whether Aidan Chiles can play — silence is not health",
       "family": "qb_status",
       "action_key": "availability:home"
      },
@@ -6915,37 +6915,32 @@
       "binding": false
      }
     ],
-    "missing": [],
+    "missing": [
+     "qb_availability:home",
+     "availability:home",
+     "qb_availability:away",
+     "availability:away"
+    ],
     "next_actions": [
      {
-      "action": "Re-read availability inside the filing window (Penn State)",
+      "action": "Restore an injury/availability source for Penn State",
       "key": "availability:away",
-      "potential_gain": 4
+      "potential_gain": 5
      },
      {
-      "action": "Re-read availability inside the filing window (Northwestern)",
+      "action": "Restore an injury/availability source for Northwestern",
       "key": "availability:home",
-      "potential_gain": 4
-     },
-     {
-      "action": "Confirm Penn State’s starting QB (Rocco Becht)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Northwestern’s starting QB (Aidan Chiles)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
+      "potential_gain": 5
      }
     ],
     "recoverable_by_family": {
-     "availability": 7,
+     "availability": 10,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 81,
-    "grade": "STRONG"
+    "score": 78,
+    "grade": "ADEQUATE"
    }
   },
   "401858477": {
