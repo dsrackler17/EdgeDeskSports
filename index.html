@@ -35,12 +35,13 @@
 <meta name="twitter:description" content="One football research terminal for the game, the market and the players: NFL and FBS model vs market, player props, EdgeDesk EV and stated uncertainty. Research, not picks.">
 <!-- Structured data: who publishes this and what it sells. No rating, no
      review count and no user count — nothing is claimed here that the page
-     itself does not state. The offer must match lib/edgedesk_pricing.js. -->
+     itself does not state. The offer must match lib/edgedesk_pricing.js
+     (PRICE_CENTS) — tools/personal/personal_wiring.test.js checks it. -->
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Organization","@id":"https://edgedesksports.com/#org","name":"EdgeDesk Sports","url":"https://edgedesksports.com/","email":"support@edgedesksports.com","legalName":"Rackler Tech Ventures LLC"},
  {"@type":"WebSite","@id":"https://edgedesksports.com/#site","url":"https://edgedesksports.com/","name":"EdgeDesk Sports","publisher":{"@id":"https://edgedesksports.com/#org"}},
- {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"A football research terminal for NFL and FBS: model against market for game lines and player props, matchup and roster research, EdgeDesk EV and stated uncertainty. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","price":"79.99","priceCurrency":"USD","description":"7-day free trial, then $79.99 per month. Cancel anytime.","category":"subscription"}}
+ {"@type":"SoftwareApplication","name":"EdgeDesk Research Terminal","applicationCategory":"SportsApplication","operatingSystem":"Web","url":"https://edgedesksports.com/","description":"A football research terminal for NFL and FBS: model against market for game lines and player props, matchup and roster research, EdgeDesk EV and stated uncertainty. Research, not betting advice.","publisher":{"@id":"https://edgedesksports.com/#org"},"offers":{"@type":"Offer","name":"EdgeDesk Full Access","price":"49.99","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","price":"49.99","priceCurrency":"USD","unitCode":"MON","referenceQuantity":{"@type":"QuantitativeValue","value":1,"unitCode":"MON"}},"description":"7-day free trial, then $49.99 per month. Cancel anytime.","category":"subscription"}}
 ]}
 </script>
 <link rel="preconnect" href="https://iattxbkbufslbauoumga.supabase.co" crossorigin>
@@ -462,8 +463,6 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
 .timeline .when{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--obs);padding-top:2px}
 .timeline b{display:block;font-size:16px;font-weight:600}
 .timeline span{display:block;color:var(--dim);font-size:14px;line-height:1.5;margin-top:3px}
-.founding{margin-top:20px;font-size:14px;color:var(--dim);line-height:1.55}
-.founding b{color:var(--text);font-weight:600}
 @media(max-width:900px){.price{grid-template-columns:1fr;max-width:520px}}
 @media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}.timeline li{grid-template-columns:78px minmax(0,1fr);gap:12px}}
 
@@ -571,7 +570,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <a class="nlink" href="/articles">Research articles</a>
       <a class="nlink" href="/games/">Games</a>
       <button type="button" class="btn ghost" id="navLogin" onclick="openAuth('login')" data-track="login_click">Log in</button>
-      <p class="nav-offer"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
+      <p class="nav-offer"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
     </div>
     <div class="nav-act">
       <button type="button" class="btn primary" id="navSignup" onclick="startSubscribe()" data-track="nav_trial_click" data-cta="nav_trial">Start free trial</button>
@@ -599,7 +598,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <a class="btn primary lg" id="heroBoard" href="#today" data-track="hero_board_click" data-cta="hero_board">Explore today&rsquo;s board <span class="ar" aria-hidden="true">&rarr;</span></a>
         <button type="button" class="btn ghost lg" id="heroStart" onclick="startSubscribe()" data-track="hero_trial_click" data-cta="hero_trial">Start free trial</button>
       </div>
-      <p class="microcta"><span><b><span data-ed-price="trial">7 days free</span></b></span><span>Then <span data-ed-price="price">$79.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
+      <p class="microcta"><span><b><span data-ed-price="trial">7 days free</span></b></span><span>Then <span data-ed-price="price">$49.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
       <!-- LIVE STATISTICS: counts of what EdgeDesk holds right now. Real rows
            only; every item stays hidden unless the database returned it. Not
            a user count, not an accuracy, not a profit. -->
@@ -919,35 +918,39 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <div class="sec-body price">
       <div class="pcard rv">
         <span id="subscribe"></span>
-        <span class="ptag">Full access</span>
-        <p class="pname" data-ed-price="plan">EdgeDesk Founding Member</p>
-        <div class="pprice"><span class="pamt" data-ed-price="price">$79.99</span><span class="pper">/ month</span></div>
+        <span class="ptag" data-ed-price="plan">EdgeDesk Full Access</span>
+        <p class="pname">Football research terminal</p>
+        <div class="pprice"><span class="pamt" data-ed-price="price">$49.99</span><span class="pper">/ month</span></div>
         <span class="ptrial" data-ed-price="trial">7 days free</span>
-        <ul class="pincl" id="lpIncludes">
-          <li>NFL + FBS, one terminal</li>
-          <li>Game markets: spreads, moneylines and totals</li>
-          <li>Player props, priced at the exact odds</li>
-          <li>Fair lines, projected scores and win probabilities</li>
-          <li>EdgeDesk EV at the exact price you&rsquo;re offered</li>
-          <li>Matchup, roster and player research</li>
-          <li>Simulations and outcome ranges</li>
-          <li>Uncertainty and data quality on every game</li>
-          <li>The public record and copyable research briefs</li>
-          <li>Everything included &mdash; no tiers</li>
+        <!-- One list, written in lib/edgedesk_pricing.js (FEATURES); the
+             terminal's paywall renders the same one. Player props are part of
+             Full Access, never an add-on. -->
+        <ul class="pincl">
+          <li>NFL + FBS</li>
+          <li>Game markets</li>
+          <li>Player props</li>
+          <li>Fair spreads and projections</li>
+          <li>EdgeDesk EV</li>
+          <li>Live market comparison</li>
+          <li>Matchup research</li>
+          <li>Player and roster research</li>
+          <li>Simulation and uncertainty</li>
+          <li>Power ratings</li>
+          <li>Public record</li>
+          <li>Research briefs</li>
         </ul>
         <button type="button" class="btn primary lg authbtn" id="subBtn" onclick="startSubscribe()" data-track="pricing_trial_click" data-cta="pricing_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
-        <p class="psub"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
-        <p class="psub">Nothing charged until day <span data-ed-price="day8">8</span>. Cancel anytime before renewal.</p>
+        <p class="psub"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
+        <p class="psub">Nothing charged until day <span data-ed-price="day8">8</span>.</p>
         <p class="psub" id="edOffer" hidden></p>
         <p class="psmall">21+ &middot; Research and decision-support tool &middot; Signals can be wrong &middot; <span class="nw">1-800-GAMBLER</span></p>
       </div>
       <div class="rv">
         <ol class="timeline">
-          <li><span class="when">Today</span><span><b>Full access, $0</b><span>Every layer of the terminal. Stripe holds a card and charges nothing.</span></span></li>
-          <li><span class="when">Before day <span data-ed-price="day8">8</span></span><span><b>We email you</b><span>A reminder that says the exact date your card will be charged. Nobody here gets billed by forgetting.</span></span></li>
-          <li><span class="when">Day <span data-ed-price="day8">8</span></span><span><b><span data-ed-price="price">$79.99</span> / month</b><span>Unless you cancel &mdash; Settings &rsaquo; Subscription, one click, no retention call.</span></span></li>
+          <li><span class="when">Today</span><span><b>Full access &middot; $0</b><span>Every layer of EdgeDesk is available during the trial.</span></span></li>
+          <li><span class="when">Before day <span data-ed-price="day8">8</span></span><span><b>Reminder email</b><span>A reminder before your trial converts, with the exact date your card will be charged.</span></span></li>
+          <li><span class="when">Day <span data-ed-price="day8">8</span></span><span><b data-ed-price="monthly">$49.99/month</b><span>Unless cancelled before renewal &mdash; Settings &rsaquo; Subscription, one click.</span></span></li>
         </ol>
-        <p class="founding"><b>Founding members</b> <span data-ed-price="founding">Founding members keep their rate while continuously subscribed.</span> No tiers, no countdown, no invented scarcity.</p>
       </div>
     </div>
   </div>
@@ -975,8 +978,12 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <div class="a"><p>Passing yards, passing touchdowns, interceptions, rushing yards, rushing attempts, receiving yards, receptions, touchdowns and other supported NFL and FBS markets, whenever sportsbooks post them. Each prop is read beside its game. Prop markets are in EdgeDesk&rsquo;s experimental validation stage: their EV is labelled model-estimated and they carry no stake until their graded record promotes them.</p></div>
       </details>
       <details>
-        <summary>How does the free trial work?</summary>
-        <div class="a"><p>You get the full product for <span data-ed-price="days">7</span> days &mdash; no locked tiers, no trial-only board. Stripe holds a card and <b>charges nothing until day <span data-ed-price="day8">8</span></b>. We email you before the trial converts, with the exact date you will be charged, and if you cancel during the trial you are never charged.</p></div>
+        <summary>How much does EdgeDesk cost?</summary>
+        <div class="a"><p>EdgeDesk costs <b data-ed-price="monthly">$49.99/month</b> after the <span data-ed-price="days">7</span>-day free trial. One plan with everything in it &mdash; game markets, player props, EdgeDesk EV and every research layer. Cancel before the trial ends and you are never charged.</p></div>
+      </details>
+      <details>
+        <summary>How does the <span data-ed-price="days">7</span>-day trial work?</summary>
+        <div class="a"><p>You get the full product for <span data-ed-price="days">7</span> days &mdash; no locked tiers, no trial-only board. Stripe holds a card and <b>charges nothing until day <span data-ed-price="day8">8</span></b>. We email you before the trial converts, with the exact date you will be charged, and if you cancel during the trial you are never charged. After the trial, it is <span data-ed-price="monthly">$49.99/month</span> until you cancel.</p></div>
       </details>
       <details>
         <summary>Where does EdgeDesk get its numbers?</summary>
@@ -993,10 +1000,6 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <details>
         <summary>What happens when the model is uncertain?</summary>
         <div class="a"><p>It says so on the game. An unconfirmed starting quarterback is carried as unknown, never as healthy. A stale price is not compared. A very large gap is investigated as a possible data problem rather than surfaced as a find. Layers that have not cleared validation move no line.</p></div>
-      </details>
-      <details>
-        <summary>What does &ldquo;founding member&rdquo; mean?</summary>
-        <div class="a"><p><span data-ed-price="founding">Founding members keep their rate while continuously subscribed.</span> There is one plan and everyone gets everything; nothing about it is limited-time.</p></div>
       </details>
       <details>
         <summary>Can I cancel anytime?</summary>
@@ -1031,7 +1034,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <button type="button" class="btn primary lg" id="btmLogin" onclick="startSubscribe()" data-track="final_trial_click" data-cta="final_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
       <a class="btn ghost lg" href="#today" data-cta="final_board">Explore today&rsquo;s board</a>
     </div>
-    <p class="microcta"><span data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</span></p>
+    <p class="microcta"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
     <p class="fine">Research, not picks &middot; 21+ &middot; <span class="nw">1-800-GAMBLER</span></p>
   </div>
 </section>
@@ -1105,19 +1108,19 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <p class="ld" id="arlWho"></p>
     <div class="arl">
       <div class="arl-h">FREE TRIAL &amp; AUTOMATIC RENEWAL TERMS</div>
-      <p id="arlTerms"><b><span data-ed-price="plan">EdgeDesk Founding Member</span> &mdash; <span data-ed-price="days">7</span>-day free trial, then <span data-ed-price="price">$79.99</span> per month (founding rate).</b>
-      <b>You are not charged today.</b> Your free trial begins now and lasts <b><span data-ed-price="days">7</span> days</b>. Full access opens immediately.
-      <b>Unless you cancel before the trial ends, the trial converts automatically into a paid subscription and your card is charged <span data-ed-price="price">$79.99</span></b>, and <span data-ed-price="price">$79.99</span> again every month on that same date, until you cancel. This founding rate is locked for the life of your subscription and will not increase.
-      <b>To avoid being charged you must cancel before the end of the <span data-ed-price="days">7</span>th day</b> &mdash; from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. Cancelling during the trial costs nothing and stops all charges. Cancelling later takes effect at the end of the billing period you have already paid for and stops every future charge. We will also email you before the trial converts.
+      <p id="arlTerms"><b><span data-ed-price="plan">EdgeDesk Full Access</span> &mdash; 7-day free trial, then <span data-ed-price="price">$49.99</span> per month.</b>
+      <b>You are not charged today.</b> Your free trial begins now and lasts <b>7 days</b>. Full access opens immediately.
+      <b>Unless you cancel before the trial ends, the trial converts automatically into a paid subscription and your card is charged <span data-ed-price="price">$49.99</span></b>, and <span data-ed-price="price">$49.99</span> again every month on that same date, until you cancel.
+      <b>To avoid being charged you must cancel before the end of the 7th day</b> &mdash; from Settings &rsaquo; Subscription inside the app, or by emailing <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>. Cancelling during the trial costs nothing and stops all charges. Cancelling later takes effect at the end of the billing period you have already paid for and stops every future charge. We will also email you before the trial converts.
       Cancelling during the free trial costs you nothing. <b>Fees already charged are non-refundable</b>, so cancel before the trial ends if you do not want to be billed. Questions: <a href="mailto:support@edgedesksports.com">support@edgedesksports.com</a>.</p>
       <label class="arl-row">
         <input type="checkbox" id="arlAgree">
-        <span>I have read and <b>expressly agree to these free-trial and automatic renewal terms</b>. I understand my trial <b>converts to a paid subscription after <span data-ed-price="days">7</span> days</b> and my card is charged <b><span data-ed-price="price">$79.99</span> per month until I cancel</b>, unless I cancel before the trial ends.</span>
+        <span>I have read and <b>expressly agree to these free-trial and automatic renewal terms</b>. I understand my trial <b>converts to a paid subscription after 7 days</b> and my card is charged <b><span data-ed-price="price">$49.99</span> per month until I cancel</b>, unless I cancel before the trial ends.</span>
       </label>
     </div>
     <button type="button" class="btn primary lg authbtn" id="arlSubmit" onclick="confirmArl()" disabled>Start free trial &mdash; $0 today</button>
     <div class="auth-msg" id="arlMsg"></div>
-    <p class="auth-legal"><b data-ed-price="cta">7-day free trial. $79.99/month after trial. Cancel anytime.</b> Stripe collects a card to hold the trial and charges nothing during it. EdgeDesk never sees or stores your card details.</p>
+    <p class="auth-legal"><b data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</b> Stripe collects a card to hold the trial and charges nothing for 7 days. EdgeDesk never sees or stores your card details.</p>
   </div>
 </div>
 
@@ -1145,9 +1148,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      Carried over from the previous landing page. app.html links unsubscribed
      readers to ./index.html#pricing and ./index.html#subscribe, so this flow
      and those anchors have to live here. Do not rewrite it as part of a
-     presentation change. Since the funnel upgrade the offer's figures are
-     read from lib/edgedesk_pricing.js (each constant keeps a literal fallback
-     that tools/personal/personal_wiring.test.js holds equal to it), and the
+     presentation change. The offer's figures and the checkout link are read
+     from lib/edgedesk_pricing.js (with no fallback figure: if that file does
+     not load, confirmArl() stops before any consent or charge), and the
      funnel events signup_started and checkout_started are sent through
      lib/edgedesk_track.js.
      ========================================================================== -->
@@ -1156,7 +1159,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      rather than duplicated inline so the landing page, the reset page and
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
      board's view model (supabase/home_board.sql + football/home/board.json) -->
@@ -1533,23 +1536,29 @@ affTrackClick(); acqTrackVisit(); edOfferLoad();
    checkout.session.completed, which is how the webhook attributes the payment.
    Stripe silently DROPS invalid values — only [A-Za-z0-9_-], max 200 chars. A UUID
    is valid; an email is not (the @ would be stripped and the payment orphaned). */
-/* THE OFFER, FROM ITS ONE SOURCE: lib/edgedesk_pricing.js (PLAN). Each
-   literal after || is only the fallback for a page whose pricing file did not
-   load, and tools/personal/personal_wiring.test.js fails the moment any of
-   them differs from the file — so the figure a customer consents to and the
-   figure checkout charges cannot drift apart here.
+/* THE OFFER AND THE LINK COME FROM ONE FILE, lib/edgedesk_pricing.js, loaded
+   above. The payment link MUST point at a Stripe price of the same amount as
+   PRICE_DISPLAY and the auto-renewal consent text — a customer consenting to
+   one figure and being charged another is a compliance problem, not a display
+   bug — so the figure and the link are written down side by side, and
+   tools/billing/verify_stripe_offer.js asks Stripe whether that link really
+   sells that price with that trial.
 
-   STRIPE_LINK is the founding-rate payment link. It MUST point at a Stripe
-   price of the same amount as PRICE_DISPLAY and the auto-renewal consent
-   text — a customer consenting to one figure and being charged another is a
-   compliance problem, not a display bug. This page CANNOT create a trial or
-   change a price: both live on the Stripe price behind STRIPE_LINK. */
-var ED_PRICING=window.EDPricing||null;
-var STRIPE_LINK=(ED_PRICING&&ED_PRICING.PAYMENT_LINK)||"https://buy.stripe.com/fZufZggqeev36iOf9o8IU0b";
-var PRICE_DISPLAY=(ED_PRICING&&ED_PRICING.PRICE_DISPLAY)||"$79.99";
-var BILLING_PERIOD=(ED_PRICING&&ED_PRICING.BILLING_PERIOD)||"month";
-var TRIAL_DAYS=(ED_PRICING&&ED_PRICING.TRIAL_DAYS)||7;
-var STRIPE_PRICE_ID=(ED_PRICING&&ED_PRICING.STRIPE_PRICE_ID)||null;
+   checkoutLink() refuses anything that is not a Stripe checkout link, and the
+   retired $79.99 links by name. If the pricing file did not load, all of these
+   are empty and confirmArl() stops before a consent is recorded or a card is
+   asked for. */
+var EDP=window.EDPricing||null;
+var STRIPE_LINK=EDP?EDP.checkoutLink('trial'):'';
+/* Recorded with the auto-renewal consent, so it must be the figure Stripe
+   charges. */
+var PRICE_DISPLAY=EDP?EDP.PRICE_DISPLAY:'';
+var BILLING_PERIOD=EDP?EDP.BILLING_PERIOD:'';
+/* The trial length shown on the page and written into the consent record. This
+   page CANNOT create a trial — the trial lives on the Stripe payment link. If
+   Stripe is not configured for a 7-day trial, every line of copy on this page
+   is false and the first charge lands immediately. */
+var TRIAL_DAYS=EDP?EDP.TRIAL_DAYS:0;
 /* Bumped to v6: the 30-day CLV guarantee is gone and the 7-day free trial is
    the offer. Earlier versions promised a conditional refund that this text no
    longer offers, so the version string is what keeps those older records true
@@ -1557,7 +1566,11 @@ var STRIPE_PRICE_ID=(ED_PRICING&&ED_PRICING.STRIPE_PRICE_ID)||null;
    guarantee and is still owed it. billing_consents stores
    the exact offer_text shown, so old records stay accurate on their own terms;
    the version string is what distinguishes which text a user actually saw. */
-var CONSENT_VERSION=(ED_PRICING&&ED_PRICING.CONSENT_VERSION)||"arl-2026-08-v6-trial7";
+/* v7: $49.99 per month is the standard price, and the founding-rate lock the
+   v6 text promised at $79.99 is no longer part of the offer. Anyone who
+   consented under v6 keeps what v6 promised them; the version string is how
+   their record says so. */
+var CONSENT_VERSION="arl-2026-09-v7-trial7";
 
 function edSession(){try{return JSON.parse(localStorage.getItem('edgedesk_session')||'null');}catch(e){return null;}}
 function edUserFromSession(){
@@ -1670,6 +1683,18 @@ async function confirmArl(){
     return;
   }
 
+  /* NO CHECKOUT, NO CONSENT RECORD. A consent is a legal statement that this
+     person agreed to be billed on these terms, and one must never be written
+     for a checkout this page cannot open: the pricing file missing, or its
+     link empty, mistyped or one of the retired $79.99 links. */
+  if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS){
+    msg.className='auth-msg err';
+    msg.innerHTML='<b>Checkout is being updated</b>, so we stopped before recording anything or taking any payment. <b>Nothing has been charged.</b> '+
+      'Email <a href="mailto:support@edgedesksports.com?subject='+encodeURIComponent('Start my trial')+'" style="color:var(--obs);font-weight:700">support@edgedesksports.com</a> and we will get you started.';
+    try{console.error('Checkout is not configured: lib/edgedesk_pricing.js CHECKOUT_LINK is empty, retired or not a https://buy.stripe.com/... payment link.');}catch(_){}
+    return;
+  }
+
   var btn=document.getElementById('arlSubmit'); btn.disabled=true; var old=btn.textContent; btn.textContent='…';
   /* Record the consent BEFORE sending them to Stripe, storing the exact terms
      displayed on screen. ARL requires the record; retain it for 3 years. */
@@ -1739,7 +1764,7 @@ async function confirmArl(){
   msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
   /* the funnel's checkout step, sent with keepalive so the navigation below
      cannot cancel it; it carries the plan, never anything personal */
-  edFunnel('checkout_started',{plan:(ED_PRICING&&ED_PRICING.PLAN&&ED_PRICING.PLAN.key)||'founding',price_id:STRIPE_PRICE_ID||'',promo:!!(ED_OFFER&&ED_OFFER.checkout_code)},{now:true,keepalive:true});
+  edFunnel('checkout_started',{plan:(EDP&&EDP.PLAN_NAME)||'',price:PRICE_DISPLAY,promo:!!(ED_OFFER&&ED_OFFER.checkout_code)},{now:true,keepalive:true});
   window.location.href=url;
 }
 
@@ -1962,7 +1987,7 @@ async function handleCheckoutReturn(){
     if(st==='yes'){
       var h=retnEl('retnH'), pp=retnEl('retnP');
       if(h) h.textContent='You’re in. Opening the terminal…';
-      if(pp) pp.textContent='Trial active — nothing charged. Your card is billed in '+TRIAL_DAYS+' days unless you cancel, and we will email you before that happens.';
+      if(pp) pp.textContent='Trial active — nothing charged. Your card is billed '+(TRIAL_DAYS?'in '+TRIAL_DAYS+' days':'when the trial ends')+' unless you cancel, and we will email you before that happens.';
       setTimeout(function(){ window.location.href=APP_URL; },700);
       return true;
     }
@@ -2133,7 +2158,9 @@ async function handleAuthCallback(){
       /* Say why the terminal has not opened, rather than letting them find out
          by clicking into a wall. */
       var hp=document.querySelector('.microcta');
-      if(hp)hp.innerHTML='<b style="color:var(--est)">Your account exists, but your trial has not started.</b> The terminal opens the moment it does &mdash; and the first '+TRIAL_DAYS+' days are free. &middot; 21+ &middot; 1-800-GAMBLER';
+      var ep=window.EDPricing;
+      if(hp)hp.innerHTML='<b style="color:var(--est)">Your account exists, but your trial has not started.</b> The terminal opens the moment it does &mdash; and the first 7 days are free'+
+        (ep?', then '+ep.PRICE_DISPLAY+'/'+ep.BILLING_PERIOD:'')+'. &middot; 21+ &middot; 1-800-GAMBLER';
     }else{
       if(su){su.textContent='Open the terminal';su.onclick=toApp;}
       if(hs){hs.textContent='Open the terminal →';hs.onclick=toApp;}

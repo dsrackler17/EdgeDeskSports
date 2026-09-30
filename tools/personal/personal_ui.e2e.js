@@ -483,7 +483,7 @@ async function withPage(browser, site, viewport, db, init) {
     await page.waitForTimeout(1200);
     const lines = await page.$$eval('[data-ed-price="cta"]', (els) => els.map((e) => e.textContent.trim()));
     chk('every trial CTA carries the whole offer, verbatim', lines.length >= 4 && lines.every((t) => t === X.CTA_LINE), lines);
-    chk('the hero says what follows the free week, under its button', /Then \$79\.99\/month/.test(await page.textContent('#top .microcta')));
+    chk('the hero says what follows the free week, under its button', /Then \$49\.99\/month/.test(await page.textContent('#top .microcta')));
     chk('a partner link is counted as a click', db.log.some((l) => l.table === 'rpc/affiliate_track_click' && l.body.p_code === 'COACHBIGGS' && /^[A-Za-z0-9_-]{16,64}$/.test(l.body.p_visitor)));
     chk('the visit is recorded for acquisition with the signals it came with', db.log.some((l) => l.table === 'rpc/acq_track_visit' && l.body.p_touch && l.body.p_touch.ref === 'coachbiggs'));
     await page.waitForFunction(() => { const e = document.getElementById('edOffer'); return e && !e.hidden; }, null, { timeout: 8000 }).catch(() => null);

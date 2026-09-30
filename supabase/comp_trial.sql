@@ -27,9 +27,9 @@
 --                              check in the product reads the row as lapsed.
 --   cancel_at_period_end       true, because nothing renews this. It is also
 --                              what makes the Settings card say "Access ends
---                              <date>" instead of "Renews on <date> — you will
---                              be charged $79.99 on this date", which would be
---                              a straight lie to somebody with no card on file.
+--                              <date>" instead of "Trial ends <date> — your
+--                              first charge is on this date", which would be a
+--                              straight lie to somebody with no card on file.
 --   stripe ids, last_event_*   NOT WRITTEN. Nothing was bought, so there is no
 --                              Stripe id to have; and leaving the ordering
 --                              guard null means a real subscription later on
@@ -38,7 +38,7 @@
 --
 -- WHAT HAPPENS WHEN IT RUNS OUT. `pgEntitled()` returns false, `pgCheck()`
 -- returns 'locked', and the paywall overlay closes over the terminal with the
--- $79.99 checkout button on it. The row is left exactly as it is — an expired
+-- monthly checkout button on it (the price is lib/edgedesk_pricing.js's). The row is left exactly as it is — an expired
 -- trial that says what it was. Nothing is deleted and no account is touched.
 --
 -- WHAT IT REFUSES. An account that is ALREADY entitled — a live Stripe
@@ -224,7 +224,7 @@ begin
           'From ' || to_char(v_pe at time zone 'UTC', 'YYYY-MM-DD HH24:MI') || ' UTC onward the period '
           'end is in the past, and every entitlement check flips on its own — no job runs, and '
           'nothing has to be remembered. The terminal closes behind the paywall overlay, which offers the '
-          '$79.99 checkout. There is no past_due grace on this: that 21-day window only applies to '
+          'monthly checkout. There is no past_due grace on this: that 21-day window only applies to '
           'a Stripe card being retried, and nothing here is being charged.');
 
   -- 6 ---- the other gate, if it is installed ------------------------------

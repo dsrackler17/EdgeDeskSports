@@ -84,7 +84,7 @@ chk('the secondary action is "Start free trial" through the consented trial flow
 /* the offer sits directly under the buttons — nobody hunts for what the trial becomes */
 const OFFER = (HERO.match(/<p class="microcta">([\s\S]*?)<\/p>/) || [])[1] || '';
 chk('the hero offer line is found', OFFER.length > 40);
-['data-ed-price="trial"', 'data-ed-price="price"', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
+['data-ed-price="trial">7 days free', '$49.99', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
 chk('the hero offer is the first .microcta, the one bootAuthState rewrites for an unpaid account', () => {
   const first = IDX.search(/class="microcta"/), a = IDX.indexOf('<header class="hero"'), b = IDX.indexOf('</header>');
   return first > a && first < b;
@@ -166,7 +166,7 @@ has(PR, 'carry no stake until their graded record promotes them', 'and the valid
   .forEach(m => has(PR, m, 'the prop markets named: ' + m));
 chk('the hero subhead, the board, the product grid, the plan and the FAQ all carry player props', () =>
   /player props/.test(HERO) && /Player-prop research/.test(TODAY) && /Player prop research/.test(section('product'))
-  && /Player props, priced at the exact odds/.test(section('pricing')) && /Which player props does EdgeDesk analyze\?/.test(section('faq')));
+  && /<li>Player props<\/li>/.test(section('pricing')) && /Which player props does EdgeDesk analyze\?/.test(section('faq')));
 
 /* ======================================================================== */
 /* 4. FOUR PUBLIC WORDS. NO PICKS. NO PROFIT PROMISES.                      */
@@ -274,22 +274,32 @@ chk('one plan card', (IDX.match(/class="pcard\b/g) || []).length === 1);
 has(PRICE, 'data-ed-price="plan">' + X.PLAN_NAME + '<', 'the plan is named from the pricing file');
 has(PRICE, 'data-ed-price="price">' + X.PRICE_DISPLAY + '<', 'the price is stated from the pricing file');
 has(PRICE, 'data-ed-price="trial">' + X.TRIAL_LABEL + '<', 'the trial is stated from the pricing file');
-has(PRICE, 'data-ed-price="founding">' + X.FOUNDING_NOTE + '<', 'the founding-member note is the pricing file\'s');
+has(PRICE, '$49.99', 'the price is stated');
+lacks(PRICE, '$79.99', 'and the retired price is gone');
+has(PRICE, 'EdgeDesk Full Access', 'the plan is named');
+has(PRICE, 'Football research terminal', 'and says what it is');
 has(PRICE, 'id="subscribe"', 'the #subscribe anchor app.html sends people to is here');
-chk('the plan\'s inclusions are the pricing file\'s, in order', () => {
-  const li = [...(PRICE.match(/<ul class="pincl" id="lpIncludes">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
-  return JSON.stringify(li) === JSON.stringify(X.INCLUDES.map(s => s.replace(/’/g, "'").replace(/—/g, ' ').replace(/\s+/g, ' ').trim()));
-}, 'the list in #lpIncludes differs from lib/edgedesk_pricing.js INCLUDES');
-lacks(PRICE, 'Only ' + X.PRICE_DISPLAY, 'the price is never apologised for');
+lacks(PRICE, 'Only $49.99', 'and never apologised for');
+[/founding/i, /introductory/i, /\bsale\b/i, /\bdiscount/i, /best value/i, /\bwas \$/i, /normally \$/i]
+  .forEach(re => chk('the price is simply the price: ' + re, !re.test(PRICE), (re.exec(PRICE) || [])[0]));
+chk('the plan\'s inclusions are the pricing file\'s FEATURES, in order', () => {
+  const li = [...(PRICE.match(/<ul class="pincl">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
+  return JSON.stringify(li) === JSON.stringify(X.FEATURES);
+}, 'the plan card list differs from lib/edgedesk_pricing.js FEATURES');
 lacks(TEXT, 'worth every penny', 'no worth-every-penny copy');
 chk('no crossed-out price', !/<(?:s|del|strike)>\s*\$/.test(IDX) && !/line-through[^}]*\$/.test(IDX));
 [/\bcountdown\b/i, /\blimited time\b/i, /\bhurry\b/i, /\bonly \d+ (?:spots|seats|left)\b/i, /\bexpires? (?:soon|tonight|today)\b/i, /\blimited availability\b/i]
   .forEach(re => { const o = claimsIt(re); chk('no scarcity device: ' + re, o.length === 0, o.join(' || ')); });
-chk('no availability limit is claimed while the pricing file configures none', X.AVAILABILITY_LIMIT === null && !/\bspots? left\b|\bonly \d+ founding\b/i.test(TEXT));
+chk('no availability limit or scarcity is claimed', !/\bspots? left\b|\bonly \d+ (spots|seats|places)\b|\bwhile (supplies|spots) last\b/i.test(TEXT));
+['NFL + FBS', 'Game markets', 'Player props', 'Fair spreads and projections', 'EdgeDesk EV', 'Live market comparison',
+ 'Matchup research', 'Player and roster research', 'Simulation and uncertainty', 'Power ratings', 'Public record', 'Research briefs']
+  .forEach(f => has(PRICE, f, 'the plan includes ' + f));
 has(PRICE, 'Nothing charged until day <span data-ed-price="day8">' + X.FIRST_CHARGE_DAY + '</span>', 'the trial mechanics are stated');
-has(PRICE, 'Cancel anytime before renewal', 'and so is cancelling');
-has(PRICE, 'We email you', 'and the reminder before conversion');
+has(PRICE, 'Cancel anytime', 'and so is cancelling');
+has(PRICE, 'Reminder email', 'and the reminder before conversion');
 has(PRICE, 'the exact date your card will be charged', 'which states the charge date');
+has(PRICE, 'Unless cancelled before renewal', 'and what day 8 means');
+chk('the trial reads Today, Before day 8, Day 8', /<span class="when">Today<\/span>[\s\S]*<span class="when">Before day <span data-ed-price="day8">8<\/span><\/span>[\s\S]*<span class="when">Day <span data-ed-price="day8">8<\/span><\/span><span><b data-ed-price="monthly">\$49\.99\/month<\/b>/.test(PRICE));
 has(PRICE, 'id="edOffer" hidden', 'a creator discount is only ever Stripe\'s own record');
 
 /* ======================================================================== */
@@ -354,8 +364,11 @@ has(IDX, '<link rel="canonical" href="https://edgedesksports.com/">', 'the canon
 chk('the structured data parses and offers the price the pricing file states', () => {
   const j = JSON.parse((IDX.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) || [])[1]);
   const app = j['@graph'].find(n => n['@type'] === 'SoftwareApplication');
-  return app && app.offers && ('$' + app.offers.price) === X.PRICE_DISPLAY && app.offers.priceCurrency === X.CURRENCY
-    && app.offers.description === X.CTA_LINE.replace('/' + X.BILLING_PERIOD + ' after trial.', ' per ' + X.BILLING_PERIOD + '.').replace('-day free trial. ', '-day free trial, then ');
+  /* consent records PRICE_DISPLAY, which index.html reads from the pricing file */
+  const price = X.PRICE_DISPLAY.replace(/^\$/, '');
+  return /var PRICE_DISPLAY=EDP\?EDP\.PRICE_DISPLAY:'';/.test(IDX) && price === '49.99'
+    && app && app.offers && app.offers.price === price && app.offers.priceCurrency === X.CURRENCY
+    && app.offers.description === X.TRIAL_DAYS + '-day free trial, then ' + X.PRICE_DISPLAY + ' per ' + X.BILLING_PERIOD + '. Cancel anytime.';
 });
 
 /* ======================================================================== */

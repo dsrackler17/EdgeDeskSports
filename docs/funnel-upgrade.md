@@ -137,29 +137,26 @@ one-click opt-out (`/email/unsubscribe/`); the billing reminder is not a tip.
 
 ## 6. One source for the price (`lib/edgedesk_pricing.js`)
 
-`PLAN` holds the plan name, `price_cents`, currency, billing period,
-`trial_days`, the founding flag and note ("Founding members keep their rate
-while continuously subscribed."), `availability_limit` (null — no scarcity is
-claimed unless it is configured), `stripe_price_id`, the checkout and
-resubscribe links, the consent version and the "includes" list. Every price,
-trial length and consent line on the landing page, the terminal, the sample
-page and the emails reads from it (`data-ed-price` placeholders, filled by
-`EDPricing.apply`).
+The offer is **EdgeDesk Full Access: 7 days free, then $49.99/month** — the
+standard price, not a founding or introductory rate (dsrackler17/EdgeDeskSports#427).
+`PRICE_CENTS`, the trial, the plan name, `FEATURES` (the plan card's and the
+paywall's list) and the two Stripe Payment Links live in that one file. The
+funnel adds only derived helpers there: `money()`, `TRIAL_LABEL` ("7 days
+free"), `FIRST_CHARGE_DAY` (8) and `renewalLine()` for the emails, and the
+`trial` / `day8` placeholders to the `data-ed-price` words `EDPricing.apply`
+fills. Every figure on the landing page, the methodology page, the terminal,
+the sample page and the emails reads from it.
 
-**The live price stays $79.99/month, 7 days free**, because that is what the
-Stripe Payment Link charges. To launch the $39.99 founding rate:
-
-1. In Stripe, create a Price of $39.99/month on the product and a Payment Link
-   for it with a 7-day trial (and, if used, a no-trial resubscribe link).
-2. In `lib/edgedesk_pricing.js` set `price_cents: 3999`, `stripe_price_id`,
-   `payment_link` (and `resubscribe_link`), and bump `consent_version` (the
-   renewal terms a reader accepts name the amount).
-3. Bump the `?v=` on the pricing script in `index.html`, `app.html` and
-   `research/sample/index.html`, and run the suites below.
+**Checkout stays closed until the $49.99 Payment Links exist.**
+`CHECKOUT_LINK` and `RESUBSCRIBE_LINK` are empty and the old $79.99 links are
+refused by name, so "Start free trial" opens the terms and then stops — before
+a consent is recorded or a card is asked for — with "Checkout is being
+updated". To open it: create the $49.99 Price and Payment Links in Stripe,
+paste them there, and run `node tools/billing/verify_stripe_offer.js`.
 
 The renewal reminder always states the amount on the reader's own Stripe
-subscription item, so a reader who started at one price is reminded of that
-price.
+subscription item, so a reader who started on the earlier $79.99 price is
+reminded of $79.99, not of the new standard price.
 
 ## 7. Deploying
 
@@ -196,8 +193,9 @@ fixtures from the real SQL.
 
 ## 9. What this does not do (yet)
 
-- The founding **$39.99** rate is designed in but not live — Stripe still
-  charges $79.99 (section 6).
+- Checkout is closed until the $49.99 Stripe Payment Links are pasted into
+  `lib/edgedesk_pricing.js` (section 6); the funnel's `checkout_started` and
+  `trial_started` steps stay at zero until then.
 - Funnel events start the day `funnel.sql` is applied; there is no backfill of
   landing or terminal behaviour (accounts, trials and payments are backfilled
   from existing rows).

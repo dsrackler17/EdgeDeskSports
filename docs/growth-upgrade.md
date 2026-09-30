@@ -181,7 +181,7 @@ optional end time). The page shows the fair line and fair total, the market
 main deduction, the key reason, up to three measured drivers, quarterback
 confirmation and availability counts, and the methodology in plain language —
 then **"Research the full board"** with the whole offer, **"7-day free trial.
-$79.99/month after trial. Cancel anytime."** (from `lib/edgedesk_pricing.js`).
+$49.99/month after trial. Cancel anytime."** (from `lib/edgedesk_pricing.js`).
 
 `public_sample_research()` returns only that subset: win probability, the
 research-priority ranking, the full driver list, line movement, the rest of the
@@ -266,7 +266,8 @@ first two run in `.github/workflows/personal-tests.yml` on pull requests.
   reads *unverified*, no discount is shown and checkout does not prefill the
   code (the visitor can still type it). No Stripe API is called from the
   database.
-- **The in-app paywall link for lapsed readers** (`PG_STRIPE_LINK`) does not
+- **The in-app paywall link for lapsed readers** (`RESUBSCRIBE_LINK` in
+  `lib/edgedesk_pricing.js`) does not
   carry a campaign code; new accounts go through the landing page, which does.
 - **Totals are not itemised** by the model, so a total difference is never
   attributed to an input; the NFL spread is not itemised either.

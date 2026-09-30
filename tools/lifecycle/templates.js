@@ -140,7 +140,7 @@ function build(msg, view, ctx) {
   } else if (msg.kind === 'renewal_reminder') {
     subject = charge ? 'Your EdgeDesk trial ends on ' + charge.replace(/, \d{4}$/, '') : 'Your EdgeDesk trial is ending';
     blocks.push({ p: charge ? X.renewalLine(msg.charge_at, msg.amount_cents) : 'Your free trial is ending soon and your card will be charged ' + amount + ' unless you cancel.' });
-    blocks.push({ p: 'After that, ' + amount + ' is charged every ' + X.BILLING_PERIOD + ' on the same date until you cancel. ' + (X.FOUNDING_NOTE || '') });
+    blocks.push({ p: 'After that, ' + amount + ' is charged every ' + X.BILLING_PERIOD + ' on the same date until you cancel.' });
     blocks.push({ p: 'To cancel, open Settings › Subscription in the terminal — one click, no call. Cancelling before the date above means you are never charged. Questions: reply to this email or write to support@edgedesksports.com.' });
     blocks.push({ btn: [app, 'Open the terminal (Settings \u203a Subscription)'] });
   } else {

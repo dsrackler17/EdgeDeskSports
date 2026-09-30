@@ -52,7 +52,7 @@ const base = { id: 7, user_id: 'u', email: 'reader@example.com', unsubscribe_tok
 /* ── 1-3 each email ──────────────────────────────────────────────────────── */
 const mails = {};
 ['trial_welcome', 'trial_day1', 'trial_day3', 'renewal_reminder'].forEach((k) => {
-  const m = TPL.build(Object.assign({}, base, { kind: k, charge_at: charge, amount_cents: k === 'renewal_reminder' ? 3999 : null }), V, CTX);
+  const m = TPL.build(Object.assign({}, base, { kind: k, charge_at: charge, amount_cents: k === 'renewal_reminder' ? 7999 : null }), V, CTX);
   mails[k] = m;
   chk(k + ' builds', !!m && !!m.subject && m.html.length > 400 && m.text.length > 100);
   chk(k + ' passes the copy rule', m && m.copy.ok, m && m.copy);
@@ -66,7 +66,7 @@ chk('the welcome reads the live board (counts from the database)', /Right now Ed
 chk('day 1 shows current research, each price with its capture time', /GAME RESEARCH|PLAYER PROP RESEARCH/.test(mails.trial_day1.text) && /captured \d+ (?:min|h) ago\)/.test(mails.trial_day1.text), mails.trial_day1.text.slice(0, 600));
 const dateOnly = TPL.dateText(charge).replace(/, \d{4}$/, '');
 chk('the reminder\'s subject is the date the trial ends', mails.renewal_reminder.subject === 'Your EdgeDesk trial ends on ' + dateOnly, mails.renewal_reminder.subject);
-chk('the reminder states the charge date and the amount Stripe holds', mails.renewal_reminder.text.indexOf('Your card will be charged $39.99 on ' + TPL.dateText(charge)) >= 0, mails.renewal_reminder.text.slice(0, 300));
+chk('the reminder states the charge date and the amount Stripe holds', mails.renewal_reminder.text.indexOf('Your card will be charged $79.99 on ' + TPL.dateText(charge)) >= 0, mails.renewal_reminder.text.slice(0, 300));
 chk('without Stripe\'s amount it states the plan\'s', TPL.build(Object.assign({}, base, { kind: 'renewal_reminder', charge_at: charge }), V, CTX).text.indexOf('charged ' + X.PRICE_DISPLAY + ' on') >= 0);
 chk('the reminder says how to cancel and that cancelling first means no charge', /Settings › Subscription/.test(mails.renewal_reminder.text) && /never charged/.test(mails.renewal_reminder.text));
 chk('the reminder is a billing notice: no research teaser, no unsubscribe', !/Game research|Player prop research|EdgeDesk EV/i.test(mails.renewal_reminder.text) && mails.renewal_reminder.unsubscribe === null && /billing notice/.test(mails.renewal_reminder.text));

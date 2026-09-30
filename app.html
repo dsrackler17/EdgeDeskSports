@@ -2533,12 +2533,14 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 .pg-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
 .pg-h{font-size:19px;font-weight:800;margin:0 0 7px;line-height:1.3}
 .pg-p{font-size:13px;color:var(--dim);line-height:1.55;margin:0 0 14px}
-.pg-price{display:flex;align-items:baseline;gap:7px;padding:13px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px}
+.pg-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 7px;padding:13px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:14px}
 .pg-price .n{font-family:'JetBrains Mono',monospace;font-size:27px;font-weight:800;color:var(--text)}
 .pg-price .per{font-size:12px;color:var(--faint)}
 .pg-list{margin:0 0 16px;padding:0;list-style:none}
 .pg-list li{font-size:12.5px;color:var(--dim);padding:4px 0 4px 20px;position:relative;line-height:1.45}
 .pg-list li::before{content:'\2713';position:absolute;left:0;color:var(--pos);font-weight:700}
+.pg-list.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:12px}
+@media(max-width:360px){.pg-list.two{grid-template-columns:1fr}}
 .pg-btn{display:block;width:100%;text-align:center;padding:13px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;font-family:inherit}
 .pg-btn:disabled{opacity:.55;cursor:default}
 .pg-btn.ghost{background:transparent;color:var(--dim);border-color:var(--border);font-weight:600;font-size:12.5px;padding:10px;margin-top:8px}
@@ -3816,7 +3818,7 @@ window.mcRefresh=function(){
 <script src="/lib/research_core.js?v=20260925p"></script>
 <script src="/lib/edgedesk_personal.js?v=20260929e"></script>
 <script src="/lib/edgedesk_share_card.js?v=20260926g"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
 <script src="/lib/edgedesk_track.js?v=20260930a"></script>
 <!-- The CFB research view: what a reader sees first on the college board
@@ -7043,7 +7045,7 @@ function renderEdges(){
        window.SUB: undefined = still loading, null = signed in but not subscribed. */
     var _locked=(window.SUB===null&&window.PAYWALL_LIVE===true);
     f.innerHTML=_locked
-      ?'<div class="empty"><b>Your subscription isn\u2019t active.</b><br>Live edges are part of the EdgeDesk Research Terminal. This isn\u2019t an empty board \u2014 it\u2019s a locked one.<div style="margin-top:11px"><a class="btn sm" href="./index.html#pricing" style="text-decoration:none">See the plan</a></div></div>'
+      ?'<div class="empty"><b>Your subscription isn\u2019t active.</b><br>Live edges are part of EdgeDesk Full Access. This isn\u2019t an empty board \u2014 it\u2019s a locked one.<div style="margin-top:11px"><a class="btn sm" href="./index.html#pricing" style="text-decoration:none">See the plan</a></div></div>'
       :down
       ?'<div class="empty"><b>No live edges to show.</b><br>The data is stale or the pipeline is down \u2014 see the banner above. Nothing here would be current.'+funnel+'</div>'
       :'<div class="empty"><b>Nothing clears the strict bar in your '+winLbl+' window.</b><br>Capture is live (last run '+ago(window.__edgeLatest)+'). The strict list wants real liquidity behind the fair line; '+(near?'the closest positive line is shown below.':'right now it\u2019s a clean board.')+' Try <b>All books</b> or a wider <b>Window</b> for more.'+funnel+'</div>'+nearHtml;
@@ -18898,9 +18900,10 @@ function stripePortalHref(){
     'A checkout link here would double-bill anyone trying to cancel. Got: '+u);}catch(_){}
   return '';
 }
-/* the offer's one source is lib/edgedesk_pricing.js (loaded above); the
-   literal is only the fallback, held equal to it by personal_wiring.test.js */
-var SUB_PRICE_DISPLAY=(window.EDPricing&&window.EDPricing.PRICE_DISPLAY)||"$79.99";
+/* The standard price and the plan's name, from lib/edgedesk_pricing.js — the
+   one file the offer is written in. Never typed here a second time. */
+var SUB_PRICE_DISPLAY=(window.EDPricing&&window.EDPricing.PRICE_DISPLAY)||'';
+var SUB_PLAN_NAME=(window.EDPricing&&window.EDPricing.PLAN_NAME)||'EdgeDesk Full Access';
 /* Flip to true ONLY after paywall.sql STEP 2 has run and you have verified the
    gate. It exists so the "your subscription isn't active" empty state can never
    appear while the data is in fact still free — telling a free user they're
@@ -18949,10 +18952,47 @@ async function loadSubStatus(){
     window.SUB=(rows&&rows[0])||null;
   }catch(e){ window.SUB=undefined; }   // undefined = couldn't read; null = no subscription
   if(SET_ACTIVE==='subscription')renderSettings();
+  loadSubPrice();
+}
+/* WHAT THIS SUBSCRIPTION ACTUALLY COSTS, as Stripe last described it.
+   SUB_PRICE_DISPLAY is the standard price: what a NEW subscriber pays. A
+   subscription started on an earlier price keeps that price until it is moved
+   in Stripe, and telling that reader "you will be charged $49.99" while Stripe
+   is about to charge something else is the same wrong as a wrong consent.
+   public.my_subscription_price() (supabase/subscription_price.sql) reads the
+   latest subscription event Stripe sent about this reader's OWN subscription.
+
+   Optional on purpose, and never a gate: access is decided by status alone.
+   Without the function, with no event on file, or on any error, the card
+   shows the standard price exactly as it always did. */
+window.SUB_PRICE=null;
+async function loadSubPrice(){
+  var sub=window.SUB;
+  window.SUB_PRICE=null;
+  if(!sub||subIsComp(sub)||!sub.stripe_customer_id)return;
+  try{
+    var t=await edToken();
+    var r=await fetch(SB_URL+'/rest/v1/rpc/my_subscription_price',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+t,'content-type':'application/json'},body:'{}'});
+    if(!r.ok)return;
+    var rows=await r.json();
+    window.SUB_PRICE=(Array.isArray(rows)?rows[0]:rows)||null;
+  }catch(e){ window.SUB_PRICE=null; return; }
+  if(window.SUB_PRICE&&SET_ACTIVE==='subscription')renderSettings();
 }
 function subStatusLabel(s){
   return ({active:'Active',trialing:'Trial',past_due:'Payment failed',canceled:'Cancelled',
            incomplete:'Incomplete',unpaid:'Unpaid'})[s]||s||'\u2014';
+}
+/* The monthly figure this reader is actually on: Stripe's own record when
+   there is one (a whole-month USD price), otherwise the standard price. */
+function subPriceDisplay(){
+  var p=window.SUB_PRICE, X=window.EDPricing;
+  if(p&&X&&p.billing_interval==='month'&&(+p.interval_count||1)===1){
+    var f=X.formatCents(p.unit_amount,p.currency);
+    if(f)return f;
+  }
+  return SUB_PRICE_DISPLAY;
 }
 function renderSetSub(){
   var sub=window.SUB;
@@ -18960,23 +19000,25 @@ function renderSetSub(){
     return setCard('Subscription',null,'<div class="set-note">Checking your subscription\u2026 if this persists, the <span class="mono">subscriptions</span> table may not exist yet \u2014 run subscriptions.sql.</div>');
   }
   var out='';
+  var trialDays=(window.EDPricing&&window.EDPricing.TRIAL_DAYS)||null;
   if(!sub){
     out+=setCard('No active subscription','You are signed in but not subscribed.',
       setRow('Plan','<span class="set-val">None</span>')+
-      setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>','Renews monthly until cancelled')+
-      '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Subscribe</a></div>'+
+      setRow(stEsc(SUB_PLAN_NAME),'<span class="set-val">'+(trialDays?trialDays+' days free':'Free trial')+'</span>',
+        'Then '+SUB_PRICE_DISPLAY+'/month. Cancel anytime.')+
+      '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Start '+(trialDays?trialDays+' days':'your trial')+' free</a></div>'+
       '<div class="set-note">Subscribing takes you through the automatic renewal terms before any payment is collected.</div>');
     return out;
   }
   /* A COMP. Every row below this point describes a Stripe subscription -- a
      renewal date, a monthly charge, a portal to cancel it in -- and none of
      it is true of an account that was never billed. Telling the owner
-     "Renews on 31 December 2099: you will be charged $79.99 on this date" is
+     "Renews on 31 December 2099: you will be charged the monthly price on this date" is
      not a cosmetic slip. It states a charge that is never coming and offers
      a cancel button for a subscription Stripe has never heard of. */
   if(subIsComp(sub)){
     out+=setCard('Subscription',null,
-      setRow('Plan','<span class="set-val">EdgeDesk Research Terminal</span>')+
+      setRow('Plan','<span class="set-val">'+stEsc(SUB_PLAN_NAME)+'</span>')+
       setRow('Status','<span class="set-val pos">PAID · Owner Access</span>')+
       setRow('Price','<span class="set-val">$0 — comped</span>','Granted on the account, not billed through Stripe')+
       setRow('Renews on','<span class="set-val">Never expires</span>','No card on file, and no charge scheduled'));
@@ -18986,16 +19028,35 @@ function renderSetSub(){
       'there is nothing here that can charge you.</div>');
     return out;
   }
-  var active=(sub.status==='active'||sub.status==='trialing');
+  var trialing=sub.status==='trialing';
+  var active=(sub.status==='active'||trialing);
+  /* Every date below is the row's own current_period_end, which the Stripe
+     webhook writes from the subscription (for a trial, that is the day the
+     trial converts). Nothing here computes or invents a date. */
   var end=sub.current_period_end?new Date(sub.current_period_end):null;
-  var endStr=end?end.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'\u2014';
-  out+=setCard('Subscription',null,
-    setRow('Plan','<span class="set-val">EdgeDesk Research Terminal</span>')+
-    setRow('Status','<span class="set-val '+(active?'pos':'')+'">'+stEsc(subStatusLabel(sub.status))+'</span>')+
-    setRow('Price','<span class="set-val">'+SUB_PRICE_DISPLAY+' / month</span>')+
-    setRow(sub.cancel_at_period_end?'Access ends':'Renews on','<span class="set-val">'+stEsc(endStr)+'</span>',
-      sub.cancel_at_period_end?'Cancelled \u2014 no further charges':'You will be charged '+SUB_PRICE_DISPLAY+' on this date')
-  );
+  var endStr=end&&isFinite(end.getTime())?end.toLocaleDateString(undefined,{month:'long',day:'numeric',year:'numeric'}):'\u2014';
+  var price=subPriceDisplay();
+  var ending=!!sub.cancel_at_period_end;
+  var over=(sub.status==='canceled'||sub.status==='incomplete_expired');
+  var rows=setRow('Plan','<span class="set-val">'+stEsc(SUB_PLAN_NAME)+'</span>')+
+    setRow('Status','<span class="set-val '+(active?'pos':'')+'">'+stEsc(subStatusLabel(sub.status))+'</span>');
+  if(trialing){
+    /* A trial granted by hand (supabase/comp_trial.sql) is not the checkout's
+       7-day trial and renews into nothing, so it is never given a length or a
+       charge it does not have. */
+    var handGranted=String(sub.price_id||'')==='comp_trial';
+    rows+=setRow('Price','<span class="set-val">'+(trialDays&&!handGranted?trialDays+'-day free trial':'Free trial')+'</span>',
+        ending?'Not renewing \u2014 no charge is scheduled':'Then '+stEsc(price)+'/month')+
+      setRow(ending?'Access ends':'Trial ends','<span class="set-val">'+stEsc(endStr)+'</span>',
+        ending?'You will not be charged':'Your first charge of '+stEsc(price)+' is on this date unless you cancel before it');
+  }else{
+    rows+=setRow('Price','<span class="set-val">'+stEsc(price)+' / month</span>')+
+      (over
+        ? setRow('Access','<span class="set-val">Ended</span>','No further charges')
+        : setRow(ending?'Access ends':'Next billing date','<span class="set-val">'+stEsc(endStr)+'</span>',
+            ending?'Cancelled \u2014 no further charges':'You will be charged '+stEsc(price)+' on this date'));
+  }
+  out+=setCard('Subscription',null,rows);
   if(sub.status==='past_due'){
     out+='<div class="set-gate" style="border-color:rgba(226,96,68,.4)"><div class="set-gate-h"><span class="set-gate-tag" style="border-color:rgba(226,96,68,.5);color:var(--neg);background:rgba(226,96,68,.1)">ACTION NEEDED</span>Payment failed</div>'+
       '<p>Your most recent payment did not go through. Update your card to keep access.</p></div>';
@@ -21093,8 +21154,11 @@ function bqCardHTML(e){
 /* app rather than data.                                                  */
 /* ===================================================================== */
 var PG_OWNER_ID='e7e46801-80c4-4f47-b718-4aff211c8d3a';
-/* the no-trial resubscribe link, from lib/edgedesk_pricing.js (RESUBSCRIBE_LINK) */
-var PG_STRIPE_LINK=(window.EDPricing&&window.EDPricing.RESUBSCRIBE_LINK)||'https://buy.stripe.com/cNi00ifmaaeNePk2mC8IU09';
+/* The lapsed reader's checkout, from lib/edgedesk_pricing.js — the same file
+   that states the price it sells. Empty (and the button below says so rather
+   than guessing) until the link is configured there; a retired $79.99 link is
+   refused by name. */
+var PG_STRIPE_LINK=(window.EDPricing&&window.EDPricing.checkoutLink('resubscribe'))||'';
 var PG_SUPPORT='support@edgedesksports.com';
 var PG_POLL_MS=2500, PG_POLL_MAX=24;      /* ~60s of webhook grace */
 
@@ -21188,6 +21252,7 @@ function pgHide(){
 function pgCheckoutURL(){
   var u=(typeof edUser==='function')?edUser():null;
   var url=PG_STRIPE_LINK;
+  if(!url)return '';
   if(u&&u.id)url+='?client_reference_id='+encodeURIComponent(u.id);
   if(u&&u.email)url+=(url.indexOf('?')>0?'&':'?')+'prefilled_email='+encodeURIComponent(u.email);
   return url;
@@ -21198,12 +21263,16 @@ function pgLockedHTML(note){
   var s=window.SUB;
   var failed=!!(s&&(s.status==='past_due'||s.status==='unpaid'));
   var canceled=!!(s&&s.status==='canceled');
+  var X=window.EDPricing, fresh=!s;
+  var price=SUB_PRICE_DISPLAY;
   var head=failed?'Your payment didn\u2019t go through'
           :canceled?'Your subscription has ended'
+          :fresh?'Unlock '+stEsc(SUB_PLAN_NAME)
           :'Your subscription isn\u2019t active';
   var body=failed?'We kept your access open while the card was retried, but the payment never cleared.'
           :canceled?'Your subscription was cancelled, so the terminal is closed. You can restart it any time.'
           :'You\u2019re signed in'+(u&&u.email?' as <b>'+stEsc(u.email)+'</b>':'')+', but the terminal needs an active subscription. This is a locked board, not an empty one.';
+  var resub=pgCheckoutURL();
   return '<h1 class="pg-h">'+head+'</h1>'+
     '<p class="pg-p">'+body+'</p>'+
     (note?'<div class="pg-status">'+note+'</div>':'')+
@@ -21212,17 +21281,16 @@ function pgLockedHTML(note){
        auto-renewal consent before Stripe; a reader whose subscription lapsed
        keeps the resubscribe link and is promised no trial it may not get.
        The words come from lib/edgedesk_pricing.js. */
-    (function(){var X=window.EDPricing,fresh=!s;
-      return '<div class="pg-price"><span class="n">'+SUB_PRICE_DISPLAY+'</span><span class="per">per month, cancel anytime</span></div>'
-        +'<div class="pg-status" data-ed-price="'+(fresh?'cta':'resub')+'">'+stEsc(X?(fresh?X.CTA_LINE:X.RESUBSCRIBE_LINE):(SUB_PRICE_DISPLAY+'/month. Cancel anytime.'))+'</div>';})()+
-    '<ul class="pg-list">'+
-      '<li>Live edges priced against a de-vigged Pinnacle fair line</li>'+
-      '<li>Full research receipt behind every signal</li>'+
-      '<li>CLV grading on anything you log, entry price vs closing fair</li>'+
-      '<li>MLB, WNBA, UFC and CFB boards</li>'+
-    '</ul>'+
-    (!s?'<a class="pg-btn" href="./index.html#subscribe">Start 7-day free trial \u2014 then '+SUB_PRICE_DISPLAY+'/mo</a>'
-       :'<a class="pg-btn" href="'+pgCheckoutURL()+'">Subscribe \u2014 '+SUB_PRICE_DISPLAY+'/mo</a>')+
+    (fresh
+      ? '<div class="pg-price"><span class="n">'+(X?X.TRIAL_DAYS:'')+' days free</span><span class="per">then '+stEsc(price)+'/month</span></div>'
+      : '<div class="pg-price"><span class="n">'+stEsc(price)+'</span><span class="per">per month, cancel anytime</span></div>')+
+    '<div class="pg-status" data-ed-price="'+(fresh?'cta':'resub')+'">'+stEsc(X?(fresh?X.CTA_LINE:X.RESUBSCRIBE_LINE):(price+'/month. Cancel anytime.'))+'</div>'+
+    /* What Full Access includes: the same list the landing page's plan card
+       carries, from the same file. Player props are in it, not sold apart. */
+    '<ul class="pg-list two">'+((X&&X.FEATURES)||[]).map(function(f){return '<li>'+stEsc(f)+'</li>';}).join('')+'</ul>'+
+    (fresh?'<a class="pg-btn" href="./index.html#subscribe">Start '+(X?X.TRIAL_DAYS:'')+' days free</a>'
+       :resub?'<a class="pg-btn" href="'+resub+'">Subscribe \u2014 '+stEsc(price)+'/mo</a>'
+       :'<a class="pg-btn" href="mailto:'+PG_SUPPORT+'?subject='+encodeURIComponent('Restart my EdgeDesk subscription')+'">Restart your subscription \u2014 email us</a>')+
     '<button class="pg-btn ghost" onclick="pgRecheck()">I already paid \u2014 check again</button>'+
     /* THIS SCREEN USED TO BE A DEAD END. Three buttons — pay, re-check, sign
        out — for the one visitor most likely to have hit a bug: brand new,
@@ -23197,7 +23265,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var leads=q.filter(function(it){return it.kind!=='market'&&it.kind!=='movement';}).length;
       var title, sub;
       if(hb.red){title='Nothing here is current.';sub=hb.hb?'Capture last reported '+agoS(hb.hb)+'. Prices below are old and the desk will not rank them as live.':'The capture pipeline has not reported. There is no live board to read.';}
-      else if(locked){title='The desk is locked.';sub='Live signals are part of the EdgeDesk Research Terminal.';}
+      else if(locked){title='The desk is locked.';sub='Live signals are part of EdgeDesk Full Access.';}
       else if(!q.length){title='Nothing qualifies right now.';sub='EdgeDesk scanned the priced board in your window and found nothing worth pushing to the top of the desk.';}
       else if(worth){title=worth+' thing'+(worth===1?'':'s')+' deserve'+(worth===1?'s':'')+' attention.';sub='Ranked by evidence, not by size. Each card says why it is here, what could be wrong, and what to research next.';}
       else{title='Nothing to force right now.';sub='Everything on the desk is a PASS or a research lead. That is the terminal doing its job.';}
@@ -61312,7 +61380,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260930a"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260930b"></script>
 <!-- first run ("Here's what EdgeDesk found today") and the funnel's in-app steps,
      over the landing page's own view model (lib/edgedesk_home.js) -->
 <script src="/lib/edgedesk_home.js?v=20260930a"></script>
