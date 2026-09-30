@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-09-30T16:07:35.611Z",
+ "generated_at": "2026-09-30T17:07:40.216Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 2,
+   "n": 3,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 15.47,
+   "average_gap": 12.91,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -51,6 +51,23 @@
     "final_margin": null
    },
    {
+    "game_id": "401856705",
+    "game": "Vanderbilt @ Georgia",
+    "week": 5,
+    "at": "2026-09-30T17:07:32.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 16.71,
+    "market_at_snapshot": 24.5,
+    "gap": 7.79,
+    "toward": "Vanderbilt",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
     "game_id": "401858252",
     "game": "Syracuse @ UConn",
     "week": 5,
@@ -69,7 +86,7 @@
    }
   ],
   "outcomes": {
-   "BAD_INFORMATION": 2
+   "BAD_INFORMATION": 3
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -96,10 +113,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 2,
+   "n": 3,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 15.47,
+   "average_gap": 12.91,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -296,7 +313,7 @@
   }
  },
  "verdict_not_run": {
-  "n": 5,
-  "note": "5 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
+  "n": 4,
+  "note": "4 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
  }
 }
