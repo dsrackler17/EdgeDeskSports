@@ -246,6 +246,12 @@ share one board fetch.
   VOID (did not play, cancelled game, market void). Overtime counts.
   Closing line and price come from the last pregame capture; line CLV, price
   CLV and no-vig probability CLV are computed only when a close exists.
+  **Corrections:** for 14 days after kickoff every settled grade's official
+  statistic is re-read; where it changed, a correction row is APPENDED
+  (`correction: true`, `corrects`, the reason) — never an edit, never a second
+  grade, never a VOID because a feed dropped a line. The latest row per
+  evaluation is the settlement; the P&L ledger (docs/pnl/DESIGN.md) logs the
+  change on the recommendation's row.
 - **Performance** (`performance.json`): bets, W-L-P, units, ROI, CLV, average
   EV, by sport, market, position, EV bucket and confidence bucket, every figure
   with its `n` and sample state (`EDValidation.sampleState`).

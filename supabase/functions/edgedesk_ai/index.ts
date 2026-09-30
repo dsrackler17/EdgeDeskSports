@@ -29071,7 +29071,8 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
      prop's are different models and never one number */
   function gradePropEntry(entry, results) {
     if (!entry || entry.type !== 'PLAYER_PROP') return null;
-    var P = PR(), res = (results || []).filter(function (x) { return String(x.game_id) === String(entry.game_id) && x.player_id === entry.player_id && x.market === entry.market && (x.result === 'VOID' || isNum(x.value)); })[0];
+    /* the LATEST matching row: results.jsonl is append-only, and a correction row follows the grade it corrects */
+    var P = PR(), res = (results || []).filter(function (x) { return String(x.game_id) === String(entry.game_id) && x.player_id === entry.player_id && x.market === entry.market && (x.result === 'VOID' || isNum(x.value)); }).pop();
     if (!res) return null;
     var s = res.result === 'VOID' && !isNum(res.value) ? { result: 'VOID', reason: res.reason || null } : P.settle(entry.market, entry.line, entry.side, { played: true, value: res.value });
     var won = P.unitsWon ? P.unitsWon(s.result, entry.american, entry.units) : null;

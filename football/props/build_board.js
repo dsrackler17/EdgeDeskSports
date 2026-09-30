@@ -520,7 +520,9 @@ function ledgerRow(kind, input, ev, g, p, key) {
     team: input.team, opp: input.opp, position: p.pg, market: input.market, evaluated_at: ev.evaluated_at,
     decision: ev.decision, code: ev.code, units: ev.units, confidence: ev.confidence ? ev.confidence.score : null, probability_source: ev.probability_source, stage: ev.stage || null,
     exposure_cap: ev.exposure ? { code: ev.exposure.code, from_units: ev.exposure.from } : null,
-    side: c ? c.side : null, line: c ? c.line : null, american: c ? c.american : null, book: c ? c.book : null, p_side: c ? r4(c.p_win / Math.max(1e-9, 1 - (c.p_push || 0))) : null, p_raw: c ? c.p_raw : null,
+    side: c ? c.side : null, line: c ? c.line : null, american: c ? c.american : null, book: c ? c.book : null,
+    /* when the entry price was captured (the P&L ledger's odds timestamp); not part of the evaluation id */
+    quote_captured_at: c && c.captured_at ? c.captured_at : null, p_side: c ? r4(c.p_win / Math.max(1e-9, 1 - (c.p_push || 0))) : null, p_raw: c ? c.p_raw : null,
     ev: c ? c.ev : null, ev_raw: c ? c.ev_raw : null, edge_pp: c ? c.edge_pp : null,
     consensus: ev.consensus ? { line: ev.consensus.line, over: ev.consensus.over, under: ev.consensus.under, novig_over: ev.consensus.novig_over, n_books: ev.consensus.n_books } : null,
     model_over_at_consensus: ac ? r4(ac.over / Math.max(1e-9, ac.over + ac.under)) : null, model_mean: ev.informed ? ev.informed.mean : null, raw_mean: ev.raw ? ev.raw.mean : null,

@@ -1,0 +1,5009 @@
+{
+ "schema": "edgedesk_pnl_summary_v1",
+ "engine": "edgedesk_pnl_v1",
+ "generated_at": "2026-09-30T02:23:12.136Z",
+ "season": 2026,
+ "strategy": "Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.",
+ "rules": [
+  "Historical P&L uses the recommendation and the price that existed at the time; nothing is re-predicted or re-priced.",
+  "No captured entry price, no P&L: the result counts in the win/loss record and is marked \"P&L unavailable — entry price not captured\". EdgeDesk never assumes −110.",
+  "A price the source assumed rather than captured is simulated and never counted as verified P&L.",
+  "ROI = net profit ÷ total risked × 100. A push or a void returns the stake: it adds nothing to risked or to P&L.",
+  "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
+ ],
+ "counts": {
+  "rows": 908,
+  "bets": 14,
+  "verified_bets": 0,
+  "corrected": 0
+ },
+ "model_versions": [
+  "edgedesk_cfb_p4_v1.0.0",
+  "edgedesk_football_v1.0.0",
+  "edgedesk_props_model_v1"
+ ],
+ "books": [
+  "BetMGM",
+  "BetOnline",
+  "BetRivers",
+  "DraftKings",
+  "ESPN BET",
+  "FanDuel",
+  "Fanatics",
+  "Hard Rock",
+  "Pinnacle"
+ ],
+ "views": {
+  "all": {
+   "label": "All",
+   "flat": {
+    "summary": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 720,
+     "wins": 432,
+     "losses": 284,
+     "pushes": 4,
+     "record": "432-284-4",
+     "win_rate_pct": 60.34
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 263,
+      "wins": 123,
+      "losses": 136,
+      "pushes": 4,
+      "record": "123-136-4",
+      "win_rate_pct": 47.49
+     },
+     "Total": {
+      "n": 194,
+      "wins": 99,
+      "losses": 95,
+      "pushes": 0,
+      "record": "99-95",
+      "win_rate_pct": 51.03
+     },
+     "Moneyline": {
+      "n": 263,
+      "wins": 210,
+      "losses": 53,
+      "pushes": 0,
+      "record": "210-53",
+      "win_rate_pct": 79.85
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    },
+    "breakdowns": {
+     "league": [
+      {
+       "key": "NFL",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "market": [
+      {
+       "key": "Player Props",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "prop_type": [
+      {
+       "key": "Receiving Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Receptions",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rush + Rec Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rush Attempts",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rushing Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "prop_category": [
+      {
+       "key": "Combined",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Receiving",
+       "n": 0,
+       "rows": 8,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rushing",
+       "n": 0,
+       "rows": 4,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "side": [
+      {
+       "key": "Over",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Under",
+       "n": 0,
+       "rows": 11,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "book": [
+      {
+       "key": "BetMGM",
+       "n": 0,
+       "rows": 4,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "BetOnline",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "DraftKings",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "ESPN BET",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Hard Rock",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "edge": [
+      {
+       "key": "3–5%",
+       "n": 0,
+       "rows": 7,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "5–7%",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "7%+",
+       "n": 0,
+       "rows": 5,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "unit_size": [
+      {
+       "key": "0.25u",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "odds_range": [
+      {
+       "key": "−199 to −140",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−139 to −115",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−114 to −105",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−104 to +100",
+       "n": 0,
+       "rows": 1,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "+101 to +149",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "week": [
+      {
+       "key": "NFL · Week 04",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "model_version": [
+      {
+       "key": "edgedesk_props_model_v1",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "grade": [
+      {
+       "key": "Bet",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Lean",
+       "n": 0,
+       "rows": 133,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Watch",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Pass",
+       "n": 0,
+       "rows": 38,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "calibration": [
+      {
+       "bucket": "0–1%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "1–2%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "2–3%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "3–4%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "4–5%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "5–7%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "7–10%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "10%+",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "clv": {
+      "positive": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "negative": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "unmeasured": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "buckets": [
+       {
+        "bucket": "< −2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "−2 to −1",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "−1 to 0",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "0 to +1",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "+1 to +2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "> +2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "staked": {
+    "summary": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 720,
+     "wins": 432,
+     "losses": 284,
+     "pushes": 4,
+     "record": "432-284-4",
+     "win_rate_pct": 60.34
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 263,
+      "wins": 123,
+      "losses": 136,
+      "pushes": 4,
+      "record": "123-136-4",
+      "win_rate_pct": 47.49
+     },
+     "Total": {
+      "n": 194,
+      "wins": 99,
+      "losses": 95,
+      "pushes": 0,
+      "record": "99-95",
+      "win_rate_pct": 51.03
+     },
+     "Moneyline": {
+      "n": 263,
+      "wins": 210,
+      "losses": 53,
+      "pushes": 0,
+      "record": "210-53",
+      "win_rate_pct": 79.85
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    },
+    "breakdowns": {
+     "league": [
+      {
+       "key": "NFL",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "market": [
+      {
+       "key": "Player Props",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "prop_type": [
+      {
+       "key": "Receiving Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Receptions",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rush + Rec Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rush Attempts",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rushing Yards",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "prop_category": [
+      {
+       "key": "Combined",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Receiving",
+       "n": 0,
+       "rows": 8,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Rushing",
+       "n": 0,
+       "rows": 4,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "side": [
+      {
+       "key": "Over",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Under",
+       "n": 0,
+       "rows": 11,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "book": [
+      {
+       "key": "BetMGM",
+       "n": 0,
+       "rows": 4,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "BetOnline",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "DraftKings",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "ESPN BET",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Hard Rock",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "edge": [
+      {
+       "key": "3–5%",
+       "n": 0,
+       "rows": 7,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "5–7%",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "7%+",
+       "n": 0,
+       "rows": 5,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "unit_size": [
+      {
+       "key": "0.25u",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "odds_range": [
+      {
+       "key": "−199 to −140",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−139 to −115",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−114 to −105",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "−104 to +100",
+       "n": 0,
+       "rows": 1,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "+101 to +149",
+       "n": 0,
+       "rows": 2,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "week": [
+      {
+       "key": "NFL · Week 04",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "model_version": [
+      {
+       "key": "edgedesk_props_model_v1",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "grade": [
+      {
+       "key": "Bet",
+       "n": 0,
+       "rows": 14,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Lean",
+       "n": 0,
+       "rows": 133,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Watch",
+       "n": 0,
+       "rows": 3,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Pass",
+       "n": 0,
+       "rows": 38,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": 0,
+       "risked_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": 0,
+       "record_only": {
+        "n": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "record": "0-0",
+        "win_rate_pct": null
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "calibration": [
+      {
+       "bucket": "0–1%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "1–2%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "2–3%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "3–4%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "4–5%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "5–7%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "7–10%",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "bucket": "10%+",
+       "n": 0,
+       "record": "0-0",
+       "expected_win_pct": null,
+       "actual_win_pct": null,
+       "win_rate_pct": null,
+       "gap_pp": null,
+       "n_with_prob": 0,
+       "net_units": 0,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "verdict": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "clv": {
+      "positive": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "negative": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "unmeasured": {
+       "n": 0,
+       "record": "0-0",
+       "net_units": 0,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "avg_clv_points": null,
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      "buckets": [
+       {
+        "bucket": "< −2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "−2 to −1",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "−1 to 0",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "0 to +1",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "+1 to +2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       },
+       {
+        "bucket": "> +2",
+        "n": 0,
+        "record": "0-0",
+        "net_units": 0,
+        "roi_pct": null,
+        "win_rate_pct": null,
+        "sample": {
+         "key": "VERY_SMALL",
+         "label": "Very small sample",
+         "warn": true,
+         "n": 0,
+         "text": "n=0 · Very small sample — results may be unstable"
+        }
+       }
+      ]
+     }
+    }
+   },
+   "data_quality": {
+    "total": 908,
+    "verified": 0,
+    "pending": 188,
+    "voids": 0,
+    "missing_entry_odds": 720,
+    "simulated_price": 0,
+    "invalid_price": 0,
+    "invalid_stake": 0,
+    "not_pnl_eligible": 720,
+    "corrected": 0
+   }
+  },
+  "nfl": {
+   "label": "NFL",
+   "flat": {
+    "summary": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 95,
+     "wins": 56,
+     "losses": 37,
+     "pushes": 2,
+     "record": "56-37-2",
+     "win_rate_pct": 60.22
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 32,
+      "wins": 19,
+      "losses": 11,
+      "pushes": 2,
+      "record": "19-11-2",
+      "win_rate_pct": 63.33
+     },
+     "Total": {
+      "n": 31,
+      "wins": 16,
+      "losses": 15,
+      "pushes": 0,
+      "record": "16-15",
+      "win_rate_pct": 51.61
+     },
+     "Moneyline": {
+      "n": 32,
+      "wins": 21,
+      "losses": 11,
+      "pushes": 0,
+      "record": "21-11",
+      "win_rate_pct": 65.63
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "staked": {
+    "summary": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 95,
+     "wins": 56,
+     "losses": 37,
+     "pushes": 2,
+     "record": "56-37-2",
+     "win_rate_pct": 60.22
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 32,
+      "wins": 19,
+      "losses": 11,
+      "pushes": 2,
+      "record": "19-11-2",
+      "win_rate_pct": 63.33
+     },
+     "Total": {
+      "n": 31,
+      "wins": 16,
+      "losses": 15,
+      "pushes": 0,
+      "record": "16-15",
+      "win_rate_pct": 51.61
+     },
+     "Moneyline": {
+      "n": 32,
+      "wins": 21,
+      "losses": 11,
+      "pushes": 0,
+      "record": "21-11",
+      "win_rate_pct": 65.63
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "data_quality": {
+    "total": 151,
+    "verified": 0,
+    "pending": 56,
+    "voids": 0,
+    "missing_entry_odds": 95,
+    "simulated_price": 0,
+    "invalid_price": 0,
+    "invalid_stake": 0,
+    "not_pnl_eligible": 95,
+    "corrected": 0
+   }
+  },
+  "cfb": {
+   "label": "College Football",
+   "flat": {
+    "summary": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 625,
+     "wins": 376,
+     "losses": 247,
+     "pushes": 2,
+     "record": "376-247-2",
+     "win_rate_pct": 60.35
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 231,
+      "wins": 104,
+      "losses": 125,
+      "pushes": 2,
+      "record": "104-125-2",
+      "win_rate_pct": 45.41
+     },
+     "Total": {
+      "n": 163,
+      "wins": 83,
+      "losses": 80,
+      "pushes": 0,
+      "record": "83-80",
+      "win_rate_pct": 50.92
+     },
+     "Moneyline": {
+      "n": 231,
+      "wins": 189,
+      "losses": 42,
+      "pushes": 0,
+      "record": "189-42",
+      "win_rate_pct": 81.82
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "staked": {
+    "summary": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 625,
+     "wins": 376,
+     "losses": 247,
+     "pushes": 2,
+     "record": "376-247-2",
+     "win_rate_pct": 60.35
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 231,
+      "wins": 104,
+      "losses": 125,
+      "pushes": 2,
+      "record": "104-125-2",
+      "win_rate_pct": 45.41
+     },
+     "Total": {
+      "n": 163,
+      "wins": 83,
+      "losses": 80,
+      "pushes": 0,
+      "record": "83-80",
+      "win_rate_pct": 50.92
+     },
+     "Moneyline": {
+      "n": 231,
+      "wins": 189,
+      "losses": 42,
+      "pushes": 0,
+      "record": "189-42",
+      "win_rate_pct": 81.82
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "data_quality": {
+    "total": 757,
+    "verified": 0,
+    "pending": 132,
+    "voids": 0,
+    "missing_entry_odds": 625,
+    "simulated_price": 0,
+    "invalid_price": 0,
+    "invalid_stake": 0,
+    "not_pnl_eligible": 625,
+    "corrected": 0
+   }
+  },
+  "props": {
+   "label": "Player Props",
+   "flat": {
+    "summary": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "win_rate_pct": null
+    },
+    "record_only_by_market": {},
+    "compare": {
+     "game": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "staked": {
+    "summary": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "win_rate_pct": null
+    },
+    "record_only_by_market": {},
+    "compare": {
+     "game": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "data_quality": {
+    "total": 147,
+    "verified": 0,
+    "pending": 147,
+    "voids": 0,
+    "missing_entry_odds": 0,
+    "simulated_price": 0,
+    "invalid_price": 0,
+    "invalid_stake": 0,
+    "not_pnl_eligible": 0,
+    "corrected": 0
+   }
+  },
+  "game": {
+   "label": "Game Markets",
+   "flat": {
+    "summary": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 720,
+     "wins": 432,
+     "losses": 284,
+     "pushes": 4,
+     "record": "432-284-4",
+     "win_rate_pct": 60.34
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 263,
+      "wins": 123,
+      "losses": 136,
+      "pushes": 4,
+      "record": "123-136-4",
+      "win_rate_pct": 47.49
+     },
+     "Total": {
+      "n": 194,
+      "wins": 99,
+      "losses": 95,
+      "pushes": 0,
+      "record": "99-95",
+      "win_rate_pct": 51.03
+     },
+     "Moneyline": {
+      "n": 263,
+      "wins": 210,
+      "losses": 53,
+      "pushes": 0,
+      "record": "210-53",
+      "win_rate_pct": 79.85
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "flat",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "staked": {
+    "summary": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": 0,
+     "risked_units": 0,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "avg_decimal": null,
+     "avg_odds": null,
+     "break_even_pct": null,
+     "gross_win_units": 0,
+     "gross_loss_units": 0,
+     "profit_factor": null,
+     "profit_factor_note": null,
+     "max_drawdown_units": 0,
+     "current_drawdown_units": 0,
+     "peak_profit_units": 0,
+     "drawdown": {
+      "max": 0,
+      "current": 0,
+      "peak": 0,
+      "max_began": null,
+      "max_trough": null,
+      "max_recovered": null,
+      "longest_recovery_days": null,
+      "longest_recovery_ongoing": false,
+      "underwater": false
+     },
+     "streaks": {
+      "current": null,
+      "current_kind": null,
+      "current_n": 0,
+      "longest_win": 0,
+      "longest_loss": 0
+     },
+     "avg_clv_points": null,
+     "clv_n": 0,
+     "avg_clv_prob_pp": null,
+     "clv_prob_n": 0,
+     "clv_hit_rate_pct": null,
+     "clv_hit_n": 0,
+     "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "series": [],
+    "record_only": {
+     "n": 720,
+     "wins": 432,
+     "losses": 284,
+     "pushes": 4,
+     "record": "432-284-4",
+     "win_rate_pct": 60.34
+    },
+    "record_only_by_market": {
+     "Spread": {
+      "n": 263,
+      "wins": 123,
+      "losses": 136,
+      "pushes": 4,
+      "record": "123-136-4",
+      "win_rate_pct": 47.49
+     },
+     "Total": {
+      "n": 194,
+      "wins": 99,
+      "losses": 95,
+      "pushes": 0,
+      "record": "99-95",
+      "win_rate_pct": 51.03
+     },
+     "Moneyline": {
+      "n": 263,
+      "wins": 210,
+      "losses": 53,
+      "pushes": 0,
+      "record": "210-53",
+      "win_rate_pct": 79.85
+     }
+    },
+    "compare": {
+     "game": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     },
+     "props": {
+      "mode": "staked",
+      "n": 0,
+      "wins": 0,
+      "losses": 0,
+      "pushes": 0,
+      "record": "0-0",
+      "net_units": 0,
+      "risked_units": 0,
+      "roi_pct": null,
+      "win_rate_pct": null,
+      "avg_decimal": null,
+      "avg_odds": null,
+      "break_even_pct": null,
+      "gross_win_units": 0,
+      "gross_loss_units": 0,
+      "profit_factor": null,
+      "profit_factor_note": null,
+      "max_drawdown_units": 0,
+      "current_drawdown_units": 0,
+      "peak_profit_units": 0,
+      "drawdown": {
+       "max": 0,
+       "current": 0,
+       "peak": 0,
+       "max_began": null,
+       "max_trough": null,
+       "max_recovered": null,
+       "longest_recovery_days": null,
+       "longest_recovery_ongoing": false,
+       "underwater": false
+      },
+      "streaks": {
+       "current": null,
+       "current_kind": null,
+       "current_n": 0,
+       "longest_win": 0,
+       "longest_loss": 0
+      },
+      "avg_clv_points": null,
+      "clv_n": 0,
+      "avg_clv_prob_pp": null,
+      "clv_prob_n": 0,
+      "clv_hit_rate_pct": null,
+      "clv_hit_n": 0,
+      "avg_edge_pct": null,
+      "sample": {
+       "key": "VERY_SMALL",
+       "label": "Very small sample",
+       "warn": true,
+       "n": 0,
+       "text": "n=0 · Very small sample — results may be unstable"
+      }
+     }
+    }
+   },
+   "data_quality": {
+    "total": 761,
+    "verified": 0,
+    "pending": 41,
+    "voids": 0,
+    "missing_entry_odds": 720,
+    "simulated_price": 0,
+    "invalid_price": 0,
+    "invalid_stake": 0,
+    "not_pnl_eligible": 720,
+    "corrected": 0
+   }
+  }
+ },
+ "excluded_sources": [
+  {
+   "source": "CFB Model Lab",
+   "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
+   "rows": 26,
+   "reason": "research positions graded at an ASSUMED −110 (price_assumed); simulated, so never counted as verified P&L"
+  },
+  {
+   "source": "CFB Model Lab replays",
+   "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
+   "rows": 215,
+   "reason": "backtest replays of past games, not recommendations that existed at the time"
+  },
+  {
+   "source": "CFB decision engine (shadow)",
+   "file": "football/cfb_decision/2026/decisions.jsonl",
+   "rows": 188,
+   "reason": "a shadow engine under evaluation; its calls are not published EdgeDesk recommendations"
+  }
+ ],
+ "integrity_alerts": [],
+ "help": {
+  "pnl": "Profit & Loss measures how many units a strategy would have gained or lost after accounting for betting odds. Unlike win percentage, P&L reflects the actual price paid for each wager.",
+  "units": "A unit is a fixed amount you decide on — often 1% of a bankroll. Measuring in units lets people with different bankrolls compare the same record: +5u means five times your standard bet.",
+  "roi": "Return on investment: net profit divided by the total amount risked, times 100. Risking 100u to make 8u is an 8% ROI. It is not wins divided by losses.",
+  "clv": "Closing-line value: whether the price or line EdgeDesk recorded was better than where the market closed. Beating the close consistently is the clearest early evidence that a signal carries information, because it does not depend on who won.",
+  "drawdown": "Drawdown is how far the running total has fallen from its highest point. It shows the worst losing stretch someone following along would have had to sit through.",
+  "flat": "Flat 1u: every qualifying recommendation risks exactly 1 unit, at the odds EdgeDesk recorded when it made the recommendation.",
+  "staked": "EdgeDesk staking: every qualifying recommendation risks the units EdgeDesk recommended at the time (0.25u to 1.00u). The two strategies are never mixed.",
+  "break_even": "The win rate the actual prices needed to break even. At −110 on every bet it is 52.38%.",
+  "profit_factor": "Gross units won divided by gross units lost. Above 1.00 the winners paid for the losers.",
+  "missing": "P&L unavailable — entry price not captured. The result still counts in the win/loss record, but a profit figure needs the real price, and EdgeDesk never assumes −110."
+ },
+ "sources": [
+  {
+   "source": "player_props",
+   "league": "NFL",
+   "file": "football/props/nfl/2026/evaluations.jsonl",
+   "rows": 56,
+   "results_file": "football/props/nfl/2026/results.jsonl",
+   "results": 0
+  },
+  {
+   "source": "player_props",
+   "league": "CFB",
+   "file": "football/props/cfb/2026/evaluations.jsonl",
+   "rows": 91,
+   "results_file": "football/props/cfb/2026/results.jsonl",
+   "results": 0
+  },
+  {
+   "source": "bettor_decision",
+   "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
+   "snapshots": 193,
+   "rows": 41,
+   "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
+  },
+  {
+   "source": "model_record",
+   "league": "NFL",
+   "file": "record/football/nfl_2026.json",
+   "rows": 95,
+   "note": "no price captured: record-only rows"
+  },
+  {
+   "source": "model_record",
+   "league": "CFB",
+   "file": "record/football/cfb_2026.json",
+   "rows": 625,
+   "note": "no price captured: record-only rows"
+  }
+ ],
+ "ledger_file": "record/pnl/ledger_2026.json",
+ "rows_file": "record/pnl/rows_2026.json"
+}

@@ -356,6 +356,42 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
     chk('a grade of an evaluation that is not on file is caught', V.checkResults('', rtext, rows.filter((x) => x.evaluation_id !== 'w'), 'results.jsonl').some((p) => /not on file/.test(p)));
     chk('a grade repeated is caught', V.checkResults('', rtext + JSON.stringify(graded[0]) + '\n', rows, 'results.jsonl').some((p) => /second time/.test(p)));
   }
+  /* ---- a corrected official statistic: appended, never edited, never doubled */
+  {
+    chk('nothing changed at the source: no correction', G.correct(ds, rows, graded, NOW).length === 0);
+    const log = ds.players[BIJAN].logs.find((l) => l.gid === G3);
+    const keepRyd = log.ryd;
+    log.ryd = 70;                                  /* the league revises Bijan's rushing yards down */
+    try {
+      const later = NOW + 3600000;
+      const fix = G.correct(ds, rows, graded, later);
+      const fw = fix.find((x) => x.evaluation_id === 'w'), fl = fix.find((x) => x.evaluation_id === 'l');
+      chk('a stat correction appends a correction row per affected grade', fw && fl && fw.correction === true && fw.corrects === byId.w.graded_at, fix.map((x) => x.evaluation_id));
+      chk('the over becomes a LOSS at its own price and stake', fw.result === 'LOSS' && fw.value === 70 && fw.units_won === -0.25 && fw.flat_units_won === -1, fw);
+      chk('the under becomes a WIN', fl.result === 'WIN' && fl.units_won === EDP.unitsWon('WIN', -115, 0.25), fl);
+      chk('the correction says what changed', /→ 70/.test(fw.correction_reason) && /WIN → LOSS/.test(fw.correction_reason), fw.correction_reason);
+      chk('a VOID (did not play) is not touched by a stat correction elsewhere', !fix.some((x) => x.evaluation_id === 'v'));
+      const all = graded.concat(fix);
+      chk('the settlement is the latest row per evaluation', G.latest(all).find((x) => x.evaluation_id === 'w').result === 'LOSS' && G.latest(all).length === graded.length);
+      chk('correcting twice appends nothing new', G.correct(ds, rows, all, later + 3600000).length === 0);
+      const rtext = all.map((x) => JSON.stringify(x)).join('\n') + '\n';
+      chk('the verifier accepts a correction that names the grade it corrects', V.checkResults('', rtext, rows, 'results.jsonl').length === 0, V.checkResults('', rtext, rows, 'results.jsonl'));
+      const forged = Object.assign({}, fw, { corrects: 'nope' });
+      chk('the verifier refuses a correction that does not', V.checkResults('', graded.concat([forged]).map((x) => JSON.stringify(x)).join('\n') + '\n', rows, 'results.jsonl').some((p) => /correction must name/.test(p)));
+      const repC = G.report('nfl', 2026, all, rows, NOW);
+      chk('the report counts each bet once after a correction (no double count)', repC.summary.n === 3 && repC.counts.corrections === fix.length, [repC.summary.n, repC.counts]);
+      chk('the push at the old exact number is corrected too: PUSH → LOSS', fix.find((x) => x.evaluation_id === 'p').result === 'LOSS');
+      chk('and the report\'s units are the corrected ones (-0.25 + 0.2174 - 0.25 = -0.28u)', repC.summary.units === -0.28, repC.summary.units);
+      const OPP = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_opportunity.js'));
+      const saved = { type: 'PLAYER_PROP', game_id: G3, player_id: BIJAN, market: 'rush_yds', line: 84.5, side: 'over', american: -105, units: 0.25 };
+      chk('a reader\'s saved prop grades on the corrected statistic', OPP.gradePropEntry(saved, all).value === 70 && OPP.gradePropEntry(saved, all).result === 'LOSS', OPP.gradePropEntry(saved, all));
+      const drop = ds.players[BIJAN].logs.indexOf(log);
+      ds.players[BIJAN].logs.splice(drop, 1);      /* a feed that loses the line */
+      delete ds._gradeIx;
+      chk('a feed that drops the box line never voids a graded bet', G.correct(ds, rows, graded, later).filter((x) => x.evaluation_id === 'w').length === 0);
+      ds.players[BIJAN].logs.splice(drop, 0, log);
+    } finally { log.ryd = keepRyd; delete ds._gradeIx; }
+  }
   const rep = G.report('nfl', 2026, graded, rows, NOW);
   chk('the report counts bets (BET only) and keeps LEAN apart', rep.summary.n === 3 && rep.lean.n === 1, [rep.summary, rep.lean]);
   chk('the report carries breakdowns and the calibration table', rep.breakdown.market.length && rep.breakdown.ev_bucket.length && rep.calibration.table.length === 5);

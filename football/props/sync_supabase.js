@@ -72,7 +72,10 @@ async function sync(o) {
   const P = C.leaguePaths(o.league, o.season);
   const recent = (t) => { const v = Date.parse(t); return Number.isFinite(v) && v >= since; };
   const evals = (o.evaluations || readJsonl(P.evaluations)).filter((x) => recent(x.evaluated_at) || recent(x.frozen_at));
-  const results = (o.results || readJsonl(P.results)).filter((x) => recent(x.graded_at));
+  /* player_prop_results holds the first settlement of each evaluation, write-once;
+     a later CORRECTION row reaches the database through model_pnl (tools/record/pnl_sync.js),
+     which updates the settlement in place and logs it in model_pnl_corrections */
+  const results = (o.results || readJsonl(P.results)).filter((x) => recent(x.graded_at) && !x.correction);
   const resolved = o.resolved || readJson(path.join(C.CACHE, o.league + '_resolved_quotes.json'));
   const db = o.db;
   const out = { league: o.league, quotes: 0, evaluations: 0, projections: 0, results: 0 };

@@ -44,6 +44,24 @@ deploy that worked and changed nothing.
 
 ## The files
 
+### `model_pnl.sql` + `model_pnl_analytics.sql` — profit and loss of EdgeDesk's recommendations
+
+`model_pnl` holds one row per recommendation, keyed by `recommendation_id`, so settling twice writes one row. It is written only by `model_pnl_upsert()` (service role), which `tools/record/pnl_sync.js` feeds from `record/pnl/ledger_<season>.json`.
+
+- **P&L is derived by trigger** from the row's own American entry price, stake and result: `flat_profit_units` at 1u and `profit_units` at the recommended stake, never mixed.
+- **No captured price, no P&L.** A constraint and the trigger both enforce it. A malformed price is never stored as odds; it is kept in `entry_odds_raw` as `INVALID_PRICE`.
+- **The recommendation half of a row is frozen.** A settlement that changes after it was settled updates the row in place, and the change is appended to `model_pnl_corrections`, which is append-only.
+- **Delete and truncate are refused.**
+- **RLS is on with no client policy.** Readers get `model_pnl_public`: public fields only, anon included.
+
+The analytics file adds:
+
+- the SQL rollups (`model_pnl_rollup`) and drawdown (`model_pnl_drawdown`), both in parity with `lib/edgedesk_pnl.js`;
+- the cached daily series (`model_pnl_daily`, refreshed by `model_pnl_refresh()`);
+- `model_pnl_my_dollars()`, which is SECURITY INVOKER and reads only the caller's own `bankroll_settings` row. No dollar figure is ever stored.
+
+Run the core file first; the analytics file's guard says so. Report rows should all read `ok`. Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pnl/DESIGN.md`.
+
 ### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
 Everything personal used to live in one browser. This gives each reader rows on
 their account, under row level security on `auth.uid()`, and nothing takes a

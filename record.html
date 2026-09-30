@@ -6,6 +6,7 @@
 <title>EdgeDesk Record: our closing line value, unedited</title>
 <meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
 <!-- NO LOGIN GATE. That is the entire point of this file.
      app.html redirects logged-out visitors to index.html. Its own gate comment
      says "this is a UX funnel, not a data paywall — the anon key still reads
@@ -169,6 +170,7 @@ footer a:hover{color:var(--text)}
     <span class="nav-sp"></span>
     <a class="nlink hideS" href="#briefs">Published briefs</a>
     <a class="nlink hideS" href="#cfb-model-lab">CFB Model Lab</a>
+    <a class="nlink hideS" href="#pnl">Profit &amp; loss</a>
     <a class="nlink hideS" href="./curriculum.html">Curriculum</a>
     <span class="pill" id="dbPill">loading</span>
     <a class="btn ghost" href="./index.html">The terminal</a>
@@ -233,6 +235,15 @@ footer a:hover{color:var(--text)}
     <h2>Every player-prop bet EdgeDesk flagged, and how it graded</h2>
     <p class="sub">Before kickoff, EdgeDesk freezes each player-prop BET and LEAN it would act on: the price, the book, EdgeDesk's probability, EV, the decision, and the market's validation stage. The ledger only ever grows. After the game each one is graded against the box score as a win, loss or push, or void when the player did not play. LEANs are graded at a flat 1U for information and are not counted as bets. Closing-line value is measured against the last price EdgeDesk captured before kickoff. Every figure below is copied from the file football/props/grade.js writes; this page calculates nothing of its own.</p>
     <div id="propsPub"><div class="edrec-empty">Loading the player-prop record…</div></div>
+  </div>
+</section>
+
+<section class="sec" id="pnl">
+  <div class="wrap">
+    <span class="ey">Profit &amp; loss · every recommendation at the price it was made</span>
+    <h2>If you had followed every EdgeDesk recommendation</h2>
+    <p class="sub">Every recommendation EdgeDesk classified BET, at the American price it recorded when it made the call, flat 1u or at the stake it recommended — never both at once. Nothing is re-priced with today’s odds, nothing is re-predicted with today’s model, and a result whose price was never captured counts in the win/loss record but never in P&amp;L: EdgeDesk does not assume −110. Losses stay, and a corrected result is logged on its row. Every figure is copied from record/pnl/, which tools/record/pnl_ledger.js writes from the settled ledgers; this page adds nothing of its own.</p>
+    <div id="pnlPub"><div class="edrec-empty">Loading the profit &amp; loss record…</div></div>
   </div>
 </section>
 
@@ -4928,6 +4939,15 @@ async function load(){
 $('yr').textContent=new Date().getFullYear();
 renderRecScope();
 load();
+</script>
+<!-- PROFIT & LOSS (#pnl): public, units only, no login — the committed record/pnl/ rendered by lib/edgedesk_pnl_ui.js -->
+<script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20260930a"></script>
+<script>
+(function () {
+  var host = document.getElementById('pnlPub');
+  if (host && window.EDPnlUI) window.EDPnlUI.mount(host, { base: '', surface: 'public' });
+})();
 </script>
 </body>
 </html>

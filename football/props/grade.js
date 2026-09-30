@@ -16,6 +16,14 @@
      game whose box is published), when the game was cancelled, or when the
      statistic is not published for that market. A game whose box is not yet
      published stays PENDING — it is never voided for lateness.
+   CORRECTIONS — a settled row is never edited and never graded a second
+     time as if new. When the official statistic behind a settled grade
+     changes (an NFL stat correction, a box score republished), correct()
+     APPENDS a correction row for the same evaluation: `correction: true`,
+     what it corrects (`corrects` = that grade's graded_at) and why. The
+     latest row per evaluation is the settlement (latest()); the history
+     stays on file. A correction never turns a graded bet into a VOID because
+     a feed dropped a line, and only looks back CORRECTION_DAYS after kickoff.
    CLV (EDProps.clv) — entry vs the close:
      the close is the last pregame capture of the SAME prop ('final' row):
      line CLV always, price CLV and no-vig probability CLV only at the same
@@ -65,6 +73,52 @@ function resultOf(ds, row) {
   return { state: 'SETTLE', played, value: v, overtime: !!g.overtime };
 }
 
+/* the settlement of each evaluation: its latest result row (a correction
+   row supersedes the grade it corrects; nothing is removed from the file) */
+function latest(results) {
+  const by = {}, order = [];
+  (results || []).forEach((x) => {
+    if (!x || !x.evaluation_id) return;
+    const p = by[x.evaluation_id];
+    if (!p) order.push(x.evaluation_id);
+    if (!p || (Date.parse(x.graded_at) || 0) >= (Date.parse(p.graded_at) || 0)) by[x.evaluation_id] = x;
+  });
+  return order.map((k) => by[k]);
+}
+
+const CORRECTION_DAYS = 14;
+/* re-read the official statistic behind every settled grade and append a
+   correction row where it changed */
+function correct(ds, rows, done, now) {
+  const cur = {};
+  latest(done).forEach((x) => { cur[x.evaluation_id] = x; });
+  const out = [];
+  rows.forEach((x) => {
+    const g = cur[x.evaluation_id];
+    if (!g) return;
+    const k = Date.parse(x.kickoff);
+    if (isFinite(k) && now - k > CORRECTION_DAYS * 86400000) return;
+    const res = resultOf(ds, x);
+    /* only a published statistic for a player who played can correct a grade */
+    if (res.state !== 'SETTLE' || res.played === false || typeof res.value !== 'number') return;
+    let line = x.line, side = x.side;
+    if (x.kind === 'final') { const c = x.consensus || {}; if (c.line == null) return; line = c.line; side = 'over'; }
+    const s = EDP.settle(x.market, line, side, { played: true, value: res.value });
+    if (s.result === g.result && (g.value === res.value || (g.value == null && res.value == null))) return;
+    const rec = Object.assign({}, g, { result: s.result, value: s.value != null ? s.value : null, graded_at: new Date(now).toISOString(),
+      correction: true, corrects: g.graded_at || null,
+      correction_reason: 'official statistic changed: ' + (g.value != null ? g.value : g.result) + ' → ' + res.value + ' (' + g.result + ' → ' + s.result + ')' });
+    delete rec.reason;
+    if (s.reason) rec.reason = s.reason;
+    if (x.kind === 'qualified') {
+      rec.units_won = EDP.unitsWon(rec.result, x.american, x.units > 0 ? x.units : 1);
+      rec.flat_units_won = EDP.unitsWon(rec.result, x.american, 1);
+    }
+    out.push(rec);
+  });
+  return out;
+}
+
 function grade(ds, rows, done, now) {
   const seen = new Set(done.map((x) => x.evaluation_id));
   const finals = {};
@@ -111,7 +165,9 @@ function marketEvidence(results) {
   });
   return out;
 }
-function report(league, season, results, evals, now) {
+function report(league, season, rowsOnFile, evals, now) {
+  /* one settlement per evaluation: the latest row (corrections supersede) */
+  const results = latest(rowsOnFile);
   const bets = results.filter((x) => x.kind === 'qualified' && x.decision === 'BET');
   const leans = results.filter((x) => x.kind === 'qualified' && x.decision === 'LEAN');
   const cal = EDP.calibration(results.filter((x) => x.kind === 'final').map((x) => ({ p_side: x.p_over, result: x.result })));
@@ -136,7 +192,7 @@ function report(league, season, results, evals, now) {
     markets: marketEvidence(results),
     calibration_state: { state: EDP.calibrationState(cal, summary), n: cal.n, ece: cal.ece, rule: '≥ 500 settled and ECE ≤ 0.03 → PARTIAL; ≥ 1000, ECE ≤ 0.02 and positive CLV → CALIBRATED' },
     counts: { evaluations: evals.length, results: results.length, bets: bets.length, leans: leans.length, finals: results.filter((x) => x.kind === 'final').length,
-      void: results.filter((x) => x.result === 'VOID').length }
+      void: results.filter((x) => x.result === 'VOID').length, corrections: (rowsOnFile || []).filter((x) => x.correction).length }
   };
 }
 
@@ -151,11 +207,12 @@ async function main() {
     const src = league === 'cfb' ? require('./sources/cfb.js') : require('./sources/nfl.js');
     const ds = await src.load({ season, offline: a.indexOf('--offline') >= 0, now, current_feeds: league === 'nfl' ? ['stats', 'pbp', 'snaps', 'roster'] : undefined, no_prior: true });
     if (!ds.ok) { console.log('[props grade] dataset unavailable: ' + ds.error + ' — nothing graded'); return 0; }
-    fresh = grade(ds, evals, done, now);
+    fresh = grade(ds, evals, done, now).concat(correct(ds, evals, done, now));
   }
   const results = done.concat(fresh);
   const perf = report(league, season, results, evals, now);
-  console.log('[props grade] ' + league + ' ' + season + ': ' + evals.length + ' evaluations, ' + fresh.length + ' newly settled, ' + results.length + ' settled in all · bets ' + perf.summary.n + ' · calibration ' + perf.calibration_state.state + ' (n ' + perf.calibration.n + ')');
+  const nCorr = fresh.filter((x) => x.correction).length;
+  console.log('[props grade] ' + league + ' ' + season + ': ' + evals.length + ' evaluations, ' + (fresh.length - nCorr) + ' newly settled, ' + nCorr + ' corrected, ' + results.length + ' settled in all · bets ' + perf.summary.n + ' · calibration ' + perf.calibration_state.state + ' (n ' + perf.calibration.n + ')');
   if (!write) { console.log('[props grade] dry run: nothing written (pass --write)'); return 0; }
   if (fresh.length) { fs.mkdirSync(P.season_dir, { recursive: true }); fs.appendFileSync(P.results, fresh.map((x) => JSON.stringify(x)).join('\n') + '\n'); }
   const prev = (() => { try { return JSON.parse(fs.readFileSync(P.performance, 'utf8')); } catch (e) { return null; } })();
@@ -164,5 +221,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { grade, report, resultOf, marketEvidence };
+module.exports = { grade, correct, latest, report, resultOf, marketEvidence, CORRECTION_DAYS };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props grade] ' + (e.stack || e.message)); process.exit(1); });

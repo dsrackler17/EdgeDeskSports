@@ -2879,6 +2879,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3001,15 +3002,21 @@ body.focus .dk-focusnote{display:block}
   <!-- RECORD -->
   <section id="v-record" class="view hide">
     <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
-    <!-- TWO BOOKS, NEVER MIXED. The edges record grades prices the capture
+    <!-- BOOKS, NEVER MIXED. The edges record grades prices the capture
          flagged (signals). The football model record grades the number the
          football model published (record/football/, written by
-         .github/workflows/football-model-record.yml). Neither reads the other. -->
+         .github/workflows/football-model-record.yml). Neither reads the other.
+         Profit & Loss prices EdgeDesk's own recommendations (record/pnl/). -->
     <div class="stseg" id="recBook" role="tablist" aria-label="Which record">
       <button data-rb="edges" class="on" role="tab" aria-selected="true">Edges record</button>
       <button data-rb="football" role="tab" aria-selected="false">Football model record</button>
+      <button data-rb="pnl" role="tab" aria-selected="false">Profit &amp; Loss</button>
     </div>
     <div id="recFbWrap" class="hide"></div>
+    <!-- PROFIT & LOSS — a third book, not a filter of the other two: every
+         EdgeDesk recommendation at the price it recorded, from record/pnl/
+         (tools/record/pnl_ledger.js). Rendered by lib/edgedesk_pnl_ui.js. -->
+    <div id="recPnlWrap" class="hide"></div>
     <div id="recEdgesWrap">
     <p class="lede">The auto-graded closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b>. Entry prices are frozen at flag time, the close is snapshotted, and every row grades itself after the game. Nothing here is typed in by hand and nothing is estimated.</p>
     <!-- THE PROOF LAYER — static framing only; every number stays in the
@@ -3857,6 +3864,9 @@ window.mcRefresh=function(){
      and the explain layer every surface reads its words from. -->
 <script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
 <script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
+<!-- THE P&L BOOK (docs/pnl/DESIGN.md): the arithmetic and the Record section over record/pnl/ -->
+<script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20260930a"></script>
 <script src="/lib/edgedesk_market.js?v=20260929a"></script>
 <script src="/lib/edgedesk_execution.js?v=20260929a"></script>
 <script src="/lib/edgedesk_decision.js?v=20260929b"></script>
@@ -3870,7 +3880,7 @@ window.mcRefresh=function(){
 <!-- THE OPPORTUNITY LAYER: one object for a game market and a player prop, so
      Research, the Props page, the Card and the AI desk read the same thing
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
-<script src="/lib/edgedesk_opportunity.js?v=20260929fr1"></script>
+<script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
 <script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
@@ -10184,14 +10194,46 @@ function rfbRenderGames(L){
 }
 
 function recBook(b){
-  b=b==='football'?'football':'edges';
+  b=b==='football'?'football':b==='pnl'?'pnl':'edges';
   var seg=$('recBook');if(!seg)return;
   var bs=seg.querySelectorAll('button');
   for(var i=0;i<bs.length;i++){var on=bs[i].dataset.rb===b;bs[i].classList.toggle('on',on);bs[i].setAttribute('aria-selected',on?'true':'false');}
   $('recEdgesWrap').classList.toggle('hide',b!=='edges');
   $('recFbWrap').classList.toggle('hide',b!=='football');
+  var pw=$('recPnlWrap');if(pw)pw.classList.toggle('hide',b!=='pnl');
   try{localStorage.setItem('edgedesk_rec_book',b);}catch(_){}
   if(b==='football'){rfbRender();rfbLoad().then(rfbRender);}
+  if(b==='pnl')rpnlOpen(false);
+}
+
+/* =====================================================================
+   PROFIT & LOSS — the third book. lib/edgedesk_pnl_ui.js renders the
+   committed record/pnl/ (tools/record/pnl_ledger.js); nothing here computes
+   a figure. Dollars appear only when THIS reader has set a unit or a
+   bankroll: their device settings, or — signed in — their own
+   bankroll_settings row (RLS: nobody else's is readable). Never a default.
+   ===================================================================== */
+var RPNL={ui:null,remote:null,remoteP:null};
+function rpnlUnit(){
+  try{
+    var BK=window.EDBankroll;if(!BK)return null;
+    var s=RPNL.remote||(window.EDDecisionUI&&typeof EDDecisionUI.settings==='function'?EDDecisionUI.settings():BK.load());
+    var u=BK.unitValue(s);return u&&u.unit?u:null;
+  }catch(_){return null;}
+}
+function rpnlRemote(){
+  if(RPNL.remoteP||typeof edUser!=='function'||!edUser()||!window.EDBankroll)return;
+  RPNL.remoteP=sbGet('bankroll_settings?select=bankroll_amount,base_unit_amount,unit_mode,unit_percent&limit=1').then(function(rows){
+    var row=rows&&rows[0];
+    if(row){RPNL.remote=EDBankroll.fromRow(row,EDBankroll.load());if(RPNL.ui)RPNL.ui.refresh();}
+  }).catch(function(){/* units only */});
+}
+function rpnlOpen(force){
+  var host=$('recPnlWrap');if(!host||!window.EDPnlUI)return;
+  if(!RPNL.ui)RPNL.ui=EDPnlUI.mount(host,{base:'',unitValue:rpnlUnit,surface:'app'});
+  else if(force)RPNL.ui.reload();
+  else RPNL.ui.refresh();
+  rpnlRemote();
 }
 window.recBook=recBook;
 window.EDFootballRecord={
@@ -10210,9 +10252,9 @@ window.EDFootballRecord={
     else if(b.id==='rfbMore'){RFB.limit+=60;rfbLedger(RFB.sport).then(rfbRenderGames);}
   });
   /* the header refresh reloads whichever book is open */
-  $('recRefresh').addEventListener('click',function(){if(!$('recFbWrap').classList.contains('hide'))rfbLoad(true).then(rfbRender);});
+  $('recRefresh').addEventListener('click',function(){if(!$('recFbWrap').classList.contains('hide'))rfbLoad(true).then(rfbRender);var pw=$('recPnlWrap');if(pw&&!pw.classList.contains('hide'))rpnlOpen(true);});
   var saved=null;try{saved=localStorage.getItem('edgedesk_rec_book');}catch(_){}
-  if(saved==='football')recBook('football');
+  if(saved==='football'||saved==='pnl')recBook(saved);
 })();
 
 /* =====================================================================
