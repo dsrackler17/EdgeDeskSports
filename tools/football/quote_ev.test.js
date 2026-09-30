@@ -553,6 +553,32 @@ section('14. audit 2026-09-30: the EV is priced from the displayed projection, a
   const nflFair = 10, G7 = Q.evaluateGame(nflM(nflFair), [sq('home', -3, -110), sq('away', 3, -110)], ctx({ game: SEA }));
   const s7 = C.researchStatus({ projected: true, market: 'FRESH', gap: 7, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: nflFair, market_margin: 3, implausible_ev: G7.implausible_ev });
   chk('NFL too: a verified 7-pt gap at −110 reads VERIFIED MAJOR', s7.key === 'VERIFIED_MAJOR' && G7.implausible_ev === null, [s7.key, G7.implausible_ev]);
+
+  /* THE TERMINAL'S STORED CURVE (found in the follow-up's Step 3): the college
+     terminal prices quotes from a TABLE of the same conditioned distribution,
+     sampled ±30-60 pts around the market (football/cfb_terminal/build.js
+     readBase → RD.buildCurve → curveCover). σ was read only from a function
+     answering ±80, so every terminal game fell to the flat 25% fallback while
+     the page, pricing the same game from the function, was σ-scaled: two
+     labels for one game (UNT @ Tulsa read "implausible EV" in the terminal
+     only). The quantiles are now read inside the window the cover answers. */
+  const TB = require(path.join(ROOT, 'football', 'cfb_terminal', 'build.js'));
+  const hcFull = Q.cfbConditionedCover(PP.distributions, -9.2, 1.5, 14.84, 14.633);   /* UNT @ Tulsa: Tulsa −1.5, EdgeDesk North Texas −9.2 */
+  const curve = RD.buildCurve(hcFull, 1.5, Math.min(60, Math.max(30, Math.ceil(Math.abs(-9.2 - 1.5)) + 24)), {});
+  const sdFull = Q.distributionSpread(hcFull), sdTable = Q.distributionSpread(TB.curveCover(curve));
+  chk('the terminal\'s stored table reads the same σ as the function it samples', typeof sdTable === 'number' && near(sdTable, sdFull, 1e-6), [sdTable, sdFull]);
+  const cFull = Q.distributionCentre(hcFull), cTable = Q.distributionCentre(TB.curveCover(curve));
+  chk('…and the same median', cFull.checked && cTable.checked && near(cTable.median, cFull.median, 1e-6), [cFull, cTable]);
+  const mTerm = { sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: -9.2, tail: { validated_within_pts: 0 } };
+  const qsTerm = [q('home', -1.5, -108), q('away', 1.5, -112)];
+  const Gpage = Q.evaluateGame(Object.assign({}, mTerm, { home_cover: hcFull }), qsTerm, ctx());
+  const Gterm = Q.evaluateGame(Object.assign({}, mTerm, { home_cover: TB.curveCover(curve) }), qsTerm, ctx());
+  chk('a 10.7-pt gap at +43% raw EV reads the SAME in the terminal as on the page: σ-scaled, not implausible, a LARGE EV',
+    Gpage.implausible_ev === null && Gterm.implausible_ev === null && Gterm.large_ev && Gpage.large_ev && Gterm.large_ev.raw_ev === Gpage.large_ev.raw_ev,
+    [Gpage.implausible_ev, Gterm.implausible_ev, Gterm.large_ev]);
+  const narrow = { lo: 5, step: 0.5, win: [0.3, 0.29, 0.28], push: [0, 0, 0] };
+  chk('a table whose window does not reach the 16th and 84th percentiles reads no σ (the fallback then applies and says so)', Q.distributionSpread(TB.curveCover(narrow)) === null);
+  chk('a function answering every margin reads exactly as before (σ 14 still 14.0)', Q.distributionSpread(normalCover(-2, 14)) === sd14);
 }
 
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');

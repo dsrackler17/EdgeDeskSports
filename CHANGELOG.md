@@ -131,7 +131,28 @@ that look at the quote rather than the gap:
 
 This is stated, not tuned away.
 
+**Found when re-running the boards (Step 3), then fixed: the college terminal never used σ.** The terminal
+(`football/cfb_terminal/build.js`, which writes `board.json` and `games.json`) prices quotes from a stored TABLE of
+the conditioned distribution. The table is sampled ±30-60 pts around the market (`readBase` → `RD.buildCurve` →
+`curveCover`). `distributionSpread` only read σ from a cover function that answers every margin from −80 to +80.
+- Every terminal game therefore fell to the flat 25% fallback.
+- The page prices the same game from the function, and there it was σ-scaled.
+- The result was two labels for one game. North Texas @ Tulsa read "implausible EV, check data" in the terminal (+43.3%
+  raw EV at a 10.7-pt gap, 0.66 σ), but not on the page.
+
+The fix: the quantiles (`distributionSpread`, `distributionCentre`) are now read inside the window the cover function
+answers. A function answering every margin reads exactly as before. The fitted z* and the holdout numbers above came
+from the function, so they stand. On the 2026-09-30 18:55Z snapshot, North Texas @ Tulsa now reads MARKET FAULT: a
+10.7-pt gap with one fresh book, where two are required at that size. That is the canonical classifier, not the
+guard.
+
 **Tests.**
+- `tools/football/quote_ev.test.js` §14, the terminal's stored curve. These three checks fail against the previous
+  library:
+  - the table reads the same σ and median as the function it samples;
+  - the North Texas @ Tulsa quotes read the same (σ-scaled, LARGE EV, not implausible) from the table as from the
+    function;
+  - a window that misses the 16th and 84th percentiles reads no σ.
 - `tools/football/quote_ev.test.js` §14 (rewritten for the new rule):
   - the σ reading;
   - a 1.04 σ gap is implausible;
