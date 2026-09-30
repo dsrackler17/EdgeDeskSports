@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T22:00:00.000Z",
   "game_when_label": "2026-10-03 22:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-30T17:58:21.981Z",
-  "generated_at": "2026-09-30T17:58:21.981Z",
+  "updated_at": "2026-09-30T22:10:34.592Z",
+  "generated_at": "2026-09-30T22:10:34.592Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 4
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 6
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Colorado State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Oregon State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -255,7 +279,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-27T01:00:00.000Z",
-        "retrieved_at": "2026-09-30T17:15:21.257Z"
+        "retrieved_at": "2026-09-30T21:08:54.685Z"
       },
       "home": {
         "team": "Colorado State",
@@ -345,9 +369,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T17:15:21.257Z"
+        "retrieved_at": "2026-09-30T21:08:54.685Z"
       },
-      "generated_at": "2026-09-30T17:16:05.729Z",
+      "generated_at": "2026-09-30T21:09:42.089Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1463,7 +1487,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 20h old",
+          "text": "odds is 24h old",
           "widening": null
         },
         {
@@ -1596,7 +1620,7 @@
       "total_market": "61.5",
       "book": "captured consensus (stale) · 2 books · best at BetOnline.ag",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "20 hours old",
+      "capture_age": "24 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1646,13 +1670,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 81,
-        "tier": "STRONG",
-        "text": "81 · STRONG",
-        "sub": "main deduction: Oregon State’s availability report is not due yet",
-        "score": 81,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "pct": 77,
+        "tier": "ADEQUATE",
+        "text": "77 · ADEQUATE",
+        "sub": "main deduction: Oregon State’s availability sources refused",
+        "score": 77,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
         "gate_label": null,
         "components": [
           {
@@ -1664,7 +1688,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.1,
+            "score": 7.6,
             "max": 20
           },
           {
@@ -1676,7 +1700,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1692,18 +1716,18 @@
             "max": 10
           }
         ],
-        "main_deduction": "Oregon State’s availability report is not due yet; the impact of Oregon State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Oregon State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Oregon State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Oregon State)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "action": "Restore an injury/availability source for Oregon State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Colorado State)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "action": "Restore an injury/availability source for Colorado State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
@@ -1956,6 +1980,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-30T17:58:21.981Z"
+    "at": "2026-09-30T22:10:34.592Z"
   }
 }
