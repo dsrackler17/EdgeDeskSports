@@ -699,6 +699,26 @@
       fairTotal = pr.sharp_total;
       terms = pr.terms;
       feats = pr.features;
+      /* THE NFL REGIME SIGNAL (audit follow-up #4, lib/nfl_regime.js): a
+         first-year head coach, a new starting QB, the starting QB out. Its
+         walk-forward-fitted shift (football/validation/nfl_regime.json) is
+         its OWN spread term, applied only when the record says it is priced;
+         either way a flagged side is named in the data-quality warnings. */
+      var rgm = req.regime || (req.game && req.game.regime) || null;
+      if (rgm && rgm.home && rgm.away) {
+        var rgShift = (isNum(rgm.home.shift_points) ? rgm.home.shift_points : 0) - (isNum(rgm.away.shift_points) ? rgm.away.shift_points : 0);
+        if (rgm.priced === true && Math.abs(rgShift) > 1e-12) {
+          fairSpread += rgShift;
+          comp.regime_shift = rgShift;
+          terms = { spread: (terms && terms.spread ? terms.spread.slice() : []).concat([{ key: 'regime', value: rgShift, points: rgShift }]),
+            total: terms && terms.total ? terms.total : [] };
+        }
+        [['home', req.game.home], ['away', req.game.away]].forEach(function (x) {
+          var s = rgm[x[0]];
+          if (s && s.flagged && s.why) q.warnings = (q.warnings || []).concat(['NFL REGIME (' + x[1] + '): ' + s.why
+            + (rgm.priced === true && isNum(s.shift_points) ? ' — priced ' + (s.shift_points > 0 ? '+' : '') + s.shift_points.toFixed(2) + ' pts' : ' — research only, not priced')]);
+        });
+      }
     } else {
       var g = req.game;
       fairSpread = cfb.predictMargin(req.state, g.home, g.away,

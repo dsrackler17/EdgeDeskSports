@@ -3873,6 +3873,9 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
 <script src="/lib/edgedesk_decision_inputs.js?v=20260929b"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
+<!-- THE NFL REGIME SIGNAL (audit follow-up #4): a first-year head coach, a new starting QB,
+     the starting QB out — one definition for the fit and the board (fbNflGameReq). -->
+<script src="/lib/nfl_regime.js?v=20260930a"></script>
 <script src="/lib/edgedesk_decision_ui.js?v=20260929f"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
@@ -47811,7 +47814,16 @@ function fbNflGameReq(g){
   return {home:g.home_team,away:g.away_team,week:fbNum(g.week),
     home_rest:fbNum(g.home_rest),away_rest:fbNum(g.away_rest),roof:g.roof,surface:g.surface,
     div_game:fbNum(g.div_game),temp:fbNum(g.temp),wind:fbNum(g.wind),
-    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null};
+    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null,
+    regime:fbNflRegimeFor(g)};
+}
+/* THE NFL REGIME SIGNAL for one game (lib/nfl_regime.js over the games.csv rows
+   fbLoadNfl read, the fit record football/validation/nfl_regime.json): the engine
+   prices it only when the record says it is promoted, and names it either way */
+function fbNflRegimeFor(g){
+  var S=FB.nfl,R=window.EDNflRegime;
+  if(!R||!S||!S.regimeSig||!g||!g.game_id)return null;
+  try{return R.forGame(S.regimeSig,String(g.game_id),S.regimeFit||null);}catch(_){return null;}
 }
 /* nflverse gameday + gametime are US EASTERN wall-clock. Parsed as the
    viewer's local time, a UTC browser saw an 8:15 PM ET kickoff four hours
@@ -48155,8 +48167,12 @@ function fbLoadNfl(signal){
   });
   /* non-QB personnel availability: display only, moves no number */
   try{ if(typeof fbPersonnelEnsure==='function')fbPersonnelEnsure(); }catch(_){}
+  /* the NFL regime signal's fit record: without it the signal is shown, never priced */
+  var regimeP=fbFetchText('/football/validation/nfl_regime.json',signal).then(function(t){var j=JSON.parse(t);S.regimeFit=j&&j.schema==='edgedesk_nfl_regime_v1'?j:null;})
+    .catch(function(e){if(e&&e.name==='AbortError')throw e;S.regimeFit=null;});
   return fbFetchText(FB_URL_GAMES,signal).then(function(txt){
     var rows=fbCsv(txt),i,r;
+    try{S.regimeSig=window.EDNflRegime?window.EDNflRegime.signals(rows):null;}catch(_){S.regimeSig=null;}
     var maxSeason=0;
     for(i=0;i<rows.length;i++){var sn=fbNum(rows[i].season);if(sn&&sn>maxSeason)maxSeason=sn;}
     S.curSeason=maxSeason;
@@ -48187,7 +48203,8 @@ function fbLoadNfl(signal){
         return byGame;
       });
     }
-    return stwP.then(function(byGame){
+    return Promise.all([stwP,regimeP]).then(function(done){
+      var byGame=done[0];
       var absorbed=0;
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
       S.weekPreds={};

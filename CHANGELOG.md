@@ -267,6 +267,78 @@ bootstrap 95% CI, per season and per gap bucket. Samples under 100 moved games r
 - that the market is not an input and nothing is fitted;
 - that each reading follows its own numbers.
 
+### #4 — An NFL regime signal: first-year coach, new starting QB, starting QB out (promoted: it prices)
+
+**Root cause.** The NFL ratings are built from each club's own week-by-week stats, so a club whose quarterback changed
+carries the old quarterback's passing numbers. LAC @ SEA is the example:
+- Seattle's projected starter is Drew Lock.
+- Its +4.0-pt passing term was built mostly with Sam Darnold.
+- The engine's QB term moved the line 0.4 pts.
+
+Nothing flagged it, and nothing measured whether it matters.
+
+**Change.**
+- `lib/nfl_regime.js` holds one definition, from nflverse `games.csv` (each game's head coach and starting QB,
+  1999-2026). All three flags are known before kickoff:
+  - `coach`: the game's head coach did not coach the club's last game of the previous season.
+  - `new_qb`: the starter is not last season's primary QB (most starts).
+  - `qb_out`: the club has started a QB this season and this game's starter is not its established one (most starts
+    so far).
+
+  Starters are announced before kickoff, so this is the closing line's information set, not the opener's.
+- The price is a signed shift per side, `(b_coach·coach + b_new_qb·new_qb)·e^(−λ·games) + b_qb_out·qb_out`.
+  `tools/football/nfl_regime.js` fits it against the final margin, expanding window: each season 2019-2025 is scored on
+  a fit of 2016..S−1. The NFL engine's own parameters are frozen on seasons up to 2015. The promotion rule, declared
+  before the first run, is a held-out gain of at least 0.05 with a CI that excludes zero.
+- `football/engine.js` adds a priced shift to the fair spread as its own `regime` term. An unpriced one is only named
+  ("research only").
+- The board's `fbNflGameReq` attaches it from the `games.csv` rows `fbLoadNfl` already reads, plus
+  `football/validation/nfl_regime.json`. The published NFL slate prices through the same module (`_module.js`
+  loads the library the page's `<script>` tag loads).
+- `football/nfl/regime_2026.json` lists every club's next-game signal.
+
+**Result (held out, never fitted).**
+
+| season | games | fitted on | coach | new QB | QB out | MAE standard | MAE with the signal |
+|---|---|---|---|---|---|---|---|
+| 2019 | 251 | 2016-2018 | −0.50 | −1.25 | −4.50 | 11.015 | 10.805 |
+| 2020 | 261 | 2016-2019 | −1.25 | −1.00 | −4.50 | 10.392 | 10.525 |
+| 2021 | 285 | 2016-2020 | −3.00 | +1.00 | −4.00 | 11.341 | 11.057 |
+| 2022 | 284 | 2016-2021 | −2.00 | −0.50 | −4.25 | 8.948 | 8.973 |
+| 2023 | 285 | 2016-2022 | −2.00 | −1.00 | −3.25 | 10.609 | 10.512 |
+| 2024 | 285 | 2016-2023 | −2.00 | −1.00 | −3.25 | 10.111 | 9.814 |
+| 2025 | 285 | 2016-2024 | −2.00 | −1.00 | −3.25 | 10.514 | 10.482 |
+| **pooled** | **1,936** | | | | | **10.409** | **10.299** (−0.110, 95% CI [−0.184, −0.047]) |
+
+- It is **promoted**. Five of seven seasons improve.
+- Shipped (fitted on 2016-2025): coach −1.75, new QB −1.25, QB out −3.00, no decay.
+- **No research gate is warranted.** Held out, when the model and the close disagree by 2+ pts, the model's side covers
+  *more* often in flagged games (51.3-52.3%) than in unflagged ones (47.3%).
+
+**What it moves this week.** On an offline rebuild of the NFL slate, 18 of 30 games move, each by exactly its regime
+term. The published slate is rebuilt with weather by the starter-context workflow.
+
+| game | before | after |
+|---|---|---|
+| LAC @ SEA (SEA: new QB Drew Lock) | SEA −9.24 | SEA −7.99 |
+| NYJ @ CHI (CHI: QB out, Case Keenum) | CHI −11.83 | CHI −8.83 |
+| ARI @ NYG (NYG: first-year coach, QB out, Jameis Winston) | NYG −2.23 | ARI −3.77 |
+| GB @ TB (TB: QB out, Jalon Daniels) | GB −1.05 | GB −5.30 |
+| NE @ BUF, IND @ WAS (unflagged) | unchanged | unchanged |
+
+**Not done here.** The NFL pricing blend and its tier (`football/validation/pricing_nfl.json`,
+`tools/football/validate_pricing.js`) were fitted on the model without this term. Re-validating them with the term is
+a follow-up.
+
+**Tests.** `tools/football/nfl_regime.test.js` (23 checks, in `football:audit:test`) covers:
+- the three flags, including that an upcoming start never counts toward "established";
+- the shift formula;
+- that `forGame` prices only when the record is promoted;
+- the engine term, priced and unpriced;
+- the record's walk-forward windows and its promotion rule;
+- that this season's file matches the formula;
+- that the board's own module attaches the signal and prices it.
+
 ### #6 — Re-run both boards live: not possible from this environment
 
 The live capture host (`iattxbkbufslbauoumga.supabase.co`) is denied by this environment's network policy. So are The

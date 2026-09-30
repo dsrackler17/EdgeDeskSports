@@ -125,6 +125,10 @@ function loadNflEngine(win, root) {
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'engine.js'), 'utf8'), win, { filename: 'football/engine.js' });
   delete win.module;
   if (!win.EDFootball || !win.EDFootballParams) throw new Error('the football engine loaded but its globals are missing');
+  /* the NFL regime signal (lib/nfl_regime.js), as the page's <script> tag loads it:
+     the board's fbNflGameReq prices a promoted signal, so a harness without it would not */
+  vm.runInContext(fs.readFileSync(path.join(root, 'lib', 'nfl_regime.js'), 'utf8'), win, { filename: 'lib/nfl_regime.js' });
+  if (!win.EDNflRegime) throw new Error('the NFL regime signal loaded but EDNflRegime is missing');
   return win.EDFootball;
 }
 

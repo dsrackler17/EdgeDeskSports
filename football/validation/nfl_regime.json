@@ -1,0 +1,205 @@
+{
+ "schema": "edgedesk_nfl_regime_v1",
+ "generated_at": "2026-09-30T18:49:03.989Z",
+ "rules": {
+  "first_scored": 2019,
+  "first_fit": 2016,
+  "last": 2025,
+  "promote_min_gain": 0.05,
+  "disagreement_pts": 2,
+  "tolerance_pp": 2.5,
+  "grid": {
+   "coach": [
+    -3,
+    1,
+    0.25
+   ],
+   "new_qb": [
+    -4,
+    1,
+    0.25
+   ],
+   "qb_out": [
+    -7,
+    1,
+    0.25
+   ],
+   "lambda": [
+    0,
+    0.3,
+    0.1
+   ]
+  }
+ },
+ "signal": "coach: the game’s head coach is not the one who coached the team’s last game of the previous season; new_qb: the starter is not last season’s primary QB (most starts); qb_out: the team has started a QB this season and this game’s starter is not its established starter (most starts so far)",
+ "price": "shift = (b_coach·coach + b_new_qb·new_qb)·exp(−λ·games this season) + b_qb_out·qb_out per side; fair’ = fair + shift_home − shift_away",
+ "market_is_an_input": false,
+ "engine_frozen_through": 2015,
+ "data": {
+  "replay_rows": 2658,
+  "joined": 2658,
+  "seasons": "2016-2025",
+  "source": "nflverse games.csv (coach, starter per game); tools/football/validate_pricing.js replayNfl (the shipped NFL engine, cold)"
+ },
+ "walk_forward": {
+  "by_season": [
+   {
+    "season": 2019,
+    "fitted_on": "2016-2018",
+    "coef": {
+     "coach": -0.5,
+     "new_qb": -1.25,
+     "qb_out": -4.5,
+     "lambda": 0
+    },
+    "games": 251,
+    "mae_standard": 11.015,
+    "mae_regime": 10.805
+   },
+   {
+    "season": 2020,
+    "fitted_on": "2016-2019",
+    "coef": {
+     "coach": -1.25,
+     "new_qb": -1,
+     "qb_out": -4.5,
+     "lambda": 0
+    },
+    "games": 261,
+    "mae_standard": 10.392,
+    "mae_regime": 10.525
+   },
+   {
+    "season": 2021,
+    "fitted_on": "2016-2020",
+    "coef": {
+     "coach": -3,
+     "new_qb": 1,
+     "qb_out": -4,
+     "lambda": 0.2
+    },
+    "games": 285,
+    "mae_standard": 11.341,
+    "mae_regime": 11.057
+   },
+   {
+    "season": 2022,
+    "fitted_on": "2016-2021",
+    "coef": {
+     "coach": -2,
+     "new_qb": -0.5,
+     "qb_out": -4.25,
+     "lambda": 0
+    },
+    "games": 284,
+    "mae_standard": 8.948,
+    "mae_regime": 8.973
+   },
+   {
+    "season": 2023,
+    "fitted_on": "2016-2022",
+    "coef": {
+     "coach": -2,
+     "new_qb": -1,
+     "qb_out": -3.25,
+     "lambda": 0
+    },
+    "games": 285,
+    "mae_standard": 10.609,
+    "mae_regime": 10.512
+   },
+   {
+    "season": 2024,
+    "fitted_on": "2016-2023",
+    "coef": {
+     "coach": -2,
+     "new_qb": -1,
+     "qb_out": -3.25,
+     "lambda": 0
+    },
+    "games": 285,
+    "mae_standard": 10.111,
+    "mae_regime": 9.814
+   },
+   {
+    "season": 2025,
+    "fitted_on": "2016-2024",
+    "coef": {
+     "coach": -2,
+     "new_qb": -1,
+     "qb_out": -3.25,
+     "lambda": 0
+    },
+    "games": 285,
+    "mae_standard": 10.514,
+    "mae_regime": 10.482
+   }
+  ],
+  "pooled": {
+   "games": 1936,
+   "mae_standard": 10.409,
+   "mae_regime": 10.299,
+   "delta": -0.11,
+   "delta_ci95": [
+    -0.184,
+    -0.047
+   ],
+   "flagged_games": 1578,
+   "flagged_delta": -0.135
+  }
+ },
+ "promoted": true,
+ "verdict": "PROMOTED: the held-out improvement clears the 0.05 bar with a CI that excludes zero",
+ "research_gate": {
+  "rule": "held out, model vs close disagreeing by 2+: a flag whose games cover more than 2.5 pp less often than unflagged games holds a research label at INVESTIGATE",
+  "by_flag": {
+   "coach": {
+    "flagged": {
+     "games": 510,
+     "cover_pct": 51.961
+    },
+    "unflagged": {
+     "games": 207,
+     "cover_pct": 47.343
+    },
+    "difference_pp": 4.618,
+    "gate": false
+   },
+   "new_qb": {
+    "flagged": {
+     "games": 863,
+     "cover_pct": 52.26
+    },
+    "unflagged": {
+     "games": 207,
+     "cover_pct": 47.343
+    },
+    "difference_pp": 4.917,
+    "gate": false
+   },
+   "qb_out": {
+    "flagged": {
+     "games": 400,
+     "cover_pct": 51.25
+    },
+    "unflagged": {
+     "games": 207,
+     "cover_pct": 47.343
+    },
+    "difference_pp": 3.907,
+    "gate": false
+   }
+  }
+ },
+ "shipped": {
+  "fitted_on": "2016-2025",
+  "coef": {
+   "coach": -1.75,
+   "new_qb": -1.25,
+   "qb_out": -3,
+   "lambda": 0
+  },
+  "in_sample_mae": 10.227,
+  "in_sample_mae_standard": 10.382
+ }
+}
