@@ -17,8 +17,9 @@
      3  player props are part of the product everywhere it is described —
         the hero, the board, the workflow, their own section, the plan, the
         FAQ — and only factors the prop model actually uses are listed;
-     4  four public words (RESEARCH / WATCH / PASS / DATA INCOMPLETE), never a
-        pick, and nothing anywhere promises profit;
+     4  four public words (RESEARCH / WATCH / PASS / DATA INCOMPLETE; the
+        landing board lists only the first three), never a pick, and nothing
+        anywhere promises profit;
      5  no metric is claimed that EdgeDesk cannot prove;
      6  the hierarchy: hero, board, workflow, props, difference, product,
         trust, who, pricing, FAQ, close — each said once;
@@ -171,7 +172,10 @@ chk('the hero subhead, the board, the product grid, the plan and the FAQ all car
 /* ======================================================================== */
 /* 4. FOUR PUBLIC WORDS. NO PICKS. NO PROFIT PROMISES.                      */
 /* ======================================================================== */
-['RESEARCH', 'WATCH', 'PASS', 'DATA INCOMPLETE'].forEach(w => has(TODAY, '<span class="st ', 'the legend exists') || has(TODAY, '>' + w + '</span>', 'the legend defines ' + w));
+/* the landing board lists only games with a current market (lib/edgedesk_home.js
+   listed_games), so its legend defines the three words it can show */
+['RESEARCH', 'WATCH', 'PASS'].forEach(w => has(TODAY, '>' + w + '</span>', 'the legend defines ' + w));
+chk('the landing legend has no DATA INCOMPLETE: nothing listed there carries it', TODAY.indexOf('>DATA INCOMPLETE</span>') < 0);
 has(TODAY, 'worth opening, not a bet', 'RESEARCH is defined as not a bet');
 const Home = require(path.join(ROOT, 'lib', 'edgedesk_home.js'));
 chk('the view model has exactly the four public words', JSON.stringify(Object.keys(Home.STATUS)) === JSON.stringify(['RESEARCH', 'WATCH', 'PASS', 'DATA_INCOMPLETE']));
