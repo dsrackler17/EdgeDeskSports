@@ -1,10 +1,10 @@
 {
   "schema": "edgedesk_football_health_v1",
-  "generated_at": "2026-09-30T16:02:40.478Z",
+  "generated_at": "2026-09-30T17:14:28.563Z",
   "ok": true,
-  "last_ok_at": "2026-09-30T16:02:40.478Z",
+  "last_ok_at": "2026-09-30T17:14:28.563Z",
   "run": {
-    "trigger": "schedule",
+    "trigger": "push",
     "runner": "github-actions",
     "params_built_at": {
       "football": "2026-08-21T19:18:15+00:00",
@@ -188,23 +188,23 @@
       "id": "p4_confidence_ledger",
       "label": "CFB P4: every published confidence ledger adds to 100",
       "status": "pass",
-      "detail": "108 games"
+      "detail": "109 games"
     }
   ],
   "pipeline_meta": {
-    "daily_check_last_run": "2026-09-30T16:02:40.478Z",
+    "daily_check_last_run": "2026-09-30T17:14:28.563Z",
     "daily_check_last_status": "ok",
-    "engine_tests_last_run": "2026-09-30T16:02:40.478Z",
+    "engine_tests_last_run": "2026-09-30T17:14:28.563Z",
     "engine_tests_last_status": "ok",
-    "nfl_ingest_last_run": "2026-09-30T16:02:40.478Z",
+    "nfl_ingest_last_run": "2026-09-30T17:14:28.563Z",
     "nfl_ingest_last_status": "ok",
     "row_count_nfl_ingest": 48,
-    "p4_ingest_last_run": "2026-09-30T16:02:40.478Z",
+    "p4_ingest_last_run": "2026-09-30T17:14:28.563Z",
     "p4_ingest_last_status": "ok",
     "row_count_p4_ingest": 331,
-    "projection_guard_last_run": "2026-09-30T16:02:40.478Z",
+    "projection_guard_last_run": "2026-09-30T17:14:28.563Z",
     "projection_guard_last_status": "ok",
-    "line_guard_last_run": "2026-09-30T16:02:40.478Z",
+    "line_guard_last_run": "2026-09-30T17:14:28.563Z",
     "line_guard_last_status": "ok",
     "row_count_line_guard": 17
   },
@@ -213,7 +213,7 @@
     "what_ok_does_not_mean": "it is NOT a statement about data coverage. A week where the conference availability reports are not due yet, no forecast provider was called and half the slate is non-conference is a perfectly healthy pipeline over thin inputs, and `coverage` below is where that shows."
   },
   "coverage": {
-    "games": 108,
+    "games": 109,
     "information_confidence": {
       "mean": 83.8,
       "median": 85.7,
@@ -228,7 +228,7 @@
       },
       {
         "field": "off_field",
-        "mean_points_lost": 2.39
+        "mean_points_lost": 2.4
       },
       {
         "field": "roster",
@@ -240,14 +240,14 @@
       },
       {
         "field": "team_rating",
-        "mean_points_lost": 0.67
+        "mean_points_lost": 0.66
       },
       {
         "field": "matchup_profile",
         "mean_points_lost": 0.18
       }
     ],
-    "ledgers_reconciling": 108,
+    "ledgers_reconciling": 109,
     "source": "football/fbs/slate.json — read, not recomputed, so this cannot disagree with the board"
   }
 }
