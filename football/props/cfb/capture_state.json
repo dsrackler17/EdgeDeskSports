@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "309 prop prices from 3 books across 2 of 2 events queried.",
+ "why": "202 prop prices from 2 books across 1 of 1 events queried.",
  "error_message": null,
- "started_at": "2026-09-30T20:30:47.766Z",
- "completed_at": "2026-09-30T20:30:48.580Z",
- "updated_at": "2026-09-30T20:30:48.580Z",
- "last_attempt": "2026-09-30T20:30:47.766Z",
- "duration_ms": 814,
+ "started_at": "2026-09-30T21:00:53.301Z",
+ "completed_at": "2026-09-30T21:00:53.921Z",
+ "updated_at": "2026-09-30T21:00:53.921Z",
+ "last_attempt": "2026-09-30T21:00:53.301Z",
+ "duration_ms": 620,
  "run": {
-  "id": "36773059489.1",
+  "id": "36776503948.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,9 +81,9 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-09-30T20:30:47.766Z",
- "last_success_at": "2026-09-30T20:30:47.766Z",
- "last_full_success_at": "2026-09-30T20:30:47.766Z",
+ "last_run": "2026-09-30T21:00:53.301Z",
+ "last_success_at": "2026-09-30T21:00:53.301Z",
+ "last_full_success_at": "2026-09-30T21:00:53.301Z",
  "polled_at": {
   "b0998b3474fea9dee080784b8da01048": "2026-09-30T19:41:00.933Z",
   "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T19:41:00.933Z",
@@ -142,7 +142,7 @@
   "23025b717a93bdd8f30424e90a97d68f": "2026-09-30T19:30:54.138Z",
   "4ec93b02d04c2a019ebd6f4ccd9f7af5": "2026-09-30T20:30:47.766Z",
   "f73081099f845f23ea7f41ef09128cdd": "2026-09-30T20:30:47.766Z",
-  "63dded0ee467d6f6d03c41673569238d": "2026-09-30T15:00:54.044Z",
+  "63dded0ee467d6f6d03c41673569238d": "2026-09-30T21:00:53.301Z",
   "4d9e59b57798afb31927c84e1f6dc25e": "2026-09-30T16:00:54.902Z"
  },
  "events_state": {
@@ -1116,8 +1116,8 @@
    "next_due_at": "2026-10-01T02:30:47.766Z"
   },
   "63dded0ee467d6f6d03c41673569238d": {
-   "polled_ok_at": "2026-09-30T15:00:54.044Z",
-   "attempted_at": "2026-09-30T15:00:54.044Z",
+   "polled_ok_at": "2026-09-30T21:00:53.301Z",
+   "attempted_at": "2026-09-30T21:00:53.301Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -1128,9 +1128,9 @@
    "home_team": "Arizona Wildcats",
    "away_team": "Cincinnati Bearcats",
    "books": 2,
-   "markets": 1,
-   "quotes": 51,
-   "next_due_at": "2026-09-30T21:00:54.044Z"
+   "markets": 5,
+   "quotes": 202,
+   "next_due_at": "2026-10-01T03:00:53.301Z"
   },
   "4d9e59b57798afb31927c84e1f6dc25e": {
    "polled_ok_at": "2026-09-30T16:00:54.902Z",
@@ -1155,8 +1155,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 36522,
-  "requests_used": 63478
+  "requests_remaining": 36432,
+  "requests_used": 63568
  },
  "pacing": {
   "factor": 1,
@@ -1166,86 +1166,69 @@
  "window_entry_at": "2026-10-03T00:00:00.000Z",
  "events_discovered": 65,
  "events_in_window": 59,
- "events_due": 2,
- "events_checked": 2,
- "events_polled": 2,
+ "events_due": 1,
+ "events_checked": 1,
+ "events_polled": 1,
  "events_failed": 0,
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "4ec93b02d04c2a019ebd6f4ccd9f7af5",
-  "f73081099f845f23ea7f41ef09128cdd"
+  "63dded0ee467d6f6d03c41673569238d"
  ],
  "books_returned": [
   "betonlineag",
-  "draftkings",
-  "espnbet"
+  "draftkings"
  ],
  "markets_returned": {
-  "player_anytime_td": 3,
-  "player_pass_tds_alternate": 2,
-  "player_pass_yds_alternate": 2,
-  "player_reception_yds_alternate": 2,
-  "player_rush_yds_alternate": 2
+  "player_anytime_td": 2,
+  "player_pass_tds_alternate": 1,
+  "player_pass_yds_alternate": 1,
+  "player_reception_yds_alternate": 1,
+  "player_rush_yds_alternate": 1
  },
- "outcomes_returned": 314,
- "quotes": 309,
- "quotes_normalized": 309,
- "quotes_written": 309,
+ "outcomes_returned": 204,
+ "quotes": 202,
+ "quotes_normalized": 202,
+ "quotes_written": 202,
  "refused": {
-  "price not a valid American price": 1,
-  "team or defense entity, not a player": 4
+  "team or defense entity, not a player": 2
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 6,
- "requests_remaining": 36522,
- "requests_used": 63478,
+ "credits_spent": 5,
+ "requests_remaining": 36432,
+ "requests_used": 63568,
  "requests": [
   {
-   "event_id": "4ec93b02d04c2a019ebd6f4ccd9f7af5",
-   "matchup": "Baylor Bears @ Arizona State Sun Devils",
-   "kickoff": "2026-10-04T02:30:00Z",
+   "event_id": "63dded0ee467d6f6d03c41673569238d",
+   "matchup": "Cincinnati Bearcats @ Arizona Wildcats",
+   "kickoff": "2026-10-04T03:00:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 176,
-   "books": 3,
+   "ms": 265,
+   "books": 2,
    "markets": 5,
-   "outcomes": 290,
-   "quotes": 287,
+   "outcomes": 204,
+   "quotes": 202,
    "cost": 5,
-   "remaining": 36523
-  },
-  {
-   "event_id": "f73081099f845f23ea7f41ef09128cdd",
-   "matchup": "Texas State Bobcats @ San Diego State Aztecs",
-   "kickoff": "2026-10-04T02:30:00Z",
-   "http": 200,
-   "attempts": 1,
-   "ms": 246,
-   "books": 1,
-   "markets": 1,
-   "outcomes": 24,
-   "quotes": 22,
-   "cost": 1,
-   "remaining": 36522
+   "remaining": 36432
   }
  ],
- "feed_quotes": 11789,
+ "feed_quotes": 11940,
  "feed_events": 59,
  "markets_closed": 7,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-09-30T21:00:54.044Z",
+ "next_due_at": "2026-09-30T21:41:00.933Z",
  "health": {
-  "now": "2026-09-30T20:30:47.766Z",
+  "now": "2026-09-30T21:00:53.301Z",
   "active_events": 59,
   "on_target": 59,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-09-30T20:30:47.766Z",
-  "last_attempt_at": "2026-09-30T20:30:47.766Z",
+  "last_success_at": "2026-09-30T21:00:53.301Z",
+  "last_attempt_at": "2026-09-30T21:00:53.301Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
