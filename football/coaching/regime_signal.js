@@ -88,5 +88,66 @@
     return Math.min(standardWeight, curve.w0 * Math.exp(-curve.lambda * g));
   }
 
-  return { DEFAULT: DEFAULT, fires: fires, percentiles: percentiles, weight: weight };
+  /* ==========================================================================
+     THE REGIME MAGNITUDE (v2, audit 2026-09-30 follow-up). The flag above is
+     a yes/no: Iowa State (4th-percentile returning production, last year's QB
+     gone, 128% of its production imported) and Virginia Tech (36th percentile,
+     a coach change) got the same 69% long-run weight at four games. The
+     magnitude is a CONTINUOUS turnover index over four measured inputs, each
+     a hinge that is zero at or better than the season's typical programme:
+
+        f_coach = 1 if the head coach's tenure began this season, else 0
+                  (an unknown change is 0, as for the flag)
+        f_prod  = max(0, 1 − 2·returning_production_pct)   (0 at the median)
+        f_qb    = 1 if the quarterback who started the team's last game is not
+                  last season's primary QB (before its first game: he is not on
+                  the roster), 0 if he is or if that is unknown
+        f_port  = max(0, 2·incoming_production_pct − 1)    (0 at the median)
+                  incoming = production-weighted portal inflow: what the
+                  arrivals produced last season at another programme
+
+        m = a_coach·f_coach + a_prod·f_prod + a_qb·f_qb + a_port·f_port
+        w = w_standard(g) · exp(−m)
+
+     The coefficients are FITTED walk-forward on 2021+ seasons only
+     (football/cfb_p4/research/regime_magnitude_backtest.js) and shipped in
+     football/cfb_p4/regime_curve.js. m = 0 is the standard curve exactly, so
+     a programme with typical-or-better continuity and the same coach and QB
+     is priced as before; the magnitude can only CUT the long-run weight.
+     Percentiles are within the season among FBS programmes, like the flag's.
+     An UNMEASURED input is 0: silence is not turnover, and the magnitude only
+     ever cuts the long-run weight on evidence.
+     ========================================================================== */
+  var MAGNITUDE_INPUTS = ['coach', 'prod', 'qb', 'port'];
+  function hingeLow(p) { return isNum(p) ? Math.max(0, Math.min(1, 1 - 2 * p)) : 0; }
+  function hingeHigh(p) { return isNum(p) ? Math.max(0, Math.min(1, 2 * p - 1)) : 0; }
+  /* x = { new_hc, returning_production_pct, qb_change, incoming_production_pct } */
+  function magnitudeFeatures(x) {
+    x = x || {};
+    return {
+      coach: x.new_hc === true ? 1 : 0,
+      prod: hingeLow(x.returning_production_pct),
+      qb: x.qb_change === true ? 1 : 0,
+      port: hingeHigh(x.incoming_production_pct)
+    };
+  }
+  /* coef = { coach, prod, qb, port } (fitted); returns { m, features, terms } */
+  function magnitude(x, coef) {
+    if (!coef) return null;
+    var f = magnitudeFeatures(x), terms = {}, m = 0, i, k;
+    for (i = 0; i < MAGNITUDE_INPUTS.length; i++) {
+      k = MAGNITUDE_INPUTS[i];
+      terms[k] = (isNum(coef[k]) ? coef[k] : 0) * f[k];
+      m += terms[k];
+    }
+    return { m: m, features: f, terms: terms };
+  }
+  function magnitudeWeight(standardWeight, m) {
+    if (!isNum(standardWeight) || !isNum(m)) return null;
+    return standardWeight * Math.exp(-Math.max(0, m));
+  }
+
+  return { DEFAULT: DEFAULT, fires: fires, percentiles: percentiles, weight: weight,
+    MAGNITUDE_INPUTS: MAGNITUDE_INPUTS, magnitudeFeatures: magnitudeFeatures, magnitude: magnitude,
+    magnitudeWeight: magnitudeWeight };
 });

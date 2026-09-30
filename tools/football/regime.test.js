@@ -207,5 +207,103 @@ section('8. the published slate carries what the engine applied');
     { with_regime: withRegime.length, should: shouldHave.length });
 }
 
+/* ======================================================================== */
+section('9. v2: the continuous turnover magnitude (a CANDIDATE, not priced)');
+{
+  const F = RS.magnitudeFeatures;
+  chk('each hinge is zero at or better than the season median, and 1 at the extreme', F({ returning_production_pct: 0.5, incoming_production_pct: 0.5 }).prod === 0
+    && F({ returning_production_pct: 0.9 }).prod === 0 && F({ returning_production_pct: 0 }).prod === 1 && F({ incoming_production_pct: 1 }).port === 1
+    && F({ incoming_production_pct: 0.2 }).port === 0 && near(F({ returning_production_pct: 0.25 }).prod, 0.5));
+  chk('coach and QB are 0/1, and an UNMEASURED input is 0 (silence is not turnover)', (() => {
+    const z = F({}); return z.coach === 0 && z.prod === 0 && z.qb === 0 && z.port === 0 && F({ new_hc: true, qb_change: true }).coach === 1 && F({ qb_change: null }).qb === 0;
+  })());
+  chk('the magnitude is the coefficient-weighted sum of the features, term by term', (() => {
+    const M = RS.magnitude({ new_hc: true, returning_production_pct: 0.1, qb_change: true, incoming_production_pct: 0.9 }, { coach: 0.3, prod: 0.5, qb: 0.2, port: 0.1 });
+    return near(M.m, 0.3 + 0.5 * 0.8 + 0.2 + 0.1 * 0.8) && near(M.terms.prod, 0.4) && RS.magnitude({}, null) === null;
+  })());
+  chk('the weight is the standard weight times exp(−m), never above it', near(RS.magnitudeWeight(0.8, 0.3), 0.8 * Math.exp(-0.3)) && RS.magnitudeWeight(0.8, -1) === 0.8);
+
+  /* a board with 24 programmes that have played, so the track centres are measurable */
+  const st = E.newState();
+  E.ingest.seasonBreak(st);
+  const T = []; for (let i = 0; i < 24; i++) T.push('Team ' + String.fromCharCode(65 + i));
+  for (let w = 0; w < 4; w++) for (let i = 0; i < 12; i++)
+    E.ingest.absorbGame(st, { home: T[(i + w) % 24], away: T[(i + 12 + 3 * w) % 24], home_fbs: true, away_fbs: true, home_points: 17 + ((i * 7 + w) % 21), away_points: 20 });
+  const tc = E.strength.trackCentres(st);
+  chk('the track centres are measured over this season\'s programmes that have played (24 here), and the offset is the difference of the two means',
+    tc.available === true && tc.teams === 24 && near(tc.offset, tc.carried - tc.this_season, 1e-12), tc);
+  const small = E.newState(); E.ingest.seasonBreak(small);
+  E.ingest.absorbGame(small, { home: 'Iowa State', away: 'Kansas', home_fbs: true, away_fbs: true, home_points: 17, away_points: 31 });
+  chk('…and are UNAVAILABLE before 20 programmes have played', E.strength.trackCentres(small).available === false);
+
+  const kick = new Date(Date.now() + 3 * 86400e3).toISOString();
+  const req = (rh) => ({ season: 2026, week: 5, state: st, game: { home: T[0], away: T[1], home_fbs: true, away_fbs: true, neutral_site: false, kickoff: kick },
+    teams: { home: { conference: 'Big 12', regime: rh || null }, away: { conference: 'Big 12' } } });
+  const base = E.projectGame(req(null)), B0 = base.layers.strength.preseason_blend;
+  const m = 0.4, mag = E.projectGame(req({ regime_change: false, magnitude: m, magnitude_terms: { coach: 0.25, prod: 0.15 } }));
+  const B1 = mag.layers.strength.preseason_blend, S1 = mag.layers.strength.regime.home;
+  chk('the magnitude path weights the long-run state w_standard·exp(−m), for a programme the binary flag did NOT fire on',
+    near(B1.home_prior_weight, B0.home_prior_weight * Math.exp(-m), 1e-12) && S1.regime_change === false && S1.applied === true, [B1.home_prior_weight, B0.home_prior_weight, S1]);
+  chk('…and moves the fair margin by exactly (w − w_std)·(long-run − this season − track offset): the cut weight lands on the CENTRED track',
+    near(mag.model.fair_spread - base.model.fair_spread, (B1.home_prior_weight - B1.home_standard_prior_weight) * (B1.home_carried - B1.home_this_season - tc.offset), 1e-9)
+      && S1.centring && S1.centring.applied === true, [mag.model.fair_spread - base.model.fair_spread, S1.centring]);
+  chk('…and names it ROSTER TURNOVER (not REGIME CHANGE) in the data-quality warnings', (mag.data_quality.warnings || []).some((w) => /^ROSTER TURNOVER \(/.test(w))
+    && !(mag.data_quality.warnings || []).some((w) => /^REGIME CHANGE \(/.test(w)));
+  const zero = E.projectGame(req({ regime_change: false, magnitude: 0 }));
+  chk('magnitude 0 on an unflagged programme is the standard curve EXACTLY, with no regime state at all (Georgia, Ohio State)',
+    zero.model.fair_spread === base.model.fair_spread && zero.layers.strength.regime.home === null);
+  const sh = E.projectGame(req({ regime_change: false, prior_shift: -2.5, shift_decay: 0.1 })), B2 = sh.layers.strength.preseason_blend;
+  chk('the shift form moves the long-run rating by prior_shift·exp(−decay·g) at the STANDARD weight',
+    near(sh.model.fair_spread - base.model.fair_spread, B0.home_prior_weight * -2.5 * Math.exp(-0.1 * B0.home_games_played), 1e-9) && near(B2.home_prior_weight, B0.home_prior_weight, 1e-12));
+  chk('a v1 record (no magnitude) still prices on the v1 curve, byte-identical to before', (() => {
+    const R = { regime_change: true, reason: 'x', min_games_for_research: 6 };
+    const a = E.projectGame(req(R)), Ba = a.layers.strength.preseason_blend;
+    return near(a.model.fair_spread - base.model.fair_spread, (Ba.home_prior_weight - Ba.home_standard_prior_weight) * (Ba.home_carried - Ba.home_this_season), 1e-9)
+      && !a.layers.strength.regime.home.centring;
+  })());
+
+  /* the contract forwards a magnitude ONLY when it is priced (promoted) */
+  const rec = (priced, flag, mm) => ({ regime_change: flag, reason: 'r', team: 'X', min_games_for_research: flag ? 6 : null,
+    magnitude: { priced: priced, magnitude: mm, terms: { coach: mm }, version: 'cfb_regime_magnitude_v2' } });
+  chk('an UNPRICED (candidate) magnitude never reaches the engine: a flagged team gets the v1 record, an unflagged one nothing',
+    (() => { const a = CONTRACT.regimeFor({ a: rec(false, true, 0.3) }, 'a'), b = CONTRACT.regimeFor({ b: rec(false, false, 0.3) }, 'b');
+      return a && a.regime_change === true && a.magnitude === undefined && b === null; })());
+  chk('a PRICED magnitude is forwarded, flagged or not (a turned-over roster without a coach change)',
+    (() => { const a = CONTRACT.regimeFor({ a: rec(true, false, 0.3) }, 'a'), z = CONTRACT.regimeFor({ z: rec(true, false, 0) }, 'z');
+      return a && a.regime_change === false && a.magnitude === 0.3 && a.min_games_for_research === null && z === null; })());
+
+  /* the artifact and the published record */
+  const MAG = require(path.join(ROOT, 'football', 'cfb_p4', 'regime_magnitude.js'));
+  chk('the v2 artifact names its family, its 2021+ fit windows and its holdout, and cites a report that exists',
+    MAG.version === 'cfb_regime_magnitude_v2' && /^2021-/.test(MAG.fitted_on) && MAG.evaluation_fitted_on === '2021-2023' && MAG.record.holdout === '2024-2025'
+      && fs.existsSync(path.join(ROOT, MAG.report)), { v: MAG.version, f: MAG.fitted_on, e: MAG.evaluation_fitted_on });
+  chk('status follows the verdict: PROMOTED only if the holdout says no worse than standard and v1', (MAG.status === 'PROMOTED') === (MAG.promoted === true) && MAG.promoted === MAG.verdict.promote);
+  const REP = JSON.parse(fs.readFileSync(path.join(ROOT, MAG.report), 'utf8'));
+  chk('the report\'s protocol: selection on 2021-2022 → 2023 only, holdout 2024-2025 never fitted, the market not an input, the disclosure present',
+    REP.protocol.holdout_never_fitted === true && REP.protocol.market_is_an_input === false && /2023/.test(REP.protocol.selection)
+      && REP.stage_a_selection.every((s) => s.fitted_on === '2021-2022' && s.validated_on === 2023) && /optimistic/.test(REP.protocol.disclosure));
+  chk('the engine self-check held in the fit: the analytic counterfactual IS engine.js (both v2 forms)', REP.self_check.ok === true && REP.self_check.max_abs_difference < 1e-9);
+  const RJ = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'coaching', 'regime.json'), 'utf8'));
+  const all = Object.values(RJ.by_team);
+  chk('every programme in the 2026 record carries its v2 inputs, features and magnitude, marked priced exactly when the artifact is promoted',
+    all.length > 100 && all.every((t) => t.magnitude && t.magnitude.priced === (MAG.promoted === true) && t.magnitude.features && 'qb_change' in t && 'incoming_production_pct' in t));
+  chk('the published magnitude is the artifact\'s formula over the published features', all.every((t) => {
+    const M = t.magnitude; if (!M.terms) return false;
+    const v = RS.MAGNITUDE_INPUTS.reduce((s, k) => s + (MAG.params[k] || 0) * M.features[k], 0);
+    return MAG.family === 'shift' ? near(M.prior_shift, v, 1e-3) : near(M.magnitude, Math.max(0, v), 1e-3);
+  }));
+  const by = (k) => RJ.by_team[k];
+  chk('Georgia and Ohio State: same coach, same QB, continuity above the median — zero magnitude', ['georgia', 'ohiostate'].every((k) => by(k) && by(k).qb_change === false
+    && Object.values(by(k).magnitude.features).every((x) => x === 0)), ['georgia', 'ohiostate'].map((k) => by(k) && by(k).magnitude.features));
+  chk('Iowa State and North Texas: new coach, new QB, bottom-decile returning production', ['iowastate', 'northtexas'].every((k) => by(k) && by(k).new_hc === true
+    && by(k).qb_change === true && by(k).returning_production_pct <= 0.1));
+  chk('the QB input names its basis (the starter observed vs last season\'s primary QB)', /vs last season.s primary QB/.test(by('iowastate').qb_basis || ''));
+  chk('qbChangeOf: an observed starter decides; before one, the roster; nothing on file is unknown', BR.qbChangeOf({ prev_primary_qb_id: '1' }, { player_id: '2', status: 'PREVIOUS_GAME' }).qb_change === true
+    && BR.qbChangeOf({ prev_primary_qb_id: '1' }, { player_id: '1', status: 'PREVIOUS_GAME' }).qb_change === false
+    && BR.qbChangeOf({ prev_primary_qb_id: '1', returning_qb: true }, null).qb_change === false
+    && BR.qbChangeOf({ prev_primary_qb_id: '1', returning_qb: false }, { status: 'UNKNOWN' }).qb_change === true
+    && BR.qbChangeOf(null, null).qb_change === null);
+}
+
 console.log((fail ? 'FAILED ' : 'ALL GREEN ') + 'regime change — ' + pass + ' passed, ' + fail + ' failed');
 if (fail) { failures.forEach((f) => console.log('  ✗ ' + f)); process.exit(1); }

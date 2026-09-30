@@ -79,12 +79,24 @@
     }
     return c || null;
   }
-  /* regime = the caller's record for this team ({regime_change, reason, ...});
-     returns null when no regime fires, else the weight to use and its state */
+  /* regime = the caller's record for this team ({regime_change, reason,
+     magnitude, ...}); returns null when neither a regime nor any turnover
+     magnitude applies, else the weight to use and its state.
+
+     THE MAGNITUDE (v2). When the record carries `magnitude` (the continuous
+     turnover index football/coaching/build_regime.js computes with the
+     coefficients fitted in research/regime_magnitude_backtest.js), the
+     long-run weight is  w_standard(g) · exp(−magnitude)  for EVERY programme
+     that carries one, flagged or not: a roster that turned over without a
+     coach change is still a different team. magnitude = 0 is the standard
+     curve exactly. A record with no magnitude falls back to the v1 binary
+     curve when its flag fires, as before. */
   function regimeWeight(regime, gamesPlayed, standardWeight) {
-    if (!regime || regime.regime_change !== true) return null;
-    var RC = regimeCurve(), cv = regime.curve_override || (RC && RC.curve) || null;
+    if (!regime) return null;
     var g = isNum(gamesPlayed) ? Math.max(0, gamesPlayed) : 0;
+    if (isNum(regime.magnitude) || isNum(regime.prior_shift)) return magnitudeWeightOf(regime, g, standardWeight);
+    if (regime.regime_change !== true) return null;
+    var RC = regimeCurve(), cv = regime.curve_override || (RC && RC.curve) || null;
     var n = RC && isNum(RC.min_games_for_research) ? RC.min_games_for_research : null;
     var state = { regime_change: true, reason: regime.reason || null, games_played: g,
       min_games_for_research: isNum(regime.min_games_for_research) ? regime.min_games_for_research : n,
@@ -103,7 +115,42 @@
     return { weight: w, standard_weight: standardWeight, state: state,
       basis: 'regime-change prior weight at ' + g + ' games played (standard ' + Math.round(100 * standardWeight) + '%)' };
   }
+  var MAGNITUDE_LABEL = { coach: 'new head coach', prod: 'returning production', qb: 'quarterback change', port: 'portal inflow' };
+  /* v2, two forms (research/regime_magnitude_backtest.js selects one; the
+     builder writes only the selected one's field):
+       magnitude     cut the long-run WEIGHT: w = w_standard·exp(−m), the cut
+                     weight moved onto the centred this-season track
+       prior_shift   SHIFT the long-run RATING by a signed number of points
+                     (turnover docks it, imported production adds back),
+                     fading as exp(−shift_decay·g); the weight stays standard */
+  function magnitudeWeightOf(regime, g, standardWeight) {
+    var RC = regimeCurve(), flagged = regime.regime_change === true;
+    var m = isNum(regime.magnitude) ? Math.max(0, regime.magnitude) : 0;
+    var decay = isNum(regime.shift_decay) ? Math.max(0, regime.shift_decay) : 0;
+    var shift = isNum(regime.prior_shift) ? regime.prior_shift * Math.exp(-decay * g) : 0;
+    if (!(m > 0) && Math.abs(shift) < 1e-12 && !flagged) return null;
+    var n = RC && isNum(RC.min_games_for_research) ? RC.min_games_for_research : null;
+    var w = clamp(standardWeight * Math.exp(-m), 0, 1), terms = regime.magnitude_terms || null;
+    var named = terms ? Object.keys(MAGNITUDE_LABEL).filter(function (k) { return isNum(terms[k]) && Math.abs(terms[k]) > 0.005; })
+      .map(function (k) { return MAGNITUDE_LABEL[k] + ' ' + (terms[k] > 0 ? '+' : '') + terms[k].toFixed(2); }) : [];
+    var state = { regime_change: flagged, reason: regime.reason || null, games_played: g,
+      min_games_for_research: isNum(regime.min_games_for_research) ? regime.min_games_for_research : n,
+      curve_version: regime.magnitude_version || (RC ? RC.version || null : null),
+      magnitude: isNum(regime.magnitude) ? m : null, magnitude_terms: terms,
+      prior_shift: isNum(regime.prior_shift) ? regime.prior_shift : null, shift_decay: decay, shift_applied: shift,
+      applied: m > 0 || Math.abs(shift) >= 1e-12, standard_weight: standardWeight, weight: w };
+    var lead = flagged ? 'REGIME CHANGE: ' + (regime.reason || 'new head coach and roster turnover') + '. ' : 'ROSTER TURNOVER: ';
+    state.why = isNum(regime.prior_shift)
+      ? lead + 'the long-run rating is shifted ' + (shift >= 0 ? '+' : '') + shift.toFixed(2) + ' pts at ' + g + ' game' + (g === 1 ? '' : 's') + ' played'
+        + (named.length ? ' (' + named.join(', ') + ' pts before fading)' : '') + '; its weight stays on the standard curve (' + Math.round(100 * w) + '%).'
+      : lead + 'turnover magnitude ' + m.toFixed(2) + (named.length ? ' (' + named.join(', ') + ')' : '') + ', so the long-run state is weighted '
+        + Math.round(100 * w) + '% instead of ' + Math.round(100 * standardWeight) + '% (standard curve) at ' + g + ' game' + (g === 1 ? '' : 's') + ' played.';
+    return { weight: w, standard_weight: standardWeight, shift: shift, state: state,
+      basis: isNum(regime.prior_shift) ? 'standard prior weight at ' + g + ' games played; long-run rating shifted ' + shift.toFixed(2) + ' pts for turnover'
+        : 'turnover-magnitude prior weight at ' + g + ' games played (standard ' + Math.round(100 * standardWeight) + '%, magnitude ' + m.toFixed(2) + ')' };
+  }
 
+  var MIN_CENTRE_TEAMS = 20;
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
   /* an availability designation, as the key of the trained injury status
      weights (params.injury.status_weight). The same reading the input
@@ -443,6 +490,25 @@
       if (isFbs === false) return st.hp.fcs_rating;
       return has(st.rf || {}, teamKey) ? st.rf[teamKey] : st.hp.init_rating;
     },
+    /* THE TWO TRACKS' CENTRES. The this-season-only track starts every
+       programme at init_rating (−12) and its FBS mean stays there — FBS games
+       are zero-sum — while the long-run track's FBS mean sits near −2: an
+       ~8.6-pt offset at every games-played count 2021-2025
+       (research/regime_magnitude_backtest.js). The standard blend gives both
+       teams in a game one weight, so the offset cancels in the gap; a
+       per-team regime cut does not, and moving weight onto the raw track
+       docks the team (Δw × 8.6) pts for no football reason. The magnitude
+       path therefore moves the cut weight onto the CENTRED track. Measured
+       over this season's FBS programmes that have played (st.rf); fewer than
+       MIN_CENTRE_TEAMS (the first days of a season) is "unavailable". */
+    trackCentres: function (st) {
+      var rf = st.rf || {}, t, n = 0, sc = 0, sf = 0;
+      for (t in rf) if (has(rf, t) && isNum(rf[t])) {
+        n++; sc += has(st.r, t) ? st.r[t] : st.hp.init_rating; sf += rf[t];
+      }
+      if (n < MIN_CENTRE_TEAMS) return { available: false, teams: n, offset: 0 };
+      return { available: true, teams: n, carried: sc / n, this_season: sf / n, offset: (sc - sf) / n };
+    },
     /* Section XXIV in one function: what the model believed in August,
        blended against what it has actually seen, on a LEARNED curve.
 
@@ -493,10 +559,20 @@
       var played = (st.gamesThisSeason && st.gamesThisSeason[teamKey]) || 0;
       var fresh = strength.freshRating(st, teamKey, isFbs);
       var pw = priorWeight(week, played);
-      var w = isNum(pw.w) ? clamp(pw.w, 0, 1) : 1;
-      var rg = regimeWeight(regime, played, w);
+      var w = isNum(pw.w) ? clamp(pw.w, 0, 1) : 1, w0 = w;
+      var rg = regimeWeight(regime, played, w), centre = 0;
       if (rg) w = rg.weight;
-      return { value: w * carried + (1 - w) * fresh, prior_weight: w,
+      /* the magnitude path moves the CUT weight (w0 − w) onto the centred
+         this-season track; the standard share (1 − w0) is untouched, so a
+         programme with no cut is priced exactly as before */
+      if (rg && rg.state && isNum(rg.state.magnitude) && w < w0) {
+        var tc = strength.trackCentres(st);
+        rg.state.centring = tc.available ? { applied: true, offset: tc.offset, teams: tc.teams }
+          : { applied: false, teams: tc.teams, why: 'fewer than ' + MIN_CENTRE_TEAMS + ' programmes have played this season: the track centres are not yet measurable' };
+        centre = tc.available ? (w0 - w) * tc.offset : 0;
+      }
+      var shift = rg && isNum(rg.shift) ? rg.shift : 0;
+      return { value: w * (carried + shift) + (1 - w) * fresh + centre, prior_weight: w,
         standard_prior_weight: rg ? rg.standard_weight : w,
         carried: carried, this_season: fresh, games_played: played,
         basis: rg ? rg.basis : pw.basis, regime: rg ? rg.state : null };
@@ -2667,7 +2743,10 @@
              data-quality flag the research gate reads: it blocks WORTH
              RESEARCHING / VERIFIED MAJOR until the team has min_games_for_research
              games this season (lib/edgedesk_canon.js regimeBlock). */
-          regime: { home: H.blended.regime || null, away: A.blended.regime || null } },
+          regime: { home: H.blended.regime || null, away: A.blended.regime || null },
+          /* the two tracks' FBS centres at this kickoff (trackCentres): read by
+             the disagreement explainer (lib/edgedesk_explainer.js); no number here reads it back */
+          track_centres: strength.trackCentres(st) },
         talent: { home: H.talent, away: A.talent },
         situation: { venue_hfa: hfa, travel: travel, rivalry: riv,
           schedule_home: H.schedule, schedule_away: A.schedule,
@@ -2712,8 +2791,8 @@
       data_quality: (function () {
         /* a regime change is a DATA-QUALITY fact about this projection: the
            long-run half of a side's rating describes a programme that turned over */
-        var rw = [H, A].filter(function (S) { return S.blended && S.blended.regime; })
-          .map(function (S) { return 'REGIME CHANGE (' + S.name + '): ' + S.blended.regime.why; });
+        var rw = [H, A].filter(function (S) { return S.blended && S.blended.regime && (S.blended.regime.regime_change || S.blended.regime.applied); })
+          .map(function (S) { return (S.blended.regime.regime_change ? 'REGIME CHANGE (' : 'ROSTER TURNOVER (') + S.name + '): ' + S.blended.regime.why; });
         if (rw.length) q.warnings = (q.warnings || []).concat(rw);
         return q;
       })(),

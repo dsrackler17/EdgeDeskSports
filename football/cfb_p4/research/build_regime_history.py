@@ -26,6 +26,22 @@ WHAT IS MEASURED, AND FROM WHERE (all public, all already in the pipeline):
                                  defensive events; features_roster.py's
                                  declared units) by players on this season's
                                  roster, 2015+ (player_stats starts 2014)
+  * portal INFLOW, production-   the same units, produced LAST season at
+    weighted (audit 2026-09-30   ANOTHER programme by players on this
+    follow-up)                   season's roster, as a share of this
+                                 programme's own last-season production.
+                                 Measured, not a recruiting rating: no
+                                 rating-weighted portal feed is public and
+                                 keyless (CollegeFootballData's needs a key),
+                                 and this misses FCS/JUCO arrivals and
+                                 players who did not play
+  * the quarterback              last season's PRIMARY QB (most dropbacks for
+                                 this programme), whether he is on this
+                                 season's roster, and every team-game's
+                                 starter (most dropbacks in that game), so a
+                                 walk-forward can ask "is the QB who started
+                                 the last game last season's QB?" using only
+                                 games already played (qb_starts.csv)
 
 NEW HEAD COACH, DEFINED AS THE ENGINE ASKS IT: the tenure began THIS season.
 The coach table drops a team in a season it changed coach mid-year (Penn
@@ -43,7 +59,7 @@ and a 2026 team are compared with their own seasons.
 Usage:  CFB_P4_DATA=.cache python3 build_regime_history.py .cache/out
         CFB_P4_DATA=.cache python3 build_regime_history.py .cache/out --current 2026
                  (the season in progress: football/coaching/returning_production_2026.json)
-Writes: <out>/regime_history.csv
+Writes: <out>/regime_history.csv, <out>/qb_starts.csv
 """
 import glob
 import os
@@ -151,8 +167,55 @@ def continuity():
         print('[regime] player production unavailable (%s) — returning production stays null' % e)
         U = pd.DataFrame(columns=['athlete_id', 'team_key', 'season', 'units', 'yds'])
     T = FR.roster_team_season(R, U)
+    # portal INFLOW, production-weighted: what the arrivals produced last season
+    # at their previous programme, over this programme's own last-season total
+    inc = [c for c in T.columns if c.startswith('g_') and c.endswith('_incoming_units')]
+    T['incoming_units'] = T[inc].fillna(0.0).sum(axis=1)
+    T['incoming_production'] = T.incoming_units / T.team_prior_units.replace(0, np.nan)
     return T[['team_key', 'season', 'roster_n', 'returning_share', 'transfers_in', 'transfers_out',
-              'returning_production']]
+              'returning_production', 'incoming_production']], R
+
+
+DROPBACK_COLS = ('completion_player_id', 'incompletion_player_id', 'sack_taken_player_id',
+                 'interception_thrown_player_id')
+
+
+def qb_tables(lo, hi):
+    """Two quarterback tables from the play feed (dropbacks = completions,
+    incompletions, sacks taken, interceptions thrown, as features_roster.py
+    counts them):
+      starts   one row per team-game: the athlete with the most dropbacks in
+               that game (the game's starter as observed, never announced)
+      primary  one row per team-season: the athlete with the most dropbacks
+               for that programme that season, and his share of them"""
+    parts = []
+    for y in range(lo, hi + 1):
+        p = os.path.join(common.DATA, 'pstats', 'pstats_%d.csv' % y)
+        if not os.path.exists(p):
+            continue
+        d = pd.read_csv(p, usecols=lambda c: c in ('game_id', 'week', 'team') + DROPBACK_COLS, low_memory=False)
+        s = pd.concat([d[['game_id', 'week', 'team', c]].rename(columns={c: 'athlete_id'}) for c in DROPBACK_COLS
+                       if c in d.columns], ignore_index=True)
+        s['athlete_id'] = pd.to_numeric(s.athlete_id, errors='coerce')
+        s = s[s.athlete_id.notna()]
+        s['athlete_id'] = s.athlete_id.astype('int64')
+        s['season'] = y
+        parts.append(s.groupby(['season', 'game_id', 'week', 'team', 'athlete_id']).size().rename('dropbacks').reset_index())
+    if not parts:
+        return pd.DataFrame(), pd.DataFrame()
+    Q = pd.concat(parts, ignore_index=True)
+    Q['team_key'] = Q.team.map(common.norm)
+    starts = (Q.sort_values(['season', 'game_id', 'team_key', 'dropbacks'], ascending=[True, True, True, False])
+               .groupby(['season', 'game_id', 'team_key'], as_index=False).first()
+               [['season', 'game_id', 'week', 'team_key', 'athlete_id', 'dropbacks']]
+               .rename(columns={'athlete_id': 'starter_id'}))
+    tot = Q.groupby(['season', 'team_key', 'athlete_id']).dropbacks.sum().reset_index()
+    team_tot = tot.groupby(['season', 'team_key']).dropbacks.sum().rename('team_dropbacks').reset_index()
+    primary = (tot.sort_values(['season', 'team_key', 'dropbacks'], ascending=[True, True, False])
+                .groupby(['season', 'team_key'], as_index=False).first()
+                .merge(team_tot, on=['season', 'team_key'], how='left'))
+    primary['primary_share'] = primary.dropbacks / primary.team_dropbacks.replace(0, np.nan)
+    return starts, primary.rename(columns={'athlete_id': 'primary_qb_id'})[['season', 'team_key', 'primary_qb_id', 'primary_share']]
 
 
 def pct_within_season(df, col, mask):
@@ -195,6 +258,8 @@ def current_returning_production(season, repo_root):
         return None
     U = FR.production_units(P)
     keys = set(U.team_key.unique())
+    _, primary = qb_tables(season - 1, season - 1)
+    prim = {r.team_key: {'id': int(r.primary_qb_id), 'share': float(r.primary_share)} for r in primary.itertuples(index=False)}
     by_team = {}
     for t in cur.get('teams', []):
         nm = t.get('location') or t.get('display_name') or ''
@@ -209,17 +274,31 @@ def current_returning_production(season, repo_root):
                       if p.get('espn_id') is not None and str(p['espn_id']).lstrip('-').isdigit())
         prior = float(u.units.sum())
         ret = float(u[u.athlete_id.isin(now_ids)].units.sum())
+        # portal INFLOW, production-weighted: last season's units produced at
+        # ANOTHER programme by players on this roster now
+        inc = float(U[U.athlete_id.isin(now_ids) & ~U.team_key.eq(tk)].units.sum())
         top = u.sort_values('units', ascending=False).head(5)
+        pq = prim.get(tk)
         by_team[nm] = {'team': nm, 'play_feed_key': tk, 'prior_units': round(prior, 1), 'returning_units': round(ret, 1),
                        'returning_production': round(ret / prior, 4) if prior > 0 else None,
+                       'incoming_units': round(inc, 1),
+                       'incoming_production': round(inc / prior, 4) if prior > 0 else None,
+                       'prev_primary_qb_id': str(pq['id']) if pq else None,
+                       'prev_primary_qb_share': round(pq['share'], 4) if pq else None,
+                       'returning_qb': (pq['id'] in now_ids) if pq else None,
                        'top_prior_producers_returning': int(top.athlete_id.isin(now_ids).sum()),
                        'why': None if prior > 0 else 'no %d production attributed to this programme' % (season - 1)}
-    out = {'schema': 'edgedesk_returning_production_v1', 'season': season,
+    out = {'schema': 'edgedesk_returning_production_v2', 'season': season,
            'generated_at': pd.Timestamp.now('UTC').isoformat(),
            'source': 'cfbfastR-data player_stats %d (production units, team as attributed by the play feed) x '
                      'EdgeDesk ESPN roster sync %d (athlete ids)' % (season - 1, season),
            'method': 'share of last season\u2019s countable production for this programme (dropbacks 1, touches 1, '
                      'targets 0.5, defensive events 1; research/features_roster.py) made by players on its roster now',
+           'incoming_method': 'portal inflow, production-weighted: the same units produced last season at ANOTHER '
+                              'programme by players on this roster now, over this programme\u2019s own last-season total '
+                              '(misses FCS/JUCO arrivals and players who did not play)',
+           'qb_method': 'prev_primary_qb_id = the athlete with the most dropbacks for this programme last season; '
+                        'returning_qb = he is on the roster now',
            'by_team': by_team}
     dest = os.path.join(repo_root, 'football', 'coaching', 'returning_production_%d.json' % season)
     with open(dest, 'w') as fh:
@@ -239,12 +318,29 @@ def main():
     NH = new_head_coach(C)
     ids = team_ids()
     NH = NH.merge(ids, on=['season', 'team_id'], how='left')
-    T = continuity()
+    T, R = continuity()
     H = NH.merge(T, on=['team_key', 'season'], how='left')
+    # the quarterback: last season's primary QB for this programme, and
+    # whether he is on this season's roster here (known before the season)
+    starts, primary = qb_tables(common.PSTATS_FIRST, 2026)
+    if len(primary):
+        prev = primary.assign(season=primary.season + 1).rename(
+            columns={'primary_qb_id': 'prev_primary_qb_id', 'primary_share': 'prev_primary_qb_share'})
+        H = H.merge(prev, on=['team_key', 'season'], how='left')
+        on_roster = set(zip(R.season.astype(int), R.team_key, R.athlete_id.astype('int64')))
+        roster_seasons = set(R.season.astype(int))           # no roster file = unknown, never "left"
+        H['returning_qb'] = [
+            (None if (pd.isna(q) or pd.isna(s) or int(s) not in roster_seasons) else ((int(s), k, int(q)) in on_roster))
+            for s, k, q in zip(H.season, H.team_key, H.prev_primary_qb_id)]
+        H['prev_primary_qb_id'] = H.prev_primary_qb_id.astype('Int64')
+        sdest = os.path.join(OUT, 'qb_starts.csv')
+        starts.to_csv(sdest, index=False)
+        print('[regime] %d team-game starters -> %s' % (len(starts), sdest))
     fbs = H.division.astype(str).str.lower().eq('fbs')
     H['returning_share_pct'] = pct_within_season(H, 'returning_share', fbs)
     H['transfers_out_pct'] = pct_within_season(H, 'transfers_out', fbs)
     H['returning_production_pct'] = pct_within_season(H, 'returning_production', fbs)
+    H['incoming_production_pct'] = pct_within_season(H, 'incoming_production', fbs)
     H['fbs'] = fbs
     H = H.sort_values(['season', 'team_key'])
     dest = os.path.join(OUT, 'regime_history.csv')
@@ -256,7 +352,10 @@ def main():
                                   unknown=('new_hc', lambda s: int(s.isna().sum())),
                                   returning_share=('returning_share', 'median'),
                                   transfers_out=('transfers_out', 'median'),
-                                  returning_production=('returning_production', 'median')).round(3).to_string())
+                                  returning_production=('returning_production', 'median'),
+                                  incoming_production=('incoming_production', 'median'),
+                                  returning_qb=('returning_qb', lambda s: float(s.dropna().astype(bool).mean()) if s.notna().any() else np.nan))
+          .round(3).to_string())
 
 
 if __name__ == '__main__':

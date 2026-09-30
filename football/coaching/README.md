@@ -9,7 +9,7 @@ board and the number in the published slate are priced from the same facts.
 | `continuity.json` | `build_coaching.js` | the head coach of every FBS programme and the season the tenure began (`new_hc` = the tenure began this season; `null` = unknown, never "continuous") |
 | `regime.json` | `build_regime.js` | whether each programme is in a **REGIME CHANGE** this season, and why |
 | `regime_overrides.json` | by hand | dated, sourced corrections the feeds miss (see below) |
-| `returning_production_<season>.json` | `football/cfb_p4/research/build_regime_history.py` | the share of last season's production still on the roster |
+| `returning_production_<season>.json` | `football/cfb_p4/research/build_regime_history.py` | the share of last season's production still on the roster, the production-weighted portal inflow, and last season's primary QB |
 | `regime_signal.js` | — | the one definition of the signal (shared by the fit, the builder and the tests) |
 
 ## The regime-change signal (audit 2026-09-30 #1)
@@ -42,6 +42,42 @@ When it fires:
 * **player props** (`football/props/model.js`) scale last season's usage and volume priors by
   the same curve, relative to the standard one, and cap a regime team's props below BET until
   N games (`REGIME_CHANGE`, `lib/edgedesk_props.js`).
+
+## v2: the continuous turnover magnitude (a CANDIDATE — it does not price)
+
+The flag above is a yes/no. v2 measures turnover continuously over four inputs
+(`regime_signal.js magnitudeFeatures`), each a hinge that is zero at or better than
+the season's typical programme:
+
+| input | feature | source |
+|---|---|---|
+| new head coach | 1 / 0 | `continuity.json` + overrides |
+| returning production | `max(0, 1 − 2·pct)` | `returning_production_<season>.json` |
+| QB change | 1 if the starter of the team's last game is not last season's primary QB (before game 1: the roster) | `football/starters/cfb_<season>.json` vs `prev_primary_qb_id` |
+| portal inflow, production-weighted | `max(0, 2·pct − 1)` | `incoming_production` (what arrivals produced last season elsewhere) |
+
+`football/cfb_p4/research/regime_magnitude_backtest.js` fits three ways of pricing it
+(a weight cut onto the raw this-season track, the same onto the centred track, a signed
+level shift) on 2021-2022, selects on 2023, refits on 2021-2023 and scores 2024-2025
+once. The chosen form **did not beat the v1 curve on that holdout**, so
+`football/cfb_p4/regime_magnitude.js` ships as `CANDIDATE`, `promoted: false`.
+`build_regime.js` still publishes every programme's inputs, features and magnitude under
+`by_team.<key>.magnitude` with `priced: false`, and `football/matchup/contract.js`
+forwards a magnitude to the engine only when it is priced. Production numbers are the
+v1 curve's, unchanged.
+
+**The this-season track is offset.** It starts every programme at `init_rating` (−12)
+and its FBS mean stays ~8.6 pts under the long-run track's at every games-played count.
+The standard blend cancels that in the gap (both teams share one weight); a per-team
+cut does not, so moving weight onto the raw track also docks the team ~Δw·8.6 pts. The
+engine's magnitude path moves the cut onto the CENTRED track (`engine.js trackCentres`).
+v1 keeps the raw track, as it was fitted and validated.
+
+```
+CFB_P4_DATA=D python3 football/cfb_p4/research/build_regime_history.py D/out   # + qb_starts.csv
+CFB_P4_DATA=D python3 football/cfb_p4/research/build_regime_history.py D/out --current 2026
+node football/cfb_p4/research/regime_magnitude_backtest.js --data D [--write]
+```
 
 ## `regime_overrides.json`
 

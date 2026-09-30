@@ -65,6 +65,7 @@ const T = require(path.join(ROOT, 'lib', 'cfb_terminal.js'));
 const RD = require(path.join(ROOT, 'lib', 'edgedesk_read.js'));
 const EV = require(path.join(ROOT, 'lib', 'edgedesk_ev.js'));
 const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+const EXPL = require(path.join(ROOT, 'lib', 'edgedesk_explainer.js'));
 const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab', 'integrity.js')); } catch (e) { return null; } })();
 /* THE BETTOR DECISION (lib/edgedesk_decision.js, the unified football
    engine): one BET / LEAN / WATCH / PASS / NO DECISION answer per game, on
@@ -470,12 +471,28 @@ function buildGame(ctx, row) {
     /* THE BETTOR DECISION: one answer per game, from the same pricing */
     let bettor = null;
     try { bettor = BDS.decideGame(ctx, o, read, ev, quoteEv); } catch (e) { bettor = null; ctx.warnings.push('Bettor decision failed for ' + gid + ': ' + e.message); }
-    return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, bettor: bettor, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+    return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, bettor: bettor, snapshot: snapshotRow(o, terms, qb, model, row, ctx),
+      explainer: explainerOf(ctx, o, row) };
   };
   let res = finish();
   const ie = res.quote_ev && res.quote_ev.game ? res.quote_ev.game.implausible_ev : null;
   if (ie && !b.implausible_ev) { b.implausible_ev = ie; res = finish(); }
   return res;
+}
+
+/* THE DISAGREEMENT EXPLAINER (audit follow-up #3, lib/edgedesk_explainer.js):
+   the slate's market-free terms against this game's consensus, with the
+   discounts fitted in football/validation/disagreement_explainer.json. It
+   describes the gap; nothing reads it back into a number or a status. */
+function explainerOf(ctx, o, row) {
+  const t = row && row.disagreement_inputs ? row.disagreement_inputs.explainer_terms : null;
+  if (!t || !ctx.explainerFit || !o.edgedesk.available || !o.market.available || num(o.market.consensus_home_line) == null) return null;
+  return EXPL.explain(t, o.edgedesk.home_margin, -o.market.consensus_home_line, ctx.explainerFit, { home: o.game.home, away: o.game.away });
+}
+function explainerRow(x) {
+  if (!x || !x.available) return null;
+  return { gap: x.gap_points, explained: x.explained_points, unexplained: x.unexplained_points, unexplained_toward: x.unexplained_toward,
+    top: x.parts.slice(0, 3).map((p) => ({ key: p.key, points: p.explained_points })) };
 }
 
 /* ------------------------------------------------------------ QUOTE-LEVEL EV
@@ -984,6 +1001,7 @@ function main() {
     etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
     evNote: calibratedEvNote(gov.artifact, gov.policy), warnings: warnings, ev: evCfg, evLedger: evLedgerLoad(season), decLedger: BDS.load(season),
     qevTail: QEV.tailDomain(qevTour && qevTour.alternate_line_domain),
+    explainerFit: (readJson('football/validation/disagreement_explainer.json', null) || {}).explainer || null,
     degraded: ops && ops.system ? { status: ops.system.status, rule: ops.system.rule } : null,
     sources: [
       { id: 'slate', path: 'football/fbs/slate.json', updated_at: slate.generated_at, what: 'champion projections, reliability, QB context' },
@@ -1060,6 +1078,7 @@ function main() {
     filters: Object.keys(T.FILTERS).map((k) => ({ key: k, label: T.FILTERS[k].label, n: objs.filter((o) => o.flags[k]).length })),
     rows: objs.map((o) => Object.assign(boardRow(o), { read: readRow(readOf[o.game_id] && readOf[o.game_id].read), ev: evRow(readOf[o.game_id] && readOf[o.game_id].ev),
       quote_ev: quoteEvRow(readOf[o.game_id] && readOf[o.game_id].quote_ev),
+      disagreement_explainer: explainerRow(readOf[o.game_id] && readOf[o.game_id].explainer),
       decision_facts: readOf[o.game_id] && readOf[o.game_id].bettor ? readOf[o.game_id].bettor.facts : null,
       bettor: readOf[o.game_id] && readOf[o.game_id].bettor ? BDS.compact(readOf[o.game_id].bettor.decision, readOf[o.game_id].bettor.track) : null })),
     quote_ev: { engine: QEV.VERSION, tooltip: QEV.TOOLTIP, tail_domain: ctx.qevTail,
@@ -1073,7 +1092,8 @@ function main() {
     record_headline: { n: rec.n, ats: rec.ats, clv: rec.clv, versions: rec.versions }
   });
   const games = Object.assign({ schema: 'edgedesk_cfb_terminal_games_v1' }, meta, { games: {} });
-  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [], quote_ev: quoteEvGame(x.quote_ev) }); });
+  objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [], quote_ev: quoteEvGame(x.quote_ev),
+    disagreement_explainer: x.explainer || null }); });
   games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
   /* what the page needs to re-price the EV read on the reader's clock: the pinned calibrator artifact and policy */
   games.ev = { engine: EV.VERSION, artifact: evCfg.artifact || null, policy: evCfg.policy || null, decision_vocabulary: EV.DECISION, tooltip: EV.TOOLTIP, validation: EVL.validation, ledger: EVL.paths };

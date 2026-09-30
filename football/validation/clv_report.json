@@ -1,0 +1,494 @@
+{
+ "schema": "edgedesk_clv_report_v1",
+ "generated_at": "2026-09-30T18:39:20.790Z",
+ "rules": {
+  "min_side_gap": 0.5,
+  "buckets": [
+   [
+    0.5,
+    2
+   ],
+   [
+    2,
+    4
+   ],
+   [
+    4,
+    7
+   ],
+   [
+    7,
+    null
+   ]
+  ],
+  "min_moved_to_read": 100,
+  "headline_seasons": [
+   2022,
+   2025
+  ],
+  "tune_seasons": [
+   2018,
+   2021
+  ],
+  "cfb_sigma_base": 14.633
+ },
+ "definition": "side = sign(fair − open) on home margins; CLV pts = side · (close − open); CLV prob = the no-push cover probability of that side at the opening number, on a margin distribution centred at the close, minus the same at the close",
+ "market_is_an_input": false,
+ "fitted": "nothing: every number is replayed or read as frozen",
+ "samples": {
+  "cfb_replay_2022_2025": {
+   "what": "cold replay of the shipped engine vs the cfbfastR opener and close; the engine’s held-out window (hyperparameters tuned 2018-2021)",
+   "all": {
+    "games": 2843,
+    "moved": 2492,
+    "moved_toward": 1317,
+    "toward_rate": 0.5285,
+    "p_two_sided": 0.0047,
+    "mean_clv_pts": 0.206,
+    "mean_clv_pts_ci95": [
+     0.139,
+     0.269
+    ],
+    "mean_clv_prob": 0.0053,
+    "readable": true,
+    "reading": "the market moved TOWARD EdgeDesk more often than chance"
+   },
+   "by_bucket": {
+    "0.5-2": {
+     "games": 737,
+     "moved": 637,
+     "moved_toward": 339,
+     "toward_rate": 0.5322,
+     "p_two_sided": 0.113,
+     "mean_clv_pts": 0.16,
+     "mean_clv_pts_ci95": [
+      0.051,
+      0.297
+     ],
+     "mean_clv_prob": 0.0041,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "2-4": {
+     "games": 846,
+     "moved": 741,
+     "moved_toward": 379,
+     "toward_rate": 0.5115,
+     "p_two_sided": 0.5567,
+     "mean_clv_pts": 0.098,
+     "mean_clv_pts_ci95": [
+      0.024,
+      0.185
+     ],
+     "mean_clv_prob": 0.0028,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "4-7": {
+     "games": 795,
+     "moved": 704,
+     "moved_toward": 367,
+     "toward_rate": 0.5213,
+     "p_two_sided": 0.2744,
+     "mean_clv_pts": 0.21,
+     "mean_clv_pts_ci95": [
+      0.075,
+      0.327
+     ],
+     "mean_clv_prob": 0.0054,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "7+": {
+     "games": 465,
+     "moved": 410,
+     "moved_toward": 232,
+     "toward_rate": 0.5659,
+     "p_two_sided": 0.0089,
+     "mean_clv_pts": 0.469,
+     "mean_clv_pts_ci95": [
+      0.259,
+      0.67
+     ],
+     "mean_clv_prob": 0.0119,
+     "readable": true,
+     "reading": "the market moved TOWARD EdgeDesk more often than chance"
+    }
+   },
+   "by_season": {
+    "2022": {
+     "games": 650,
+     "moved": 555,
+     "moved_toward": 279,
+     "toward_rate": 0.5027,
+     "p_two_sided": 0.9323,
+     "mean_clv_pts": 0.017,
+     "mean_clv_pts_ci95": [
+      -0.092,
+      0.127
+     ],
+     "mean_clv_prob": 0.0005,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "2023": {
+     "games": 716,
+     "moved": 665,
+     "moved_toward": 359,
+     "toward_rate": 0.5398,
+     "p_two_sided": 0.0438,
+     "mean_clv_pts": 0.346,
+     "mean_clv_pts_ci95": [
+      0.228,
+      0.5
+     ],
+     "mean_clv_prob": 0.0087,
+     "readable": true,
+     "reading": "the market moved TOWARD EdgeDesk more often than chance"
+    },
+    "2024": {
+     "games": 731,
+     "moved": 637,
+     "moved_toward": 335,
+     "toward_rate": 0.5259,
+     "p_two_sided": 0.2048,
+     "mean_clv_pts": 0.081,
+     "mean_clv_pts_ci95": [
+      -0.094,
+      0.339
+     ],
+     "mean_clv_prob": 0.0025,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "2025": {
+     "games": 746,
+     "moved": 635,
+     "moved_toward": 344,
+     "toward_rate": 0.5417,
+     "p_two_sided": 0.0391,
+     "mean_clv_pts": 0.359,
+     "mean_clv_pts_ci95": [
+      0.169,
+      0.564
+     ],
+     "mean_clv_prob": 0.0091,
+     "readable": true,
+     "reading": "the market moved TOWARD EdgeDesk more often than chance"
+    }
+   },
+   "with_line_pair": 3111
+  },
+  "cfb_replay_2021": {
+   "what": "the same, 2021: IN-SAMPLE for the engine’s hyperparameter tune (reported separately, never pooled into the headline)",
+   "all": {
+    "games": 686,
+    "moved": 577,
+    "moved_toward": 293,
+    "toward_rate": 0.5078,
+    "p_two_sided": 0.7391,
+    "mean_clv_pts": 0.12,
+    "mean_clv_pts_ci95": [
+     0.006,
+     0.217
+    ],
+    "mean_clv_prob": 0.0025,
+    "readable": true,
+    "reading": "not significantly different from a coin flip"
+   },
+   "by_bucket": {
+    "0.5-2": {
+     "games": 182,
+     "moved": 155,
+     "moved_toward": 78,
+     "toward_rate": 0.5032,
+     "p_two_sided": 1,
+     "mean_clv_pts": -0.047,
+     "mean_clv_pts_ci95": [
+      -0.28,
+      0.144
+     ],
+     "mean_clv_prob": -0.0015,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "2-4": {
+     "games": 214,
+     "moved": 173,
+     "moved_toward": 91,
+     "toward_rate": 0.526,
+     "p_two_sided": 0.543,
+     "mean_clv_pts": 0.194,
+     "mean_clv_pts_ci95": [
+      -0.029,
+      0.373
+     ],
+     "mean_clv_prob": 0.004,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "4-7": {
+     "games": 174,
+     "moved": 146,
+     "moved_toward": 71,
+     "toward_rate": 0.4863,
+     "p_two_sided": 0.8039,
+     "mean_clv_pts": -0.065,
+     "mean_clv_pts_ci95": [
+      -0.428,
+      0.178
+     ],
+     "mean_clv_prob": -0.0001,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    },
+    "7+": {
+     "games": 116,
+     "moved": 103,
+     "moved_toward": 53,
+     "toward_rate": 0.5146,
+     "p_two_sided": 0.8438,
+     "mean_clv_pts": 0.519,
+     "mean_clv_pts_ci95": [
+      0.047,
+      1.034
+     ],
+     "mean_clv_prob": 0.0099,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    }
+   },
+   "by_season": {
+    "2021": {
+     "games": 686,
+     "moved": 577,
+     "moved_toward": 293,
+     "toward_rate": 0.5078,
+     "p_two_sided": 0.7391,
+     "mean_clv_pts": 0.12,
+     "mean_clv_pts_ci95": [
+      0.006,
+      0.217
+     ],
+     "mean_clv_prob": 0.0025,
+     "readable": true,
+     "reading": "not significantly different from a coin flip"
+    }
+   },
+   "with_line_pair": 731
+  },
+  "cfb_2026": {
+   "what": "EdgeDesk’s frozen pregame number (record first), the Model Lab’s earliest captured line, the record’s close",
+   "all": {
+    "games": 68,
+    "moved": 51,
+    "moved_toward": 23,
+    "toward_rate": 0.451,
+    "p_two_sided": 0.5754,
+    "mean_clv_pts": 0.044,
+    "mean_clv_pts_ci95": [
+     -0.257,
+     0.353
+    ],
+    "mean_clv_prob": 0.0008,
+    "readable": false,
+    "reading": "too small to read (51 moved games; 100 is the floor)"
+   },
+   "by_bucket": {
+    "0.5-2": {
+     "games": 14,
+     "moved": 9,
+     "moved_toward": 3,
+     "toward_rate": 0.3333,
+     "p_two_sided": 0.505,
+     "mean_clv_pts": -0.214,
+     "mean_clv_pts_ci95": [
+      -0.679,
+      0.286
+     ],
+     "mean_clv_prob": -0.0068,
+     "readable": false,
+     "reading": "too small to read (9 moved games; 100 is the floor)"
+    },
+    "2-4": {
+     "games": 10,
+     "moved": 8,
+     "moved_toward": 5,
+     "toward_rate": 0.625,
+     "p_two_sided": 0.7237,
+     "mean_clv_pts": 0.2,
+     "mean_clv_pts_ci95": [
+      -0.2,
+      0.6
+     ],
+     "mean_clv_prob": 0.0046,
+     "readable": false,
+     "reading": "too small to read (8 moved games; 100 is the floor)"
+    },
+    "4-7": {
+     "games": 22,
+     "moved": 15,
+     "moved_toward": 8,
+     "toward_rate": 0.5333,
+     "p_two_sided": 1,
+     "mean_clv_pts": 0.159,
+     "mean_clv_pts_ci95": [
+      -0.364,
+      0.636
+     ],
+     "mean_clv_prob": 0.0012,
+     "readable": false,
+     "reading": "too small to read (15 moved games; 100 is the floor)"
+    },
+    "7+": {
+     "games": 22,
+     "moved": 19,
+     "moved_toward": 7,
+     "toward_rate": 0.3684,
+     "p_two_sided": 0.3588,
+     "mean_clv_pts": 0.023,
+     "mean_clv_pts_ci95": [
+      -0.591,
+      0.705
+     ],
+     "mean_clv_prob": 0.0037,
+     "readable": false,
+     "reading": "too small to read (19 moved games; 100 is the floor)"
+    }
+   },
+   "by_season": {
+    "week 4": {
+     "games": 68,
+     "moved": 51,
+     "moved_toward": 23,
+     "toward_rate": 0.451,
+     "p_two_sided": 0.5754,
+     "mean_clv_pts": 0.044,
+     "mean_clv_pts_ci95": [
+      -0.257,
+      0.353
+     ],
+     "mean_clv_prob": 0.0008,
+     "readable": false,
+     "reading": "too small to read (51 moved games; 100 is the floor)"
+    }
+   },
+   "with_line_pair": 71
+  },
+  "nfl_2026": {
+   "what": "EdgeDesk’s frozen pregame number (record first), EdgeDesk’s own opener ledger (from 2026-09-16), the record’s close; no historical NFL opener archive exists",
+   "all": {
+    "games": 29,
+    "moved": 21,
+    "moved_toward": 15,
+    "toward_rate": 0.7143,
+    "p_two_sided": 0.0809,
+    "mean_clv_pts": 0.448,
+    "mean_clv_pts_ci95": [
+     -0.259,
+     1.155
+    ],
+    "mean_clv_prob": 0.0115,
+    "readable": false,
+    "reading": "too small to read (21 moved games; 100 is the floor)"
+   },
+   "by_bucket": {
+    "0.5-2": {
+     "games": 5,
+     "moved": 3,
+     "moved_toward": 2,
+     "toward_rate": 0.6667,
+     "p_two_sided": 1,
+     "mean_clv_pts": -0.6,
+     "mean_clv_pts_ci95": [
+      -2.8,
+      0.8
+     ],
+     "mean_clv_prob": -0.0206,
+     "readable": false,
+     "reading": "too small to read (3 moved games; 100 is the floor)"
+    },
+    "2-4": {
+     "games": 13,
+     "moved": 11,
+     "moved_toward": 7,
+     "toward_rate": 0.6364,
+     "p_two_sided": 0.5465,
+     "mean_clv_pts": 0.885,
+     "mean_clv_pts_ci95": [
+      -0.269,
+      2.231
+     ],
+     "mean_clv_prob": 0.018,
+     "readable": false,
+     "reading": "too small to read (11 moved games; 100 is the floor)"
+    },
+    "4-7": {
+     "games": 10,
+     "moved": 6,
+     "moved_toward": 6,
+     "toward_rate": 1,
+     "p_two_sided": 0.0412,
+     "mean_clv_pts": 0.6,
+     "mean_clv_pts_ci95": [
+      0.2,
+      1.1
+     ],
+     "mean_clv_prob": 0.0243,
+     "readable": false,
+     "reading": "too small to read (6 moved games; 100 is the floor)"
+    },
+    "7+": {
+     "games": 1,
+     "moved": 1,
+     "moved_toward": 0,
+     "toward_rate": 0,
+     "p_two_sided": 1,
+     "mean_clv_pts": -1.5,
+     "mean_clv_pts_ci95": null,
+     "mean_clv_prob": -0.0392,
+     "readable": false,
+     "reading": "too small to read (1 moved games; 100 is the floor)"
+    }
+   },
+   "by_season": {
+    "week 2": {
+     "games": 14,
+     "moved": 9,
+     "moved_toward": 7,
+     "toward_rate": 0.7778,
+     "p_two_sided": 0.1824,
+     "mean_clv_pts": 0.25,
+     "mean_clv_pts_ci95": [
+      -0.143,
+      0.571
+     ],
+     "mean_clv_prob": 0.0097,
+     "readable": false,
+     "reading": "too small to read (9 moved games; 100 is the floor)"
+    },
+    "week 3": {
+     "games": 15,
+     "moved": 12,
+     "moved_toward": 8,
+     "toward_rate": 0.6667,
+     "p_two_sided": 0.3865,
+     "mean_clv_pts": 0.633,
+     "mean_clv_pts_ci95": [
+      -0.667,
+      1.9
+     ],
+     "mean_clv_prob": 0.0132,
+     "readable": false,
+     "reading": "too small to read (12 moved games; 100 is the floor)"
+    }
+   },
+   "with_line_pair": 32
+  }
+ },
+ "sources": {
+  "cfb_replay": "football/cfb_p4/research/replay_rows.js (cfbfastR schedules; betting/cfb_line_odds.csv.gz via research/build_market.py)",
+  "cfb_2026": "record/football/cfb_2026.json; football/cfb_lab/ledger/2026/quotes/*.jsonl",
+  "nfl_2026": "record/football/nfl_2026.json; football/pricing/openers_nfl.json"
+ }
+}

@@ -108,9 +108,10 @@ chk('the model agrees with the market = PASS (market aligned)', noEdge.decision 
 
 const huge = dec({ model: model(-1, 2), market: { fault: true, fault_reason: 'one book, stale consensus' }, research: { status: 'MARKET_FAULT', gap_pts: 5.5 } });
 chk('huge raw EV + market fault ≠ BET', huge.decision !== 'BET' && huge.raw_ev_pct > 30, { d: huge.decision, raw: huge.raw_ev_pct });
-/* audit 2026-09-30 #8: past 25% raw EV on a main-line spread the decision is
-   WATCH · IMPLAUSIBLE EV ("check data") first; the open price anomaly stays */
-chk('…past the 25% implausible-EV bound it is WATCH · IMPLAUSIBLE EV, the price anomaly still open', huge.decision === 'WATCH' && huge.action_reason_code === 'IMPLAUSIBLE_EV' && (huge.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), { d: huge.decision, c: huge.action_reason_code });
+/* audit 2026-09-30 #8, σ-scaled in the follow-up: past 25% raw EV on a
+   main-line spread the decision is WATCH · LARGE EV (no stake); the open price
+   anomaly stays. IMPLAUSIBLE EV is kept for a gap past the σ-scaled bound */
+chk('…past 25% raw EV (inside the σ-scaled bound) it is WATCH · LARGE EV, the price anomaly still open', huge.decision === 'WATCH' && huge.action_reason_code === 'LARGE_EV' && (huge.caps || []).some((c) => c.code === 'PRICE_ANOMALY'), { d: huge.decision, c: huge.action_reason_code });
 const faultPx = dec({ model: model(2.5, 3.5), market: { fault: true, fault_reason: 'one book, stale consensus' }, research: { status: 'MARKET_FAULT', gap_pts: 4 } });
 chk('…under the bound, an attractive price on a market fault is WATCH · PRICE ANOMALY until the market re-verifies', faultPx.decision === 'WATCH' && faultPx.action_reason_code === 'PRICE_ANOMALY' && faultPx.waiting_on.length === 1 && faultPx.raw_ev_pct < 25, { d: faultPx.decision, c: faultPx.action_reason_code, w: faultPx.waiting_on, raw: faultPx.raw_ev_pct });
 const faultQuiet = dec({ model: model(6.5, 6.5), market: { fault: true }, research: { status: 'MARKET_FAULT', gap_pts: 0.2 } });
@@ -118,7 +119,7 @@ chk('a market fault with no priced opportunity is PASS — the wager is still ev
 const inv = dec({ model: model(2.5, 3.5), research: { status: 'INVESTIGATE', gap_pts: 4, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
 chk('an unverified gap on an attractive price = WATCH · PRICE ANOMALY', inv.decision === 'WATCH' && inv.action_reason_code === 'PRICE_ANOMALY' && inv.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: inv.decision, c: inv.action_reason_code });
 const invBig = dec({ model: model(-6, 1), research: { status: 'INVESTIGATE', gap_pts: 12.5, verification: 'INCOMPLETE', verification_items: ['1 book behind the consensus'] } });
-chk('huge gap + unverified market (+61% raw EV) = WATCH · IMPLAUSIBLE EV, the gap check still failed', invBig.decision === 'WATCH' && invBig.action_reason_code === 'IMPLAUSIBLE_EV' && invBig.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: invBig.decision, c: invBig.action_reason_code });
+chk('huge gap + unverified market (+61% raw EV) = WATCH · LARGE EV, the gap check still failed', invBig.decision === 'WATCH' && invBig.action_reason_code === 'LARGE_EV' && invBig.anomaly.checks.some((c) => c.code === 'GAP_VERIFIED' && c.status === 'FAIL'), { d: invBig.decision, c: invBig.action_reason_code });
 chk('WATCH never carries units', inv.recommended_units === 0 && huge.recommended_units === 0 && invBig.recommended_units === 0);
 chk('WATCH says what EdgeDesk is waiting on and when it re-checks', inv.waiting_on.length > 0 && /re-evaluates/.test(inv.next_check) && /verification/.test(inv.watch.trigger));
 
@@ -243,7 +244,7 @@ const extreme = dec(extremeIn);
 chk('an extreme gap triggers price verification', extreme.anomaly && extreme.anomaly.triggered && extreme.anomaly.triggers.some((t) => t.code === 'LARGE_GAP'), extreme.anomaly && extreme.anomaly.triggers);
 /* audit 2026-09-30 #8: a 10.5-pt CFB gap is +50% raw EV on the main line —
    no verification clears that; under the 25% bound a cleared anomaly proceeds */
-chk('…a verified 10.5-pt gap past the 25% raw-EV bound is WATCH · IMPLAUSIBLE EV, never a stake', extreme.decision === 'WATCH' && extreme.action_reason_code === 'IMPLAUSIBLE_EV' && extreme.recommended_units === 0, { d: extreme.decision, c: extreme.action_reason_code, u: extreme.recommended_units });
+chk('…a verified 10.5-pt gap past 25% raw EV is WATCH · LARGE EV, never a stake (plausible, so its research label may still be VERIFIED MAJOR)', extreme.decision === 'WATCH' && extreme.action_reason_code === 'LARGE_EV' && extreme.recommended_units === 0, { d: extreme.decision, c: extreme.action_reason_code, u: extreme.recommended_units });
 const extremeOk = dec({ model: model(2.5, 3.5) });
 chk('…under the bound, every check cleared, it proceeds, capped — a ridiculous edge is never a bigger stake', extremeOk.anomaly && extremeOk.anomaly.triggered && extremeOk.decision === 'BET' && extremeOk.anomaly.cleared && extremeOk.recommended_units <= 0.5 && extremeOk.warnings.some((w) => w.code === 'ANOMALY_CLEARED'), { d: extremeOk.decision, u: extremeOk.recommended_units, checks: extremeOk.anomaly && extremeOk.anomaly.checks.filter((c) => c.status !== 'PASS') });
 const flip = dec(Object.assign({}, extremeIn, { anomaly: { favorite_flip: true, circuit_breaker: { triggered: true, level: 'SEVERE', verified: true } } }));
