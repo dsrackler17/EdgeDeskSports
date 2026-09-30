@@ -36,8 +36,8 @@
      - the game-card section reads nothing until opened, then shows the
        leads and the headline projections and links into the game
      - the Lab's Player props validation view and the public record section;
-       the record page never scrolls sideways at 375, 390, 430, 768 or
-       1440 px, and the Model Lab's sample labels stay inside their tiles
+       the record page never scrolls sideways at 320, 375, 390, 430, 768
+       or 1440 px, and the Model Lab's sample labels stay inside their tiles
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
    Run:  node tools/props/props_ui.e2e.js [--shots <dir>]
@@ -547,7 +547,7 @@ async function buildFixture() {
     await ctx.close();
     /* the whole record page, once the props record and the Model Lab record
        have both drawn: nothing reaches past the screen at any width */
-    for (const W of [375, 390, 430, 768, 1440]) {
+    for (const W of [320, 375, 390, 430, 768, 1440]) {
       const rctx = await browser.newContext({ viewport: { width: W, height: 844 } });
       await rctx.route('**/*', (route) => (route.request().url().startsWith('http://127.0.0.1') ? route.continue() : route.fulfill({ status: 204, body: '' })));
       const rp = await rctx.newPage(); const rerr = []; rp.on('pageerror', (e) => rerr.push(String(e)));
