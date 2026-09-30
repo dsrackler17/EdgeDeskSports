@@ -61,6 +61,40 @@ function defaultSeason() { const d = new Date(); return (d.getMonth() <= 1) ? d.
 function curveArtifact() {
   try { return require(path.join(ROOT, 'football', 'cfb_p4', 'regime_curve.js')); } catch (_) { return null; }
 }
+/* the v2 turnover magnitude (research/regime_magnitude_backtest.js): published
+   for every programme; forwarded to the engine only when PROMOTED */
+function magnitudeArtifact() {
+  try { return require(path.join(ROOT, 'football', 'cfb_p4', 'regime_magnitude.js')); } catch (_) { return null; }
+}
+/* v2's QB input for the season in progress: the starter of the team's last
+   game (football/starters/cfb_<season>.json, play attribution) against last
+   season's primary QB (returning_production_<season>.json). Before a first
+   game the roster answers: last season's QB on it or not. */
+function qbChangeOf(p, st) {
+  const prevQb = p && p.prev_primary_qb_id != null ? String(p.prev_primary_qb_id) : null;
+  if (!prevQb) return { qb_change: null, basis: 'no primary quarterback last season on file' };
+  if (st && st.player_id != null && (st.status === 'PREVIOUS_GAME' || st.status === 'ANNOUNCED' || st.status === 'EXPECTED' || st.status === 'DEPTH_CHART'))
+    return { qb_change: String(st.player_id) !== prevQb, basis: 'starter ' + (st.player_name || st.player_id) + ' (' + st.status + ') vs last season\u2019s primary QB ' + prevQb };
+  if (p.returning_qb == null) return { qb_change: null, basis: 'no starter observed and roster membership unknown' };
+  return { qb_change: !p.returning_qb, basis: 'no starter observed yet: last season\u2019s primary QB is ' + (p.returning_qb ? '' : 'not ') + 'on the roster' };
+}
+function magnitudeOf(x, art) {
+  const inputs = { new_hc: x.new_hc, returning_production_pct: x.returning_production_pct, qb_change: x.qb_change,
+    incoming_production_pct: x.incoming_production_pct };
+  const f = RS.magnitudeFeatures(inputs);
+  const out = { version: art ? art.version : null, status: art ? art.status : 'UNAVAILABLE', priced: !!(art && art.promoted === true),
+    family: art ? art.family : null, inputs, features: f, qb_basis: x.qb_basis || null };
+  if (!art || !art.params) { out.why = 'football/cfb_p4/regime_magnitude.js is missing: no v2 magnitude'; return out; }
+  const terms = {};
+  let v = 0;
+  RS.MAGNITUDE_INPUTS.forEach(k => { terms[k] = r4((art.params[k] || 0) * f[k]); v += terms[k]; });
+  out.terms = terms;
+  if (art.family === 'shift') { out.prior_shift = r4(v); out.shift_decay = art.params.lambda || 0; }
+  else { out.magnitude = r4(Math.max(0, v)); out.weight_multiplier = r4(Math.exp(-Math.max(0, v))); }
+  out.why = out.priced ? 'priced: v2 is promoted' : 'research only: v2 is a ' + art.status + ' (it did not beat the v1 curve on the 2024-2025 holdout; '
+    + 'football/cfb_p4/research/report/regime_magnitude_backtest.json). The v1 REGIME CHANGE curve prices.';
+  return out;
+}
 
 /* ---- the hand-maintained table ------------------------------------------
    Every entry must carry a source and a date; an entry without both is
@@ -127,6 +161,9 @@ function build(season) {
   if (!coach || +coach.season !== +season) problems.push('football/coaching/continuity.json is missing or not for ' + season + ' — run build_coaching.js');
   if (!curve) problems.push('football/cfb_p4/regime_curve.js is missing — run research/regime_backtest.js --write');
   if (!rp || +rp.season !== +season) problems.push('returning_production_' + season + '.json is missing — returning production stays unmeasured');
+  const mag = magnitudeArtifact();
+  if (!mag) problems.push('football/cfb_p4/regime_magnitude.js is missing — the v2 turnover magnitude is not published');
+  const starters = readJson(path.join(ROOT, 'football', 'starters', 'cfb_' + season + '.json'), null);
   const rc = (cur && prev) ? rosterContinuity(cur, prev) : null;
   if (!rc) problems.push('ESPN rosters for ' + season + '/' + (season - 1) + ' are missing — roster continuity stays unmeasured');
   const ov = loadOverrides(season);
@@ -151,6 +188,8 @@ function build(season) {
       returning_share: r ? r4(r.returning_share) : null, transfers_out: r ? r.transfers_out : null,
       returning_production: o && isNum(o.returning_production_pct) ? r4(o.returning_production_pct / 100) : (p ? p.returning_production : null),
       returning_production_source: o && isNum(o.returning_production_pct) ? 'override: ' + o.source : (p ? 'returning_production_' + season + '.json' : null),
+      incoming_production: p && isNum(p.incoming_production) ? p.incoming_production : null,
+      prev_primary_qb_id: p && p.prev_primary_qb_id != null ? String(p.prev_primary_qb_id) : null,
       override: o ? { new_coach: o.new_coach == null ? null : o.new_coach, returning_production_pct: o.returning_production_pct == null ? null : o.returning_production_pct,
         source: o.source, note: o.note || null, entered_at: o.entered_at } : null
     };
@@ -158,12 +197,17 @@ function build(season) {
   const pRS = RS.percentiles(rows.map(x => x.returning_share));
   const pTO = RS.percentiles(rows.map(x => x.transfers_out));
   const pRP = RS.percentiles(rows.map(x => x.returning_production));
+  const pIN = RS.percentiles(rows.map(x => x.incoming_production));
   const byTeam = {};
   let fired = 0;
   rows.forEach(x => {
     x.returning_share_pct = r4(pRS(x.returning_share));
     x.transfers_out_pct = r4(pTO(x.transfers_out));
     x.returning_production_pct = r4(pRP(x.returning_production));
+    x.incoming_production_pct = r4(pIN(x.incoming_production));
+    const q = qbChangeOf(rpBy[x.key] || null, starters && starters.teams ? starters.teams[x.key] : null);
+    x.qb_change = q.qb_change; x.qb_basis = q.basis;
+    x.magnitude = magnitudeOf(x, mag);
     const f = RS.fires(x, sig);
     x.regime_change = f.fires;
     x.reason = f.reason;
@@ -174,12 +218,15 @@ function build(season) {
   return {
     schema: SCHEMA, season, generated_at: new Date().toISOString(),
     signal: sig, curve_version: curve ? curve.version : null, min_games_for_research: N,
+    magnitude: mag ? { version: mag.version, status: mag.status, promoted: mag.promoted === true, family: mag.family, params: mag.params,
+      fitted_on: mag.fitted_on, report: mag.report } : null,
     sources: {
       coaching: coach ? { file: 'football/coaching/continuity.json', generated_at: coach.generated_at || null } : null,
       returning_production: rp ? { file: 'football/coaching/returning_production_' + season + '.json', generated_at: rp.generated_at || null, source: rp.source || null } : null,
       rosters: rc ? { files: ['football/rosters/fbs_' + season + '_espn.json', 'football/rosters/fbs_' + (season - 1) + '_espn.json'],
         doubled_last_season_listings: rc.doubled_listings, unplaced_athletes: rc.unplaced } : null,
-      overrides: { file: 'football/coaching/regime_overrides.json', applied: Object.keys(ov.by_key).length, refused: ov.refused }
+      overrides: { file: 'football/coaching/regime_overrides.json', applied: Object.keys(ov.by_key).length, refused: ov.refused },
+      starters: starters ? { file: 'football/starters/cfb_' + season + '.json', generated_at: starters.generated_at || null, week: starters.week || null } : null
     },
     counts: { teams: rows.length, regime_change: fired, new_hc: rows.filter(x => x.new_hc === true).length,
       new_hc_unknown: rows.filter(x => x.new_hc == null).length },
@@ -200,4 +247,4 @@ function main() {
 }
 
 if (require.main === module) process.exit(main());
-module.exports = { build, rosterContinuity, loadOverrides, SCHEMA };
+module.exports = { build, rosterContinuity, loadOverrides, qbChangeOf, magnitudeOf, SCHEMA };

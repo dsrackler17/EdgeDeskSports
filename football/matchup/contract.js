@@ -449,8 +449,21 @@
      standard curve, exactly as before. */
   function regimeFor(byTeam, key) {
     var r = key && byTeam ? byTeam[key] : null;
-    if (!r || r.regime_change !== true) return null;
-    return { regime_change: true, reason: r.reason || null, team: r.team || null,
+    /* the v2 turnover magnitude reaches the engine only when PROMOTED
+       (football/cfb_p4/regime_magnitude.js; build_regime.js marks it priced) */
+    var M = r && r.magnitude && r.magnitude.priced === true ? r.magnitude : null;
+    var mv = M && (isNum(M.magnitude) || isNum(M.prior_shift)) ? M : null;
+    if (!r || (r.regime_change !== true && !(mv && ((isNum(mv.magnitude) && mv.magnitude > 0) || (isNum(mv.prior_shift) && mv.prior_shift !== 0))))) return null;
+    var out = regimeRecord(r);
+    if (mv) {
+      if (isNum(mv.magnitude)) out.magnitude = mv.magnitude;
+      if (isNum(mv.prior_shift)) { out.prior_shift = mv.prior_shift; out.shift_decay = isNum(mv.shift_decay) ? mv.shift_decay : 0; }
+      out.magnitude_terms = mv.terms || null; out.magnitude_version = mv.version || null;
+    }
+    return out;
+  }
+  function regimeRecord(r) {
+    return { regime_change: r.regime_change === true, reason: r.reason || null, team: r.team || null,
       new_hc: r.new_hc === true, hc: r.hc || null, previous_hc: r.previous_hc || null,
       returning_share: isNum(r.returning_share) ? r.returning_share : null,
       returning_production: isNum(r.returning_production) ? r.returning_production : null,

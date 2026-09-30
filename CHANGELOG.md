@@ -1,5 +1,91 @@
 # Changelog
 
+## 2026-09-30 — audit follow-up: verification of the first pass, and the second pass
+
+The first pass (the section below) was re-verified from its code and data before anything here was changed. Its
+regime backtest reproduces from a fresh download of the public data (held-out MAE 13.479 → 13.447 against its
+reported 13.475 → 13.445; the same curve, the same N = 6, an engine self-check of 7e-15); its eleven test suites
+pass. Nothing of the second pass had been started. Each item below says what the data supports, including where it
+does not support what the audit expected.
+
+### #1 — The regime prior as a continuous magnitude (a CANDIDATE: it did not beat v1, so it does not price)
+
+**Root cause of "Iowa State still ≈ −9 against West Virginia".** There were no magnitude inputs to wire in. The v1
+signal is a yes/no, so Iowa State (4th-percentile returning production), North Texas, UConn, Penn State and Virginia
+Tech (36th percentile) all got the same 69% long-run weight at four games. West Virginia (3rd-percentile returning
+roster, no coach change) got no adjustment at all. The v1 fit also started in 2007, and the curve it ships was fitted
+on seasons through 2025. The QB change and portal inflow were not inputs anywhere.
+
+**Change.**
+- `football/cfb_p4/research/build_regime_history.py` now also measures:
+  - portal inflow, production-weighted: last season's units produced at another programme by players on this roster
+    (the rating-weighted alternative needs a keyed feed; this was agreed as the substitute);
+  - last season's primary QB and whether he is on the roster;
+  - every team-game's starter (`qb_starts.csv`).
+
+  `--current 2026` writes the same fields into `returning_production_2026.json` (schema v2).
+- `football/coaching/regime_signal.js` holds the one magnitude definition. It has four hinge features, each zero at or
+  better than the season median: new coach, returning production, QB change (the starter of the team's last completed
+  game vs last season's primary QB), and portal inflow. An unmeasured input is 0.
+- `football/cfb_p4/research/regime_magnitude_backtest.js` replays the shipped engine cold and fits on 2021+ only:
+  - **A. Selection.** Three pricing forms (a weight cut onto the raw this-season track, the same onto the centred track,
+    a signed level shift on the long-run rating) are fitted on 2021-2022 and scored on 2023.
+  - **B. Holdout.** Each form is refitted on 2021-2023 and scored once on 2024-2025, which no fit it is judged on ever
+    saw.
+  - **C. Ship.** The chosen form is refitted on 2021-2025 and promoted only if the holdout shows it no worse than the
+    standard curve and than v1.
+- Disclosure: two of the three forms were each scored on the holdout once while the list of forms was being built, so
+  read the holdout intervals as optimistic.
+- `football/cfb_p4/engine.js` supports both v2 forms (`magnitude`, `prior_shift`). `football/matchup/contract.js`
+  forwards them only when `priced`. `football/coaching/build_regime.js` publishes every programme's v2 inputs,
+  features and magnitude under `by_team.<key>.magnitude`, with `priced: false` while the artifact is a candidate.
+
+**Result (2024-2025 holdout, never fitted).** Stage A chose `w_raw` (2023 MAE 13.108; standard 13.126).
+
+| subset (games) | standard | v1 (ships) | v2 w_raw | v2 − standard | v2 − v1 |
+|---|---|---|---|---|---|
+| all FBS games (1,604) | 12.594 | 12.559 | 12.579 | −0.015 [−0.044, +0.022] | +0.020 [−0.008, +0.036] |
+| v1 regime subset (537) | 13.027 | 12.921 | 12.946 | −0.080 [−0.193, +0.017] | +0.025 [−0.056, +0.109] |
+| heavy turnover (284) | 12.719 | 12.662 | 12.619 | −0.101 [−0.246, +0.065] | −0.043 [−0.133, +0.048] |
+| stable (80) | 13.536 | 13.536 | 13.542 | +0.006 | +0.006 |
+
+- Bias on the regime subset (+ = the model overrates the flagged team): standard **+1.68**, v1 +0.94, v2 +0.79.
+  The standard curve's figure is about 2.3 standard errors from zero.
+- **v1 against the standard curve on the regime subset is significant: −0.106, 95% CI [−0.229, −0.011].** Its 2021-2023
+  refit gives the identical curve (w0 0.75, λ 0.02), so its sight of 2024-2025 did not change it.
+- **No v2 form is significantly different from v1, and v2's point estimates are slightly worse.** It is not promoted.
+  `football/cfb_p4/regime_magnitude.js` ships as `CANDIDATE`, fitted on 2021-2025 as coach 0.25, returning production
+  0.05, QB 0, portal inflow 0. That would put Iowa State's long-run weight at about 60% at four games (×0.74), not under 50%:
+  2021-2025 does not support the deep cut the audit expected.
+- A fit-years-only diagnostic found the same thing. The best multiplier on the long-run weight is 0.8-0.85 for
+  turnover profiles, and 1.0 for the most Iowa-State-like one (new coach, returning production at or under the 10th
+  percentile, heavy inflow; 46 games).
+
+**Found on the way: the this-season track is offset.** It starts every programme at `init_rating` (−12), and its FBS
+mean stays about 8.6 pts under the long-run track's at every games-played count, 2021-2025 (sd 7.9-9.6 against
+8.8-9.5, correlation 0.90+ from four games).
+- The standard blend cancels this in the gap, because both teams share one weight. A per-team cut does not: moving
+  weight onto the raw track also docks the team about Δw × 8.6 pts for no football reason.
+- Iowa State's this-season −7.42 after four games is roughly where Iowa State 2025 (8-4) stood at the same point
+  (−8.4). It is not by itself evidence that the team is bad.
+- The v2 engine path moves the cut onto the centred track (`trackCentres`). v1 keeps the raw track, as it was fitted and
+  validated, and its accidental level shift is part of why it works: regime teams really are overrated by their
+  long-run rating.
+
+**Unchanged by design.** All 109 games of a rebuilt `football/fbs/slate.json` have identical model margins and regime
+weights (0 differences). Georgia and Ohio State have zero magnitude (the same coach and QB, continuity above the median).
+
+**Tests.** `tools/football/regime.test.js` §9 (24 new checks) covers:
+- the hinges and the unmeasured-input rule;
+- both engine forms, exact to 1e-9, with the centring on and off;
+- that magnitude 0 is the standard curve exactly;
+- that a v1 record is byte-identical;
+- the contract gating (an unpriced magnitude never reaches the engine);
+- the artifact's provenance and verdict;
+- the published 2026 record (Georgia and Ohio State at zero; Iowa State and North Texas new coach, new QB, bottom
+  decile);
+- `qbChangeOf`.
+
 ## 2026-09-30 — audit fixes: Week 5 CFB / Week 4 NFL board
 
 These fixes come from a manual audit of the Week 5 CFB / Week 4 NFL board. They are listed in the audit's priority order.
