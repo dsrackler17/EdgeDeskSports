@@ -6,7 +6,7 @@
   var R = {
    "version": "cfb_regime_curve_v1",
    "generated_by": "football/cfb_p4/research/regime_backtest.js",
-   "generated_at": "2026-09-30T14:08:35.477Z",
+   "generated_at": "2026-09-30T20:26:42.291Z",
    "engine_model_version": "edgedesk_cfb_p4_v1.0.0",
    "signal": {
     "id": "cfb_regime_signal_v1",
@@ -41,17 +41,18 @@
    "record": {
     "walk_forward_window": "2014-2025",
     "games": 2203,
-    "mae_standard": 13.475,
-    "mae_regime": 13.445,
-    "delta": -0.03,
+    "mae_standard": 13.479,
+    "mae_regime": 13.447,
+    "delta": -0.032,
     "delta_ci95": [
-     -0.063,
-     -0.006
+     -0.095,
+     0.033
     ],
+    "significant": false,
     "improved_seasons": 7,
     "seasons": 12,
-    "mean_abs_gap_to_close_standard": 4.249,
-    "mean_abs_gap_to_close_regime": 4.206
+    "mean_abs_gap_to_close_standard": 4.264,
+    "mean_abs_gap_to_close_regime": 4.22
    },
    "report": "football/cfb_p4/research/report/regime_backtest.json"
   };

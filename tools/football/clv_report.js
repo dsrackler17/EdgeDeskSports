@@ -21,6 +21,15 @@
    probability. A sample under 100 moved games is reported and marked "too
    small to read".
 
+   THE AUDIT'S OWN CUTS (second follow-up to the 2026-09-30 audit, item 5 as it
+   was asked): cumulative gaps of 2+, 3+ and 5+ points to the opener, each split
+   by the v1 regime flag (either side's team-season fires the signal the shipped
+   regime curve uses, football/coaching/regime_signal.js) and by games played
+   against the curve's own fitted research minimum (football/cfb_p4/
+   regime_curve.js min_games_for_research). No cut is chosen here: the
+   thresholds are the audit's and the minimum is the one already fitted. A
+   sample whose rows carry no regime flag says so rather than splitting.
+
    SAMPLES
      cfb_replay   2021-2025 FBS games in the cfbfastR archive with an opener and
                   a close, EdgeDesk's number from a cold replay of the shipped
@@ -56,8 +65,11 @@ require(path.join(ROOT, 'football', 'params.js'));
 const EF = require(path.join(ROOT, 'football', 'engine.js'));
 
 const SCHEMA = 'edgedesk_clv_report_v1';
+const RC = require(path.join(ROOT, 'football', 'cfb_p4', 'regime_curve.js'));
 const RULES = { min_side_gap: 0.5, buckets: [[0.5, 2], [2, 4], [4, 7], [7, null]], min_moved_to_read: 100, headline_seasons: [2022, 2025], tune_seasons: [2018, 2021],
-  cfb_sigma_base: 14.633 };
+  cfb_sigma_base: 14.633,
+  /* the audit's thresholds, and the regime curve's fitted research minimum (not chosen here) */
+  thresholds: [2, 3, 5], min_games_for_research: RC.min_games_for_research };
 const OUT = path.join(ROOT, 'football', 'validation', 'clv_report.json');
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); if (i < 0) return dflt; const v = process.argv[i + 1]; return (v == null || v.slice(0, 2) === '--') ? true : v; }
@@ -92,7 +104,9 @@ function binomTwoSided(k, n) {
 }
 function bootCI(xs, reps) {
   if (xs.length < 2) return null;
-  let seed = 20260930; const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  /* an exact 32-bit LCG: the earlier (seed * 1103515245 + 12345) % 2^31 lost its low bits in doubles
+     and cycled after ~10,466 draws, which made every bootstrap interval too narrow */
+  let seed = 20260930; const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const m = [];
   for (let i = 0; i < (reps || 2000); i++) { let s = 0; for (let j = 0; j < xs.length; j++) s += xs[Math.floor(rnd() * xs.length)]; m.push(s / xs.length); }
   m.sort((a, b) => a - b);
@@ -121,7 +135,32 @@ function sampleReport(sport, rows, seasonOf) {
     const ss = Array.from(new Set(scored.map((x) => seasonOf(x.g)))).sort();
     ss.forEach((s) => { out.by_season[s] = summarize(scored.filter((x) => seasonOf(x.g) === s).map((x) => x.c)); });
   }
+  out.by_threshold = thresholdCuts(scored);
   out.with_line_pair = rows.filter((g) => num(g.open) != null && num(g.close) != null).length;
+  return out;
+}
+/* the audit's cuts: 2+ / 3+ / 5+ (cumulative), by regime flag and by games played */
+function thresholdCuts(scored) {
+  const flagKnown = (g) => g.regime && g.regime.home != null && g.regime.away != null;
+  const flagged = (g) => !!(g.regime && (g.regime.home === true || g.regime.away === true));
+  const gpMin = (g) => (g.games_played && num(g.games_played.home) != null && num(g.games_played.away) != null ? Math.min(g.games_played.home, g.games_played.away) : null);
+  const hasRegime = scored.some((x) => x.g.regime !== undefined);
+  const N = RULES.min_games_for_research;
+  const out = {};
+  RULES.thresholds.forEach((t) => {
+    const at = scored.filter((x) => x.c.gap >= t);
+    const o = { all: summarize(at.map((x) => x.c)) };
+    if (!hasRegime) o.split = 'not available: this sample\u2019s rows carry no regime flag or games played';
+    else {
+      /* regime-flagged: either side fires; not flagged: both sides measured and neither fires; the rest is unknown and counted */
+      o.regime = summarize(at.filter((x) => flagged(x.g)).map((x) => x.c));
+      o.not_regime = summarize(at.filter((x) => !flagged(x.g) && flagKnown(x.g)).map((x) => x.c));
+      o.regime_unknown_games = at.filter((x) => !flagged(x.g) && !flagKnown(x.g)).length;
+      o['before_' + N + '_games'] = summarize(at.filter((x) => gpMin(x.g) != null && gpMin(x.g) < N).map((x) => x.c));
+      o['from_' + N + '_games'] = summarize(at.filter((x) => gpMin(x.g) != null && gpMin(x.g) >= N).map((x) => x.c));
+    }
+    out[t + '+'] = o;
+  });
   return out;
 }
 
@@ -131,7 +170,7 @@ function cfbReplay() {
   if (!data) throw new Error('--data <cfbfastR cache with sched/ and out/market.csv> is required for the college replay');
   const RR = require(path.join(ROOT, 'football', 'cfb_p4', 'research', 'replay_rows.js'));
   require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
-  return RR.replayRows({ data, from: 2021, to: 2025 }).rows;
+  return RR.replayRows({ data, from: 2021, to: 2025, regime: true }).rows;
 }
 function readJsonl(p) { try { return fs.readFileSync(p, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)); } catch (e) { return []; } }
 function cfb2026() {
@@ -186,4 +225,4 @@ function main() {
   if (arg('write', false)) { fs.writeFileSync(OUT, JSON.stringify(art, null, 1) + '\n'); console.error('[write] ' + path.relative(ROOT, OUT)); }
 }
 if (require.main === module) main();
-module.exports = { clvOf, summarize, sampleReport, coverAt, binomTwoSided, RULES, SCHEMA };
+module.exports = { clvOf, summarize, sampleReport, thresholdCuts, coverAt, binomTwoSided, RULES, SCHEMA };

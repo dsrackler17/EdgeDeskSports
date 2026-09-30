@@ -310,6 +310,9 @@ jobs:
       - name: The NFL slate carries Coaching Staff without moving projections
         run: node tools/football/nfl_slate.test.js
 
+      - name: The NFL starter, regime signal and neutral site stay honest
+        run: node tools/football/nfl_regime.test.js
+
       - name: The NFL board shows staff research and zero applied points
         run: node tools/football/nfl_coaching_staff_ui.test.js
 

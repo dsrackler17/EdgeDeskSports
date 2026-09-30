@@ -271,7 +271,11 @@ function fit(list, key) {
 function bootCI(diffs, reps) {
   if (!diffs.length) return null;
   var seed = 20260930;
-  function rnd() { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; }
+  /* a 32-bit LCG in exact integer arithmetic (Math.imul, >>> 0). The earlier
+     (seed * 1103515245 + 12345) % 2^31 overflowed 2^53 in doubles, lost its low
+     bits and cycled after ~10,466 draws, so every resample of a few thousand
+     games re-read nearly the same sequence and the CI came out far too narrow */
+  function rnd() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
   var means = [], i, j, s;
   for (i = 0; i < (reps || 2000); i++) {
     s = 0; for (j = 0; j < diffs.length; j++) s += diffs[Math.floor(rnd() * diffs.length)];
@@ -324,6 +328,8 @@ function walkForward(key) {
     pooled: { games: heldOut.length,
       mae_standard: r3(sStd / heldOut.length), mae_regime: r3(sReg / heldOut.length),
       delta: r3((sReg - sStd) / heldOut.length), delta_ci95: bootCI(diffs),
+      /* stated from its own interval: significant only when the whole 95% interval is below zero */
+      significant: (function () { var c = bootCI(diffs); return !!(c && c[1] < 0); })(),
       improved_seasons: bySeason.filter(function (s) { return s.delta < 0; }).length, seasons: bySeason.length,
       with_close: wc.length,
       mean_abs_gap_to_close_standard: wc.length ? r3(gS / wc.length) : null,
@@ -438,7 +444,7 @@ if (WRITE) {
     min_games_for_research: N,
     record: { walk_forward_window: report.data.test_window, games: WF.pooled.games,
       mae_standard: WF.pooled.mae_standard, mae_regime: WF.pooled.mae_regime, delta: WF.pooled.delta,
-      delta_ci95: WF.pooled.delta_ci95, improved_seasons: WF.pooled.improved_seasons, seasons: WF.pooled.seasons,
+      delta_ci95: WF.pooled.delta_ci95, significant: WF.pooled.significant, improved_seasons: WF.pooled.improved_seasons, seasons: WF.pooled.seasons,
       mean_abs_gap_to_close_standard: WF.pooled.mean_abs_gap_to_close_standard,
       mean_abs_gap_to_close_regime: WF.pooled.mean_abs_gap_to_close_regime },
     report: 'football/cfb_p4/research/report/regime_backtest.json'

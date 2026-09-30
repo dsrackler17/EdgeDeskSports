@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_clv_report_v1",
- "generated_at": "2026-09-30T18:39:20.790Z",
+ "generated_at": "2026-09-30T21:02:31.751Z",
  "rules": {
   "min_side_gap": 0.5,
   "buckets": [
@@ -30,7 +30,13 @@
    2018,
    2021
   ],
-  "cfb_sigma_base": 14.633
+  "cfb_sigma_base": 14.633,
+  "thresholds": [
+   2,
+   3,
+   5
+  ],
+  "min_games_for_research": 6
  },
  "definition": "side = sign(fair − open) on home margins; CLV pts = side · (close − open); CLV prob = the no-push cover probability of that side at the opening number, on a margin distribution centred at the close, minus the same at the close",
  "market_is_an_input": false,
@@ -46,8 +52,8 @@
     "p_two_sided": 0.0047,
     "mean_clv_pts": 0.206,
     "mean_clv_pts_ci95": [
-     0.139,
-     0.269
+     0.125,
+     0.292
     ],
     "mean_clv_prob": 0.0053,
     "readable": true,
@@ -62,8 +68,8 @@
      "p_two_sided": 0.113,
      "mean_clv_pts": 0.16,
      "mean_clv_pts_ci95": [
-      0.051,
-      0.297
+      0.02,
+      0.3
      ],
      "mean_clv_prob": 0.0041,
      "readable": true,
@@ -77,8 +83,8 @@
      "p_two_sided": 0.5567,
      "mean_clv_pts": 0.098,
      "mean_clv_pts_ci95": [
-      0.024,
-      0.185
+      -0.026,
+      0.231
      ],
      "mean_clv_prob": 0.0028,
      "readable": true,
@@ -92,8 +98,8 @@
      "p_two_sided": 0.2744,
      "mean_clv_pts": 0.21,
      "mean_clv_pts_ci95": [
-      0.075,
-      0.327
+      0.058,
+      0.359
      ],
      "mean_clv_prob": 0.0054,
      "readable": true,
@@ -107,8 +113,8 @@
      "p_two_sided": 0.0089,
      "mean_clv_pts": 0.469,
      "mean_clv_pts_ci95": [
-      0.259,
-      0.67
+      0.226,
+      0.739
      ],
      "mean_clv_prob": 0.0119,
      "readable": true,
@@ -124,8 +130,8 @@
      "p_two_sided": 0.9323,
      "mean_clv_pts": 0.017,
      "mean_clv_pts_ci95": [
-      -0.092,
-      0.127
+      -0.125,
+      0.157
      ],
      "mean_clv_prob": 0.0005,
      "readable": true,
@@ -139,8 +145,8 @@
      "p_two_sided": 0.0438,
      "mean_clv_pts": 0.346,
      "mean_clv_pts_ci95": [
-      0.228,
-      0.5
+      0.177,
+      0.52
      ],
      "mean_clv_prob": 0.0087,
      "readable": true,
@@ -154,8 +160,8 @@
      "p_two_sided": 0.2048,
      "mean_clv_pts": 0.081,
      "mean_clv_pts_ci95": [
-      -0.094,
-      0.339
+      -0.058,
+      0.231
      ],
      "mean_clv_prob": 0.0025,
      "readable": true,
@@ -169,12 +175,248 @@
      "p_two_sided": 0.0391,
      "mean_clv_pts": 0.359,
      "mean_clv_pts_ci95": [
-      0.169,
-      0.564
+      0.203,
+      0.524
      ],
      "mean_clv_prob": 0.0091,
      "readable": true,
      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+    }
+   },
+   "by_threshold": {
+    "2+": {
+     "all": {
+      "games": 2106,
+      "moved": 1855,
+      "moved_toward": 978,
+      "toward_rate": 0.5272,
+      "p_two_sided": 0.0202,
+      "mean_clv_pts": 0.222,
+      "mean_clv_pts_ci95": [
+       0.129,
+       0.321
+      ],
+      "mean_clv_prob": 0.0058,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime": {
+      "games": 658,
+      "moved": 576,
+      "moved_toward": 289,
+      "toward_rate": 0.5017,
+      "p_two_sided": 0.9668,
+      "mean_clv_pts": 0.041,
+      "mean_clv_pts_ci95": [
+       -0.127,
+       0.209
+      ],
+      "mean_clv_prob": 0.001,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "not_regime": {
+      "games": 1290,
+      "moved": 1140,
+      "moved_toward": 615,
+      "toward_rate": 0.5395,
+      "p_two_sided": 0.0084,
+      "mean_clv_pts": 0.327,
+      "mean_clv_pts_ci95": [
+       0.205,
+       0.447
+      ],
+      "mean_clv_prob": 0.0086,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime_unknown_games": 158,
+     "before_6_games": {
+      "games": 1000,
+      "moved": 885,
+      "moved_toward": 443,
+      "toward_rate": 0.5006,
+      "p_two_sided": 1,
+      "mean_clv_pts": 0.084,
+      "mean_clv_pts_ci95": [
+       -0.043,
+       0.203
+      ],
+      "mean_clv_prob": 0.0027,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 1106,
+      "moved": 970,
+      "moved_toward": 535,
+      "toward_rate": 0.5515,
+      "p_two_sided": 0.0015,
+      "mean_clv_pts": 0.348,
+      "mean_clv_pts_ci95": [
+       0.215,
+       0.488
+      ],
+      "mean_clv_prob": 0.0085,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     }
+    },
+    "3+": {
+     "all": {
+      "games": 1641,
+      "moved": 1442,
+      "moved_toward": 762,
+      "toward_rate": 0.5284,
+      "p_two_sided": 0.0329,
+      "mean_clv_pts": 0.233,
+      "mean_clv_pts_ci95": [
+       0.124,
+       0.348
+      ],
+      "mean_clv_prob": 0.0061,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime": {
+      "games": 536,
+      "moved": 472,
+      "moved_toward": 232,
+      "toward_rate": 0.4915,
+      "p_two_sided": 0.7473,
+      "mean_clv_pts": 0.013,
+      "mean_clv_pts_ci95": [
+       -0.175,
+       0.201
+      ],
+      "mean_clv_prob": 0.0006,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "not_regime": {
+      "games": 983,
+      "moved": 860,
+      "moved_toward": 474,
+      "toward_rate": 0.5512,
+      "p_two_sided": 0.003,
+      "mean_clv_pts": 0.369,
+      "mean_clv_pts_ci95": [
+       0.228,
+       0.508
+      ],
+      "mean_clv_prob": 0.0095,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime_unknown_games": 122,
+     "before_6_games": {
+      "games": 796,
+      "moved": 703,
+      "moved_toward": 340,
+      "toward_rate": 0.4836,
+      "p_two_sided": 0.4067,
+      "mean_clv_pts": 0.038,
+      "mean_clv_pts_ci95": [
+       -0.106,
+       0.179
+      ],
+      "mean_clv_prob": 0.0015,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 845,
+      "moved": 739,
+      "moved_toward": 422,
+      "toward_rate": 0.571,
+      "p_two_sided": 0.0001,
+      "mean_clv_pts": 0.416,
+      "mean_clv_pts_ci95": [
+       0.254,
+       0.59
+      ],
+      "mean_clv_prob": 0.0103,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     }
+    },
+    "5+": {
+     "all": {
+      "games": 918,
+      "moved": 812,
+      "moved_toward": 443,
+      "toward_rate": 0.5456,
+      "p_two_sided": 0.0104,
+      "mean_clv_pts": 0.348,
+      "mean_clv_pts_ci95": [
+       0.189,
+       0.513
+      ],
+      "mean_clv_prob": 0.0089,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime": {
+      "games": 317,
+      "moved": 277,
+      "moved_toward": 141,
+      "toward_rate": 0.509,
+      "p_two_sided": 0.8101,
+      "mean_clv_pts": 0.113,
+      "mean_clv_pts_ci95": [
+       -0.144,
+       0.38
+      ],
+      "mean_clv_prob": 0.0034,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "not_regime": {
+      "games": 547,
+      "moved": 485,
+      "moved_toward": 274,
+      "toward_rate": 0.5649,
+      "p_two_sided": 0.0049,
+      "mean_clv_pts": 0.499,
+      "mean_clv_pts_ci95": [
+       0.295,
+       0.718
+      ],
+      "mean_clv_prob": 0.0125,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     },
+     "regime_unknown_games": 54,
+     "before_6_games": {
+      "games": 490,
+      "moved": 435,
+      "moved_toward": 219,
+      "toward_rate": 0.5034,
+      "p_two_sided": 0.9236,
+      "mean_clv_pts": 0.12,
+      "mean_clv_pts_ci95": [
+       -0.067,
+       0.303
+      ],
+      "mean_clv_prob": 0.0034,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 428,
+      "moved": 377,
+      "moved_toward": 224,
+      "toward_rate": 0.5942,
+      "p_two_sided": 0.0003,
+      "mean_clv_pts": 0.609,
+      "mean_clv_pts_ci95": [
+       0.353,
+       0.887
+      ],
+      "mean_clv_prob": 0.015,
+      "readable": true,
+      "reading": "the market moved TOWARD EdgeDesk more often than chance"
+     }
     }
    },
    "with_line_pair": 3111
@@ -189,8 +431,8 @@
     "p_two_sided": 0.7391,
     "mean_clv_pts": 0.12,
     "mean_clv_pts_ci95": [
-     0.006,
-     0.217
+     -0.013,
+     0.261
     ],
     "mean_clv_prob": 0.0025,
     "readable": true,
@@ -205,8 +447,8 @@
      "p_two_sided": 1,
      "mean_clv_pts": -0.047,
      "mean_clv_pts_ci95": [
-      -0.28,
-      0.144
+      -0.261,
+      0.166
      ],
      "mean_clv_prob": -0.0015,
      "readable": true,
@@ -220,8 +462,8 @@
      "p_two_sided": 0.543,
      "mean_clv_pts": 0.194,
      "mean_clv_pts_ci95": [
-      -0.029,
-      0.373
+      0.007,
+      0.387
      ],
      "mean_clv_prob": 0.004,
      "readable": true,
@@ -235,8 +477,8 @@
      "p_two_sided": 0.8039,
      "mean_clv_pts": -0.065,
      "mean_clv_pts_ci95": [
-      -0.428,
-      0.178
+      -0.348,
+      0.198
      ],
      "mean_clv_prob": -0.0001,
      "readable": true,
@@ -250,8 +492,8 @@
      "p_two_sided": 0.8438,
      "mean_clv_pts": 0.519,
      "mean_clv_pts_ci95": [
-      0.047,
-      1.034
+      0.039,
+      1.093
      ],
      "mean_clv_prob": 0.0099,
      "readable": true,
@@ -267,12 +509,248 @@
      "p_two_sided": 0.7391,
      "mean_clv_pts": 0.12,
      "mean_clv_pts_ci95": [
-      0.006,
-      0.217
+      -0.013,
+      0.261
      ],
      "mean_clv_prob": 0.0025,
      "readable": true,
      "reading": "not significantly different from a coin flip"
+    }
+   },
+   "by_threshold": {
+    "2+": {
+     "all": {
+      "games": 504,
+      "moved": 422,
+      "moved_toward": 215,
+      "toward_rate": 0.5095,
+      "p_two_sided": 0.7333,
+      "mean_clv_pts": 0.18,
+      "mean_clv_pts_ci95": [
+       0.013,
+       0.353
+      ],
+      "mean_clv_prob": 0.0039,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime": {
+      "games": 114,
+      "moved": 90,
+      "moved_toward": 42,
+      "toward_rate": 0.4667,
+      "p_two_sided": 0.5982,
+      "mean_clv_pts": 0.024,
+      "mean_clv_pts_ci95": [
+       -0.279,
+       0.305
+      ],
+      "mean_clv_prob": 0.0019,
+      "readable": false,
+      "reading": "too small to read (90 moved games; 100 is the floor)"
+     },
+     "not_regime": {
+      "games": 332,
+      "moved": 285,
+      "moved_toward": 147,
+      "toward_rate": 0.5158,
+      "p_two_sided": 0.6356,
+      "mean_clv_pts": 0.2,
+      "mean_clv_pts_ci95": [
+       -0.017,
+       0.441
+      ],
+      "mean_clv_prob": 0.0038,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime_unknown_games": 58,
+     "before_6_games": {
+      "games": 258,
+      "moved": 222,
+      "moved_toward": 101,
+      "toward_rate": 0.455,
+      "p_two_sided": 0.2022,
+      "mean_clv_pts": -0.03,
+      "mean_clv_pts_ci95": [
+       -0.274,
+       0.204
+      ],
+      "mean_clv_prob": -0.0009,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 246,
+      "moved": 200,
+      "moved_toward": 114,
+      "toward_rate": 0.57,
+      "p_two_sided": 0.0562,
+      "mean_clv_pts": 0.399,
+      "mean_clv_pts_ci95": [
+       0.169,
+       0.675
+      ],
+      "mean_clv_prob": 0.0089,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     }
+    },
+    "3+": {
+     "all": {
+      "games": 379,
+      "moved": 324,
+      "moved_toward": 162,
+      "toward_rate": 0.5,
+      "p_two_sided": 1,
+      "mean_clv_pts": 0.187,
+      "mean_clv_pts_ci95": [
+       -0.026,
+       0.412
+      ],
+      "mean_clv_prob": 0.0039,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime": {
+      "games": 88,
+      "moved": 73,
+      "moved_toward": 32,
+      "toward_rate": 0.4384,
+      "p_two_sided": 0.3491,
+      "mean_clv_pts": -0.065,
+      "mean_clv_pts_ci95": [
+       -0.423,
+       0.256
+      ],
+      "mean_clv_prob": -0.0004,
+      "readable": false,
+      "reading": "too small to read (73 moved games; 100 is the floor)"
+     },
+     "not_regime": {
+      "games": 246,
+      "moved": 215,
+      "moved_toward": 112,
+      "toward_rate": 0.5209,
+      "p_two_sided": 0.5853,
+      "mean_clv_pts": 0.258,
+      "mean_clv_pts_ci95": [
+       -0.021,
+       0.567
+      ],
+      "mean_clv_prob": 0.0051,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime_unknown_games": 45,
+     "before_6_games": {
+      "games": 200,
+      "moved": 172,
+      "moved_toward": 78,
+      "toward_rate": 0.4535,
+      "p_two_sided": 0.2527,
+      "mean_clv_pts": -0.035,
+      "mean_clv_pts_ci95": [
+       -0.302,
+       0.231
+      ],
+      "mean_clv_prob": -0.0006,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 179,
+      "moved": 152,
+      "moved_toward": 84,
+      "toward_rate": 0.5526,
+      "p_two_sided": 0.2237,
+      "mean_clv_pts": 0.434,
+      "mean_clv_pts_ci95": [
+       0.134,
+       0.782
+      ],
+      "mean_clv_prob": 0.009,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     }
+    },
+    "5+": {
+     "all": {
+      "games": 220,
+      "moved": 193,
+      "moved_toward": 96,
+      "toward_rate": 0.4974,
+      "p_two_sided": 1,
+      "mean_clv_pts": 0.213,
+      "mean_clv_pts_ci95": [
+       -0.1,
+       0.57
+      ],
+      "mean_clv_prob": 0.0044,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime": {
+      "games": 49,
+      "moved": 42,
+      "moved_toward": 17,
+      "toward_rate": 0.4048,
+      "p_two_sided": 0.2801,
+      "mean_clv_pts": -0.112,
+      "mean_clv_pts_ci95": [
+       -0.663,
+       0.434
+      ],
+      "mean_clv_prob": -0.0022,
+      "readable": false,
+      "reading": "too small to read (42 moved games; 100 is the floor)"
+     },
+     "not_regime": {
+      "games": 148,
+      "moved": 132,
+      "moved_toward": 67,
+      "toward_rate": 0.5076,
+      "p_two_sided": 0.9306,
+      "mean_clv_pts": 0.274,
+      "mean_clv_pts_ci95": [
+       -0.106,
+       0.726
+      ],
+      "mean_clv_prob": 0.0059,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "regime_unknown_games": 23,
+     "before_6_games": {
+      "games": 136,
+      "moved": 119,
+      "moved_toward": 52,
+      "toward_rate": 0.437,
+      "p_two_sided": 0.1994,
+      "mean_clv_pts": -0.081,
+      "mean_clv_pts_ci95": [
+       -0.447,
+       0.301
+      ],
+      "mean_clv_prob": -0.0015,
+      "readable": true,
+      "reading": "not significantly different from a coin flip"
+     },
+     "from_6_games": {
+      "games": 84,
+      "moved": 74,
+      "moved_toward": 44,
+      "toward_rate": 0.5946,
+      "p_two_sided": 0.1307,
+      "mean_clv_pts": 0.688,
+      "mean_clv_pts_ci95": [
+       0.143,
+       1.39
+      ],
+      "mean_clv_prob": 0.014,
+      "readable": false,
+      "reading": "too small to read (74 moved games; 100 is the floor)"
+     }
     }
    },
    "with_line_pair": 731
@@ -287,8 +765,8 @@
     "p_two_sided": 0.5754,
     "mean_clv_pts": 0.044,
     "mean_clv_pts_ci95": [
-     -0.257,
-     0.353
+     -0.243,
+     0.346
     ],
     "mean_clv_prob": 0.0008,
     "readable": false,
@@ -303,8 +781,8 @@
      "p_two_sided": 0.505,
      "mean_clv_pts": -0.214,
      "mean_clv_pts_ci95": [
-      -0.679,
-      0.286
+      -0.714,
+      0.25
      ],
      "mean_clv_prob": -0.0068,
      "readable": false,
@@ -334,7 +812,7 @@
      "mean_clv_pts": 0.159,
      "mean_clv_pts_ci95": [
       -0.364,
-      0.636
+      0.659
      ],
      "mean_clv_prob": 0.0012,
      "readable": false,
@@ -348,7 +826,7 @@
      "p_two_sided": 0.3588,
      "mean_clv_pts": 0.023,
      "mean_clv_pts_ci95": [
-      -0.591,
+      -0.614,
       0.705
      ],
      "mean_clv_prob": 0.0037,
@@ -365,12 +843,68 @@
      "p_two_sided": 0.5754,
      "mean_clv_pts": 0.044,
      "mean_clv_pts_ci95": [
-      -0.257,
-      0.353
+      -0.243,
+      0.346
      ],
      "mean_clv_prob": 0.0008,
      "readable": false,
      "reading": "too small to read (51 moved games; 100 is the floor)"
+    }
+   },
+   "by_threshold": {
+    "2+": {
+     "all": {
+      "games": 54,
+      "moved": 42,
+      "moved_toward": 20,
+      "toward_rate": 0.4762,
+      "p_two_sided": 0.8774,
+      "mean_clv_pts": 0.111,
+      "mean_clv_pts_ci95": [
+       -0.222,
+       0.481
+      ],
+      "mean_clv_prob": 0.0028,
+      "readable": false,
+      "reading": "too small to read (42 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
+    },
+    "3+": {
+     "all": {
+      "games": 49,
+      "moved": 38,
+      "moved_toward": 18,
+      "toward_rate": 0.4737,
+      "p_two_sided": 0.8711,
+      "mean_clv_pts": 0.122,
+      "mean_clv_pts_ci95": [
+       -0.245,
+       0.52
+      ],
+      "mean_clv_prob": 0.0027,
+      "readable": false,
+      "reading": "too small to read (38 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
+    },
+    "5+": {
+     "all": {
+      "games": 37,
+      "moved": 30,
+      "moved_toward": 14,
+      "toward_rate": 0.4667,
+      "p_two_sided": 0.8551,
+      "mean_clv_pts": 0.189,
+      "mean_clv_pts_ci95": [
+       -0.284,
+       0.689
+      ],
+      "mean_clv_prob": 0.0045,
+      "readable": false,
+      "reading": "too small to read (30 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
     }
    },
    "with_line_pair": 71
@@ -385,8 +919,8 @@
     "p_two_sided": 0.0809,
     "mean_clv_pts": 0.448,
     "mean_clv_pts_ci95": [
-     -0.259,
-     1.155
+     -0.276,
+     1.138
     ],
     "mean_clv_prob": 0.0115,
     "readable": false,
@@ -416,8 +950,8 @@
      "p_two_sided": 0.5465,
      "mean_clv_pts": 0.885,
      "mean_clv_pts_ci95": [
-      -0.269,
-      2.231
+      -0.308,
+      2.192
      ],
      "mean_clv_prob": 0.018,
      "readable": false,
@@ -460,7 +994,7 @@
      "p_two_sided": 0.1824,
      "mean_clv_pts": 0.25,
      "mean_clv_pts_ci95": [
-      -0.143,
+      -0.107,
       0.571
      ],
      "mean_clv_prob": 0.0097,
@@ -475,12 +1009,68 @@
      "p_two_sided": 0.3865,
      "mean_clv_pts": 0.633,
      "mean_clv_pts_ci95": [
-      -0.667,
-      1.9
+      -0.7,
+      1.933
      ],
      "mean_clv_prob": 0.0132,
      "readable": false,
      "reading": "too small to read (12 moved games; 100 is the floor)"
+    }
+   },
+   "by_threshold": {
+    "2+": {
+     "all": {
+      "games": 24,
+      "moved": 18,
+      "moved_toward": 13,
+      "toward_rate": 0.7222,
+      "p_two_sided": 0.099,
+      "mean_clv_pts": 0.667,
+      "mean_clv_pts_ci95": [
+       0,
+       1.417
+      ],
+      "mean_clv_prob": 0.0182,
+      "readable": false,
+      "reading": "too small to read (18 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
+    },
+    "3+": {
+     "all": {
+      "games": 14,
+      "moved": 9,
+      "moved_toward": 8,
+      "toward_rate": 0.8889,
+      "p_two_sided": 0.0455,
+      "mean_clv_pts": 0.643,
+      "mean_clv_pts_ci95": [
+       0.036,
+       1.321
+      ],
+      "mean_clv_prob": 0.0227,
+      "readable": false,
+      "reading": "too small to read (9 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
+    },
+    "5+": {
+     "all": {
+      "games": 6,
+      "moved": 4,
+      "moved_toward": 3,
+      "toward_rate": 0.75,
+      "p_two_sided": 0.6171,
+      "mean_clv_pts": 0.417,
+      "mean_clv_pts_ci95": [
+       -0.5,
+       1.417
+      ],
+      "mean_clv_prob": 0.0137,
+      "readable": false,
+      "reading": "too small to read (4 moved games; 100 is the floor)"
+     },
+     "split": "not available: this sample’s rows carry no regime flag or games played"
     }
    },
    "with_line_pair": 32

@@ -6,6 +6,9 @@
      2  the summary's arithmetic and its "too small to read" floor
      3  the artifact: the engine's held-out window is the headline, the tune
         season is never pooled into it, nothing is fitted, the market is no input
+     4  the audit's own cuts: 2+ / 3+ / 5+ to the opener, split by the v1 regime
+        flag and by the regime curve's fitted research minimum (nothing chosen
+        here), and said to be unavailable where a sample carries no flags
 
      node tools/football/clv_report.test.js
    ========================================================================== */
@@ -59,6 +62,35 @@ section('3. the artifact');
   chk('every sample reports all four gap buckets', Object.values(A.samples).every((s) => Object.keys(s.by_bucket).length === A.rules.buckets.length));
   chk('the headline reading follows its own numbers', (() => { const x = A.samples.cfb_replay_2022_2025.all;
     return x.readable && (x.p_two_sided < 0.05 ? /TOWARD|AWAY/.test(x.reading) : /coin flip/.test(x.reading)); })());
+}
+
+section('4. the audit\'s cuts');
+{
+  const g = (gap, pts, rh, ra, gh, ga) => ({ g: { regime: { home: rh, away: ra }, games_played: { home: gh, away: ga } }, c: { gap, pts, prob: 0 } });
+  const N = CR.RULES.min_games_for_research;
+  const scored = [g(2.5, 1, true, false, 2, 7), g(3.5, -1, false, false, 8, 9), g(6, 2, false, null, N, N), g(8, 1, false, false, N - 1, 10), g(1, 1, false, false, 9, 9)];
+  const T = CR.thresholdCuts(scored);
+  chk('the thresholds are cumulative: 2+ holds 3+ holds 5+', T['2+'].all.games === 4 && T['3+'].all.games === 3 && T['5+'].all.games === 2);
+  chk('regime-flagged = either side fires; not flagged = both measured and neither fires; the rest is counted as unknown',
+    T['2+'].regime.games === 1 && T['2+'].not_regime.games === 2 && T['2+'].regime_unknown_games === 1);
+  chk('games played splits at the regime curve\'s fitted minimum (the smaller side\'s count)', T['2+']['before_' + N + '_games'].games === 2 && T['2+']['from_' + N + '_games'].games === 2);
+  chk('rows with no flags are not split, and say so', /not available/.test(CR.thresholdCuts([{ g: {}, c: { gap: 3, pts: 1, prob: 0 } }])['2+'].split));
+
+  const RCV = require(path.join(ROOT, 'football', 'cfb_p4', 'regime_curve.js'));
+  const A = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'clv_report.json'), 'utf8'));
+  chk('the artifact\'s cuts are the audit\'s (2, 3, 5) and the minimum is the curve\'s own, not chosen here',
+    A.rules.thresholds.join(',') === '2,3,5' && A.rules.min_games_for_research === RCV.min_games_for_research);
+  ['cfb_replay_2022_2025', 'cfb_replay_2021'].forEach((k) => {
+    const T2 = A.samples[k].by_threshold;
+    chk(k + ': every threshold is split by regime and by games played, and the parts add up', ['2+', '3+', '5+'].every((t) => {
+      const o = T2[t]; if (!o || !o.regime) return false;
+      return o.regime.games + o.not_regime.games + o.regime_unknown_games === o.all.games
+        && o['before_' + A.rules.min_games_for_research + '_games'].games + o['from_' + A.rules.min_games_for_research + '_games'].games === o.all.games;
+    }) && T2['2+'].all.games >= T2['3+'].all.games && T2['3+'].all.games >= T2['5+'].all.games);
+  });
+  chk('the 2026 samples carry no flags and say the split is unavailable', ['cfb_2026', 'nfl_2026'].every((k) => ['2+', '3+', '5+'].every((t) => /not available/.test(A.samples[k].by_threshold[t].split || ''))));
+  chk('a toward-rate over 60% on a readable cut would need a leakage review first: none is readable over 60%',
+    Object.values(A.samples).every((smp) => Object.values(smp.by_threshold).every((o) => Object.keys(o).every((kk) => { const x = o[kk]; return !(x && x.readable && x.toward_rate > 0.6); }))));
 }
 
 console.log((fail ? 'FAILED ' : 'ALL GREEN ') + 'CLV report — ' + pass + ' passed, ' + fail + ' failed');

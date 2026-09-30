@@ -47673,7 +47673,10 @@ function fbEnsureEngine(){
   return fbScript('football/params.js').then(function(){return fbScript('football/engine.js');})
     .then(function(){ if(!window.EDFootball||!window.EDFootballParams)throw new Error('engine loaded but globals missing'); })
     /* quote-level EV: optional, never gates the board */
-    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});});
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});})
+    /* the NFL regime signal's fitted adjustment: display only while it is not
+       promoted, so it never gates the board */
+    .then(function(){return fbScript('football/nfl/regime_nfl.js').catch(function(){});});
 }
 
 /* ---- live captured quotes for a football sport_key, grouped by event ----
@@ -47807,11 +47810,141 @@ function fbWMedian(xs){
   return a[a.length-1].v;
 }
 /* ---- shared per-game builders (cards, grading and CSV must agree) ---- */
+/* the international venues of the verified NFL stadium table, loaded with the board (fbLoadNfl) */
+function fbNflIntlVenue(stadium){
+  var m=FB.nfl&&FB.nfl.intlVenues;
+  return !!(m&&stadium&&m[String(stadium).toLowerCase()]);
+}
+function fbNflNeutral(g){ return String(g&&g.location||'')==='Neutral'||fbNflIntlVenue(g&&g.stadium); }
+function fbNflSiteNote(g){
+  if(!g||String(g.location||'')==='Neutral'||!fbNflIntlVenue(g.stadium))return null;
+  return 'SITE: the schedule feed marks this game '+(g.location||'unmarked')+', but '+g.stadium+' is an international venue with no home team; priced as a neutral site (no home-field advantage).';
+}
 function fbNflGameReq(g){
   return {home:g.home_team,away:g.away_team,week:fbNum(g.week),
     home_rest:fbNum(g.home_rest),away_rest:fbNum(g.away_rest),roof:g.roof,surface:g.surface,
     div_game:fbNum(g.div_game),temp:fbNum(g.temp),wind:fbNum(g.wind),
-    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null};
+    home_qb_id:g.home_qb_id||null,away_qb_id:g.away_qb_id||null,
+    /* a neutral site has no home field (football/engine.js nfl.predict): nflverse location = Neutral, or a
+       verified international venue (football/venues/nfl_stadiums.json) the feed marked otherwise */
+    neutral:fbNflNeutral(g),site_note:fbNflSiteNote(g),
+    /* a starter substitution the injury report forced (fbNflReconcileStarters): a
+       data-quality note the engine states beside the number, never a number itself */
+    home_qb_note:g.home_qb_note||null,away_qb_note:g.away_qb_note||null,
+    /* the game's NFL regime state (fbNflRegimeFor): carried to the projection by
+       fbPredict for display, priced by nothing */
+    regime:g._regime||null};
+}
+/* THE STARTER THE MODEL PRICES (audit follow-up #4: Washington without Jayden
+   Daniels). nflverse games.csv pre-fills each upcoming game's quarterback with
+   the club's usual starter, and this season it left the field unchanged after
+   the fact: it names Daniels for Washington's week 3, which Marcus Mariota
+   started (Daniels left week 2 hurt and is OUT, elbow, on the week-3 report;
+   the player game logs, football/props/nfl/players.json, show Mariota on 100%
+   of the week-3 snaps and Daniels on 55% of week 2's).
+   So the board priced Washington with a quarterback who is not playing. A
+   named starter listed OUT or DOUBTFUL on his club's latest injury report
+   (football/injuries/nfl_<season>.json) is no longer priced as the starter.
+   The club's most recent other starter is: the quarterback with the most starts
+   for the club this season, then last season, per the schedule feed, who is not
+   himself OUT or DOUBTFUL. When the report is an earlier week's and the game's
+   own week has none filed yet, the substitution is stated as PENDING (the props
+   rule for the same fact). A club with no other starter prices the
+   unknown-starter path (its carried quarterback level). */
+var FB_QB_UNAVAILABLE=/^(out|doubtful)$/i;
+function fbNflQbStarts(rows){
+  /* team -> season -> {qb_id: {n, name}}, and each team's first and last coach per season */
+  var starts={},coach={};
+  rows.slice().sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));})
+    .forEach(function(r){
+      var sn=fbNum(r.season);if(!sn)return;
+      ['home','away'].forEach(function(s){
+        var t=r[s+'_team'],id=r[s+'_qb_id'],nm=r[s+'_qb_name'],c=r[s+'_coach'];
+        if(!t)return;
+        if(c){var cc=(coach[t]=coach[t]||{})[sn]||(coach[t][sn]={first:c,last:c});cc.last=c;}
+        if(!id||r.home_score==null)return;          /* a start is a PLAYED game's */
+        var ts=(starts[t]=starts[t]||{})[sn]||(starts[t][sn]={});
+        var q=ts[id]||(ts[id]={n:0,name:nm||id});q.n++;
+      });
+    });
+  return {starts:starts,coach:coach};
+}
+function fbNflReportRow(rep,id,name){
+  if(!rep||!rep.players)return null;
+  for(var i=0;i<rep.players.length;i++){var p=rep.players[i];if((id&&p.gsis_id===id)||(name&&p.name===name))return p;}
+  return null;
+}
+function fbNflReplacementStarter(S,team,outId,rep){
+  var season=S.curSeason,Q=S.qbHist&&S.qbHist.starts&&S.qbHist.starts[team]||{};
+  var pick=function(yr){
+    var best=null,m=Q[yr]||{};
+    Object.keys(m).forEach(function(id){
+      if(id===outId)return;
+      var row=fbNflReportRow(rep,id,m[id].name);
+      if(row&&FB_QB_UNAVAILABLE.test(String(row.status||'')))return;
+      if(!best||m[id].n>best.n)best={id:id,name:m[id].name,n:m[id].n,season:yr};
+    });
+    return best;
+  };
+  return pick(season)||pick(season-1);
+}
+/* every unplayed game of the current season: the upcoming board (S.up) and the
+   week scans / slate build (S.games) share these row objects, so one pass
+   settles the starter and the regime for all of them */
+function fbNflOpenGames(S){
+  var src=S.games&&S.games.length?S.games:(S.up||[]);
+  return src.filter(function(u){return u&&u.g&&!u.done&&u.g.home_score==null;});
+}
+function fbNflReconcileStarters(S){
+  var inj=S.inj&&S.inj.teams?S.inj:null;if(!inj)return 0;
+  var changed=0;
+  fbNflOpenGames(S).forEach(function(u){
+    var g=u.g;
+    ['home','away'].forEach(function(side){
+      if(g[side+'_qb_reconciled'])return;
+      var team=g[side+'_team'],id=g[side+'_qb_id'],name=g[side+'_qb_name'];
+      if(!id&&!name)return;
+      var rep=inj.teams[team],row=fbNflReportRow(rep,id,name);
+      if(!row||!FB_QB_UNAVAILABLE.test(String(row.status||'')))return;
+      var wk=fbNum(g.week),rw=rep?fbNum(rep.week):null,pending=rw!=null&&wk!=null&&rw<wk;
+      var repl=fbNflReplacementStarter(S,team,id,rep);
+      g[side+'_qb_reconciled']={scheduled_id:id||null,scheduled_name:name||null,status:row.status,injury:row.injury||null,
+        report_week:rw,game_week:wk,pending:pending,replacement_id:repl?repl.id:null,replacement_name:repl?repl.name:null,
+        replacement_basis:repl?(repl.n+' start'+(repl.n===1?'':'s')+' in '+repl.season):null};
+      g[side+'_qb_id']=repl?repl.id:null;g[side+'_qb_name']=repl?repl.name:null;
+      g[side+'_qb_note']=team+' starter: '+(name||id)+' is '+String(row.status).toUpperCase()+(row.injury?' ('+row.injury+')':'')+' on the week-'+rw+' injury report'
+        +(pending?' and the week-'+wk+' report is not filed yet (pending)':'')+'; priced with '
+        +(repl?repl.name+' ('+repl.n+' start'+(repl.n===1?'':'s')+' in '+repl.season+'), not the schedule feed’s pre-filled starter':'no named starter (the club’s carried quarterback level)')+'.';
+      changed++;
+    });
+  });
+  return changed;
+}
+/* THE NFL REGIME SIGNAL per side (football/nfl/regime_nfl.js, fitted walk-forward
+   by football/research/nfl_regime.py): a new head coach, a new starting
+   quarterback, the regular starter out. Read after the starter is reconciled.
+   The fitted adjustment prices only when the artifact is promoted; until then
+   it is shown, never added. */
+function fbNflRegimeFor(S,g){
+  var H=S.qbHist||{},sn=fbNum(g.season)||S.curSeason,wk=fbNum(g.week),R=window.EDNflRegime||null;
+  var early=R&&R.early_weeks!=null?R.early_weeks:6;
+  var side=function(s){
+    var t=g[s+'_team'],id=g[s+'_qb_id'],C=H.coach&&H.coach[t]||{},Q=H.starts&&H.starts[t]||{};
+    var prevC=C[sn-1]?C[sn-1].last:null,curC=g[s+'_coach']||(C[sn]?C[sn].first:null);
+    var hcNew=prevC&&curC?(curC!==prevC||(C[sn]&&C[sn].first!==curC)):null;
+    var top=function(m){var b=null;Object.keys(m||{}).forEach(function(k){if(!b||m[k].n>b.n)b={id:k,n:m[k].n,name:m[k].name};});return b;};
+    var last=top(Q[sn-1]),cur=top(Q[sn]),nCur=0,nTop=0;
+    Object.keys(Q[sn]||{}).forEach(function(k){nCur+=Q[sn][k].n;if(cur&&Q[sn][k].n===cur.n)nTop++;});
+    /* the fit's own definition (nfl_regime.py signals): the regular starter is
+       the most starts so far, the earliest on a tie; a tie is stated as one */
+    var qbNew=id&&last?id!==last.id:null,qbOut=id&&cur&&nCur>=2?id!==cur.id:(id?false:null);
+    var active=!!((hcNew&&wk!=null&&wk<=early)||(qbNew&&wk!=null&&wk<=early)||qbOut);
+    var adj=null;
+    if(R&&R.coefficients){var k=R.coefficients;adj=(hcNew?(wk!=null&&wk<=early?k.hc_new_early:k.hc_new_late):0)+(qbNew?(wk!=null&&wk<=early?k.qb_new_early:k.qb_new_late):0)+(qbOut?k.qb_out:0);}
+    return {team:t,hc_new:hcNew,qb_new:qbNew,qb_out:qbOut,active:active,regular_starter:cur?cur.name:null,regular_tied:nTop>1,last_season_starter:last?last.name:null,
+      adjustment_pts:adj==null?null:Math.round(adj*100)/100};
+  };
+  return {home:side('home'),away:side('away'),promoted:!!(R&&R.promoted===true),version:R?R.version:null};
 }
 /* nflverse gameday + gametime are US EASTERN wall-clock. Parsed as the
    viewer's local time, a UTC browser saw an 8:15 PM ET kickoff four hours
@@ -48142,6 +48275,13 @@ var FB_URL_NFL_COACHING='/football/nfl/slate.json';
 function fbLoadNfl(signal){
   var E=window.EDFootball,S=FB.nfl;
   S.notes=[];S.coachingArtifact=null;S.coachingByGame={};
+  S.inj=null;S.qbHist=null;
+  /* the verified stadium table's international venues (fbNflNeutral) */
+  var venueP=fbFetchText('/football/venues/nfl_stadiums.json',signal).then(function(t){
+    var j=JSON.parse(t),m={};
+    ((j&&j.stadiums)||[]).forEach(function(s){if(s&&s.international===true)[s.name].concat(s.aliases||[]).forEach(function(n){if(n)m[String(n).toLowerCase()]=1;});});
+    S.intlVenues=m;return m;
+  }).catch(function(e){if(e&&e.name==='AbortError')throw e;S.intlVenues=null;return null;});
   var coachingP=fbFetchText(FB_URL_NFL_COACHING,signal).then(function(txt){
     var j=JSON.parse(txt);
     if(!j||j.schema!=='edgedesk_nfl_slate_v1')throw new Error('wrong NFL slate schema');
@@ -48160,6 +48300,14 @@ function fbLoadNfl(signal){
     var maxSeason=0;
     for(i=0;i<rows.length;i++){var sn=fbNum(rows[i].season);if(sn&&sn>maxSeason)maxSeason=sn;}
     S.curSeason=maxSeason;
+    /* who started and who coached, per club and season (fbNflReconcileStarters, fbNflRegimeFor) */
+    S.qbHist=fbNflQbStarts(rows);
+    /* the NFL injury report the research card reads (football/injuries/nfl_<season>.json):
+       the model now reads it too, for the one fact it prices — the starter */
+    var injP=fbFetchText('/football/injuries/nfl_'+maxSeason+'.json',signal).then(function(t){return JSON.parse(t);}).catch(function(e){
+      if(e&&e.name==='AbortError')throw e;
+      S.notes.push('The NFL injury report could not be read in this session, so each starter is the schedule feed\u2019s: a starter listed OUT is not caught.');
+      return null;});
     /* the QB roster request runs beside the team-week fetches; it resolves to
        the floor on any failure and never fails the module */
     var qbP=fbLoadQbs(maxSeason,signal).catch(function(e){if(e&&e.name==='AbortError')throw e;return S;});
@@ -48187,8 +48335,11 @@ function fbLoadNfl(signal){
         return byGame;
       });
     }
-    return stwP.then(function(byGame){
-      var absorbed=0;
+    /* the pregame snapshots below read the site (fbNflGameReq -> fbNflNeutral),
+       so the venue table settles first: the same game is never graded with a
+       home field on one load and without it on the next */
+    return Promise.all([stwP,venueP]).then(function(pp){
+      var byGame=pp[0],absorbed=0;
       toAbsorb.sort(function(a,b){return String(a.gameday).localeCompare(String(b.gameday))||String(a.game_id).localeCompare(String(b.game_id));});
       S.weekPreds={};
       toAbsorb.forEach(function(g){
@@ -48236,10 +48387,15 @@ function fbLoadNfl(signal){
       }
       S.up.sort(function(a,b){return a.t-b.t;});
       S.up=S.up.slice(0,32);
-      return Promise.all([fbSignals('americanfootball_nfl',signal),coachingP]);
+      return Promise.all([fbSignals('americanfootball_nfl',signal),coachingP,injP,venueP]);
     }).then(function(parts){
       var sig=parts[0];
       S.sig=sig;
+      /* the starter the model prices, then each side's regime signal (after the starter is settled) */
+      S.inj=parts[2]||null;
+      var nsub=fbNflReconcileStarters(S);
+      if(nsub)S.notes.push(nsub+' upcoming NFL starter'+(nsub===1?' was':'s were')+' listed OUT or DOUBTFUL on the injury report and '+(nsub===1?'is':'are')+' priced with the club\u2019s most recent other starter (each game says which).');
+      fbNflOpenGames(S).forEach(function(u){try{u.g._regime=fbNflRegimeFor(S,u.g);}catch(_){u.g._regime=null;}});
       if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
       /* wait briefly for the roster; a slow roster host never holds the board */
       var settled=false;
@@ -48556,6 +48712,8 @@ function fbPredict(sport,game,mkt,season){
   if(FB._pred[key])return FB._pred[key];
   var out=window.EDFootball.predictGame({sport:sport,state:(sport==='nfl'?FB.nfl.state:FB.cfb.state),
     game:game,season:season,market:mkt||{},timestamps:{odds:(mkt&&mkt.at)||null}});
+  /* the NFL regime state rides on the projection for the card; the engine never saw it */
+  if(sport==='nfl'&&out&&game&&game.regime)out._regime=game.regime;
   FB._pred[key]=out;
   return out;
 }
@@ -48580,9 +48738,27 @@ function fbModelCard(){
     +'; <b>no market backtest exists</b> (no public CFB line archive). Everything below is research, counted nowhere, until this model’s own graded CLV beats the close. '
     +'<span class="mono" style="color:var(--faint)">'+fbEsc(M.model_version)+' · trained through '+fbEsc(String(M.nfl.trained_through))+' · built '+fbEsc(String(M.built_at).slice(0,10))+'</span></div>';
 }
+/* the NFL regime signal, stated (football/nfl/regime_nfl.js): which side, why,
+   and the adjustment the walk-forward fit would make — priced only if promoted */
+function fbNflRegimeText(R){
+  if(!R)return null;
+  var parts=[];
+  ['home','away'].forEach(function(s){
+    var x=R[s];if(!x||!x.active)return;
+    var why=[];
+    if(x.qb_out)why.push(x.regular_tied?'no settled starter this season (the most starts are tied)':'regular starter'+(x.regular_starter?' ('+x.regular_starter+')':'')+' out');
+    if(x.qb_new)why.push('new starting QB');
+    if(x.hc_new)why.push('new head coach');
+    parts.push(x.team+': '+why.join(', ')+(x.adjustment_pts!=null&&x.adjustment_pts!==0?' (fitted '+(x.adjustment_pts>0?'+':'')+x.adjustment_pts.toFixed(1)+' pts)':''));
+  });
+  if(!parts.length)return null;
+  return 'REGIME '+(R.promoted?'(priced)':'(not priced: the fitted adjustment did not clear the holdout)')+' — '+parts.join('; ');
+}
 function fbQualityLine(p,extra){
   var w=(p.data_quality&&p.data_quality.warnings)||[];
   var bits=w.slice();
+  var rt=null;try{rt=fbNflRegimeText(p._regime);}catch(_){rt=null;}
+  if(rt)bits.push(rt);
   (extra||[]).forEach(function(x){bits.push(x);});
   if(!bits.length)return '';
   return '<div class="gd-modelnote">⚠ '+fbEsc(bits.join(' · '))+'</div>';

@@ -107,6 +107,22 @@ async function fetchText(url, offline) {
   return t;
 }
 
+/* the starter the model PRICED (second follow-up to the 2026-09-30 audit,
+   item 4): the schedule feed's, unless the injury report lists him OUT or
+   DOUBTFUL and the board substituted the team's next starter (app.html
+   fbNflReconcileStarters). A substitution with no one to name is
+   STARTER_UNKNOWN: the engine prices the club's carried quarterback level
+   and states that the starter is unknown beside the number. */
+function starterOf(g, side) {
+  const rec = g[side + '_qb_reconciled'];
+  if (rec) return { player_name: rec.replacement_name || null, player_id: rec.replacement_id || null,
+    source: 'injury report (football/injuries/nfl_<season>.json) over the nflverse schedule feed',
+    status: rec.replacement_id ? (rec.pending ? 'INJURY_REPORT_REPLACEMENT_PENDING' : 'INJURY_REPORT_REPLACEMENT') : 'STARTER_UNKNOWN',
+    scheduled: { player_name: rec.scheduled_name, player_id: rec.scheduled_id, status: rec.status, injury: rec.injury, report_week: rec.report_week },
+    basis: rec.replacement_basis || null };
+  return g[side + '_qb_name'] ? { player_name: g[side + '_qb_name'], player_id: g[side + '_qb_id'] || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null;
+}
+
 async function build(opts) {
   opts = opts || {};
   const B = M.boot({ probe: ['fbLoadNfl', 'fbNflGameReq', 'fbNflRefMarket', 'fbPredict', 'FB_CODE_NAMES', 'fbNflRanks', 'FB_LOOKAHEAD_D'] });
@@ -271,8 +287,13 @@ async function build(opts) {
           basis: 'research-only Coaching / Staff residual points. The candidate matchup shift is shown for audit; the applied NFL projection adjustment is exactly 0.'
         };
       })(),
-      home_starter: g.home_qb_name ? { player_name: g.home_qb_name, player_id: g.home_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
-      away_starter: g.away_qb_name ? { player_name: g.away_qb_name, player_id: g.away_qb_id || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null,
+      /* the starter the model PRICED: the schedule feed's, unless the injury
+         report lists him OUT or DOUBTFUL (app.html fbNflReconcileStarters) */
+      home_starter: starterOf(g, 'home'),
+      away_starter: starterOf(g, 'away'),
+      /* the NFL regime signal per side (football/nfl/regime_nfl.js): shown,
+         priced only when promoted */
+      regime: g._regime || null,
       model_status: priced ? 'PREDICTED' : (p ? p.status : 'ERROR'),
       model_reason: priced ? null : (p ? (p.reason || (p.missing || []).join(', ')) : err),
       /* BOTH conventions, named. fair_spread is the projected HOME MARGIN. */
