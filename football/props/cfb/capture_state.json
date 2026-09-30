@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "45 prop prices from 2 books across 1 of 1 events queried.",
+ "why": "112 prop prices from 3 books across 1 of 1 events queried.",
  "error_message": null,
- "started_at": "2026-09-30T03:00:38.196Z",
- "completed_at": "2026-09-30T03:00:38.488Z",
- "updated_at": "2026-09-30T03:00:38.488Z",
- "last_attempt": "2026-09-30T03:00:38.196Z",
- "duration_ms": 292,
+ "started_at": "2026-09-30T03:30:41.635Z",
+ "completed_at": "2026-09-30T03:30:41.938Z",
+ "updated_at": "2026-09-30T03:30:41.938Z",
+ "last_attempt": "2026-09-30T03:30:41.635Z",
+ "duration_ms": 303,
  "run": {
-  "id": "36662399851.1",
+  "id": "36664668843.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,12 +81,12 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-09-30T03:00:38.196Z",
- "last_success_at": "2026-09-30T03:00:38.196Z",
- "last_full_success_at": "2026-09-30T03:00:38.196Z",
+ "last_run": "2026-09-30T03:30:41.635Z",
+ "last_success_at": "2026-09-30T03:30:41.635Z",
+ "last_full_success_at": "2026-09-30T03:30:41.635Z",
  "polled_at": {
   "b0998b3474fea9dee080784b8da01048": "2026-09-30T02:00:42.098Z",
-  "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T01:30:41.663Z",
+  "3c64f3dd8efd756a90f09303e5517006": "2026-09-30T03:30:41.635Z",
   "a39f3695781e9b2f76011e921d63b124": "2026-09-29T21:49:09.697Z",
   "e61c74f0e28b46ad83270a6234b425f4": "2026-09-29T21:49:09.697Z",
   "0469a451e58ca81723a7760d4bede173": "2026-09-29T21:49:09.697Z",
@@ -163,8 +163,8 @@
    "next_due_at": "2026-09-30T04:00:42.098Z"
   },
   "3c64f3dd8efd756a90f09303e5517006": {
-   "polled_ok_at": "2026-09-30T01:30:41.663Z",
-   "attempted_at": "2026-09-30T01:30:41.663Z",
+   "polled_ok_at": "2026-09-30T03:30:41.635Z",
+   "attempted_at": "2026-09-30T03:30:41.635Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -177,7 +177,7 @@
    "books": 3,
    "markets": 4,
    "quotes": 112,
-   "next_due_at": "2026-09-30T03:30:41.663Z"
+   "next_due_at": "2026-09-30T05:30:41.635Z"
   },
   "a39f3695781e9b2f76011e921d63b124": {
    "polled_ok_at": "2026-09-29T21:49:09.697Z",
@@ -1137,8 +1137,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 39519,
-  "requests_used": 60481
+  "requests_remaining": 39485,
+  "requests_used": 60515
  },
  "pacing": {
   "factor": 1,
@@ -1155,41 +1155,45 @@
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "63dded0ee467d6f6d03c41673569238d"
+  "3c64f3dd8efd756a90f09303e5517006"
  ],
  "books_returned": [
   "betonlineag",
-  "draftkings"
+  "draftkings",
+  "espnbet"
  ],
  "markets_returned": {
+  "player_pass_yds_alternate": 1,
+  "player_reception_yds_alternate": 1,
+  "player_rush_yds_alternate": 1,
   "player_anytime_td": 2
  },
- "outcomes_returned": 47,
- "quotes": 45,
- "quotes_normalized": 45,
- "quotes_written": 45,
+ "outcomes_returned": 114,
+ "quotes": 112,
+ "quotes_normalized": 112,
+ "quotes_written": 112,
  "refused": {
   "team or defense entity, not a player": 2
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 1,
- "requests_remaining": 39519,
- "requests_used": 60481,
+ "credits_spent": 4,
+ "requests_remaining": 39485,
+ "requests_used": 60515,
  "requests": [
   {
-   "event_id": "63dded0ee467d6f6d03c41673569238d",
-   "matchup": "Cincinnati Bearcats @ Arizona Wildcats",
-   "kickoff": "2026-10-04T03:00:00Z",
+   "event_id": "3c64f3dd8efd756a90f09303e5517006",
+   "matchup": "North Texas Mean Green @ Tulsa Golden Hurricane",
+   "kickoff": "2026-10-02T01:00:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 102,
-   "books": 2,
-   "markets": 1,
-   "outcomes": 47,
-   "quotes": 45,
-   "cost": 1,
-   "remaining": 39519
+   "ms": 74,
+   "books": 3,
+   "markets": 4,
+   "outcomes": 114,
+   "quotes": 112,
+   "cost": 4,
+   "remaining": 39485
   }
  ],
  "feed_quotes": 6022,
@@ -1197,16 +1201,16 @@
  "markets_closed": 6,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-09-30T03:30:41.663Z",
+ "next_due_at": "2026-09-30T03:49:09.697Z",
  "health": {
-  "now": "2026-09-30T03:00:38.196Z",
+  "now": "2026-09-30T03:30:41.635Z",
   "active_events": 58,
   "on_target": 58,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-09-30T03:00:38.196Z",
-  "last_attempt_at": "2026-09-30T03:00:38.196Z",
+  "last_success_at": "2026-09-30T03:30:41.635Z",
+  "last_attempt_at": "2026-09-30T03:30:41.635Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
