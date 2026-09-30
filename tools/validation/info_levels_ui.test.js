@@ -40,9 +40,11 @@ function decide(fair, quotes, extra) {
   return D.decide(Object.assign({ sport: 'NFL', game: { game_id: 'g', home: 'Miami Dolphins', away: 'Buffalo Bills', kickoff: KICK }, model: nflModel(fair), quotes, now: NOW,
     qb: { known: true }, availability: { known: true }, reliability: { score: 85 }, confidence: { score: 80 }, projection: { stability: 'STABLE', p10: -20, p50: -8, p90: 5 }, context: CONTEXT }, extra || {}));
 }
+/* the fair margins moved with audit 2026-09-30 #4 (the NFL table read by its
+   median): Miami +10 against a fair +7 is the BET, against +8.25 the WATCH (near threshold) */
 const CASES = {
-  BET: decide(-8, board(10)),
-  WATCH: decide(-14, board(10)),
+  BET: decide(-7, board(10)),
+  WATCH: decide(-8.25, board(10)),
   LEAN: decide(-8, [qq('home', 10, -110), qq('home', 10, -112, 'FanDuel')]),
   PASS: decide(3, board(-3, -115, -115)),
   NO_DECISION: decide(-8, board(10).map((q) => Object.assign({}, q, { captured_at: OLD })))

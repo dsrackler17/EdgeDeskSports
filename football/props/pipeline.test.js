@@ -202,6 +202,38 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const dsQ = loadDs(); dsQ.injuries.by_player[BIJAN] = { status: 'Questionable', practice: 'Limited Participation in Practice', team: 'ATL', week: 4 };
   const prQ = M.projectPlayer(M.prepare(dsQ, game.gameday), BIJAN, game, ['rush_att'], {});
   chk('QUESTIONABLE lowers the projected volume and is carried as status', prQ.status.status === 'QUESTIONABLE' && EDP.mean(prQ.markets.rush_att.dist) < EDP.mean(pr.markets.rush_att.dist));
+  /* THE REPORT ON FILE IS THE TEAM'S OWN (audit 2026-09-30 #7, the week
+     bug). On the Wednesday of week 4 Green Bay's last report was week 3's,
+     which had Jayden Reed OUT. The model read "on file" as "any team has a
+     week-4 report" and a teammate missing from week 4's list as BACK: every
+     Green Bay receiver's share was cut ×0.85 for a return nobody reported
+     (IND's Alec Pierce, the audit's Colts group, the same). */
+  {
+    const gGB = ds.schedule.find((g) => g.game_id === '2026_04_GB_TB');
+    const REED = Object.values(ds.players).find((p) => p.name === 'Jayden Reed').id;
+    const WATSON = Object.values(ds.players).find((p) => p.name === 'Christian Watson').id;
+    const before = M.projectPlayer(M.prepare(ds, gGB.gameday), WATSON, gGB, ['receptions'], { team: 'GB' });
+    chk('week bug, reproduced: with no report listing him, Reed missing recent games reads as returned (share ×0.85)', before.ok && before.teammate_returned && before.teammate_returned.id === REED, before.teammate_returned);
+    const dsW = loadDs();
+    dsW.injuries.by_player[REED] = { status: 'Out', practice: 'Did Not Participate In Practice', injury: 'Ankle', team: 'GB', week: 3, name: 'Jayden Reed', position: 'WR' };
+    dsW.injuries.by_player['00-TB-CB'] = { status: 'Out', team: 'TB', week: 3, name: 'A Cornerback', position: 'CB' };
+    dsW.injuries.by_player['00-PIT-X'] = { status: null, team: 'PIT', week: 4, name: 'Somebody', position: 'WR' };
+    dsW.injuries.team_week = { GB: 3, TB: 3, PIT: 4, CLE: 4 };
+    const ctxW = M.prepare(dsW, gGB.gameday);
+    const after = M.projectPlayer(ctxW, WATSON, gGB, ['receptions'], { team: 'GB' });
+    chk('…fixed: a teammate OUT on last week\'s report, this week\'s not on file, is PENDING — never returned, no dilution', after.ok && !(after.teammate_returned && after.teammate_returned.id === REED)
+      && after.teammates_pending.some((t) => t.name === 'Jayden Reed' && t.status === 'OUT' && t.week === 3), [after.teammate_returned, after.teammates_pending]);
+    chk('…the share is not cut for the phantom return', after.shares.tgt.projected > before.shares.tgt.projected, [before.shares.tgt.projected, after.shares.tgt.projected]);
+    chk('…and the prop carries the open question (teammate_uncertain → material uncertainty)', after.teammate_uncertain === true);
+    chk('"on file" is the team\'s own report: Green Bay (week 3) is not, Pittsburgh (week 4) is', after.status.on_file === false
+      && M.statusFor(ctxW, '00-PIT-X', { week: 4 }, 'PIT').on_file === true && M.teamReportWeek(dsW.injuries, 'GB') === 3);
+    chk('the player\'s own earlier listing is carried as pending', (() => { const st = M.statusFor(ctxW, REED, { week: 4 }, 'GB'); return st.on_file === false && st.pending && st.pending.status === 'OUT' && st.pending.week === 3; })());
+    const dsR = loadDs(); dsR.injuries.team_week = { GB: 4 }; dsR.injuries.by_player['00-GB-OTHER'] = { status: 'Questionable', team: 'GB', week: 4, name: 'Other', position: 'TE' };
+    const back = M.projectPlayer(M.prepare(dsR, gGB.gameday), WATSON, gGB, ['receptions'], { team: 'GB' });
+    chk('…a genuine return is still read: Green Bay\'s week-4 report on file, Reed not on it', back.ok && back.teammate_returned && back.teammate_returned.id === REED && !back.teammates_pending.length);
+    const opp = M.defenceAvailability(ctxW, 'TB', gGB);
+    chk('the opponent\'s defensive availability: its latest report\'s defenders OUT, with the week it is from', opp && opp.report_week === 3 && opp.report_on_file === false && opp.out.length === 1 && opp.out[0].pos === 'CB' && opp.out[0].status === 'OUT', opp);
+  }
   const windy = Object.assign({}, game, { roof: 'outdoors', forecast: { wind_mph: 22, precip_in: 0, temp_f: 50 } });
   const qbCalm = M.projectPlayer(ctx, PENIX, game, ['pass_yds'], { force: true }), qbWind = M.projectPlayer(ctx, PENIX, windy, ['pass_yds'], { force: true });
   chk('a 22 mph wind lowers the passing projection', EDP.mean(qbWind.markets.pass_yds.dist) < EDP.mean(qbCalm.markets.pass_yds.dist), [EDP.mean(qbCalm.markets.pass_yds.dist), EDP.mean(qbWind.markets.pass_yds.dist)]);
@@ -228,6 +260,16 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('the page re-prices a row to the same decision the build wrote', (() => {
     const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js')); U.state.clock = () => NOW; U._prepBoard(board);
     return priced.every((r) => { const e = EDP.compact(EDP.evaluate(U._inputOf(board, r), { now: NOW, calibration: { state: board.probability.state }, stages: board.stages })); return e.d === r.e.d && JSON.stringify(e.cand) === JSON.stringify(r.e.cand); });
+  })());
+  chk('the Edge column is the EV\'s own quote\'s edge (audit 2026-09-30 #7a): the cell reads the candidate\'s edge; the consensus no-vig comparison is labelled "nv"', (() => {
+    const U = require(path.join(ROOT, 'lib', 'edgedesk_props_ui.js')); U.state.clock = () => NOW; U._prepBoard(board);
+    U.state.boards = U.state.boards || {}; U.state.boards.nfl = board; U.state.league = 'nfl';
+    const ppx = (x) => (x >= 0 ? '+' : '−') + Math.abs(x).toFixed(1);
+    const rows = priced.filter((r) => r.e.cand).map((r) => U._rowOf(board, r, r.e)).filter((row) => row.cand);
+    return rows.length > 0 && rows.every((row) => {
+      const h = U._rowHTML(row, 0), m = /<span class="r c-edge[^"]*"[^>]*>([^<]*)(<span class="sub">nv ([^<]*)<\/span>)?/.exec(h);
+      return m && m[1] === ppx(row.cand.edge) && (row.edgeNv == null || m[3] === ppx(row.edgeNv));
+    });
   })());
   chk('the board carries each of its markets\' validation stage, derived from evidence', board.stages && Object.keys(board.stages).length > 0 && Object.keys(board.stages).every((m) => EDP.STAGES.indexOf(board.stages[m].stage) >= 0 && Array.isArray(board.stages[m].gates)));
   chk('an EXPERIMENTAL market never carries units on the board', priced.every((r) => !(board.stages[r.m] && board.stages[r.m].stage === 'EXPERIMENTAL' && r.e.u > 0)));

@@ -31,6 +31,25 @@ chk('an unloaded sport is RESEARCH and says so', P.validationFor('basketball_nba
 /* ---- fair lines ---------------------------------------------------------- */
 const F = P.fairSpread({ sport: NFL, model_home_line: -9, market_home_line: -4.5 });
 chk('the fair line is the blend: 4.5 + 0.25 x (9 - 4.5) = 5.625 home margin', F.ok && F.status === 'BLENDED' && Math.abs(F.fair_home_line + 5.63) < 0.02 && F.gap_points === 4.5 && F.sigma === 12.8, F);
+/* audit 2026-09-30 #4: THE BLEND MAY SHRINK THE DISAGREEMENT, NEVER REVERSE IT.
+   The real NFL blend (intercept -0.38, 1.1565 on the market) lands past the
+   line on PIT @ CLE: projection CLE -0.76, market CLE +2.5, blend CLE +2.52 —
+   a fair line priced against the projection on screen. It is held at the
+   market line (no edge either way on this symmetric kernel), and says so. */
+{
+  const V_REAL = JSON.parse(JSON.stringify(V_NFL));
+  V_REAL.markets.spread.blend.latest_coef = { intercept: -0.3811, close: 1.1565, model_minus_close: 0.232 };
+  P.loadValidation(NFL, V_REAL);
+  const held = P.fairSpread({ sport: NFL, model_home_line: -0.76, market_home_line: 2.5 });
+  chk('a blend that would cross the market line against the projection is held AT the market line (BLENDED_HELD)', held.ok && held.status === 'BLENDED_HELD' && held.fair_home_line === 2.5 && /held at the market line/.test(held.basis), held);
+  const same = P.fairSpread({ sport: NFL, model_home_line: -9.24, market_home_line: -7 });
+  chk('a blend on the projection\'s side of the line is left alone (BLENDED): LAC @ SEA -> SEA -8.23', same.ok && same.status === 'BLENDED' && Math.abs(same.fair_home_line + 8.23) < 0.01, same);
+  const close = P.fairSpread({ sport: NFL, model_home_line: 11.47, market_home_line: 11.5 });
+  chk('inside half a point the projection has no side to protect: the blend stands', close.status === 'BLENDED', close);
+  const hsides = ['home', 'away'].map((sd) => P.priceSpreadSide({ fair: held, side: sd, odds_american: -110 }));
+  chk('…and at the held line neither side prices an edge (both at -110 are below break-even)', hsides.every((x) => x && x.edge_pp != null && x.edge_pp < 0), hsides.map((x) => x && x.edge_pp));
+  P.loadValidation(NFL, V_NFL);
+}
 chk('with no market the fair line is the projection and says MODEL_ONLY', P.fairSpread({ sport: NFL, model_home_line: -9 }).status === 'MODEL_ONLY' && P.fairSpread({ sport: NFL, model_home_line: -9 }).fair_home_line === -9);
 const FC = P.fairSpread({ sport: CFB, model_home_line: -20, market_home_line: -14 });
 chk('with no validated blend the market is the fair price and the projection is a stated disagreement', FC.status === 'MARKET_ANCHORED' && FC.fair_home_line === -14 && /research disagreement of 6 points/.test(FC.basis), FC);

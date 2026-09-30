@@ -1,0 +1,15 @@
+{
+ "schema": "edgedesk_regime_overrides_v1",
+ "doc": "Hand-maintained regime-change facts that the automated feeds miss or get wrong. One entry per team-season. football/coaching/build_regime.js applies an entry OVER the automated reads for that team-season only, and refuses (and lists) any entry without a source and a valid entered_at date. Fields: team (the programme's school name, e.g. \"Iowa State\"), season, new_coach (true / false / null = leave the coach table's answer), returning_production_pct (0-100, share of last season's production still on the roster; null = leave the automated measure), source (where the fact was verified: a URL or a named document), note (optional), entered_at (ISO date). See football/coaching/README.md.",
+ "entries": [
+  {
+   "team": "Virginia Tech",
+   "season": 2026,
+   "new_coach": true,
+   "returning_production_pct": null,
+   "source": "https://hokiesports.com/news/2025/11/17/james-franklin-announced-as-new-leader-of-virginia-tech-football",
+   "note": "The coach table has no 2025 row for Virginia Tech (Brent Pry was fired in September 2025) or for Penn State (Franklin was fired there in October 2025), so build_coaching.js cannot date Franklin's tenure and publishes null. The official announcement is dated 2025-11-17; 2026 is his first season as Virginia Tech's head coach. Verified from the search listing of that page on 2026-09-30; the page itself could not be fetched from the build environment.",
+   "entered_at": "2026-09-30"
+  }
+ ]
+}

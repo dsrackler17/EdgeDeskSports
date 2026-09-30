@@ -909,6 +909,15 @@ async function main() {
         projection_p90: rel.stability.projection_p90, favorite_flip_rate: rel.stability.favorite_flip_rate,
         tier: rel.stability.tier } : null,
       reliability: rel ? REL.published(rel) : null,
+      /* THE REGIME CHANGE (audit 2026-09-30 #1), as the engine applied it: per
+         side whether the long-run state was weighted on the fitted regime curve
+         (football/cfb_p4/regime_curve.js), the weight it got against the
+         standard curve's, the games played and the N the research gate waits
+         for. The terminal and the research status read this, so the published
+         build and the board block the same labels. Null when neither side is
+         in a regime change. */
+      regime: (p && p.status === 'PREDICTED' && p.layers && p.layers.strength && p.layers.strength.regime
+        && (p.layers.strength.regime.home || p.layers.strength.regime.away)) ? p.layers.strength.regime : null,
       /* THE ENRICHMENT, appended: whether the score was calculated from an
          evidence package, the score it could approximately reach with its
          unresolved evidence resolved (not a probability), and the DATA

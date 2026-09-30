@@ -195,6 +195,44 @@ ev = E.evaluate(prop({ quotes: two, projection: Object.assign({}, prop().project
 chk('a small edge one price step from BET is a WATCH with its trigger', ev.decision === 'WATCH' && ev.trigger && ev.trigger.realistic && /becomes BET/.test(ev.trigger.text), [ev.decision, ev.trigger]);
 chk('positive EV alone is not a BET (LEAN/WATCH exist)', ['LEAN', 'WATCH', 'PASS'].indexOf(E.evaluate(prop({ quotes: [Q('dk', 90.5, 'over', -110), Q('dk', 90.5, 'under', -110), Q('fd', 90.5, 'over', -110), Q('fd', 90.5, 'under', -110)], projection: Object.assign({}, prop().projection, { dist: { family: 'gcomp', n: { family: 'negbin', mean: 20, size: 22 }, a: 1.88, theta: 4.62, shift: 4 } }) }), OPTS).decision) >= 0);
 chk('deterministic: the same input evaluates the same', JSON.stringify(E.compact(E.evaluate(prop({ quotes: two }), OPTS))) === JSON.stringify(E.compact(E.evaluate(prop({ quotes: two }), OPTS))));
+/* TAIL PRICING, UNCALIBRATED (audit 2026-09-30 #7e): the same quote as an
+   alternate and as a main line — only the flag differs */
+{
+  const altQ = two.concat([Q('dk', 82.5, 'over', -110, 5, true), Q('fd', 82.5, 'over', -110, 5, true)]);
+  const mainQ = two.concat([Q('dk', 82.5, 'over', -110, 5, false), Q('fd', 82.5, 'over', -110, 5, false)]);
+  const asAlt = E.evaluate(prop({ quotes: altQ }), OPTS), asMain = E.evaluate(prop({ quotes: mainQ }), OPTS);
+  chk('an alternate inside the median at a BET-quality price never reaches BET: LEAN · TAIL_PRICING_UNCALIBRATED, no units', asAlt.candidate && asAlt.candidate.alt === true && asAlt.decision === 'LEAN'
+    && asAlt.code === 'TAIL_PRICING_UNCALIBRATED' && asAlt.units === 0 && asAlt.caps.some((c) => c.code === 'TAIL_PRICING_UNCALIBRATED' && /tail pricing, uncalibrated/.test(c.text)), [asAlt.decision, asAlt.code, asAlt.candidate]);
+  chk('…the identical quote as a main line is a BET (the flag is the only difference)', asMain.decision === 'BET' && asMain.candidate.line === 82.5 && asMain.candidate.alt === false, [asMain.decision, asMain.candidate]);
+  chk('…every alternate rung on the ladder carries "tail pricing: uncalibrated"; main rungs do not', asAlt.ladder.filter((r) => !r.main).every((r) => r.tail_pricing === 'uncalibrated') && asAlt.ladder.filter((r) => r.main).every((r) => r.tail_pricing === null));
+}
+/* REGIME CHANGE on the player's team (audit 2026-09-30 #7d) */
+{
+  const rg = (g) => ({ regime_change: true, team: 'Iowa State Cyclones', reason: 'new head coach; returning production at the 4th percentile', games_played: g, min_games_for_research: 6 });
+  const early = E.evaluate(prop({ quotes: two, regime: rg(4) }), OPTS), later = E.evaluate(prop({ quotes: two, regime: rg(6) }), OPTS);
+  chk('a regime-change team before N games: BET capped at LEAN · REGIME_CHANGE, named, no units', early.decision === 'LEAN' && early.code === 'REGIME_CHANGE' && early.units === 0 && early.regime && early.regime.games_played === 4
+    && early.caps.some((c) => c.code === 'REGIME_CHANGE' && /REGIME CHANGE: Iowa State/.test(c.text) && /4 of 6 games/.test(c.text)), [early.decision, early.code]);
+  chk('…from N games the regime cap lifts (the flag stays on the record)', later.decision === 'BET' && !later.caps.some((c) => c.code === 'REGIME_CHANGE') && later.regime && later.regime.games_played === 6, [later.decision, later.caps]);
+  chk('…no regime record, no cap', E.evaluate(prop({ quotes: two, regime: { regime_change: false } }), OPTS).decision === 'BET');
+}
+/* THE EDGE AND THE EV ARE ONE QUOTE'S (audit 2026-09-30 #7a) */
+chk('edgeEvAgree: a LEAN with a negative edge is refused', E.edgeEvAgree('LEAN', { edge_pp: -0.4, ev: 0.02 }) === false && E.edgeEvAgree('BET', { edge_pp: 5, ev: -0.01 }) === false
+  && E.edgeEvAgree('LEAN', { edge_pp: 2.5, ev: 0.03 }) === true && E.edgeEvAgree('WATCH', { edge_pp: -3, ev: -0.05 }) === true && E.edgeEvAgree('BET', null) === false);
+chk('every BET and LEAN the kernel makes has a positive edge and EV at its own quote', [two, alts, shop, even].every((qs) => { const x = E.evaluate(prop({ quotes: qs }), OPTS); return (x.decision !== 'BET' && x.decision !== 'LEAN') || (x.candidate.edge_pp > 0 && x.candidate.ev > 0); }));
+/* the opponent's defensive availability (audit 2026-09-30 #7c): a warning, never silence */
+{
+  const od = { out: [{ name: 'Frankie Luvu', pos: 'LB', status: 'OUT' }, { name: 'Nick Cross', pos: 'S', status: 'OUT' }], report_week: 3, report_on_file: false };
+  const w = E.evaluate(prop({ quotes: two, opp_defense: od }), OPTS);
+  chk('defenders OUT on the opponent\'s report: OPP_DEFENSE_UNMODELED, naming them and the report\'s week', w.warnings.indexOf('OPP_DEFENSE_UNMODELED') >= 0 && w.opp_defense && w.opp_defense.modeled === false
+    && /Frankie Luvu \(LB, out\)/.test(w.opp_defense.text) && /week-3 report \(this week's is not on file\)/.test(w.opp_defense.text), w.opp_defense);
+  chk('…nobody listed, no warning', E.evaluate(prop({ quotes: two, opp_defense: { out: [], report_week: 4, report_on_file: true } }), OPTS).warnings.indexOf('OPP_DEFENSE_UNMODELED') < 0);
+  chk('…it is a warning, not a model input: the numbers are unchanged', JSON.stringify(w.candidate) === JSON.stringify(E.evaluate(prop({ quotes: two }), OPTS).candidate));
+}
+/* the player's own earlier listing, this week's report not on file (the week bug) */
+{
+  const pend = E.evaluate(prop({ quotes: two, player_status: { status: null, pending: { status: 'OUT', week: 3 } }, report_on_file: false }), OPTS);
+  chk('listed OUT last week, this week\'s report not on file: WATCH · AVAILABILITY_PENDING, never a clean BET', pend.decision === 'WATCH' && pend.code === 'AVAILABILITY_PENDING' && pend.caps.some((c) => /week-3 report/.test(c.text)), [pend.decision, pend.code]);
+}
 /* compact carries what the page needs */
 const cp = E.compact(E.evaluate(prop({ quotes: alts }), OPTS));
 chk('compact: decision, candidate, consensus, projection summaries', cp.d && cp.cand && cp.cand.length === 12 && cp.cons && cp.inf && cp.raw);
@@ -400,10 +438,36 @@ section('same-game correlation, the joint Monte Carlo and exposure caps');
   const it = (o) => Object.assign({ units: 1, value: 50 }, L(o));
   const x1 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'qb', pos: 'QB', m: 'pass_tds', value: 80 })], model);
   chk('one player carries at most 1U across his props: the lower-value one gives way', !x1.a && x1.b && x1.b.units === 0 && x1.b.code === 'PLAYER_EXPOSURE', x1);
-  const x2 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80 }), it({ key: 'c', p: 'wr2', pos: 'WR', m: 'rec_yds', value: 70 })], model);
-  chk('a game\'s correlated stake stops at 2U: the third correlated Over is cut, rounded DOWN to the grid', !x2.a && !x2.b && x2.c && x2.c.code === 'CORRELATED_EXPOSURE' && x2.c.units < 1 && [0, 0.25, 0.5, 0.75].indexOf(x2.c.units) >= 0, x2);
-  const x3 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80, side: 'under' }), it({ key: 'c', p: 'rb', pos: 'RB', m: 'rush_yds', value: 70 })], model);
-  chk('offsetting selections hedge each other: three 1U bets fit under the 2U correlated cap', Object.keys(x3).length === 0, x3);
+  /* the 2U correlated cap across a game's groups: a hand-made model where
+     both offences' selections move together (test data) */
+  const model2 = { teammate: { 'QB:pass_yds|RB:rush_yds': [-0.8, 1000] }, opponent: { 'QB:pass_yds|QB:pass_yds': [0.9, 540], 'QB:pass_yds|RB:rush_yds': [-0.8, 540] } };
+  const x2 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'qb2', pos: 'QB', m: 'pass_yds', team: 'NO', opp: 'ATL', value: 80 }),
+    it({ key: 'c', p: 'rb', pos: 'RB', m: 'rush_yds', side: 'under', value: 70 })], model2);
+  chk('a game\'s correlated stake stops at 2U across its groups: the third correlated selection is cut, rounded DOWN to the grid', !x2.a && !x2.b && x2.c && x2.c.code === 'CORRELATED_EXPOSURE' && x2.c.units < 1 && [0, 0.25, 0.5, 0.75].indexOf(x2.c.units) >= 0, x2);
+  const x3 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80, side: 'under' }), it({ key: 'c', p: 'rb2', pos: 'RB', m: 'rush_yds', team: 'NO', opp: 'ATL', value: 70 })], model);
+  chk('offsetting selections hedge each other: three 1U bets in three groups fit under the 2U correlated cap', Object.keys(x3).length === 0, x3);
+  /* ONE EXPOSURE PER GAME, OFFENCE AND DIRECTION (audit 2026-09-30 #7b) */
+  chk('exposureGroup: game | offence | direction; an Under is the offence\'s quiet day', E.exposureGroup(it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds' })) === 'G1|ATL|up'
+    && E.exposureGroup(it({ key: 'a', p: 'wr', pos: 'WR', m: 'receptions', side: 'under' })) === 'G1|ATL|down');
+  chk('…interceptions thrown and sacks are down markets: their Over is the offence\'s quiet day', E.exposureGroup(it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_ints' })) === 'G1|ATL|down');
+  chk('…a defender\'s prop is grouped on the offence it plays against', E.exposureGroup(it({ key: 'a', p: 'lb', pos: 'LB', m: 'sacks', team: 'NO', opp: 'ATL' })) === 'G1|ATL|down'
+    && E.exposureGroup(it({ key: 'a', p: 'lb', pos: 'LB', m: 'tackles_ast', team: 'NO', opp: 'ATL' })) === 'G1|ATL|up');
+  const x5 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds', value: 90 }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', value: 80 }), it({ key: 'c', p: 'wr2', pos: 'WR', m: 'rec_yds', value: 70 })], model);
+  chk('three Overs on one offence are ONE exposure: the highest-value one keeps its stake, the others give way to the group', !x5.a && x5.b && x5.b.units === 0 && x5.b.code === 'GROUP_EXPOSURE' && x5.c && x5.c.units === 0 && x5.c.code === 'GROUP_EXPOSURE' && x5.b.group === 'G1|ATL|up', x5);
+  /* the audit's Colts group: 8 BETs in IND @ WAS at 0.25U — seven on the
+     Colts' offence having a quiet day, one (Taylor's carries) on a big one.
+     The correlation model lists no pair among most of them, so √(uᵀRu) read
+     them as independent and the 2U game cap never bound. */
+  const colts = [['taylor', 'RB', 'rec_yds', 'under', 45.6], ['taylor', 'RB', 'receptions', 'under', 56.3], ['taylor', 'RB', 'rush_att', 'over', 48.8], ['downs', 'WR', 'rec_yds', 'under', 115],
+    ['downs', 'WR', 'receptions', 'under', 114.8], ['allen', 'WR', 'receptions', 'under', 68.1], ['jones', 'QB', 'rush_att', 'under', 95.2], ['jones', 'QB', 'rush_yds', 'under', 121.7]]
+    .map((c, i) => ({ key: 'k' + i, g: '2026_04_IND_WAS', p: c[0], team: 'IND', opp: 'WAS', pos: c[1], m: c[2], side: c[3], units: 0.25, value: c[4] }));
+  const realCorr = (() => { try { return require(path.join(ROOT, 'football', 'props', 'nfl', 'correlation.json')); } catch (e) { return null; } })();
+  const xc = E.exposure(colts, realCorr);
+  const staked = colts.filter((c) => !xc[c.key] || xc[c.key].units > 0);
+  chk('the Colts group: the seven quiet-day props are one exposure (one 0.25U stake), Taylor\'s carries Over is its own', staked.length === 2 && staked.some((c) => c.m === 'rush_att' && c.p === 'taylor')
+    && colts.filter((c) => c.side === 'under' || c.m !== 'rush_att' || c.p !== 'taylor').filter((c) => xc[c.key] && xc[c.key].code === 'GROUP_EXPOSURE' && xc[c.key].units === 0).length === 6, xc);
+  chk('…the one kept is the highest-value member (Jones rush yards Under)', staked.some((c) => c.p === 'jones' && c.m === 'rush_yds'));
+  chk('…and the game carries 0.5U, not 2U', staked.reduce((a, c) => a + (xc[c.key] ? xc[c.key].units : c.units), 0) === 0.5);
   const x4 = E.exposure([it({ key: 'a', p: 'qb', pos: 'QB', m: 'pass_yds' }), it({ key: 'b', p: 'wr', pos: 'WR', m: 'rec_yds', g: 'G2' }), it({ key: 'c', p: 'rb', pos: 'RB', m: 'rush_yds', g: 'G3' })], model);
   chk('bets in different games never cap each other', Object.keys(x4).length === 0);
   const ev = E.evaluate(prop({ quotes: two }), OPTS);

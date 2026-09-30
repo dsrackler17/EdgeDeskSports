@@ -199,8 +199,14 @@ const GAME = section('game');
 const HERO_MODEL = +((GAME.match(/EdgeDesk<\/span><span class="v mdl">Auburn &minus;([\d.]+)/) || [])[1]);
 const HERO_MKT = +((GAME.match(/Market<\/span><span class="v">Auburn &minus;([\d.]+)/) || [])[1]);
 chk('the market line in the game is the line EdgeDesk EV prices', HERO_MKT === -D.hero.line);
+/* the illustrative card shows ONE data-quality figure (72%); the one research
+   classifier needs both football confidence and a MEASURED reliability (audit
+   2026-09-30 #6: unmeasured reliability is not a pass), so the card's figure
+   stands for both here */
 chk('a gap of this size is WORTH RESEARCHING in lib/edgedesk_canon.js',
-  Canon.researchStatus({ projected: true, market: 'FRESH', gap: HERO_MODEL - HERO_MKT, confidence: 72, fair_margin: HERO_MODEL }).key === 'WORTH_RESEARCHING');
+  Canon.researchStatus({ projected: true, market: 'FRESH', gap: HERO_MODEL - HERO_MKT, confidence: 72, reliability: 72, fair_margin: HERO_MODEL }).key === 'WORTH_RESEARCHING');
+chk('…and with its reliability unmeasured the same card would read LIMITED DATA, never WORTH RESEARCHING (the gate is not loosened for a demo)',
+  Canon.researchStatus({ projected: true, market: 'FRESH', gap: HERO_MODEL - HERO_MKT, confidence: 72, fair_margin: HERO_MODEL }).key === 'LIMITED_DATA');
 chk('and the gap clears the canonical research threshold', HERO_MODEL - HERO_MKT >= Canon.THRESHOLDS.research_gap);
 chk('the model is further onto Auburn than the market, so EdgeDesk\'s cover at the market line is above a coin flip',
   HERO_MODEL > HERO_MKT && H.cover > 0.5);

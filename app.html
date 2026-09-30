@@ -31146,8 +31146,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 
   /* The board's own windows, restated so the two halves agree.
      A captured PRICE is actionable inside quote_ttl_min. A consensus LINE has
-     no timestamp at all and is research context for as long as the board
-     considers the card live — 72h, matching FBP4_QUOTE_FRESH_MS. */
+     no timestamp at all: it is research CONTEXT (a reference number), and
+     since audit 2026-09-30 it is never the market a research label or a gap
+     ranking is measured against (app.html fbP4Market) — nothing can say it is
+     current. This window only bounds how long it may be SHOWN as context. */
   CONFIG.line_research_window_min = 72 * 60;
   /* The spread-convention constants the engine uses. Same numbers, because it
      is the same question: does negating this row reconcile it with the model? */
@@ -47348,27 +47350,45 @@ function fbCanonRow(gid){
 }
 var FB_CANON_TO_VIEW={VERIFIED_MAJOR:'VERIFIED_MAJOR_DISAGREEMENT',INVESTIGATE:'INVESTIGATE',MARKET_FAULT:'MARKET_FAULT',WORTH_RESEARCHING:'WORTH_RESEARCHING',
   NEAR_PICKEM:'NEAR_PICKEM',MARKET_ALIGNED:'MARKET_ALIGNED',LIMITED_DATA:'LIMITED_DATA',NO_MARKET:'NO_MARKET',DATA_FAULT:'DATA_FAULT'};
+/* THE BUILD'S VERDICT, KEPT BESIDE THE LIVE ONE — NEVER SWAPPED IN (audit
+   2026-09-30). This used to replace the live research label with the one the
+   research terminal published, while the gap beside it stayed the live one:
+   board.json's label was measured on the Model Lab ledger's consensus and the
+   gap on this page's captured quotes, so a card could read "MARKET ALIGNED ·
+   gap 5.3". The label, the gap, the ranking and the price line now come from
+   ONE snapshot (fbP4Market) through ONE rule (EDCanon.researchStatus), so the
+   live label stands everywhere. The build's decision fields are still carried
+   (the decision engine reads them) and its research status is kept for audit
+   as build_research_status. */
 function fbCanonApply(v,cr){
-  var C=window.EDCanon,V=window.EDCfbResearchView;
-  if(!v||!cr||!C||!cr.research_status||!C.RESEARCH_STATUS[cr.research_status])return v;
+  var C=window.EDCanon;
+  if(!v||!cr||!C)return v;
   var b=FB.canon&&FB.canon.board,age=b&&b.generated_at?(Date.now()-Date.parse(b.generated_at))/36e5:null;
-  var extra={row:cr,age_h:age,decision:cr.decision_status,decision_label:cr.decision_label,decision_reason:cr.decision_reason,
-    price_state:cr.price_state,price_state_label:cr.price_state_label,favorite_flip:!!cr.favorite_flip,rating_divergence:cr.rating_divergence||null};
-  if(age==null||age>FB_CANON_MAX_AGE_H)return Object.assign({},v,{canonical:Object.assign(extra,{stale:true})});
-  /* MARKET AVAILABILITY IS A LIVE FACT. The build set its research status on
-     the market IT could see (the Model Lab ledger, up to FB_CANON_MAX_AGE_H
-     ago); this page prices the live captured board. When the two disagree
-     about whether a usable market exists — the build saw none and the page
-     prices a live quote, or the reverse — the page's own label stands, so a
-     research status can never read NO MARKET beside a priced quote. */
-  var lv=v.research_label,liveNoMk=!!(lv&&(lv.rule==='no_market'||lv.rule==='stale_market')),buildNoMk=cr.research_status==='NO_MARKET';
-  if(lv&&liveNoMk!==buildNoMk)return Object.assign({},v,{canonical:Object.assign(extra,{stale:false,market_reconciled:true,build_research_status:cr.research_status})});
-  var vk=FB_CANON_TO_VIEW[cr.research_status],d=C.RESEARCH_STATUS[cr.research_status],L=V&&V.LABELS&&V.LABELS[vk];
-  /* a canonical DATA FAULT keeps its kind: the build's (decision_facts), else
-     the live rule it replaces (EDDecisionInputs.labelFaultKind) */
-  var fk=cr.decision_facts&&cr.decision_facts.integrity&&cr.decision_facts.integrity.data_fault?cr.decision_facts.integrity.data_fault_kind||null:null;
-  return Object.assign({},v,{research_label:{key:vk,label:d.label,tone:L?L.tone:'mut',rule:'canonical',means:cr.research_reason||d.means,
-    canonical:true,live_key:v.research_label?v.research_label.key:null,live_rule:v.research_label?v.research_label.rule||null:null,fault_kind:fk},canonical:Object.assign(extra,{stale:false})});
+  var stale=age==null||age>FB_CANON_MAX_AGE_H;
+  var extra={row:cr,age_h:age,stale:stale,decision:cr.decision_status,decision_label:cr.decision_label,decision_reason:cr.decision_reason,
+    price_state:cr.price_state,price_state_label:cr.price_state_label,favorite_flip:!!cr.favorite_flip,rating_divergence:cr.rating_divergence||null,
+    build_research_status:cr.research_status||null,
+    build_market_home_line:cr.market_home_line==null?null:cr.market_home_line};
+  return Object.assign({},v,{canonical:extra});
+}
+/* THE EV SANITY GUARD'S INPUT TO THE RESEARCH STATUS (audit 2026-09-30 #8):
+   the raw EV of this game's captured main-line quotes, priced on the SAME
+   model object the quote-EV board prices (fbQevModelCfb, fbQevQuotes). A raw
+   EV past 25% on a main-line spread makes the research status INVESTIGATE —
+   "implausible EV, check data" — and the decision engine caps the game at
+   WATCH on the same evaluation (lib/edgedesk_decision.js). */
+function fbP4ImplausibleEv(u,p,mkt){
+  if(typeof fbQevReady!=='function'||!fbQevReady()||!u||!p||p.status!=='PREDICTED')return null;
+  var ev=null;try{ev=fbP4EventFor(u);}catch(_){ev=null;}
+  if(!ev)return null;
+  var gid=String(u.g.game_id),qs=fbQevQuotes(ev,gid,u.t,'cfb');
+  if(!qs||!qs.length)return null;
+  var model=null;try{model=fbQevModelCfb(u,p,mkt||{},fbQevAnchor(qs));}catch(_){model=null;}
+  if(!model||!model.available)return null;
+  var G=null;
+  try{G=window.EDQuoteEV.evaluateGame(model,qs,{now:Date.now(),game:{game_id:gid,home:u.g.home_team,away:u.g.away_team,kickoff:u.t?new Date(u.t).toISOString():null},
+    orientation:{ok:true},market_stale:!!(mkt&&mkt.stale),max_age_minutes:90});}catch(_){G=null;}
+  return G&&G.implausible_ev?G.implausible_ev:null;
 }
 function fbP4ViewFor(u,p,mkt,opts){
   var V=window.EDCfbResearchView;
@@ -47385,9 +47405,10 @@ function fbP4ViewFor(u,p,mkt,opts){
   var rec=null;try{rec=fbP4RecordFor(u);}catch(_){rec=null;}
   var h2h=null;try{h2h=fbP4H2hMove(u);}catch(_){h2h=null;}
   var visit=null;if(!pub)try{visit=fbP4VisitFor(u);}catch(_){visit=null;}
+  var ie=null;try{ie=fbP4ImplausibleEv(u,p,mkt);}catch(_){ie=null;}
   /* a quote's freshness is judged NOW, so the view is rebuilt every five
      minutes even when nothing else about the game has changed */
-  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,
+  var key=[p.prediction_timestamp,mkt&&mkt.spread_line,mkt&&mkt.as_of,mkt&&mkt.stale,cs&&cs.input_coverage,ie?ie.raw_ev:'-',
     quotes?quotes.length:0,rec?rec.updated_at:'-',h2h,visit?visit.t:'-',par?(par.ok+':'+par.gaps.length):'-',
     !!(FB.personnel&&FB.personnel.data),!!(FB.relArt&&FB.relArt.data),!!(FB.p4&&FB.p4.dgSub),!!(FB.canon&&FB.canon.board),
     Math.floor(Date.now()/3e5)].join('|');
@@ -47400,7 +47421,7 @@ function fbP4ViewFor(u,p,mkt,opts){
   try{
     v=V.build({game:{game_id:g.game_id,home:g.home_team,away:g.away_team,kickoff:u.t},projection:p,market:mkt,
       reliability:rel,coverage:cs,quotes:quotes,record:rec,h2h_pp:h2h,visit:visit,parity:par,now:Date.now(),
-      disagreement:dg},fbP4ViewCfg());
+      disagreement:dg,implausible_ev:ie},fbP4ViewCfg());
   }catch(_){v=null;}
   if(v&&!pub){ var cr=null;try{cr=fbCanonRow(g.game_id);}catch(_){cr=null;} if(cr)v=fbCanonApply(v,cr); }
   u[slot]={p:p,key:key,v:v};
@@ -47655,44 +47676,135 @@ function fbEnsureEngine(){
     .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});});
 }
 
-/* ---- live captured quotes for a football sport_key, grouped by event ---- */
+/* ---- live captured quotes for a football sport_key, grouped by event ----
+   Read in a DETERMINISTIC order and in full. The read used to be one page of
+   900 with no order: `signals` keeps a row per (event, market, selection,
+   point) for good, so which rows came back — and which row "the market" was —
+   depended on how Postgres happened to lay them out (audit 2026-09-30: SEA
+   -3.0 and BUF -3.0 on a board whose books were at -6.5/-7). The capture's
+   own modal-point flag (point_is_modal, supabase/capture_v9_qualification.sql)
+   is read too, so the main line can be told from an alternate. */
 function fbSignals(sportKey,signal){
   var nowIso=new Date().toISOString();
   var hiIso=new Date(Date.now()+FB_LOOKAHEAD_D*864e5).toISOString();
-  return sbGet('signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,n_books,home_team,away_team,commence_time,last_seen_at'
-    +'&sport_key=eq.'+sportKey+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+hiIso+'&limit=900',signal)
-  .then(function(rows){
+  var q='signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,n_books,home_team,away_team,commence_time,last_seen_at,point_is_modal,modal_point'
+    +'&sport_key=eq.'+sportKey+'&commence_time=gte.'+nowIso+'&commence_time=lte.'+hiIso
+    +'&order=event_id.asc,market.asc,selection.asc,point.asc.nullsfirst';
+  function page(off,acc){
+    return sbGet(q+'&limit=1000&offset='+off,signal).then(function(rows){
+      rows=rows||[];acc=acc.concat(rows);
+      return (rows.length===1000&&off<4000)?page(off+1000,acc):acc;
+    });
+  }
+  return page(0,[]).then(function(rows){
     var ev={};
     (rows||[]).forEach(function(r){(ev[r.event_id]=ev[r.event_id]||{home:r.home_team,away:r.away_team,t:r.commence_time,rows:[]}).rows.push(r);});
     return ev;
   }).catch(function(){return {};});
 }
-/* extract engine-convention market numbers from one event's captured rows.
+/* THE MARKET A GAP IS MEASURED AGAINST (audit 2026-09-30).
+
+   It used to be whichever home `spreads` row PostgREST returned first, with
+   `at` set to the newest capture of ANY row: `signals` keeps a row per point
+   for good and the capture files alternate spreads under market='spreads', so
+   an August look-ahead, a stale opener or an alternate could stand as "the
+   market" and look minutes old. It is now the CONSENSUS OF THE CAPTURED
+   QUOTES THAT ARE CURRENT under the page's own freshness rule
+   (EDINTEL.quoteState — the rule the price line prices by, so the gap, the
+   research label, the ranking and the best price read one snapshot):
+     - each spreads row is one point offered by n_books books; an away point
+       is the home line negated;
+     - where the capture marked a row modal (point_is_modal), the main line
+       is chosen among the modal rows; otherwise every current row competes;
+     - the main line is the books-weighted mode (ties: nearer the
+       books-weighted median, then the home side's row);
+     - consensus_fault: the main line may not sit more than
+       EDCanon.THRESHOLDS.market_consensus_pts from the books-weighted median
+       of the same current rows (lib/edgedesk_canon.js marketConsensusFault);
+     - no current row: the same consensus over every row on file, marked
+       stale, so the research label reads STALE MARKET and the game leaves
+       the research ranking.
    spreads: home selection point -3 means home -3 -> spread_line=+3 (home must
    win by more than 3), matching the training target convention. */
 function fbMarketFromEvent(e,homeName){
-  var out={spread_line:null,total_line:null,spread_book:null,total_book:null,quotes_h2h:null,at:null,h2h_move:null,first_seen:null};
-  if(!e)return out;
-  var hN=fbNorm(homeName),decH=null,decA=null,decH0=null,i,r;
+  var out={spread_line:null,total_line:null,spread_book:null,total_book:null,quotes_h2h:null,at:null,h2h_move:null,first_seen:null,
+    stale:false,spread_consensus:null,consensus_fault:null,n_books:null};
+  if(!e||!e.rows)return out;
+  var W=typeof window!=='undefined'?window:{},I=W.EDINTEL||null,C=W.EDCanon||null;
+  var T=(C&&C.THRESHOLDS)||{market_consensus_pts:1.5,stale_minutes:180};
+  var kick=e.t?Date.parse(e.t):null;
+  function current(at,mk){
+    if(!at)return false;
+    if(I&&I.quoteState){try{var q=I.quoteState({captured_at:at,market:mk,kickoff:isFinite(kick)?kick:null});return !!(q&&q.actionable);}catch(_){}}
+    /* the freshness policy did not load: the canonical research window */
+    var age=(Date.now()-Date.parse(at))/6e4;return isFinite(age)&&age>=0&&age<=T.stale_minutes;
+  }
+  var hN=fbNorm(homeName),aN=e.away?fbNorm(e.away):null,sp=[],ov=[],h2h=[],i,r;
   for(i=0;i<e.rows.length;i++){
     r=e.rows[i];
-    if(r.last_seen_at&&(!out.at||r.last_seen_at>out.at))out.at=r.last_seen_at;
     if(r.first_seen_at&&(!out.first_seen||r.first_seen_at<out.first_seen))out.first_seen=r.first_seen_at;
-    if(r.market==='spreads'&&fbNorm(r.selection)===hN&&r.point!=null&&out.spread_line==null){out.spread_line=-(+r.point);out.spread_book=r.best_book;}
-    if(r.market==='totals'&&/over/i.test(r.selection||'')&&r.point!=null&&out.total_line==null){out.total_line=+r.point;out.total_book=r.best_book;}
-    if(r.market==='h2h'&&r.best_dec>1){ if(fbNorm(r.selection)===hN){decH=+r.best_dec;decH0=fbNum(r.first_best_dec);} else decA=+r.best_dec; }
+    var sel=fbNorm(r.selection),w=Math.max(1,fbNum(r.n_books)||1);
+    if(r.market==='spreads'&&r.point!=null&&isFinite(+r.point)){
+      var side=sel===hN?'home':((aN?sel===aN:sel!==hN)?'away':null);
+      if(side)sp.push({side:side,v:side==='home'?+r.point:(+r.point===0?0:-(+r.point)),w:w,book:r.best_book||null,at:r.last_seen_at||null,
+        modal:r.point_is_modal===true,fresh:current(r.last_seen_at,'spreads')});
+    }
+    if(r.market==='totals'&&/over/i.test(r.selection||'')&&r.point!=null&&isFinite(+r.point))
+      ov.push({v:+r.point,w:w,book:r.best_book||null,at:r.last_seen_at||null,modal:r.point_is_modal===true,fresh:current(r.last_seen_at,'totals')});
+    if(r.market==='h2h'&&r.best_dec>1)h2h.push({home:sel===hN,dec:+r.best_dec,dec0:fbNum(r.first_best_dec),at:r.last_seen_at||null,fresh:current(r.last_seen_at,'h2h')});
   }
-  /* only the away side captured at the spread: the same number, read from it
-     (away +3 is home -3), so a priced event never reads NO MARKET */
-  if(out.spread_line==null){
-    for(i=0;i<e.rows.length;i++){r=e.rows[i];if(r.market==='spreads'&&fbNorm(r.selection)!==hN&&r.point!=null){out.spread_line=+r.point;out.spread_book=r.best_book;break;}}
+  /* the main number of a set of rows, by the rule above */
+  function main(rows){
+    var use=rows.filter(function(x){return x.fresh;}),stale=!use.length;
+    if(stale)use=rows.slice();
+    if(!use.length)return null;
+    var modal=use.filter(function(x){return x.modal;}),cand=modal.length?modal:use,med=fbWMedian(use),by={},best=null;
+    cand.forEach(function(x){
+      var k=String(x.v),b=by[k]||(by[k]={v:x.v,w:0,home:false,at:null,book:null});
+      b.w+=x.w;if(x.side==='home')b.home=true;
+      if(x.at&&(!b.at||x.at>b.at))b.at=x.at;
+      if(!b.book||x.side==='home')b.book=x.book;
+    });
+    Object.keys(by).forEach(function(k){
+      var b=by[k];
+      if(!best||b.w>best.w)best=b;
+      else if(b.w===best.w){
+        var db=Math.abs(b.v-med),dx=Math.abs(best.v-med);
+        if(db<dx-1e-9||(Math.abs(db-dx)<1e-9&&b.home&&!best.home))best=b;
+      }
+    });
+    return {v:best.v,w:best.w,at:best.at,book:best.book,median:med,stale:stale,rows:use.length,
+      books:use.reduce(function(s,x){return s+x.w;},0),modal:!!modal.length};
   }
+  var ms=main(sp);
+  if(ms){
+    out.spread_line=ms.v===0?0:-ms.v;out.spread_book=ms.book;out.at=ms.at;out.stale=ms.stale;out.n_books=ms.w;
+    out.spread_consensus={home_line:ms.v,home_line_median:ms.median,rows:ms.rows,books:ms.books,current:!ms.stale,
+      main_by:ms.modal?'the capture\u2019s modal point':'books-weighted mode of the current quotes'};
+    if(C&&C.marketConsensusFault){var f=C.marketConsensusFault(ms.v,ms.median,'captured quotes for this game');if(f)out.consensus_fault=f;}
+  }
+  var mt=main(ov);
+  if(mt){out.total_line=mt.v;out.total_book=mt.book;if(!out.at)out.at=mt.at;}
+  var hh=h2h.filter(function(x){return x.fresh;});if(!hh.length)hh=h2h;
+  var decH=null,decA=null,decH0=null;
+  hh.forEach(function(x){if(x.home){if(!decH||x.dec>decH){decH=x.dec;decH0=x.dec0;}}else if(!decA||x.dec>decA)decA=x.dec;});
   if(decH&&decA)out.quotes_h2h=[[decH,decA]];
   /* home-side implied probability, first capture vs now: a market fact the
      overview reports as movement. Raw implied (with vig) both ends, so the
      difference is like-for-like. */
   if(decH&&decH0&&decH0>1)out.h2h_move={open:1/decH0,now:1/decH,at:out.first_seen};
   return out;
+}
+/* the books-weighted median of a list of {v, w} */
+function fbWMedian(xs){
+  var a=xs.filter(function(x){return x&&isFinite(x.v)&&x.w>0;}).sort(function(p,q){return p.v-q.v;});
+  if(!a.length)return null;
+  var tot=a.reduce(function(s,x){return s+x.w;},0),run=0,i;
+  for(i=0;i<a.length;i++){run+=a[i].w;if(run>=tot/2-1e-9){
+    /* exactly half the weight on each side: the midpoint, as a median is */
+    if(Math.abs(run-tot/2)<1e-9&&i+1<a.length)return (a[i].v+a[i+1].v)/2;
+    return a[i].v;}}
+  return a[a.length-1].v;
 }
 /* ---- shared per-game builders (cards, grading and CSV must agree) ---- */
 function fbNflGameReq(g){
@@ -47719,7 +47831,12 @@ function fbNflRefMarket(g){
   return {spread_line:fbNum(g.spread_line),total_line:fbNum(g.total_line),
     home_ml:fbNum(g.home_moneyline),away_ml:fbNum(g.away_moneyline)};
 }
-/* best market for an UPCOMING game: live captured signals first, reference second */
+/* THE MARKET FOR AN UPCOMING NFL GAME (audit 2026-09-30: the board showed
+   SEA -3.0 and BUF -3.0 while every book was at -6.5/-7). The captured
+   consensus — the same current quotes the price line prices (fbMarketFromEvent)
+   — is the market. The nflverse games.csv line carries no timestamp: it is a
+   REFERENCE, shown as one, and a game whose only number it is reads STALE
+   MARKET and leaves the research ranking. */
 function fbNflMarketFor(g,t){
   var homeName=FB_CODE_NAMES[g.home_team]||g.home_team,awayName=FB_CODE_NAMES[g.away_team]||g.away_team;
   var ev=null,k;
@@ -47728,12 +47845,41 @@ function fbNflMarketFor(g,t){
     if(fbNorm(e2.home)===fbNorm(homeName)&&fbNorm(e2.away)===fbNorm(awayName)
       &&Math.abs(Date.parse(e2.t)-t)<36*3600e3){ev=e2;break;}
   }
-  var mkt=fbMarketFromEvent(ev,homeName),src='captured';
+  var mkt=fbMarketFromEvent(ev,homeName),src=ev&&mkt.spread_line!=null?'captured':null;
   var ref=fbNflRefMarket(g);
-  if(mkt.spread_line==null&&ref.spread_line!=null){mkt.spread_line=ref.spread_line;src='nflverse reference';}
-  if(mkt.total_line==null&&ref.total_line!=null){mkt.total_line=ref.total_line;if(src!=='captured')src='nflverse reference';}
-  return {mkt:mkt,src:src,homeName:homeName,awayName:awayName,
+  mkt.reference=ref.spread_line!=null?{spread_line:ref.spread_line,total_line:ref.total_line,source:'nflverse games.csv (untimed reference)'}:null;
+  if(mkt.spread_line==null&&ref.spread_line!=null){mkt.spread_line=ref.spread_line;mkt.stale=true;mkt.reference_only=true;src='nflverse reference';}
+  /* the captured event behind this market, for the research state's EV
+     sanity guard (fbNflImplausibleEv); never serialised */
+  try{Object.defineProperty(mkt,'__ev',{value:ev,enumerable:false,configurable:true});}catch(_){}
+  if(mkt.total_line==null&&ref.total_line!=null){mkt.total_line=ref.total_line;if(!src)src='nflverse reference';}
+  return {mkt:mkt,src:src||'captured',homeName:homeName,awayName:awayName,
     spread_book:mkt.spread_book,total_book:mkt.total_book,ev:ev};
+}
+/* THE NFL BOARD SELF-CHECK (audit 2026-09-30). Every game's main-line market
+   must sit within EDCanon.THRESHOLDS.market_consensus_pts of the books-weighted
+   median of its own captured quotes. One that does not FAILS the board: the
+   board says so above the rows, and the game reads MARKET FAULT with the
+   reason until the quotes reconcile. */
+function fbNflMarketSelfCheck(){
+  var out={ok:true,checked:0,faults:[]};
+  ((FB.nfl&&FB.nfl.up)||[]).forEach(function(u){
+    var M=null;try{M=fbNflMarketFor(u.g,u.t);}catch(_){M=null;}
+    if(!M||!M.mkt||M.mkt.reference_only||M.mkt.spread_line==null)return;
+    out.checked++;
+    if(M.mkt.consensus_fault)out.faults.push({game_id:String(u.g.game_id),game:M.awayName+' @ '+M.homeName,reason:M.mkt.consensus_fault.reason,
+      market:M.mkt.consensus_fault.market,consensus:M.mkt.consensus_fault.consensus});
+  });
+  out.ok=!out.faults.length;
+  return out;
+}
+function fbNflSelfCheckHTML(){
+  var c=null;try{c=fbNflMarketSelfCheck();}catch(_){c=null;}
+  if(!c||c.ok)return '';
+  return '<div class="gd-nodata" style="border-left:3px solid var(--neg);padding-left:10px"><b>NFL MARKET SELF-CHECK FAILED</b> — '
+    +c.faults.length+' of '+c.checked+' game'+(c.checked===1?'':'s')+' carry a main-line market more than '
+    +(((window.EDCanon||{}).THRESHOLDS||{}).market_consensus_pts||1.5)+' pts from the median of their own captured books: '
+    +c.faults.map(function(f){return fbEsc(f.game);}).join(', ')+'. Those games read MARKET FAULT and are excluded from research ranking until the quotes reconcile.</div>';
 }
 /* grade the model's pregame picks for one completed game against the
    nflverse closing consensus. Picks are the SIGN OF THE GAP — the same rule
@@ -49326,9 +49472,14 @@ function fbQevAltEnsure(sport){
     .catch(function(e){FBQEV.alt[sport]={data:null,err:String(e&&e.message||e)};FBQEV.altP[sport]=null;});
 }
 function fbP4Ensure(){
-  if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs)return Promise.resolve();
+  if(window.EDCfbP4&&window.EDCfbP4Params&&window.EDFbs&&window.EDCfbP4RegimeCurve)return Promise.resolve();
   return fbScript('football/cfb_p4/params.js')
     .then(function(){return fbScript('football/cfb_p4/engine.js');})
+    /* THE REGIME-CHANGE CURVE moves numbers (a new head coach and a turned-over
+       roster weight the long-run state on the fitted steeper curve), so unlike
+       the display-only calibration records below it GATES the board: the
+       build prices with it, and a board without it would not match the build */
+    .then(function(){return fbScript('football/cfb_p4/regime_curve.js');})
     /* the FBS universe: team identity, season conference, program group and
        the canonical slate. It gates the board because a board that cannot
        say which teams are FBS this season cannot honestly claim to cover
@@ -50243,13 +50394,15 @@ window.fbP4ResearchBriefFor=function(q){
   }catch(_){return null;}
 };
 
-/* Joins the FRESHEST real number, in this order: a live captured quote,
-   the cfb.lines book consensus once the capture has gone stale (offseason
-   quotes sit for weeks and a 200-hour-old price is not a market), and a
-   stale capture only when nothing fresher exists — labelled with its age
-   and flagged `stale` so the live guard and the board can treat it as
-   stale market data rather than a model fault. */
-var FBP4_QUOTE_FRESH_MS=72*3600e3;
+/* THE MARKET THE GAP, THE LABEL AND THE RANKING ARE MEASURED AGAINST
+   (audit 2026-09-30). One snapshot: the consensus of the captured quotes that
+   are current under the page's own freshness rule — the same quotes the price
+   line (fbQevQuotes) prices, so "Market VT -6.5" can no longer sit above a
+   "Best price" an hour old at VT -3. The board used to take a captured quote
+   up to 72 HOURS old as fresh, then fall back to cfb.lines, which carries no
+   timestamp at all and is often the opener. cfb.lines is now a REFERENCE: it
+   is shown, and a game whose only number it is reads STALE MARKET and leaves
+   the research ranking, because nothing can say that number is current. */
 /* ---- the model number a suspect line cannot have touched ---------------
    Cached per game against the load stamp, exactly like fbP4ProjCached, so
    the extra projection is paid once per game per load and only for games
@@ -50328,7 +50481,7 @@ function fbP4OddsMisses(){
 }
 function fbP4Market(u){
   var g=u.g,out={spread_line:null,total_line:null,quotes_h2h:null,book:null,as_of:null,stale:false,
-    status:'NO MARKET',match:null};
+    status:'NO MARKET',match:null,consensus:null,consensus_fault:null,reference:null};
   var ix=fbP4TeamIx(),ev=null,k;
   /* BOTH sides must resolve to this game's own teams, by the FBS universe's
      alias resolver — a bare prefix test is how "Miami (OH) RedHawks" ends up
@@ -50340,22 +50493,23 @@ function fbP4Market(u){
   }
   var m=ev?fbMarketFromEvent(ev,ev.home):null;
   var line=FB.p4.lines[g.game_id];
-  var capAge=(m&&m.at)?(Date.now()-Date.parse(m.at)):null;
-  var capFresh=capAge!=null&&capAge<FBP4_QUOTE_FRESH_MS;
-  if(m&&m.spread_line!=null&&capFresh){
-    out.spread_line=m.spread_line;out.book='captured · '+(m.spread_book||'');out.as_of=m.at;
-  }else if(line&&line.spread!=null){
-    out.spread_line=fbP4LineToMargin(line.spread);
-    out.book='cfb.lines · '+(line.provider||'consensus')
+  if(line&&line.spread!=null)out.reference={spread_line:fbP4LineToMargin(line.spread),provider:line.provider||'consensus',
+    over_under:line.over_under!=null?+line.over_under:null,
+    why:'cfb.lines carries no book and no timestamp: a reference number, never the current market'};
+  if(m&&m.spread_line!=null){
+    var c=m.spread_consensus||{};
+    out.spread_line=m.spread_line;out.as_of=m.at;out.stale=!!m.stale;
+    out.consensus=c;out.consensus_fault=m.consensus_fault||null;
+    out.book=(m.stale?'captured consensus (stale) · ':'captured consensus · ')+(c.books||0)+' book'+((c.books||0)===1?'':'s')
+      +(m.spread_book?' · best at '+m.spread_book:'');
+  }else if(out.reference){
+    out.spread_line=out.reference.spread_line;out.stale=true;
+    out.book='cfb.lines · '+out.reference.provider+' (untimed reference, not a current price)'
       +(fbP4LinesConv()==='margin'?' · margin convention':'');
-  }else if(m&&m.spread_line!=null){
-    out.spread_line=m.spread_line;out.as_of=m.at;out.stale=true;
-    out.book='captured (stale '+Math.round(capAge/3600e3)+'h) · '+(m.spread_book||'');
   }
-  if(m&&m.total_line!=null&&capFresh){out.total_line=m.total_line;out.book=out.book||('captured · '+(m.total_book||''));out.as_of=out.as_of||m.at;}
-  else if(line&&line.over_under!=null){out.total_line=+line.over_under;out.book=out.book||('cfb.lines · '+(line.provider||'consensus'));}
-  else if(m&&m.total_line!=null){out.total_line=m.total_line;out.stale=out.spread_line==null?true:out.stale;out.book=out.book||'captured (stale)';out.as_of=out.as_of||m.at;}
-  if(m&&m.quotes_h2h&&capFresh)out.quotes_h2h=m.quotes_h2h;
+  if(m&&m.total_line!=null){out.total_line=m.total_line;out.as_of=out.as_of||m.at;}
+  else if(out.reference&&out.reference.over_under!=null)out.total_line=out.reference.over_under;
+  if(m&&m.quotes_h2h&&!m.stale)out.quotes_h2h=m.quotes_h2h;
   /* the last thing that happens to a spread line here is being asked whether
      it points the right way. A row that only agrees with the model once it is
      negated is dropped and named — see fbP4LineFault. */
@@ -50787,6 +50941,10 @@ function fbP4InputArtifacts(season){
     get('gen','football/venues/resolved.json'),
     get('team_talent','football/players/team_talent.json',function(j){return j&&+j.season===+season;}),
     get('coaching','football/coaching/continuity.json'),
+    /* the regime-change record (football/coaching/build_regime.js): which
+       programmes the engine prices on the fitted regime curve, and the
+       research gate blocks until they have played enough games */
+    get('regime','football/coaching/regime.json',function(j){return j&&+j.season===+season;}),
     get('offfield_store','football/offfield/signals.json'),
     get('offfield_reg','football/offfield/sources.json'),
     get('epa_index','football/fbs_epa/index.json'),
@@ -50873,6 +51031,7 @@ function fbP4InputCtx(){
     off_field_source:off?'EdgeDesk off-field register (football/offfield/signals.json)':null,
     off_field_as_of:off?(off.as_of||null):null,off_field_counts:off?off.counts:null,
     coaching_for:coach?function(k){return C.coachingFor(coach.by_team||{},k);}:null,
+    regime_for:A.regime?function(k){return C.regimeFor(A.regime.by_team||{},k);}:null,
     coaching_source:coach?(coach.source||null):null,coaching_as_of:coach?(coach.generated_at||null):null,
     coaching_season:coach?(coach.season||null):null
   };
@@ -50927,6 +51086,14 @@ function fbP4Request(u,opts){
   }
   return fbP4RequestBare(u,mkt,noMkt);
 }
+/* the regime-change record for one team, through the shared contract's own
+   mapping when it loaded (football/matchup/contract.js regimeFor) */
+function fbP4RegimeFor(key){
+  var A=FB.p4.art||{},C=window.EDInputContract,r=A.regime&&A.regime.by_team?A.regime.by_team[key]:null;
+  if(!r)return null;
+  if(C&&C.regimeFor)return C.regimeFor(A.regime.by_team,key);
+  return r.regime_change===true?{regime_change:true,reason:r.reason||null,min_games_for_research:r.min_games_for_research==null?null:r.min_games_for_research}:null;
+}
 /* THE FALLBACK when the shared assembly did not load: the request the board
    built before it, so a missing file degrades the contract, never the board */
 function fbP4RequestBare(u,mkt,noMkt){
@@ -50958,10 +51125,12 @@ function fbP4RequestBare(u,mkt,noMkt){
          sentences applies. */
       home:{conference:g.home_conference,roster:FB.p4.roster[hk]||null,
         qb:null,qb_context:fbP4QbContext(g.home_team,g.game_id),
-        injuries:fbP4Injuries(g.home_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home')},
+        injuries:fbP4Injuries(g.home_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'home'),
+        regime:fbP4RegimeFor(hk)},
       away:{conference:g.away_conference,roster:FB.p4.roster[ak]||null,
         qb:null,qb_context:fbP4QbContext(g.away_team,g.game_id),
-        injuries:fbP4Injuries(g.away_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away')}
+        injuries:fbP4Injuries(g.away_team,g.game_id,{kickoff:g.start_date,now:Date.now()}),news:null,coaching:null,schedule:fbP4SchedCtx(g,'away'),
+        regime:fbP4RegimeFor(ak)}
     },
     venue:{home:V[hk]||null,away:V[ak]||null},
     weather:FB.p4.weather[g.game_id]||null,
@@ -51118,7 +51287,10 @@ function fbP4CanonTail(u,p,mkt){
   var C=window.EDCanon,g=u.g,v=null;
   try{v=(p&&p.status==='PREDICTED'&&typeof fbP4ViewFor==='function')?fbP4ViewFor(u,p):null;}catch(_){v=null;}
   var cz=v&&v.canonical,fresh=cz&&!cz.stale;
-  var rs=fresh&&cz.row?cz.row.research_status:(v&&v.research_label&&C?(C.fromResearchView(v.research_label)||''):'');
+  /* the export's research status is THE row's status (fbP4StatusFor, the
+     canonical rule over this page's one market snapshot) — never the build's
+     label measured on another snapshot */
+  var rs=null;try{var st0=fbP4StatusFor(p,mkt,u);rs=st0&&st0.key?st0.key:null;}catch(_){rs=null;}
   var fm=p&&p.model?p.model.fair_spread:null,mm=mkt&&mkt.spread_line!=null?-mkt.spread_line:null;
   return [(p&&p.prediction_timestamp)||'',rs||'',fresh&&cz.decision?cz.decision:'NO_DECISION',
     mkt&&mkt.spread_line!=null?mkt.spread_line:'',(mkt&&mkt.as_of)||'',fresh?(cz.price_state||''):'',
@@ -51127,7 +51299,7 @@ function fbP4CanonTail(u,p,mkt){
 }
 function fbP4FbsTail(u,p,mkt){
   var g=u.g,m=u.meta||(window.EDFbs&&FB.p4.uni?window.EDFbs.classifyGame(g,FB.p4.uni):null);
-  var st=fbP4StatusFor(p,mkt||{});
+  var st=fbP4StatusFor(p,mkt||{},u);
   /* THE COLUMN EXISTS SO A DOWNLOADED ROW RECONCILES WITH THE ROW ON SCREEN.
      It carried the engine's internal probe count while the board carried the
      input contract, which is precisely the divergence this column was added
@@ -52491,13 +52663,23 @@ function fbGxState(p){
 }
 
 /* THE LABEL THE CARD, THE BRIEF AND THE SHARE TEXT PRINT: the research
-   view's one research label when it loaded, the card's own research state
-   when it did not. One call site, so the three can never disagree. */
+   view's one research label when it loaded; when it did not, the SAME
+   canonical status the board reads (fbP4StatusFor, lib/edgedesk_canon.js) —
+   never a second classifier (audit 2026-09-30 #6: fbGxState used to answer
+   here with its own thresholds). fbGxState stays only as the Games layer's
+   parity anchor (tools/games/state_parity.test.js); no research surface
+   reads it. */
 function fbRvState(u,p){
   var v=null;try{v=fbP4ViewFor(u,p);}catch(_){v=null;}
   var L=v&&v.research_label;
   if(L)return {key:L.key,label:L.label,cls:L.tone,means:L.means,view:true};
-  return fbGxState(p);
+  var C=window.EDCanon,st=null,mk=null;
+  try{mk=(FB.p4._mkt&&FB.p4._mkt[String(u.g.game_id)])||fbP4Market(u);}catch(_){mk=null;}
+  try{st=fbP4StatusFor(p,mk||{},u);}catch(_){st=null;}
+  var d=C&&st&&st.key&&C.RESEARCH_STATUS?C.RESEARCH_STATUS[st.key]:null;
+  var VK={VERIFIED_MAJOR:'VERIFIED_MAJOR_DISAGREEMENT'};
+  if(d)return {key:VK[st.key]||st.key,label:d.label,cls:d.tone||'mut',means:(st.sub||d.means),view:false};
+  return {key:'LIMITED_DATA',label:'Limited data',cls:'neg',means:'The research status could not be computed: the canonical classifier did not load.',view:false};
 }
 
 /* the projected score line, split from the model's OWN spread and total.
@@ -53902,7 +54084,7 @@ function fbQevModelNfl(p,anchor){
   if(!adj.available)adj.reason='no validated NFL probability source: '+adj.reason+(sp&&sp.tier?' (pricing tier '+sp.tier+')':'')+' — RAW EV only';
   return {sport:'NFL',available:true,model_version:p.model_version,projection_timestamp:p.prediction_timestamp,fair_home_margin:fair,
     home_cover:function(t){return E.dist.coverProbSpread('nfl',fair,t);},
-    basis:'the NFL margin distribution learned by spread (football/params.js), keyed by EdgeDesk’s own fair spread',
+    basis:'the NFL margin distribution learned by spread (football/params.js), read by its median at EdgeDesk’s own fair spread — centred on the displayed projection (audit 2026-09-30 #4)',
     adjusted:adj,
     total_cover:typeof ft==='number'&&isFinite(ft)?function(t){return E.dist.coverProbTotal('nfl',ft,t,'over');}:null,
     tail:{validated_within_pts:0,basis:'no alternate-line audit exists for the NFL distribution'},
@@ -54708,6 +54890,11 @@ function fbP4QueueHTML(visible){
   var items=[];
   (visible||[]).forEach(function(r){
     if(!r||!r.p||r.p.status!=='PREDICTED')return;
+    /* ONE STATUS (audit 2026-09-30 #6): a game the board's one classifier
+       excludes from ranking — a data or market fault, thin data, no or a
+       stale market — never enters this reading order, and every row carries
+       the board's own word beside its flags */
+    if(r.st&&r.st.rankable===false)return;
     var o=null;try{o=fbGxResearchObj(r.u,r.p);}catch(_){o=null;}
     if(!o||!o.flags||!o.flags.priority)return;
     items.push({r:r,o:o,z:o.model_vs_market.normalized_gap.value,
@@ -54719,6 +54906,7 @@ function fbP4QueueHTML(visible){
     var g=x.r.u.g,gid=String(g.game_id);
     return '<div onclick="fbP4Gate(\''+fbEsc(gid)+'\')" style="cursor:pointer;border-bottom:1px solid var(--border);padding:6px 2px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline">'
       +'<span style="min-width:180px">'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)+'</span>'
+      +(x.r.st&&x.r.st.t?'<span class="rv-q-st" data-status="'+fbEsc(x.r.st.t)+'" style="color:'+(x.r.st.c||'var(--dim)')+'">'+fbEsc(x.r.st.t)+'</span>':'')
       +'<span class="mut">'+(x.o.model_vs_market.raw_gap.value!=null?x.o.model_vs_market.raw_gap.value.toFixed(1)+' pts':'')
         +(x.z!=null?' · '+x.z.toFixed(2)+'σ':'')+'</span>'
       +'<span>'+x.flags.map(function(f){return '<span class="ec mut" title="'+fbEsc(f.rule)+'">'+fbEsc(f.key.replace(/_/g,' ').toLowerCase())+'</span>';}).join(' ')+'</span></div>';
@@ -55627,9 +55815,15 @@ function fbP4DisagreementFor(u,p,mkt,rel){
   return v;
 }
 function fbP4UnitFor(p){
-  var S=FB.p4,k,i;if(!S||!S._proj||!p)return null;
-  for(k in S._proj)if(S._proj.hasOwnProperty(k)&&S._proj[k]===p){
-    for(i=0;i<(S.up||[]).length;i++)if(String(S.up[i].g.game_id)===k)return S.up[i];
+  /* the unit behind a projection, from either projection cache (the board's
+     _proj and the overview rows' _pc): a status computed without its unit
+     falls back to a thinner rule than the view beside it, and one game would
+     read two labels (audit 2026-09-30 #6) */
+  var S=FB.p4,k,i,caches=[S&&S._proj,S&&S._pc],c;if(!S||!p)return null;
+  for(c=0;c<caches.length;c++){var C0=caches[c];if(!C0)continue;
+    for(k in C0)if(C0.hasOwnProperty(k)&&C0[k]===p){
+      for(i=0;i<(S.up||[]).length;i++)if(String(S.up[i].g.game_id)===k)return S.up[i];
+    }
   }
   return null;
 }
@@ -55650,23 +55844,44 @@ function fbP4GateStatus(p,mkt,u,gap){
   if(e.status==='DATA_FAULT')return {t:'DATA FAULT',c:'var(--neg)',sub:e.status_label};
   return {t:'INVESTIGATE',c:'var(--warn)',sub:e.status_label};
 }
+/* THE BOARD WORD, READ OFF THE ONE RESEARCH STATUS (audit 2026-09-30).
+   This used to be a classifier of its own — RESEARCH for every gap under 7,
+   with no 2-point threshold — so Pitt @ Virginia Tech read RESEARCH on the Desk
+   while the research view beside it said MARKET ALIGNED. It now classifies
+   nothing: the research view's label IS lib/edgedesk_canon.js researchStatus
+   over the one market snapshot (fbP4Market), and this is only its short board
+   word (EDCanon.boardWord). If the view library failed to load, the same rule
+   runs over the projection directly (EDCanon.researchStatusFromProjection). */
 function fbP4StatusFor(p,mkt,u){
-  if(!p||p.status!=='PREDICTED')return {t:'AWAITING DATA',c:'var(--faint)'};
-  /* a line dropped by the orientation check is a quote that exists and
-     cannot be trusted — fbP4Market's own DATA FAULT — never NO MARKET */
-  if(mkt&&mkt.spread_fault)return {t:'DATA FAULT',c:'var(--neg)',sub:'the joined line only agreed with EdgeDesk once negated: a market to verify, not a missing one'};
-  if(!mkt||mkt.spread_line==null)return {t:'NO MARKET',c:'var(--faint)'};
-  if(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE')
-    return {t:'THIN DATA',c:'var(--dim)'};
-  if(mkt.stale)return {t:'STALE QUOTE',c:'var(--dim)'};
-  var gap=Math.abs(p.model.fair_spread-mkt.spread_line);
-  /* 7+: the integrity gate decides. A gap past the guard that passes EVERY
-     check is shown, not hidden, as VERIFIED — extraordinary, with a manual
-     review queued */
-  if(gap>=7){var dg=null;try{dg=fbP4GateStatus(p,mkt,u,gap);}catch(_){dg=null;}if(dg)return dg;}
-  if(gap>FB_GUARD.p4.game)return {t:'DATA FAULT',c:'var(--neg)'};
-  if(gap>=7)return {t:'INVESTIGATE',c:'var(--warn)',sub:'INVESTIGATE — VERIFICATION INCOMPLETE'};
-  return {t:'RESEARCH',c:'var(--accent)'};
+  var C=window.EDCanon,FBP4_STATUS_COLOR={'VERIFIED MAJOR DISAGREEMENT':'var(--gold)',RESEARCH:'var(--accent)',INVESTIGATE:'var(--warn)',
+    AGREEMENT:'var(--pos)','MARKET FAULT':'var(--dim)','THIN DATA':'var(--dim)','STALE QUOTE':'var(--dim)','NO MARKET':'var(--faint)',
+    'DATA FAULT':'var(--neg)','AWAITING DATA':'var(--faint)'};
+  if(!p||p.status!=='PREDICTED'||!C)return {t:'AWAITING DATA',c:'var(--faint)'};
+  var L=null,st=null;
+  try{if(!u&&typeof fbP4UnitFor==='function')u=fbP4UnitFor(p);}catch(_){u=null;}
+  if(u&&typeof fbP4ViewFor==='function'){var v=null;try{v=fbP4ViewFor(u,p,mkt);}catch(_){v=null;}L=v&&v.research_label?v.research_label:null;}
+  if(L&&L.canonical_key)st={key:L.canonical_key,rule:L.canonical_rule,reason:L.reason};
+  else{
+    /* no view (the library did not load, or no unit): the SAME rule over the
+       projection, with the facts the view would have given it — the scored
+       reliability and, for a 7+ gap, the integrity gate's verdict */
+    var rel=null,relObj=null,ver=null,verWhy=null,mm=mkt&&mkt.spread_line!=null?+mkt.spread_line:null;
+    if(u){
+      try{if(typeof fbP4ReliabilityFor==='function'){relObj=fbP4ReliabilityFor(u,p,mkt,typeof fbP4QuotesFor==='function'?fbP4QuotesFor(u):null);rel=relObj&&isFinite(relObj.score)?relObj.score:null;}}catch(_){relObj=null;rel=null;}
+      if(mm!=null&&p.model&&Math.abs(p.model.fair_spread-mm)>=((C.THRESHOLDS&&C.THRESHOLDS.major_gap)||7)&&typeof fbP4DisagreementFor==='function'){
+        var e=null;try{e=fbP4DisagreementFor(u,p,mkt,relObj);}catch(_){e=null;}
+        if(e&&e.status){ver=e.verified?'VERIFIED':(e.status==='MARKET_FAULT'?'MARKET_FAULT':(e.status==='DATA_FAULT'?'DATA_FAULT':null));verWhy=e.status_label||null;}
+      }
+    }
+    st=C.researchStatusFromProjection(p,mkt,{thresholds:{guard_gap:FB_GUARD.p4.game},reliability:rel,verification:ver,verification_reason:verWhy});
+  }
+  var t=C.boardWord(st),o={t:t,c:FBP4_STATUS_COLOR[t]||'var(--dim)',key:st.key,rule:st.rule,reason:st.reason||null,rankable:st.rankable!==false};
+  if(L&&L.status_label)o.sub=L.status_label;
+  else if(st.rule==='fault'||st.rule==='orientation')o.sub='the joined line only agreed with EdgeDesk once negated: a market to verify, not a missing one';
+  else if(st.rule==='unverified')o.sub='INVESTIGATE — VERIFICATION INCOMPLETE';
+  else if(/^(regime_change|implausible_ev|market_fault_consensus|orientation_flip)$/.test(String(st.rule)))o.sub=st.reason;
+  if(t==='VERIFIED MAJOR DISAGREEMENT'){o.cls='verified';o.verified=true;}
+  return o;
 }
 function fbP4Line(team,fairSpread){
   if(fairSpread==null||!isFinite(fairSpread))return '—';
@@ -55717,7 +55932,7 @@ function fbP4StatusStrip(){
    research router owns the hash, so this owns `?fbs_*` and leaves the hash
    exactly as it found it. */
 var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
-var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
+var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','AGREEMENT','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
 /* the words on screen (lib/edgedesk_vocab.js): the board keeps its internal
    STALE QUOTE key for its exports and the research ranking, and shows the
    canonical market-state word */
@@ -56283,7 +56498,13 @@ function fbGameRows(){
         r.gapS=p.market.spread_gap;r.gapT=p.market.total_gap;r.winp=p.model.home_win_prob;
         r.lean=fbRecDisagrees(p.edge&&p.edge.spread)||fbRecDisagrees(p.edge&&p.edge.total);
         r.warn=((p.data_quality&&p.data_quality.warnings)||[]).slice();
-        if(r.gapS!=null&&Math.abs(r.gapS)>FB_GUARD.nfl.game)r.fault=true;
+        /* THE ROW'S STATUS IS THE BOARD'S ONE CLASSIFIER (audit 2026-09-30 #6):
+           fault and stale are read off fbNflResearchState, never re-derived
+           from the gap here — the Desk and the reading order read these */
+        var ns=null;try{ns=fbNflResearchState(p,M.mkt);}catch(_){ns=null;}
+        r.cs=ns?{key:FB_NFL_TO_CANON[ns.label]||null,t:ns.label,rule:ns.rule||null,reason:ns.note||null}:null;
+        if(ns){r.fault=ns.label==='DATA FAULT'||ns.label==='MARKET FAULT';r.stale=ns.label==='STALE MARKET';}
+        else if(r.gapS!=null&&Math.abs(r.gapS)>FB_GUARD.nfl.game)r.fault=true;
         r.ref=(M.src==='nflverse reference'&&(M.mkt.spread_line!=null||M.mkt.total_line!=null));
         if(M.mkt.h2h_move)r.move=(M.mkt.h2h_move.now-M.mkt.h2h_move.open)*100;
       }
@@ -56298,9 +56519,21 @@ function fbGameRows(){
         ref:false,ok:!!(p&&p.status==='PREDICTED'),gapS:null,gapT:null,lean:false,winp:null,warn:[],fault:false,thin:false,stale:!!mkt.stale,move:null};
       if(r.ok){
         r.gapS=p.market?p.market.spread_gap:null;r.gapT=p.market?p.market.total_gap:null;r.winp=p.model.home_win_prob;
-        r.thin=!!(p.edge&&p.edge.spread&&p.edge.spread.recommendation==='PASS_LOW_CONFIDENCE');
+        /* THE ROW'S STATUS IS THE ONE CLASSIFIER'S (audit 2026-09-30 #6). Thin,
+           fault and stale used to be re-derived here — thin from the engine's
+           PASS_LOW_CONFIDENCE, fault from the guard gap alone — so the Desk and
+           Top Research Priorities could exclude or pick a game the board word
+           read differently (Pitt @ Virginia Tech). They are read off the
+           canonical status now (fbP4StatusFor, lib/edgedesk_canon.js); with no
+           classifier loaded the row fails closed (thin: nothing picks it). */
+        var cs=null;try{cs=fbP4StatusFor(p,mkt,u);}catch(_){cs=null;}
+        r.cs=cs&&cs.key?cs:null;
+        if(r.cs){
+          r.thin=cs.key==='LIMITED_DATA';
+          r.fault=cs.key==='DATA_FAULT'||cs.key==='MARKET_FAULT';
+          r.stale=cs.rule==='stale_market'||!!mkt.stale;
+        } else r.thin=true;
         r.lean=!r.thin&&(fbRecDisagrees(p.edge&&p.edge.spread)||fbRecDisagrees(p.edge&&p.edge.total));
-        if(!r.thin&&!r.stale&&r.gapS!=null&&Math.abs(r.gapS)>FB_GUARD.p4.game)r.fault=true;
         var ex=p.explanation;
         r.warn=((ex&&ex.data_quality)||[]).map(function(d){return d.text;});
         if(mkt.h2h_move)r.move=(mkt.h2h_move.now-mkt.h2h_move.open)*100;
@@ -56323,22 +56556,20 @@ function fbGameRows(){
 function fbResearchStatusOfRow(r){
   var C=window.EDCanon;if(!C)return null;
   if(r.sport==='p4'){
-    var cr=null;try{cr=fbCanonRow(r.gid);}catch(_){cr=null;}
-    var b=FB.canon&&FB.canon.board,age=b&&b.generated_at?(Date.now()-Date.parse(b.generated_at))/36e5:null;
-    if(cr&&cr.research_status&&age!=null&&age<=FB_CANON_MAX_AGE_H)return cr.research_status;
+    /* the SAME canonical status the board word, the card, Top Research
+       Priorities and the export read (fbP4StatusFor) */
     var u=null;((FB.p4&&FB.p4.up)||[]).some(function(x){if(String(x.g.game_id)===r.gid){u=x;return true;}return false;});
-    var v=null;if(u&&r.p)try{v=fbP4ViewFor(u,r.p);}catch(_){v=null;}
-    if(v&&v.research_label){var k=C.fromResearchView(v.research_label);if(k)return k;}
+    var st=null;try{st=fbP4StatusFor(r.p,r.mkt,u);}catch(_){st=null;}
+    return st&&st.key?st.key:(r.ok?null:'LIMITED_DATA');
   }
-  var hasMkt=r.mkt&&(r.mkt.spread_line!=null||r.mkt.total_line!=null),gap=r.gapS!=null?Math.abs(r.gapS):null;
-  if(r.fault)return 'DATA_FAULT';
-  if(!r.ok)return 'LIMITED_DATA';
-  if(!hasMkt||r.stale)return 'NO_MARKET';
-  if(r.thin)return 'LIMITED_DATA';
-  if(gap!=null&&gap>=C.THRESHOLDS.major_gap)return 'INVESTIGATE';
-  if(r.lean)return 'WORTH_RESEARCHING';
-  return 'MARKET_ALIGNED';
+  /* NFL: its own board's one classifier, mapped to the canonical keys word
+     for word (an NFL INVESTIGATE is counted as INVESTIGATE, never as WORTH
+     RESEARCHING it never said) */
+  var ns=null;try{ns=fbNflResearchState(r.p,r.mkt);}catch(_){ns=null;}
+  return ns?(FB_NFL_TO_CANON[ns.label]||null):null;
 }
+var FB_NFL_TO_CANON={'NOT PRICED':'LIMITED_DATA','NO MARKET':'NO_MARKET','STALE MARKET':'NO_MARKET','DATA FAULT':'DATA_FAULT',
+  'MARKET FAULT':'MARKET_FAULT','INVESTIGATE':'INVESTIGATE','AGREEMENT':'MARKET_ALIGNED'};
 function fbCanonHierarchy(rows){
   var C=window.EDCanon;if(!C)return null;
   return C.counterHierarchy(rows.map(function(r){return {sport:r.sport==='p4'?'cfb':r.sport,research_status:fbResearchStatusOfRow(r)};}));
@@ -56384,7 +56615,8 @@ function fbTodayItems(rows){
     r=sp[0];
     items.push({k:'Largest spread disagreement',pri:Math.abs(r.gapS)>=2?'major':'notable',r:r,
       cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Difference',v:Math.abs(r.gapS).toFixed(1)+' pts',p:true}],
-      note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.',
+      note:'Home line. Model leans '+fbEsc(fbSideOf(r,r.gapS))+' relative to the market'+(Math.abs(r.gapS)>=7?' — at this size, missing information is the likelier explanation':'')+'.'
+        +(r.cs&&r.cs.t?' Status: '+fbEsc(r.cs.t)+'.':''),
       why:Math.abs(r.gapS)>=7
         ? 'This is the widest gap on the board, and a gap this size is far more often the model missing something — an injury, a starter, a suspension — than the market being wrong. Open it to find what the model has not been told.'
         : 'The model and the market are pricing this game differently by '+Math.abs(r.gapS).toFixed(1)+' points. That is a question worth opening, not an edge: the model\u2019s own record does not beat the close.'});
@@ -56419,8 +56651,12 @@ function fbTodayItems(rows){
   if(ft.length){
     r=ft[0];var lim=r.sport==='p4'?FB_GUARD.p4.game:FB_GUARD.nfl.game;
     items.push({k:'Data-quality warning',pri:'neg',cls:'neg',r:r,
-      cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:Math.abs(r.gapS).toFixed(1)+' pts',c:'neg',p:true}],
-      note:'Home line. Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge'+(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.',
+      cells:[{l:'Model',v:fbHomeLine(fbFairDisp(r.p.model)),c:'mdl'},{l:'Market',v:fbHomeLine(r.mkt.spread_line)},{l:'Gap',v:r.gapS!=null?Math.abs(r.gapS).toFixed(1)+' pts':'—',c:'neg',p:true}],
+      /* the canonical status's own word and reason (audit 2026-09-30 #6): a
+         fault is not only a gap past the guard — an orientation flip, a market
+         that disagrees with its own quotes, a failed integrity check */
+      note:'Home line. '+(r.cs&&r.cs.reason?fbEsc(r.cs.t+' — '+r.cs.reason):'Beyond the '+lim+'-pt guard bound: treat as a data fault, not an edge')
+        +(ft.length>1?(' · '+(ft.length-1)+' more game'+(ft.length===2?'':'s')+' flagged on the board'):'')+'.',
       why:'A disagreement this far past the guard bound is EdgeDesk telling you its own number is unsafe here. It is shown so it cannot be mistaken for an opportunity — inspect the inputs, do not price it.'});
   }
   var qb=rows.filter(function(x){return x.ok&&x.warn.some(function(w){return /qb/i.test(w);});});
@@ -56469,7 +56705,8 @@ var FB_WR_LIBS=['lib/research_core.js','lib/research_eval.js','lib/game_research
 var FB_WR_QB_UNKNOWN=/(qb starter|starting quarterback) unknown/i;
 var FB_WR_REASON={NOT_PROJECTED:'not projected',NO_MARKET:'no market',DATA_FAULT:'data fault',THIN_DATA:'thin data',
   STALE_MARKET:'stale quote',STATUS:'other status',NO_NORMALIZED_GAP:'no normalized gap',NOTHING_TO_EXPLAIN:'nothing to explain'};
-var FB_WR_UNC={large_gap:'gap of 7+ pts',high_uncertainty:'input data incomplete or out of date',qb_unknown:'QB starter unknown'};
+var FB_WR_UNC={large_gap:'gap of 7+ pts',high_uncertainty:'input data incomplete or out of date',qb_unknown:'QB starter unknown',
+  implausible_ev:'implausible EV, check data',regime_change:'regime change (new head coach, roster turnover)'};
 function fbWrNum(x){return (typeof x==='number'&&isFinite(x))?x:null;}
 /* The shared research layer loads with the FBS board. The overview asks for
    the same three files through the same fbScript keys, so whichever asks
@@ -56573,7 +56810,7 @@ function fbPsTopHTML(){
 window.fbPsTopHTML=fbPsTopHTML; /* the Research board's module, for tools/opportunity/opportunity_ui.e2e.js */
 function fbWrCandidate(r,ix){
   var cfb=r.sport==='p4',p=r.p,mk=r.mkt||{},ok=!!(r.ok&&p&&p.model),st=null;
-  try{st=cfb?fbP4StatusFor(p,mk).t:fbNflResearchState(p,mk).label;}catch(_){st=null;}
+  try{st=cfb?fbP4StatusFor(p,mk,ix&&ix[r.gid]).t:fbNflResearchState(p,mk).label;}catch(_){st=null;}
   var live=cfb?/^captured/.test(String(mk.book||'')):(r.src==='captured');
   var at=cfb?(mk.as_of?Date.parse(mk.as_of):null):fbWrNum(r.at);
   var age=(live&&at!=null&&isFinite(at))?Math.max(0,(Date.now()-at)/36e5):null;
@@ -56601,6 +56838,11 @@ function fbWrCandidate(r,ix){
       c.confidence_tier=rv.confidence.tier;c.reliability_tier=rv.reliability.tier;
       c.stability_tier=rv.projection_stability?rv.projection_stability.tier:null;
       c.research_label=rv.research_label.key;c.view=rv;
+      /* the research status's own reason, as a qualifier the reading order
+         reads: an implausible EV (audit 2026-09-30 #8) or a regime change (#1) */
+      var crl=rv.research_label.canonical_rule;
+      if(crl==='implausible_ev')c.qualifiers.push('IMPLAUSIBLE_EV');
+      if(crl==='regime_change'||(rv.research_label.flags||[]).some(function(f){return f&&f.key==='REGIME_CHANGE';}))c.qualifiers.push('REGIME_CHANGE');
     }
   }
   if(fbRecDisagrees(p.edge&&p.edge.spread))c.flags.push('SPREAD_LEAN');
@@ -59638,7 +59880,7 @@ function fbBriefGame(q){
       try{ brCov=fbP4ContractFor(pr.u); }catch(_){ brCov=null; }
       var reach=(brCov&&brCov.summary&&brCov.summary.input_coverage!=null)
         ? Math.round(brCov.summary.input_coverage*100) : null;
-      var st=fbP4StatusFor(p,mk);
+      var st=fbP4StatusFor(p,mk,pr.u);
       var scoreAbsent=null;
       if(!sc){
         scoreAbsent=(m.fair_total==null)
@@ -60362,19 +60604,55 @@ function fbNflUncertainty(o){
    it is not a statement about whether the matchup is worth reading about.
    The bounds are the ones the engine already uses: its own 2-point research
    threshold and the board's NFL guard bound. */
-function fbNflResearchState(p,mkt){
+/* THE NFL BOARD'S ONE RESEARCH CLASSIFIER. Its words are its own (the NFL
+   model has no integrity gate and no information-confidence measure, so it
+   never says VERIFIED or WORTH RESEARCHING), and every NFL surface — the
+   board, the Desk, Top Research Priorities, the counters, the exports — reads
+   this one function (fbResearchStatusOfRow maps it word for word). The market
+   checks are the canonical ones (lib/edgedesk_canon.js): a stale or reference
+   market, a market that disagrees with its own books, a possible orientation
+   flip and an implausible raw EV are each excluded before any gap is read. */
+/* THE EV SANITY GUARD'S INPUT TO THE NFL RESEARCH STATE (audit 2026-09-30
+   #8): the raw EV of the captured main-line quotes behind this market, on the
+   same model object the quote-EV board prices (fbQevModelNfl) */
+function fbNflImplausibleEv(p,mkt){
+  if(typeof fbQevReady!=='function'||!fbQevReady()||!p||p.status!=='PREDICTED'||!mkt||!mkt.__ev||mkt.reference_only)return null;
+  var ev=mkt.__ev,kick=ev.t?Date.parse(ev.t):null,gid=ev.rows&&ev.rows[0]&&ev.rows[0].event_id!=null?String(ev.rows[0].event_id):'nfl';
+  var qs=fbQevQuotes(ev,gid,isFinite(kick)?kick:null,'nfl');
+  if(!qs.length)return null;
+  var model=null;try{model=fbQevModelNfl(p,fbQevAnchor(qs));}catch(_){model=null;}
+  if(!model||!model.available)return null;
+  var G=null;
+  try{G=window.EDQuoteEV.evaluateGame(model,qs,{now:Date.now(),game:{game_id:gid,home:ev.home,away:ev.away,kickoff:isFinite(kick)?new Date(kick).toISOString():null},
+    orientation:{ok:true},max_age_minutes:90});}catch(_){G=null;}
+  return G&&G.implausible_ev?G.implausible_ev:null;
+}
+function fbNflResearchState(p,mkt,ie){
+  var C=window.EDCanon;
+  /* every caller reads the same state: the guard's input is looked up here
+     when a caller does not pass it */
+  if(ie===undefined){try{ie=fbNflImplausibleEv(p,mkt);}catch(_){ie=null;}}
   if(!p||p.status!=='PREDICTED')
     return {label:'NOT PRICED',note:'The game model has not produced a number for this matchup.'};
   if(!mkt||mkt.spread_line==null)
     return {label:'NO MARKET',note:'No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.'};
   var gap=p.market&&p.market.spread_gap!=null?Math.abs(p.market.spread_gap):null;
   if(gap==null) return {label:'NO MARKET',note:'A market number is on file but it could not be compared with EdgeDesk’s.'};
+  if(mkt.stale) return {label:'STALE MARKET',rule:'stale_market',
+    note:(mkt.reference_only?'Only the nflverse reference line is on file, and it carries no timestamp'
+      :'The captured quotes for this game are older than the freshness limit')+': it is not a current price, so the '+gap.toFixed(1)
+      +'-point gap is context only and the game is excluded from research ranking.'};
+  if(mkt.consensus_fault) return {label:'MARKET FAULT',rule:'market_fault_consensus',note:mkt.consensus_fault.reason};
+  var orient=C&&C.orientationSuspect?C.orientationSuspect(p.model.fair_spread,mkt.spread_line):null;
+  if(orient) return {label:'DATA FAULT',rule:'orientation_flip',note:'DATA FAULT — '+orient.reason};
   var guard=(window.FB_GUARD&&FB_GUARD.nfl&&FB_GUARD.nfl.game)||14;
-  if(gap>guard) return {label:'DATA FAULT',
+  if(gap>guard) return {label:'DATA FAULT',rule:'guard',
     note:'EdgeDesk and the market are '+gap.toFixed(1)+' points apart, past the '+guard+'-point guard bound. A gap that size is a signal about EdgeDesk’s inputs, not about the game.'};
-  if(gap>=2) return {label:'INVESTIGATE',
+  if(ie&&ie.raw_ev!=null) return {label:'INVESTIGATE',rule:'implausible_ev',
+    note:'implausible EV, check data: '+(ie.label?ie.label+' ':'')+'prices at +'+(100*ie.raw_ev).toFixed(1)+'% raw EV on a main-line spread. At that size a data error is the likelier explanation than an edge.'};
+  if(gap>=2) return {label:'INVESTIGATE',rule:'research_gap',
     note:'EdgeDesk differs from the market by '+gap.toFixed(1)+' points. That is enough to look harder — and out of sample no gap size of any width has cleared p<0.05 against the close, so it is a research prompt and not an edge.'};
-  return {label:'AGREEMENT',
+  return {label:'AGREEMENT',rule:'aligned',
     note:'EdgeDesk and the market are '+gap.toFixed(1)+' points apart, inside the 2-point research threshold. There is nothing unusual to report.'};
 }
 /* the header facts: when, where, what kind of game */
@@ -61340,6 +61618,8 @@ function fbRenderBoard(host){
      (Model status drawer / System Health), not at the top of the board */
   var html='';
   if(S.notes&&S.notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+S.notes.map(fbEsc).join('<br>')+'</div>';
+  /* the market self-check fails the board loudly, above every row */
+  try{html+=fbNflSelfCheckHTML();}catch(_){}
   /* NFL: scoped board — auto window, one week (predictions + grading), or season */
   if(FB.scope==='season'){
     html+=fbSeasonTableHTML()+fbRatingsBoard('nfl');

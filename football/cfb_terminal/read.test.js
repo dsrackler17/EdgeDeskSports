@@ -495,7 +495,19 @@ section('19. alternate spreads: the opt-in capture parses only real prices');
 /* =================================================================== 20 */
 section('20. the explanation boundary carries the Read and refuses to contradict it');
 {
-  const o = GAMES.find((x) => x.read && x.read.selected && !x.read.research_status.blocks_action);
+  /* a published read with a selection that nothing blocks; when this week's
+     slate has none (Pitt @ Virginia Tech, the only selected read, is held at
+     INVESTIGATE by Virginia Tech's regime change — audit 2026-09-30 #1), the
+     boundary is exercised on a copy of that read with the block lifted: what
+     is under test here is the explanation boundary, not the slate */
+  const o = GAMES.find((x) => x.read && x.read.selected && !x.read.research_status.blocks_action) || (() => {
+    const b = GAMES.find((x) => x.read && x.read.selected);
+    if (!b) return null;
+    const c = JSON.parse(JSON.stringify(b));
+    c.read.research_status = Object.assign({}, c.read.research_status, { blocks_action: false });
+    return c;
+  })();
+  chk('the slate carries a selected read to explain', !!o);
   const f = X.cfbFacts(T.explainSource(o));
   chk('the facts carry the read: timing, decision, side, line, price, cover (basis), break-even', f.read && f.read.timing && f.read.line === o.read.selected.line && f.read.probability_basis === 'RAW');
   const txt = X.render(f);

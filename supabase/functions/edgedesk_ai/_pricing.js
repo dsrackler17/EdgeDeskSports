@@ -185,6 +185,17 @@
       weights = { intercept: r4(v.blend.intercept), market: r4(v.blend.close), projection_minus_market: r4(v.blend.model_minus_close) };
       basis = 'blend fitted on seasons before the held-out season: margin = ' + r2(v.blend.intercept) + ' + ' + r2(v.blend.close) + '×market + ' + r2(v.blend.model_minus_close) + '×(projection − market)';
       status = 'BLENDED';
+      /* THE BLEND MAY SHRINK THE PROJECTION'S DISAGREEMENT, NEVER REVERSE IT
+         (audit 2026-09-30 #4; lib/edgedesk_decision.js blendAdjusted applies the
+         same rule on the board's own distribution). With 1.16 on the market and
+         an intercept the fitted blend can land past the market line on the side
+         the projection is against — a fair line that prices against the number
+         on screen. On this kernel's symmetric distribution, "no edge at the
+         market" is the market line itself. */
+      if (Math.abs(mm - km) >= 0.5 && ((mm > km && fairMargin < km) || (mm < km && fairMargin > km))) {
+        basis += '; held at the market line: the blend (' + r2(-fairMargin) + ') would have crossed it against the projection';
+        fairMargin = km; status = 'BLENDED_HELD';
+      }
     } else if (khl != null && mhl != null) { fairMargin = -khl; basis = 'no validated blend for this sport: the market is the fair price and the projection is a research disagreement of ' + r1(Math.abs(mhl - khl)) + ' points'; status = 'MARKET_ANCHORED'; }
     else if (khl != null) { fairMargin = -khl; basis = 'no projection on file: the market is the fair price'; status = 'MARKET_ONLY'; }
     else { fairMargin = -mhl; basis = 'no market on file: the projection stands alone and its tier is ' + v.tier; status = 'MODEL_ONLY'; }
@@ -378,7 +389,7 @@
         var r = priceSpreadSide({ fair: FS, side: s, selection: s === 'home' ? g.home : g.away, odds_american: num(g.odds_american) });
         if (!r) return;
         var score = r.edge_pp != null ? r.edge_pp * completeness : -99;
-        rows.push({ game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff || null, side: s, selection: r.selection, market_line: r.market_line, fair_line: r.fair_line, model_line: r.model_line, gap_points: r.gap_points, cover_at_market: r.cover_at_market, break_even: r.break_even, edge_pp: r.edge_pp, bet_to_line: r.bet_to_line, status: r.status, why: r.why, tier: r.tier, completeness: completeness, rank_score: r2(score), market_source: g.market_source || null });
+        rows.push({ game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff || null, side: s, selection: r.selection, market_line: r.market_line, fair_line: r.fair_line, model_line: r.model_line, gap_points: r.gap_points, cover_at_market: r.cover_at_market, break_even: r.break_even, edge_pp: r.edge_pp, bet_to_line: r.bet_to_line, status: r.status, why: r.why, tier: r.tier, completeness: completeness, rank_score: r2(score), market_source: g.market_source || null, fair_status: FS.status, fair_basis: FS.basis });
       });
     });
     var rank = { PLAY: 5, LEAN_PLAY: 4, PROBABILITY: 3, PASS: 2, CONDITIONAL: 1, NO_MARKET: 0, NO_NUMBER: -1 };

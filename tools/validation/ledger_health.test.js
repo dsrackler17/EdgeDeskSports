@@ -118,7 +118,10 @@ section('model health: cached, current, honest');
   chk('every dashboard bucket carries n and a sample state', (all.match(/"bucket"/g) || []).length > 0 && (all.match(/"bucket"/g) || []).length === (all.match(/"sample":"/g) || []).length);
   chk('the maturity ladder is reported stage by stage, with n', H.maturity.length === 5 && H.maturity.every((m) => typeof m.n === 'number' && m.sample));
   chk('the NFL no-skill finding is a research alert', H.alerts.some((a) => a.code === 'NO_SKILL_OVER_BASE_RATE' && /NFL spread blend/.test(a.text)));
-  chk('the distribution audit raises the NFL centre drift', H.alerts.some((a) => a.code === 'DISTRIBUTION_CENTRE_DRIFT' && a.league === 'NFL' && a.severity === 'RESEARCH_ALERT'));
+  /* audit 2026-09-30 #4: the NFL engine now reads its table by the median, so
+     the table's drift no longer reaches a decision's centre — it is reported
+     as a note, like the college table's, never silently dropped */
+  chk('the distribution audit still reports the NFL table drift, as a note now that decisions read the table by its median', H.alerts.some((a) => a.code === 'DISTRIBUTION_CENTRE_DRIFT' && a.league === 'NFL' && a.severity === 'INFO' && /BY ITS MEDIAN/.test(a.text)));
   chk('the CFB drift is a note: its decision path re-centres the shape', H.alerts.some((a) => a.code === 'DISTRIBUTION_CENTRE_DRIFT' && a.league === 'CFB' && a.severity === 'INFO'));
   chk('a losing published record is said out loud, not hidden', H.alerts.some((a) => a.code === 'MODEL_RECORD_BELOW_BREAK_EVEN'));
   chk('every alert says it changes nothing', H.alerts.every((a) => /not an automatic change|excluded from nothing automatically/.test(a.note || '')));

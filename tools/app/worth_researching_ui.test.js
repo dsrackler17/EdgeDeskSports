@@ -82,13 +82,17 @@ function nflRow(gid, home, away, fair, line, o) {
     market: { spread_line: line, total_line: total, spread_gap: gapS, total_gap: gapT },
     edge: { spread: cls(gapS), total: cls(gapT) }, data_quality: { status: 'OK', warnings: (o.warn || []).slice() },
     prediction_timestamp: iso(NOW - 60e3), fingerprint: 'fp_' + gid, model_version: 'edgedesk_football_v1.0.0' };
+  /* a reference-only line is what fbNflMarketFor now returns for it: stale,
+     reference_only — an untimed number is never the current market (audit
+     2026-09-30 #2/#3) */
   const mkt = { spread_line: line, total_line: total, spread_book: ref ? null : 'DraftKings', total_book: ref ? null : 'DraftKings',
-    quotes_h2h: null, at: ref ? null : iso(NOW - (o.ageH == null ? 1 : o.ageH) * H), h2h_move: null, first_seen: null };
+    quotes_h2h: null, at: ref ? null : iso(NOW - (o.ageH == null ? 1 : o.ageH) * H), h2h_move: null, first_seen: null,
+    stale: ref, reference_only: ref };
   return { sport: 'nfl', gid: String(gid), home, away, hc: home.slice(0, 3).toUpperCase(), ac: away.slice(0, 3).toUpperCase(),
     t: NOW + (o.inH || 30) * H, week: 4, p, mkt, src: ref ? 'nflverse reference' : 'captured', book: mkt.spread_book,
     at: mkt.at ? Date.parse(mkt.at) : null, ref: ref && line != null, ok: true, gapS, gapT,
     lean: cls(gapS).recommendation === 'RESEARCH_LEAN', winp: p.model.home_win_prob, warn: (o.warn || []).slice(),
-    fault: gapS != null && Math.abs(gapS) > 14, thin: false, stale: false, move: o.move == null ? null : o.move };
+    fault: gapS != null && Math.abs(gapS) > 14, thin: false, stale: ref, move: o.move == null ? null : o.move };
 }
 const CFB_UP = [];
 function cfbRow(gid, home, away, fair, line, o) {
@@ -122,7 +126,7 @@ const BOARD = [
   cfbRow(104, 'Duke', 'Tulane', 12, 3, { thin: true }),                        /* THIN DATA                             */
   cfbRow(105, 'Utah', 'Arizona', 11, 4, { stale: true, asOf: iso(NOW - 80 * H) }),  /* STALE QUOTE (board rule)       */
   cfbRow(106, 'Oregon', 'Boise State', 14, null),                              /* NO MARKET                             */
-  cfbRow(107, 'Texas', 'Oklahoma', 10, 6.5, { book: 'cfb.lines · consensus', asOf: null }),  /* consensus line          */
+  cfbRow(107, 'Texas', 'Oklahoma', 10, 6.5, { book: 'cfb.lines · consensus (untimed reference, not a current price)', asOf: null, stale: true }),  /* reference only: STALE (fbP4Market) */
   cfbRow(108, 'Clemson', 'Miami', 9, 4, { asOf: iso(NOW - 9 * H), builtYoung: true }),       /* 9h quote, cached young   */
   nflRow('201', 'Buffalo Bills', 'Detroit Lions', 6.5, 3),                     /* NFL INVESTIGATE 3.5: research band    */
   nflRow('202', 'Chicago Bears', 'New York Jets', 8, 3, { warn: ['home QB starter unknown'] }),  /* QB unknown          */
@@ -149,6 +153,8 @@ function makeCtx(opts) {
   if (opts.layer !== false) ['research_core.js', 'research_eval.js', 'game_research.js'].forEach((f) =>
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), c));
   if (opts.priority !== false) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'research_priority.js'), 'utf8'), c);
+  /* the one research classifier the board word is read off (audit 2026-09-30 #6), as the page loads it */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'params.js'), 'utf8'), c);
   vm.runInContext(PAGE_HELPERS, c);
   Object.assign(c, {
@@ -157,6 +163,11 @@ function makeCtx(opts) {
     fbP4LoadGuarded: (force) => { loads.push(force); return new Promise(() => {}); }, renderFootball: () => {},
     $: () => null, document: { getElementById: () => null },
     fbScopeLabel: () => 'NFL + FBS', fbGameRows: () => opts.rows || BOARD,
+    /* the unit behind a row's projection and its scored reliability, which the
+       board's status reads when it has no research view (every fixture here is
+       a well-covered game: _quality all AVAILABLE) */
+    fbP4UnitFor: (p) => { const r = BOARD.find((x) => x.p === p); return r ? CFB_UP.find((u) => String(u.g.game_id) === r.gid) || null : null; },
+    fbP4ReliabilityFor: () => ({ score: 82, scored: true }),
     fbScript: (src) => { scripts.push(src); return Promise.resolve(); },
     fbOpenGame: (sport, gid) => opened.push([sport, gid]),
     edEvent: (name, params) => fired.push([name, params]),
@@ -202,8 +213,8 @@ has(NFLP, '<span class="t">NFL</span>', 'the NFL panel is labelled');
 has(CFBP, '<span class="t">CFB</span>', 'the CFB panel is labelled');
 eq('NFL: more than five eligible, exactly five rows', NROWS.length, 5);
 eq('CFB: more than five eligible, exactly five rows', CROWS.length, 5);
-has(NFLP, '6 of 9 clear the reading-order gates', 'the NFL panel counts NFL games only');
-has(CFBP, '6 of 11 clear the reading-order gates', 'the CFB panel counts CFB games only');
+has(NFLP, '5 of 9 clear the reading-order gates', 'the NFL panel counts NFL games only');
+has(CFBP, '5 of 11 clear the reading-order gates', 'the CFB panel counts CFB games only');
 [NROWS, CROWS].forEach((rows, i) => same((i ? 'CFB' : 'NFL') + ' is ranked 1 to 5 on its own',
   rows.map((r) => (r.match(/<span class="n">(\d)<\/span>/) || [])[1]), ['1', '2', '3', '4', '5']));
 chk('every NFL row is an NFL game', NROWS.every((r) => /fbWrOpen\(&#39;nfl&#39;|fbWrOpen\('nfl'/.test(r) && /<span class="ts">NFL · /.test(r)));
@@ -228,7 +239,8 @@ eq('CFB research reads go through the cockpit object', C.__gx.indexOf('101') >= 
 [['Purdue @ Iowa', 'DATA FAULT (CFB guard)'], ['Tulane @ Duke', 'THIN DATA'], ['Arizona @ Utah', 'STALE QUOTE'],
  ['Boise State @ Oregon', 'NO MARKET'], ['Miami @ Clemson', 'a 9h quote the research layer calls stale, even from a cache built when it was young'],
  ['Miami Dolphins @ Kansas City Chiefs', 'a captured NFL quote older than the research freshness window'],
- ['New Orleans Saints @ Atlanta Falcons', 'AGREEMENT with nothing to explain'], ['Los Angeles Rams @ Denver Broncos', 'DATA FAULT (NFL guard)']]
+ ['New Orleans Saints @ Atlanta Falcons', 'AGREEMENT with nothing to explain'], ['Los Angeles Rams @ Denver Broncos', 'DATA FAULT (NFL guard)'],
+ ['Oklahoma @ Texas', 'a cfb.lines reference number (STALE, never the market)'], ['Los Angeles Chargers @ Seattle Seahawks', 'an nflverse reference line (STALE MARKET)']]
   .forEach((x) => lacks(HTML, x[0], 'excluded: ' + x[1]));
 const R0 = C.EDResearchPriority.rank(BOARD.map((r) => C.fbWrCandidate(r, ix)), 14);
 const reasons = {}; R0.excluded.forEach((e) => { reasons[e.key] = e.reasons.join('+'); });
@@ -240,7 +252,10 @@ eq('Clemson is out: the quote aged past the window after its research object was
 eq('the 10h NFL quote is out as stale', reasons['nfl|203'], 'STALE_MARKET');
 eq('the 1-pt NFL agreement has nothing to explain', reasons['nfl|205'], 'NOTHING_TO_EXPLAIN');
 eq('Denver is out as a data fault', reasons['nfl|206'], 'DATA_FAULT');
-eq('twelve are eligible across both leagues', R0.eligible, 12);
+/* audit 2026-09-30 #2: an untimed reference number reads STALE and leaves the ranking */
+eq('Texas is out: its only number is the cfb.lines reference', reasons['p4|107'], 'STALE_MARKET');
+eq('Seattle is out: its only number is the nflverse reference', reasons['nfl|204'], 'STALE_MARKET');
+eq('ten are eligible across both leagues', R0.eligible, 10);
 const byLeague = (sport) => C.EDResearchPriority.rank(BOARD.filter((r) => r.sport === sport).map((r) => C.fbWrCandidate(r, ix)), 5);
 same('the NFL list is the ordering layer\'s NFL top five, in its order', titles(NROWS),
   byLeague('nfl').items.map((x) => x.candidate.away + ' @ ' + x.candidate.home));
@@ -291,12 +306,13 @@ lacks(band || '', 'Higher uncertainty', 'without the label: that is the NFL rese
 const qb = ROWS.find((r) => r.indexOf('New York Jets @ Chicago Bears') >= 0);
 chk('an NFL game with an unknown QB is listed', !!qb);
 has(qb || '', 'Higher uncertainty · QB starter unknown', 'and says why its uncertainty is higher');
-/* the consensus line is honest about what it is */
-const consRow = rowsOf(C.fbWrInner([BY_GID['204'], BY_GID['201']])).find((r) => r.indexOf('Los Angeles Chargers @ Seattle Seahawks') >= 0) || '';
-has(consRow, '<span class="ts">NFL · ', 'a game on a consensus line is listed when it earns a place');
-chk('and says it is on a consensus line, with no invented quote age', /· consensus line<\/span>/.test(consRow) && !/market \d+(s|m|h) ago/.test(consRow));
-chk('the full board ranks both consensus-line games below captured quotes in their leagues',
-  titles(NROWS).indexOf('Los Angeles Chargers @ Seattle Seahawks') < 0 && titles(CROWS).indexOf('Oklahoma @ Texas') < 0);
+/* a reference line is never the market (audit 2026-09-30 #2): the nflverse
+   and cfb.lines numbers carry no timestamp, so a game whose only number is one
+   reads STALE and is never listed, even with nothing else on the board */
+const consOnly = C.fbWrInner([BY_GID['204'], BY_GID['201']]);
+chk('a game whose only number is a reference line is never listed, even beside one other game', consOnly.indexOf('Los Angeles Chargers @ Seattle Seahawks') < 0 && consOnly.indexOf('Detroit Lions @ Buffalo Bills') >= 0);
+chk('the full board lists neither reference-line game in its league', titles(NROWS).indexOf('Los Angeles Chargers @ Seattle Seahawks') < 0 && titles(CROWS).indexOf('Oklahoma @ Texas') < 0);
+eq('the reference-line games read the board\'s stale words', [C.fbNflResearchState(BY_GID['204'].p, BY_GID['204'].mkt).label, C.fbP4StatusFor(BY_GID['107'].p, BY_GID['107'].mkt).t].join('|'), 'STALE MARKET|STALE QUOTE');
 chk('a captured quote carries its age', /market \d+(s|m|h) ago/.test(HTML));
 
 /* the reading-order note and the rule */

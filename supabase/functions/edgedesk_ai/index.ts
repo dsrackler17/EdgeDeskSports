@@ -14099,8 +14099,10 @@ const EDPRES: any = (globalThis as any).EDPRES;
 
   /* The board's own windows, restated so the two halves agree.
      A captured PRICE is actionable inside quote_ttl_min. A consensus LINE has
-     no timestamp at all and is research context for as long as the board
-     considers the card live — 72h, matching FBP4_QUOTE_FRESH_MS. */
+     no timestamp at all: it is research CONTEXT (a reference number), and
+     since audit 2026-09-30 it is never the market a research label or a gap
+     ranking is measured against (app.html fbP4Market) — nothing can say it is
+     current. This window only bounds how long it may be SHOWN as context. */
   CONFIG.line_research_window_min = 72 * 60;
   /* The spread-convention constants the engine uses. Same numbers, because it
      is the same question: does negating this row reconcile it with the model? */
@@ -21444,6 +21446,17 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
       weights = { intercept: r4(v.blend.intercept), market: r4(v.blend.close), projection_minus_market: r4(v.blend.model_minus_close) };
       basis = 'blend fitted on seasons before the held-out season: margin = ' + r2(v.blend.intercept) + ' + ' + r2(v.blend.close) + '×market + ' + r2(v.blend.model_minus_close) + '×(projection − market)';
       status = 'BLENDED';
+      /* THE BLEND MAY SHRINK THE PROJECTION'S DISAGREEMENT, NEVER REVERSE IT
+         (audit 2026-09-30 #4; lib/edgedesk_decision.js blendAdjusted applies the
+         same rule on the board's own distribution). With 1.16 on the market and
+         an intercept the fitted blend can land past the market line on the side
+         the projection is against — a fair line that prices against the number
+         on screen. On this kernel's symmetric distribution, "no edge at the
+         market" is the market line itself. */
+      if (Math.abs(mm - km) >= 0.5 && ((mm > km && fairMargin < km) || (mm < km && fairMargin > km))) {
+        basis += '; held at the market line: the blend (' + r2(-fairMargin) + ') would have crossed it against the projection';
+        fairMargin = km; status = 'BLENDED_HELD';
+      }
     } else if (khl != null && mhl != null) { fairMargin = -khl; basis = 'no validated blend for this sport: the market is the fair price and the projection is a research disagreement of ' + r1(Math.abs(mhl - khl)) + ' points'; status = 'MARKET_ANCHORED'; }
     else if (khl != null) { fairMargin = -khl; basis = 'no projection on file: the market is the fair price'; status = 'MARKET_ONLY'; }
     else { fairMargin = -mhl; basis = 'no market on file: the projection stands alone and its tier is ' + v.tier; status = 'MODEL_ONLY'; }
@@ -21637,7 +21650,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
         var r = priceSpreadSide({ fair: FS, side: s, selection: s === 'home' ? g.home : g.away, odds_american: num(g.odds_american) });
         if (!r) return;
         var score = r.edge_pp != null ? r.edge_pp * completeness : -99;
-        rows.push({ game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff || null, side: s, selection: r.selection, market_line: r.market_line, fair_line: r.fair_line, model_line: r.model_line, gap_points: r.gap_points, cover_at_market: r.cover_at_market, break_even: r.break_even, edge_pp: r.edge_pp, bet_to_line: r.bet_to_line, status: r.status, why: r.why, tier: r.tier, completeness: completeness, rank_score: r2(score), market_source: g.market_source || null });
+        rows.push({ game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff || null, side: s, selection: r.selection, market_line: r.market_line, fair_line: r.fair_line, model_line: r.model_line, gap_points: r.gap_points, cover_at_market: r.cover_at_market, break_even: r.break_even, edge_pp: r.edge_pp, bet_to_line: r.bet_to_line, status: r.status, why: r.why, tier: r.tier, completeness: completeness, rank_score: r2(score), market_source: g.market_source || null, fair_status: FS.status, fair_basis: FS.basis });
       });
     });
     var rank = { PLAY: 5, LEAN_PLAY: 4, PROBABILITY: 3, PASS: 2, CONDITIONAL: 1, NO_MARKET: 0, NO_NUMBER: -1 };
@@ -27018,7 +27031,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     out.ladder = ladderOf(pricedFresh).map(function (g) {
       var b = g.best;
       return { side: g.side, line: g.line, main: g.main, books: g.books, book: b.book, american: b.american, implied: r(b.implied, 4),
-        p_win: r(b.p_win, 4), p_push: r(b.p_push, 4), fair_american: b.fair_american, ev: r(b.ev, 4), ev_raw: r(b.ev_raw, 4), edge_pp: r(b.edge_pp, 2), captured_at: b.captured_at };
+        p_win: r(b.p_win, 4), p_push: r(b.p_push, 4), fair_american: b.fair_american, ev: r(b.ev, 4), ev_raw: r(b.ev_raw, 4), edge_pp: r(b.edge_pp, 2), captured_at: b.captured_at,
+        /* audit 2026-09-30 #7e: an alternate is priced from the distribution's tail */
+        tail_pricing: b.alt ? 'uncalibrated' : null };
     });
     /* best EV per side, over every book and line; best raw price at the consensus line */
     var bestSide = { over: null, under: null }, bestPrice = { over: null, under: null };
@@ -27074,6 +27089,8 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (st === 'QUESTIONABLE' || st === 'DOUBTFUL') material.push('player ' + st.toLowerCase());
     if (P.qb_change) material.push('starting QB change');
     if (P.teammate_uncertain) material.push('teammate status unresolved');
+    var pendSelf = (prop.player_status || {}).pending || null;
+    if (pendSelf && st !== 'QUESTIONABLE' && st !== 'DOUBTFUL') material.push('listed ' + String(pendSelf.status).toLowerCase() + ' on the week-' + pendSelf.week + ' report; this week\'s is not on file');
     /* the availability report's own age: a STALE report is open uncertainty
        (labelled, and it caps any stake), never read as current */
     var injF = prop.injury_as_of !== undefined || prop.injury_published !== undefined ? injuryFreshness(prop.injury_as_of, now, FC, prop.injury_published) : null;
@@ -27098,6 +27115,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       /* the order is the severity: availability, anomaly, then quality */
       if (decision === 'BET' || decision === 'LEAN') {
         if (st === 'QUESTIONABLE' || st === 'DOUBTFUL') capTo('WATCH', 'AVAILABILITY_PENDING', 'The player is ' + st.toLowerCase() + ': wait for the final status.');
+        /* audit 2026-09-30 #7: listed on an EARLIER report, his team's report
+           for this week not on file — pending, the same wait */
+        else if (pendSelf) capTo('WATCH', 'AVAILABILITY_PENDING', 'The player was listed ' + String(pendSelf.status).toLowerCase() + ' on the week-' + pendSelf.week + ' report and his team has not filed this week\'s: wait for it.');
         if (P.qb_change && P.qb_unconfirmed && mdef && (mdef.cat === 'passing' || mdef.cat === 'receiving')) capTo('WATCH', 'QB_UNRESOLVED', 'The starting quarterback is unconfirmed after a change: wait for confirmation.');
         var extreme = cand.ev >= CONFIG.anomaly.ev || cand.edge_pp >= CONFIG.anomaly.edge_pp;
         if (extreme) {
@@ -27108,7 +27128,19 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
         if (conf.score < CONFIG.caps.min_confidence) capTo('LEAN', 'LOW_CONFIDENCE', 'Decision confidence ' + conf.score + ' is below ' + CONFIG.caps.min_confidence + '.');
         if (sampleGames < CONFIG.caps.min_games) capTo('LEAN', 'THIN_SAMPLE', 'Fewer than ' + CONFIG.caps.min_games + ' games this season.');
         if (isNum(P.role_stability) && P.role_stability < CONFIG.caps.role_stability) capTo('LEAN', 'ROLE_UNSTABLE', 'The player\'s role has moved sharply over recent games.');
+        /* audit 2026-09-30 #7e: ANY alternate line is priced from the
+           distribution's tail — the part no calibration has measured. It is
+           flagged "tail pricing, uncalibrated" and never reaches BET, whichever
+           side of the median it sits (Hansen O13.5 at -213 used to). */
+        if (cand.alt) capTo('LEAN', 'TAIL_PRICING_UNCALIBRATED', 'tail pricing, uncalibrated: an alternate line is priced from the tail of EdgeDesk\'s distribution, which no calibration has measured — it never reaches BET.');
         if (cand.p_cover != null && cand.p_cover < 0.5) capTo('LEAN', 'TAIL_ALTERNATE', 'An alternate beyond EdgeDesk\'s median: distribution tails are the least validated part of the model.');
+        /* audit 2026-09-30 #7d: a player on a programme in a REGIME CHANGE (a
+           new head coach and a turned-over roster, football/coaching/regime.json)
+           has a usage prior from a system that left; like the research gate on
+           the game (#1), no BET until the team has played N games */
+        var RG = prop.regime || null;
+        if (RG && RG.regime_change === true && !(isNum(RG.games_played) && isNum(RG.min_games_for_research) && RG.games_played >= RG.min_games_for_research))
+          capTo('LEAN', 'REGIME_CHANGE', 'REGIME CHANGE: ' + (RG.team || 'the player\'s team') + ' — ' + (RG.reason || 'new head coach and roster turnover') + ' (' + (isNum(RG.games_played) ? RG.games_played : '?') + ' of ' + (isNum(RG.min_games_for_research) ? RG.min_games_for_research : '?') + ' games this season): the usage prior describes a system that left.');
         if (cons.n_two_sided < 1) capTo('LEAN', 'ONE_SIDED_MARKET', 'No book deals both sides: there is no no-vig anchor.');
         if (!out.anchored) capTo('LEAN', 'NO_MARKET_ANCHOR', 'No two-sided consensus to anchor the market-informed projection.');
         if (single && cons.n_books < 2) capTo('LEAN', 'SINGLE_BOOK', 'Only one sportsbook is quoting this player.');
@@ -27127,6 +27159,28 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       if (out.trigger && out.stage === 'EXPERIMENTAL' && (out.trigger.price != null || out.trigger.line != null))
         out.trigger.text = out.trigger.text.replace(/^becomes BET at/, 'clears the BET thresholds at') + '; the market is EXPERIMENTAL, so it stays capped at LEAN';
     }
+    /* THE EDGE AND THE EV ARE ONE QUOTE'S (audit 2026-09-30 #7a): the class
+       above reads the candidate's own edge and EV, at its own line and price,
+       so a BET or LEAN on a non-positive edge is a contradiction — failed
+       loudly, never shown */
+    if (!edgeEvAgree(decision, cand)) {
+      if (typeof console !== 'undefined' && console.error) console.error('[EDProps] EDGE_EV_MISMATCH on ' + (prop.id || '?') + ': a ' + decision + ' without a positive edge and EV at one quote');
+      out.caps.push({ code: 'EDGE_EV_MISMATCH', to: 'WATCH', text: 'The edge and the EV at the evaluated quote disagree in sign: nothing is decided on it.' });
+      decision = 'WATCH'; code = 'EDGE_EV_MISMATCH';
+    }
+    /* audit 2026-09-30 #7c: the opponent's defensive availability is not a
+       model input (the defensive factors are the defence's season-to-date
+       rates, whoever played). Where the opponent's latest report on file
+       lists defenders OUT or DOUBTFUL, the prop carries a warning that says
+       who, and from which week's report */
+    var OD = prop.opp_defense || null;
+    if (OD && (OD.out || []).length) {
+      var odList = OD.out.slice(0, 4).map(function (x) { return x.name + ' (' + x.pos + ', ' + String(x.status || '').toLowerCase() + ')'; }).join(', ') + (OD.out.length > 4 ? ' and ' + (OD.out.length - 4) + ' more' : '');
+      out.warnings.push('OPP_DEFENSE_UNMODELED');
+      out.opp_defense = { modeled: false, out: OD.out.slice(0, 8), report_week: OD.report_week != null ? OD.report_week : null, report_on_file: OD.report_on_file !== false,
+        text: 'Opponent defense not modeled: ' + (OD.report_on_file === false ? 'its week-' + OD.report_week + ' report (this week\'s is not on file)' : 'its report') + ' lists ' + odList + '. EdgeDesk\'s defensive factors are season-to-date rates, whoever played.' };
+    }
+    if (RG && RG.regime_change === true) out.regime = { team: RG.team || null, reason: RG.reason || null, games_played: isNum(RG.games_played) ? RG.games_played : null, min_games_for_research: isNum(RG.min_games_for_research) ? RG.min_games_for_research : null };
     out.decision = decision; out.code = code;
     var V = VOC(), dv = V && V.DECISION ? V.DECISION[decision === 'NO_DECISION' ? 'NO_DECISION' : decision] : null;
     out.decision_label = dv ? dv.label : decision.replace('_', ' ');
@@ -27200,6 +27254,16 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     if (ev.waiting_for_price) o.wp = 1;
     if (ev.price_basis === 'LATEST') o.lt = 1;
     return o;
+  }
+
+  /* THE EDGE AND THE EV ARE ONE QUOTE'S (audit 2026-09-30 #7a): a BET or a
+     LEAN needs a positive edge (probability minus the price's break-even)
+     AND a positive EV, both at the evaluated quote's own line and price. At
+     one quote the two cannot disagree in sign, so a failure here is a bug
+     upstream — evaluate() demotes it to WATCH and says so, loudly. */
+  function edgeEvAgree(decision, cand) {
+    if (decision !== 'BET' && decision !== 'LEAN') return true;
+    return !!(cand && isNum(cand.edge_pp) && cand.edge_pp > 0 && isNum(cand.ev) && cand.ev > 0);
   }
 
   /* ======================================================= VALUE SCORE
@@ -27303,6 +27367,10 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       (t.delta > 0 === up ? why : risks).push(t.name + ' (' + t.pos + ') is ' + (t.status || 'OUT') + ': projected ' + t.label + ' ' + (t.delta > 0 ? '+' : '−') + Math.abs(100 * t.delta).toFixed(1) + ' pp (a projected adjustment).');
     });
     if (f.teammate_returned) (up ? risks : why).push(f.teammate_returned.name + ' (' + f.teammate_returned.pos + ') is back after missing recent games: the workload may be shared again.');
+    /* listed out on an earlier report, this week's not on file: open, not resolved either way (audit 2026-09-30 #7) */
+    if (f.teammates_pending && f.teammates_pending.length) risks.push(f.teammates_pending.slice(0, 3).map(function (t) { return t.name + ' (' + t.pos + ')'; }).join(', ') + ' listed ' + String(f.teammates_pending[0].status || 'OUT').toLowerCase() + ' on the week-' + f.teammates_pending[0].week + ' report; this week\'s is not on file, so the share is not adjusted either way.');
+    if (ev.opp_defense && ev.opp_defense.text) risks.push(ev.opp_defense.text);
+    if (ev.regime) risks.push('REGIME CHANGE (' + (ev.regime.team || 'the team') + '): new head coach and roster turnover — last season\'s usage describes a system that left.');
     if (isNum(f.wind) && f.wind >= 15 && /pass|rec|long|kick|fg/.test(ev.market)) (up ? risks : why).push('Wind forecast ' + Math.round(f.wind) + ' mph: passing and kicking efficiency drop.');
     if (f.qb_change) risks.push('Starting quarterback change (' + (f.qb_change.from || 'previous starter') + ' → ' + (f.qb_change.to || 'new starter') + '): passing volume and efficiency are less certain.');
     var stt = String(f.status || '').toUpperCase();
@@ -27365,7 +27433,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       snaps: sh.snaps && isNum(sh.snaps.now) ? { now: sh.snaps.now, before: sh.snaps.season } : null,
       opp: o.lead || null, implied_pts: isNum(env.implied) ? env.implied : null, league_implied: isNum(o.league_implied) ? o.league_implied : null,
       spread: isNum(env.margin) ? -env.margin : null, consensus_price: o.consensus_price != null ? o.consensus_price : null,
-      teammates_out: pl.teammates_out || [], teammate_returned: pl.teammate_returned || null, wind: isNum(env.wind) ? env.wind : null,
+      teammates_out: pl.teammates_out || [], teammate_returned: pl.teammate_returned || null, teammates_pending: pl.teammates_pending || [], wind: isNum(env.wind) ? env.wind : null,
       qb_change: pl.qb_change || null, status: pl.status ? pl.status.status : null, practice: pl.status ? pl.status.practice : null,
       sample_games: isNum(pl.sample_games) ? pl.sample_games : null, history: o.hist || null
     };
@@ -27617,13 +27685,37 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       rho: R.map(function (row) { return row.map(function (v) { return r(v, 2); }); }), shrink: f.shrink };
   }
   function floorGrid(u) { var g = decisionConfig().sizing.grid || [0.25, 0.5, 0.75, 1], best = 0; g.forEach(function (x) { if (x <= u + 1e-9 && x > best) best = x; }); return best; }
-  /* items: [{ key, g, p, team, pos, m, side, units, value }] — BET stakes */
+  /* ONE EXPOSURE PER GAME, OFFENCE AND DIRECTION (audit 2026-09-30 #7b). The
+     correlation model lists no cross-player pairs, so √(uᵀRu) summed eight
+     0.25U Colts props as if independent and the 2U game cap never bound: all
+     eight NFL BETs on the board were Indianapolis props in one game, seven of
+     them on the Colts' offence having a quiet day. Props that win together
+     are one bet: every selection that wins when ONE offence in ONE game has a
+     big (or a small) day belongs to one group, and the group together carries
+     at most the stake of its single largest member. A defender's prop is
+     grouped on the offence it plays against (a sack or an interception is
+     that offence's small day). */
+  var DOWN_MARKETS = { pass_ints: 1, sacks: 1, def_ints: 1 };
+  var DEFENCE_MARKETS = { tackles_ast: 1, solo_tackles: 1, sacks: 1, def_ints: 1 };
+  function exposureGroup(it) {
+    if (!it || !it.g || !it.m || !it.side) return null;
+    var offence = DEFENCE_MARKETS[it.m] ? (it.opp || null) : (it.team || null);
+    if (!offence) return null;
+    var up = it.side === 'over';
+    if (DOWN_MARKETS[it.m]) up = !up;
+    return it.g + '|' + offence + '|' + (up ? 'up' : 'down');
+  }
+  /* items: [{ key, g, p, team, opp, pos, m, side, units, value }] — BET stakes */
   function exposure(items, model, cfg) {
     cfg = cfg || CONFIG.exposure;
     var list = (items || []).filter(function (x) { return x && x.units > 0; }).slice().sort(function (a, b) { return (b.value || 0) - (a.value || 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0); });
-    var taken = {}, byPlayer = {}, out = {};
+    var taken = {}, byPlayer = {}, byGroup = {}, groupCap = {}, out = {};
     list.forEach(function (it) {
       var gl = taken[it.g] || (taken[it.g] = []);
+      var gk = exposureGroup(it);
+      /* the group's one-bet size: its first (highest-value) member's stake */
+      if (gk && groupCap[gk] == null) groupCap[gk] = it.units;
+      var groupRoom = gk ? groupCap[gk] - (byGroup[gk] || 0) : Infinity;
       var room = cfg.player_max_units - (byPlayer[it.p] || 0), S = 0, c = 0, top = null;
       gl.forEach(function (a) {
         var ra = selCorr(model, it, a); c += a.units * ra;
@@ -27631,14 +27723,17 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
         gl.forEach(function (b) { S += a.units * b.units * (a === b ? 1 : selCorr(model, a, b)); });
       });
       var disc = c * c - S + cfg.game_max_units * cfg.game_max_units, gameRoom = disc < 0 ? 0 : -c + Math.sqrt(disc);
-      var allow = floorGrid(Math.min(it.units, Math.max(0, room), Math.max(0, gameRoom)));
+      var allow = floorGrid(Math.min(it.units, Math.max(0, room), Math.max(0, gameRoom), Math.max(0, groupRoom)));
       if (allow < it.units - 1e-9) {
-        var player = room < gameRoom;
-        out[it.key] = { units: allow, from: it.units, code: player ? 'PLAYER_EXPOSURE' : 'CORRELATED_EXPOSURE', with: top,
-          text: player ? 'EdgeDesk already stakes ' + r(byPlayer[it.p] || 0, 2) + 'U on this player\'s other props; one player carries at most ' + cfg.player_max_units + 'U.'
+        /* the most specific reason that binds: the player, then the group, then the game */
+        var binding = Math.min(room, gameRoom, groupRoom), player = room <= binding + 1e-12, grp = !player && groupRoom < Infinity && groupRoom <= binding + 1e-12;
+        var dirText = gk ? (gk.slice(gk.lastIndexOf('|') + 1) === 'up' ? 'a big day' : 'a quiet day') : '';
+        out[it.key] = { units: allow, from: it.units, code: grp ? 'GROUP_EXPOSURE' : (player ? 'PLAYER_EXPOSURE' : 'CORRELATED_EXPOSURE'), with: top, group: gk,
+          text: grp ? 'This prop wins with the same offence having ' + dirText + ' as a bet already sized in this game (' + (gk ? gk.split('|')[1] : '') + '): props that win together are one exposure, and this group already carries its ' + r(groupCap[gk], 2) + 'U.'
+            : player ? 'EdgeDesk already stakes ' + r(byPlayer[it.p] || 0, 2) + 'U on this player\'s other props; one player carries at most ' + cfg.player_max_units + 'U.'
             : 'This game\'s correlated stake is at its ' + cfg.game_max_units + 'U cap' + (top && top.rho ? ' (it moves with a bet already sized here, ρ ' + (top.rho > 0 ? '+' : '') + top.rho + ')' : '') + '.' };
       }
-      if (allow > 0) { gl.push({ key: it.key, g: it.g, p: it.p, team: it.team, pos: it.pos, m: it.m, side: it.side, units: allow }); byPlayer[it.p] = (byPlayer[it.p] || 0) + allow; }
+      if (allow > 0) { gl.push({ key: it.key, g: it.g, p: it.p, team: it.team, pos: it.pos, m: it.m, side: it.side, units: allow }); byPlayer[it.p] = (byPlayer[it.p] || 0) + allow; if (gk) byGroup[gk] = (byGroup[gk] || 0) + allow; }
     });
     return out;
   }
@@ -27670,7 +27765,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       var k = row.key || row.id || (b.league + '|' + row.g + '|' + row.p + '|' + row.m), e = (byKey && byKey[k]) || row.e;
       if (!row.p || !e || e.d !== 'BET' || !(e.u > 0) || !e.cand) return;
       var ctx = boardCtx(b, row) || {};
-      items.push({ key: k, g: row.g, p: row.p, team: ctx.team, pos: ctx.pos, m: row.m, side: e.cand[0], units: e.xp ? e.xp[1] : e.u, value: e.v });
+      items.push({ key: k, g: row.g, p: row.p, team: ctx.team, opp: ctx.opp, pos: ctx.pos, m: row.m, side: e.cand[0], units: e.xp ? e.xp[1] : e.u, value: e.v });
     });
     return exposure(items, b.correlation || null);
   }
@@ -27700,7 +27795,11 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
       market_status: x.mc ? 'closed' : null, market_closed_at: x.mc || null,
       /* the availability report's age (injuryFreshness) */
       injury_as_of: b.sources && b.sources.injuries ? b.sources.injuries.retrieved_at || null : undefined,
-      injury_published: b.sources && b.sources.injuries ? b.sources.injuries.published !== false : undefined
+      injury_published: b.sources && b.sources.injuries ? b.sources.injuries.published !== false : undefined,
+      /* the game's regime-change records and defensive availability, as the
+         build evaluated them (build_board.js games[].regime / .availability) */
+      regime: pl && g.regime ? g.regime[pl.team] || null : null,
+      opp_defense: pl && g.availability ? g.availability[pl.opp] || null : null
     };
   }
   /* the opponent's rank in the metric that leads this prop's kind (the
@@ -27775,7 +27874,7 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     /* stages */
     boardInput: boardInput, boardEval: boardEval, boardCtx: boardCtx, boardGames: boardGames, boardLead: boardLead, boardFacts: boardFacts,
     /* same-game correlation and exposure */
-    legCorr: legCorr, selCorr: selCorr, jointSim: jointSim, exposure: exposure, applyExposure: applyExposure, exposeCompact: exposeCompact, boardExposure: boardExposure,
+    legCorr: legCorr, selCorr: selCorr, jointSim: jointSim, exposure: exposure, exposureGroup: exposureGroup, edgeEvAgree: edgeEvAgree, applyExposure: applyExposure, exposeCompact: exposeCompact, boardExposure: boardExposure,
     STAGES: STAGES, STAGE_LABEL: STAGE_LABEL, STAGE_RULES: STAGE_RULES, stageOf: stageOf, stageTable: stageTable, stageOfMarket: stageOfMarket, isTailMarket: isTailMarket,
     /* text */
     priceText: priceText, pctText: pctText, probText: probText, ppText: ppText, unitsText: unitsText, bookName: bookName, bookAbbr: bookAbbr,
@@ -28346,7 +28445,11 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     SINGLE_BOOK: 'Only one sportsbook is quoting this player.',
     STAGE_EXPERIMENTAL: 'This market has not passed EdgeDesk’s validation gates: it informs, it never stakes.',
     PLAYER_EXPOSURE: 'EdgeDesk already stakes this player’s other props up to the 1U player cap.',
-    CORRELATED_EXPOSURE: 'This game’s correlated prop stake is at its cap.'
+    CORRELATED_EXPOSURE: 'This game’s correlated prop stake is at its cap.',
+    GROUP_EXPOSURE: 'Wins with the same offence’s day as a prop already staked in this game: one exposure, one stake.',
+    TAIL_PRICING_UNCALIBRATED: 'Tail pricing, uncalibrated: an alternate line never reaches BET.',
+    REGIME_CHANGE: 'Regime change (new head coach, roster turnover): no BET until the team has played enough games.',
+    EDGE_EV_MISMATCH: 'The edge and the EV at the evaluated quote disagree: nothing is decided on it.'
   };
   /* "Over 38.5 rushing yards" / "Anytime TD" / "No Anytime TD" */
   function propSelText(mk, side, line) {
@@ -28519,7 +28622,7 @@ const EDPROPSDESK: any = (globalThis as any).EDPROPSDESK;
     Object.keys(F).forEach(function (k) { f *= F[k]; });
     var pen = {}, capCodes = (o.caps || []).map(function (c) { return c && c.code ? c.code : c; });
     if (capCodes.indexOf('PRICE_ANOMALY') >= 0) pen.price_anomaly = R.penalty.price_anomaly;
-    if (capCodes.indexOf('TAIL_ALTERNATE') >= 0) pen.tail_alternate = R.penalty.tail_alternate;
+    if (capCodes.indexOf('TAIL_ALTERNATE') >= 0 || capCodes.indexOf('TAIL_PRICING_UNCALIBRATED') >= 0) pen.tail_alternate = R.penalty.tail_alternate;
     if (o.market_view && isNum(o.market_view.n_books) && o.market_view.n_books < 2) pen.single_book = R.penalty.single_book;
     if (capCodes.indexOf('QB_UNRESOLVED') >= 0 || pl.qb_unconfirmed) pen.qb_unresolved = R.penalty.qb_unresolved;
     if (isNum(pl.completeness) && pl.completeness < R.low_completeness) pen.low_completeness = R.penalty.low_completeness;

@@ -472,6 +472,8 @@ section('17 · the board (app.html) shows VERIFIED only when the gate verifies')
     delete u._dg;
     const ctx = { window: {}, Date, Math, JSON, String, isFinite, fetch: () => new Promise(() => {}) };
     ctx.window.EDCfbDisagreement = opts.noGate ? undefined : D;
+    /* the one research classifier the board word is read off (audit 2026-09-30 #6) */
+    ctx.window.EDCanon = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
     ctx.FB = { p4: { _proj: { b1: p }, up: [u], _mkt: {}, dgSub: opts.dgSub === undefined ? { b1: { source: 't', projections: { r: line + 9, g: line + 8, c: line + 8.5 }, ensemble: line + 8.5, ensemble_sd: 1 } } : opts.dgSub, dgSubLoading: true } };
     ctx.FB_GUARD = { p4: { game: 21 } };
     ctx.fbP4Assembly = () => ({ starters: { home: { status: 'PREVIOUS_GAME', player_name: 'QB1', availability: { state: 'UNKNOWN' } },

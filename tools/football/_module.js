@@ -199,6 +199,12 @@ function loadEngine(win, root, opts) {
   vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'engine.js'), 'utf8'), win, { filename: 'engine.js' });
   delete win.module;
   if (!win.EDCfbP4 || !win.EDCfbP4Params) throw new Error('the Power 4 engine loaded but its globals are missing');
+  /* the fitted regime-change curve, as fbP4Ensure loads it right after the
+     engine (audit 2026-09-30 #1): it moves numbers for a programme in a
+     regime change, so a harness without it would price those games on the
+     standard curve the build no longer uses */
+  vm.runInContext(fs.readFileSync(path.join(root, 'football', 'cfb_p4', 'regime_curve.js'), 'utf8'), win, { filename: 'regime_curve.js' });
+  if (!win.EDCfbP4RegimeCurve) throw new Error('the regime curve loaded but EDCfbP4RegimeCurve is missing');
   if (!(opts && opts.contract === false)) {
     CONTRACT_FILES.forEach(parts => {
       vm.runInContext(fs.readFileSync(path.join(root, ...parts), 'utf8'), win, { filename: parts.join('/') });
@@ -242,8 +248,45 @@ function stageGame(win, opts) {
   } else {
     delete S.lines[g.game_id];
   }
+  /* A MARKET IS A CAPTURED QUOTE (audit 2026-09-30 #2). The board measures
+     the gap, the label and the ranking against the consensus of CURRENT
+     captured quotes — the snapshot the price line prices — and cfb.lines is an
+     untimed reference that reads STALE MARKET on its own. So a staged market
+     is staged the way a live board has it: the reference AND a fresh captured
+     consensus at the same number, joined through the real FBS resolver.
+     `market_capture: false` stages the reference alone; `market_captured_at`
+     ages the capture. */
+  delete S.sig['staged:' + g.game_id];
+  /* one board holds one game per pair of teams: a capture staged for the same
+     two teams under another id (an earlier case in the same file) is the same
+     real event, and would join this game — drop it */
+  Object.keys(S.sig).forEach((k) => {
+    const e = S.sig[k];
+    if (/^staged:/.test(k) && e && e.home === g.home_team && e.away === g.away_team) delete S.sig[k];
+  });
+  S._stagedRows = (S._stagedRows || []).filter((x) => !(x.home_team === g.home_team && x.away_team === g.away_team && x.game_id !== g.game_id));
+  if (opts.market_spread != null && opts.market_capture !== false) {
+    ensureFbs(win);
+    /* one universe over every game staged on this board, as the page builds
+       it over the whole schedule */
+    S._stagedRows = (S._stagedRows || []).filter((x) => x.game_id !== g.game_id).concat([g]);
+    S.uni = win.EDFbs.buildUniverse({ rows: S._stagedRows, season: g.season, source: 'staged', params: win.EDCfbP4Params,
+      knownFbs: (win.EDCfbP4Params && win.EDCfbP4Params.rating && win.EDCfbP4Params.rating.seed_ratings) || null });
+    const at = opts.market_captured_at || new Date(Date.now() - 5 * 60000).toISOString();
+    const row = (sel, point) => ({ market: 'spreads', selection: sel, point: point, n_books: opts.market_books || 3, best_book: 'staged consensus',
+      last_seen_at: at, first_seen_at: at, point_is_modal: true });
+    S.sig['staged:' + g.game_id] = { staged: true, home: g.home_team, away: g.away_team, t: g.start_date,
+      rows: [row(g.home_team, +opts.market_spread), row(g.away_team, +opts.market_spread === 0 ? 0 : -opts.market_spread)] };
+  }
   S.loadedAt = Date.now();
   return u;
+}
+/* the FBS resolver the board joins captured quotes through (fbP4Ensure loads it) */
+function ensureFbs(win) {
+  if (win.EDFbs) return win.EDFbs;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'fbs', 'fbs.js'), 'utf8'), win, { filename: 'football/fbs/fbs.js' });
+  if (!win.EDFbs) throw new Error('football/fbs/fbs.js loaded but EDFbs is missing');
+  return win.EDFbs;
 }
 
 module.exports = { ROOT, boot, loadEngine, stageGame, loadNflEngine, stageNflGame, moduleSource, stubWindow, stubElement };

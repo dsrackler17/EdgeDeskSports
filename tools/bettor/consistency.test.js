@@ -144,12 +144,17 @@ chk('A: a board event that captured only the away spread still has a market line
 chk('A: …and the home side still reads first (home -3 is a +3 home margin)', PAGE.fbMarketFromEvent({ rows: [{ market: 'spreads', selection: 'Florida', point: -3, best_book: 'DK' }, { market: 'spreads', selection: 'Ole Miss', point: 3.5, best_book: 'FD' }] }, 'Florida').spread_line === 3);
 PAGE.FB = { canon: { board: { generated_at: new Date(Date.now() - 20 * 60000).toISOString() } } };
 const liveView = { research_label: { key: 'WORTH_RESEARCHING', label: 'WORTH RESEARCHING', rule: 'research_gap' } };
+/* audit 2026-09-30 (#6): the build's label was measured on the Model Lab
+   ledger's market and was swapped over a live gap measured on this page's
+   captured quotes ("MARKET ALIGNED · gap 5.3"). The live label — the one rule
+   over the one snapshot the gap and the price line use — now always stands;
+   the build's status is carried for audit only. */
 const reconciled = PAGE.fbCanonApply(liveView, { research_status: 'NO_MARKET', research_reason: 'no current spread quote' });
-chk('A: a published NO MARKET never overrides a live priced market on the card', reconciled.research_label.key === 'WORTH_RESEARCHING' && reconciled.canonical.market_reconciled === true && reconciled.canonical.build_research_status === 'NO_MARKET');
+chk('A: a published NO MARKET never overrides a live priced market on the card', reconciled.research_label.key === 'WORTH_RESEARCHING' && reconciled.canonical.build_research_status === 'NO_MARKET');
 const reverse = PAGE.fbCanonApply({ research_label: { key: 'NO_MARKET', label: 'NO MARKET', rule: 'no_market' } }, { research_status: 'WORTH_RESEARCHING' });
-chk('A: …nor a published market status a market the page no longer sees', reverse.research_label.key === 'NO_MARKET' && reverse.canonical.market_reconciled === true);
+chk('A: …nor a published market status a market the page no longer sees', reverse.research_label.key === 'NO_MARKET' && reverse.canonical.build_research_status === 'WORTH_RESEARCHING');
 const agree = PAGE.fbCanonApply(liveView, { research_status: 'VERIFIED_MAJOR', research_reason: 'x' });
-chk('A: when both see a market, the published research status still stands (one status on every page)', agree.research_label.key === 'VERIFIED_MAJOR_DISAGREEMENT' && agree.research_label.rule === 'canonical');
+chk('A: a published status measured on another snapshot never replaces the live label (one snapshot, one rule, one status on every page)', agree.research_label.key === 'WORTH_RESEARCHING' && agree.research_label.rule === 'research_gap' && agree.canonical.build_research_status === 'VERIFIED_MAJOR');
 chk('A: the FBS summary reads the decision’s market state and quote, not a second join', /var MS=bd&&bd\.market_state/.test(APP) && /Calibrated EV · decision quote/.test(APP));
 chk('A: the NFL card says "no market" only when the decision’s own market state agrees', /\(!dms\|\|dms\.key==='NO_MARKET'\)/.test(APP));
 
@@ -228,8 +233,15 @@ section('L. M. calibrated EV decides; raw EV is diagnostic');
 const rawOnly = dec({ model: model(12, 6.5), quotes: mainQuotes(6.5, -110, -110) });
 chk('L: a huge raw EV with no calibrated edge is not a BET', rawOnly.raw_ev_pct > 20 && rawOnly.decision !== 'BET' && rawOnly.decision_ev_pct === rawOnly.calibrated_ev_pct, { raw: rawOnly.raw_ev_pct, cal: rawOnly.calibrated_ev_pct, d: rawOnly.decision });
 chk('L: …and the card says why that raw EV is not actionable', /Raw model EV \+[\d.]+% is not actionable/.test(top(U.actionCardHTML(rawOnly, { track: null }))), top(U.actionCardHTML(rawOnly, { track: null })).slice(0, 500));
-const calOnly = dec({ model: model(5, 9.5), quotes: mainQuotes(6.5, -110, -110) });
-chk('M: a calibrated edge that clears decides BET even when the raw one would not', calOnly.decision === 'BET' && calOnly.calibrated_ev_pct >= 5 && calOnly.decision_ev_pct === calOnly.calibrated_ev_pct, { d: calOnly.decision, cal: calOnly.calibrated_ev_pct, raw: calOnly.raw_ev_pct });
+/* raw WF by 5 against WF -6.5 (NC State +6.5 at +3.6%, under the BET line); calibrated WF by 3.5, the same side, clears */
+const calOnly = dec({ model: model(5, 3.5), quotes: mainQuotes(6.5, -110, -110) });
+chk('M: a calibrated edge that clears decides BET even when the raw one would not', calOnly.decision === 'BET' && calOnly.calibrated_ev_pct >= 5 && calOnly.raw_ev_pct < 5 && calOnly.decision_ev_pct === calOnly.calibrated_ev_pct, { d: calOnly.decision, cal: calOnly.calibrated_ev_pct, raw: calOnly.raw_ev_pct });
+/* audit 2026-09-30 #4: a calibration that carries the number ACROSS the line
+   (displayed WF by 5 = NC State's side of WF -6.5; calibrated WF by 9.5 = WF's
+   side) prices the other side from a projection nobody is shown — the side
+   invariant fails it loudly: NO DECISION, never a BET on WF */
+const crossed = (() => { const ce = console.error; console.error = () => {}; try { return dec({ model: model(5, 9.5), quotes: mainQuotes(6.5, -110, -110) }); } finally { console.error = ce; } })();
+chk('M: a calibration that crosses the market line against the displayed projection = NO DECISION · EV SIDE CONTRADICTION, never a BET', crossed.decision === 'NO_DECISION' && crossed.blocker_codes[0] === 'EV_SIDE_CONTRADICTION' && /EV SIDE CONTRADICTION/.test(crossed.action_reason_text), { d: crossed.decision, b: crossed.blocker_codes, t: crossed.action_reason_text });
 chk('M: with a calibration, the decision EV IS the calibrated EV on every evaluable fixture', evaluable.filter((d) => d.calibrated_ev_pct != null).every((d) => d.decision_ev_pct === d.calibrated_ev_pct));
 chk('M: raw EV beside a calibration is labelled RAW MODEL EV · Diagnostic only; the decision EV CALIBRATED EV · Used by the decision engine',
   /RAW MODEL EV \+[\d.]+% Diagnostic only/.test(text(U.actionCardHTML(bet, { track: null }))) && /CALIBRATED EV \+[\d.]+% Used by the decision engine/.test(text(U.actionCardHTML(bet, { track: null }))));
@@ -252,7 +264,7 @@ chk('N: the card prints that same selection, price and book at the top', evaluab
 section('O. PLAYABLE TO stays inside the BET threshold');
 const bets = [bet, calOnly, dec({ model: model(9.5, 9.4), quotes: mainQuotes(6.5, -110, -110) })].filter((d) => d.decision === 'BET' && d.playable);
 function clears(d, line, odds, src) { const o = Q.priceQuote(src, { game_id: 'g1', side: d.side_key, line, american: odds, book: 'X', captured_at: FRESH, fresh: true }, { now: NOW, game: { game_id: 'g1' }, main_line_for_side: line }); const m = D.metricsOf(o); return !!m && m.edge_pp >= 4 - 1e-7 && m.ev >= 0.05 - 1e-9; }
-const srcOf = (d) => d === bet ? model(4, 4.4) : (d === calOnly ? model(5, 9.5) : model(9.5, 9.4));
+const srcOf = (d) => d === bet ? model(4, 4.4) : (d === calOnly ? model(5, 3.5) : model(9.5, 9.4));
 chk('O: several BETs with a playable boundary', bets.length >= 2, bets.length);
 chk('O: the PLAYABLE TO corner (worst line, worst price there) clears the BET threshold', bets.every((d) => clears(d, d.playable.min_line, d.playable.max_odds, srcOf(d))), bets.map((d) => d.playable.text));
 chk('O: one cent worse at the corner does not', bets.every((d) => d.playable.max_odds <= -250 || !clears(d, d.playable.min_line, d.playable.max_odds < 0 ? d.playable.max_odds - 1 : (d.playable.max_odds === 100 ? -101 : d.playable.max_odds - 1), srcOf(d))));

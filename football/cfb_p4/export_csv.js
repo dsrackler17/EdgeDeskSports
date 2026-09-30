@@ -224,17 +224,20 @@ function evTail(g) {
     String(!!x.ev_available), v('ev_unavailable_reason'), v('ev_state'), v('decision_status'), v('best_team'), src];
 }
 
-/* the board's own operational read, restated here so the file and the screen
-   cannot disagree about a game's status. Mirrors fbP4StatusFor in app.html. */
-function boardStatus(p, mkt) {
-  if (!p || p.status !== 'PREDICTED') return 'AWAITING DATA';
-  if (!mkt || mkt.spread_line == null) return 'NO MARKET';
-  if (p.edge && p.edge.spread && p.edge.spread.recommendation === 'PASS_LOW_CONFIDENCE') return 'THIN DATA';
-  if (mkt.stale) return 'STALE QUOTE';
-  var gap = Math.abs(p.model.fair_spread - mkt.spread_line);
-  if (gap > 21) return 'DATA FAULT';
-  if (gap >= 7) return 'INVESTIGATE';
-  return 'RESEARCH';
+/* THE BOARD WORD, READ OFF THE ONE RESEARCH STATUS (audit 2026-09-30 #6).
+   This was a classifier of its own — RESEARCH for every gap under 7, no
+   2-point threshold, no confidence or reliability rule — so the file could
+   say RESEARCH where the screen said MARKET ALIGNED (Pitt @ Virginia Tech).
+   It classifies nothing now: lib/edgedesk_canon.js researchStatus over the
+   projection and this export's market, with the published reliability
+   (football/fbs/slate.json) and no integrity-gate result (a 7+ gap is
+   INVESTIGATE: fail closed), named by EDCanon.boardWord. */
+function boardStatus(p, mkt, g) {
+  if (!CANON) throw new Error('lib/edgedesk_canon.js is required: it is the one research classifier');
+  relTail(g, p);   /* loads the published reliability once */
+  var r = g && g.game_id != null && PUBLISHED_REL ? PUBLISHED_REL[String(g.game_id)] : null;
+  var st = CANON.researchStatusFromProjection(p, mkt || {}, { reliability: r ? r.reliability_score : null, thresholds: { guard_gap: 21 } });
+  return CANON.boardWord(st);
 }
 function fbsTail(g, p, mkt, universe) {
   var m = universe ? FBS.classifyGame(g, universe) : null;
@@ -254,7 +257,7 @@ function fbsTail(g, p, mkt, universe) {
     (ctx && ctx.information_missing != null) ? Math.round((1 - ctx.information_missing) * 1000) / 10 : '',
     (mkt && mkt.spread_line != null) ? (mkt.stale ? 'STALE QUOTE' : 'LIVE') : 'NO MARKET',
     (mkt && mkt.as_of) || '',
-    boardStatus(p, mkt)
+    boardStatus(p, mkt, g)
   ].concat(relTail(g, p));
 }
 var PUBLISHED_REL = null;

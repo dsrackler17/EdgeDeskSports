@@ -288,6 +288,13 @@ async function open(opts) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_reliability.js'), 'utf8'), win,
       { filename: 'lib/cfb_reliability.js' });
   } catch (e) { log('  reliability: ' + (e && e.message)); }
+  /* THE ONE RESEARCH CLASSIFIER (lib/edgedesk_canon.js, a <script src> on
+     the page): the view's label is canon's researchStatus since audit
+     2026-09-30 #6, so a host without it would publish no research label */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win,
+      { filename: 'lib/edgedesk_canon.js' });
+  } catch (e) { log('  research classifier: ' + (e && e.message)); }
   try {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
       { filename: 'lib/cfb_research_view.js' });

@@ -38,8 +38,10 @@ const win = BOOT.win, T = win.__FBTEST;
   vm.runInContext(BOOT.app.slice(at, BOOT.app.indexOf('\n', at)), win);
 })();
 win.whenLabel = win.whenLabel || (iso => String(iso));
-/* two more page-level one-liners from earlier script blocks, loaded for real */
-['function edEsc(', 'function edAttrJs('].forEach(sig => {
+/* more page-level one-liners from earlier script blocks, loaded for real
+   (ago: a live captured market's age, since audit 2026-09-30 #2 every staged
+   market is a captured quote) */
+['function edEsc(', 'function edAttrJs(', 'function ago('].forEach(sig => {
   const at = BOOT.app.indexOf(sig);
   if (at < 0) { console.error('app.html no longer defines ' + sig); process.exit(1); }
   vm.runInContext(BOOT.app.slice(at, BOOT.app.indexOf('\n', at)), win);
@@ -52,6 +54,10 @@ const LIB = 'lib/cfb_research_view.js';
 has(BOOT.app, '<script src="/' + LIB + '?v=', 'app.html loads ' + LIB);
 vm.runInContext(fs.readFileSync(path.join(ROOT, LIB), 'utf8'), win, { filename: LIB });
 ok(!!win.EDCfbResearchView, 'the research view is on window, as the page reads it');
+/* …and the one research classifier it delegates to (audit 2026-09-30 #6) */
+has(BOOT.app, '<script src="/lib/edgedesk_canon.js?v=', 'app.html loads lib/edgedesk_canon.js');
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win, { filename: 'lib/edgedesk_canon.js' });
+ok(!!win.EDCanon, 'the research classifier is on window, as the view reads it');
 
 const HOME = 'Duke', AWAY = 'Wake Forest';
 const HK = E.normKey(HOME), AK = E.normKey(AWAY);

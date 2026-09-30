@@ -440,6 +440,24 @@
       tenure_is_floor: r.tenure_is_floor, previous_hc: r.previous_hc || null };
   }
 
+  /* IS THIS PROGRAMME IN A REGIME CHANGE, from football/coaching/regime.json
+     (football/coaching/build_regime.js): a new head coach AND a roster that
+     turned over. The engine prices its long-run state on the separate,
+     steeper curve (football/cfb_p4/regime_curve.js) and the research gate
+     blocks WORTH RESEARCHING / VERIFIED MAJOR until min_games_for_research.
+     A team the file does not carry, or one that does not fire, is null: the
+     standard curve, exactly as before. */
+  function regimeFor(byTeam, key) {
+    var r = key && byTeam ? byTeam[key] : null;
+    if (!r || r.regime_change !== true) return null;
+    return { regime_change: true, reason: r.reason || null, team: r.team || null,
+      new_hc: r.new_hc === true, hc: r.hc || null, previous_hc: r.previous_hc || null,
+      returning_share: isNum(r.returning_share) ? r.returning_share : null,
+      returning_production: isNum(r.returning_production) ? r.returning_production : null,
+      transfers_out: isNum(r.transfers_out) ? r.transfers_out : null,
+      min_games_for_research: isNum(r.min_games_for_research) ? r.min_games_for_research : null };
+  }
+
   /* THE ONE VENUE TABLE, in the precedence the model's coefficients require:
      the trained table wins (the venue coefficients were fitted on it), a
      hand-checked supplement entry comes next, the generated resolution is the
@@ -1058,11 +1076,13 @@
         home: { conference: g.home_conference, roster: A.rosters.home, qb: null,
           qb_context: qbCtx(A.starters.home, 'home'),
           injuries: A.injuries.home, news: ctx.off_field_for ? ctx.off_field_for(A.hk) : null,
-          coaching: ctx.coaching_for ? ctx.coaching_for(A.hk) : null, schedule: A.schedule.home },
+          coaching: ctx.coaching_for ? ctx.coaching_for(A.hk) : null, schedule: A.schedule.home,
+          regime: ctx.regime_for ? ctx.regime_for(A.hk) : null },
         away: { conference: g.away_conference, roster: A.rosters.away, qb: null,
           qb_context: qbCtx(A.starters.away, 'away'),
           injuries: A.injuries.away, news: ctx.off_field_for ? ctx.off_field_for(A.ak) : null,
-          coaching: ctx.coaching_for ? ctx.coaching_for(A.ak) : null, schedule: A.schedule.away }
+          coaching: ctx.coaching_for ? ctx.coaching_for(A.ak) : null, schedule: A.schedule.away,
+          regime: ctx.regime_for ? ctx.regime_for(A.ak) : null }
       },
       venue: { home: A.venue.home, away: A.venue.away },
       weather: A.weather, market: o.market || {},
@@ -1087,7 +1107,7 @@
   }
 
   return { STATES: STATES, row: row, summarise: summarise, officialReportForGame: officialReportForGame,
-    coachingFor: coachingFor, mergeVenues: mergeVenues, assemble: assemble, request: request,
+    coachingFor: coachingFor, regimeFor: regimeFor, mergeVenues: mergeVenues, assemble: assemble, request: request,
     applyTeamTalent: applyTeamTalent, normKey: normKey,
     normPersonName: normPersonName, AVAIL_TO_ENGINE: AVAIL_TO_ENGINE, playerDetailsFrom: playerDetailsFrom,
     playerIdentity: playerIdentity, replacementFor: replacementFor, injuriesFor: injuriesFor,

@@ -67,6 +67,43 @@
     return c || null;
   }
 
+  /* The REGIME-CHANGE prior curve (football/cfb_p4/regime_curve.js, GENERATED
+     by research/regime_backtest.js --write): a separate, steeper long-run
+     weight for a programme whose head coach and roster turned over, fitted
+     walk-forward on past coaching-change team-seasons. Read exactly like the
+     margin calibration: the global in the browser, require() in node. */
+  function regimeCurve() {
+    var c = root.EDCfbP4RegimeCurve;
+    if (!c && typeof require === 'function') {
+      try { c = require('./regime_curve.js'); } catch (e) { /* browser path */ }
+    }
+    return c || null;
+  }
+  /* regime = the caller's record for this team ({regime_change, reason, ...});
+     returns null when no regime fires, else the weight to use and its state */
+  function regimeWeight(regime, gamesPlayed, standardWeight) {
+    if (!regime || regime.regime_change !== true) return null;
+    var RC = regimeCurve(), cv = regime.curve_override || (RC && RC.curve) || null;
+    var g = isNum(gamesPlayed) ? Math.max(0, gamesPlayed) : 0;
+    var n = RC && isNum(RC.min_games_for_research) ? RC.min_games_for_research : null;
+    var state = { regime_change: true, reason: regime.reason || null, games_played: g,
+      min_games_for_research: isNum(regime.min_games_for_research) ? regime.min_games_for_research : n,
+      curve_version: regime.curve_override ? 'override' : (RC ? RC.version || null : null),
+      applied: false, standard_weight: standardWeight, weight: standardWeight };
+    if (!cv || !isNum(cv.w0) || !isNum(cv.lambda)) {
+      state.why = 'the regime curve (football/cfb_p4/regime_curve.js) is not loaded: the standard weight is kept and the flag still blocks research labels';
+      return { weight: standardWeight, standard_weight: standardWeight, state: state,
+        basis: 'standard prior weight at ' + g + ' games played (REGIME CHANGE flagged; regime curve not loaded)' };
+    }
+    var w = clamp(Math.min(standardWeight, cv.w0 * Math.exp(-cv.lambda * g)), 0, 1);
+    state.applied = true; state.weight = w;
+    state.why = 'REGIME CHANGE: ' + (regime.reason || 'new head coach and roster turnover') + '. The long-run state is weighted '
+      + Math.round(100 * w) + '% (regime curve) instead of ' + Math.round(100 * standardWeight) + '% (standard curve) at ' + g
+      + ' game' + (g === 1 ? '' : 's') + ' played.';
+    return { weight: w, standard_weight: standardWeight, state: state,
+      basis: 'regime-change prior weight at ' + g + ' games played (standard ' + Math.round(100 * standardWeight) + '%)' };
+  }
+
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
   /* an availability designation, as the key of the trained injury status
      weights (params.injury.status_weight). The same reading the input
@@ -407,18 +444,42 @@
       return has(st.rf || {}, teamKey) ? st.rf[teamKey] : st.hp.init_rating;
     },
     /* Section XXIV in one function: what the model believed in August,
-       blended against what it has actually seen, on a LEARNED curve. */
-    blendedRating: function (st, teamKey, isFbs, week) {
+       blended against what it has actually seen, on a LEARNED curve.
+
+       THE REGIME CURVE. `regime` is the caller's per-team regime-change
+       record (football/coaching/regime.json via the input contract). When it
+       fires, the long-run weight comes from the SEPARATE, steeper curve fitted
+       walk-forward on past coaching-change team-seasons
+       (football/cfb_p4/regime_curve.js), capped by the standard curve: a
+       regime can only cut the weight on a long-run state that is describing a
+       team that left. A regime that fires with no curve loaded keeps the
+       standard weight and SAYS so; the research gate still reads the flag. */
+    blendedRating: function (st, teamKey, isFbs, week, regime) {
       var carried = strength.rating(st, teamKey, isFbs);
       if (isFbs === false) return { value: carried, prior_weight: 1, carried: carried,
         this_season: carried, games_played: null, basis: 'FCS bucket' };
       var cr = st.canonicalRatings && st.canonicalRatings[teamKey];
       if (cr && isNum(cr.value)) {
         var cplayed = (st.gamesThisSeason && st.gamesThisSeason[teamKey]) || 0;
+        /* A REGIME CHANGE IS FLAGGED ON EVERY RATING PATH (audit 2026-09-30
+           #1). A promoted canonical rating is priced as published — it has no
+           long-run blend for the curve to re-weight — but the research gate
+           (lib/edgedesk_canon.js) reads the flag from this layer, so it must
+           not vanish because the rating came from somewhere else. */
+        var crg = null;
+        if (regime && regime.regime_change === true) {
+          var RCc = regimeCurve();
+          crg = { regime_change: true, reason: regime.reason || null, games_played: cplayed,
+            min_games_for_research: isNum(regime.min_games_for_research) ? regime.min_games_for_research
+              : (RCc && isNum(RCc.min_games_for_research) ? RCc.min_games_for_research : null),
+            curve_version: RCc ? RCc.version || null : null, applied: false, standard_weight: 0, weight: 0,
+            why: 'REGIME CHANGE: ' + (regime.reason || 'new head coach and roster turnover') + '. The canonical neutral-field rating is priced as '
+              + 'published (it has no long-run blend to re-weight); the flag still gates research labels.' };
+        }
         return { value: cr.value, prior_weight: 0, carried: cr.value,
           this_season: cr.value, games_played: cplayed, canonical: true,
           source: cr.source || 'canonical neutral-field rating',
-          basis: cr.basis || 'canonical neutral-field rating supplied after replay' };
+          basis: cr.basis || 'canonical neutral-field rating supplied after replay', regime: crg };
       }
       /* An FBS team the rating state has never seen has NO rating. Falling back
          to init_rating here would hand back a confident number for a team the
@@ -433,8 +494,12 @@
       var fresh = strength.freshRating(st, teamKey, isFbs);
       var pw = priorWeight(week, played);
       var w = isNum(pw.w) ? clamp(pw.w, 0, 1) : 1;
+      var rg = regimeWeight(regime, played, w);
+      if (rg) w = rg.weight;
       return { value: w * carried + (1 - w) * fresh, prior_weight: w,
-        carried: carried, this_season: fresh, games_played: played, basis: pw.basis };
+        standard_prior_weight: rg ? rg.standard_weight : w,
+        carried: carried, this_season: fresh, games_played: played,
+        basis: rg ? rg.basis : pw.basis, regime: rg ? rg.state : null };
     },
     predictMargin: function (st, home, away, hFbs, aFbs, hfaPts) {
       return strength.rating(st, home, hFbs) - strength.rating(st, away, aFbs)
@@ -920,6 +985,18 @@
        modelled per conference, never as one blanket adjustment. */
     conference: function (st, confName, season) {
       var P = params(); if (!P || !P.conference) return M.missing('conference table not trained');
+      /* AN INDEPENDENT HAS NO CONFERENCE (audit 2026-09-30 #5). "FBS
+         Independents" is a list, not a league: its cross-conference
+         "strength" is whatever its members did (2025: +15.2, the highest of
+         any group, carried by Notre Dame), and it swings with membership
+         (2023 -3.8, 2024 +5.5). Read as a conference it handed UConn a +3.8-pt
+         bonus over every ACC team — Syracuse @ UConn priced UConn -12.2 into a
+         Syracuse -7.5 market. An independent's quality is its own rating;
+         the conference term does not apply to it. (params
+         conference.independents_as_conference = true restores the old
+         reading, for the walk-forward comparison only.) */
+      if (/independent/i.test(String(confName || '')) && !(P.conference.independents_as_conference === true))
+        return M.missing('an independent has no conference: the "' + confName + '" strength is an average of unrelated programmes and says nothing about this team');
       var live = st && st.conf ? st.conf[confName] : null;
       if (live && isNum(live.strength)) {
         return M(live.strength, { n: live.n, confidence: clamp(live.n / 30, 0.3, 1),
@@ -1994,7 +2071,7 @@
     var isFbs = (which === 'home' ? g.home_fbs : g.away_fbs) !== false;
     var prof = strength.profile(st, key, isFbs);
     var roster = talent.profile(side.roster, which);
-    var blended = strength.blendedRating(st, key, isFbs, req.week);
+    var blended = strength.blendedRating(st, key, isFbs, req.week, side.regime || null);
     return {
       which: which, key: key, name: (which === 'home' ? g.home : g.away), is_fbs: isFbs,
       strength: prof, blended: blended, talent: roster,
@@ -2577,11 +2654,20 @@
             /* current-season games behind EACH side's rating (display and
                integrity checks only; nothing reads them back into a number) */
             home_games_played: H.blended.games_played, away_games_played: A.blended.games_played,
+            /* each side's own weight, and the standard curve's, so a regime cut is visible */
+            home_prior_weight: H.blended.prior_weight, away_prior_weight: A.blended.prior_weight,
+            home_standard_prior_weight: isNum(H.blended.standard_prior_weight) ? H.blended.standard_prior_weight : H.blended.prior_weight,
+            away_standard_prior_weight: isNum(A.blended.standard_prior_weight) ? A.blended.standard_prior_weight : A.blended.prior_weight,
             preseason_share: (function () {
               var c = P.blend && P.blend.preseason_share_by_games;
               if (!c || H.blended.games_played == null) return null;
               return c[String(clamp(Math.round(H.blended.games_played), 0, 15))];
-            })() } },
+            })() },
+          /* THE REGIME-CHANGE STATE per side (null = no regime fired). A
+             data-quality flag the research gate reads: it blocks WORTH
+             RESEARCHING / VERIFIED MAJOR until the team has min_games_for_research
+             games this season (lib/edgedesk_canon.js regimeBlock). */
+          regime: { home: H.blended.regime || null, away: A.blended.regime || null } },
         talent: { home: H.talent, away: A.talent },
         situation: { venue_hfa: hfa, travel: travel, rivalry: riv,
           schedule_home: H.schedule, schedule_away: A.schedule,
@@ -2623,7 +2709,14 @@
       },
       cover: cover,
       over: over,
-      data_quality: q,
+      data_quality: (function () {
+        /* a regime change is a DATA-QUALITY fact about this projection: the
+           long-run half of a side's rating describes a programme that turned over */
+        var rw = [H, A].filter(function (S) { return S.blended && S.blended.regime; })
+          .map(function (S) { return 'REGIME CHANGE (' + S.name + '): ' + S.blended.regime.why; });
+        if (rw.length) q.warnings = (q.warnings || []).concat(rw);
+        return q;
+      })(),
       unproven: !(P.validation_summary && P.validation_summary.market
         && P.validation_summary.market.beats_closing_line),
       model_version: P.model_version,

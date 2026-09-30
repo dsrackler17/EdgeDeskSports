@@ -1324,8 +1324,10 @@
 
   /* The board's own windows, restated so the two halves agree.
      A captured PRICE is actionable inside quote_ttl_min. A consensus LINE has
-     no timestamp at all and is research context for as long as the board
-     considers the card live — 72h, matching FBP4_QUOTE_FRESH_MS. */
+     no timestamp at all: it is research CONTEXT (a reference number), and
+     since audit 2026-09-30 it is never the market a research label or a gap
+     ranking is measured against (app.html fbP4Market) — nothing can say it is
+     current. This window only bounds how long it may be SHOWN as context. */
   CONFIG.line_research_window_min = 72 * 60;
   /* The spread-convention constants the engine uses. Same numbers, because it
      is the same question: does negating this row reconcile it with the model? */

@@ -276,7 +276,9 @@ function buildGame(ctx, row) {
         fair_total: row.model_fair_total, home_win_prob: row.model_home_win_prob, sigma: sg.sigma, sigma_basis: sg.basis,
         home_points: latestChamp ? latestChamp.projected_home_points : null, away_points: latestChamp ? latestChamp.projected_away_points : null,
         football_confidence: num(conf) != null ? Math.round(conf) : (latestChamp ? latestChamp.football_confidence : null),
-        prediction_ts: ctx.slate.generated_at, source: 'football/fbs/slate.json' };
+        prediction_ts: ctx.slate.generated_at, source: 'football/fbs/slate.json',
+        /* the engine's regime-change state per side, as the slate published it */
+        regime: row.regime || null };
       /* the engine's team points are (total ± margin) / 2 exactly */
       if (num(row.model_fair_total) != null) { model.home_points = (row.model_fair_total + row.model_home_margin) / 2; model.away_points = (row.model_fair_total - row.model_home_margin) / 2; }
       dist = v1Dist(row.model_home_margin, sg.sigma, ctx._consMargin);
@@ -435,29 +437,45 @@ function buildGame(ctx, row) {
       decision_policy: G.policy_dir, betting_enabled: !!(G.policy && G.policy.bet_enabled), calibrated_ev_note: ctx.evNote, warnings: ctx.warnings },
     sources: ctx.sources
   };
-  const first = T.build(b);
-  b.historical = T.historicalContext(ctx.recordRows, first);
-  const o = T.build(b);
-  /* THE EDGEDESK READ: the stored inputs, then the read built through the same adapter the page uses */
-  const readInputs = readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expErr);
-  let read = null, ev = null, rin = null;
-  try { rin = RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG }); read = RD.read(rin); }
-  catch (e) { read = null; ctx.warnings.push('EdgeDesk Read failed for ' + gid + ': ' + e.message); }
-  /* THE EDGEDESK EV READ: the same stored input and the same Read, priced through lib/edgedesk_ev.js */
-  /* the earlier frozen EV reads of this game (compact: what PRICE GONE and edge decay read), the same list the page gets */
-  const evHistory = ((ctx.evLedger && ctx.evLedger.byGame.get(gid)) || []).map(evHistRow);
-  if (rin && read) {
-    try { ev = EV.evRead(rin, read, { artifact: ctx.ev.artifact, policy: ctx.ev.policy, now: now, history: evHistory, typical_move_pts: ctx.cfg.typical_move_pts }); }
-    catch (e) { ev = null; ctx.warnings.push('EdgeDesk EV failed for ' + gid + ': ' + e.message); }
-  }
-  /* QUOTE-LEVEL EV: every captured quote, both sides, priced one by one */
-  let quoteEv = null;
-  try { quoteEv = quoteEvOf(ctx, o, rin, read, ev); } catch (e) { quoteEv = null; ctx.warnings.push('Quote EV failed for ' + gid + ': ' + e.message); }
-  ctx._governed = null; ctx._governedTop = null; ctx._governedQuotes = null;
-  /* THE BETTOR DECISION: one answer per game, from the same pricing */
-  let bettor = null;
-  try { bettor = BDS.decideGame(ctx, o, read, ev, quoteEv); } catch (e) { bettor = null; ctx.warnings.push('Bettor decision failed for ' + gid + ': ' + e.message); }
-  return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, bettor: bettor, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+  /* THE EV SANITY GUARD (audit 2026-09-30 #8). The quotes are priced from the
+     object the research status is built on, so the status cannot see the
+     raw EV on the first pass: when a captured main-line quote prices past
+     the 25% implausible bound, the object is built once more with that
+     result and its research status reads INVESTIGATE — "implausible EV,
+     check data" — as the page's does. */
+  const gov0 = { g: ctx._governed, t: ctx._governedTop, q: ctx._governedQuotes };
+  const finish = () => {
+    /* the governed engine's verdicts (set above) are read by the quote pricing
+       and cleared after it: a second pass starts from the same verdicts */
+    ctx._governed = gov0.g; ctx._governedTop = gov0.t; ctx._governedQuotes = gov0.q;
+    const first = T.build(b);
+    b.historical = T.historicalContext(ctx.recordRows, first);
+    const o = T.build(b);
+    /* THE EDGEDESK READ: the stored inputs, then the read built through the same adapter the page uses */
+    const readInputs = readBase(ctx, row, game, model, dist, v21, market, quotes, lines, expErr);
+    let read = null, ev = null, rin = null;
+    try { rin = RD.fromTerminal(o, readInputs, { now: now, integrity: INTEG }); read = RD.read(rin); }
+    catch (e) { read = null; ctx.warnings.push('EdgeDesk Read failed for ' + gid + ': ' + e.message); }
+    /* THE EDGEDESK EV READ: the same stored input and the same Read, priced through lib/edgedesk_ev.js */
+    /* the earlier frozen EV reads of this game (compact: what PRICE GONE and edge decay read), the same list the page gets */
+    const evHistory = ((ctx.evLedger && ctx.evLedger.byGame.get(gid)) || []).map(evHistRow);
+    if (rin && read) {
+      try { ev = EV.evRead(rin, read, { artifact: ctx.ev.artifact, policy: ctx.ev.policy, now: now, history: evHistory, typical_move_pts: ctx.cfg.typical_move_pts }); }
+      catch (e) { ev = null; ctx.warnings.push('EdgeDesk EV failed for ' + gid + ': ' + e.message); }
+    }
+    /* QUOTE-LEVEL EV: every captured quote, both sides, priced one by one */
+    let quoteEv = null;
+    try { quoteEv = quoteEvOf(ctx, o, rin, read, ev); } catch (e) { quoteEv = null; ctx.warnings.push('Quote EV failed for ' + gid + ': ' + e.message); }
+    ctx._governed = null; ctx._governedTop = null; ctx._governedQuotes = null;
+    /* THE BETTOR DECISION: one answer per game, from the same pricing */
+    let bettor = null;
+    try { bettor = BDS.decideGame(ctx, o, read, ev, quoteEv); } catch (e) { bettor = null; ctx.warnings.push('Bettor decision failed for ' + gid + ': ' + e.message); }
+    return { object: o, read: read, read_inputs: readInputs, ev: ev, ev_history: evHistory, quote_ev: quoteEv, bettor: bettor, snapshot: snapshotRow(o, terms, qb, model, row, ctx) };
+  };
+  let res = finish();
+  const ie = res.quote_ev && res.quote_ev.game ? res.quote_ev.game.implausible_ev : null;
+  if (ie && !b.implausible_ev) { b.implausible_ev = ie; res = finish(); }
+  return res;
 }
 
 /* ------------------------------------------------------------ QUOTE-LEVEL EV

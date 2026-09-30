@@ -311,6 +311,18 @@ async function build(opts) {
     /* each defence's ranks, once per board */
     [g.home, g.away].forEach((tm) => { if (!matchups[tm] && ctx.ranks[tm]) { const o = {}; Object.keys(ctx.ranks[tm]).forEach((k) => { const x = ctx.ranks[tm][k]; o[k] = [x.rank, x.of, r4(x.value)]; }); matchups[tm] = o; } });
     const env = M.environment(ctx, g, g.home);
+    /* each side's defensive availability on its latest report (NFL; null
+       where no availability feed exists) and each programme's regime-change
+       record (college): game-level, so the page's boardInput reads the same
+       objects the build evaluates (audit 2026-09-30 #7c, #7d) */
+    const availability = {}, regimes = {};
+    [g.home, g.away].forEach((tm) => {
+      const a = M.defenceAvailability(ctx, tm, g);
+      if (a) availability[tm] = a;
+      const rg = ctx.team[tm] && ctx.team[tm].regime;
+      if (rg) regimes[tm] = { regime_change: true, team: (ds.team_names && ds.team_names[tm]) || rg.team || tm, reason: rg.reason || null,
+        games_played: rg.games_played, min_games_for_research: rg.min_games_for_research, prior_scale: r4(rg.prior_scale) };
+    });
     /* markets the books have pulled since they were dealt (capture.js
        buildQuotesFeed `closed`, keyed by the book's player name) */
     const closedFor = {};
@@ -332,6 +344,7 @@ async function build(opts) {
         status: pr.ok ? pr.status : null, depth_rank: pr.ok ? pr.depth_rank : null, sample_games: pr.ok ? pr.sample_games : 0, prior_games: pr.ok ? pr.prior_games : 0,
         role_stability: pr.ok ? pr.role_stability : null, completeness: pr.ok ? pr.completeness : null,
         shares: pr.ok ? pr.shares : null, teammates_out: pr.ok ? pr.teammates_out : [], teammate_returned: pr.ok ? pr.teammate_returned : null,
+        teammates_pending: pr.ok && pr.teammates_pending && pr.teammates_pending.length ? pr.teammates_pending : undefined,
         qb_change: pr.ok ? pr.qb_change : null, env: penv ? { margin: penv.margin, implied: penv.implied, opp_implied: penv.opp_implied, total: penv.total, script: penv.script, wind: penv.wind, dome: penv.dome, source: penv.source } : null,
         projection_error: pr.ok ? null : pr.reason
       };
@@ -351,7 +364,8 @@ async function build(opts) {
           quotes: mq.map((q) => ({ book: q.book, line: q.line, side: q.side, american: q.american, quoted_at: q.quoted_at, captured_at: q.captured_at, alt: q.alt })),
           history: hist.length >= 3 ? { values: hist } : null,
           event: gCap ? { polled_ok_at: gCap.polled_ok_at, attempted_at: gCap.attempted_at, failed: gCap.failed, error: gCap.error } : null,
-          injury_as_of: injAsOf, injury_published: injPublished
+          injury_as_of: injAsOf, injury_published: injPublished,
+          regime: regimes[tm] || null, opp_defense: availability[pctx.opp] || null
         };
         if (!mq.length) { const mc = closedAt([p.name].concat(byPlayer[pid] ? [byPlayer[pid].name] : []), m); if (mc) { input.market_status = 'closed'; input.market_closed_at = mc; } }
         const ev = EDP.evaluate(input, { now, calibration: cal, stages, freshness: FRESH });
@@ -373,7 +387,8 @@ async function build(opts) {
             h: input.history ? input.history.values : null },
           q: input.quotes.map(packQ),
           e: compactEval(ev), mv,
-          fl: [ctx.caps.targets === false && EDP.categoryOf(m) === 'receiving' ? 'NO_TARGETS_IN_FEED' : null, ds.shapes_borrowed && proj && /long/.test(m) ? 'NFL_PLAY_SHAPE' : null, calibFile && league === 'cfb' ? 'NFL_CALIBRATION' : null].filter(Boolean)
+          fl: [ctx.caps.targets === false && EDP.categoryOf(m) === 'receiving' ? 'NO_TARGETS_IN_FEED' : null, ds.shapes_borrowed && proj && /long/.test(m) ? 'NFL_PLAY_SHAPE' : null, calibFile && league === 'cfb' ? 'NFL_CALIBRATION' : null,
+            regimes[tm] ? 'REGIME_CHANGE' : null].filter(Boolean)
         };
         if (!rec.fl.length) delete rec.fl;
         if (!rec.mv) delete rec.mv;
@@ -416,6 +431,7 @@ async function build(opts) {
       script: { home: env.script, away: M.environment(ctx, g, g.away).script },
       pace: { home: ctx.team[g.home] ? r2(ctx.team[g.home].plays) : null, away: ctx.team[g.away] ? r2(ctx.team[g.away].plays) : null, league: r2(ctx.league.plays) },
       starters: g.starters || null, event_id: Q ? Q.event.event_id : (gCap && gCap.event_id) || null, quotes_observed_at: Q ? Q.event.observed_at : null, capture: gCap,
+      availability: Object.keys(availability).length ? availability : null, regime: Object.keys(regimes).length ? regimes : null,
       n_props: nProps, n_priced: nPriced, markets: Object.keys(gMarkets).sort() });
   }
 

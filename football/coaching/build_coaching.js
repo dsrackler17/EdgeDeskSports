@@ -144,6 +144,44 @@ async function grab(url, dest) {
   return { ok: true, bytes: buf.length };
 }
 
+/* WALK BACK UNTIL THE NAME CHANGES. The season the tenure began is the first
+   one, going backwards, still coached by the same person.
+
+   A MISSING PREVIOUS SEASON IS NOT ALWAYS UNKNOWN. The coach table drops a
+   programme entirely in a season it changed coach mid-year: Penn State and
+   Oklahoma State have no 2025 row at all. Walking back stopped there and
+   published `new_hc: null` for both — while the same table shows Matt Campbell
+   as Iowa State's head coach in 2025 and Eric Morris as North Texas's. A man
+   who was another programme's head coach last season began his tenure HERE
+   this season; that is read from the table, not assumed. Anything the table
+   cannot settle stays null. */
+function walkBack(bySeason, id, who, season, earliest) {
+  let since = season, sawAnyPrior = false;
+  for (let y = season - 1; y >= earliest; y--) {
+    const prev = bySeason[y] && bySeason[y][id];
+    if (!prev) break;
+    sawAnyPrior = true;
+    if (prev.coach !== who.coach) break;
+    since = y;
+  }
+  if (sawAnyPrior) {
+    return { since, saw_prior: true, new_hc: since === season, hc_elsewhere: null,
+      basis: since === season ? 'head coach changed from last season' : 'same head coach since ' + since };
+  }
+  const last = bySeason[season - 1] || null;
+  const elsewhere = last ? Object.keys(last).filter(k => String(k) !== String(id) && last[k].coach === who.coach) : [];
+  if (elsewhere.length) {
+    const other = last[elsewhere[0]];
+    return { since: season, saw_prior: true, new_hc: true, hc_elsewhere: { team_id: +elsewhere[0], team: other.team || null, season: season - 1 },
+      basis: 'no ' + (season - 1) + ' row for this programme (a mid-season change drops it from the coach table); '
+        + who.coach + ' was head coach of ' + (other.team || ('team ' + elsewhere[0])) + ' in ' + (season - 1)
+        + ', so his tenure here began in ' + season };
+  }
+  return { since: season, saw_prior: false, new_hc: null, hc_elsewhere: null,
+    basis: last ? 'no ' + (season - 1) + ' row for this programme and nothing in the table settles it: unknown, not continuous'
+      : 'no previous season was read' };
+}
+
 /* one season's head coach per team, keyed on the provider's team id */
 function hcBySeason(rows, season) {
   const m = {};
@@ -210,19 +248,11 @@ async function main() {
   const cur = bySeason[season];
   for (const id of Object.keys(cur)) {
     const who = cur[id];
-    /* WALK BACK UNTIL THE NAME CHANGES. The season the tenure began is the
-       first one, going backwards, still coached by the same person. */
-    let since = season, sawAnyPrior = false;
-    for (let y = season - 1; y >= earliest; y--) {
-      const prev = bySeason[y] && bySeason[y][id];
-      if (!prev) break;
-      sawAnyPrior = true;
-      if (prev.coach !== who.coach) break;
-      since = y;
-    }
+    const wb = walkBack(bySeason, id, who, season, earliest);
+    const since = wb.since, sawAnyPrior = wb.saw_prior;
     const prevSeason = bySeason[season - 1] && bySeason[season - 1][id];
     /* NO HISTORY IS UNKNOWN, NEVER CONTINUOUS. */
-    const new_hc = sawAnyPrior ? (since === season) : null;
+    const new_hc = wb.new_hc;
     const rec = {
       team: who.team || null,
       team_id: +id,
@@ -233,9 +263,10 @@ async function main() {
          Pat Narduzzi shows "since 2019" because 2019 is as far back as this
          run read, not because he arrived then. Saying so is the difference
          between a measurement and a rounding. */
-      tenure_is_floor: sawAnyPrior ? (since === earliest) : null,
+      tenure_is_floor: sawAnyPrior ? (since === earliest && !wb.hc_elsewhere) : null,
       previous_hc: prevSeason ? prevSeason.coach : null,
       new_hc: new_hc,
+      new_hc_basis: wb.basis,
       /* THE TWO THIS SOURCE CANNOT ANSWER. Null, never false. */
       new_oc: null,
       new_dc: null,
@@ -283,4 +314,4 @@ async function main() {
 if (require.main === module) main().then(c => process.exit(c || 0)).catch(e => {
   console.error('[coaching] ' + ((e && e.stack) || e)); process.exit(2);
 });
-module.exports = { hcBySeason, normKey, parseCsv, SCHEMA };
+module.exports = { hcBySeason, walkBack, normKey, parseCsv, SCHEMA };
