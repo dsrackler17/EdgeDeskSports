@@ -212,13 +212,20 @@ jobs:
         # run here, before anything is committed (football/props/verify_ledger.js)
         run: node football/props/verify_ledger.js --league all --base HEAD
 
+      # The landing page's live board reads this small file (tools/home/build_home.js):
+      # the research-grade props from the summaries just built and the college
+      # game EV from the committed research terminal. Copied, never computed;
+      # every run, because the terminal board it reads changes hourly on its own.
+      - name: Landing page board (football/home/board.json)
+        run: node tools/home/build_home.js --write || echo "::warning::the landing page board could not be rebuilt; the last one stays published"
+
       - name: Commit the artifacts
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
             'player props: prices, projections, board and grades' -- \
-            football/props/nfl/ football/props/cfb/
+            football/props/nfl/ football/props/cfb/ football/home/
 
       - name: Insert-only copy to Supabase
         if: ${{ steps.capture.outputs.rebuild != 'false' }}

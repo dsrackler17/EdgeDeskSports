@@ -1,0 +1,337 @@
+{
+ "note": "tools/home/home_sql.test.js: a real player-props block (football/props/cfb/summary.json event 401858249, 2026-09-29T23:35:51.491Z) through lib/edgedesk_opportunity.js stateProps, so the board's prop fields are always exercised",
+ "game_id": "401858249",
+ "home": "Clemson",
+ "away": "Miami",
+ "props": {
+  "schema": "edgedesk_state_props/1",
+  "event_key": "cfb|401858249",
+  "game_id": "401858249",
+  "league": "cfb",
+  "count": 2,
+  "top_score": 65,
+  "text": "2 player props meet EdgeDesk’s research threshold; strongest: Mark Fletcher Jr. Under 80.5 rushing yards (EV +12.5%, confidence 60).",
+  "total_props": 56,
+  "priced_props": 37,
+  "evaluated_props": 29,
+  "bet_count": 0,
+  "lean_count": 4,
+  "watch_count": 10,
+  "capture": {
+   "state": "PRICED",
+   "text": null,
+   "status": "SUCCESS",
+   "reason": "QUOTES_WRITTEN",
+   "window_h": 96
+  },
+  "more": 0,
+  "empty_text": "29 props evaluated. No player props currently meet EdgeDesk’s research threshold. This is a valid result.",
+  "summary_generated_at": "2026-09-29T23:35:51.491Z",
+  "top_opportunities": [
+   {
+    "schema": "edgedesk_opportunity/1",
+    "engine": "edgedesk_opportunity_v1",
+    "type": "PLAYER_PROP",
+    "sport": "CFB",
+    "league": "cfb",
+    "event": {
+     "event_key": "cfb|401858249",
+     "game_id": "401858249",
+     "provider_event_id": "932c7f6dfe06be77192fe000e9f3ac9d",
+     "home": "clemson",
+     "away": "miami",
+     "home_name": "Clemson",
+     "away_name": "Miami",
+     "kickoff": "2026-10-03T23:30:00.000Z",
+     "status": "scheduled"
+    },
+    "player": {
+     "id": "4870736",
+     "name": "Mark Fletcher Jr.",
+     "team": "miami",
+     "opp": "clemson",
+     "position": "RB",
+     "status": null,
+     "practice": null,
+     "injury": null,
+     "report_on_file": false,
+     "sample_games": 3,
+     "prior_games": 14,
+     "role_stability": 0.8,
+     "completeness": 0.5,
+     "qb_change": false,
+     "qb_unconfirmed": false,
+     "teammate_uncertain": false
+    },
+    "market": {
+     "kind": "player_prop",
+     "key": "rush_yds",
+     "label": "Rushing Yards",
+     "category": "rushing",
+     "yesno": false
+    },
+    "selection": {
+     "side": "under",
+     "line": 80.5,
+     "text": "Under 80.5 rushing yards",
+     "short": "U80.5 Rush Yds"
+    },
+    "price": {
+     "american": -114,
+     "book": "betonlineag",
+     "book_name": "BetOnline",
+     "captured_at": "2026-09-29T23:30:42.451Z",
+     "age_minutes": 5.2,
+     "fresh": "FRESH",
+     "alt": false,
+     "books_at_line": 1,
+     "executable": true
+    },
+    "model": {
+     "probability": 0.5994,
+     "p_win": 0.5994,
+     "p_push": 0,
+     "fair_american": -150,
+     "projection": {
+      "mean": 75.66,
+      "median": 70,
+      "p25": 45,
+      "p75": 100
+     },
+     "raw_mean": 70.78,
+     "fair_line": 70,
+     "market_implied_mean": 87.05
+    },
+    "market_view": {
+     "consensus_line": 80.5,
+     "over": -114,
+     "under": -114,
+     "novig_over": 0.5,
+     "novig_side": 0.5,
+     "n_books": 1,
+     "n_two_sided": 1,
+     "interpolated": false
+    },
+    "break_even": 0.5327,
+    "ev": 0.1253,
+    "ev_raw": 0.2124,
+    "edge_pp": 6.67,
+    "disagreement_toward_pp": 9.94,
+    "confidence": 60,
+    "decision": "LEAN",
+    "decision_label": "LEAN",
+    "tone": "lean",
+    "code": "SINGLE_BOOK",
+    "reason": "Only one sportsbook is quoting this player.",
+    "units": 0,
+    "engine_units": 0,
+    "tier": null,
+    "caps": [
+     "SINGLE_BOOK"
+    ],
+    "warnings": [
+     "STAGE_EXPERIMENTAL"
+    ],
+    "blockers": [],
+    "exposure_cap": null,
+    "probability_source": "model_estimated",
+    "probability_label": "MODEL-ESTIMATED (UNVALIDATED CALIBRATION)",
+    "stage": "EXPERIMENTAL",
+    "movement": {
+     "text": "No movement since open",
+     "line_move": 0
+    },
+    "evaluated_at": "2026-09-29T23:35:51.491Z",
+    "key": "prop|cfb|401858249|4870736|rush_yds|under",
+    "prop_id": "cfb|401858249|4870736|rush_yds",
+    "id": "opp_f9500095",
+    "unit_caps": [],
+    "research": {
+     "score": 65,
+     "grade": true,
+     "parts": {
+      "ev": 1,
+      "edge": 0.953,
+      "confidence": 0.6,
+      "market": 0.25,
+      "disagreement": 1,
+      "decision": 0.75
+     },
+     "factors": {},
+     "penalties": {
+      "single_book": 10
+     },
+     "reasons": [],
+     "rule": "opportunity research score v1",
+     "base": 75,
+     "factor": 1
+    },
+    "explanation": {
+     "why": [
+      "EdgeDesk projects 75.7 (median 70.0) against a 80.5 line.",
+      "Fair probability 59.9% vs break-even 53.3% at -114.",
+      "EdgeDesk sits +9.9 pp from the no-vig market on the under at the consensus line.",
+      "Terrell Walden II (RB) is back after missing recent games: the workload may be shared again."
+     ],
+     "concerns": [
+      "Clemson ranks 172nd of 238 in rush epa allowed.",
+      "Team implied total 32.6 (above the league's 26.5).",
+      "Favoured by 14.8: a positive rushing script is likely."
+     ]
+    }
+   },
+   {
+    "schema": "edgedesk_opportunity/1",
+    "engine": "edgedesk_opportunity_v1",
+    "type": "PLAYER_PROP",
+    "sport": "CFB",
+    "league": "cfb",
+    "event": {
+     "event_key": "cfb|401858249",
+     "game_id": "401858249",
+     "provider_event_id": "932c7f6dfe06be77192fe000e9f3ac9d",
+     "home": "clemson",
+     "away": "miami",
+     "home_name": "Clemson",
+     "away_name": "Miami",
+     "kickoff": "2026-10-03T23:30:00.000Z",
+     "status": "scheduled"
+    },
+    "player": {
+     "id": "5164365",
+     "name": "Daylyn Upshaw",
+     "team": "miami",
+     "opp": "clemson",
+     "position": "WR",
+     "status": null,
+     "practice": null,
+     "injury": null,
+     "report_on_file": false,
+     "sample_games": 4,
+     "prior_games": 5,
+     "role_stability": 0.95,
+     "completeness": 0.5,
+     "qb_change": false,
+     "qb_unconfirmed": false,
+     "teammate_uncertain": false
+    },
+    "market": {
+     "kind": "player_prop",
+     "key": "rec_yds",
+     "label": "Receiving Yards",
+     "category": "receiving",
+     "yesno": false
+    },
+    "selection": {
+     "side": "under",
+     "line": 17.5,
+     "text": "Under 17.5 receiving yards",
+     "short": "U17.5 Rec Yds"
+    },
+    "price": {
+     "american": -114,
+     "book": "betonlineag",
+     "book_name": "BetOnline",
+     "captured_at": "2026-09-29T23:30:42.451Z",
+     "age_minutes": 5.2,
+     "fresh": "FRESH",
+     "alt": false,
+     "books_at_line": 1,
+     "executable": true
+    },
+    "model": {
+     "probability": 0.5917,
+     "p_win": 0.5917,
+     "p_push": 0,
+     "fair_american": -145,
+     "projection": {
+      "mean": 19.51,
+      "median": 12,
+      "p25": 0,
+      "p75": 30
+     },
+     "raw_mean": 15.73,
+     "fair_line": 12,
+     "market_implied_mean": 28.34
+    },
+    "market_view": {
+     "consensus_line": 17.5,
+     "over": -114,
+     "under": -114,
+     "novig_over": 0.5,
+     "novig_side": 0.5,
+     "n_books": 1,
+     "n_two_sided": 1,
+     "interpolated": false
+    },
+    "break_even": 0.5327,
+    "ev": 0.1108,
+    "ev_raw": 0.2252,
+    "edge_pp": 5.9,
+    "disagreement_toward_pp": 9.17,
+    "confidence": 63,
+    "decision": "LEAN",
+    "decision_label": "LEAN",
+    "tone": "lean",
+    "code": "SINGLE_BOOK",
+    "reason": "Only one sportsbook is quoting this player.",
+    "units": 0,
+    "engine_units": 0,
+    "tier": null,
+    "caps": [
+     "SINGLE_BOOK"
+    ],
+    "warnings": [
+     "STAGE_EXPERIMENTAL"
+    ],
+    "blockers": [],
+    "exposure_cap": null,
+    "probability_source": "model_estimated",
+    "probability_label": "MODEL-ESTIMATED (UNVALIDATED CALIBRATION)",
+    "stage": "EXPERIMENTAL",
+    "movement": {
+     "text": "No movement since open",
+     "line_move": 0
+    },
+    "evaluated_at": "2026-09-29T23:35:51.491Z",
+    "key": "prop|cfb|401858249|5164365|rec_yds|under",
+    "prop_id": "cfb|401858249|5164365|rec_yds",
+    "id": "opp_dd38d2f4",
+    "unit_caps": [],
+    "research": {
+     "score": 64,
+     "grade": true,
+     "parts": {
+      "ev": 1,
+      "edge": 0.843,
+      "confidence": 0.63,
+      "market": 0.25,
+      "disagreement": 1,
+      "decision": 0.75
+     },
+     "factors": {},
+     "penalties": {
+      "single_book": 10
+     },
+     "reasons": [],
+     "rule": "opportunity research score v1",
+     "base": 74,
+     "factor": 1
+    },
+    "explanation": {
+     "why": [
+      "Fair probability 59.2% vs break-even 53.3% at -114.",
+      "EdgeDesk sits +9.2 pp from the no-vig market on the under at the consensus line.",
+      "A 14.8-point favourite may lean on the run late.",
+      "The projection’s game script already comes from EdgeDesk’s game model (no sportsbook spread on file): Miami by 14.8, total 50.3. It is not counted twice."
+     ],
+     "concerns": [
+      "Team implied total 32.6 (above the league's 26.5).",
+      "Wide outcome range (P25 0 – P75 24): projection uncertainty remains elevated.",
+      "Only one sportsbook is quoting this prop."
+     ]
+    }
+   }
+  ]
+ }
+}

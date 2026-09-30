@@ -1,0 +1,404 @@
+{
+ "note": "tools/funnel/funnel_sql.test.js --write-fixture: funnel_admin_report(30) and lifecycle_admin_summary() over this suite's accounts",
+ "report": {
+  "as_of": "2026-09-29T23:28:50.760028+00:00",
+  "rates": {
+   "signup": 1,
+   "game_open": 0.3333,
+   "prop_open": 0.3333,
+   "landing_cta": 1,
+   "trial_start": 0.6,
+   "cancellation": 0.3333,
+   "trial_to_paid": 1,
+   "terminal_activation": 1
+  },
+  "steps": [
+   {
+    "n": 1,
+    "key": "visitors",
+    "label": "Visitors"
+   },
+   {
+    "n": 0,
+    "key": "live_board",
+    "label": "Saw the live board"
+   },
+   {
+    "n": 0,
+    "key": "pricing",
+    "label": "Saw pricing"
+   },
+   {
+    "n": 1,
+    "key": "landing_cta",
+    "label": "Pressed a landing CTA"
+   },
+   {
+    "n": 0,
+    "key": "signup_started",
+    "label": "Started sign-up"
+   },
+   {
+    "n": 1,
+    "key": "signed_up",
+    "label": "Visitors who created an account"
+   },
+   {
+    "n": 5,
+    "key": "accounts",
+    "label": "All new accounts"
+   },
+   {
+    "n": 0,
+    "key": "checkout",
+    "label": "Reached Stripe checkout"
+   },
+   {
+    "n": 3,
+    "key": "trials",
+    "label": "Started a trial"
+   },
+   {
+    "n": 3,
+    "key": "terminal",
+    "label": "Opened the terminal (trials)"
+   },
+   {
+    "n": 1,
+    "key": "board",
+    "label": "Viewed a board (trials)"
+   },
+   {
+    "n": 1,
+    "key": "game",
+    "label": "Opened a game (trials)"
+   },
+   {
+    "n": 1,
+    "key": "prop",
+    "label": "Opened a player prop (trials)"
+   },
+   {
+    "n": 1,
+    "key": "price",
+    "label": "Compared a price (trials)"
+   },
+   {
+    "n": 0,
+    "key": "saved",
+    "label": "Saved research (trials)"
+   },
+   {
+    "n": 1,
+    "key": "second_session",
+    "label": "Came back (trials)"
+   },
+   {
+    "n": 1,
+    "key": "paid",
+    "label": "Paid"
+   }
+  ],
+  "cohorts": {
+   "sport": [
+    {
+     "d1": 0,
+     "d3": 0,
+     "d7": 0,
+     "key": "nfl",
+     "game": 1,
+     "paid": 0,
+     "prop": 0,
+     "trials": 1,
+     "accounts": 1,
+     "terminal": 1,
+     "cancelled": 0,
+     "d1_eligible": 0,
+     "d3_eligible": 0,
+     "d7_eligible": 0
+    },
+    {
+     "d1": 2,
+     "d3": 1,
+     "d7": 1,
+     "key": "unset",
+     "game": 0,
+     "paid": 1,
+     "prop": 1,
+     "trials": 2,
+     "accounts": 4,
+     "terminal": 2,
+     "cancelled": 1,
+     "d1_eligible": 3,
+     "d3_eligible": 2,
+     "d7_eligible": 1
+    }
+   ],
+   "source": [
+    {
+     "d1": 2,
+     "d3": 1,
+     "d7": 1,
+     "key": "(untracked)",
+     "game": 1,
+     "paid": 1,
+     "prop": 1,
+     "trials": 3,
+     "accounts": 5,
+     "terminal": 3,
+     "cancelled": 1,
+     "d1_eligible": 3,
+     "d3_eligible": 2,
+     "d7_eligible": 1
+    }
+   ],
+   "signup_week": [
+    {
+     "d1": 2,
+     "d3": 1,
+     "d7": 1,
+     "key": "2026-09-21",
+     "game": 0,
+     "paid": 1,
+     "prop": 1,
+     "trials": 2,
+     "accounts": 3,
+     "terminal": 2,
+     "cancelled": 1,
+     "d1_eligible": 3,
+     "d3_eligible": 2,
+     "d7_eligible": 1
+    },
+    {
+     "d1": 0,
+     "d3": 0,
+     "d7": 0,
+     "key": "2026-09-28",
+     "game": 1,
+     "paid": 0,
+     "prop": 0,
+     "trials": 1,
+     "accounts": 2,
+     "terminal": 1,
+     "cancelled": 0,
+     "d1_eligible": 0,
+     "d3_eligible": 0,
+     "d7_eligible": 0
+    }
+   ],
+   "stated_focus": [
+    {
+     "d1": 0,
+     "d3": 0,
+     "d7": 0,
+     "key": "player_props",
+     "game": 1,
+     "paid": 0,
+     "prop": 0,
+     "trials": 1,
+     "accounts": 1,
+     "terminal": 1,
+     "cancelled": 0,
+     "d1_eligible": 0,
+     "d3_eligible": 0,
+     "d7_eligible": 0
+    },
+    {
+     "d1": 2,
+     "d3": 1,
+     "d7": 1,
+     "key": "unset",
+     "game": 0,
+     "paid": 1,
+     "prop": 1,
+     "trials": 2,
+     "accounts": 4,
+     "terminal": 2,
+     "cancelled": 1,
+     "d1_eligible": 3,
+     "d3_eligible": 2,
+     "d7_eligible": 1
+    }
+   ],
+   "research_type": [
+    {
+     "d1": 0,
+     "d3": 0,
+     "d7": 0,
+     "key": "game_lines",
+     "game": 1,
+     "paid": 0,
+     "prop": 0,
+     "trials": 1,
+     "accounts": 1,
+     "terminal": 1,
+     "cancelled": 0,
+     "d1_eligible": 0,
+     "d3_eligible": 0,
+     "d7_eligible": 0
+    },
+    {
+     "d1": 1,
+     "d3": 1,
+     "d7": 1,
+     "key": "neither",
+     "game": 0,
+     "paid": 1,
+     "prop": 0,
+     "trials": 1,
+     "accounts": 3,
+     "terminal": 1,
+     "cancelled": 0,
+     "d1_eligible": 2,
+     "d3_eligible": 2,
+     "d7_eligible": 1
+    },
+    {
+     "d1": 1,
+     "d3": 0,
+     "d7": 0,
+     "key": "player_props",
+     "game": 0,
+     "paid": 0,
+     "prop": 1,
+     "trials": 1,
+     "accounts": 1,
+     "terminal": 1,
+     "cancelled": 1,
+     "d1_eligible": 1,
+     "d3_eligible": 0,
+     "d7_eligible": 0
+    }
+   ]
+  },
+  "coverage": {
+   "accounts": 5,
+   "untracked_accounts": 4,
+   "accounts_from_tracked_visitors": 1
+  },
+  "last_step": [
+   {
+    "step": "opened a game",
+    "trials": 1
+   },
+   {
+    "step": "compared a price",
+    "trials": 1
+   },
+   {
+    "step": "paid",
+    "trials": 1
+   }
+  ],
+  "retention": {
+   "d1": {
+    "rate": 1,
+    "eligible": 2,
+    "returned": 2
+   },
+   "d3": {
+    "rate": 1,
+    "eligible": 1,
+    "returned": 1
+   },
+   "d7": {
+    "rate": 1,
+    "eligible": 1,
+    "returned": 1
+   }
+  },
+  "trial_days": 7,
+  "definitions": {
+   "paid": "a paid invoice with amount_paid > 0, or trialing became active",
+   "trial": "Stripe's own records (comps excluded)",
+   "signup": "landing visitors later linked to an account created in the window, over landing visitors; accounts with no tracked visit are counted under All new accounts only",
+   "visitor": "a distinct hashed visitor with a landing_view in the window",
+   "retention": "rolling: a terminal event N or more days after the account was created, among trials whose account is at least N days old",
+   "trial_to_paid": "paid among trials whose 7-day trial has ended",
+   "starts_at_deploy": "landing, terminal and research events exist only from the day funnel.sql was applied"
+  },
+  "window_days": 30,
+  "trial_outcomes": {
+   "paid": 1,
+   "trials": 3,
+   "cancelled": 1,
+   "trials_ended": 1,
+   "cancelled_in_trial": 1
+  }
+ },
+ "lifecycle": {
+  "as_of": "2026-09-29T23:28:51.838359+00:00",
+  "skips": [
+   {
+    "n": 2,
+    "reason": "no longer an active trial"
+   },
+   {
+    "n": 1,
+    "reason": "reader turned trial tips off"
+   },
+   {
+    "n": 1,
+    "reason": "the charge date moved"
+   }
+  ],
+  "counts": [
+   {
+    "n": 1,
+    "kind": "renewal_reminder",
+    "status": "sending"
+   },
+   {
+    "n": 1,
+    "kind": "renewal_reminder",
+    "status": "skipped"
+   },
+   {
+    "n": 1,
+    "kind": "trial_day1",
+    "status": "sending"
+   },
+   {
+    "n": 1,
+    "kind": "trial_day1",
+    "status": "skipped"
+   },
+   {
+    "n": 1,
+    "kind": "trial_day3",
+    "status": "pending"
+   },
+   {
+    "n": 1,
+    "kind": "trial_day3",
+    "status": "skipped"
+   },
+   {
+    "n": 1,
+    "kind": "trial_welcome",
+    "status": "sent"
+   },
+   {
+    "n": 1,
+    "kind": "trial_welcome",
+    "status": "skipped"
+   }
+  ],
+  "next_due": "2026-10-02T23:28:50.044373+00:00",
+  "settings": {
+   "id": 1,
+   "reply_to": "support@edgedesksports.com",
+   "site_url": "https://edgedesksports.com",
+   "from_email": "EdgeDesk <research@edgedesksports.com>",
+   "updated_at": "2026-09-29T23:28:51.758336+00:00",
+   "day1_enabled": true,
+   "day3_enabled": true,
+   "mailing_address": "Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423",
+   "renewal_enabled": true,
+   "sending_enabled": false,
+   "welcome_enabled": true,
+   "renewal_lead_hours": 72
+  },
+  "opted_out": 1
+ }
+}

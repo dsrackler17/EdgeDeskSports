@@ -2878,6 +2878,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
+<link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3817,7 +3818,9 @@ window.mcRefresh=function(){
 <script src="/lib/research_core.js?v=20260925p"></script>
 <script src="/lib/edgedesk_personal.js?v=20260929e"></script>
 <script src="/lib/edgedesk_share_card.js?v=20260926g"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260929p"></script>
+<script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
+<!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
+<script src="/lib/edgedesk_track.js?v=20260930a"></script>
 <!-- The CFB research view: what a reader sees first on the college board
      (the fair line with its side, the market gap, the research label, the
      reasons, the best available line, the projection's own history), read off
@@ -3868,7 +3871,7 @@ window.mcRefresh=function(){
      Research, the Props page, the Card and the AI desk read the same thing
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260929fr1"></script>
-<script src="/lib/edgedesk_props_ui.js?v=20260929calm1"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -4069,6 +4072,9 @@ window.mcRefresh=function(){
 /* ===== Supabase (read-only; anon key is public-safe, RLS allows select) ===== */
 var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+/* the funnel: events go out with the reader's own token (edToken refreshes it
+   through the one shared refresh), so the database, not the page, names the reader */
+try{ if(window.EDTrack) window.EDTrack.configure({url:SB_URL,key:SB_KEY,token:function(){ return edToken(); }}); }catch(_){}
 /* ===== session token =====================================================
    Reads MUST carry the user's access_token, not the anon key: auth.uid() is what
    every RLS policy keys on, and it is NULL for an anon bearer. Anon is kept only
@@ -21318,8 +21324,15 @@ async function pgRecheck(){
   }
 }
 
+/* the terminal is open to this reader: the first-run screen and the funnel's
+   terminal_opened listen for it (lib/edgedesk_first_run.js) */
+function pgEntitledSignal(st){
+  window.ED_ENTITLED=st;
+  try{document.dispatchEvent(new CustomEvent('ed:entitled',{detail:st}));}catch(_){}
+}
 /* after unlocking, repaint whatever the user is looking at */
 function pgOnUnlock(){
+  pgEntitledSignal('ok');
   try{
     if(typeof loadEdges==='function')loadEdges();
     if(typeof loadSubStatus==='function')loadSubStatus();
@@ -21353,9 +21366,10 @@ async function pgPollForSub(){
   if(st==='ok'){
     try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){}
     pgWarnBar(window.SUB);
+    pgEntitledSignal('ok');
     return;
   }
-  if(st==='unknown')return;                  /* fail open; RLS still governs data */
+  if(st==='unknown'){ pgEntitledSignal('unknown'); return; }   /* fail open; RLS still governs data */
 
   if(justPaid||pending){ await pgPollForSub(); return; }
   pgShow(pgLockedHTML(''));
@@ -61366,7 +61380,11 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20260929p"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20260930b"></script>
+<!-- first run ("Here's what EdgeDesk found today") and the funnel's in-app steps,
+     over the landing page's own view model (lib/edgedesk_home.js) -->
+<script src="/lib/edgedesk_home.js?v=20260930a"></script>
+<script src="/lib/edgedesk_first_run.js?v=20260930a"></script>
 <script>
 try{
   window.EDReport.configure({url:SB_URL,key:SB_KEY,

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE LANDING PAGE'S EDGEDESK EV — one implementation, and it is the
+   THE METHODOLOGY PAGE'S EDGEDESK EV — one implementation, and it is the
    terminal's.
 
-   The landing page shows EdgeDesk EV on an illustrative game: in the hero,
-   the not-picks comparison, the three steps, the feature grid, the game's
-   price check, the price slider and the alternate-line ladder. Every one of
-   those numbers must be what lib/edgedesk_quote_ev.js (over
+   The EdgeDesk EV walk-through lives on /methodology/ (the landing page
+   shows LIVE numbers now, and links here for the explanation). It prices an
+   illustrative game: the game's price check, the price slider and the
+   alternate-line ladder. Every one of those numbers must be what
+   lib/edgedesk_quote_ev.js (over
    lib/research_core.js) returns for the illustrative inputs in #lpEvData —
    never a figure typed into marketing copy, and never a second copy of the
    odds math. This suite:
@@ -37,7 +38,8 @@ function chk(name, cond, detail) {
 function has(hay, needle, name) { chk(name, String(hay).indexOf(needle) >= 0, 'missing: ' + needle); }
 
 const ROOT = path.join(__dirname, '..', '..');
-const IDX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const IDX = fs.readFileSync(path.join(ROOT, 'methodology', 'index.html'), 'utf8');
+const LANDING = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 const Q = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
 const Canon = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
 const POLICY = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_ev', 'policy', 'cfb_ev_policy_v1.json'), 'utf8'));
@@ -132,19 +134,9 @@ chk('zero EV is a PASS, not a qualifier', stateOf({ ev: 0, edge: 0.02, price: -1
 /* ======================================================================== */
 const H = quote(D.hero.line, D.hero.price);
 const pct = x => Q.pct(x, 1), sev = x => ENT(Q.signedPct(x, 1)), price = a => M(Q.priceText(a));
-const HERO = IDX.slice(IDX.indexOf('<header class="hero"'), IDX.indexOf('</header>'));
-has(HERO, 'Auburn ' + M(D.hero.line) + ' at ' + price(D.hero.price), 'the hero names the exact quote it prices');
-has(HERO, '<span class="v">' + pct(H.cover) + '</span>', 'hero: EdgeDesk probability ' + pct(H.cover));
-has(HERO, '<span class="v dim">' + pct(H.be) + '</span>', 'hero: break-even ' + pct(H.be));
-has(HERO, '<span class="v dim">' + price(H.fair) + '</span>', 'hero: fair odds ' + price(H.fair));
-has(HERO, '<span class="v big">' + sev(H.ev) + '</span>', 'hero: EdgeDesk EV ' + Q.signedPct(H.ev, 1));
-const NP = section('difference');
-has(NP, 'Available odds</span><span class="v">' + price(D.hero.price) + '</span>', 'not-picks: the same available price');
-has(NP, 'EdgeDesk EV</span><span class="v pos">' + sev(H.ev) + '</span>', 'not-picks: the same EV');
-const HOW = section('how');
-[price(D.hero.price), pct(H.be), sev(H.ev), 'EdgeDesk probability ' + pct(H.cover)].forEach(v => has(HOW, v, 'step 03 shows ' + v));
-const FEAT = section('product');
-has(FEAT, '<span>' + price(D.hero.price) + '</span><i>&rarr;</i><span>BE ' + pct(H.be) + '</span><i>&rarr;</i><b>EV ' + sev(H.ev) + '</b>', 'the EV feature card shows the same quote');
+/* the landing page no longer carries an illustrative EV: its numbers are live */
+chk('the landing page carries no illustrative EV figure of its own', LANDING.indexOf('id="lpEvData"') < 0 && LANDING.indexOf('id="evSlider"') < 0);
+chk('and links to this walk-through', /href="\/methodology\/#ev"/.test(LANDING));
 /* the price slider's first state */
 const start = quote(D.slider.line, D.slider.start), st0 = stateOf(start);
 chk('the slider starts on the hero\'s price', D.slider.start === D.hero.price);
@@ -203,16 +195,16 @@ chk('the positive EVs stay modest — the demo does not oversell', rows.concat([
 /* ======================================================================== */
 /* 6. THE ILLUSTRATIVE GAME OBEYS THE PRODUCT'S OWN RULES                   */
 /* ======================================================================== */
-const HERO_MODEL = +((HERO.match(/EdgeDesk line<\/span><span class="v mdl">Auburn &minus;([\d.]+)/) || [])[1]);
-const HERO_MKT = +((HERO.match(/Market<\/span><span class="v">Auburn &minus;([\d.]+)/) || [])[1]);
-chk('the market line in the hero is the line EdgeDesk EV prices', HERO_MKT === -D.hero.line);
+const GAME = section('game');
+const HERO_MODEL = +((GAME.match(/EdgeDesk<\/span><span class="v mdl">Auburn &minus;([\d.]+)/) || [])[1]);
+const HERO_MKT = +((GAME.match(/Market<\/span><span class="v">Auburn &minus;([\d.]+)/) || [])[1]);
+chk('the market line in the game is the line EdgeDesk EV prices', HERO_MKT === -D.hero.line);
 chk('a gap of this size is WORTH RESEARCHING in lib/edgedesk_canon.js',
   Canon.researchStatus({ projected: true, market: 'FRESH', gap: HERO_MODEL - HERO_MKT, confidence: 72, fair_margin: HERO_MODEL }).key === 'WORTH_RESEARCHING');
 chk('and the gap clears the canonical research threshold', HERO_MODEL - HERO_MKT >= Canon.THRESHOLDS.research_gap);
 chk('the model is further onto Auburn than the market, so EdgeDesk\'s cover at the market line is above a coin flip',
   HERO_MODEL > HERO_MKT && H.cover > 0.5);
-const GAME = section('game');
-has(GAME, 'Auburn &minus;' + HERO_MODEL, 'the game section repeats the hero\'s model line');
+has(GAME, 'Auburn &minus;' + HERO_MODEL, 'the game section states the model line');
 has(GAME, (HERO_MODEL - HERO_MKT).toFixed(1) + ' pts', 'and its gap');
 has(GAME, '= Auburn by ' + HERO_MODEL, 'and the drivers add up to it');
 chk('the drivers sum to the fair line', () => {

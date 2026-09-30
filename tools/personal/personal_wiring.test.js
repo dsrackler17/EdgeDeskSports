@@ -70,6 +70,13 @@ const ctaSpans = IDX.match(/data-ed-price="cta">([^<]+)</g) || [];
 chk('the landing page carries the offer on at least four CTAs', ctaSpans.length >= 4, ctaSpans.length);
 chk('every static CTA text equals the one source (no-JS readers see the same words)',
   ctaSpans.every((m) => m.replace(/^data-ed-price="cta">/, '').replace(/<$/, '') === X.CTA_LINE), ctaSpans);
+chk('every static price, trial and plan text equals the one source', () => {
+  const want = { price: X.PRICE_DISPLAY, trial: X.TRIAL_LABEL, plan: X.PLAN_NAME, days: String(X.TRIAL_DAYS), day8: String(X.FIRST_CHARGE_DAY), founding: X.FOUNDING_NOTE };
+  const bad = [...IDX.matchAll(/data-ed-price="(price|trial|plan|days|day8|founding)">([^<]*)</g)].filter((m) => m[2] !== want[m[1]]).map((m) => m[1] + '=' + m[2]);
+  return bad.length === 0 || (console.log('   drift:', bad.join(', ')), false);
+});
+chk('the renewal terms the customer consents to are filled from the file before they are recorded',
+  /<p id="arlTerms">[\s\S]*data-ed-price="price"[\s\S]*<\/p>/.test(IDX) && /EDPricing\.apply\(document\.getElementById\('arlModal'\)\)[\s\S]{0,200}var offer=document\.getElementById\('arlTerms'\)/.test(IDX));
 chk('the landing page loads the pricing file and applies it', /\/lib\/edgedesk_pricing\.js/.test(IDX) && /EDPricing\.apply\(document\)/.test(IDX));
 /* every static copy of a figure a no-JS reader sees equals the one source */
 const WORD = { price: X.PRICE_DISPLAY, monthly: X.PRICE_DISPLAY + '/' + X.BILLING_PERIOD, plan: X.PLAN_NAME };
@@ -96,7 +103,7 @@ chk('the paywall renders the same list', /\(\(X&&X\.FEATURES\)\|\|\[\]\)\.map\(/
 /* the offer sits under the hero button rather than in the bar, so a reader
    sees what the free week becomes before any button, at every width */
 chk('the hero says what follows the free week, right under its button',
-  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b>Full access for 7 days<\/b><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
+  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b><span data-ed-price="trial">7 days free<\/span><\/b><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
 chk('the in-app paywall states the trial line for a new account and promises no trial to a lapsed one',
   /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
   && /<span class="per">then '\+stEsc\(price\)\+'\/month<\/span>/.test(APP));

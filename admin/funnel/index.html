@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Conversion funnel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE CONVERSION FUNNEL (supabase/funnel.sql, supabase/lifecycle_email.sql).
+
+     WHERE PEOPLE STOP   visitor → saw the live board → saw pricing → pressed a
+                         landing CTA → started sign-up → account → Stripe
+                         checkout → trial → opened the terminal → board → game
+                         → player prop → compared a price → saved research →
+                         came back → paid. Each step with its count, the share
+                         of the step before, the share of the first, and the
+                         biggest drop marked.
+     RATES               landing CTA, signup, trial start, terminal activation,
+                         game open, prop open, day-1 / day-3 / day-7 retention
+                         (rolling), trial-to-paid (trials whose trial ended),
+                         cancellation.
+     WHERE TRIALS ENDED  the furthest step each trial reached.
+     COHORTS             by signup week, traffic source (first touch), sport
+                         (stated), stated research focus, and what readers
+                         actually opened (game lines, player props, both).
+     LIFECYCLE EMAIL     the four trial emails: the switch, what was sent and
+                         skipped (with reasons) in the last 30 days.
+
+     Every call is a security-definer function that checks the operator list
+     (public.affiliate_admins) under the OPERATOR'S OWN token. No reader is
+     named anywhere on this page: every figure is a count.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--bar:#2fa79a;--bar-track:#221c15}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:120px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);white-space:nowrap}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.seg{display:inline-flex;gap:4px;border:1px solid var(--border);border-radius:9px;padding:3px;flex-wrap:wrap}
+.seg button{background:none;color:var(--dim);padding:5px 10px}
+.seg button.on{background:var(--surface2);color:var(--text)}
+/* the funnel: one series, one hue, thin bars anchored left, the value labelled at the end */
+.fun{display:grid;gap:4px}
+.fr{display:grid;grid-template-columns:minmax(150px,230px) minmax(0,1fr) 150px;gap:10px;align-items:center;padding:3px 4px;border-radius:6px}
+.fr:hover{background:var(--surface2)}
+.fr .lb{font-size:12.5px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fr .tr{height:12px;background:var(--bar-track);border-radius:4px;position:relative}
+.fr .br{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px}
+.fr .vl{font:600 12px 'JetBrains Mono',monospace;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+.fr .vl small{color:var(--dim);font-weight:500;margin-left:6px}
+.fr.drop .lb::after{content:"  \25bc biggest drop";color:var(--warn);font:700 10px 'JetBrains Mono',monospace}
+.fr.sep{margin-top:8px;border-top:1px dashed var(--border);border-radius:0;padding-top:9px}
+@media(max-width:640px){.fr{grid-template-columns:1fr 110px}.fr .tr{grid-column:1/-1;order:3}}
+.pill{font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim)}
+.pill.on{color:var(--pos);border-color:rgba(118,189,62,.5)}
+.cbs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.cbs label{display:flex;gap:6px;align-items:center;font-weight:500;color:var(--text)}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">funnel</span><nav><a href="/admin/growth/">Growth console</a><a href="/admin/affiliates/">Partner program</a></nav><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div class="card" id="signin" style="margin-top:18px">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="row">
+      <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+      <div class="f"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+      <button type="button" id="gGo">Sign in</button>
+    </div>
+    <div class="msg" id="gMsg"></div>
+    <div class="note">Operators only (the partner program's operator list). Every figure on this page is a count of rows; no reader is named.</div>
+  </div>
+
+  <div id="app" class="hide">
+    <div class="row" style="margin-top:18px;align-items:center">
+      <div class="f" style="max-width:200px"><label for="win">Window</label>
+        <select id="win"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="180">Last 180 days</option></select></div>
+      <button type="button" class="g" id="reload">Refresh</button>
+      <span class="sp"></span><span class="who" id="asOf"></span>
+    </div>
+    <div class="msg" id="aMsg"></div>
+
+    <h2>Rates</h2>
+    <div class="kpis" id="kpis"></div>
+    <div class="note" id="kNote"></div>
+
+    <h2>Where people stop</h2>
+    <div class="card">
+      <div class="fun" id="fun" role="img" aria-label="Funnel: count at each step"></div>
+      <div class="note">Three sections, each read against its own first step: landing visitors · all new accounts (checkout, trials) · what trials did in the terminal. The small figure is the share of the step before. The table below has every number.</div>
+      <div class="tw" style="margin-top:12px"><table id="funT"></table></div>
+    </div>
+
+    <h2>Where trials ended up</h2>
+    <div class="card"><div class="tw"><table id="last"></table></div>
+      <div class="note">The furthest step each trial in the window reached. A trial that paid is counted as paid, whatever else it did.</div></div>
+
+    <h2>Cohorts</h2>
+    <div class="card">
+      <div class="seg" id="dims" role="tablist" aria-label="Cohort dimension">
+        <button type="button" data-d="signup_week" class="on">Signup week</button><button type="button" data-d="source">Traffic source</button>
+        <button type="button" data-d="sport">Sport</button><button type="button" data-d="stated_focus">Stated focus</button><button type="button" data-d="research_type">What they opened</button>
+      </div>
+      <div class="tw" style="margin-top:12px"><table id="coh"></table></div>
+      <div class="note" id="cNote"></div>
+    </div>
+
+    <h2>Lifecycle email</h2>
+    <div class="card">
+      <div class="row" style="align-items:center"><span>Sending is <b id="lcState">—</b></span><span class="sp"></span><button type="button" id="lcToggle" class="g">—</button></div>
+      <div class="cbs" id="lcKinds"></div>
+      <div class="row" style="margin-top:10px"><div class="f" style="max-width:220px"><label for="lcLead">Renewal reminder, hours before the charge</label><input id="lcLead" type="number" min="24" max="120" step="1"></div><button type="button" class="g" id="lcSave">Save</button></div>
+      <div class="msg" id="lcMsg"></div>
+      <div class="tw" style="margin-top:12px"><table id="lcT"></table></div>
+      <div class="note" id="lcNote">The sender runs hourly (.github/workflows/lifecycle-email.yml) and needs RESEND_API_KEY. Nothing is sent while sending is off.</div>
+    </div>
+
+    <h2>Definitions</h2>
+    <div class="card"><div class="note" id="defs"></div></div>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_funnel_admin_session';
+var SESSION = null, REP = null, LC = null, DIM = 'signup_week';
+var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
+var KINDS = { trial_welcome: 'Welcome (terminal is live)', trial_day1: 'Day 1 research', trial_day3: 'Day 3: new since last visit', renewal_reminder: 'Renewal reminder' };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function pct(x) { return x == null ? '—' : (Math.round(x * 1000) / 10) + '%'; }
+function rate(a, b) { return b ? pct(a / b) : '—'; }
+async function api(path, init) {
+  var t = (SESSION && SESSION.access_token) || SB_KEY;
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json' } }));
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function rpc(n, b) { return api('rpc/' + n, { method: 'POST', body: JSON.stringify(b || {}) }); }
+function kpi(label, v, sub) { return '<div class="kpi"><i>' + esc(label) + '</i><b>' + esc(v) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
+
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+
+function renderRates(r) {
+  var R = r.rates || {}, T = r.retention || {}, O = r.trial_outcomes || {};
+  var step = function (k) { var s = (r.steps || []).filter(function (x) { return x.key === k; })[0]; return s ? s.n : null; };
+  var ret = function (x) { return x ? pct(x.rate) : '—'; }, retSub = function (x) { return x ? x.returned + ' of ' + x.eligible + ' eligible trials' : ''; };
+  $('kpis').innerHTML = kpi('Visitors', step('visitors') == null ? '—' : step('visitors'), 'distinct, in ' + r.window_days + ' days')
+    + kpi('Landing CTA', pct(R.landing_cta), 'of visitors pressed one')
+    + kpi('Signup', pct(R.signup), (step('signed_up') == null ? step('accounts') + ' accounts' : step('signed_up') + ' of ' + step('visitors') + ' visitors'))
+    + kpi('Trial start', pct(R.trial_start), step('trials') + ' of ' + step('accounts') + ' accounts')
+    + kpi('Terminal activation', pct(R.terminal_activation), 'trials that opened the terminal')
+    + kpi('Game open', pct(R.game_open), 'of activated trials')
+    + kpi('Prop open', pct(R.prop_open), 'of activated trials')
+    + kpi('Day-1 retention', ret(T.d1), retSub(T.d1))
+    + kpi('Day-3 retention', ret(T.d3), retSub(T.d3))
+    + kpi('Day-7 retention', ret(T.d7), retSub(T.d7))
+    + kpi('Trial to paid', pct(R.trial_to_paid), (O.paid || 0) + ' paid · ' + (O.trials_ended || 0) + ' trials ended')
+    + kpi('Cancellation', pct(R.cancellation), (O.cancelled || 0) + ' of ' + (O.trials || 0) + ' trials · ' + (O.cancelled_in_trial || 0) + ' during the trial');
+  var C = r.coverage || {};
+  $('kNote').textContent = ((O.trials || 0) < 30 ? 'Small sample: ' + (O.trials || 0) + ' trials in the window. A few accounts move these rates a lot. ' : '')
+    + (C.untracked_accounts > 0 ? C.untracked_accounts + ' of ' + C.accounts + ' new accounts have no tracked landing visit (created before tracking began, from another page, or with storage blocked); they count from “All new accounts” down.' : '');
+}
+function renderFunnel(r) {
+  var steps = r.steps || [], first = steps.length ? steps[0].n : 0, trials = (steps.filter(function (s) { return s.key === 'trials'; })[0] || {}).n || 0;
+  /* three sections, each read against its own first step: visitors · all new
+     accounts (checkout, trials) · what trials did in the terminal */
+  var accounts = (steps.filter(function (s) { return s.key === 'accounts'; })[0] || {}).n || 0;
+  var keys = steps.map(function (s) { return s.key; }), accIdx = keys.indexOf('accounts'), termIdx = keys.indexOf('terminal');
+  var baseOf = function (i) { return termIdx >= 0 && i >= termIdx ? { n: trials, w: 'trials' } : (accIdx >= 0 && i >= accIdx ? { n: accounts, w: 'new accounts' } : { n: first, w: 'visitors' }); };
+  var prevOf = function (i) { return i === 0 || i === accIdx || i === termIdx ? null : steps[i - 1].n; };
+  var worst = null, worstRate = 2;
+  steps.forEach(function (s, i) {
+    var prev = prevOf(i);
+    if (prev > 0 && s.key !== 'trials') { var q = s.n / prev; if (q < worstRate) { worstRate = q; worst = s.key; } }
+  });
+  var max = Math.max.apply(null, steps.map(function (s) { return s.n || 0; }).concat([1]));
+  $('fun').innerHTML = steps.map(function (s, i) {
+    var prev = prevOf(i), b = baseOf(i);
+    var w = max ? Math.max(0, Math.min(100, 100 * (s.n || 0) / max)) : 0;
+    var tip = s.label + ': ' + s.n + (prev != null ? ' · ' + rate(s.n, prev) + ' of the step before' : '') + ' · ' + rate(s.n, b.n) + ' of ' + b.w;
+    return '<div class="fr' + (s.key === worst ? ' drop' : '') + (i === accIdx || i === termIdx ? ' sep' : '') + '" title="' + esc(tip) + '"><span class="lb">' + esc(s.label) + '</span>'
+      + '<span class="tr"><span class="br" style="width:' + w.toFixed(1) + '%"></span></span><span class="vl">' + (s.n || 0) + '<small>' + (prev != null ? rate(s.n, prev) : '') + '</small></span></div>';
+  }).join('');
+  $('funT').innerHTML = '<tr><th>Step</th><th class="r">Count</th><th class="r">Of the step before</th><th class="r">Of the section’s first step</th></tr>'
+    + steps.map(function (s, i) { var p = prevOf(i), b = baseOf(i); return '<tr><td>' + esc(s.label) + '</td><td class="r">' + s.n + '</td><td class="r">' + (p != null ? rate(s.n, p) : '—') + '</td><td class="r">' + rate(s.n, b.n) + ' <small style="color:var(--faint)">of ' + b.w + '</small></td></tr>'; }).join('');
+}
+function renderLast(r) {
+  var L = r.last_step || [], tot = L.reduce(function (a, x) { return a + x.trials; }, 0);
+  $('last').innerHTML = '<tr><th>Furthest step reached</th><th class="r">Trials</th><th class="r">Share</th></tr>'
+    + (L.length ? L.map(function (x) { return '<tr><td>' + esc(x.step) + '</td><td class="r">' + x.trials + '</td><td class="r">' + rate(x.trials, tot) + '</td></tr>'; }).join('') : '<tr><td colspan="3">No trials in the window.</td></tr>');
+}
+function renderCohorts() {
+  if (!REP) return;
+  var rows = (REP.cohorts || {})[DIM] || [];
+  var lab = function (k) { return DIM === 'source' ? (SOURCES[k] || k) : (k === 'unset' ? 'Not stated' : k === 'nfl' ? 'NFL' : k === 'cfb' ? 'College' : k === 'both' ? 'Both' : k === 'game_lines' ? 'Game lines' : k === 'player_props' ? 'Player props' : k === 'neither' ? 'Opened neither' : k); };
+  $('coh').innerHTML = '<tr><th>' + esc({ signup_week: 'Signup week', source: 'Source', sport: 'Sport', stated_focus: 'Stated focus', research_type: 'What they opened' }[DIM]) + '</th>'
+    + '<th class="r">Accounts</th><th class="r">Trials</th><th class="r">Terminal</th><th class="r">Game</th><th class="r">Prop</th><th class="r">D1</th><th class="r">D3</th><th class="r">D7</th><th class="r">Paid</th><th class="r">Cancelled</th></tr>'
+    + (rows.length ? rows.map(function (c) {
+      return '<tr><td>' + esc(lab(c.key)) + '</td><td class="r">' + c.accounts + '</td><td class="r">' + c.trials + ' <small style="color:var(--faint)">' + rate(c.trials, c.accounts) + '</small></td>'
+        + '<td class="r">' + rate(c.terminal, c.trials) + '</td><td class="r">' + rate(c.game, c.trials) + '</td><td class="r">' + rate(c.prop, c.trials) + '</td>'
+        + '<td class="r">' + rate(c.d1, c.d1_eligible) + '</td><td class="r">' + rate(c.d3, c.d3_eligible) + '</td><td class="r">' + rate(c.d7, c.d7_eligible) + '</td>'
+        + '<td class="r">' + c.paid + ' <small style="color:var(--faint)">' + rate(c.paid, c.trials) + '</small></td><td class="r">' + c.cancelled + '</td></tr>';
+    }).join('') : '<tr><td colspan="11">No accounts in the window.</td></tr>');
+  $('cNote').textContent = DIM === 'research_type' ? 'Behaviour, not a stated preference: which of a game or a player prop each account actually opened.' : (DIM === 'source' ? 'First attributable touch (supabase/growth.sql acquisition). Accounts that never passed a tracked page are "No record".' : 'Retention columns are shares of accounts old enough for that day.');
+}
+function renderLifecycle(s) {
+  LC = s; var st = s.settings || {};
+  $('lcState').textContent = st.sending_enabled ? 'ON' : 'off';
+  $('lcState').style.color = st.sending_enabled ? 'var(--pos)' : 'var(--warn)';
+  $('lcToggle').textContent = st.sending_enabled ? 'Switch sending off' : 'Switch sending on';
+  $('lcLead').value = st.renewal_lead_hours;
+  $('lcKinds').innerHTML = [['welcome_enabled', 'trial_welcome'], ['day1_enabled', 'trial_day1'], ['day3_enabled', 'trial_day3'], ['renewal_enabled', 'renewal_reminder']]
+    .map(function (k) { return '<label><input type="checkbox" data-k="' + k[0] + '"' + (st[k[0]] ? ' checked' : '') + '> ' + esc(KINDS[k[1]]) + '</label>'; }).join('');
+  var by = {}; (s.counts || []).forEach(function (c) { by[c.kind] = by[c.kind] || {}; by[c.kind][c.status] = c.n; });
+  $('lcT').innerHTML = '<tr><th>Email (last 30 days)</th><th class="r">Sent</th><th class="r">Skipped</th><th class="r">Pending</th><th class="r">Failed</th></tr>'
+    + Object.keys(KINDS).map(function (k) { var b = by[k] || {}; return '<tr><td>' + esc(KINDS[k]) + '</td><td class="r">' + (b.sent || 0) + '</td><td class="r">' + (b.skipped || 0) + '</td><td class="r">' + ((b.pending || 0) + (b.sending || 0)) + '</td><td class="r">' + (b.failed || 0) + '</td></tr>'; }).join('')
+    + (s.skips && s.skips.length ? '<tr><th colspan="5">Why emails were skipped</th></tr>' + s.skips.map(function (x) { return '<tr><td colspan="4">' + esc(x.reason) + '</td><td class="r">' + x.n + '</td></tr>'; }).join('') : '');
+  $('lcNote').textContent = 'The sender runs hourly (.github/workflows/lifecycle-email.yml) and needs RESEND_API_KEY. Nothing is sent while sending is off. '
+    + (s.opted_out ? s.opted_out + ' reader(s) turned trial tips off. ' : '') + (s.next_due ? 'Next due: ' + String(s.next_due).replace('T', ' ').slice(0, 16) + 'Z.' : '');
+}
+async function setLc(patch) {
+  try { renderLifecycle(await rpc('lifecycle_admin_set', { p: patch })); say('lcMsg', 'ok', 'Saved.'); }
+  catch (e) { say('lcMsg', 'err', String(e.message || e)); }
+}
+$('lcToggle').onclick = function () { if (LC) setLc({ sending_enabled: !LC.settings.sending_enabled }); };
+$('lcSave').onclick = function () {
+  var p = { renewal_lead_hours: parseInt($('lcLead').value, 10) };
+  [].forEach.call(document.querySelectorAll('#lcKinds input'), function (i) { p[i.getAttribute('data-k')] = i.checked; });
+  setLc(p);
+};
+$('dims').onclick = function (e) {
+  var b = e.target.closest ? e.target.closest('button[data-d]') : null; if (!b) return;
+  DIM = b.getAttribute('data-d');
+  [].forEach.call(this.querySelectorAll('button'), function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+  renderCohorts();
+};
+$('reload').onclick = function () { load(); };
+$('win').onchange = function () { load(); };
+
+async function load() {
+  say('aMsg', '', '');
+  try {
+    REP = await rpc('funnel_admin_report', { p_days: parseInt($('win').value, 10) || 30 });
+    $('asOf').textContent = 'as of ' + String(REP.as_of).replace('T', ' ').slice(0, 16) + 'Z';
+    renderRates(REP); renderFunnel(REP); renderLast(REP); renderCohorts();
+    var d = REP.definitions || {};
+    $('defs').innerHTML = Object.keys(d).map(function (k) { return '<b>' + esc(k.replace(/_/g, ' ')) + '</b>: ' + esc(d[k]); }).join('<br>');
+  } catch (e) { say('aMsg', 'err', /not an admin/.test(String(e.message)) ? 'This account is not on the operator list.' : 'Could not read the funnel: ' + String(e.message || e) + ' (apply supabase/funnel.sql).'); }
+  try { renderLifecycle(await rpc('lifecycle_admin_summary', {})); }
+  catch (e) { $('lcNote').textContent = 'Lifecycle email is not set up yet: apply supabase/lifecycle_email.sql.'; }
+}
+async function boot() {
+  try { SESSION = SESSION || JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { SESSION = null; }
+  if (!SESSION || !SESSION.access_token) return;
+  if (SESSION.expires_at && SESSION.expires_at * 1000 < Date.now()) { try { localStorage.removeItem(KEY); } catch (e) {} SESSION = null; return; }
+  $('who').textContent = (SESSION.user && SESSION.user.email) || '';
+  $('signin').classList.add('hide'); $('app').classList.remove('hide');
+  await load();
+}
+boot();
+</script>
+</body>
+</html>
