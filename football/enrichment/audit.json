@@ -1,14 +1,14 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-09-30T05:47:24.470Z",
+ "generated_at": "2026-09-30T12:51:52.368Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-09-30T05:47:24.470Z",
-  "reliability_generated_at": "2026-09-30T05:47:24.470Z",
-  "enrichment_generated_at": "2026-09-30T05:47:15.644Z",
+  "at": "2026-09-30T12:51:52.368Z",
+  "reliability_generated_at": "2026-09-30T12:51:52.368Z",
+  "enrichment_generated_at": "2026-09-30T12:51:45.235Z",
   "counts": {
    "games": 108,
-   "mean": 84.6,
+   "mean": 84.5,
    "median": 87,
    "by_band": {
     "STRONG": 85,
@@ -23,7 +23,7 @@
    "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 108,
-   "stale_evidence_records": 67,
+   "stale_evidence_records": 69,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -1718,7 +1718,7 @@
    },
    "401864513": {
     "game": "San José State @ Hawai'i",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
      "availability": 4.6,
@@ -1726,6 +1726,7 @@
      "qb_conflict": 1,
      "qb_status": 2,
      "rating_sample": 1.4,
+     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1815,6 +1816,7 @@
      "qb_status": 2,
      "stability": 0.7,
      "rating_sample": 1.4,
+     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
@@ -2463,42 +2465,36 @@
   }
  },
  "previous": {
-  "at": "2026-09-30T02:47:34.357Z",
+  "at": "2026-09-30T05:47:24.470Z",
   "counts": {
-   "games": 71,
-   "mean": 84,
+   "games": 108,
+   "mean": 84.6,
    "median": 87,
    "by_band": {
-    "STRONG": 54,
+    "STRONG": 85,
     "LOW": 3,
-    "ADEQUATE": 13,
-    "CAUTION": 1
+    "ADEQUATE": 17,
+    "CAUTION": 3
    },
-   "missing_qb_status": 139,
-   "qb_conflicts_open": 3,
+   "missing_qb_status": 213,
+   "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 15,
+   "games_lacking_injury_information": 20,
    "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 71,
+   "games_under_two_market_sources": 108,
    "stale_evidence_records": 67,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+0.6 mean reliability (84 → 84.6)"
- ],
+ "what_improved": [],
  "what_degraded": [
-  "+74 QB statuses missing (139 → 213)",
-  "+3 open QB conflicts (3 → 6)",
-  "+5 games lacking injury information (15 → 20)",
-  "+37 games under two market sources (71 → 108)"
+  "-0.1 mean reliability (84.6 → 84.5)",
+  "+2 stale evidence records (67 → 69)"
  ],
- "why": [
-  "the slate itself changed: 37 games entered the window, 0 left it (kicked off or rolled out)"
- ],
+ "why": [],
  "history": [
   {
    "at": "2026-09-25T19:38:31.100Z",
@@ -3936,6 +3932,30 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 108,
     "stale_evidence_records": 67,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-09-30T12:51:52.368Z",
+   "counts": {
+    "games": 108,
+    "mean": 84.5,
+    "median": 87,
+    "by_band": {
+     "STRONG": 85,
+     "LOW": 3,
+     "ADEQUATE": 17,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 213,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 20,
+    "unrated_meaningful_absences": 30,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 108,
+    "stale_evidence_records": 69,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

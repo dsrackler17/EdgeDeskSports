@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-30T05:47:24.470Z",
+ "generated_at": "2026-09-30T12:51:52.368Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -78,7 +78,7 @@
  ],
  "summary": {
   "games": 108,
-  "mean": 84.6,
+  "mean": 84.5,
   "median": 87,
   "percentiles": {
    "p10": 79,
@@ -166,7 +166,7 @@
    },
    {
     "n": 8,
-    "mean": 86.8,
+    "mean": 86.6,
     "median": 88,
     "conference": "Mountain West"
    },
@@ -332,8 +332,8 @@
    {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 20,
-    "points": 13.3
+    "games": 22,
+    "points": 14.5
    },
    {
     "key": "contract_conflicts",
@@ -635,8 +635,8 @@
    {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 20,
-    "points": 13.3
+    "games": 22,
+    "points": 14.5
    },
    {
     "key": "contract_conflicts",
@@ -683,7 +683,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-30T05:47:15.644Z",
+  "artifact_generated_at": "2026-09-30T12:51:45.235Z",
   "games_with_evidence": 108,
   "summary": {
    "games": 108,
@@ -817,7 +817,7 @@
      "label": "Official conference availability reports",
      "kind": "availability",
      "state": "DEGRADED",
-     "reason": "63 of 130 calls failed (bad content ×63)",
+     "reason": "71 of 138 calls failed (bad content ×71)",
      "attributable_to": "provider"
     },
     {
@@ -865,7 +865,7 @@
      "label": "FCS rating bridge build",
      "kind": "fcs_ratings",
      "state": "HEALTHY",
-     "reason": "built 3h ago",
+     "reason": "built 10h ago",
      "attributable_to": null
     },
     {
@@ -934,7 +934,7 @@
     }
    ],
    "provider_failures": 4,
-   "stale_evidence_records": 67,
+   "stale_evidence_records": 69,
    "conflicts": 30
   }
  },
@@ -961,14 +961,14 @@
     "label": "QB conflicts",
     "games_affected": 35,
     "current_points_lost": 43.8,
-    "maximum_recoverable_points": 83,
-    "games_recoverable": 22,
+    "maximum_recoverable_points": 84,
+    "games_recoverable": 23,
     "cost": 2,
     "feasible": 0.8,
     "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
     "recover": "sides whose starter evidence disagrees",
-    "estimated_recoverable_points": 66.4,
-    "enrichment_roi": 33.2,
+    "estimated_recoverable_points": 67.2,
+    "enrichment_roi": 33.6,
     "engineering_priority": 2
    },
    {
@@ -989,16 +989,16 @@
    {
     "key": "starters",
     "label": "Starter evidence staleness",
-    "games_affected": 20,
-    "current_points_lost": 13.3,
-    "maximum_recoverable_points": 8,
-    "games_recoverable": 8,
+    "games_affected": 22,
+    "current_points_lost": 14.5,
+    "maximum_recoverable_points": 9,
+    "games_recoverable": 9,
     "cost": 1,
     "feasible": 0.9,
     "how": "the starter job re-reads on the refresh windows",
     "recover": "stale starter records",
-    "estimated_recoverable_points": 7.2,
-    "enrichment_roi": 7.2,
+    "estimated_recoverable_points": 8.1,
+    "enrichment_roi": 8.1,
     "engineering_priority": 4
    },
    {
@@ -1095,7 +1095,7 @@
   ],
   "potential": {
    "games": 108,
-   "mean_score": 84.6,
+   "mean_score": 84.5,
    "mean_potential": 93.9,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
@@ -2449,7 +2449,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "McNeese’s starter record was re-read 3h ago and describes evidence from an unknown time ago",
+      "reason": "McNeese’s starter record was re-read 10.1h ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4395,7 +4395,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "Kansas’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4572,7 +4572,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Arizona State’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "Arizona State’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4768,7 +4768,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Arizona State’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "Arizona State’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4946,7 +4946,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "BYU’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "BYU’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6196,7 +6196,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "BYU’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "BYU’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -6376,7 +6376,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "Kansas’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -7325,7 +7325,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "North Carolina’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "North Carolina’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -7679,7 +7679,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Syracuse’s starter record was re-read 3h ago and describes evidence from 12.3 days ago",
+      "reason": "Syracuse’s starter record was re-read 10.1h ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8343,7 +8343,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "North Carolina’s starter record was re-read 3h ago and describes evidence from 10.6 days ago",
+      "reason": "North Carolina’s starter record was re-read 10.1h ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8544,7 +8544,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Syracuse’s starter record was re-read 3h ago and describes evidence from 12.3 days ago",
+      "reason": "Syracuse’s starter record was re-read 10.1h ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -12797,7 +12797,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Memphis’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "Memphis’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13546,7 +13546,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "South Florida’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -13744,7 +13744,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Samford’s starter record was re-read 3h ago and describes evidence from an unknown time ago",
+      "reason": "Samford’s starter record was re-read 10.1h ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13965,7 +13965,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "South Florida’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -14469,7 +14469,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Memphis’s starter record was re-read 3h ago and describes evidence from 10.3 days ago",
+      "reason": "Memphis’s starter record was re-read 10.1h ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14531,11 +14531,11 @@
    "legacy_input_coverage": 0.692,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 88.7,
+    "raw": 88.1,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -14552,7 +14552,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -14633,6 +14633,13 @@
       "action_key": null
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "San José State’s starter record was re-read 43h ago and describes evidence from 43h ago",
+      "family": "starters",
+      "action_key": "starters:away"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Luke Weaver — uncertain; no calibrated rate exists for this evidence class",
@@ -14662,9 +14669,43 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Re-read availability inside the filing window (San José State)",
+      "key": "availability:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read availability inside the filing window (Hawai'i)",
+      "key": "availability:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Resolve San José State’s starter conflict",
+      "key": "qb_conflict:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm San José State’s starting QB (Luke Weaver)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Hawai'i’s starting QB (Micah Alejado)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read San José State’s starter evidence",
+      "key": "starters:away",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 6
+     "availability": 7,
+     "qb_conflict": 1,
+     "qb_identity": 1,
+     "starters": 1
     }
    },
    "reliability_without_evidence": {
@@ -14960,7 +15001,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "North Dakota State’s starter record was re-read 3h ago and describes evidence from 10.1 days ago",
+      "reason": "North Dakota State’s starter record was re-read 10.1h ago and describes evidence from 10.4 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -15184,7 +15225,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 88.1,
+    "raw": 87.5,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -15201,7 +15242,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -15289,6 +15330,13 @@
       "action_key": null
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "San José State’s starter record was re-read 43h ago and describes evidence from 43h ago",
+      "family": "starters",
+      "action_key": "starters:home"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Tyler Hughes — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -15340,22 +15388,11 @@
       "action": "Resolve San José State’s starter conflict",
       "key": "qb_conflict:home",
       "potential_gain": 1
-     },
-     {
-      "action": "Confirm Wyoming’s starting QB (Tyler Hughes)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm San José State’s starting QB (Luke Weaver)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 7,
-     "qb_conflict": 1,
-     "qb_identity": 1
+     "availability": 6,
+     "qb_conflict": 1
     }
    },
    "reliability_without_evidence": {
@@ -17321,7 +17358,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Louisiana Tech’s starter record was re-read 3h ago and describes evidence from 10.4 days ago",
+      "reason": "Louisiana Tech’s starter record was re-read 10.1h ago and describes evidence from 10.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -18918,7 +18955,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Louisiana Tech’s starter record was re-read 3h ago and describes evidence from 10.4 days ago",
+      "reason": "Louisiana Tech’s starter record was re-read 10.1h ago and describes evidence from 10.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
