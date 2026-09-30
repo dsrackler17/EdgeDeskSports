@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:00:00.000Z",
   "game_when_label": "2026-10-03 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-30T09:35:34.622Z",
-  "generated_at": "2026-09-30T09:35:34.622Z",
+  "updated_at": "2026-09-30T17:58:21.981Z",
+  "generated_at": "2026-09-30T17:58:21.981Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -231,7 +231,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
       "home": {
         "team": "Rice",
@@ -309,9 +309,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-27T02:00:00.000Z",
-        "retrieved_at": "2026-09-30T02:46:10.197Z"
+        "retrieved_at": "2026-09-30T17:15:21.257Z"
       },
-      "generated_at": "2026-09-30T02:46:55.743Z",
+      "generated_at": "2026-09-30T17:16:05.729Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1413,7 +1413,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 12h old",
+          "text": "odds is 20h old",
           "widening": null
         },
         {
@@ -1538,9 +1538,9 @@
       "difference_n": 4.388863276164576,
       "total_model": "58.3",
       "total_market": "56.5",
-      "book": "captured · theScore Bet",
+      "book": "captured consensus (stale) · 2 books · best at theScore Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "12 hours old",
+      "capture_age": "20 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1555,10 +1555,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 4.4 pts toward Rice, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1578,9 +1578,9 @@
         "market_line_text": "UTSA -12.5",
         "market_home_margin": -12.5,
         "favorite_differs": false,
-        "source": "captured · theScore Bet",
+        "source": "captured consensus (stale) · 2 books · best at theScore Bet",
         "as_of": "2026-09-29T22:00:02.478+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1620,7 +1620,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1885,7 +1885,7 @@
       "EdgeDesk’s line is Rice +8.1 on a neutral read of the two teams, before any book is consulted. Projected total 58.3.",
       "Rice wins 29% of the time in EdgeDesk’s simulation, UTSA 71%.",
       "Eight games in ten land between -30.1 and +11.9 for Rice. A single result inside that band tells you nothing new about either team.",
-      "The market has Rice +12.5 at captured · theScore Bet, 4.4 points from EdgeDesk’s number.",
+      "The market has Rice +12.5 at captured consensus (stale) · 2 books · best at theScore Bet, 4.4 points from EdgeDesk’s number.",
       "UTSA quarterback: Owen McCown — started the last game; no announcement for this one.",
       "Rice quarterback: Jacurri Brown — started the last game; no announcement for this one."
     ],
@@ -1901,6 +1901,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-09-30T09:35:34.622Z"
+    "at": "2026-09-30T17:58:21.981Z"
   }
 }
