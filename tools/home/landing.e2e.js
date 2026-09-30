@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE LANDING PAGE, IN A REAL BROWSER, AT FIVE WIDTHS AND THREE STATES.
+   THE LANDING PAGE, IN A REAL BROWSER, AT SIX WIDTHS AND THREE STATES.
 
    index.html exactly as it ships, served locally; the two live reads it makes
    are answered from committed data:
@@ -11,7 +11,7 @@
    with every capture time moved relative to the browser's clock, so "live"
    means live NOW and "stale" means stale NOW.
 
-   LIVE    at 375 · 390 · 430 · 768 · 1280:
+   LIVE    at 320 · 375 · 390 · 430 · 768 · 1280:
              nothing wider than the screen (the page clips overflow-x, so a
              scrollWidth check would pass a broken layout — every element's
              box is measured instead); both hero calls to action above the
@@ -139,9 +139,11 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     return { ctx, page, events, errors };
   }
 
-  /* elements whose box leaves the screen, outside a deliberate scroller */
-  const overflowing = (page) => page.evaluate(() => {
-    const W = window.innerWidth, out = [];
+  /* elements whose box leaves the screen, outside a deliberate scroller —
+     measured against the configured viewport: on a phone the browser widens
+     window.innerWidth to fit whatever overflows, which would hide it */
+  const overflowing = (page) => page.evaluate((W) => {
+    const out = [];
     const clipped = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if (/(auto|scroll|hidden|clip)/.test(s.overflowX)) return true; } return false; };
     document.querySelectorAll('body *').forEach((el) => {
       if (el.closest('[hidden],dialog:not([open]),.modal:not(.open),noscript,script,style')) return;
@@ -150,9 +152,9 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       if ((r.right > W + 1 || r.left < -1) && !clipped(el)) out.push((el.id ? '#' + el.id : el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0]) + ' ' + Math.round(r.left) + '→' + Math.round(r.right));
     });
     return out.slice(0, 6);
-  });
+  }, page.viewportSize().width);
 
-  const WIDTHS = [{ width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
+  const WIDTHS = [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
   for (const vp of WIDTHS) {
     const w = vp.width;
     let S;
@@ -235,6 +237,30 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       chk('funnel: the hero click once, naming its CTA', S.events.filter((e) => e.event === 'cta_clicked' && e.props && e.props.cta === 'hero_board').length === 1, S.events.filter((e) => e.event === 'cta_clicked'));
       chk('funnel: every event carries the path, never a query string or an address', S.events.every((e) => e.page_path === '/' && !/[?@]/.test(JSON.stringify(e))), S.events[0]);
     }
+    await S.ctx.close();
+  }
+
+  /* A FIRST VISIT FROM A SOCIAL LINK: an iPhone SE inside X's in-app browser
+     leaves about 548 px of page. Before any scroll the hero must say what
+     EdgeDesk is, what it does, that it covers player props, what it costs,
+     where to tap, and — from the freshness tile, not a claim — that it is live. */
+  {
+    const S = await open({ width: 375, height: 548 }, 'live', { search: '?utm_source=x&utm_medium=social' });
+    const r = await S.page.evaluate(() => {
+      const H = window.innerHeight, upd = document.querySelector('#lpStats li.upd');
+      const bottom = (el) => (el && !el.hidden ? Math.round(el.getBoundingClientRect().bottom) : null);
+      const sub = document.querySelector('.hero .sub');
+      return { H, what: bottom(document.querySelector('.hero h1')), does: bottom(sub), props: /player props/.test(sub.textContent),
+        cost: bottom(document.querySelector('.hero .microcta')), price: document.querySelector('.hero .microcta').textContent,
+        tap: bottom(document.getElementById('heroBoard')), live: bottom(upd), liveText: upd ? upd.textContent.replace(/\s+/g, ' ').trim() : '' };
+    });
+    const above = (b) => b !== null && b <= r.H;
+    chk('first visit, 375×548: what EdgeDesk is (eyebrow and headline) above the fold', above(r.what), r);
+    chk('first visit: what it does, player props named, above the fold', above(r.does) && r.props, r);
+    chk('first visit: the price and trial above the fold', above(r.cost) && /\$49\.99/.test(r.price) && /7 days free/.test(r.price), r);
+    chk('first visit: the primary call to action above the fold', above(r.tap), r);
+    chk('first visit: the live freshness tile above the fold', above(r.live) && /^Updated \d+ min ago$/.test(r.liveText), r);
+    chk('first visit: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 

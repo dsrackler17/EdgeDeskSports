@@ -125,6 +125,8 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .nav.open .burger i::after{transform:translateY(-5px) rotate(-45deg)}
 @media(max-width:960px){
   .burger{display:inline-flex}
+  /* the links collapse into the menu, so nothing else pushes the actions right */
+  .nav-act{margin-left:auto}
   .nav-links{display:none;position:absolute;top:64px;left:0;right:0;margin:0;flex-direction:column;align-items:stretch;gap:0;padding:6px 20px 20px;background:var(--ink);border-bottom:1px solid var(--line);box-shadow:0 30px 40px -30px rgba(0,0,0,.8)}
   .nav.open .nav-links{display:flex}
   .nav-links .nlink{font-size:17px;padding:15px 2px;border-radius:0;border-bottom:1px solid var(--line);color:var(--text)}
@@ -132,8 +134,18 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
   #navLogin{margin:16px 0 0;width:100%;padding:13px 16px;font-size:15px}
   .nav-offer{display:block;margin-top:10px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--faint)}
 }
-@media(max-width:560px){.wrap{padding:0 16px}.logo small{display:none}.nav-in{height:60px}.nav-links{top:60px;padding:4px 16px 18px}#navSignup{padding:10px 13px;font-size:13.5px}}
-@media(max-width:340px){.logo{font-size:16px}#navSignup{padding:9px 10px;font-size:12.5px}.burger{width:38px;height:38px}}
+@media(max-width:560px){
+  .wrap{padding:0 16px}.logo small{display:none}.logo{font-size:17px;gap:9px}
+  .nav-in{height:56px}.nav-links{top:56px;padding:4px 16px 18px}
+  /* the nav action is a compact chip on a phone; the hero carries the big CTAs */
+  #navSignup{padding:7px 12px;min-height:34px;font-size:13px;border-radius:9px}
+  .burger{width:36px;height:36px;border-radius:9px}
+  /* smaller to the eye, still a 44 px target to the thumb */
+  #navSignup,.burger{position:relative}
+  #navSignup::after,.burger::after{content:"";position:absolute;inset:-5px 0}
+  #navSignup::after{inset:-6px 0}
+}
+@media(max-width:359px){.logo{font-size:16px;gap:8px}.nav-act{gap:6px}#navSignup{padding:6px 10px;font-size:12px}}
 
 /* ---------- the terminal's own data grammar ---------- */
 .ey{display:inline-flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
@@ -189,20 +201,61 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
 .stats li.upd.old::before{background:var(--est)}
 @media(max-width:1020px){.hero-in{grid-template-columns:1fr;gap:36px}.hero{padding:40px 0 64px}}
 @media(max-width:560px){
-  .hero{padding:24px 0 52px}
-  h1{font-size:clamp(33px,9.6vw,42px);margin-top:12px;letter-spacing:-.035em}
-  .sub{font-size:16px;margin-top:14px}
   .cta{margin-top:20px;gap:10px}
   .cta .btn.lg{flex:1 1 100%;padding:14px 16px;font-size:15.5px}
-  .hero .ey{font-size:10px;letter-spacing:.14em}
-  .hero .microcta{font-size:11px}
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:18px;min-height:0}
-  .stats li{font-size:10.5px;padding:6px 8px;flex-wrap:wrap;gap:0 5px}
 }
 @media(max-width:1180px){
   .hero .microcta{display:grid;grid-template-columns:auto auto;justify-content:start;gap:3px 22px}
   .hero .microcta>span{padding:0}
   .hero .microcta>span::before{display:none}
+}
+/* THE HERO ON A PHONE: a compact first screen, not the desktop column squeezed.
+   Written for a first visit from a social link, where the in-app browser's bars
+   leave ~550 px (iPhone SE) to ~660 px (iPhone 15) of page: before any scroll
+   it says what EdgeDesk is (eyebrow, headline), what it does and that it covers
+   player props (the copy), what it costs (the offer), where to tap (the CTAs)
+   and that the data is live (the freshness tile, first in the stats).
+   One spacing rhythm: headline 10 · copy 16 · CTAs 8 · offer 10 · stats 12 ·
+   preview 20. Desktop and tablet (above 560 px) are untouched. After the
+   1180 px block, which it overrides. */
+@media(max-width:560px){
+  .hero{padding:14px 0 40px}
+  .hero-in{gap:20px}
+  .hero .ey{font-size:10px;letter-spacing:.14em}
+  .hero h1{font-size:clamp(30px,8.8vw,38px);line-height:1.03;margin-top:8px;letter-spacing:-.035em;text-wrap:balance}
+  .hero .sub{font-size:15px;line-height:1.45;margin-top:10px}
+  .hero .cta{margin-top:16px;gap:8px}
+  .hero .cta .btn.lg{flex:1 1 100%;min-height:44px;padding:10px 16px;font-size:15px;border-radius:11px}
+  /* the offer: two centred lines, "7 days free · Then $49.99/month" over
+     "Cancel anytime · 21+" (the ::after is a line break between the pairs) */
+  .hero .microcta{display:flex;flex-wrap:wrap;justify-content:center;gap:0;margin-top:10px;font-size:11.5px;line-height:1.5;text-align:center}
+  .hero .microcta::after{content:"";flex-basis:100%;height:0;order:2}
+  .hero .microcta>span{padding:0 9px;order:1}
+  .hero .microcta>span:nth-child(n+3){order:3}
+  .hero .microcta>span:nth-child(even)::before{display:block;content:"";position:absolute;left:-2px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:var(--faint)}
+  .hero .microcta [data-ed-price="price"]{color:var(--text)}
+  /* the live stats: a 2×2 grid of small terminal tiles, label over number
+     like the board's tiles; the freshness tile keeps its colour and dot.
+     Freshness and player props lead, so the first row alone answers "is this
+     live?" and "does it cover props?" on the smallest screen */
+  .hero .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px;min-height:0}
+  .hero .stats li.upd{order:-2}
+  .hero .stats li[data-k="props_tracked"]{order:-1}
+  .hero .stats li{display:grid;grid-template-columns:minmax(0,1fr);align-content:center;gap:2px 6px;min-width:0;padding:6px 10px 7px;border-radius:9px;font-size:9px;line-height:1.3;letter-spacing:.06em;text-transform:uppercase}
+  .hero .stats li b{order:1;grid-column:1/-1;font-size:17px;line-height:1.15;letter-spacing:-.01em;text-transform:none;overflow-wrap:anywhere}
+  .hero .stats li.upd{grid-template-columns:auto minmax(0,1fr);background:rgba(124,193,66,.05)}
+  .hero .stats li.upd.old{background:rgba(217,164,65,.05)}
+  /* an odd number of tiles: the freshness tile (last in the markup, first on
+     screen) takes the whole first row */
+  .hero .stats li.upd:nth-child(odd of :not([hidden])){grid-column:1/-1}
+}
+@media(max-width:359px){
+  .hero .sub{font-size:14.5px}
+  .hero .microcta>span{padding:0 7px}
+  .hero .stats li{padding:6px 9px 7px;letter-spacing:.02em}
+  .hero .stats li b{font-size:16px}
+  .prev .panel-bar{padding:10px 12px;gap:8px;font-size:10.5px}
+  .prev .panel-bar .tag{letter-spacing:.04em;padding:3px 6px}
 }
 
 /* ---------- the live research preview (hero) ---------- */
@@ -236,11 +289,22 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
 .opp .more{display:inline-flex;margin-top:12px;font-size:13.5px;font-weight:600;color:var(--obs);cursor:pointer;background:none;border:0;padding:0}
 .opp .more small{font-weight:400;color:var(--faint);margin-left:8px;font-family:var(--mono);font-size:10.5px}
 .opp.compact .opp-hd b{font-size:15px}
-@media(max-width:560px){.prev-body{min-height:300px}.opp{padding:13px 14px}.pm .nums{font-size:11px}}
+@media(max-width:560px){
+  .prev-body{min-height:300px}.pm .nums{font-size:11px}
+  /* the live research card on a phone: tighter cards, long names wrap */
+  .opp{padding:12px 14px}
+  .opp-hd>div{min-width:0}
+  .opp-hd b{font-size:16px;overflow-wrap:anywhere}
+  .opp.compact .opp-hd b{font-size:15px}
+  .opp-k{margin-top:10px}
+  .opp .ev{overflow-wrap:anywhere}
+}
 /* on a phone the three numbers read as three lines, label left, value right */
 @media(max-width:520px){
   .opp .cells.c3,.gc .cells.c3{grid-template-columns:1fr}
   .opp .cells.c3>div,.gc .cells.c3>div{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:8px 12px}
+  .opp .cells.c3>div{padding:7px 12px}
+  .opp .cells.c3 .v{min-width:0}
   .opp .cells.c3 .v,.gc .cells.c3 .v{margin-top:0;text-align:right;font-size:14px}
   .opp .more{flex-wrap:wrap;text-align:left}
   .opp .more small{display:block;width:100%;margin:2px 0 0}
@@ -280,12 +344,15 @@ h1 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),var(--brand-lit))
 .gc .note{font-size:13px;color:var(--dim);line-height:1.5;margin-top:10px}
 .gc .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 10px;margin-top:auto;padding-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--faint)}
 .gc .foot .pr{color:var(--obs)}
+/* a long market note ("consensus reference, not a captured quote") wraps on a phone rather than widening the page */
+@media(max-width:560px){.gc .foot>span{min-width:0}.gc .foot .age{white-space:normal}.opp .ev .age{display:inline-block;white-space:normal}}
 .empty{border:1px dashed var(--line2);border-radius:14px;padding:22px;color:var(--dim);font-size:15px;line-height:1.55;margin-top:18px}
 .empty b{color:var(--text)}
 .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:12.5px;color:var(--faint);line-height:1.5}
 .legend span{display:inline-flex;align-items:center;gap:8px}
 .board-cta{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-top:26px}
 .board-cta p{font-size:14px;color:var(--dim);max-width:44em}
+@media(max-width:560px){.board-cta .btn{max-width:100%;white-space:normal}}
 .srcnote{margin-top:14px;font-family:var(--mono);font-size:10.5px;color:var(--faint);line-height:1.6;max-width:90ch}
 
 /* ---------- game + player workflow ---------- */
