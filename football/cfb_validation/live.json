@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-09-30T18:07:35.624Z",
+ "generated_at": "2026-09-30T18:27:54.147Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -77,9 +77,21 @@
     "lib/cfb_terminal.js",
     "lib/cfb_research_view.js"
    ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p2",
+   "effective_at": "2026-09-30T18:27:54.147Z",
+   "reason": "the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js",
+   "changed_files": [
+    "football/cfb_p4/engine.js"
+   ]
   }
  ],
- "pending_patches": [],
+ "pending_patches": [
+  "edgedesk_cfb_r1+p2: the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js"
+ ],
  "north_star": {
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
   "release": "edgedesk_cfb_r1",
@@ -1222,7 +1234,7 @@
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "539fd26ac36fa61d",
-    "to": "deb8f0fed53e91fe"
+    "to": "3aeab327f8b1cf92"
    },
    {
     "what": "research-gate code",
