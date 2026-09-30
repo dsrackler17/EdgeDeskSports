@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-09-30T21:07:30.000Z",
+ "generated_at": "2026-09-30T22:07:30.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 153,
-    "latest_snapshot_at": "2026-09-30T21:07:30.000Z",
+    "snapshots": 155,
+    "latest_snapshot_at": "2026-09-30T22:07:30.000Z",
     "upcoming_games": 113,
-    "avg_confidence_upcoming": 78.5
+    "avg_confidence_upcoming": 78.6
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 182,
-    "latest_snapshot_at": "2026-09-30T21:07:30.000Z",
+    "snapshots": 183,
+    "latest_snapshot_at": "2026-09-30T22:07:30.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 182,
-    "latest_snapshot_at": "2026-09-30T21:07:30.000Z",
+    "snapshots": 183,
+    "latest_snapshot_at": "2026-09-30T22:07:30.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77.5
    }
@@ -73,13 +73,13 @@
   "data_quality": {
    "games": 113,
    "counts": {
-    "GREEN": 44,
-    "YELLOW": 69,
+    "GREEN": 45,
+    "YELLOW": 68,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 69,
+     "YELLOW": 67,
      "RED": 0
     },
     "pbp_freshness": {
@@ -107,27 +107,9 @@
      "matchup": "Samford @ UAB"
     },
     {
-     "game_id": "401860899",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-03T22:00:00.000Z",
-     "matchup": "Oregon State @ Colorado State"
-    },
-    {
      "game_id": "401862790",
      "status": "YELLOW",
      "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      },
       {
        "check": "pbp_freshness",
        "status": "YELLOW",
@@ -1002,16 +984,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-09-30T21:07:30.000Z",
-    "quotes_total": 3866,
+    "last_quote_at": "2026-09-30T22:07:30.000Z",
+    "quotes_total": 3899,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1027,
-   "live_predictions": 517,
-   "quotes": 3866,
+   "predictions": 1031,
+   "live_predictions": 521,
+   "quotes": 3899,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
@@ -4222,53 +4204,53 @@
    "home": "Colorado State",
    "away": "Oregon State",
    "market": {
-    "current": 6.25,
+    "current": 6,
     "open": 4,
     "books": 1,
-    "as_of": "2026-09-29T12:08:29Z",
+    "as_of": "2026-09-30T17:07:32.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-27T15:07:15.000Z",
-     "margin": -1.75,
+     "prediction_ts": "2026-09-30T22:07:30.000Z",
+     "margin": -1.77,
      "fair": "Oregon State -2.0",
-     "p_home": 0.4532,
-     "sigma": 14.883,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "p_home": 0.4526,
+     "sigma": 14.862,
+     "conf": 86,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 4.23,
+     "line": 6,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
-     "margin": -4.52,
+     "prediction_ts": "2026-09-30T22:07:30.000Z",
+     "margin": -4.43,
      "fair": "Oregon State -4.5",
-     "p_home": 0.3925,
-     "sigma": 16.684,
+     "p_home": 0.3945,
+     "sigma": 16.687,
      "conf": 57,
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 1.73,
-     "line": 6.25,
+     "gap": 1.57,
+     "line": 6,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -4278,21 +4260,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
-     "margin": -3.79,
-     "fair": "Oregon State -4.0",
-     "p_home": 0.4092,
-     "sigma": 16.628,
+     "prediction_ts": "2026-09-30T22:07:30.000Z",
+     "margin": -3.73,
+     "fair": "Oregon State -3.5",
+     "p_home": 0.4107,
+     "sigma": 16.632,
      "conf": 58,
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 2.46,
-     "line": 6.25,
+     "gap": 2.27,
+     "line": 6,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -4309,31 +4291,33 @@
    "home": "Florida Atlantic",
    "away": "Texas Southern",
    "market": {
-    "current": null,
-    "open": null,
-    "books": 0,
-    "as_of": null,
-    "sources": [],
-    "stale": true
+    "current": -43.5,
+    "open": -43.5,
+    "books": 1,
+    "as_of": "2026-09-30T20:07:25.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-27T15:07:15.000Z",
-     "margin": 24.62,
+     "prediction_ts": "2026-09-30T22:07:30.000Z",
+     "margin": 24.68,
      "fair": "Florida Atlantic -24.5",
-     "p_home": 0.9514,
-     "sigma": 14.844,
+     "p_home": 0.9518,
+     "sigma": 14.845,
      "conf": 59,
      "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -18.82,
+     "line": 43.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     }
@@ -9800,18 +9784,18 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 44,
-  "games_with_verdict": 37,
-  "raw_major_disagreements": 5,
+  "games_with_market": 46,
+  "games_with_verdict": 39,
+  "raw_major_disagreements": 6,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
   "verified_15plus": 0,
   "investigate": 0,
   "data_fault": 0,
-  "market_fault": 4,
+  "market_fault": 5,
   "verification_not_run": 1,
-  "average_raw_gap": 4.123,
-  "average_raw_gap_7plus": 11.134,
+  "average_raw_gap": 4.445,
+  "average_raw_gap_7plus": 12.415,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": null,
   "verified_gap_mae": null,
@@ -9820,7 +9804,7 @@
   "false_extreme_rate_verified_pct": null,
   "graded": {
    "raw_7plus": {
-    "n": 5,
+    "n": 6,
     "settled": 0,
     "mae": null,
     "market_mae_at_snapshot": null,
@@ -9840,7 +9824,7 @@
     "false_extremes": 0
    },
    "unverified": {
-    "n": 5,
+    "n": 6,
     "settled": 0,
     "mae": null,
     "market_mae_at_snapshot": null,
@@ -9851,18 +9835,18 @@
    }
   },
   "root_causes_unverified": {
-   "THIN_MARKET": 4,
+   "THIN_MARKET": 5,
    "NOT_RUN": 1
   },
   "by_week": {
    "5": {
-    "raw_7plus": 5,
-    "raw_10plus": 2,
-    "raw_15plus": 1,
+    "raw_7plus": 6,
+    "raw_10plus": 3,
+    "raw_15plus": 2,
     "verified": 0,
     "investigate": 0,
     "data_fault": 0,
-    "market_fault": 4,
+    "market_fault": 5,
     "not_run": 1,
     "favorite_flips": 2
    }
