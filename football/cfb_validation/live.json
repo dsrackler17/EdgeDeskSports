@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-09-30T18:27:54.147Z",
+ "generated_at": "2026-09-30T18:43:16.531Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -87,10 +87,32 @@
    "changed_files": [
     "football/cfb_p4/engine.js"
    ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p3",
+   "effective_at": "2026-09-30T18:43:16.531Z",
+   "reason": "the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js, football/fbs/build_coverage.js",
+   "changed_files": [
+    "football/cfb_p4/engine.js",
+    "football/fbs/build_coverage.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r3",
+   "effective_at": "2026-09-30T18:43:16.531Z",
+   "reason": "the research path changed (auto-detected by football/cfb_validation/build.js): lib/edgedesk_canon.js",
+   "changed_files": [
+    "lib/edgedesk_canon.js"
+   ]
   }
  ],
  "pending_patches": [
-  "edgedesk_cfb_r1+p2: the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js"
+  "edgedesk_cfb_r1+p3: the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js, football/fbs/build_coverage.js",
+  "edgedesk_cfb_r1.research+r3: the research path changed (auto-detected by football/cfb_validation/build.js): lib/edgedesk_canon.js"
  ],
  "north_star": {
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
@@ -1234,19 +1256,19 @@
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "539fd26ac36fa61d",
-    "to": "3aeab327f8b1cf92"
+    "to": "ace1bbe0c6d64b38"
    },
    {
     "what": "research-gate code",
     "kind": "SOFTWARE",
     "from": "6f3777c51557e1a4",
-    "to": "800134c494800564"
+    "to": "c7f653ff596ac330"
    },
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T00:53:47.573Z",
-    "to": "2026-09-30T17:16:40.663Z"
+    "to": "2026-09-30T18:28:15.174Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
