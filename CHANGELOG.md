@@ -145,6 +145,82 @@ This is stated, not tuned away.
 - `tools/bettor/football_decision.test.js` and `tools/bettor/decision.test.js`: six scenarios move from WATCH ·
   IMPLAUSIBLE EV to WATCH · LARGE EV, all still with no stake. The gaps past z* stay IMPLAUSIBLE EV.
 
+### #3 — A disagreement explainer (North Texas @ Tulsa, Syracuse @ UConn)
+
+**What was missing.** A research label says how large a disagreement is and whether it passed the integrity gate. It
+never says why. The 2026-09-27 forensic report decomposes EdgeDesk's number, not the gap between it and the market.
+
+**Change.**
+- `lib/edgedesk_explainer.js` splits a gap into eight terms read off the engine's own projection:
+  - the rating scale;
+  - last season's share of the rating, `w·(long-run − this season − track offset)`, and that share on a turned-over
+    roster;
+  - the home-field constant;
+  - QB change;
+  - conference;
+  - matchup;
+  - the rest.
+
+  None of the terms comes from the market.
+- `tools/football/explainer_fit.js` fits how much of each term the closing market has historically taken out. It runs
+  OLS of `fair − close` on the terms over 2021-2023 FBS games (cold replay, `replay_rows.js --explainer`), scores
+  2024-2025 once, and ships a 2021-2025 refit (`football/validation/disagreement_explainer.json`).
+- Explained is the intercept plus Σ β·term. Unexplained is the rest.
+- `football/cfb_p4/engine.js` publishes the tracks' centres in `layers.strength.track_centres`, for display only; no
+  number reads them back.
+- `football/fbs/build_coverage.js` publishes the market-free terms in `disagreement_inputs.explainer_terms`.
+- `football/cfb_terminal/build.js` explains each game against the consensus it already shows (`games.json`
+  `disagreement_explainer`, and a compact form in `board.json`).
+
+**The fit (2021-2023, every term |t| ≥ 1.96).**
+
+| term | β | what it says |
+|---|---|---|
+| home field | +0.43 | the market gives about 1.8 pts less home edge than the engine's 4.08 constant |
+| QB change | +0.50 pts | the market prices a new starter the engine's (usually unavailable) QB term does not |
+| last season's share | −0.42 | the market leans on last season *more* than the engine's this-season track does |
+| …on a turned-over roster | +0.50 | …except on a turned-over roster, where it takes that back (net ≈ +0.08) |
+| conference | +0.19 | |
+| rating scale | −0.03 | |
+
+- Matchup and "other" are 0 in every replayed game, because the cold replay has no efficiency or injury feed. They
+  ship unfitted: shown, never discounted.
+- **Holdout 2024-2025: R² = 0.03.** Mean |gap| 3.92 against mean |unexplained| 3.67; for 7+ gaps, 9.85 against 8.74.
+  The measured terms explain a sliver of model-market disagreement, and the explainer says so rather than overstating
+  it.
+
+**Applied (terminal build of the committed 2026-09-30 captures, SNAPSHOT).**
+
+| North Texas @ Tulsa: gap 10.74 toward North Texas (market Tulsa −1.5, one book) | term | β | explains |
+|---|---|---|---|
+| last season's share | −7.56 | −0.36 | +2.74 (toward Tulsa) |
+| …on a turned-over roster (North Texas, index 0.86) | −4.84 | +0.48 | −2.33 (toward North Texas) |
+| home field | 4.08 | +0.39 | +1.60 |
+| rating scale | −10.89 | −0.02 | +0.21 |
+| matchup (unfitted) | −2.44 | — | 0 |
+| **unexplained** | | | **12.87 toward North Texas** |
+
+The measured terms, taken together, lean 2.1 pts toward Tulsa, so nothing measured explains this gap. Even on this
+season's centred track alone, North Texas rates about 4 pts better than Tulsa, and the market disagrees with that as
+well. What remains is the market's view of this season's North Texas.
+
+| Syracuse @ UConn: gap 14.25 toward UConn (market Syracuse −6.5, stale) | term | β | explains |
+|---|---|---|---|
+| home field | 4.08 | +0.39 | +1.60 |
+| last season's share | +2.60 | −0.36 | −0.94 |
+| …on a turned-over roster (UConn, index 0.87) | +0.58 | +0.48 | +0.28 |
+| **unexplained** | | | **13.47 toward UConn** |
+
+It remains DATA FAULT ("possible orientation flip", first pass #5) at a stale capture.
+
+**Tests.** `tools/football/explainer.test.js` (21 checks, added to `football:audit:test` and `cfb:test`):
+- the terms are exact pieces of an engine projection (prior share with the published offset, turnover index,
+  contributions, QB change), with no market argument;
+- explained + unexplained = the gap;
+- unfitted terms are shown, never discounted;
+- the fit's windows, significance flags and unfitted list;
+- the slate and terminal wiring.
+
 ### #6 — Re-run both boards live: not possible from this environment
 
 The live capture host (`iattxbkbufslbauoumga.supabase.co`) is denied by this environment's network policy. So are The

@@ -62,7 +62,40 @@ function num(v) {
   return isFinite(n) ? n : null;
 }
 
-/* opts = { data, from, to, replayFrom } -> { rows, refused } */
+function bool(v) { var s = String(v).toLowerCase(); return s === 'true' ? true : (s === 'false' ? false : null); }
+/* THE TURNOVER INPUTS at a kickoff, for the explainer's terms: the v2 magnitude
+   features from research/build_regime_history.py's tables (regime_history.csv,
+   qb_starts.csv), with the QB change read from the team's LAST COMPLETED game
+   (before its first, from the roster) — the same definition as
+   research/regime_magnitude_backtest.js and football/coaching/build_regime.js */
+function regimeInputs(DATA) {
+  var RS = require(path.join(HERE, '..', '..', 'coaching', 'regime_signal.js'));
+  var hist = {}, starter = {}, last = {};
+  var fr = path.join(DATA, 'out', 'regime_history.csv'), fq = path.join(DATA, 'out', 'qb_starts.csv');
+  if (!fs.existsSync(fr) || !fs.existsSync(fq)) throw new Error('missing regime_history.csv / qb_starts.csv under ' + path.join(DATA, 'out') + ' — run build_regime_history.py');
+  readCsv(fr).forEach(function (r) {
+    if (String(r.fbs).toLowerCase() !== 'true' || !r.team) return;
+    hist[r.season + '|' + E.normKey(r.team)] = { new_hc: bool(r.new_hc), returning_production_pct: num(r.returning_production_pct),
+      incoming_production_pct: num(r.incoming_production_pct), prev: num(r.prev_primary_qb_id) != null ? String(num(r.prev_primary_qb_id)) : null, returning_qb: bool(r.returning_qb) };
+  });
+  readCsv(fq).forEach(function (r) { starter[r.season + '|' + String(r.game_id) + '|' + r.team_key] = String(num(r.starter_id)); });
+  return {
+    side: function (season, name) {
+      var k = E.normKey(name), h = hist[season + '|' + k];
+      if (!h) return null;
+      var l = last[season + '|' + k], qb = !h.prev ? null : (l ? l !== h.prev : (h.returning_qb == null ? null : !h.returning_qb));
+      return { features: RS.magnitudeFeatures({ new_hc: h.new_hc, returning_production_pct: h.returning_production_pct, incoming_production_pct: h.incoming_production_pct, qb_change: qb }),
+        qb_change: qb };
+    },
+    played: function (season, gameId, names) {
+      names.forEach(function (nm) { var k = E.normKey(nm), s = starter[season + '|' + gameId + '|' + k]; if (s) last[season + '|' + k] = s; });
+    }
+  };
+}
+
+/* opts = { data, from, to, replayFrom, explainer } -> { rows, refused }.
+   explainer: also carry each game's explainer terms (lib/edgedesk_explainer.js
+   termsFromProjection — the function the live board uses) */
 function replayRows(opts) {
   var DATA = path.resolve(String(opts.data)), FROM = opts.from, TO = opts.to, REPLAY_FROM = opts.replayFrom || 2004;
   var games = [];
@@ -88,6 +121,8 @@ function replayRows(opts) {
   st.lmeanPts = P.rating.league_mean_pts;
   st.season = REPLAY_FROM;
   var rows = [], season = REPLAY_FROM, refused = 0;
+  var X = opts.explainer ? require(path.join(HERE, '..', '..', '..', 'lib', 'edgedesk_explainer.js')) : null;
+  var RI = opts.explainer ? regimeInputs(DATA) : null;
   games.forEach(function (g) {
     if (g.season !== season) { E.ingest.seasonBreak(st); season = g.season; }
     if (!g.completed) return;
@@ -100,11 +135,13 @@ function replayRows(opts) {
         rows.push({ game_id: g.game_id, season: g.season, week: g.week, kick: g.kick, home: g.home, away: g.away,
           fair: out.model.fair_spread, sigma: num(unc.sigma), sigma_base: num(unc.sigma_base),
           open: mk.open != null ? mk.open : null, close: mk.close != null ? mk.close : null,
-          margin: g.home_points - g.away_points });
+          margin: g.home_points - g.away_points,
+          terms: X ? X.termsFromProjection(out, { home: RI.side(g.season, g.home), away: RI.side(g.season, g.away) }) : undefined });
       } else refused++;
     }
     E.ingest.absorbGame(st, { home: g.home, away: g.away, home_fbs: g.home_fbs, away_fbs: g.away_fbs,
       neutral_site: g.neutral_site, home_points: g.home_points, away_points: g.away_points });
+    if (RI) RI.played(g.season, g.game_id, [g.home, g.away]);
   });
   return { rows: rows, refused: refused, replay_from: REPLAY_FROM, model_version: P.model_version };
 }
@@ -113,7 +150,7 @@ module.exports = { replayRows: replayRows, readCsv: readCsv };
 
 if (require.main === module) {
   var arg = function (name, dflt) { var i = process.argv.indexOf('--' + name); return i < 0 ? dflt : process.argv[i + 1]; };
-  var res = replayRows({ data: arg('data', path.join(HERE, '.cache')), from: +arg('from', 2021), to: +arg('to', 2025) });
+  var res = replayRows({ data: arg('data', path.join(HERE, '.cache')), from: +arg('from', 2021), to: +arg('to', 2025), explainer: process.argv.indexOf('--explainer') >= 0 });
   var out = arg('out', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res));
   console.error('[replay] ' + res.rows.length + ' rows; refused ' + res.refused);
