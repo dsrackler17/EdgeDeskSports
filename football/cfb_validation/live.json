@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-09-30T16:49:09.642Z",
+ "generated_at": "2026-09-30T17:12:58.821Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -79,16 +79,13 @@
    ]
   }
  ],
- "pending_patches": [
-  "edgedesk_cfb_r1+p1: the pricing path changed (auto-detected by football/cfb_validation/build.js): football/cfb_p4/engine.js, football/fbs/build_coverage.js, football/matchup/inputs.js",
-  "edgedesk_cfb_r1.research+r2: the research path changed (auto-detected by football/cfb_validation/build.js): lib/edgedesk_canon.js, lib/cfb_terminal.js, lib/cfb_research_view.js"
- ],
+ "pending_patches": [],
  "north_star": {
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 0,
-  "live_snapshots_tracked": 125,
+  "live_snapshots_tracked": 129,
   "model_mae": null,
   "market_moved_toward_edgedesk_pct": null,
   "average_clv": null,
@@ -1246,13 +1243,19 @@
     "to": 89
    },
    {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 0,
+    "to": 1
+   },
+   {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 74,
-    "to": 6
+    "to": 11
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [],
  "definitions": "docs/cfb-validation/DELIVERABLE.md · docs/cfb-lab/METRICS.md"
