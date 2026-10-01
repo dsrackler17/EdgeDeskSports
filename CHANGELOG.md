@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-01 — profit and loss of every flagged edge, written by the database at settlement
+
+Every flag in `signals` now carries a recorded P&L: 1 unit flat, at the price frozen when the edge was flagged. It is written in the same transaction as its settlement, and shown on the public record beside closing-line value. `docs/pnl/EDGE_PNL.md` has the full account.
+
+- **Database** (`supabase/signal_pnl.sql`, `signal_pnl_summary.sql`, `signal_pnl_sync.sql`):
+  - `pnl_grades`: one row per `sig_key`, foreign-keyed to the signal.
+  - `pnl_grade_history`: append-only.
+  - `pnl_summary`: by sport, tier, market, day / week / month and all-time.
+  - `pnl_reconciliation()`, `pnl_verify()`, `pnl_handcheck()`.
+- **The math.** +150 win = 1.50, −110 win = 0.909, loss = −1, push = 0. Void is not a bet. A missing flag price is counted and never estimated. P&L at the closing book price is stored for comparison only. Every row is stamped `calc_version = pnl-v1`.
+- **The hook.** A trigger on `signals` fires on the columns `settle` and `close` write. It never fails a settlement; errors are logged and reconciled.
+- **Backfill.** `pnl_backfill()` is a dry run: counts, a 20-row sample, totals per sport. `pnl_backfill(true)` commits it, idempotently.
+- **`record.html#edge-pnl`**, read live from `pnl_summary`:
+  - units, ROI and W–L–P;
+  - Tier A vs Tier B in plain words (the tier is the one capture froze; nothing is re-classified);
+  - a sport filter and a running-total chart;
+  - the closing-price comparison;
+  - every flag not counted, with its reason;
+  - the method note.
+- **Records tab:**
+  - a **P&L** column on every graded row, on the receipt and in the exports;
+  - the old simulated column is labelled **Sim P/L**;
+  - a **P&L sync** row in Pipeline health (settled flags with no P&L row: 0).
+- **Unchanged:** capture, close, settle, flags, tiers, thresholds and every model. Nothing writes to `signals`.
+- **Tests:**
+  - `tools/record/signal_pnl.test.js`: the math.
+  - `signal_pnl_sql.test.js`: real PostgreSQL. Covers the dry run, idempotent backfill, the hook in the settlement's transaction, a sabotaged hook that still lets the settlement commit, summary = raw sum, a three-way hand-check, and RLS.
+  - `signal_pnl_ui.test.js`: Chromium at 375–1440 px, fed the database's own anonymous output.
+
 ## 2026-09-30 — second follow-up: corrected intervals, the NFL regime signal (#4), the NFL neutral site, the audit's CLV cuts (#5), the two root causes (#3)
 
 While this pass was in progress, #444 and #445 (another session) shipped items 1, 2, 3, 5 and 6 of the follow-up (the

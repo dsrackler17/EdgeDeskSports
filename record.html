@@ -7,6 +7,7 @@
 <meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
+<link rel="stylesheet" href="/lib/edgedesk_edge_pnl.css?v=20261001a">
 <!-- NO LOGIN GATE. That is the entire point of this file.
      app.html redirects logged-out visitors to index.html. Its own gate comment
      says "this is a UX funnel, not a data paywall — the anon key still reads
@@ -198,6 +199,15 @@ footer a:hover{color:var(--text)}
     <div id="recBasis"></div>
     <div class="kpis" id="recKpis"></div>
     <div class="edrec-note" id="recScope"></div>
+  </div>
+</section>
+
+<section class="sec" id="edge-pnl">
+  <div class="wrap">
+    <span class="ey">Profit &amp; loss · every flagged edge · read live from the database</span>
+    <h2>If you had bet every edge we flagged</h2>
+    <p class="sub">The same flags as the closing line value above, priced the simple way: 1 unit on each one, at the price on the screen when EdgeDesk flagged it. Never the closing price, never a better price that came later. A win at +150 pays 1.50 units, a win at −110 pays 0.91, a loss costs 1, a push is 0. A cancelled game is not a bet, and a flag whose price was not saved is left out and counted, never estimated. Each row is written by the database the moment the game settles.</p>
+    <div id="edgePnl"></div>
   </div>
 </section>
 
@@ -4944,6 +4954,17 @@ async function load(){
 $('yr').textContent=new Date().getFullYear();
 renderRecScope();
 load();
+</script>
+<!-- FLAGGED-EDGE P&L (#edge-pnl): public, units only, read live from pnl_summary (supabase/signal_pnl*.sql) -->
+<script src="/lib/edgedesk_edge_pnl.js?v=20261001a"></script>
+<script src="/lib/edgedesk_edge_pnl_ui.js?v=20261001a"></script>
+<script>
+(function () {
+  var host = document.getElementById('edgePnl');
+  if (!host || !window.EDEdgePnlUI) return;
+  /* the same scope as the CLV record above: the current product, or every sport on ?archive=1 */
+  window.EDEdgePnlUI.mount(host, { get: sbGet, keep: function (k) { return REC_ARCHIVE || !EDSPORTS.isRetiredKey(k); } });
+})();
 </script>
 <!-- PROFIT & LOSS (#pnl): public, units only, no login — the committed record/pnl/ rendered by lib/edgedesk_pnl_ui.js -->
 <script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
