@@ -111,9 +111,9 @@ chk('a card is made from a current research state', c.ok === true, c);
 const C = c.content;
 chk('it carries the matchup, fair line, market line, gap and reliability', C.matchup === 'Ole Miss @ Florida' && C.fair === 'Ole Miss -1.7' && C.market === 'Florida -2.5' && C.gap === '4.2 pts' && C.reliability === '88', C);
 chk('2-3 concise research drivers from the engine\'s own terms', C.drivers.length >= 2 && C.drivers.length <= 3 && /^Ole Miss: \+3\.1 pts team-strength edge/.test(C.drivers[0]) && C.drivers.every((d) => d.length <= 110), C.drivers);
-chk('a timestamp, "Research, not picks." and edgedesksports.com', /EdgeDesk research state · \w{3} \d+, \d{4} · \d{2}:\d{2} UTC/.test(C.timestamp) && C.tagline === 'Research, not picks.' && C.site === 'edgedesksports.com', C);
-chk('the market line names its book and capture time', /DraftKings · captured/.test(C.market_meta));
-chk('the gap says which side EdgeDesk\'s number favours, read from the two lines', SC.content(st({ gap: { points: 4.2 } }), { now: NOW }).content.gap_meta === 'EdgeDesk more favourable to Ole Miss'
+chk('a timestamp, "Research, not picks." and edgedesksports.com', /^EdgeDesk research state · \w{3} \w{3} \d{1,2} · \d{1,2}:\d{2} [AP]M CT$/.test(C.timestamp) && C.tagline === 'Research, not picks.' && C.site === 'edgedesksports.com', C);
+chk('the market line names its book and capture time', /DraftKings/.test(C.market_meta) && /^captured \w{3} \w{3} \d{1,2} · \d{1,2}:\d{2} [AP]M CT$/.test(C.market_at), C);
+chk('the gap says which side EdgeDesk\'s number favors, read from the two lines', SC.content(st({ gap: { points: 4.2 } }), { now: NOW }).content.gap_meta === 'EdgeDesk more favorable to Ole Miss'
   && SC.content(st({ fair: { home_line: -2.5, text: 'Florida -2.5' }, gap: { points: 0 } }), { now: NOW }).content.gap_meta === 'EdgeDesk and the market agree');
 chk('no tout or outcome language anywhere on the card', !TOUT.test(JSON.stringify(C)) && !/\b(win(s|ner)?|cover(s)?|profit|units?)\b/i.test(JSON.stringify(C).replace(/"brand":"EdgeDesk"/, '')), JSON.stringify(C).match(TOUT));
 chk('the card records the numbers it printed', c.numbers.fair_home_line === 1.7 && c.numbers.market_home_line === -2.5 && c.numbers.gap_pts === 4.2 && c.numbers.reliability_score === 88 && /^sc1-/.test(c.hash));
@@ -138,6 +138,71 @@ const LONG = Object.assign({}, C, { matchup: 'Jacksonville Jaguars @ San Francis
   chk(f + ': the footer carries the tagline, the site and the time', foot.length === 2 && foot.some((o) => /edgedesksports\.com/.test(o.text)));
   chk(f + ': nothing in the body reaches the footer', Math.max.apply(null, body.map((o) => o.y)) < Math.min.apply(null, foot.map((o) => o.y)) - 30, { body: Math.max.apply(null, body.map((o) => o.y)), foot: foot.map((o) => o.y) });
 });
+/* US Central, daylight and standard time, from one fixed zone */
+chk('times read in US Central: kickoff, research state and capture', SC.central('2026-10-02T00:00:00.000Z') === 'Thu Oct 1 · 7:00 PM CT'
+  && SC.central('2026-12-05T18:30:00Z') === 'Sat Dec 5 · 12:30 PM CT' && SC.central('nope') === null
+  && SC.content(st({ kickoff_at: '2099-10-02T00:00:00.000Z' }), { now: NOW }).content.kickoff === SC.central('2099-10-02T00:00:00.000Z')
+  && !/UTC/.test(JSON.stringify(C)), [SC.central('2026-10-02T00:00:00.000Z'), SC.central('2026-12-05T18:30:00Z')]);
+/* ONE BOOK COUNT: the state's distinct books, never the board's quote sum */
+const BK = { home_line: -2.5, text: 'Florida -2.5', kind: 'live', book: 'captured consensus · 112 books · best at DraftKings', books: 7,
+  captured_at: new Date(NOW - 30 * 60000).toISOString(), stale: false };
+c = SC.content(st({ market: BK, drivers: [], priority: { eligible: true } }), { now: NOW });
+chk('the market note and the drivers cite the same book count (the distinct books), never the quote sum', c.ok
+  && c.content.market_meta === 'consensus of 7 books · best at DraftKings' && c.content.drivers.indexOf('Multi-book market confirmation (7 books)') >= 0
+  && !/112/.test(JSON.stringify(c.content)), c.content);
+c = SC.content(st({ market: Object.assign({}, BK, { books: null }) }), { now: NOW });
+chk('with no distinct-book count, the quote sum is still not printed as a book count', c.ok && c.content.market_meta === 'consensus · best at DraftKings', c.content.market_meta);
+/* THE VERDICT: the existing decision, read, never made */
+const dec = (o) => Object.assign({ game_id: '9001', sport: 'CFB', decision: 'LEAN' }, o || {});
+const vOf = (d) => SC.content(S, { now: NOW, decision: d }).content.verdict;
+chk('the badge is the game\'s existing decision (WAIT reads WATCH)', vOf(dec()) === 'LEAN' && vOf(dec({ decision: 'BET' })) === 'BET' && vOf(dec({ decision: 'PASS' })) === 'PASS'
+  && vOf(dec({ decision: 'WATCH' })) === 'WATCH' && vOf(dec({ decision: 'WAIT' })) === 'WATCH');
+chk('no decision, another game\'s, NO DECISION or a provisional one: no badge', vOf(null) === null && vOf(undefined) === null && vOf(dec({ game_id: '9002' })) === null
+  && vOf(dec({ sport: 'NFL' })) === null && vOf(dec({ decision: 'NO_DECISION' })) === null && vOf(dec({ provisional: true })) === null && C.verdict === null && C.verdict_label === null);
+c = SC.content(S, { now: NOW, decision: dec({ decision: 'BET', recommended_units: 1.5, units: 1.5 }) });
+chk('a BET badge passes the copy rule and carries no stake', c.ok && c.content.verdict === 'BET' && !TOUT.test(JSON.stringify(c.content)) && !/\b(units?|\d+(\.\d+)?U)\b/i.test(JSON.stringify(c.content)), c.content);
+['x_landscape', 'square'].forEach((f) => {
+  const withV = SC.layout(c.content, f).ops.filter((o) => o.type === 'text'), without = SC.layout(C, f).ops.filter((o) => o.type === 'text');
+  const head = withV.filter((o) => o.text === 'BET')[0], matchup = withV.filter((o) => o.text === c.content.matchup)[0];
+  chk(f + ': the badge sits under the header, above the matchup; without a decision nothing is drawn', head && matchup && head.y < matchup.y
+    && !without.some((o) => /^(DECISION|BET|LEAN|WATCH|PASS)$/.test(o.text)), { head, matchup });
+});
+/* DRIVERS: actual inputs only */
+c = SC.content(st({ drivers: [], gap: { points: 4.2 }, reliability: { score: 92, grade: 'STRONG', scored: true, stability: { tier: 'HIGH' } },
+  qb: { home: { name: 'A', confirmed: true }, away: { name: 'B', confirmed: true }, confirmed_both: true },
+  priority: { eligible: true, why_text: 'Model and market disagree by 4.2 points with strong data coverage (91%).' } }), { now: NOW });
+chk('drivers never restate the gap, reliability, stability or the reading order\'s sentence', c.ok
+  && !c.content.drivers.some((d) => /disagree|reliability|stable model inputs/i.test(d)) && c.content.drivers[0] === 'Confirmed QB status on both sides'
+  && c.content.drivers.length >= 2 && c.content.drivers.length <= 3, c.content.drivers);
+c = SC.content(st({ drivers: [], gap: { points: 4.2 }, market: { home_line: -2.5, stale: true }, movement: {}, priority: {}, reliability: { score: 70, scored: true }, injuries: {} }), { now: NOW });
+chk('with no input to cite, nothing is added to fill a slot', c.ok && c.content.drivers.length === 0, c.content.drivers);
+['x_landscape', 'square'].forEach((f) => {
+  chk(f + ': no drivers, no empty drivers heading', !SC.layout(c.content, f).ops.some((o) => o.type === 'text' && /RESEARCH DRIVERS/.test(o.text)));
+});
+/* THE MARKET NOTE FITS: every word drawn, none cut, inside its box */
+const LONGM = Object.assign({}, C, { market_meta: 'consensus of 17 books · best at Hard Rock Bet · spread dropped (opposite convention)', market_at: 'captured Wed Sep 30 · 12:55 PM CT' });
+['x_landscape', 'square'].forEach((f) => {
+  const L = SC.layout(LONGM, f), texts = L.ops.filter((o) => o.type === 'text');
+  const box = L.ops.filter((o) => o.type === 'rect' && o.fill === SC.COLORS.panel)[1];
+  const lines = texts.filter((o) => o.x === box.x + 24 && o.y > box.y + 120 && o.y < box.y + box.h);
+  const drawn = lines.map((o) => o.text).join(' ');
+  const bare = (t) => t.replace(/[\s·]+/g, '');
+  chk(f + ': the market note is drawn whole, wrapped, with the capture time on its own line', bare(drawn) === bare(LONGM.market_meta + LONGM.market_at)
+    && lines[lines.length - 1].text === LONGM.market_at && !/…/.test(drawn), drawn);
+  const approxW = (o) => String(o.text).length * o.size * 0.56;   /* the layout's own fallback measure */
+  chk(f + ': every line of the market note sits inside its box', lines.every((o) => o.y + 8 <= box.y + box.h && o.x + approxW(o) <= box.x + box.w - 24), lines.map((o) => [o.y, Math.round(approxW(o)), o.size]));
+});
+['x_landscape', 'square'].forEach((f) => {
+  const L = SC.layout(Object.assign({}, C, { market: 'No current market quote', fair: 'Jacksonville Jaguars -10.5' }), f);
+  const box = L.ops.filter((o) => o.type === 'rect' && o.fill === SC.COLORS.panel)[1];
+  const vals = L.ops.filter((o) => o.type === 'text' && (o.text === 'No current market quote' || o.text === 'Jacksonville Jaguars -10.5'));
+  chk(f + ': a long box value is sized down to stay inside its box', vals.length === 2 && vals.every((o) => o.text.length * o.size * 0.56 <= box.w - 48), vals.map((o) => o.size));
+});
+/* SPELLING: American, everywhere on the card */
+const UK = /(favour|colour|behaviour|honour|centre|metre|defence|offence|licence|analys(e|ing)\b|catalogue|programme|judgement|labelled|travelled|modelled|cancelled|recognis|organis|prioritis|optimis|minimis|maximis|normalis|summaris|realis|categoris|characteris|stabilis|utilis|penalis)/i;
+const cardText = (x) => JSON.stringify(x);
+chk('no British spellings on the card', !UK.test(cardText(C)) && !UK.test(cardText(SC.content(st({ drivers: [], priority: { eligible: true } }), { now: NOW }).content)) && !UK.test(Object.values(SC.REASON_TEXT).join(' ')),
+  (cardText(C).match(UK) || [])[0]);
 chk('the post text carries the same numbers and nothing else', SC.shareText(C) === 'EdgeDesk research — Ole Miss @ Florida: fair Ole Miss -1.7, market Florida -2.5 (4.2 pts gap), reliability 88. Research, not picks. edgedesksports.com', SC.shareText(C));
 
 /* ══ 3. PERSONAS ══════════════════════════════════════════════════════════ */
