@@ -3091,7 +3091,7 @@ body.focus .dk-focusnote{display:block}
       </div>
       <div class="rtblwrap" id="recTblWrap"><table class="rtbl" id="recTbl"><thead></thead><tbody></tbody></table></div>
       <div class="rpager" id="recPager"></div>
-      <div class="rec-note" style="margin-top:12px">Odds are the frozen flag price where capture stored one, otherwise the first-seen price and marked. Close is the de-vigged sharp fair at close, not a book quote. Stake, notes and confidence scores are not captured by the pipeline, so they are not shown or invented. Sim P/L is a flat 1 unit simulation, not money.</div>
+      <div class="rec-note" style="margin-top:12px">Odds are the frozen flag price where capture stored one, otherwise the first-seen price and marked. Close is the de-vigged sharp fair at close, not a book quote. Stake, notes and confidence scores are not captured by the pipeline, so they are not shown or invented. P&amp;L is 1 unit flat at the price when flagged; pushes = 0; missing prices are not estimated. Units, not money.</div>
     </div>
 
     <!-- ANALYTICS -->
@@ -8738,12 +8738,23 @@ function recDecOf(r){var d=recNum(r.flagged_best_dec);if(d!=null&&d>1)return d;d
 function recDecIsFlag(r){var d=recNum(r.flagged_best_dec);return d!=null&&d>1;}
 function recAm(d){if(d==null||!(d>1))return null;return d>=2?('+'+Math.round((d-1)*100)):String(Math.round(-100/(d-1)));}
 function recAm2Dec(s){s=String(s||'').trim();if(!s)return null;var a=+s;if(isNaN(a)||a===0)return null;if(Math.abs(a)<100&&a>1)return a;/* already decimal-ish */return a>0?1+a/100:1+100/(-a);}
-/* A VOID IS A RETURNED STAKE, NOT AN UNSETTLED BET. _presentation.js folds
-   'void' into 'push' and the brief record has always handled it; this record did
-   not, so a voided row returned null here (reading as "not settled yet") while
-   still counting toward the pool size and, if it carried a clv, toward every CLV
-   average. It diluted every rate it appeared in without ever being scored. */
-function recProfitOf(r){var d=recDecOf(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push'||r.result==='void')return 0;return null;}
+/* THE P&L IS THE DATABASE'S, NOT THIS PAGE'S. public.pnl_grades (supabase/
+   pnl_grades*.sql) holds every flag's P&L: 1u flat at the price frozen at the
+   flag, never the first-seen price and never the close. loadRecord() reads it
+   and sets r._profit from it. recProfitOf() is only the fallback before that
+   migration has run, and it follows the same rules: the flag price or nothing
+   (it used to fall back to first_best_dec, a price EdgeDesk never offered at
+   the flag), a push is 1u risked and returned (0), and a void is not a bet
+   (null). A void is settled, not pending: it stays in the pool and in the
+   W-L-P context, and recPnlWhy() names it; it is only kept out of profit, ROI
+   and units risked, where a returned stake is not a wager. */
+function recProfitOf(r){var d=recNum(r.flagged_best_dec);if(d==null||!(d>1))return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push')return 0;return null;}
+function recPnlWhy(r){
+  var p=r._pnl;if(!p)return REC.pnlLive?'no P&L row (not a flag, or awaiting reconciliation)':(r.result==='void'?'void: stake returned, not a bet':'flag price only (P&L table not read)');
+  var m={void:'void: stake returned, not a bet',ungraded_missing_price:'no price frozen at the flag — not estimated',ungraded_unsettled:'awaiting a result',
+    ungraded_unsupported:'market not gradeable (sets vs games)',not_a_bet:'board showed PASS at the flag — not a bet'};
+  return p.pnl_status==='graded'?'1u at '+recEsc(String(Math.round(+p.price_at_flag_american)>0?'+'+Math.round(+p.price_at_flag_american):Math.round(+p.price_at_flag_american)))+' (flag price)':(m[p.pnl_status]||recEsc(p.pnl_status));
+}
 function recCloseFairDec(r){var p=recNum(r.closing_sharp_fair);return (p!=null&&p>0&&p<1)?1/p:null;}
 function recEdgeOf(r){var e=recNum(r.flagged_edge);return e;}
 function recU(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?2:dp;return (v>=0?'+':'')+v.toFixed(dp)+'u';}
@@ -8762,7 +8773,7 @@ function recEmptyHTML(kind,body,retry){
 }
 
 /* ---- data load ---- */
-var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav,flagged_policy,flagged_tier,flagged_reference_type,qual_reason';
+var REC_COLS='id,sig_key,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav,flagged_policy,flagged_tier,flagged_reference_type,qual_reason';
 
 async function loadRecord(force){
   if(REC.loading)return;
@@ -8829,9 +8840,20 @@ async function loadRecord(force){
     rows.forEach(function(r){
       r._unsupported=((r.sport_key||'').indexOf('tennis_')===0 && (r.market==='spreads'||r.market==='totals'));
     });
+    /* One read of public.pnl_grades (settled rows; RLS shows anyone a settled
+       or started game). Every profit, ROI and units figure below is that row's
+       pnl_units. Unreachable (the migration has not run) = the flag-price-only
+       fallback, said so on the receipt. */
+    var pnlMap=null;
+    try{
+      var pgr=await sbGetAll('pnl_grades?select=sig_key,verdict,verdict_reason,pnl_status,pnl_reason,pnl_units,pnl_units_at_close,price_at_flag_american,calc_version&settled_at=not.is.null&order=sig_key.asc',1000,30);
+      pnlMap={};pgr.forEach(function(p){pnlMap[p.sig_key]=p;});
+    }catch(_){pnlMap=null;}
+    REC.pnlLive=!!pnlMap;
     rows.forEach(function(r){
       r._dec=recDecOf(r);r._am=recAm(r._dec);r._flagPrice=recDecIsFlag(r);
-      r._profit=recProfitOf(r);r._edge=recEdgeOf(r);
+      r._pnl=pnlMap?(pnlMap[r.sig_key]||null):null;
+      r._profit=pnlMap?((r._pnl&&r._pnl.pnl_status==='graded')?+r._pnl.pnl_units:null):recProfitOf(r);r._edge=recEdgeOf(r);
       if(r._unsupported){r._profit=null;}   // never contribute to ROI/bankroll/profit charts
       r._closeDec=recCloseFairDec(r);r._closeAm=recAm(r._closeDec);
       r._gts=r.graded_at?new Date(r.graded_at).getTime():0;
@@ -8996,7 +9018,7 @@ function recRenderOverview(){
     return;
   }
   var small=st.n<REC_MIN;
-  var simTag='<span class="rtag sim">sim 1u</span>';
+  var simTag='<span class="rtag sim">1u</span>';
   var smallTag=small?'<span class="rtag small">n&lt;'+REC_MIN+'</span>':'';
   function k(n,l,s,cls){return '<div class="rkpi"><div class="n '+(cls||'')+'">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>';}
   var streak=st.curStreak?(st.curStreak.n+(st.curStreak.k==='win'?'W':'L')):'\u2014';
@@ -9005,8 +9027,8 @@ function recRenderOverview(){
   $('recHero').innerHTML=
     k(st.w+'-'+st.l+(st.p?'-'+st.p:''),'record'+(smallTag?' '+smallTag:''),'win-loss'+(st.p?'-push':'')+' \u00b7 auto-graded')+
     k(st.winPct!=null?recPc0(st.winPct,1):'\u2014','win %','of '+(st.w+st.l)+' decided')+
-    k(recU(st.profit),'profit'+simTag,'flat 1u at frozen entry price',recCls(st.profit))+
-    k(st.roi!=null?recPc(st.roi,1):'\u2014','roi'+simTag,'sim profit \u00f7 '+st.staked+' priced bets',recCls(st.roi))+
+    k(recU(st.profit),'P&amp;L'+simTag,'1u flat at the flag price',recCls(st.profit))+
+    k(st.roi!=null?recPc(st.roi,1):'\u2014','roi'+simTag,'P&amp;L \u00f7 '+st.staked+'u risked (pushes count, voids do not)',recCls(st.roi))+
     k(st.avgClv!=null?recPc(st.avgClv,2):'\u2014','avg clv','over '+st.nClv+' rows with CLV \u00b7 the number that matters',recCls(st.avgClv))+
     k(String(st.n),'graded signals','in the current filter')+
     k(st.avgEdge!=null?recPc(st.avgEdge,2):'\u2014','avg edge at flag',st.nEdge?st.nEdge+' rows carry a frozen flag edge':'not captured in this pool',recCls(st.avgEdge))+
@@ -9017,7 +9039,7 @@ function recRenderOverview(){
     k(avgAm!=null?avgAm:'\u2014','avg odds',st.avgDec!=null?'dec '+st.avgDec.toFixed(2):'')+
     k(st.maxWin!=null?recU(st.maxWin):'\u2014','largest win'+simTag,'','rpos')+
     k(st.maxLoss!=null?recU(st.maxLoss):'\u2014','largest loss'+simTag,'','rneg');
-  $('recSimNote').innerHTML='<div class="rec-note"><b>What the money-shaped numbers are.</b> No stakes are recorded anywhere in this pipeline. Profit, ROI, streak sizes, largest win and loss are a flat 1 unit simulation at the frozen entry price of each flagged edge. They show what the flags would have done at even sizing; they are not a bankroll and not betting advice. CLV remains the only proof of edge.'+(small?' At n='+st.n+' every figure above is noise, not signal.':'')+'</div>';
+  $('recSimNote').innerHTML='<div class="rec-note"><b>What the money-shaped numbers are.</b> 1 unit flat stake at the price when flagged. Pushes = 0. Missing prices are not estimated. Profit, ROI, streaks, largest win and loss come from the database\u2019s P&amp;L of each flag (public.pnl_grades): a push is 1u risked and returned, a void is not a bet, and a row with no price frozen at the flag has no P&amp;L. They show what the flags would have done at even sizing; they are not a bankroll and not betting advice. CLV remains the only proof of edge.'+(REC.pnlLive?'':' <b>The P&amp;L table could not be read</b> (not deployed yet, or unreachable), so these use the flag price directly under the same rules.')+(small?' At n='+st.n+' every figure above is noise, not signal.':'')+'</div>';
   recRenderSportCards();
   recStatusCards();
   /* Fire-and-forget: the health panel reads its own timestamps and must never
@@ -9236,6 +9258,24 @@ async function recPipelineHealth(){
     h+=row('grading',grade.txt,grade.min==null?null:grade.min<1440,'last result settled',
       grade.min==null?'nothing has ever been graded'
       :(grade.min>=1440?'no result settled in 24h \u2014 the settle job is stalled. Signals close fine and then sit ungraded, so the record cannot grow no matter how healthy everything above is.':''));
+    /* P&L RECONCILIATION (supabase/pnl_grades_analytics.sql). The settlement
+       trigger writes each flag's P&L in the same transaction that settles it;
+       this is the check that it did: settled flags with no P&L row must be 0.
+       Counts only, readable by anyone. Unreachable = not deployed, not "broken". */
+    var pr=null,prErr=null;
+    try{pr=await sbGet('rpc/pnl_reconciliation');}catch(e){prErr=e;}
+    if(pr&&pr.length){
+      var prMiss=pr.filter(function(x){return /^settled flags with no/.test(x.check_name);})[0];
+      var prBad=pr.filter(function(x){return x.state!=='ok';});
+      h+=row('p&amp;l',prMiss?(prMiss.n+' missing'):'\u2014',prBad.length===0,
+        'settled flags without a P&amp;L row (must be 0)'+(prBad.length?'':' \u00b7 every settled flag carries its P&amp;L'),
+        prBad.length?prBad.map(function(x){return recEsc(x.check_name)+': '+recEsc(x.n);}).join(' \u00b7 ')+' \u2014 run select * from pnl_grades_backfill(true)':'');
+    }else{
+      var prMissing=prErr&&(prErr.status===404||/PGRST20[25]|does not exist/.test(String(prErr.body||'')));
+      h+=row('p&amp;l',prMissing?'not deployed':'unreadable',null,'settled flags without a P&amp;L row',
+        prMissing?'pnl_reconciliation() does not exist yet: run supabase/pnl_grades.sql, pnl_grades_sync.sql and pnl_grades_analytics.sql'
+        :(prErr?'pnl_reconciliation() could not be read ('+recEsc(prErr.message)+') \u2014 this says nothing about whether the P&amp;L is in step':''));
+    }
 
     /* State the counts, then say only what they actually support. The earlier
        version asserted a condition ("both at zero") without checking it, which
@@ -9332,22 +9372,22 @@ function recRenderCharts(){
   var pcF=function(v){return (v>=0?'+':'')+(v*100).toFixed(1)+'%';};
   var uF=function(v){return (v>=0?'+':'')+v.toFixed(1)+'u';};
   var h='';
-  /* 1 bankroll growth (cumulative sim units) */
+  /* 1 bankroll growth (cumulative P&L units) */
   var cum=[],s=0;priced.forEach(function(r){s+=r._profit;cum.push(s);});
-  h+=recChartCard('Bankroll growth <span class="rtag sim">sim 1u</span>','Cumulative flat 1u profit in graded order. A simulation of even sizing at the frozen entry price, not a bankroll.',cum.length>1?rxLine(cum,{fmt:uF}):null,priced.length);
+  h+=recChartCard('Bankroll growth <span class="rtag sim">1u</span>','Cumulative P&amp;L in graded order: 1u flat at the price when flagged. Even sizing, not a bankroll.',cum.length>1?rxLine(cum,{fmt:uF}):null,priced.length);
   /* 2 profit by month */
   var pm=recGroupSum(priced,function(r){return recMonthKey(r._gts);},function(r){return r._profit;});
-  h+=recChartCard('Profit over time <span class="rtag sim">sim 1u</span>','Sim units won or lost per calendar month of grading.',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  h+=recChartCard('Profit over time <span class="rtag sim">1u</span>','Units won or lost per calendar month of grading.',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
   /* 3 monthly ROI */
-  h+=recChartCard('Monthly ROI <span class="rtag sim">sim 1u</span>','Sim profit divided by bets graded that month.',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
+  h+=recChartCard('Monthly ROI <span class="rtag sim">1u</span>','P&amp;L divided by units risked that month (pushes count, voids do not).',pm.length?rxBars(pm.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
   /* 4 weekly ROI */
   var pw=recGroupSum(priced,function(r){return recWeekKey(r._gts);},function(r){return r._profit;}).slice(-16);
-  h+=recChartCard('Weekly ROI <span class="rtag sim">sim 1u</span>','Last 16 graded weeks (week starting Monday).',pw.length?rxBars(pw.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
+  h+=recChartCard('Weekly ROI <span class="rtag sim">1u</span>','Last 16 graded weeks (week starting Monday).',pw.length?rxBars(pw.map(function(g){return {l:g.l,v:g.n?g.sum/g.n:0};}),{fmt:pcF}):null,priced.length);
   /* 5 CLV trend */
   var withClv=rows.filter(function(r){return r._clv!=null;});
   var wC=withClv.length>=50?25:Math.max(3,Math.floor(withClv.length/3));
   var clvRoll=recRoll(withClv,wC,function(w){return recMean(w.map(function(r){return r._clv;}));});
-  h+=recChartCard('CLV trend','Rolling average CLV (window '+wC+') in graded order. The only line on this page that is proof rather than simulation.',clvRoll.length>1?rxLine(clvRoll,{fmt:pcF}):null,withClv.length);
+  h+=recChartCard('CLV trend','Rolling average CLV (window '+wC+') in graded order. The only line on this page that is evidence of edge rather than a result.',clvRoll.length>1?rxLine(clvRoll,{fmt:pcF}):null,withClv.length);
   /* 6 win rate trend */
   var decided=rows.filter(function(r){return r.result==='win'||r.result==='loss';});
   var wW=decided.length>=50?25:Math.max(3,Math.floor(decided.length/3));
@@ -9355,15 +9395,15 @@ function recRenderCharts(){
   h+=recChartCard('Win rate trend','Rolling win rate over decided bets. Win rate alone means nothing without the odds; read it next to avg odds and CLV.',wrRoll.length>1?rxLine(wrRoll,{fmt:function(v){return (v*100).toFixed(0)+'%';},zero:false,col:'var(--accent)'}):null,decided.length);
   /* 7 profit by sport */
   var ps=recGroupSum(priced,function(r){return r.sport_title||'?';},function(r){return r._profit;});
-  h+=recChartCard('Profit by sport <span class="rtag sim">sim 1u</span>','Sim units by sport in the current filter.',ps.length?rxBars(ps.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  h+=recChartCard('Profit by sport <span class="rtag sim">1u</span>','Units by sport in the current filter.',ps.length?rxBars(ps.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
   /* 8 profit by bet type */
   var pt=recGroupSum(priced,function(r){return r.market||'?';},function(r){return r._profit;});
-  h+=recChartCard('Profit by bet type <span class="rtag sim">sim 1u</span>','Sim units by market.',pt.length?rxBars(pt.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
+  h+=recChartCard('Profit by bet type <span class="rtag sim">1u</span>','Units by market.',pt.length?rxBars(pt.map(function(g){return {l:g.l,v:g.sum};}),{fmt:uF}):null,priced.length);
   /* 9/10 rolling ROI */
   var r50=recRoll(priced,50,function(w){return recMean(w.map(function(r){return r._profit;}));});
-  h+=recChartCard('Rolling 50-bet ROI <span class="rtag sim">sim 1u</span>','Average sim profit per bet over a sliding 50-bet window.'+(priced.length<50?' Needs 50 priced bets; '+priced.length+' exist in this filter.':''),r50.length>1?rxLine(r50,{fmt:pcF}):null,priced.length);
+  h+=recChartCard('Rolling 50-bet ROI <span class="rtag sim">1u</span>','Average P&amp;L per bet over a sliding 50-bet window.'+(priced.length<50?' Needs 50 priced bets; '+priced.length+' exist in this filter.':''),r50.length>1?rxLine(r50,{fmt:pcF}):null,priced.length);
   var r100=recRoll(priced,100,function(w){return recMean(w.map(function(r){return r._profit;}));});
-  h+=recChartCard('Rolling 100-bet ROI <span class="rtag sim">sim 1u</span>','Average sim profit per bet over a sliding 100-bet window.'+(priced.length<100?' Needs 100 priced bets; '+priced.length+' exist in this filter.':''),r100.length>1?rxLine(r100,{fmt:pcF}):null,priced.length);
+  h+=recChartCard('Rolling 100-bet ROI <span class="rtag sim">1u</span>','Average P&amp;L per bet over a sliding 100-bet window.'+(priced.length<100?' Needs 100 priced bets; '+priced.length+' exist in this filter.':''),r100.length>1?rxLine(r100,{fmt:pcF}):null,priced.length);
   host.innerHTML=h;
 }
 
@@ -9380,7 +9420,7 @@ var REC_COLDEF=[
   {k:'_closeDec',l:'Close*',t:'De-vigged sharp fair price at close \u2014 not a book quote.',f:function(r){return r._closeAm!=null?r._closeAm:'\u2014';}},
   {k:'_clv',l:'CLV',t:'Closing Line Value: whether the frozen entry beat the sharp closing market. The one proven number here.',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
   {k:'_edge',l:'Edge',t:'Edge at flag: entry price vs the de-vigged fair, frozen at flag time.',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
-  {k:'_profit',l:'Profit',t:'Flat 1-unit simulated profit/loss. A simulation, not money.',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
+  {k:'_profit',l:'P&L',t:'1 unit flat at the price frozen when the edge was flagged (public.pnl_grades). Push = 0. A void, or a row with no flag price, has no P&L and shows \u2014.',f:function(r){return '<span class="'+recCls(r._profit)+'" title="'+recEsc(recPnlWhy(r))+'">'+recU(r._profit)+'</span>';}},
   {k:'_stat',l:'Status',t:'Settlement status of the graded signal.',f:function(r){return recStatusPill(r);}}
 ];
 function recSortRows(){
@@ -9456,7 +9496,9 @@ function recDetailHTML(r){
     dr('clv','<span class="'+recCls(r._clv)+'">'+pc(r._clv)+'</span>')+
     dr('beat close',r.beat_close===true?'<span class="rpos">yes</span>':r.beat_close===false?'<span class="rneg">no</span>':'\u2014')+
     dr('result',r._unsupported?'\u26a0 unsupported (set scores vs game line \u2014 not scored)':recEsc(r.result||'\u2014'))+
-    dr('sim p/l \u00b7 flat 1u','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>')+
+    dr('board said at flag',r._pnl?('<b>'+recEsc(r._pnl.verdict)+'</b> \u00b7 '+recEsc(r._pnl.verdict_reason)):'\u2014')+
+    dr('p&l \u00b7 1u at flag price','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span> <span class="rmut">'+recPnlWhy(r)+'</span>')+
+    dr('p&l at the closing price',r._pnl&&r._pnl.pnl_units_at_close!=null?'<span class="'+recCls(+r._pnl.pnl_units_at_close)+'">'+recU(+r._pnl.pnl_units_at_close)+'</span> <span class="rmut">comparison only</span>':'\u2014')+
     '<div class="dh">Context</div>'+
     dr('anchor',recEsc(r._anchor)+(r._anchor==='?'?' \u00b7 pre-migration row, honestly unknown':''))+
     dr('corroboration at first capture',corrob||'not captured')+
@@ -9816,7 +9858,7 @@ function recRenderAnalytics(){
   function rr(k,v){return '<div class="rr"><span class="rk">'+k+'</span><span class="rv">'+v+'</span></div>';}
   var na='not enough data (min '+MINSEG+' bets per slice)';
   var h='<div class="rstats2">';
-  h+='<div class="rstat"><h4>Where the sim profit lives <span class="rtag sim">sim 1u</span></h4>'+
+  h+='<div class="rstat"><h4>Where the P&amp;L lives <span class="rtag sim">1u</span></h4>'+
     rr('most profitable sport',bySport?segLabel(bySport.best):na)+
     rr('worst sport',bySport?segLabel(bySport.worst):na)+
     rr('most profitable book',byBook?segLabel(byBook.best):na)+
@@ -9840,19 +9882,19 @@ function recRenderAnalytics(){
   var rE=exy.length>=3?recPearson(exy.map(function(p){return p[0];}),exy.map(function(p){return p[1];})):null;
   var rC=cxy.length>=3?recPearson(cxy.map(function(p){return p[0];}),cxy.map(function(p){return p[1];})):null;
   h+='<div class="rstat"><h4>Does the thesis hold in this sample?</h4>'+
-    rr('corr(edge at flag, sim profit)',rE!=null?rE.toFixed(3)+' \u00b7 n='+exy.length:'\u2014')+
-    rr('corr(clv, sim profit)',rC!=null?rC.toFixed(3)+' \u00b7 n='+cxy.length:'\u2014')+
+    rr('corr(edge at flag, P&amp;L)',rE!=null?rE.toFixed(3)+' \u00b7 n='+exy.length:'\u2014')+
+    rr('corr(clv, P&amp;L)',rC!=null?rC.toFixed(3)+' \u00b7 n='+cxy.length:'\u2014')+
     '<div class="sub">Single-bet outcomes are dominated by variance, so both correlations are expected to be weak at small n. The claim to test over time: CLV correlates with profit and edge-at-flag correlates with CLV. If neither holds at a real sample size, the scanner is wrong and this page will say so.'+((exy.length<REC_MIN&&cxy.length<REC_MIN)?' At the current n these numbers are noise.':'')+'</div></div>';
   /* profit by weekday */
   var wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var pd=recGroupSum(priced,function(r){return wd[new Date(r._cts).getDay()];},function(r){return r._profit;});
   var pdMap={};pd.forEach(function(g){pdMap[g.l]=g;});
   var wdBars=wd.filter(function(d){return pdMap[d];}).map(function(d){return {l:d,v:pdMap[d].sum};});
-  h+='<div class="rstat"><h4>Profit by weekday <span class="rtag sim">sim 1u</span></h4>'+(wdBars.length?rxBars(wdBars,{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Bucketed by kickoff day.</div></div>';
+  h+='<div class="rstat"><h4>Profit by weekday <span class="rtag sim">1u</span></h4>'+(wdBars.length?rxBars(wdBars,{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Bucketed by kickoff day.</div></div>';
   /* profit by time of day */
   var tb=recGroupSum(priced,function(r){var hh=new Date(r._cts).getHours();return hh<12?'am':(hh<17?'aft':(hh<21?'eve':'late'));},function(r){return r._profit;});
   var tOrder={am:0,aft:1,eve:2,late:3};tb.sort(function(a,b){return tOrder[a.l]-tOrder[b.l];});
-  h+='<div class="rstat"><h4>Profit by time of day <span class="rtag sim">sim 1u</span></h4>'+(tb.length?rxBars(tb.map(function(g){return {l:g.l,v:g.sum};}),{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Local kickoff time: am before 12, aft 12\u20135, eve 5\u20139, late after 9.</div></div>';
+  h+='<div class="rstat"><h4>Profit by time of day <span class="rtag sim">1u</span></h4>'+(tb.length?rxBars(tb.map(function(g){return {l:g.l,v:g.sum};}),{h:150,fmt:function(v){return (v>=0?'+':'')+v.toFixed(1);}}):'<div class="sub">No priced rows.</div>')+'<div class="sub">Local kickoff time: am before 12, aft 12\u20135, eve 5\u20139, late after 9.</div></div>';
   h+='</div>';
   /* heatmap month x weekday */
   var months=[],mSeen={};
@@ -9874,12 +9916,12 @@ function recRenderAnalytics(){
       });
     }
     hm+='</div>';
-    h+='<div class="rstat"><h4>Profit heatmap \u00b7 month \u00d7 weekday <span class="rtag sim">sim 1u</span></h4><div class="rheatwrap">'+hm+'</div><div class="sub">Empty cells mean no graded bets, not zero profit.</div></div>';
+    h+='<div class="rstat"><h4>Profit heatmap \u00b7 month \u00d7 weekday <span class="rtag sim">1u</span></h4><div class="rheatwrap">'+hm+'</div><div class="sub">Empty cells mean no graded bets, not zero profit.</div></div>';
   }
   /* profit by month table */
   var pmT=recGroupSum(priced,function(r){return recMonthKey(r._gts);},function(r){return r._profit;});
   if(pmT.length){
-    h+='<div class="rstat"><h4>Profit by month <span class="rtag sim">sim 1u</span></h4>'+pmT.map(function(g){
+    h+='<div class="rstat"><h4>Profit by month <span class="rtag sim">1u</span></h4>'+pmT.map(function(g){
       return rr(g.l,'<span class="'+recCls(g.sum)+'">'+recU(g.sum)+'</span> \u00b7 '+g.n+' bets \u00b7 roi '+recPc(g.n?g.sum/g.n:null,1));
     }).join('')+'</div>';
   }
@@ -9896,7 +9938,7 @@ var REC_EXPORT_FIELDS=[
   ['flagged_edge','edge_at_flag'],['edge','edge_at_close'],
   ['sharp_fair','sharp_fair_at_capture'],['consensus_fair','consensus_fair_at_capture'],['closing_sharp_fair','closing_sharp_fair'],
   ['_closeDec','close_fair_decimal'],['clv','clv'],['beat_close','beat_close'],['result','result'],
-  ['_profit','sim_profit_units_flat1u'],['_anchor','anchor'],['first_corrob_n','corroborating_books_at_capture'],
+  ['_profit','pnl_units_1u_at_flag_price'],['_anchor','anchor'],['first_corrob_n','corroborating_books_at_capture'],
   ['first_corrob_ref','corroboration_reference'],['n_books','books_pricing'],['pin_dec','pinnacle_price_decimal'],['pin_opp_dec','pinnacle_opposite_decimal'],
   ['event_id','event_id']
 ];
@@ -10501,7 +10543,7 @@ function recReceiptHTML(r){
   var heroLab=clvKnown?(r._clv>0?'Beat the closing line':'Missed the closing line'):'No sharp closing price captured';
   var resChip=recStatusPill(r);
   var hero='<div class="rcpt-hero '+heroCls+'">'+
-    '<div class="rcpt-hero-lab">Closing line value '+recTip('CLV measures whether your frozen entry price beat the sharp market at close. It is the one number here that is proof, not simulation.')+'</div>'+
+    '<div class="rcpt-hero-lab">Closing line value '+recTip('CLV measures whether your frozen entry price beat the sharp market at close. It is the one number here that is evidence of edge, not a result.')+'</div>'+
     '<div class="rcpt-hero-big">'+heroBig+'</div>'+
     '<div class="rcpt-hero-tag">'+heroLab+'</div>'+
     '<div class="rcpt-hero-chips">'+
@@ -10580,7 +10622,7 @@ function recReceiptHTML(r){
   var result='<div class="rcpt-sec"><div class="rcpt-sec-h"><span class="n">05</span>Game result</div>'+
     '<div class="rcpt-grid2">'+
       kv('Status',recStatusPill(r))+
-      kv('Sim P/L \u00b7 flat 1u','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>')+
+      kv('P&amp;L \u00b7 1u at flag price','<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>'+(r._profit==null?' <span class="rmut">'+recPnlWhy(r)+'</span>':''))+
       kv('Kickoff',recDT(r.commence_time))+
       kv('Graded',recDT(r.graded_at))+
     '</div>'+
@@ -10594,7 +10636,7 @@ function recReceiptHTML(r){
       impRow('Overall record',imp.overall)+
       impRow('This sport',imp.sport)+
       impRow('This market',imp.market)+
-      '<div class="rcpt-vcap">How the running record stood the moment before this bet graded versus just after. Records are decided W\u2013L; ROI is the flat 1u simulation.</div></div>';
+      '<div class="rcpt-vcap">How the running record stood the moment before this bet graded versus just after. Records are decided W\u2013L; ROI is 1u flat at the price when flagged.</div></div>';
   }
 
   /* similar signals */
@@ -10642,7 +10684,7 @@ function recReceiptHTML(r){
     '</div></div>';
 
   var foot='<div class="rcpt-foot"><b>Not captured, so not shown:</b> stake, book limits and steam history, per-book price arrays, final score, and any research note or confidence score. '+
-    '\u2020 marks an entry taken at first sighting on rows that predate flag-price capture. * the close is the de-vigged sharp fair, not a book quote. Sim P/L is a flat 1-unit simulation, not money.</div>';
+    '\u2020 marks an entry taken at first sighting on rows that predate flag-price capture. * the close is the de-vigged sharp fair, not a book quote. P&amp;L is 1 unit flat at the price when flagged; pushes = 0; missing prices are not estimated. Units, not money.</div>';
 
   return hero+note+sel+priceSec+vizSec+mkt+result+impact+similar+prov+foot;
 
@@ -10766,7 +10808,7 @@ function rcptCopySummary(r){
     (r._game||r.selection||'')+'  \u2014  '+(r.sport_title||'')+' '+recMkt(r.market),
     'Selection: '+(r.selection||'')+(r.point!=null?' '+r.point:'')+' @ '+(r._am||'\u2014')+' ('+(r.best_book||'')+')',
     'Edge at flag: '+recPc(r._edge,1)+'   CLV: '+(r._clv!=null?recPc(r._clv,2):'not scored')+'   Beat close: '+(r.beat_close===true?'yes':r.beat_close===false?'no':'\u2014'),
-    'Result: '+(r.result||'pending')+'   Sim P/L (1u): '+recU(r._profit),
+    'Result: '+(r.result||'pending')+'   P&L (1u at flag price): '+recU(r._profit),
     'Flagged '+recDT(r.flagged_at)+'  \u00b7  graded '+recDT(r.graded_at),
     'Auto-graded from the frozen entry price and de-vigged sharp close. Not financial advice.'
   ];
@@ -10847,11 +10889,11 @@ function rcptPrintHTML(r){
     '</table>'+
     '<h2>Result</h2><table>'+
       row('Status',r._unsupported?'unsupported':(r.result||'pending'))+
-      row('Sim P/L (flat 1u)',recU(r._profit))+
+      row('P&L (1u at flag price)',recU(r._profit))+
       row('Flagged',recDT(r.flagged_at))+
       row('Graded',recDT(r.graded_at))+
     '</table>'+
-    '<div class="foot">Auto-graded by EdgeDesk from the frozen entry price and the de-vigged sharp closing fair. Stake, book limits and final scores are not captured. Sim P/L is a flat 1-unit simulation, not money. Not financial advice.</div>'+
+    '<div class="foot">Auto-graded by EdgeDesk from the frozen entry price and the de-vigged sharp closing fair. Stake, book limits and final scores are not captured. P&amp;L is 1 unit flat at the price when flagged; pushes = 0; missing prices are not estimated. Units, not money. Not financial advice.</div>'+
     '</body></html>';
 }
 
