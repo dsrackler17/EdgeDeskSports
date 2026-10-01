@@ -486,6 +486,31 @@ async function main() {
       const whyN = await page.$$eval('#pnlPub [data-r="why"] li[data-reason]', (els) => els.map((e) => [e.getAttribute('data-reason'), Number(e.querySelector('b').textContent.replace(/,/g, ''))]));
       chk(W + 'px real: why pending — the reasons add up to every pending recommendation', whyN.reduce((a, x) => a + x[1], 0) === rs.waiting.total && whyN.every((x) => rs.waiting.reasons.some((r) => r.key === x[0] && r.n === x[1])), [whyN, rs.waiting]);
       chk(W + 'px real: every row\'s state, as the summary counts them', (await page.$$eval('#pnlPub [data-r="states"] .pnl-dqi[data-state]', (els) => els.map((e) => [e.getAttribute('data-state'), Number(e.querySelector('.pnl-dqn').textContent.replace(/,/g, ''))]))).every((x) => x[1] === rs.states[x[0]]));
+      {
+        /* the college player props: every one a LEAN while that model is EXPERIMENTAL — tracked on the page, never in the record or P&L unless leans are included */
+        const cfbLeans = PNL.scopeRows(realRows, 'cfb').filter((x) => (x.season == null || x.season === real.season) && x.market_group === 'prop' && x.rec_class === 'LEAN');
+        if (cfbLeans.length) {
+          await page.evaluate(() => { const o = document.getElementById('edmOnb'); if (o) o.remove(); document.querySelector('#pnlPub .pnl-tabs [data-scope="cfb"]').click(); });
+          await page.waitForTimeout(200);
+          const tile = await page.$eval('#pnlPub [data-market="player_prop"] .pnl-hm-l', (e) => [e.getAttribute('data-lean-count'), e.textContent]).catch(() => null);
+          chk(W + 'px real: the CFB view shows its player props — ' + cfbLeans.length + ' leans tracked', tile && +tile[0] === cfbLeans.length && tile[1].indexOf(cfbLeans.length.toLocaleString('en-US') + ' lean') === 0, tile);
+          const rec = await read(page, '#pnlPub');
+          chk(W + 'px real: …and they stay out of the CFB record (leans are off)', (rec.perf || rec.hero || '').indexOf(expectOn(realRows, real.season, { scope: 'cfb' }).record.record) >= 0, rec.perf);
+          const cfbPending = cfbLeans.filter((x) => PNL.rowState(x) === 'PENDING').length;
+          if (cfbPending) {
+            await page.evaluate(() => document.querySelector('#pnlPub [data-lstatus="pending"]').click());
+            await page.waitForTimeout(100);
+            chk(W + 'px real: the CFB pending ledger says the leans are tracked, one tap away', (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(cfbPending.toLocaleString('en-US') + ' player-prop lean') >= 0 && !!(await page.$('#pnlPub [data-leans-on]')));
+            await page.evaluate(() => document.querySelector('#pnlPub [data-leans-on]').click());
+            await page.waitForTimeout(200);
+            const listed = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Sport"]', (els) => els.map((e) => e.textContent));
+            chk(W + 'px real: including leans lists the college props', await page.$eval('#pnlPub [data-leans]', (c) => c.checked) && listed.length > 0 && listed.every((t) => /CFB/.test(t) && /Lean/.test(t)), listed.slice(0, 3));
+            await page.evaluate(() => { const c = document.querySelector('#pnlPub [data-leans]'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
+          }
+          await page.evaluate(() => document.querySelector('#pnlPub .pnl-tabs [data-scope="all"]').click());
+          await page.waitForTimeout(200);
+        }
+      }
       if (!rs.n) chk(W + 'px real: with no verified P&L the ledger opens on the historical graded results, not on pending', await page.$eval('#pnlPub [data-lstatus="history"]', (b) => b.classList.contains('on')) && (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(rs.record.graded.toLocaleString('en-US') + ' result') >= 0);
       chk(W + 'px real: the agreement checks pass on the committed data', /All \d+ agreement checks pass/.test(await text(page, '#pnlPub [data-r="integrity"]')) && !(await page.$('#pnlPub .pnl-integrity')));
       if (W === 1440) {
