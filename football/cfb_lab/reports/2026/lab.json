@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-01T18:07:26.000Z",
+ "generated_at": "2026-10-01T19:07:24.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 200,
-    "latest_snapshot_at": "2026-10-01T18:07:26.000Z",
+    "snapshots": 202,
+    "latest_snapshot_at": "2026-10-01T19:07:24.000Z",
     "upcoming_games": 117,
     "avg_confidence_upcoming": 79.7
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 313,
-    "latest_snapshot_at": "2026-10-01T18:07:26.000Z",
+    "snapshots": 315,
+    "latest_snapshot_at": "2026-10-01T19:07:24.000Z",
     "upcoming_games": 114,
     "avg_confidence_upcoming": 76.6
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 313,
-    "latest_snapshot_at": "2026-10-01T18:07:26.000Z",
+    "snapshots": 315,
+    "latest_snapshot_at": "2026-10-01T19:07:24.000Z",
     "upcoming_games": 114,
     "avg_confidence_upcoming": 76.7
    }
@@ -888,16 +888,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-01T18:07:26.000Z",
-    "quotes_total": 4650,
+    "last_quote_at": "2026-10-01T19:07:24.000Z",
+    "quotes_total": 4710,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1336,
-   "live_predictions": 826,
-   "quotes": 4650,
+   "predictions": 1342,
+   "live_predictions": 832,
+   "quotes": 4710,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
@@ -999,10 +999,10 @@
    "home": "Tulsa",
    "away": "North Texas",
    "market": {
-    "current": 1.5,
+    "current": 2.5,
     "open": -1.5,
     "books": 1,
-    "as_of": "2026-10-01T12:07:33.000Z",
+    "as_of": "2026-10-01T19:07:24.000Z",
     "sources": [
      "espn"
     ],
@@ -1011,10 +1011,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-01T13:07:25.000Z",
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
      "margin": -9.24,
      "fair": "North Texas -9.0",
      "p_home": 0.2668,
@@ -1024,28 +1024,28 @@
      "decision": "LEAN",
      "status": "LEAN",
      "side": "AWAY",
-     "gap": -7.74,
-     "line": -1.5,
+     "gap": -6.74,
+     "line": -2.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-01T13:07:25.000Z",
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
      "margin": -6.12,
      "fair": "North Texas -6.0",
      "p_home": 0.3553,
      "sigma": 16.619,
      "conf": 59,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "AWAY",
-     "gap": -4.62,
-     "line": -1.5,
+     "gap": -3.62,
+     "line": -2.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1055,21 +1055,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-01T13:07:25.000Z",
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
      "margin": -5.64,
      "fair": "North Texas -5.5",
      "p_home": 0.3666,
      "sigma": 16.657,
      "conf": 57,
      "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
+     "decision": "PASS",
+     "status": "PASS",
      "side": "AWAY",
-     "gap": -4.14,
-     "line": -1.5,
+     "gap": -3.14,
+     "line": -2.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1325,6 +1325,91 @@
      "line": -2.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
+      "MARKET_DEGRADED"
+     ]
+    }
+   }
+  },
+  {
+   "game_id": "401862787",
+   "week": 5,
+   "kickoff": "2026-10-03T15:00:00.000Z",
+   "home": "Charlotte",
+   "away": "Memphis",
+   "market": {
+    "current": 20.5,
+    "open": 21.5,
+    "books": 1,
+    "as_of": "2026-10-01T18:07:26.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
+   },
+   "models": {
+    "edgedesk_cfb_p4_v1.0.0": {
+     "label": "V1",
+     "checkpoint": "T48",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
+     "margin": -16.83,
+     "fair": "Memphis -17.0",
+     "p_home": 0.1284,
+     "sigma": 14.841,
+     "conf": 79,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 3.67,
+     "line": 20.5,
+     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "T48",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
+     "margin": -17.28,
+     "fair": "Memphis -17.5",
+     "p_home": 0.1398,
+     "sigma": 16.059,
+     "conf": 77,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "HOME",
+     "gap": 3.22,
+     "line": 20.5,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "MARKET_DEGRADED"
+     ]
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "T48",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-01T19:07:24.000Z",
+     "margin": -17.29,
+     "fair": "Memphis -17.5",
+     "p_home": 0.1402,
+     "sigma": 16.088,
+     "conf": 76,
+     "dq": "GREEN",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": "AWAY",
+     "gap": 3.21,
+     "line": -20.5,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
       "MARKET_DEGRADED"
      ]
     }
@@ -3011,91 +3096,6 @@
      "line": -14.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
-      "MARKET_DEGRADED"
-     ]
-    }
-   }
-  },
-  {
-   "game_id": "401862787",
-   "week": 5,
-   "kickoff": "2026-10-03T19:30:00.000Z",
-   "home": "Charlotte",
-   "away": "Memphis",
-   "market": {
-    "current": 20.5,
-    "open": 21.5,
-    "books": 1,
-    "as_of": "2026-10-01T11:07:29.000Z",
-    "sources": [
-     "espn"
-    ],
-    "stale": false
-   },
-   "models": {
-    "edgedesk_cfb_p4_v1.0.0": {
-     "label": "V1",
-     "checkpoint": "T72",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-09-30T19:36:46.000Z",
-     "margin": -16.83,
-     "fair": "Memphis -17.0",
-     "p_home": 0.1284,
-     "sigma": 14.841,
-     "conf": 79,
-     "dq": "GREEN",
-     "decision": "LEAN",
-     "status": "LEAN",
-     "side": "HOME",
-     "gap": 3.67,
-     "line": 20.5,
-     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": null
-    },
-    "edgedesk_cfb_v2.1.0": {
-     "label": "V2.1 · hardened",
-     "checkpoint": "ADHOC",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-01T11:07:29.000Z",
-     "margin": -17.28,
-     "fair": "Memphis -17.5",
-     "p_home": 0.1398,
-     "sigma": 16.059,
-     "conf": 77,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": "HOME",
-     "gap": 3.22,
-     "line": 20.5,
-     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": [
-      "NO_PLAYER_DATA",
-      "MARKET_DEGRADED"
-     ]
-    },
-    "edgedesk_cfb_v2.0.0": {
-     "label": "V2 · candidate 001",
-     "checkpoint": "ADHOC",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-01T11:07:29.000Z",
-     "margin": -17.29,
-     "fair": "Memphis -17.5",
-     "p_home": 0.1402,
-     "sigma": 16.088,
-     "conf": 76,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": "AWAY",
-     "gap": 3.21,
-     "line": -20.5,
-     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": [
-      "NO_PLAYER_DATA",
       "MARKET_DEGRADED"
      ]
     }
@@ -9980,16 +9980,16 @@
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
   "games_with_market": 58,
   "games_with_verdict": 58,
-  "raw_major_disagreements": 6,
+  "raw_major_disagreements": 5,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
   "verified_15plus": 0,
   "investigate": 0,
   "data_fault": 0,
-  "market_fault": 6,
+  "market_fault": 5,
   "verification_not_run": 0,
-  "average_raw_gap": 4.059,
-  "average_raw_gap_7plus": 11.517,
+  "average_raw_gap": 4.041,
+  "average_raw_gap_7plus": 12.272,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": null,
   "verified_gap_mae": null,
@@ -9998,7 +9998,7 @@
   "false_extreme_rate_verified_pct": null,
   "graded": {
    "raw_7plus": {
-    "n": 6,
+    "n": 5,
     "settled": 0,
     "mae": null,
     "market_mae_at_snapshot": null,
@@ -10018,7 +10018,7 @@
     "false_extremes": 0
    },
    "unverified": {
-    "n": 6,
+    "n": 5,
     "settled": 0,
     "mae": null,
     "market_mae_at_snapshot": null,
@@ -10029,17 +10029,17 @@
    }
   },
   "root_causes_unverified": {
-   "THIN_MARKET": 6
+   "THIN_MARKET": 5
   },
   "by_week": {
    "5": {
-    "raw_7plus": 6,
+    "raw_7plus": 5,
     "raw_10plus": 3,
     "raw_15plus": 1,
     "verified": 0,
     "investigate": 0,
     "data_fault": 0,
-    "market_fault": 6,
+    "market_fault": 5,
     "not_run": 0,
     "favorite_flips": 1
    }
