@@ -96,7 +96,9 @@ X.sections.model_version.compatibility.push({ check: '<zq4>', ok: false, code: '
 X.sections.last_weekly_run = { status: 'CRITICAL', detail: '<zq7>', run_id: '<zq8>', mode: 'weekly', run_status: 'FAILED', stage_groups: { '<zq9>': 'FAILED' }, errors: [{ stage: '<zq10>', class: 'SCHEMA', message: HOSTILE }], runs_recorded: 1 };
 X.sections.source_health.sources.push({ source: '<zq11>', origin: '<zq12>', status: 'OPEN', incident: '<zq13>', age_minutes: 5000 });
 X.sections.failed_jobs.failed.push({ job: '<zq14>', step: '<zq15>', at: 'x', error: '<zq16>' });
-X.sections.degraded_games.degraded.push({ game_id: '<zq17>', home: 'Texas A&M', away: '<zq18>', modes: ['<zq19>'], reason: '<zq20>' });
+/* first, not last: the page shows the first 100 degraded games, and the
+   repository's own build already lists more than that (117 on 2026-10-01) */
+X.sections.degraded_games.degraded.unshift({ game_id: '<zq17>', home: 'Texas A&M', away: '<zq18>', modes: ['<zq19>'], reason: '<zq20>' });
 X.sections.bet_decisions.by_role_status['<zq21>'] = 2;
 X.sections.warnings.warnings.push({ source: '<zq22>', rule: '<zq23>', severity: 'CRITICAL', message: '<zq24>', detail: { '<zq25>': '<zq26>' } });
 X.sections.incidents = { status: 'CRITICAL', detail: '<zq27>', open: [{ severity: 'CRITICAL', incident_key: '<zq28>', error_code: 'DATABASE_DEADLOCK', job: 'cfb_weekly_refresh', occurrences: 12, opened_at: '2026-10-03T10:05:00Z', last_at: '2026-10-03T10:09:00Z', message: HOSTILE }] };
