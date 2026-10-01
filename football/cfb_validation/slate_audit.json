@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-01T12:07:42.233Z",
- "board_generated_at": "2026-09-30T19:36:54.139Z",
+ "generated_at": "2026-10-01T13:07:35.528Z",
+ "board_generated_at": "2026-10-01T13:07:33.494Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,16 +16,16 @@
  ],
  "games": [
   {
-   "game_id": "401858473",
-   "game": "Ohio State @ Iowa",
-   "kickoff": "2026-10-03T19:30:00.000Z",
-   "named": true,
-   "edgedesk": "Ohio State -7.7",
-   "market": "Ohio State -14.5",
+   "game_id": "401858476",
+   "game": "Penn State @ Northwestern",
+   "kickoff": "2026-10-03T00:00:00.000Z",
+   "named": false,
+   "edgedesk": "Northwestern -2.1",
+   "market": "Penn State -3.0",
    "books": 1,
-   "gap": 6.81,
+   "gap": 5.14,
    "gap_class": "MODERATE",
-   "favorite_flip": false,
+   "favorite_flip": true,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
@@ -36,90 +36,24 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401856822",
-   "game": "West Virginia @ Iowa State",
-   "kickoff": "2026-10-03T16:00:00.000Z",
-   "named": true,
-   "edgedesk": "Iowa State -8.9",
-   "market": "Iowa State -3.5",
-   "books": 1,
-   "gap": 5.37,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
-   "game_id": "401858247",
-   "game": "California @ UNLV",
+   "game_id": "401862787",
+   "game": "Memphis @ Charlotte",
    "kickoff": "2026-10-03T19:30:00.000Z",
    "named": false,
-   "edgedesk": "UNLV -10.3",
-   "market": "UNLV -2.5",
+   "edgedesk": "Memphis -16.8",
+   "market": "Memphis -20.5",
    "books": 1,
-   "gap": 7.8,
-   "gap_class": "MAJOR",
+   "gap": 3.67,
+   "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T19:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Allegiant Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 4.2 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: UNLV: Jackson Arnold (previous game) · PASS: California: Jaron-Keawe Sagapolutele (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: UNLV: availability sources checked, nothing filed · PASS: California: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.3 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.1 — the extreme is not supported by how margins of this size have actually finished"
-    }
-   ],
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401862786",
@@ -127,11 +61,11 @@
    "kickoff": "2026-10-02T01:00:00.000Z",
    "named": true,
    "edgedesk": "North Texas -9.2",
-   "market": "Tulsa -1.4",
+   "market": "North Texas -0.1",
    "books": 0,
-   "gap": 10.61,
+   "gap": 9.11,
    "gap_class": "MAJOR",
-   "favorite_flip": true,
+   "favorite_flip": false,
    "research_status": "NO_MARKET",
    "research_label": "STALE MARKET",
    "decision_status": "NO_DECISION",
@@ -188,18 +122,104 @@
    "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
+   "game_id": "401856822",
+   "game": "West Virginia @ Iowa State",
+   "kickoff": "2026-10-03T16:00:00.000Z",
+   "named": true,
+   "edgedesk": "Iowa State -8.9",
+   "market": "Iowa State -3.3",
+   "books": 0,
+   "gap": 5.62,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
+  },
+  {
    "game_id": "401858252",
    "game": "Syracuse @ UConn",
    "kickoff": "2026-10-03T16:00:00.000Z",
    "named": true,
    "edgedesk": "UConn -7.8",
    "market": "Syracuse -6.5",
-   "books": 0,
+   "books": 1,
    "gap": 14.25,
    "gap_class": "MAJOR",
    "favorite_flip": true,
    "research_status": "DATA_FAULT",
    "research_label": "DATA FAULT",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T16:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Pratt & Whitney Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "FAIL",
+     "detail": "FAIL: fewest current-season games behind a rating: 3 (at least 4 required at this size) — the number is still mostly the preseason prior"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: UConn: Kalieb Osborne (previous game) · PASS: Syracuse: Steve Angeli (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "FAIL",
+     "detail": "FAIL: UConn: availability feed fetch failed — abnormal missing data"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "FAIL",
+     "detail": "FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 12.6"
+    }
+   ],
+   "consistent": true,
+   "verdict": "DATA FAULT is correct: fresh multi-book consensus fail; current team states fail; no abnormal availability fail; submodel support fail."
+  },
+  {
+   "game_id": "401858247",
+   "game": "California @ UNLV",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "UNLV -10.3",
+   "market": "UNLV -2.6",
+   "books": 0,
+   "gap": 7.68,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
    "decision_status": "NO_DECISION",
    "gate_status": "NOT RUN",
    "root_cause": null,
@@ -251,17 +271,37 @@
     }
    ],
    "consistent": true,
-   "verdict": "DATA FAULT is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
-   "game_id": "401856705",
-   "game": "Vanderbilt @ Georgia",
-   "kickoff": "2026-10-03T16:45:00.000Z",
-   "named": false,
-   "edgedesk": "Georgia -16.7",
-   "market": "Georgia -24.3",
+   "game_id": "401858473",
+   "game": "Ohio State @ Iowa",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": true,
+   "edgedesk": "Ohio State -7.7",
+   "market": "Ohio State -14.3",
    "books": 0,
-   "gap": 7.54,
+   "gap": 6.56,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
+  },
+  {
+   "game_id": "401862793",
+   "game": "Samford @ UAB",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "UAB -21.0",
+   "market": "UAB -30.5",
+   "books": 0,
+   "gap": 9.49,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
@@ -325,9 +365,9 @@
    "kickoff": "2026-10-03T19:45:00.000Z",
    "named": true,
    "edgedesk": "James Madison -24.6",
-   "market": "James Madison -18.5",
+   "market": "James Madison -19.0",
    "books": 0,
-   "gap": 6.05,
+   "gap": 5.55,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
@@ -338,6 +378,72 @@
    "requirements": null,
    "consistent": true,
    "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
+  },
+  {
+   "game_id": "401862790",
+   "game": "Texas Southern @ Florida Atlantic",
+   "kickoff": "2026-10-03T22:00:00.000Z",
+   "named": false,
+   "edgedesk": "Florida Atlantic -24.7",
+   "market": "Florida Atlantic -43.5",
+   "books": 0,
+   "gap": 18.82,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
    "game_id": "401858249",
@@ -368,6 +474,72 @@
    "market": "South Florida -6.5",
    "books": 0,
    "gap": 8.41,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856706",
+   "game": "McNeese @ LSU",
+   "kickoff": "2026-10-03T23:45:00.000Z",
+   "named": false,
+   "edgedesk": "LSU -41.4",
+   "market": "LSU -53.5",
+   "books": 0,
+   "gap": 12.08,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
