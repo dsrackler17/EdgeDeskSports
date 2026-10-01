@@ -25790,6 +25790,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .brief-note{font-size:12px;color:var(--dim);margin:8px 2px;line-height:1.5}
 .brief-share{margin:8px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:12.5px;word-break:break-all;line-height:1.5}
 .brief-share a{color:var(--accent)}
+/* Every game brief: the list behind the publisher desk's "All game briefs". */
+.allb-lede{font-size:13.5px;line-height:1.55;color:var(--dim);margin:6px 0 12px}
+.allb-ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 6px}
+.allb-seg{display:flex;flex-wrap:wrap;gap:4px}
+.allb-seg .dcard-btn.on{border-color:var(--accent);color:var(--accent)}
+.allb-seg .dcard-btn span{color:var(--faint);font-weight:400;margin-left:3px}
+.allb-q{flex:1 1 160px;min-width:0;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font:inherit;font-size:16px;padding:7px 10px}
+.allb-day{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:14px 2px 6px}
+.allb-row{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 0 6px;color:var(--text);font:inherit;cursor:pointer}
+.allb-row:hover{border-color:var(--accent)}
+.allb-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.allb-m b{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.allb-m i{font-style:normal;font-size:12px;color:var(--dim);overflow-wrap:anywhere}
+.allb-go{flex:none;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap}
 @media print{
   body.printing-brief > *:not(#briefHost){display:none!important}
   body.printing-brief #briefHost{position:static;display:block;background:#fff;padding:0;overflow:visible}
@@ -45471,15 +45485,20 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function barHTML(snap){
     var hasSnap=!!snap;
+    /* a stored brief carries research and no market card, so the two tools
+       that only read a card (the reader check, the AI polish) have nothing
+       to work on there */
+    var hasCards=!!(snap&&snap.internal&&snap.internal.cards&&snap.internal.cards.length);
     return '<div class="brief-bar no-print">'
       +'<button class="dcard-btn" onclick="EDBRIEF.close()">Close</button>'
+      +(BR.fromAll?'<button class="dcard-btn" onclick="EDBRIEF.openAll()">‹ All game briefs</button>':'')
       +(hasSnap?'<button class="dcard-btn" onclick="EDBRIEF.copyCms()">Copy for CMS</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.copyText()">Copy plain text</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.print()">Print / Save PDF</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.share()">Share brief</button>'
-        +'<button class="dcard-btn" onclick="EDBRIEF.openQA()" title="Could a reader with no betting vocabulary act on this?">Reader check</button>'
+        +(hasCards?'<button class="dcard-btn" onclick="EDBRIEF.openQA()" title="Could a reader with no betting vocabulary act on this?">Reader check</button>':'')
         +'<button class="dcard-btn" onclick="EDBRIEF.refresh()">Refresh from current data</button>'
-        +(snap.report_type==='GAME'?'<button class="dcard-btn" onclick="EDBRIEF.polish()">Polish copy</button>':'')
+        +(snap.report_type==='GAME'&&hasCards?'<button class="dcard-btn" onclick="EDBRIEF.polish()">Polish copy</button>':'')
         /* PUBLISH THIS BRIEF AS A PUBLIC ARTICLE. Operator only, and only on a
            game brief: /articles publishes one matchup per page, and a slate or
            a rankings brief is not one. The article is built from the SAME
@@ -45502,7 +45521,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h.classList.add('open'); document.body.classList.add('printing-brief-ready');
     try{ h.scrollTop=0; }catch(_){}
   }
-  function close(){ var h=$id('briefHost'); if(h){ h.classList.remove('open'); h.innerHTML=''; } document.body.classList.remove('printing-brief'); }
+  function close(){ BR.fromAll=false; var h=$id('briefHost'); if(h){ h.classList.remove('open'); h.innerHTML=''; } document.body.classList.remove('printing-brief'); }
   function toast(msg){ try{ var d=document.createElement('div'); d.className='brief-toast'; d.textContent=msg; d.style.cssText='position:fixed;left:50%;bottom:calc(var(--nav) + 24px);transform:translateX(-50%);background:#1e1913;color:#f1ebdf;border:1px solid #3a3124;border-radius:10px;padding:9px 14px;font-size:13px;z-index:99999'; document.body.appendChild(d); setTimeout(function(){ d.remove(); },1900); }catch(_){} }
   function copyRich(html, text){
     try{
@@ -45521,6 +45540,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function refresh(){
     var s=BR.snap, src=BR.source; if(!s||!src) return;
     if(src.kind==='rankings') return openRankings(src.top);
+    if(src.kind==='stored') return openStored(src.id);
     var cards=[];
     if(src.kind==='card'||src.kind==='game'||src.kind==='primetime'){
       var q=src.q||{event_id:src.event_id};
@@ -45776,6 +45796,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   function pubSay(html){ var b=pubBox(); if(b) b.innerHTML=html; }
   function publishArticle(){
     var src=BR.source;
+    if(src&&src.kind==='stored'){
+      return pubSay('<div class="brief-note">This brief is read from the game’s article record (<span class="mono">'+esc(src.id)
+        +'</span>), so there is nothing new to build. Publish or edit it in <a href="/admin/articles" target="_blank" rel="noopener">the article manager</a>.</div>');
+    }
     if(!src||src.kind!=='game'||!src.q){
       return pubSay('<div class="brief-note">Only a single game brief becomes an article — /articles publishes one matchup per page.</div>');
     }
@@ -45882,7 +45906,199 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       });
   }
 
+  /* ═══ EVERY GAME'S BRIEF — INCLUDING THE GAMES THAT HAVE LEFT THE BOARD ═══
+     The football boards list upcoming games only. A game leaves once it is
+     final or six hours past kickoff, and its "Game brief" button leaves with
+     it; and the live builders (fbBriefGame, fbNflBriefGame) read that same
+     upcoming slate, so a brief asked for a game that is no longer on it comes
+     back with no projection at all.
+
+     The article pipeline already keeps a research record for every CFB and
+     NFL game it has seen (articles/data/records/), built by those same two
+     builders before kickoff and frozen at it. This lists every one of them
+     and opens the brief from it: the live builder while the game is still on
+     a loaded board, the stored pregame record once it is not. Nothing here
+     computes a number, and nothing is recomputed after a result. */
+  var ALLB={list:null, at:0, loading:null, when:'past', sport:'all', q:'', scroll:0};
+  function allBust(){ return Math.floor(Date.now()/300000); }
+  /* the article manifest -> one row per game: pregame records only (a
+     postgame page is a different document), CFB and NFL, one per game id */
+  function allRows(manifest){
+    var seen={}, out=[];
+    ((manifest&&manifest.articles)||[]).forEach(function(a){
+      if(!a||a.article_type!=='pregame'||!a.id||(a.sport!=='CFB'&&a.sport!=='NFL')) return;
+      var t=Date.parse(a.game_time); if(!isFinite(t)) return;
+      var k=a.sport+'|'+(a.game_id==null?a.id:a.game_id); if(seen[k]) return; seen[k]=1;
+      out.push({id:String(a.id), game_id:String(a.game_id==null?'':a.game_id), sport:a.sport,
+        home:String(a.home_team||''), away:String(a.away_team||''), t:t, line:a.fair_spread_text||null});
+    });
+    return out;
+  }
+  function allLoad(force){
+    if(!force&&ALLB.list&&(Date.now()-ALLB.at)<300000) return Promise.resolve(ALLB.list);
+    if(ALLB.loading) return ALLB.loading;
+    ALLB.loading=fetch('/articles/data/index.json?t='+allBust()).then(function(r){
+      if(!r.ok) throw new Error('the game list answered '+r.status);
+      return r.json();
+    }).then(function(d){
+      ALLB.list=allRows(d); ALLB.at=Date.now(); ALLB.loading=null; return ALLB.list;
+    },function(e){ ALLB.loading=null; throw e; });
+    return ALLB.loading;
+  }
+  function etFmt(t, o){
+    try{ return new Intl.DateTimeFormat('en-US',Object.assign({timeZone:'America/New_York'},o)).format(new Date(t)); }
+    catch(_){ return new Date(t).toUTCString(); }
+  }
+  /* A game is "already played" from kickoff on — the moment the live board
+     stops being the place to read its pregame number. */
+  function allMatch(g, o, now, past){
+    if(o.sport&&o.sport!=='all'&&g.sport!==o.sport) return false;
+    if(past!==(g.t<=now)) return false;
+    var q=norm(o.q);
+    return !q||norm(g.away+' '+g.home).indexOf(q)>=0;
+  }
+  function allCount(list, o, now, past){
+    return (list||[]).filter(function(g){ return allMatch(g, {sport:o.sport}, now, past); }).length;
+  }
+  /* pure: the list for one tab, sport and search, grouped by day (ET) */
+  function allListHTML(list, o, now){
+    o=o||{}; now=now==null?Date.now():now;
+    var past=o.when!=='upcoming';
+    var rows=(list||[]).filter(function(g){ return allMatch(g, o, now, past); });
+    rows.sort(function(a,b){ return past?(b.t-a.t):(a.t-b.t); });
+    if(!rows.length) return '<div class="brief-note">'+(norm(o.q)?'No game matches “'+esc(o.q)+'”.'
+      :(past?'No game on file has kicked off yet.':'No upcoming game is on file yet.'))+'</div>';
+    var h='', day=null;
+    rows.forEach(function(g){
+      var d=etFmt(g.t,{weekday:'short',month:'short',day:'numeric'});
+      if(d!==day){ h+='<div class="allb-day">'+esc(d)+'</div>'; day=d; }
+      h+='<button class="allb-row" onclick="EDBRIEF.openStored('+esc(JSON.stringify(g.id))+')">'
+        +'<span class="allb-m"><b>'+esc(g.away)+' at '+esc(g.home)+'</b>'
+        +'<i>'+esc(g.sport)+' · '+esc(etFmt(g.t,{hour:'numeric',minute:'2-digit'}))+' ET'
+        +(g.line?' · EdgeDesk line '+esc(g.line):'')+'</i></span>'
+        +'<span class="allb-go">Game brief ›</span></button>';
+    });
+    return h;
+  }
+  function allCtlHTML(list, o, now){
+    function seg(on, label, js){
+      return '<button class="dcard-btn'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" onclick="'+js+'">'+label+'</button>';
+    }
+    return '<div class="allb-ctl">'
+      +'<div class="allb-seg">'
+        +seg(o.when!=='upcoming','Already played <span>'+allCount(list,o,now,true)+'</span>',"EDBRIEF.allSet('when','past')")
+        +seg(o.when==='upcoming','Upcoming <span>'+allCount(list,o,now,false)+'</span>',"EDBRIEF.allSet('when','upcoming')")
+      +'</div><div class="allb-seg">'
+        +['all','CFB','NFL'].map(function(s){ return seg((o.sport||'all')===s, s==='all'?'All':s, "EDBRIEF.allSet('sport','"+s+"')"); }).join('')
+      +'</div>'
+      +'<input class="allb-q" type="search" placeholder="Find a team" aria-label="Find a team" value="'+esc(o.q||'')+'" oninput="EDBRIEF.allSet(\'q\',this.value)">'
+      +'</div>';
+  }
+  function allPaint(listOnly){
+    var now=Date.now();
+    var c=$id('allbCtl'), l=$id('allbList');
+    if(c&&!listOnly) c.innerHTML=allCtlHTML(ALLB.list, ALLB, now);
+    if(l) l.innerHTML=allListHTML(ALLB.list, ALLB, now);
+  }
+  function allSet(k, v){
+    if(k==='when') ALLB.when=v==='upcoming'?'upcoming':'past';
+    else if(k==='sport') ALLB.sport=(v==='CFB'||v==='NFL')?v:'all';
+    else if(k==='q') ALLB.q=String(v||'');
+    /* typing re-draws the list only, so the search box keeps its focus */
+    allPaint(k==='q');
+  }
+  function openAll(){
+    BR.fromAll=false;
+    var h=host();
+    h.innerHTML='<div class="brief-card">'+barHTML(null)
+      +'<div class="edb"><div class="edb-brand">EdgeDesk</div><h1 class="edb-title">Every game brief</h1>'
+      +'<p class="allb-lede">Every college football and NFL game EdgeDesk has researched, including the ones that have already kicked off and left the boards. '
+      +'A game that has kicked off opens the research EdgeDesk built before kickoff; nothing on it is recomputed after the result.</p>'
+      +'<div id="allbCtl"></div><div id="allbList"><div class="brief-note">Loading the game list…</div></div></div></div>';
+    h.classList.add('open');
+    var back=ALLB.scroll; ALLB.scroll=0;
+    return allLoad().then(function(){
+      allPaint();
+      try{ h.scrollTop=back||0; }catch(_){}
+    },function(e){
+      var l=$id('allbList');
+      if(l) l.innerHTML='<div class="brief-note">The game list would not load ('+esc(String(e&&e.message||e))+'). Nothing is shown in its place.</div>';
+    });
+  }
+  /* The query the board's own "Game brief" button builds, when the game is
+     still upcoming and on a loaded board — so the list opens exactly what
+     the board would. Null otherwise. */
+  function liveQ(g, now){
+    now=now==null?Date.now():now;
+    if(!(g.t>now)) return null;
+    try{
+      var F=window.FB, hit=null;
+      if(g.sport==='CFB'&&F&&F.p4&&F.p4.up){
+        F.p4.up.forEach(function(u){ if(!hit&&u&&u.g&&String(u.g.game_id)===g.game_id) hit=u; });
+        if(hit) return {sport_key:'americanfootball_ncaaf', sport_label:'CFB', home:hit.g.home_team, away:hit.g.away_team, t:hit.t};
+      }
+      if(g.sport==='NFL'&&F&&F.nfl&&F.nfl.up){
+        F.nfl.up.forEach(function(u){ if(!hit&&u&&u.g&&String(u.g.game_id)===g.game_id) hit=u; });
+        var C=window.FB_CODE_NAMES||{};
+        if(hit) return {sport_key:'americanfootball_nfl', sport_label:'NFL', home:C[hit.g.home_team]||hit.g.home_team, away:C[hit.g.away_team]||hit.g.away_team, t:hit.t};
+      }
+    }catch(_){}
+    return null;
+  }
+  /* pure: a stored record -> the same GAME snapshot a live brief is, with the
+     record's research in it and no market card (the stored record carries its
+     own market comparison, as of when it was built) */
+  function storedSnapshot(g, rec){
+    var nfl=g.sport==='NFL', key=nfl?'americanfootball_nfl':'americanfootball_ncaaf';
+    var built=Date.parse((rec&&(rec.generated_at||rec.updated_at))||'');
+    var snap=P.snapshot({research:rec.research, cards:[], report_type:'GAME',
+      preset:presetFor({sport_key:key, commence_time:new Date(g.t).toISOString()}),
+      sport:key, sport_label:nfl?'NFL':'CFB', event_label:g.away+' at '+g.home, when_label:P.whenLabel(g.t),
+      report_key:'GAME:STORED:'+g.id, now:isFinite(built)?built:undefined});
+    /* the footer's data check names what this is rather than "Current" */
+    snap.public.data_status.status=(isFinite(built)&&built<g.t)?'Pregame research':'Stored research';
+    return snap;
+  }
+  function storedNote(g, rec, now){
+    now=now==null?Date.now():now;
+    var built=Date.parse((rec&&(rec.generated_at||rec.updated_at))||'');
+    var at=isFinite(built)?P.fmtStamp(new Date(built).toISOString()):null;
+    if(g.t>now) return 'EdgeDesk’s latest stored research for this game'+(at?', built '+at:'')
+      +'. Open the '+(g.sport==='NFL'?'NFL':'FBS Football')+' board for the live number.';
+    if(isFinite(built)&&built>g.t) return 'This research was built '+at+', after kickoff.';
+    return 'The research EdgeDesk built before kickoff'+(at?' ('+at+')':'')+(rec&&rec.frozen?', frozen at kickoff':'')
+      +'. Nothing on this page was recomputed after the result.';
+  }
+  function openStored(id){
+    id=String(id||'');
+    var g=null;
+    (ALLB.list||[]).forEach(function(x){ if(!g&&x.id===id) g=x; });
+    if(!g&&!ALLB.list) return allLoad().then(function(){ return openStored(id); },function(e){
+      BR.fromAll=true; show(null,'The game list would not load ('+String(e&&e.message||e)+'), so this brief could not be found.');
+    });
+    BR.fromAll=true;
+    if(!g) return show(null,'EdgeDesk has no stored research for this game.');
+    try{ var h0=$id('briefHost'); if(h0&&$id('allbList')) ALLB.scroll=h0.scrollTop; }catch(_){}
+    var live=liveQ(g);
+    if(live) return openGame(live);
+    var h=host();
+    h.innerHTML='<div class="brief-card">'+barHTML(null)+'<div class="brief-note">Loading EdgeDesk’s research for '+esc(g.away+' at '+g.home)+'…</div></div>';
+    h.classList.add('open');
+    return fetch('/articles/data/records/'+encodeURIComponent(id)+'.json?t='+allBust()).then(function(r){
+      if(!r.ok) throw new Error('the record answered '+r.status);
+      return r.json();
+    }).then(function(rec){
+      if(!rec||!rec.research) throw new Error('the record carries no research');
+      BR.source={kind:'stored', id:id};
+      show(storedSnapshot(g, rec), storedNote(g, rec));
+    }).catch(function(e){
+      show(null,'The brief for '+g.away+' at '+g.home+' would not load ('+String(e&&e.message||e)+'). Nothing is shown in its place.');
+    });
+  }
+
   window.EDBRIEF={
+    openAll:openAll, openStored:openStored, allSet:allSet,
+    allRows:allRows, allListHTML:allListHTML, storedSnapshot:storedSnapshot, storedNote:storedNote, liveQ:liveQ,
     publishArticle:publishArticle, previewArticle:previewArticle,
     commitArticle:commitArticle, publishClose:publishClose,
     openCard:openCard, openGame:openGame, openPrimetime:openPrimetime, openCfbSlate:openCfbSlate, openSlate:openSlate,
@@ -45900,6 +46116,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        board at click time, so nothing is hardcoded. */
     deskHTML:function(where){
       return '<div class="pubdesk"><span class="t">Publisher desk</span>'
+        +'<button class="dcard-btn" onclick="EDBRIEF.openAll()" title="Every college football and NFL game brief, including games that have already kicked off">All game briefs</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'TNF\')">Thursday Night Football</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'SNF\')">Sunday Night Football</button>'
         +'<button class="dcard-btn" onclick="EDBRIEF.openPrimetime(\'MNF\')">Monday Night Football</button>'
@@ -45919,6 +46136,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         home:homeName||g.home_team, away:awayName||g.away_team, t:u&&u.t?u.t:null};
       return '<div class="dcard-actions" style="border-top:none;padding:6px 10px 10px"><button class="dcard-btn" onclick="event.stopPropagation();EDBRIEF.openGame('+esc(JSON.stringify(q))+')">Game brief</button></div>';
     }catch(_){ return ''; }
+  };
+  /* A game that has left the upcoming board keeps its brief: the one EdgeDesk
+     built before kickoff, read from the game's article record. */
+  window.fbStoredBriefBtn=function(id){
+    return '<div class="dcard-actions" style="border-top:none;padding:6px 10px 10px"><button class="dcard-btn" onclick="event.stopPropagation();EDBRIEF.openStored('+esc(JSON.stringify(String(id)))+')">Game brief</button></div>';
   };
   /* Paint the desk strip into the Edges view once the DOM is there. */
   try{
@@ -48871,7 +49093,8 @@ function fbGameCardNflGraded(it){
   lines+='<div class="gd-line"><span class="l">ATS '+(sPick?fbEsc(sPick)+' '+fbPts(p.market.spread_gap)+' gap':'')+'</span><span class="v">'+fbResChip(G.spread)+'</span></div>';
   lines+='<div class="gd-line"><span class="l">Total '+(tPick?fbEsc(tPick)+' '+fbPts(p.market.total_gap)+' gap':'')+'</span><span class="v">'+fbResChip(G.total_ou)+'</span></div>';
   lines+='<div class="gd-line"><span class="l">ML '+fbEsc(m.home_win_prob>=0.5?g.home_team:g.away_team)+'</span><span class="v">'+fbResChip(G.ml)+'</span></div>';
-  return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'+head+lines+'</div>';
+  return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'+head+lines
+    +(window.fbStoredBriefBtn?fbStoredBriefBtn('nfl-'+g.game_id):'')+'</div>';
 }
 function fbWeekRecord(items){
   var rec={sw:0,sl:0,sp:0,tw:0,tl:0,tp:0,mw:0,ml:0,mp:0,graded:0,pending:0,nopred:0};
