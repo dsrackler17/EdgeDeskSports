@@ -6,7 +6,8 @@
 
      NFL  nflverse/nfldata games.csv — the consensus spread and total (the
           line while the game is ahead, the CLOSE once the result is posted)
-          and the final score. The same feed the board and the slate read.
+          with their prices, and the final score. The same feed the board
+          and the slate read.
      CFB  ESPN's scoreboard (the one tools/collective/settle_finals.js reads
           every hour): the book line ESPN carries while the game is ahead,
           the line it froze at kickoff once the game is final, and the final
@@ -34,11 +35,35 @@ function num(v) {
 }
 function int(v) { const n = num(v); return n != null && Number.isInteger(n) ? n : null; }
 
+/* An American price, or null: "-110", "+150", 150, "EVEN" (= +100). A
+   number strictly between -100 and +100 is not an American price. */
+function american(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const t = String(v).trim();
+  if (/^(even|ev)$/i.test(t)) return 100;
+  const n = Number(t.replace(/^\+/, ''));
+  if (!Number.isFinite(n) || Math.abs(n) < 100 || Math.abs(n) > 100000) return null;
+  return Math.round(n);
+}
+/* THE PRICES THAT GO WITH A LINE, keyed by the side they pay:
+   { home, away } on the spread, { over, under } on the total and
+   { home_ml, away_ml } on the moneyline. Only real prices are kept; none at
+   all is null, never an assumed -110. */
+const PRICE_KEYS = ['home', 'away', 'over', 'under', 'home_ml', 'away_ml'];
+function prices(o) {
+  if (!o) return null;
+  const out = {};
+  PRICE_KEYS.forEach((k) => { const a = american(o[k]); if (a != null) out[k] = a; });
+  return Object.keys(out).length ? out : null;
+}
+
 /* ------------------------------------------------------------------ NFL */
 /** games.csv → { game_id: { market, final, espn_id } } for one season.
     spread_line is the HOME margin the market expects (positive = home
     favoured); the record's home_line is its negation. A row with both
-    scores is final, and its line is the close. */
+    scores is final, and its line is the close. The prices on the same row
+    (home_spread_odds, over_odds, home_moneyline, …) are the consensus
+    prices for that line, so they travel with it. */
 function parseNflverse(text, season) {
   const out = {};
   parseCsv(String(text || '')).forEach((r) => {
@@ -47,7 +72,12 @@ function parseNflverse(text, season) {
     const hs = int(r.home_score), as = int(r.away_score);
     const final = hs != null && as != null;
     const line = sp == null ? null : (sp === 0 ? 0 : -sp);
-    const q = (line != null || tot != null) ? { home_line: line, total: tot, source: 'nflverse', book: 'consensus' } : null;
+    const px = prices({
+      home: sp != null ? r.home_spread_odds : null, away: sp != null ? r.away_spread_odds : null,
+      over: tot != null ? r.over_odds : null, under: tot != null ? r.under_odds : null,
+      home_ml: r.home_moneyline, away_ml: r.away_moneyline,
+    });
+    const q = (line != null || tot != null) ? Object.assign({ home_line: line, total: tot, source: 'nflverse', book: 'consensus' }, px ? { prices: px } : {}) : null;
     out[r.game_id] = {
       game_id: r.game_id, home: r.home_team, away: r.away_team, week: num(r.week),
       espn_id: r.espn || null,
@@ -100,36 +130,62 @@ function parseLineText(s) {
 function espnLine(odds, homeAbbr, awayAbbr) {
   if (!odds || typeof odds !== 'object') return null;
   const reads = [];
+  let flat = null;      /* the line `details` / `spread` state: the one the flat prices go with */
   const det = odds.details != null ? String(odds.details).trim() : '';
   if (det) {
-    if (/^(even|pk|pick'?em)$/i.test(det)) reads.push(0);
+    if (/^(even|pk|pick'?em)$/i.test(det)) reads.push(flat = 0);
     else {
       const m = /^(.+?)\s+([+-]?\d+(?:\.\d+)?)$/.exec(det);
       if (m) {
         const ab = m[1].trim().toUpperCase(), n = -Math.abs(Number(m[2]));
-        if (homeAbbr && ab === String(homeAbbr).toUpperCase()) reads.push(n);
-        else if (awayAbbr && ab === String(awayAbbr).toUpperCase()) reads.push(-n);
+        if (homeAbbr && ab === String(homeAbbr).toUpperCase()) reads.push(flat = n);
+        else if (awayAbbr && ab === String(awayAbbr).toUpperCase()) reads.push(flat = -n);
       }
     }
   }
   const sp = num(odds.spread);
-  const hf = odds.homeTeamOdds && odds.homeTeamOdds.favorite, af = odds.awayTeamOdds && odds.awayTeamOdds.favorite;
+  const ho = odds.homeTeamOdds || {}, ao = odds.awayTeamOdds || {};
+  const hf = ho.favorite, af = ao.favorite;
   if (sp != null) {
-    if (sp === 0) reads.push(0);
-    else if (hf === true && af !== true) reads.push(-Math.abs(sp));
-    else if (af === true && hf !== true) reads.push(Math.abs(sp));
+    let x = null;
+    if (sp === 0) x = 0;
+    else if (hf === true && af !== true) x = -Math.abs(sp);
+    else if (af === true && hf !== true) x = Math.abs(sp);
+    if (x != null) { reads.push(x); if (flat == null) flat = x; }
   }
-  const ps = odds.pointSpread && odds.pointSpread.home;
-  const pl = ps && parseLineText((ps.close && ps.close.line) || (ps.current && ps.current.line));
+  /* the nested block: its close when it has one, else its current — and the
+     same choice for the line and the price, so they are one quote */
+  const pick = (o) => (o && (o.close || o.current)) || null;
+  const psH = pick(odds.pointSpread && odds.pointSpread.home), psA = pick(odds.pointSpread && odds.pointSpread.away);
+  const pl = psH ? parseLineText(psH.line) : null;
   if (pl != null) reads.push(pl);
 
   let home_line = reads.length ? reads[0] : null;
   if (home_line != null && reads.some((x) => Math.sign(x) !== Math.sign(home_line) && x !== 0 && home_line !== 0)) home_line = null;
+  const ttO = pick(odds.total && odds.total.over), ttU = pick(odds.total && odds.total.under);
+  const nestedTotal = ttO ? parseLineText(ttO.line) : null;
   let total = num(odds.overUnder);
-  if (total == null && odds.total && odds.total.over) total = parseLineText((odds.total.over.close && odds.total.over.close.line) || (odds.total.over.current && odds.total.over.current.line));
+  const flatTotal = total != null;
+  if (total == null) total = nestedTotal;
   if (home_line == null && total == null) return null;
   const book = (odds.provider && odds.provider.name) || null;
-  return { home_line, total, source: 'espn', book };
+
+  /* PRICES, only from the reading that gave the line: a price is the price
+     OF a number, and a price for another number is not this close's */
+  const px = {};
+  if (home_line != null) {
+    if (flat != null && flat === home_line && american(ho.spreadOdds) != null) { px.home = ho.spreadOdds; px.away = ao.spreadOdds; }
+    else if (pl != null && pl === home_line) { px.home = psH && psH.odds; px.away = psA && psA.odds; }
+  }
+  if (total != null) {
+    if (flatTotal && american(odds.overOdds) != null) { px.over = odds.overOdds; px.under = odds.underOdds; }
+    else if (nestedTotal != null && nestedTotal === total) { px.over = ttO && ttO.odds; px.under = ttU && ttU.odds; }
+  }
+  const mlH = pick(odds.moneyline && odds.moneyline.home), mlA = pick(odds.moneyline && odds.moneyline.away);
+  px.home_ml = american(ho.moneyLine) != null ? ho.moneyLine : (mlH && mlH.odds);
+  px.away_ml = american(ao.moneyLine) != null ? ao.moneyLine : (mlA && mlA.odds);
+  const p = prices(px);
+  return Object.assign({ home_line, total, source: 'espn', book }, p ? { prices: p } : {});
 }
 
 function espnCompleted(st) {
@@ -201,4 +257,5 @@ async function fetchText(url, timeoutMs) {
 module.exports = {
   URL_NFL, URL_CFB_SCHED, espnScoreboardUrl, espnSummaryUrl,
   parseNflverse, parseCfbSchedule, parseEspnScoreboard, parseEspnSummary, espnLine, espnGame, parseLineText, etDate, fetchText,
+  american, prices, PRICE_KEYS,
 };

@@ -19,7 +19,9 @@
    margin, the Brier score of the win probability — and the closing-line
    value, in POINTS: how far the market moved toward the side the model's
    number leaned, between the recorded quote and the close. The same
-   convention the editorial audit uses (tools/editorial/grading.js).
+   convention the editorial audit uses (tools/editorial/grading.js). And it
+   prices every graded side in units, at its closing price (see
+   STANDARD_PRICE below), so the record reads in money as well as wins.
 
    THE RULES IT WILL NOT BREAK
 
@@ -42,6 +44,9 @@
    =========================================================================== */
 'use strict';
 const REL = require('../../lib/cfb_reliability.js');
+/* the P&L arithmetic is the site's one kernel (American odds → units), so
+   the record and the Profit & Loss ledger can never disagree about a bet */
+const PNL = require('../../lib/edgedesk_pnl.js');
 
 const SCHEMA = 'edgedesk_football_model_record_v1';
 const SUMMARY_SCHEMA = 'edgedesk_football_model_record_summary_v1';
@@ -55,6 +60,20 @@ const EPS = 0.005;
 const PLAUSIBLE = { line: 70, total: [20, 110] };
 /* -110 both sides: the win rate a side has to clear to break even. */
 const BREAK_EVEN_PCT = 52.38;
+
+/* THE PRICE OF A PICK. The record grades every side at the CLOSING line, so
+   it prices every side at the closing PRICE of that line — captured from the
+   same source, in the same read, as the line itself (nflverse consensus for
+   the NFL, the ESPN book for college). A spread or a total whose closing
+   price the source never gave is priced at the standard -110 — the same
+   -110 the 52.38% break-even above has always assumed — and is marked
+   'standard', never passed off as a captured price. A moneyline has no
+   standard price: without the real one it carries a result and no P&L.
+   One unit on every side, flat: the record has no stakes. */
+const STANDARD_PRICE = -110;
+const PRICE_KEYS = ['home', 'away', 'over', 'under', 'home_ml', 'away_ml'];
+/* how far a pick sat from the close, in points: the buckets the P&L is cut by */
+const GAP_BUCKETS = [[0, 1, '0–1'], [1, 2, '1–2'], [2, 4, '2–4'], [4, 7, '4–7'], [7, Infinity, '7+']];
 
 const MODEL = {
   nfl: { name: 'EdgeDesk Football Engine · NFL', slate: 'football/nfl/slate.json' },
@@ -168,9 +187,24 @@ function groupOf(g) {
   return 'other_fbs';
 }
 
+/* the real prices on a quote ({ home, away, over, under, home_ml, away_ml }),
+   or null; anything that is not an American price is dropped */
+function cleanPrices(p) {
+  if (!p || typeof p !== 'object') return null;
+  const out = {};
+  PRICE_KEYS.forEach((k) => { const a = PNL.validAmerican(p[k]); if (a != null) out[k] = a; });
+  return Object.keys(out).length ? out : null;
+}
+function samePrices(a, b) { return JSON.stringify(cleanPrices(a)) === JSON.stringify(cleanPrices(b)); }
+/* 'DraftKings' and 'Draft Kings' are one book (ESPN's scoreboard and summary spell it both ways) */
+function bookKey(b) { return String(b || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+
 function quote(q, at) {
   if (!q || num(q.home_line) == null && num(q.total) == null) return null;
-  return { home_line: num(q.home_line), total: num(q.total), source: q.source || null, book: q.book || null, at: at || q.at || null };
+  const o = { home_line: num(q.home_line), total: num(q.total), source: q.source || null, book: q.book || null, at: at || q.at || null };
+  const px = cleanPrices(q.prices);
+  if (px) o.prices = px;
+  return o;
 }
 
 /* THE ENTRY: the first moment this record held BOTH the model's number and a
@@ -281,7 +315,7 @@ function noteQuote(e, q, nowIso) {
   if (!mq || mq.home_line == null) return false;
   const lq = e.last_quote;
   if (lq && same(lq.home_line, mq.home_line) && same(lq.total, mq.total) && lq.book === mq.book
-    && family(lq.source) === family(mq.source)) return false;
+    && family(lq.source) === family(mq.source) && samePrices(lq.prices, mq.prices)) return false;
   e.last_quote = mq;
   return true;
 }
@@ -295,7 +329,30 @@ function closeFromLastQuote(e, nowIso) {
   if (now == null || kick == null || now < kick || !(ms(lq.at) < kick)) return false;
   e.close = { home_line: lq.home_line, total: lq.total, source: lq.source, book: lq.book,
     basis: 'last pregame capture', at: lq.at };
+  const px = cleanPrices(lq.prices);
+  if (px) e.close.prices = px;
   return true;
+}
+
+/* A closing PRICE is taken only for the number the record already closed at,
+   from the same book: the spread's prices (and the moneyline's, read in the
+   same quote) when the source's spread is the held closing spread, the
+   total's when its total is the held closing total. A price already held is
+   never replaced. Returns true when a price was filled. */
+function fillClosePrices(close, c) {
+  const px = cleanPrices(c && c.prices);
+  if (!close || !px) return false;
+  if (close.book && c.book && bookKey(close.book) !== bookKey(c.book)) return false;
+  const have = Object.assign({}, close.prices || {});
+  const spreadOk = close.home_line != null && num(c.home_line) != null && same(close.home_line, num(c.home_line));
+  const totalOk = close.total != null && num(c.total) != null && same(close.total, num(c.total));
+  let did = false;
+  const take = (k, ok) => { if (ok && px[k] != null && have[k] == null) { have[k] = px[k]; did = true; } };
+  take('home', spreadOk); take('away', spreadOk);
+  take('home_ml', spreadOk); take('away_ml', spreadOk);
+  take('over', totalOk); take('under', totalOk);
+  if (did) close.prices = cleanPrices(have);
+  return did;
 }
 
 /** The closing line, once the game is under way. Fills what is missing;
@@ -306,12 +363,24 @@ function setClose(e, c, nowIso) {
   if (now == null || kick == null || now < kick) return false;
   const hl = num(c.home_line), tt = num(c.total);
   if (hl == null && tt == null) return false;
-  if (!e.close) { e.close = { home_line: hl, total: tt, source: c.source || null, book: c.book || null }; return true; }
+  if (!e.close) {
+    e.close = { home_line: hl, total: tt, source: c.source || null, book: c.book || null };
+    const px = cleanPrices(c.prices);
+    if (px) e.close.prices = px;
+    return true;
+  }
   let did = false;
   if (family(e.close.source) !== family(c.source)) return false;
   if (e.close.home_line == null && hl != null) { e.close.home_line = hl; did = true; }
   if (e.close.total == null && tt != null) { e.close.total = tt; did = true; }
+  if (fillClosePrices(e.close, c)) did = true;
   return did;
+}
+/** true when a graded side of this game still has no closing price */
+function lacksClosePrice(e) {
+  const c = e && e.close, p = (c && c.prices) || {};
+  if (!c) return false;
+  return (c.home_line != null && (p.home == null || p.away == null)) || (c.total != null && (p.over == null || p.under == null));
 }
 
 /** The final score. Set once; a later source that disagrees is noted and
@@ -371,11 +440,33 @@ function clvRead(read, market, close) {
   return out;
 }
 
+/* ONE PICK IN UNITS: 1u on the side the record took, at the closing price of
+   that side when the source gave one, else (spread and total only) at the
+   standard -110. { side, odds, basis: 'close' | 'standard', result, units },
+   or null when the side has no result yet — or, on the moneyline, no price. */
+function pricePick(kind, side, result, close) {
+  if (!side || !result) return null;
+  const px = (close && close.prices) || {};
+  const real = PNL.validAmerican(px[kind === 'ml' ? side + '_ml' : side]);
+  if (real == null && kind === 'ml') return null;
+  const odds = real != null ? real : STANDARD_PRICE;
+  return { side, odds, basis: real != null ? 'close' : 'standard', result, units: r4(PNL.profit(odds, 1, result)) };
+}
+/** The game's P&L: one priced pick per market, and their sum. */
+function pnlOf(g, close) {
+  const spread = g.spread ? pricePick('spread', g.spread.side, g.spread.result, close) : null;
+  const total = g.total ? pricePick('total', g.total.side, g.total.result, close) : null;
+  const ml = g.su ? pricePick('ml', g.su.side, g.su.result, close) : null;
+  const picks = [spread, total, ml].filter(Boolean);
+  if (!picks.length) return null;
+  return { spread, total, ml, units: r4(picks.reduce((a, x) => a + x.units, 0)), bets: picks.length };
+}
+
 /** Everything the record says about one game, derived from its facts. */
 function gradeGame(e, sport, nowIso) {
   const now = ms(nowIso), kick = ms(e.kickoff);
   const g = { status: null, spread: null, total: null, su: null, clv_entry: null, clv_pick: null, error: null, brier: null, beyond_guard: false,
-    reliability: null };
+    reliability: null, pnl: null };
   const f = e.final, c = e.close, p = e.pick;
   if (now != null && kick != null && now < kick) g.status = 'PREGAME';
   else if (!f) g.status = 'AWAITING_FINAL';
@@ -409,6 +500,7 @@ function gradeGame(e, sport, nowIso) {
       const y = margin > 0 ? 1 : margin < 0 ? 0 : 0.5;
       g.brier = r4((p.home_win_prob - y) * (p.home_win_prob - y));
     }
+    g.pnl = pnlOf(g, c);
   }
   /* the pregame reliability the pick was published under, in its bucket */
   if (p && p.reliability && num(p.reliability.score) != null) {
@@ -425,12 +517,29 @@ function gradeGame(e, sport, nowIso) {
 
 /* -------------------------------------------------------------- summaries */
 
-function rec() { return { n: 0, w: 0, l: 0, p: 0, pct: null }; }
+/* a win–loss record, and (rec) the same record in units: 1u a pick, so
+   risked = wins + losses (a push returns the stake) and ROI = units ÷ risked */
+function wl() { return { n: 0, w: 0, l: 0, p: 0, pct: null }; }
+function rec() { return Object.assign(wl(), { units: 0, risked: 0, roi: null, at_close: 0, at_standard: 0 }); }
 function tally(r, result) {
   if (!result) return;
   r.n++;
   if (result === 'win') r.w++; else if (result === 'loss') r.l++; else r.p++;
   r.pct = (r.w + r.l) ? r1(100 * r.w / (r.w + r.l)) : null;
+}
+/* one priced pick into a record: its result, and its units */
+function post(r, pk) {
+  if (!pk || !pk.result || pk.units == null) return;
+  tally(r, pk.result);
+  r.units = r4(r.units + pk.units);
+  if (pk.result === 'win' || pk.result === 'loss') r.risked++;
+  r.roi = r.risked ? r1(100 * r.units / r.risked) : null;
+  if (pk.basis === 'close') r.at_close++; else r.at_standard++;
+}
+function gapKey(gap) {
+  if (gap == null) return null;
+  const b = GAP_BUCKETS.filter((x) => gap >= x[0] - EPS && gap < x[1] - EPS)[0];
+  return b ? b[2] : null;
 }
 function clvAgg() { return { n: 0, sum: 0, avg: null, beat: 0, flat: 0, lost: 0, beat_pct: null }; }
 function addClv(a, pts) {
@@ -451,7 +560,15 @@ function summarize(ledger, gradesById, opts) {
     counts: { recorded: games.length, pregame: 0, awaiting_final: 0, final_no_close: 0, graded: 0, revised: 0, beyond_guard: 0 },
     ats: { all: rec(), lean: rec(), big: rec() },
     ou: { all: rec(), lean: rec(), big: rec() },
-    su: rec(),
+    su: wl(),
+    /* THE P&L, 1u flat a pick (see STANDARD_PRICE): the moneyline is the
+       straight-up pick at its real closing price, so it counts only the games
+       that have one; net is every priced pick in all three markets */
+    ml: rec(),
+    net: rec(),
+    by_gap: { spread: GAP_BUCKETS.map((b) => Object.assign({ key: b[2] }, rec())), total: GAP_BUCKETS.map((b) => Object.assign({ key: b[2] }, rec())) },
+    splits: { favorite: rec(), underdog: rec(), home: rec(), away: rec(), over: rec(), under: rec() },
+    pricing: { unit: 1, standard_price: STANDARD_PRICE, basis: 'the closing price of the side, from the source of the closing line; a spread or total with none at the standard -110; a moneyline only at its real price' },
     clv: {
       spread_entry: clvAgg(), spread_entry_lean: clvAgg(), spread_pick: clvAgg(),
       total_entry: clvAgg(), total_pick: clvAgg(),
@@ -472,20 +589,34 @@ function summarize(ledger, gradesById, opts) {
     if (e.revisions > 0) out.counts.revised++;
     if (g.beyond_guard) out.counts.beyond_guard++;
     const wk = e.week != null ? e.week : 0;
-    const W = (weeks[wk] = weeks[wk] || { week: e.week, recorded: 0, graded: 0, ats: rec(), ou: rec(), clv: clvAgg() });
+    const W = (weeks[wk] = weeks[wk] || { week: e.week, recorded: 0, graded: 0, ats: rec(), ou: rec(), ml: rec(), net: rec(), clv: clvAgg() });
     W.recorded++;
     if (g.status === 'GRADED') W.graded++;
-    if (g.spread && g.spread.result) {
-      tally(out.ats.all, g.spread.result); tally(W.ats, g.spread.result);
-      if (g.spread.gap >= LEAN) tally(out.ats.lean, g.spread.result);
-      if (g.spread.gap >= 2 * LEAN) tally(out.ats.big, g.spread.result);
+    /* every graded side is a priced pick (close or standard), so the record
+       and its units are one tally and can never count different games */
+    const pk = g.pnl || {};
+    if (pk.spread) {
+      post(out.ats.all, pk.spread); post(W.ats, pk.spread);
+      if (g.spread.gap >= LEAN) post(out.ats.lean, pk.spread);
+      if (g.spread.gap >= 2 * LEAN) post(out.ats.big, pk.spread);
+      const gb = out.by_gap.spread.filter((b) => b.key === gapKey(g.spread.gap))[0];
+      if (gb) post(gb, pk.spread);
+      post(out.splits[pk.spread.side], pk.spread);
+      const cl = e.close && e.close.home_line != null ? (pk.spread.side === 'home' ? e.close.home_line : -e.close.home_line) : null;
+      if (cl != null && cl < 0) post(out.splits.favorite, pk.spread);
+      else if (cl != null && cl > 0) post(out.splits.underdog, pk.spread);
     }
-    if (g.total && g.total.result) {
-      tally(out.ou.all, g.total.result); tally(W.ou, g.total.result);
-      if (g.total.gap >= LEAN) tally(out.ou.lean, g.total.result);
-      if (g.total.gap >= 2 * LEAN) tally(out.ou.big, g.total.result);
+    if (pk.total) {
+      post(out.ou.all, pk.total); post(W.ou, pk.total);
+      if (g.total.gap >= LEAN) post(out.ou.lean, pk.total);
+      if (g.total.gap >= 2 * LEAN) post(out.ou.big, pk.total);
+      const gb = out.by_gap.total.filter((b) => b.key === gapKey(g.total.gap))[0];
+      if (gb) post(gb, pk.total);
+      post(out.splits[pk.total.side], pk.total);
     }
     if (g.su) tally(out.su, g.su.result);
+    if (pk.ml) { post(out.ml, pk.ml); post(W.ml, pk.ml); }
+    [pk.spread, pk.total, pk.ml].forEach((x) => { if (x) { post(out.net, x); post(W.net, x); } });
     if (g.clv_entry && g.clv_entry.spread) {
       addClv(out.clv.spread_entry, g.clv_entry.spread.pts); addClv(W.clv, g.clv_entry.spread.pts);
       if (g.clv_entry.spread.gap >= LEAN) addClv(out.clv.spread_entry_lean, g.clv_entry.spread.pts);
@@ -523,8 +654,14 @@ function summarize(ledger, gradesById, opts) {
     out.by_reliability = REL.calibrate(rows);
   }
   Object.keys(out.clv).forEach((k) => { out.clv[k] = finishClv(out.clv[k]); });
+  /* straight-up games the moneyline could not price (no closing moneyline) */
+  out.counts.ml_unpriced = out.su.n - out.ml.n;
+  let run = 0;
   out.weeks = Object.keys(weeks).map(Number).sort((a, b) => a - b).map((k) => {
-    const W = weeks[k]; W.clv = finishClv(W.clv); return W;
+    const W = weeks[k]; W.clv = finishClv(W.clv);
+    run = r4(run + W.net.units);
+    W.cum_units = run;
+    return W;
   });
   return out;
 }
@@ -542,7 +679,8 @@ function gradeLedger(ledger, nowIso) {
 }
 
 module.exports = {
-  SCHEMA, SUMMARY_SCHEMA, GUARD, LEAN, BREAK_EVEN_PCT, MODEL, PRECLOSE_HOURS,
+  SCHEMA, SUMMARY_SCHEMA, GUARD, LEAN, BREAK_EVEN_PCT, MODEL, PRECLOSE_HOURS, STANDARD_PRICE, GAP_BUCKETS,
   emptyLedger, projectionFromSlate, groupOf, recordProjection, fillMarket, noteQuote, closeFromLastQuote, setClose, setFinal,
+  fillClosePrices, lacksClosePrice, cleanPrices, pricePick, pnlOf,
   gradeGame, gradeLedger, summarize, clvPts, leanSpread, leanTotal, family, num,
 };

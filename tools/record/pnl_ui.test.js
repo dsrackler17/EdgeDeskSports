@@ -307,8 +307,17 @@ async function main() {
       await page.evaluate(() => { show('record'); recBook('pnl'); });
       await page.waitForSelector('#recPnlWrap .pnl-cards', { timeout: 15000 });
       await page.waitForSelector('#recPnlWrap .pnl-lt', { timeout: 15000 });
-      chk(W + 'px app: the Profit & Loss book is a third tab', /Profit & Loss/.test(await text(page, '#recBook')) && await page.$eval('#recPnlWrap', (el) => !el.classList.contains('hide')));
-      chk(W + 'px app: the other books are hidden, not removed', await page.$eval('#recEdgesWrap', (el) => el.classList.contains('hide')) && !!(await page.$('#recFbWrap')));
+      /* Profit & Loss is part of the football record, not a book of its own:
+         the old 'pnl' link opens the football record with the
+         recommendations' P&L beneath the model record */
+      const tabs = await text(page, '#recBook');
+      chk(W + 'px app: P&L lives in the football record — two books, no separate Profit & Loss tab', /Football record & P&L/.test(tabs) && !/Profit & Loss/.test(tabs) && (await page.$$('#recBook button')).length === 2, tabs);
+      chk(W + 'px app: the recommendations\' P&L shows with the football record', await page.$eval('#recPnlWrap', (el) => !el.classList.contains('hide')) && await page.$eval('#recFbWrap', (el) => !el.classList.contains('hide')));
+      chk(W + 'px app: the edges record is hidden, not removed', await page.$eval('#recEdgesWrap', (el) => el.classList.contains('hide')) && !!(await page.$('#recFbWrap')));
+      /* the model-record rows are priced in the record above, so they are not counted again here */
+      const recs = FX.ledger.rows.filter((x) => x.source !== 'model_record');
+      const missing = await page.$$eval('#recPnlWrap .pnl-dqi', (els) => { const d = els.find((el) => /Missing entry odds/.test(el.textContent)); return d ? d.querySelector('.pnl-dqn').textContent : null; });
+      chk(W + 'px app: model-record rows are not counted twice', FX.ledger.rows.some((x) => x.source === 'model_record') && missing === String(PNL.dataQuality(recs).missing_entry_odds), [missing, PNL.dataQuality(recs).missing_entry_odds]);
       chk(W + 'px app: a reader with a unit gets the dollars toggle', !!(await page.$('#recPnlWrap [data-money="$"]')));
       await page.click('#recPnlWrap [data-money="$"]');
       const d = await text(page, '#recPnlWrap .pnl-card.hero .pnl-v');

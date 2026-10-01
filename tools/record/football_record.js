@@ -47,6 +47,13 @@ const CHASE_DAYS = 21;
 const QUOTE_DAYS = 12;
 const MAX_ESPN_DATES = 24;
 const MAX_ESPN_SUMMARIES = 40;
+/* A GRADED college game whose close carries no price is asked for one by its
+   own id: ESPN's summary keeps the closing quote of a finished game, prices
+   included. Newest first, capped per run, and at most PRICE_ASKS times per
+   game — a game ESPN never priced stays at the standard -110, and says so. */
+const PRICE_CHASE_DAYS = 120;
+const MAX_ESPN_PRICE_SUMMARIES = 60;
+const PRICE_ASKS = 3;
 
 function args(argv) {
   const a = { write: false, backfill: false, offline: false, season: null, now: null, out: 'record/football', history: null };
@@ -112,12 +119,14 @@ async function nflSources(ledger, now, log) {
   let rows = {};
   try { rows = S.parseNflverse(await S.fetchText(S.URL_NFL, 60000), ledger.season); log.push('nflverse: ' + Object.keys(rows).length + ' games'); }
   catch (e) { log.push('nflverse: unreachable (' + String(e.message).slice(0, 80) + ')'); }
-  const t = { market: 0, close: 0, final: 0 };
+  const t = { market: 0, close: 0, final: 0, close_price: 0 };
   Object.keys(ledger.games).forEach((id) => {
     const e = ledger.games[id], r = rows[id];
     if (!r) return;
     if (r.market && C.fillMarket(e, r.market, now)) t.market++;
-    if (r.close && C.setClose(e, r.close, now)) t.close++;
+    /* a held close takes the consensus closing prices for the same line */
+    const hadPrice = e.close && !C.lacksClosePrice(e);
+    if (r.close && C.setClose(e, r.close, now)) { t.close++; if (!hadPrice && !C.lacksClosePrice(e)) t.close_price++; }
     if (r.final && C.setFinal(e, r.final, now)) t.final++;
   });
   log.push('nfl filled: ' + JSON.stringify(t));
@@ -132,6 +141,12 @@ function needsEspn(e, nowMs) {
   return nowMs - k <= CHASE_DAYS * DAY && (!e.final || !e.close || e.close.home_line == null);
 }
 function lacksClose(e) { return !e.close || e.close.home_line == null; }
+/** a finished, closed game still waiting on its closing price */
+function needsPrice(e, nowMs) {
+  const k = Date.parse(e.kickoff);
+  if (!Number.isFinite(k) || k > nowMs || nowMs - k > PRICE_CHASE_DAYS * DAY) return false;
+  return !!e.final && !lacksClose(e) && C.lacksClosePrice(e) && (e.close_price_asks || 0) < PRICE_ASKS;
+}
 
 async function cfbSources(ledger, now, log) {
   const nowMs = Date.parse(now);
@@ -175,12 +190,30 @@ async function cfbSources(ledger, now, log) {
   log.push('espn: ' + ok + ' scoreboard day(s) read' + (bad ? ', ' + bad + ' failed' : '') + ', ' + sum + '/' + ask.length
     + ' summaries (' + sumLine + ' with a closing line), ' + want.length + ' game(s) wanted');
 
-  const t = { market: 0, close: 0, final: 0, contested: 0, last_quote: 0, close_from_last_quote: 0 };
+  /* closing prices for games already graded without one */
+  const priceAsk = Object.keys(ledger.games).filter((id) => ask.indexOf(id) < 0 && needsPrice(ledger.games[id], nowMs))
+    .sort(byKick).slice(0, MAX_ESPN_PRICE_SUMMARIES);
+  const priceRead = {};
+  let pSum = 0, pPriced = 0;
+  for (const id of priceAsk) {
+    try {
+      const g = S.parseEspnSummary(JSON.parse(await S.fetchText(S.espnSummaryUrl('cfb', id), 30000)), id);
+      priceRead[id] = true;
+      pSum++;
+      if (g && g.close && g.close.prices) { pPriced++; espn[id] = g; }
+    } catch (_) { /* unread: not counted as an ask */ }
+  }
+  if (priceAsk.length) log.push('espn closing prices: ' + pSum + '/' + priceAsk.length + ' summaries read, ' + pPriced + ' carrying prices');
+
+  const t = { market: 0, close: 0, final: 0, contested: 0, last_quote: 0, close_from_last_quote: 0, close_price: 0, price_asks_spent: 0 };
   Object.keys(ledger.games).forEach((id) => {
     const e = ledger.games[id], es = espn[id], cs = sched[id];
     if (es && es.market && C.fillMarket(e, es.market, now)) t.market++;
     if (es && es.market && C.noteQuote(e, es.market, now)) t.last_quote++;
-    if (es && es.close && C.setClose(e, es.close, now)) t.close++;
+    const hadPrice = !C.lacksClosePrice(e);
+    if (es && es.close && C.setClose(e, es.close, now)) { t.close++; if (!hadPrice && !C.lacksClosePrice(e)) t.close_price++; }
+    /* a summary was read for this game's price and gave none it could use */
+    if (priceRead[id] && C.lacksClosePrice(e)) { e.close_price_asks = (e.close_price_asks || 0) + 1; t.price_asks_spent++; }
     /* two finals that disagree settle nothing */
     const a = es && es.final, b = cs && cs.final;
     if (a && b && (a.home_score !== b.home_score || a.away_score !== b.away_score)) { t.contested++; return; }
@@ -206,16 +239,18 @@ function compactRow(e) {
     ou: g.total && g.total.result, ou_side: g.total && g.total.side,
     clv: g.clv_entry && g.clv_entry.spread ? g.clv_entry.spread.pts : null,
     reliability: e.pick && e.pick.reliability ? e.pick.reliability.score : null,
+    units: g.pnl ? g.pnl.units : null,
   };
 }
 
 function buildSummary(ledgers, sums, now) {
   const out = {
     schema: C.SUMMARY_SCHEMA, generated_at: now, season: ledgers.nfl.season,
-    what: 'The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.',
+    what: 'The football model’s own record: the number it published before kickoff, graded against the closing line and the final, and priced in units. Separate from the edges record, which grades flagged prices.',
     rules: [
       'Only numbers published before kickoff are recorded; the pick is the last pregame number and the first is kept beside it.',
       'Against the spread and the total, the model’s side is set by its number against the CLOSE and graded on the final.',
+      'P&L is 1 unit on every side the record takes, at that side’s closing price from the same source as the closing line. A spread or total whose closing price was never captured is priced at the standard −110 and marked; a moneyline is priced only at its real closing price. ROI = units ÷ units risked; a push returns the stake.',
       'CLV is in points: how far the market moved toward the side the model leaned, from the quote recorded with the number to the close, from the same source.',
       'No close, no final, no total: nothing is estimated. A final two feeds disagree on settles nothing.',
     ],
@@ -232,7 +267,7 @@ function buildSummary(ledgers, sums, now) {
     Object.keys(ledgers.cfb.games).forEach((k) => { if (ledgers.cfb.games[k].group === grp) sub.games[k] = ledgers.cfb.games[k]; });
     const grades = {}; Object.keys(sub.games).forEach((k) => { grades[k] = sub.games[k].grade; });
     const s = C.summarize(sub, grades);
-    out.cfb_groups[grp] = { counts: s.counts, ats: s.ats, ou: s.ou, su: s.su, clv: { spread_entry: s.clv.spread_entry }, error: s.error };
+    out.cfb_groups[grp] = { counts: s.counts, ats: s.ats, ou: s.ou, su: s.su, ml: s.ml, net: s.net, clv: { spread_entry: s.clv.spread_entry }, error: s.error };
   });
   ['nfl', 'cfb'].forEach((sp) => {
     const done = Object.values(ledgers[sp].games).filter((e) => e.grade && (e.grade.status === 'GRADED' || e.grade.status === 'FINAL_NO_CLOSE'));
@@ -286,8 +321,11 @@ async function run(opts) {
 
 function line(s) {
   const a = s.ats.all, c = s.clv.spread_entry;
-  return s.counts.recorded + ' recorded · ' + s.counts.graded + ' graded · ATS ' + a.w + '-' + a.l + '-' + a.p
-    + ' · O/U ' + s.ou.all.w + '-' + s.ou.all.l + '-' + s.ou.all.p + ' · SU ' + s.su.w + '-' + s.su.l
+  const u = (r) => (r.units > 0 ? '+' : '') + r.units.toFixed(2) + 'u';
+  return s.counts.recorded + ' recorded · ' + s.counts.graded + ' graded · ATS ' + a.w + '-' + a.l + '-' + a.p + ' ' + u(a)
+    + ' · O/U ' + s.ou.all.w + '-' + s.ou.all.l + '-' + s.ou.all.p + ' ' + u(s.ou.all) + ' · SU ' + s.su.w + '-' + s.su.l
+    + ' · ML ' + s.ml.w + '-' + s.ml.l + ' ' + u(s.ml) + ' (n=' + s.ml.n + ')'
+    + ' · NET ' + u(s.net) + ' ROI ' + (s.net.roi == null ? '—' : s.net.roi + '%') + ' (' + s.net.at_close + ' at the close, ' + s.net.at_standard + ' at -110)'
     + ' · CLV ' + (c.n ? ((c.avg > 0 ? '+' : '') + c.avg + ' pts avg, beat the close ' + c.beat_pct + '% (n=' + c.n + ')') : 'n=0');
 }
 
@@ -305,4 +343,4 @@ if (require.main === module) {
   }).catch((e) => { console.error('football record failed: ' + (e && e.stack || e)); process.exit(1); });
 }
 
-module.exports = { run, ingestSlate, needsEspn, buildSummary, gitVersions };
+module.exports = { run, ingestSlate, needsEspn, needsPrice, buildSummary, gitVersions };

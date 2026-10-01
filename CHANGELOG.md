@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-01 — the football record is graded in units; Profit & Loss is part of the record
+
+Every graded pick in the football model record now carries a profit or loss, and the Record tab shows it beside every win–loss figure. The separate Profit & Loss tab is gone: its content is the last part of the football record.
+
+- **Real closing prices** (`tools/record/football_record_sources.js`). The record grades every side against the closing line, so it now prices every side at the closing price of that line, read from the same source in the same read:
+  - NFL: nflverse `home_spread_odds`, `away_spread_odds`, `over_odds`, `under_odds` and the moneylines;
+  - CFB: the ESPN book's `spreadOdds`, `overOdds`/`underOdds` and `moneyLine` (or the nested close), taken only from the reading that gave the line.
+- **P&L per pick** (`football_record_core.js`, `grade.pnl`). 1 unit on the spread side, the total side and the straight-up pick, at that side's closing price. A spread or total whose closing price was never captured is priced at the standard −110 and marked `basis: "standard"`. A moneyline is priced only at its real price; without one it counts in the straight-up record only. The arithmetic is `lib/edgedesk_pnl.js`, the same kernel the P&L ledger uses.
+- **Price backfill.** A held close takes a price only for the exact line and book it already holds, and a held price is never replaced. NFL closes fill from nflverse on the next run. Graded college games without a price are asked for one through ESPN's summary: newest first, 60 per run, at most 3 times per game.
+- **The summary** (`record/football/summary.json`) adds units, risked units, ROI and price basis to every record. It also adds: the moneyline, the net across all three markets, units by points off the close, favourite/underdog, home/away, over/under, a running total by week, and units per CFB matchup group.
+- **The Record tab** (`app.html`): the books are now **Edges record** and **Football record & P&L**.
+  - The football record opens with its net units, the three markets and a game-by-game running-total chart (hover, tap or arrow keys).
+  - Every record tile, the matchup and week tables, and every game row show units. Each game row also shows the price it was graded at, with `std` where the price is the standard −110.
+  - A new **What has worked** table and a **By how far the model was from the close** table.
+  - **The bets EdgeDesk recommended** (props and game decisions at their recorded prices, `lib/edgedesk_pnl_ui.js` with a row filter) comes last. Model-record rows are left out there because they are priced above.
+  - Old links and saved choices for the P&L tab open the football record at that section.
+- **First numbers** (re-run on real nflverse data):
+  - NFL: all 95 graded picks are at the real closing price. ATS 19-11-2 is +6.04u, totals −0.49u, moneyline +1.08u: net **+6.63u**, ROI +7.1% on 93u risked.
+  - CFB: −35.00u at the standard −110, until the record job reads ESPN's closing prices.
+- **Unchanged:** grading itself (sides, results, CLV, Brier), the P&L ledger `record/pnl/`, its database copy, and the public `record.html`.
+- **Tests:**
+  - `tools/record/football_record.test.js`: 19 new cases. Price parsing (nflverse, ESPN flat and nested, a mismatched line refused); the close-price fill rules; P&L at −105, +120, a loss, a push, the standard −110 and an unpriced moneyline; summary units, ROI, splits, gaps and running total; the price-ask bound; the committed record's units equal the sum of its picks.
+  - `tools/record/pnl_ui.test.js`: P&L lives in the football record, and model-record rows are not counted twice.
+
 ## 2026-10-01 — an open Football tab keeps its prices current; aged quotes are STALE, not a MARKET FAULT
 
 Thursday night's PIT @ CLE read NO DECISION · STALE_QUOTE on every market, and "NFL MARKET SELF-CHECK FAILED" named it as a MARKET FAULT. That was 30 minutes after capture had re-priced the game. Capture and pg_cron were healthy; the fault was in the page (`app.html`).
