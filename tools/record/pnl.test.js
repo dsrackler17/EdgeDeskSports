@@ -73,7 +73,7 @@ chk('PUSH → push', P.normResult('PUSH') === 'push');
 chk('VOID / cancelled / DNP → void', ['VOID', 'cancelled', 'dnp'].every((x) => P.normResult(x) === 'void'));
 
 /* ── one row: status and the two strategies ─────────────────────────── */
-const base = { recommendation_id: 'x', game_date: '2026-09-20T17:00:00Z', stake_units: 0.5, entry_odds: -110 };
+const base = { recommendation_id: 'x', event_id: 'g', side: 'home', selection: 'BUF -3', game_date: '2026-09-20T17:00:00Z', stake_units: 0.5, entry_odds: -110 };
 let s = P.settle(Object.assign({}, base, { result: 'win' }));
 chk('a settled priced row is VERIFIED', s.pnl_status === 'VERIFIED' && s.pnl_eligible === true);
 chk('flat profit is at 1u', near(s.flat_profit_units, 0.9091));
@@ -110,13 +110,14 @@ chk('no recommended stake: flat P&L only', near(s.flat_profit_units, 0.9091) && 
   ['player prop Over', { market_type: 'player_prop', prop_market: 'pass_yds', side: 'over', entry_line: 276.5, entry_odds: -110, result: 'win' }, 0.9091],
   ['player prop Under', { market_type: 'player_prop', prop_market: 'receptions', side: 'under', entry_line: 3.5, entry_odds: -135, result: 'loss' }, -1]
 ].forEach(([label, row, want]) => {
-  const x = P.settle(Object.assign({ recommendation_id: label, stake_units: 1 }, row));
+  const x = P.settle(Object.assign({ recommendation_id: label, event_id: 'g', selection: label, game_date: '2026-09-20T17:00:00Z', stake_units: 1 }, row));
   chk(label + ': flat P&L ' + want, near(x.flat_profit_units, want), x.flat_profit_units);
 });
 
 /* ── aggregates over a known path ───────────────────────────────────── */
 function mk(i, date, result, odds, stake, extra) {
-  return P.settle(Object.assign({ recommendation_id: 'r' + i, game_date: date + 'T17:00:00Z', result, entry_odds: odds, stake_units: stake }, extra || {}));
+  /* a complete row, as the ledger writes one (a row with no game or no side is INVALID and graded nowhere) */
+  return P.settle(Object.assign({ recommendation_id: 'r' + i, event_id: 'g' + i, side: 'home', selection: 'Test ' + i, game_date: date + 'T17:00:00Z', result, entry_odds: odds, stake_units: stake }, extra || {}));
 }
 const rows = [
   mk(1, '2026-09-01', 'win', -110, 1, { model_edge_pct: 0.5, model_prob: 0.53, clv_points: 1.5, beat_close: true }),
@@ -168,7 +169,7 @@ const down = [mk(1, '2026-09-01', 'loss', -110, 1), mk(2, '2026-09-02', 'loss', 
 const D = P.summarize(down, 'flat');
 chk('drawdown is measured from 0 when the first bet loses', D.max_drawdown_units === -2 && D.peak_profit_units === 0, D);
 chk('current streak after L, L, W is W1', D.streaks.current === 'W1' && D.streaks.longest_loss === 2);
-chk('an empty strategy prints nothing it does not know', P.summarize([], 'flat').roi_pct === null && P.summarize([], 'flat').net_units === 0);
+chk('an empty strategy prints nothing it does not know: no ROI, and no 0.00u that reads like a result', (function () { var e = P.summarize([], 'flat'); return e.n === 0 && e.roi_pct === null && e.net_units === null && e.risked_units === null && e.max_drawdown_units === null && e.peak_profit_units === null && e.drawdown === null && P.fmtUnits(e.net_units) === '—'; })(), P.summarize([], 'flat'));
 
 /* ── breakdowns, calibration, CLV ──────────────────────────────────── */
 const bd = P.breakdown(rows, (x) => P.edgeBucket(x.model_edge_pct), 'flat', P.EDGE_BUCKETS.map((b) => b[2]));
@@ -204,6 +205,68 @@ chk('CLV buckets: six ranges', cv.buckets.length === 6 && cv.buckets[0].n === 1 
 const dq = P.dataQuality(rows.concat([P.settle({ recommendation_id: 's', entry_odds: -110, price_assumed: true, result: 'win' })]));
 chk('data quality: verified / pending / void / missing / simulated', dq.verified === 6 && dq.pending === 1 && dq.voids === 1 && dq.missing_entry_odds === 1 && dq.simulated_price === 1, dq);
 chk('data quality: not P&L eligible = missing + simulated', dq.not_pnl_eligible === 2, dq);
+
+/* ── the one state of every row ────────────────────────────────────── */
+{
+  const base = { event_id: 'g1', game_date: '2026-10-04T17:00:00.000Z', recommended_at: '2026-10-03T12:00:00.000Z', side: 'home', selection: 'BUF -3', rec_class: 'BET', stake_units: 1 };
+  const S = (o) => P.settle(Object.assign({}, base, o));
+  chk('state: no result yet → PENDING', S({ entry_odds: -110, result: 'pending' }).record_state === 'PENDING');
+  chk('state: settled at a captured price → VERIFIED', S({ entry_odds: -110, result: 'win' }).record_state === 'VERIFIED');
+  const ro = S({ entry_odds: null, result: 'loss' });
+  chk('state: a result with no entry price → RECORD_ONLY, with the reason, and no units', ro.record_state === 'RECORD_ONLY' && /entry price not captured/.test(ro.state_reason) && ro.flat_profit_units === null && ro.profit_units === null, ro);
+  chk('state: a simulated (assumed) price is RECORD_ONLY, never verified', S({ entry_odds: -110, price_assumed: true, result: 'win' }).record_state === 'RECORD_ONLY');
+  chk('state: an invalid stored price is RECORD_ONLY once settled', S({ entry_odds: 50, result: 'win' }).record_state === 'RECORD_ONLY');
+  chk('state: void → VOID', S({ entry_odds: -110, result: 'void' }).record_state === 'VOID' && S({ entry_odds: null, result: 'void' }).record_state === 'VOID');
+  const bad = S({ entry_odds: -110, result: 'graded?' });
+  chk('state: an unreadable settlement is INVALID with the value, never quietly pending', bad.record_state === 'INVALID' && /graded\?/.test(bad.state_reason) && bad.profit_units === null, bad);
+  const lateBet = S({ entry_odds: -110, result: 'win', recommended_at: '2026-10-04T18:00:00.000Z' });
+  chk('state: a recommendation stamped after kickoff is INVALID, and graded nowhere (no P&L, not a verified bet)', lateBet.record_state === 'INVALID' && lateBet.flat_profit_units === null && lateBet.profit_units === null && P.betsOf([lateBet], 'flat').length === 0, lateBet);
+  chk('state: the model record\'s own rows are pregame by its rule, never refused here', S({ rec_class: 'MODEL', entry_odds: null, result: 'win', recommended_at: '2026-10-04T18:00:00.000Z' }).record_state === 'RECORD_ONLY');
+  chk('state: a row with no game is INVALID', S({ event_id: null, game_date: null, entry_odds: -110, result: 'win' }).record_state === 'INVALID');
+  chk('state: a row written before record_state existed is read the same way', P.rowState({ result: 'win', pnl_status: 'VERIFIED', event_id: 'x', side: 'home' }) === 'VERIFIED' && P.rowState({ result: 'pending', event_id: 'x', side: 'home' }) === 'PENDING');
+
+  /* the record: model picks + BET, never PASS / WATCH, LEAN on request */
+  const rows2 = [
+    S({ rec_class: 'MODEL', entry_odds: null, result: 'win', market_type: 'spread', league: 'CFB', model_version: 'm1', week: 2 }),
+    S({ rec_class: 'MODEL', entry_odds: null, result: 'loss', market_type: 'spread', league: 'NFL', model_version: 'm2', week: 2 }),
+    S({ rec_class: 'MODEL', entry_odds: null, result: 'push', market_type: 'total', league: 'NFL', model_version: 'm2', week: 3 }),
+    S({ rec_class: 'BET', entry_odds: 120, result: 'win', market_type: 'player_prop', league: 'NFL', model_version: 'p1', week: 3 }),
+    S({ rec_class: 'BET', entry_odds: -110, result: 'pending', market_type: 'player_prop', league: 'NFL', model_version: 'p1', week: 4 }),
+    S({ rec_class: 'LEAN', entry_odds: -110, result: 'loss', market_type: 'player_prop', league: 'NFL', model_version: 'p1', week: 3 }),
+    S({ rec_class: 'PASS', entry_odds: -110, result: 'loss', market_type: 'spread', league: 'CFB', model_version: 'm1', week: 2 }),
+    S({ rec_class: 'BET', entry_odds: -110, result: 'void', market_type: 'player_prop', league: 'NFL', model_version: 'p1', week: 3 })
+  ];
+  const st = P.states(rows2);
+  chk('states: every row exactly once', st.total === 8 && P.STATE_ORDER.reduce((a, k) => a + st[k], 0) === 8 && st.PENDING === 1 && st.VERIFIED === 3 && st.RECORD_ONLY === 3 && st.VOID === 1, st);
+  const recRows = rows2.filter((x) => P.inRecord(x, false));
+  const R = P.gradedRecord(recRows);
+  chk('record: model picks and BETs, priced or not — 2-1-1 over 4 graded; PASS and LEAN left out', R.record === '2-1-1' && R.graded === 4 && R.verified === 1 && R.record_only === 3 && R.pending === 1 && R.voids === 1 && R.tracked === 6, R);
+  chk("record: win rate leaves pushes out", R.win_rate_pct === 66.6667, R.win_rate_pct);
+  chk('record: leans join only when asked', P.gradedRecord(rows2.filter((x) => P.inRecord(x, true))).record === '2-2-1');
+  const RB = P.recordBreakdowns(recRows);
+  const sumOf = (g) => g.reduce((a, x) => [a[0] + x.wins, a[1] + x.losses, a[2] + x.pushes], [0, 0, 0]).join('-');
+  chk('record by sport / market / model version / week each add up to the whole', ['league', 'market', 'model_version', 'week'].every((k) => sumOf(RB[k]) === '2-1-1'), Object.keys(RB).map((k) => k + ' ' + sumOf(RB[k])));
+  chk('record by market: spread 1-1, totals 0-0-1, props 1-0 (and one pending)', RB.market.map((x) => x.key + ' ' + x.record + (x.pending ? ' +' + x.pending : '')).join() === 'Spread 1-1,Total 0-0-1,Player Props 1-0 +1', RB.market.map((x) => x.key + ' ' + x.record));
+
+  const pr = P.pendingReasons([Object.assign({}, rows2[4], { pending_reason: 'UPCOMING' }), Object.assign({}, rows2[4], { pending_reason: 'MISSING_PLAYER_STAT' }), rows2[4], rows2[0]]);
+  chk('pending reasons: counted per reason, a row without one is UNKNOWN, settled rows ignored', pr.total === 3 && pr.reasons.map((x) => x.key + ' ' + x.n).join() === 'UPCOMING 1,MISSING_PLAYER_STAT 1,UNKNOWN 1', pr);
+  chk('pending reasons: with the reader\'s clock, a reasonless row before its kickoff is UPCOMING — after it, still UNKNOWN (never guessed)',
+    P.pendingReasonOf(rows2[4], Date.parse('2026-10-01T00:00:00Z')) === 'UPCOMING' && P.pendingReasonOf(rows2[4], Date.parse('2026-10-05T00:00:00Z')) === 'UNKNOWN'
+    && P.pendingReasonOf(Object.assign({}, rows2[4], { pending_reason: 'MISSING_FINAL' }), Date.parse('2026-10-01T00:00:00Z')) === 'MISSING_FINAL');
+
+  /* integrity: the page's figures agree, and a broken row is caught */
+  const I = P.integrity(rows2, 'flat', false);
+  chk('integrity: every check passes on a sound dataset', I.ok && I.n >= 10, I.failed);
+  const I2 = P.integrity(rows2, 'flat', true);
+  chk('integrity: also with leans counted', I2.ok, I2.failed);
+  const forged = rows2.concat([Object.assign({}, rows2[3], { recommendation_id: 'forged', entry_odds: null })]);
+  const I3 = P.integrity(forged, 'flat', false);
+  chk('integrity: a VERIFIED row with no captured price is an internal error, not a quiet number', !I3.ok && I3.failed.some((f) => f.key === 'verified_priced'), I3.failed);
+  const unitsOnRecord = rows2.concat([Object.assign({}, rows2[0], { recommendation_id: 'ro_units', flat_profit_units: 0.91 })]);
+  chk('integrity: units on a record-only row are an internal error', P.integrity(unitsOnRecord, 'flat', false).failed.some((f) => f.key === 'record_only_unpriced'));
+  const E = P.integrity([], 'flat', false);
+  chk('integrity: an empty view passes (nothing to disagree about)', E.ok, E.failed);
+}
 
 /* ── sample labels ─────────────────────────────────────────────────── */
 chk('n < 20: very small sample', P.sampleLabel(19).key === 'VERY_SMALL' && P.sampleLabel(19).warn);

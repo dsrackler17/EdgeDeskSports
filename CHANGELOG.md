@@ -1,5 +1,80 @@
 # Changelog
 
+## 2026-10-01 — the Records page populates from every graded recommendation
+
+The Records page showed 0, — and empty tables even though the ledger held 2,052 recommendations, 720 of them graded. Every figure was computed from verified priced bets only, and none had settled. The fix covers the pipeline first, then the page.
+
+**What the data showed (traced, not assumed).**
+- All 1,332 pending rows are upcoming games: props on Oct 2–5, CFB decisions on Oct 2–10. The props ledger began today, so no prop has finished.
+- The 720 graded rows are the model record: 432-284-4 (60.3%).
+  - Spread: 123-136-4 over 263.
+  - Totals: 99-95 over 194.
+  - Moneyline: 210-53 over 263.
+- None of them carries an entry price.
+- Two silent gaps in the settling jobs:
+  - The props grader worked out why a prop was pending and then dropped the reason.
+  - The CFB decision grader would never settle a finished game whose closing line was not captured.
+
+**The pipeline.**
+- **One state per row.** Each row is `PENDING`, `VERIFIED`, `RECORD_ONLY`, `VOID` or `INVALID`, set by `lib/edgedesk_pnl.js` (`stateOf`, `record_state`).
+  - An unreadable settlement is now `INVALID` with its value, instead of quietly pending.
+  - So is a recommendation stamped after kickoff.
+- **Why pending.** `tools/record/pnl_core.js` (`pendingReason`) gives each pending row one of these reasons:
+  - upcoming;
+  - in progress;
+  - awaiting the settlement run;
+  - awaiting the stat feed;
+  - missing final;
+  - missing player stat;
+  - settlement job failed;
+  - missing mapping.
+- **Where the reasons come from.**
+  - `football/props/grade.js` now writes its reasons to `football/props/<lg>/settlement.json` (`pendingStatus`), including a run whose dataset failed to load.
+  - The ledger also reads the finals EdgeDesk holds: the model record and the CFB Lab results.
+- **No more waiting forever for a close.** `football/cfb_terminal/decisions.js` (`gradeable`) settles a final with no close after 36 h, with no CLV.
+- **The ledger job** (`tools/record/pnl_ledger.js`):
+  - writes the states, the reasons, the graded record (overall and by sport, market, model version, week and grade) and the integrity checks of every scope into `record/pnl/summary.json`;
+  - writes a small `record/pnl/stamp.json` that the page polls;
+  - fails (exit 2) if any integrity check fails.
+- **The backfill** is the same idempotent build. Run once on today's ledger, it gives the counts above; a second run changes nothing.
+  - The scheduled Record P&L job runs it on `main`: hourly at :41, and after every settlement job. Within the hour of this change, `record/pnl/` carries the states, the reasons and `stamp.json`.
+  - Until then the page derives each row's state and the graded record from the same rows itself, and it reloads once the first stamp appears.
+- **Database** (`supabase/model_pnl_states.sql`, additive):
+  - `record_state` is set by a trigger and constrained (verified means priced; record only means no units);
+  - `pending_reason` is written only by `model_pnl_reasons()`, which `tools/record/pnl_sync.js` now calls;
+  - `model_record_canonical` is one normalized view (`id`, `game_id`, `event_time`, `model_value`, `entry_odds`, `recommendation_grade`, `settlement_result`, `pnl_units`, `clv`, `record_state`, …);
+  - `model_record_states` holds the counts.
+
+**The page** (`lib/edgedesk_pnl_ui.js`, `lib/edgedesk_pnl.css`).
+- **Order.** The view comes first (tabs, period, stake, leans), then the verified P&L, then its chart, then the graded record directly under them.
+- **With nothing priced settled**, the verified P&L reads *Waiting for first priced bets to settle* with the pending priced bets and the first game. The record below shows:
+  - 720 graded and 432-284-4 by market;
+  - the split by sport;
+  - *Historical P&L unavailable* for the 720 unpriced results;
+  - the pending count with its reason.
+- **Tabs** show their record (CFB 376-247-2, NFL 56-37-2) while nothing priced has settled, instead of —.
+- **Advanced Analytics:**
+  - opens on *Where the record comes from*: W-L-P by sport, market, model version, week and grade;
+  - says *Waiting for settlement* once instead of drawing tables of 0.00u;
+  - holds every row's state, *Why pending* with each reason's count, and the agreement checks.
+- **Players** with nothing settled show —, not 0-0-0. That was checked against the rows.
+- **The ledger** gains a *Record only* view (720 graded results, units —). Its audit shows each row's state and why it is pending.
+- **Empty is not zero.** The kernel's `summarize` returns `null`, not 0, when there is no settled bet.
+- **Integrity on every render.** `EDPnl.integrity()` proves the figures agree:
+  - the hero's bet count equals the ledger rows, and its net equals their sum;
+  - the chart, the sport and market breakdowns, and the record's markets and sports all add up;
+  - every row has one state.
+  - A failure shows as an *internal check failed* banner.
+- **Live.** The page polls the stamp every 5 minutes and when it is shown again, and re-reads the ledger after a settlement run.
+
+**Tests:**
+- `tools/record/pnl.test.js`: 172 checks (states, the record, reasons, integrity, null-not-zero).
+- `tools/record/pnl_ledger.test.js`: 97 checks. They pin every pending reason, check the stamp, and rebuild the real sources: one state per row, integrity in every scope.
+- `tools/record/pnl_sql.test.js`: 113 checks against a real PostgreSQL. The trigger matches the kernel on every row, and so does the real ledger.
+- `tools/record/pnl_ui.test.js`: 222 checks in Chromium. On real data there is no 0.00u or 0-0-0 anywhere, the tabs show records, the reasons add up, and a moved stamp reloads the page.
+- `football/props/pipeline.test.js` adds the pending statuses.
+- `tools/bettor/football_decision.test.js` adds grading without a close.
+
 ## 2026-10-01 — the Washington starter check follows the injury report
 
 The committed-slate check in `tools/football/nfl_regime.test.js` required that Colts @ Commanders (week 4, Tottenham) never price Jayden Daniels. That was true on the week-3 report, which listed him OUT with an elbow injury. The week-4 report lists him as limited in practice with no game designation. The slate rebuilt at 18:54 UTC rightly priced him from the schedule feed, and Intelligence CI and Collective suites went red on every open PR.

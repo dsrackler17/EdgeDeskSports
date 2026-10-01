@@ -73,4 +73,4 @@ jobs:
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node tools/record/pnl_sync.js || echo "::warning::P&L sync skipped (apply supabase/model_pnl.sql and model_pnl_analytics.sql)"
+        run: node tools/record/pnl_sync.js || echo "::warning::P&L sync skipped (apply supabase/model_pnl.sql, model_pnl_states.sql and model_pnl_analytics.sql)"

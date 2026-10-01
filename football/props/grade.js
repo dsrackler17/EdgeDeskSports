@@ -8,7 +8,9 @@
              kind 'final'      the last pregame evaluation of every priced prop (the close)
            football/props/<league>/<season>/results.jsonl       (already settled — never re-graded)
            the league dataset (official box scores: nflverse / ESPN player box)
-   WRITES  results.jsonl (append-only) and football/props/<league>/performance.json
+   WRITES  results.jsonl (append-only), football/props/<league>/performance.json
+           and football/props/<league>/settlement.json (why each started,
+           unsettled BET / LEAN is still pending — pendingStatus)
 
    SETTLEMENT (EDProps.settle)
      WIN / LOSS by the official statistic, overtime included; PUSH on a whole
@@ -151,6 +153,39 @@ function grade(ds, rows, done, now) {
   return out;
 }
 
+/* WHY A STARTED PROP IS STILL PENDING. grade() leaves a prop it cannot settle
+   off the results file; this keeps the reason instead of dropping it, so the
+   Record can say what "pending" means (tools/record/pnl_ledger.js reads it).
+   Only qualified rows whose game has kicked off and that have no settlement
+   are listed; a prop before its kickoff is simply upcoming. */
+const PENDING_CODE = {
+  'game not in the schedule feed': 'MISSING_MAPPING',
+  'game not final': 'GAME_NOT_FINAL',
+  'box score not published yet': 'STAT_FEED_PENDING'
+};
+function pendingStatus(ds, rows, settled, now) {
+  const done = new Set((settled || []).map((x) => x.evaluation_id));
+  const out = {};
+  (rows || []).forEach((x) => {
+    if (x.kind !== 'qualified' || done.has(x.evaluation_id)) return;
+    const k = Date.parse(x.kickoff);
+    if (!Number.isFinite(k) || k > now) return;
+    if (!ds || !ds.ok) { out[x.evaluation_id] = { code: 'DATASET_UNAVAILABLE', reason: 'the stat dataset could not be loaded' + (ds && ds.error ? ': ' + ds.error : ''), game_id: String(x.game_id), kickoff: x.kickoff }; return; }
+    const res = resultOf(ds, x);
+    if (res.state !== 'PENDING') return;   /* settles on this run (or a VOID): not pending */
+    out[x.evaluation_id] = { code: PENDING_CODE[res.reason] || 'UNKNOWN', reason: res.reason || null, game_id: String(x.game_id), kickoff: x.kickoff };
+  });
+  return out;
+}
+function settlementFile(league, season, ds, pending, now) {
+  const codes = {};
+  Object.keys(pending).forEach((k) => { const c = pending[k].code; codes[c] = (codes[c] || 0) + 1; });
+  return { schema: 'edgedesk_player_props_settlement_v1', league, season, checked_at: new Date(now).toISOString(),
+    what: 'Every BET / LEAN whose game has kicked off and is not settled yet, with the reason the last grading run gave. Written by football/props/grade.js; read by tools/record/pnl_ledger.js.',
+    dataset: ds && ds.ok ? { ok: true } : { ok: false, error: ds ? String(ds.error || 'unavailable') : 'not loaded' },
+    counts: codes, pending };
+}
+
 function marketEvidence(results) {
   const out = {};
   const finals = results.filter((x) => x.kind === 'final');
@@ -203,11 +238,21 @@ async function main() {
   const P = C.leaguePaths(league, season);
   const evals = readJsonl(P.evaluations), done = readJsonl(P.results);
   let fresh = [];
+  /* the pending diagnostics are written with or without a dataset: a run
+     that could not load one says so, per prop, instead of going quiet */
+  const writeSettlement = (ds, settled) => {
+    if (!write || !evals.length) return;
+    const doc = settlementFile(league, season, ds, pendingStatus(ds, evals, settled, now), now);
+    const prevS = (() => { try { return JSON.parse(fs.readFileSync(P.settlement, 'utf8')); } catch (e) { return null; } })();
+    const bare = (o) => JSON.stringify(Object.assign({}, o, { checked_at: null }));
+    if (!prevS || bare(prevS) !== bare(doc)) { fs.mkdirSync(P.dir, { recursive: true }); fs.writeFileSync(P.settlement, JSON.stringify(doc, null, 1) + '\n'); console.log('[props grade] settlement status written: ' + Object.keys(doc.pending).length + ' started and unsettled'); }
+  };
   if (evals.length) {
     const src = league === 'cfb' ? require('./sources/cfb.js') : require('./sources/nfl.js');
     const ds = await src.load({ season, offline: a.indexOf('--offline') >= 0, now, current_feeds: league === 'nfl' ? ['stats', 'pbp', 'snaps', 'roster'] : undefined, no_prior: true });
-    if (!ds.ok) { console.log('[props grade] dataset unavailable: ' + ds.error + ' — nothing graded'); return 0; }
+    if (!ds.ok) { console.log('[props grade] dataset unavailable: ' + ds.error + ' — nothing graded'); writeSettlement(ds, done); return 0; }
     fresh = grade(ds, evals, done, now).concat(correct(ds, evals, done, now));
+    writeSettlement(ds, done.concat(fresh));
   }
   const results = done.concat(fresh);
   const perf = report(league, season, results, evals, now);
@@ -221,5 +266,5 @@ async function main() {
   return 0;
 }
 
-module.exports = { grade, correct, latest, report, resultOf, marketEvidence, CORRECTION_DAYS };
+module.exports = { grade, correct, latest, report, resultOf, marketEvidence, pendingStatus, settlementFile, PENDING_CODE, CORRECTION_DAYS };
 if (require.main === module) main().then((c) => process.exit(c || 0)).catch((e) => { console.error('[props grade] ' + (e.stack || e.message)); process.exit(1); });

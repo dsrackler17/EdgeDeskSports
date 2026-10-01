@@ -94,10 +94,62 @@ function eventIndex(records) {
     if (!L || !L.games) return;
     Object.keys(L.games).forEach((k) => {
       const e = L.games[k];
-      ix[String(e.game_id)] = { home: e.home || null, away: e.away || null, home_code: e.home_code || null, away_code: e.away_code || null, kickoff: e.kickoff || null, week: e.week != null ? e.week : null };
+      ix[String(e.game_id)] = { home: e.home || null, away: e.away || null, home_code: e.home_code || null, away_code: e.away_code || null, kickoff: e.kickoff || null, week: e.week != null ? e.week : null,
+        final_at: e.final && e.final.at ? e.final.at : (e.final ? e.kickoff || null : null) };
     });
   });
   return ix;
+}
+/* every final EdgeDesk holds, by game id: the model record's, and the CFB
+   Lab's (the finals the game-decision grader reads) */
+function finalIndex(events, labResults) {
+  const out = {};
+  Object.keys(events || {}).forEach((id) => { if (events[id].final_at) out[id] = { at: events[id].final_at, source: 'model record' }; });
+  (labResults || []).forEach((r) => {
+    if (!r || r.status !== 'FINAL' || num(r.final_margin) == null || out[String(r.game_id)]) return;
+    out[String(r.game_id)] = { at: r.recorded_at || null, source: 'CFB Lab results' };
+  });
+  return out;
+}
+
+/* ====================================================== PENDING REASONS
+   Why a pending row is still pending, as of the build's clock. From the
+   settling jobs' own diagnostics (player props: football/props/<lg>/
+   settlement.json, written by football/props/grade.js) and the finals
+   EdgeDesk holds. Never a guess: a row the build cannot place is UNKNOWN. */
+const IN_PLAY_HOURS = 5;        /* kickoff → a final is due */
+const STAT_FEED_HOURS = 48;     /* kickoff → the official player box is due */
+const SETTLE_GRACE_HOURS = 40;  /* a final → the game-decision grader has run (it waits up to 36 h for a close) */
+function pendingReason(row, ctx, now) {
+  if (PNL.rowState(row) !== PNL.STATE.PENDING) return null;
+  ctx = ctx || {};
+  const ko = Date.parse(row.game_date || '');
+  if (!Number.isFinite(ko)) return 'MISSING_MAPPING';
+  if (now < ko) return 'UPCOMING';
+  const hrs = (now - ko) / 3600e3;
+  if (row.market_group === 'prop') {
+    const S = (ctx.props || {})[row.league] || null;
+    const p = S && S.pending ? S.pending[String(row.recommendation_id).replace(/^pp:/, '')] : null;
+    if (p) {
+      if (p.code === 'MISSING_MAPPING') return 'MISSING_MAPPING';
+      if (p.code === 'DATASET_UNAVAILABLE') return 'SETTLEMENT_FAILED';
+      if (p.code === 'GAME_NOT_FINAL') return hrs < IN_PLAY_HOURS ? 'IN_PROGRESS' : 'MISSING_FINAL';
+      if (p.code === 'STAT_FEED_PENDING') return hrs < STAT_FEED_HOURS ? 'AWAITING_STAT_FEED' : 'MISSING_PLAYER_STAT';
+      return 'UNKNOWN';
+    }
+    if (hrs < IN_PLAY_HOURS) return 'IN_PROGRESS';
+    /* the grader has not run since kickoff (or never wrote its status) */
+    const checked = S ? Date.parse(S.checked_at || '') : NaN;
+    if (!Number.isFinite(checked) || checked < ko) return hrs < IN_PLAY_HOURS + 6 ? 'AWAITING_SETTLEMENT' : 'SETTLEMENT_FAILED';
+    /* it ran after kickoff, did not settle the prop and gave no reason */
+    return 'SETTLEMENT_FAILED';
+  }
+  if (hrs < IN_PLAY_HOURS) return 'IN_PROGRESS';
+  const fin = (ctx.finals || {})[String(row.event_id)] || null;
+  if (!fin) return (ctx.events || {})[String(row.event_id)] ? 'MISSING_FINAL' : 'MISSING_MAPPING';
+  const fAt = Date.parse(fin.at || '');
+  const since = (now - (Number.isFinite(fAt) ? Math.max(fAt, ko) : ko)) / 3600e3;
+  return since < SETTLE_GRACE_HOURS ? 'AWAITING_SETTLEMENT' : 'SETTLEMENT_FAILED';
 }
 function eventLabel(league, gid, ev, fallback) {
   if (ev && (ev.away_code || ev.away) && (ev.home_code || ev.home)) return (ev.away_code || ev.away) + ' @ ' + (ev.home_code || ev.home);
@@ -406,6 +458,18 @@ function summarize(ledger, meta) {
   });
   const versions = Array.from(new Set(rows.map((x) => x.model_version).filter(Boolean))).sort();
   const books = Array.from(new Set(rows.filter((x) => x.entry_odds != null).map((x) => x.entry_book_name || x.entry_book).filter(Boolean))).sort();
+  /* the graded record (model picks + BETs; leans are the reader's choice on
+     the page), every row's one state, why the pending rows are pending, and
+     the agreement checks of every scope — from the same rows as the views */
+  const rec = rows.filter((x) => PNL.inRecord(x, false));
+  const integrity = {};
+  PNL.SCOPE_ORDER.forEach((k) => {
+    const sub = PNL.scopeRows(rows, k);
+    [['flat', false], ['staked', false], ['flat', true]].forEach((m) => {
+      const I = PNL.integrity(sub, m[0], m[1]);
+      integrity[k + '|' + m[0] + (m[1] ? '+leans' : '')] = { ok: I.ok, n: I.n, failed: I.failed };
+    });
+  });
   return {
     schema: SUMMARY_SCHEMA, engine: PNL.VERSION, generated_at: meta && meta.generated_at ? meta.generated_at : null,
     season: ledger.season, strategy: 'Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.',
@@ -418,6 +482,11 @@ function summarize(ledger, meta) {
     ],
     counts: { rows: rows.length, bets: rows.filter(isBet).length, verified_bets: rows.filter((x) => isBet(x) && x.pnl_status === 'VERIFIED').length, corrected: rows.filter((x) => x.corrected).length },
     model_versions: versions, books: books,
+    states: PNL.states(rows),
+    pending_reasons: PNL.pendingReasons(rows),
+    record: { what: 'Every graded model pick and BET, priced or not, as wins, losses and pushes. Never units.', all: PNL.gradedRecord(rec), by: PNL.recordBreakdowns(rec) },
+    integrity: { ok: Object.keys(integrity).every((k) => integrity[k].ok), checks: integrity },
+    settlement: (meta && meta.settlement) || null,
     views: views,
     excluded_sources: (meta && meta.excluded_sources) || [],
     integrity_alerts: (meta && meta.integrity_alerts) || [],
@@ -434,14 +503,17 @@ const PAGE_COLS = ['recommendation_id', 'source', 'league', 'season', 'week', 'e
   'side', 'selection', 'model_line', 'entry_line', 'entry_odds', 'entry_book', 'entry_book_name', 'price_assumed', 'model_prob', 'model_edge_pct', 'ev_pct',
   'model_gap_points', 'rec_class', 'confidence', 'stake_units', 'recommended_at', 'odds_captured_at', 'evaluation_mode',
   'result', 'result_value', 'final_score', 'closing_line', 'closing_odds', 'clv_points', 'clv_prob_pp', 'beat_close', 'settled_at',
-  'corrected', 'corrections', 'source_missing', 'implied_prob', 'flat_profit_units', 'profit_units', 'pnl_status', 'missing_entry_odds'];
+  'corrected', 'corrections', 'source_missing', 'implied_prob', 'flat_profit_units', 'profit_units', 'pnl_status', 'missing_entry_odds',
+  'record_state', 'state_reason', 'pending_reason'];
 function pageRows(ledger) {
+  const ci = PAGE_COLS.indexOf('corrections'), si = PAGE_COLS.indexOf('state_reason'), sti = PAGE_COLS.indexOf('record_state');
   return {
     schema: PAGE_SCHEMA, season: ledger.season, generated_at: ledger.generated_at, cols: PAGE_COLS,
     rows: (ledger.rows || []).map((x) => {
       const r = PAGE_COLS.map((k) => (x[k] === undefined ? null : x[k]));
-      const ci = PAGE_COLS.indexOf('corrections');
       if (Array.isArray(r[ci]) && !r[ci].length) r[ci] = null;
+      /* the page words every state but INVALID itself; only an invalid row's reason rides along */
+      if (r[sti] !== 'INVALID') r[si] = null;
       return r;
     })
   };
@@ -455,5 +527,6 @@ function expandRows(page) {
 module.exports = {
   PAGE_SCHEMA, PAGE_COLS, pageRows, expandRows,
   LEDGER_SCHEMA, SUMMARY_SCHEMA, FROZEN, SETTLEMENT, SCOPES, GRADE_LABEL, MARKET_LABEL,
-  propRows, decisionRows, modelRecordRows, eventIndex, latestResults, merge, finish, summarize, breakdowns, view, isBet, propMeta
+  propRows, decisionRows, modelRecordRows, eventIndex, finalIndex, pendingReason, IN_PLAY_HOURS, STAT_FEED_HOURS, SETTLE_GRACE_HOURS,
+  latestResults, merge, finish, summarize, breakdowns, view, isBet, propMeta
 };

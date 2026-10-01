@@ -14,9 +14,11 @@
                                           post-kickoff or out-of-order row is
                                           refused; nothing is ever rewritten)
      decisions/<season>/grades.jsonl      one grade per BET snapshot, written
-                                          once after the Lab's consensus close
-                                          and the final: CLV at the recorded
-                                          number and units at the recorded price
+                                          once after the final and the Lab's
+                                          consensus close (or CLOSE_WAIT_HOURS
+                                          after kickoff without one, then with
+                                          no CLV): CLV at the recorded number
+                                          and units at the recorded price
      decisions/<season>/evaluations.jsonl one graded row for the FIRST snapshot
                                           of EVERY decision class per game (BET,
                                           LEAN, WATCH, PASS): opening, evaluated,
@@ -55,6 +57,18 @@ function ms(t) { const x = typeof t === 'number' ? t : Date.parse(t); return isF
 function iso(t) { const v = ms(t); return v == null ? null : new Date(v).toISOString(); }
 
 function base(season) { return 'football/cfb_terminal/decisions/' + season; }
+/* WHEN A DECISION IS GRADED. The result needs only the final; the consensus
+   close is for CLV. A final with a close grades at once. A final without one
+   waits CLOSE_WAIT_HOURS after kickoff for the Lab's close to land, then
+   grades WITHOUT CLV (never invented) — a finished game never sits pending
+   because a closing line was not captured. */
+const CLOSE_WAIT_HOURS = 36;
+function gradeable(r, c, kickoff, now) {
+  if (!r || r.status !== 'FINAL' || num(r.final_margin) == null) return false;
+  if (c) return true;
+  const k = ms(kickoff), t = ms(now);
+  return k != null && t != null && t >= k + CLOSE_WAIT_HOURS * 3600e3;
+}
 /* the ledger, and each game's track replayed from its own snapshots */
 function load(season) {
   const snaps = readJsonl(base(season) + '/snapshots.jsonl'), grades = readJsonl(base(season) + '/grades.jsonl'), evaluations = readJsonl(base(season) + '/evaluations.jsonl');
@@ -160,8 +174,8 @@ function ledger(season, results, ctx, now) {
   all.forEach((s) => {
     if (s.decision !== 'BET' || !s.bet_price || gradedIds.has(s.snapshot_id)) return;
     const r = res[String(s.game_id)], c = closes[String(s.game_id)];
-    if (!r || r.status !== 'FINAL' || num(r.final_margin) == null || !c) return;
-    const side = s.bet_price.side, closeSide = side === 'home' ? c.home_line : -c.home_line;
+    if (!gradeable(r, c, s.kickoff, now)) return;
+    const side = s.bet_price.side, closeSide = c ? (side === 'home' ? c.home_line : -c.home_line) : null;
     const g = BT.grade({ side: side, line: s.bet_price.line, odds: s.bet_price.odds, units: s.recommended_units }, { line: closeSide }, { home_margin: r.final_margin });
     newGrades.push({ schema: 'edgedesk_bettor_decision_grade_v1', snapshot_id: s.snapshot_id, game_id: s.game_id, side: side, line: s.bet_price.line, odds: s.bet_price.odds,
       units: s.recommended_units, strength: s.strength, calibrated_cover: s.calibrated_cover_probability, close_line: closeSide, clv_points: g.clv_points, result: g.result, units_won: g.units_won,
@@ -177,9 +191,9 @@ function ledger(season, results, ctx, now) {
   BT.firstPerClass(all).forEach((s) => {
     if (evalIds.has(s.snapshot_id)) return;
     const r = res[String(s.game_id)], c = closes[String(s.game_id)];
-    if (!r || r.status !== 'FINAL' || num(r.final_margin) == null || !c) return;
+    if (!gradeable(r, c, s.kickoff, now)) return;
     const o = opens[String(s.game_id)];
-    const e = BT.gradeEvaluation(s, { open: o ? o.home_line : null, close: c.home_line, close_captured_at: c.observed_at || null, close_sharp: null },
+    const e = BT.gradeEvaluation(s, { open: o ? o.home_line : null, close: c ? c.home_line : null, close_captured_at: c ? c.observed_at || null : null, close_sharp: null },
       { home_margin: r.final_margin }, { coverAt: coverAt, now: now });
     if (e) { newEvals.push(e); evalIds.add(s.snapshot_id); }
   });
@@ -257,4 +271,4 @@ function writeLedger(season, DL) {
   if (DL.new_grades.length) fs.appendFileSync(path.join(b, 'grades.jsonl'), DL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
 }
 
-module.exports = { closingDistribution: closingDistribution, lean: lean, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
+module.exports = { gradeable: gradeable, CLOSE_WAIT_HOURS: CLOSE_WAIT_HOURS, closingDistribution: closingDistribution, lean: lean, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };

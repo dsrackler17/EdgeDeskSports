@@ -12,6 +12,19 @@
      record/pnl/ledger_<season>.json   every recommendation, one row each, with its
                                        settlement, its P&L status and its corrections
      record/pnl/summary.json           every figure the Record's P&L section prints
+     record/pnl/rows_<season>.json     the page's copy of the ledger (columnar)
+     record/pnl/stamp.json             a few bytes the open page polls: it changes
+                                       only when the rows do, so the Records page
+                                       refreshes itself after a settlement run
+
+   EVERY ROW RESOLVES TO ONE STATE (lib/edgedesk_pnl.js record_state):
+   PENDING, VERIFIED (settled at a captured price), RECORD_ONLY (a result, no
+   usable entry price), VOID or INVALID. A pending row carries WHY
+   (pending_reason, pnl_core.pendingReason): upcoming, in progress, awaiting
+   the settlement run or the stat feed, missing final, missing player stat,
+   settlement job failed, missing mapping — from the settling jobs' own
+   diagnostics (football/props/<lg>/settlement.json) and the finals EdgeDesk
+   holds (the model record; football/cfb_lab/ledger/<season>/results.jsonl).
 
    Idempotent: a second run over the same inputs changes nothing (the files
    are rewritten only when a fact moved). A settlement that changed at its
@@ -25,6 +38,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const core = require('./pnl_core.js');
 const { writeIfChanged, strip } = require(path.join(__dirname, '..', 'football', 'write_if_changed.js'));
 
@@ -88,7 +102,23 @@ function load(root, season) {
     rows.push(...got);
     sources.push({ source: 'model_record', league: x.sport.toUpperCase(), file: rel(root, x.file), rows: got.length, note: 'no price captured: record-only rows' });
   });
-  return { rows, sources, excluded: excluded(root, season) };
+  return { rows, sources, excluded: excluded(root, season), ctx: settlementContext(root, season, events) };
+}
+
+/* what the settling jobs say about the rows they have not settled yet, and
+   every final EdgeDesk holds — the inputs of pnl_core.pendingReason */
+function settlementContext(root, season, events) {
+  const props = {}, status = {};
+  PROP_LEAGUES.forEach((lg) => {
+    const f = path.join(root, 'football', 'props', lg, 'settlement.json');
+    const doc = readJson(f);
+    if (doc && Number(doc.season) === Number(season)) {
+      props[lg.toUpperCase()] = doc;
+      status[lg.toUpperCase()] = { file: rel(root, f), checked_at: doc.checked_at || null, dataset_ok: !!(doc.dataset && doc.dataset.ok), started_unsettled: Object.keys(doc.pending || {}).length };
+    } else status[lg.toUpperCase()] = { file: rel(root, f), checked_at: null, dataset_ok: null, started_unsettled: null, note: 'no settlement status written yet' };
+  });
+  const lab = readJsonl(path.join(root, 'football', 'cfb_lab', 'ledger', String(season), 'results.jsonl'));
+  return { events, finals: core.finalIndex(events, lab), props, status };
 }
 
 /* what is deliberately left out, and why — counted so the page can say so */
@@ -116,6 +146,8 @@ function build(o) {
   const prev = readJson(lf);
   const src = load(o.root, season);
   const M = core.merge(prev && prev.schema === core.LEDGER_SCHEMA ? prev : null, src.rows, now);
+  /* why each pending row is pending, as of this run */
+  M.rows.forEach((r) => { const why = core.pendingReason(r, src.ctx, now); if (why) r.pending_reason = why; else delete r.pending_reason; });
   const generated = new Date(now).toISOString();
   const ledger = {
     schema: core.LEDGER_SCHEMA, season, generated_at: generated,
@@ -123,12 +155,15 @@ function build(o) {
     sources: src.sources,
     rows: M.rows
   };
-  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts });
+  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts,
+    settlement: { as_of: generated, props: src.ctx.status, finals_known: Object.keys(src.ctx.finals).length } });
   summary.sources = src.sources;
   summary.ledger_file = rel(o.root, lf);
   summary.rows_file = rel(o.root, pf);
   const page = core.pageRows(ledger);
-  return { season, ledger, summary, page, report: M.report, files: { ledger: lf, summary: sf, rows: pf }, prev };
+  const stamp = { schema: 'edgedesk_pnl_stamp_v1', season, generated_at: generated, rows: page.rows.length,
+    digest: crypto.createHash('sha1').update(JSON.stringify(page.rows)).digest('hex').slice(0, 16) };
+  return { season, ledger, summary, page, stamp, report: M.report, files: { ledger: lf, summary: sf, rows: pf, stamp: path.join(outDir, 'stamp.json') }, prev };
 }
 
 function main() {
@@ -139,12 +174,17 @@ function main() {
     + ' · unchanged ' + B.report.unchanged + (B.report.kept_missing_source ? ' · kept (source missing) ' + B.report.kept_missing_source : ''));
   console.log('[pnl] verified ' + q.verified + ' · pending ' + q.pending + ' · void ' + q.voids + ' · no entry price ' + q.missing_entry_odds + ' · simulated ' + q.simulated_price
     + ' · BET rows ' + B.summary.counts.bets + ' (verified ' + B.summary.counts.verified_bets + ')');
+  const st = B.summary.states, rec = B.summary.record.all;
+  console.log('[pnl] states: ' + ['PENDING', 'VERIFIED', 'RECORD_ONLY', 'VOID', 'INVALID'].map((k) => k + ' ' + st[k]).join(' · ') + ' (of ' + st.total + ')');
+  console.log('[pnl] graded record ' + rec.record + ' over ' + rec.graded + ' (' + rec.verified + ' verified, ' + rec.record_only + ' record only)');
+  console.log('[pnl] pending: ' + (B.summary.pending_reasons.reasons.map((x) => x.key + ' ' + x.n).join(' · ') || 'none'));
+  if (!B.summary.integrity.ok) Object.keys(B.summary.integrity.checks).forEach((k) => B.summary.integrity.checks[k].failed.forEach((f) => console.log('[pnl] INTEGRITY FAILED ' + k + ': ' + f.label + ' — expected ' + JSON.stringify(f.expected) + ', got ' + JSON.stringify(f.got))));
   B.report.integrity_alerts.slice(0, 20).forEach((a) => console.log('[pnl] INTEGRITY ' + a.recommendation_id + ' ' + a.field + ': ledger ' + JSON.stringify(a.ledger) + ' vs source ' + JSON.stringify(a.source) + ' — ' + a.action));
   if (B.report.duplicates_in_sources) console.log('[pnl] ' + B.report.duplicates_in_sources + ' duplicate source rows ignored (one row per recommendation)');
   if (o.check) {
-    const sPrev = readJson(B.files.summary), lPrev = B.prev, pPrev = readJson(B.files.rows);
+    const sPrev = readJson(B.files.summary), lPrev = B.prev, pPrev = readJson(B.files.rows), tPrev = readJson(B.files.stamp);
     const differs = (a, b) => !a || JSON.stringify(strip(a)) !== JSON.stringify(strip(b));
-    const stale = differs(lPrev, B.ledger) || differs(sPrev, B.summary) || differs(pPrev, B.page);
+    const stale = differs(lPrev, B.ledger) || differs(sPrev, B.summary) || differs(pPrev, B.page) || differs(tPrev, B.stamp);
     console.log(stale ? '[pnl] CHECK: record/pnl is stale — run with --write' : '[pnl] CHECK: record/pnl is current');
     return stale ? 1 : 0;
   }
@@ -152,10 +192,14 @@ function main() {
   console.log('[pnl] ' + path.basename(B.files.ledger) + ' ' + writeIfChanged(B.files.ledger, B.ledger, { pretty: true, newline: true }));
   console.log('[pnl] ' + path.basename(B.files.rows) + ' ' + writeIfChanged(B.files.rows, B.page));
   console.log('[pnl] summary.json ' + writeIfChanged(B.files.summary, B.summary, { pretty: true, newline: true }));
+  console.log('[pnl] stamp.json ' + writeIfChanged(B.files.stamp, B.stamp, { pretty: true, newline: true }));
+  /* a disagreement between the page's figures is an internal error: the
+     files are written (they are the evidence), the run fails loudly */
+  if (!B.summary.integrity.ok) { console.error('[pnl] the integrity checks failed — see above'); return 2; }
   return 0;
 }
 
-module.exports = { build, load, excluded, args, DECISION_LEDGERS };
+module.exports = { build, load, excluded, settlementContext, args, DECISION_LEDGERS };
 if (require.main === module) {
   try { process.exit(main()); } catch (e) { console.error('[pnl] ' + (e.stack || e.message)); process.exit(1); }
 }

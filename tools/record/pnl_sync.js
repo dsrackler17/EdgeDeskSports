@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE P&L LEDGER → Supabase (supabase/model_pnl.sql, model_pnl_analytics.sql).
+   THE P&L LEDGER → Supabase (supabase/model_pnl.sql, model_pnl_states.sql,
+   model_pnl_analytics.sql).
 
    The committed ledger (record/pnl/ledger_<season>.json, tools/record/
    pnl_ledger.js) stays the page's source. This is the durable, queryable
@@ -8,7 +9,10 @@
    recommendation, updates a settlement that moved (logging a correction when
    the row had already settled) and leaves the rest alone — so running it
    twice writes nothing twice. A row the database refuses (a recommendation
-   that would be rewritten) is printed and the rest still land.
+   that would be rewritten) is printed and the rest still land. Then every
+   row's pending reason (and an INVALID verdict the build made) goes through
+   model_pnl_reasons(), which touches only the rows whose reason moved; the
+   table derives each row's one state itself (model_pnl_states.sql).
 
    Without SB_URL / SB_SERVICE_ROLE (EDGD_SB_URL / EDGD_SB_SERVICE) it logs
    and exits 0: the page never depends on this.
@@ -31,6 +35,11 @@ function tableRows(L) {
     return r;
   });
 }
+/* the build's pending reasons and INVALID verdicts, one small row each */
+function reasonRows(L) {
+  return ((L && L.rows) || []).map((x) => ({ recommendation_id: x.recommendation_id, pending_reason: x.pending_reason || null,
+    record_state: x.record_state || null, state_reason: x.record_state === 'INVALID' ? x.state_reason || null : null }));
+}
 async function sync(o) {
   const L = o.ledger || JSON.parse(fs.readFileSync(path.join(ROOT, 'record', 'pnl', 'ledger_' + o.season + '.json'), 'utf8'));
   const rows = tableRows(L);
@@ -43,6 +52,16 @@ async function sync(o) {
       (res.refused || []).forEach((x) => out.refused.push(x));
     }
   }
+  /* why pending, from the build; a database without model_pnl_states.sql says so and the rest stands */
+  out.reasons_updated = 0;
+  try {
+    const why = reasonRows(L);
+    for (let i = 0; i < why.length; i += size) {
+      const res = await o.db.rpc('public', 'model_pnl_reasons', { p_rows: why.slice(i, i + size) });
+      out.reasons_updated += (res && res.updated) || 0;
+    }
+    out.reasons = true;
+  } catch (e) { out.reasons = false; out.reasons_error = String(e.message || e).slice(0, 160); }
   try { await o.db.rpc('public', 'model_pnl_refresh', {}); out.refreshed = true; } catch (e) { out.refreshed = false; out.refresh_error = String(e.message || e).slice(0, 160); }
   return out;
 }
@@ -62,14 +81,16 @@ async function main() {
   if (!cfg) { console.log('[pnl sync] SB_URL / SB_SERVICE_ROLE are not set: nothing written (the page reads record/pnl/)'); return 0; }
   try {
     const r = await sync({ season, chunk: Number(arg('chunk', 200)), db: PGR.client(cfg) });
-    console.log('[pnl sync] ' + season + ': ' + r.rows + ' rows · inserted ' + r.inserted + ' · updated ' + r.updated + ' · unchanged ' + r.unchanged + ' · refused ' + r.refused.length + (r.refreshed ? ' · daily series refreshed' : ' · daily series not refreshed (' + (r.refresh_error || '') + ')'));
+    console.log('[pnl sync] ' + season + ': ' + r.rows + ' rows · inserted ' + r.inserted + ' · updated ' + r.updated + ' · unchanged ' + r.unchanged + ' · refused ' + r.refused.length
+      + (r.reasons ? ' · pending reasons moved on ' + r.reasons_updated : ' · pending reasons not sent (' + (r.reasons_error || '') + ' — apply supabase/model_pnl_states.sql)')
+      + (r.refreshed ? ' · daily series refreshed' : ' · daily series not refreshed (' + (r.refresh_error || '') + ')'));
     r.refused.slice(0, 20).forEach((x) => console.log('  ✗ ' + x.recommendation_id + ': ' + x.error));
     return 0;
   } catch (e) {
-    console.log('[pnl sync] ' + String(e.message || e).slice(0, 300) + ' — apply supabase/model_pnl.sql and model_pnl_analytics.sql');
+    console.log('[pnl sync] ' + String(e.message || e).slice(0, 300) + ' — apply supabase/model_pnl.sql, model_pnl_states.sql and model_pnl_analytics.sql');
     return 0;
   }
 }
 
-module.exports = { sync, tableRows };
+module.exports = { sync, tableRows, reasonRows };
 if (require.main === module) main().then((c) => process.exit(c || 0));

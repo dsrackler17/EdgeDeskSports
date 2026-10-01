@@ -624,6 +624,20 @@ if (DEC.engine === D.VERSION) {
   chk('decisions.json (v2): every evaluable game reaches BET / LEAN / WATCH / PASS', DEC.decisions.every((d) => d.evaluation_status !== 'EVALUABLE' || d.decision !== 'NO_DECISION'));
 }
 
+section('a finished game is graded even when no closing line was captured');
+{
+  const DJ = require(path.join(ROOT, 'football', 'cfb_terminal', 'decisions.js'));
+  const K0 = '2026-10-03T19:30:00.000Z', fin = { status: 'FINAL', final_margin: 7 }, close = { home_line: -3.5 };
+  const at = (h) => new Date(Date.parse(K0) + h * 3600e3).toISOString();
+  chk('final + close: graded at once', DJ.gradeable(fin, close, K0, at(4)) === true);
+  chk('final, no close yet: waits for the close inside the window', DJ.gradeable(fin, null, K0, at(DJ.CLOSE_WAIT_HOURS - 1)) === false);
+  chk('final, no close after the window: graded (no CLV), never pending forever', DJ.gradeable(fin, null, K0, at(DJ.CLOSE_WAIT_HOURS)) === true);
+  chk('no final: never graded, close or not', DJ.gradeable({ status: 'IN_PROGRESS', final_margin: null }, close, K0, at(100)) === false && DJ.gradeable(null, close, K0, at(100)) === false);
+  const BTk = require(path.join(ROOT, 'lib', 'edgedesk_decision_track.js'));
+  const g = BTk.grade({ side: 'home', line: -3.5, odds: -110, units: 0.5 }, { line: null }, { home_margin: 7 });
+  chk('graded without a close: the result and units, CLV left unknown (null)', g.result === 'win' && g.clv_points === null && g.units_won > 0, g);
+}
+
 /* ------------------------------------------------------------------ out */
 if (VERBOSE) [A1, A2, Bd, Cd, Dd, Ed, Fd, Hu, Jd, giant, guard, Ld].forEach((d) => console.log(JSON.stringify(brief(d))));
 failures.forEach((f) => console.log('FAIL | ' + f));
