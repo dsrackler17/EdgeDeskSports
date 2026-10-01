@@ -21,8 +21,8 @@
   "game_time": "2026-10-04T02:30:00.000Z",
   "game_when_label": "2026-10-04 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T05:41:18.618Z",
-  "generated_at": "2026-10-01T05:41:18.618Z",
+  "updated_at": "2026-10-01T13:02:40.989Z",
+  "generated_at": "2026-10-01T13:02:40.989Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -115,22 +115,22 @@
         "note": "Quoted from San Diego State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 83,
-      "inputs_reached_pct": 73,
+      "inputs_reached_pct": 81,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 5
         },
         "absent": [
@@ -139,18 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for San Diego State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Texas State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
           },
           {
             "field": "qb_availability",
@@ -1443,7 +1431,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 32h old",
+          "text": "odds is 39h old",
           "widening": null
         },
         {
@@ -1493,18 +1481,6 @@
           "label": "missing",
           "text": "weather not supplied",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1515,14 +1491,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1570,7 +1538,7 @@
       "total_market": "58.5",
       "book": "captured consensus (stale) · 2 books · best at theScore Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "32 hours old",
+      "capture_age": "39 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1620,11 +1588,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 80,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "80 · STRONG",
-        "sub": "main deduction: Texas State’s availability sources refused",
-        "score": 80,
+        "text": "84 · STRONG",
+        "sub": "main deduction: the projected spread moves ±2.33 pts (1 SD) across 64 perturbation scenarios (largest source",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1638,7 +1606,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9,
+            "score": 12.4,
             "max": 20
           },
           {
@@ -1650,13 +1618,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 12.9,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.7,
+            "score": 14.6,
             "max": 15
           },
           {
@@ -1666,23 +1634,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Texas State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Texas State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "the projected spread moves ±2.33 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.48 pts)",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Restore an injury/availability source for Texas State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm San Diego State’s QB availability",
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Restore an injury/availability source for San Diego State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm Texas State’s QB availability",
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1716,9 +1684,9 @@
         "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 47 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "LOW",
@@ -1930,6 +1898,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T05:41:18.618Z"
+    "at": "2026-10-01T13:02:40.989Z"
   }
 }
