@@ -74,6 +74,27 @@ The analytics file adds:
 
 Run the core file first; the analytics file's guard says so. Report rows should all read `ok`. Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pnl/DESIGN.md`.
 
+### `pnl_grades.sql` + `pnl_grades_sync.sql` + `pnl_grades_analytics.sql` — P&L of every flagged edge
+
+`pnl_grades` holds one row per flag in `signals`, keyed by `sig_key` (primary key and a foreign key to `signals`), so a flag can never be graded twice. Run the three files in that order; each guard names the one it needs.
+
+- **1u flat at `flagged_best_dec`, the price frozen at the flag.** Never the close, never a later price, never `first_best_dec`.
+  - Win = price − 1 (= odds/100 or 100/|odds|), loss −1, push 0 (risked and returned), void excluded and counted.
+  - No flag price → `ungraded_missing_price`, never estimated.
+- **The verdict is the board's BET / LEAN at the moment of the flag.** It is rebuilt from the frozen `flagged_*` inputs with app.html's own rule (`pnl_verdict_at_flag`). A pre-v9 flag is UNLABELLED, and a flag the board would have shown as PASS is `not_a_bet`.
+- **Synced by trigger.** After insert/update on `signals`, in the same transaction that flags or settles a row, so `capture`, `close` and the deployed `settle` are unchanged. A P&L fault never fails the signals write: it is logged to `pnl_grades_errors`.
+- **History is a backfill.**
+  - `select * from pnl_grades_backfill(false)` is the dry run (writes nothing; counts, totals per sport, a 20-row sample). `(true)` commits.
+  - It is idempotent and service role only.
+  - Every change to a written row goes to `pnl_grades_history` (append-only), and `calc_version` names the arithmetic.
+- **Reading it.**
+  - `pnl_summary` (anon): W-L-P, units, ROI, at-close comparison and every ungraded/void count, by sport × verdict × market type × all-time/month/week/day.
+  - `pnl_reconciliation()` (anon, counts only): settled flags with no P&L row must be 0. It is shown in the app's Records → Pipeline health.
+- **RLS:** anyone reads a started or settled game, the live board stays private, and no client writes.
+- `audits/pnl_grades_check.sql` is the read-only production check (10-row hand check, summary vs raw sum, reconciliation).
+
+Report rows should all read `ok`. Tested against a real PostgreSQL by `tools/record/pnl_grades_sql.test.js` and in Chromium by `tools/record/edge_pnl_ui.test.js`; see `docs/pnl/GRADES.md`.
+
 ### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
 Everything personal used to live in one browser. This gives each reader rows on
 their account, under row level security on `auth.uid()`, and nothing takes a

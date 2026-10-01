@@ -38,7 +38,7 @@ Left out on purpose, and counted on the page with the reason:
 - **Lab replays** (`origin: REPLAY`). These are backtests, not recommendations that existed at the time.
 - **The shadow CFB decision engine** (`football/cfb_decision/`). Its calls are not published recommendations.
 
-Also left out: `signals`, the edges record, which already carries its own flat-1u simulation, and the per-reader AI-desk tables (`stake_recommendations`, `recommendation_ledger`). Those are one reader's own answers, not the public model's recommendations.
+Also left out: `signals`, the edges record — its P&L is its own DB-native ledger, `pnl_grades` ([`GRADES.md`](GRADES.md)), 1u at the flag price with the board's BET/LEAN at the flag — and the per-reader AI-desk tables (`stake_recommendations`, `recommendation_ledger`). Those are one reader's own answers, not the public model's recommendations.
 
 ## The rules
 

@@ -14,7 +14,13 @@ on:
       - 'lib/edgedesk_pnl*.js'
       - 'lib/edgedesk_pnl.css'
       - 'tools/record/pnl*'
+      - 'tools/record/edge_pnl*'
+      - 'lib/edgedesk_edge_pnl*'
       - 'supabase/model_pnl*.sql'
+      - 'supabase/pnl_grades*.sql'
+      - 'supabase/audits/pnl_grades_check.sql'
+      - 'supabase/capture_v9_qualification.sql'
+      - 'supabase/close_v7_parity.sql'
       - 'record/pnl/**'
       - 'football/props/grade.js'
       - 'football/props/verify_ledger.js'
@@ -25,8 +31,11 @@ on:
     branches: [main]
     paths:
       - 'lib/edgedesk_pnl*.js'
+      - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
+      - 'tools/record/edge_pnl*'
       - 'supabase/model_pnl*.sql'
+      - 'supabase/pnl_grades*.sql'
   workflow_dispatch:
 
 permissions:
@@ -53,9 +62,15 @@ jobs:
         env:
           PNL_SQL_REQUIRED: '1'
         run: node tools/record/pnl_sql.test.js
+      - name: The edge P&L in the database (pnl_grades on signals; odds math, verdict at flag, dry run, idempotent backfill, settlement trigger, reconciliation, summary = raw sum, RLS)
+        env:
+          PNL_SQL_REQUIRED: '1'
+        run: node tools/record/pnl_grades_sql.test.js
       - name: Playwright and Chromium
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
       - name: The Record's P&L section in a real browser (record.html and the app, 375 / 390 / 430 / 768 / 1440 px)
         run: node tools/record/pnl_ui.test.js
+      - name: The edge P&L on the pages, fed by the real database (record.html #edge-pnl and the app's Records, 375 / 768 / 1440 px)
+        run: node tools/record/edge_pnl_ui.test.js

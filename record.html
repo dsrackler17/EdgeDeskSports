@@ -7,6 +7,7 @@
 <meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
+<link rel="stylesheet" href="/lib/edgedesk_edge_pnl.css?v=20261001a">
 <!-- NO LOGIN GATE. That is the entire point of this file.
      app.html redirects logged-out visitors to index.html. Its own gate comment
      says "this is a UX funnel, not a data paywall — the anon key still reads
@@ -171,6 +172,7 @@ footer a:hover{color:var(--text)}
   <div class="wrap nav-in">
     <a class="logo" href="./index.html"><span class="mk"></span>EdgeDesk <small>record</small></a>
     <span class="nav-sp"></span>
+    <a class="nlink hideS" href="#edge-pnl">Edge P&amp;L</a>
     <a class="nlink hideS" href="#briefs">Published briefs</a>
     <a class="nlink hideS" href="#cfb-model-lab">CFB Model Lab</a>
     <a class="nlink hideS" href="#pnl">Profit &amp; loss</a>
@@ -198,6 +200,23 @@ footer a:hover{color:var(--text)}
     <div id="recBasis"></div>
     <div class="kpis" id="recKpis"></div>
     <div class="edrec-note" id="recScope"></div>
+  </div>
+</section>
+
+<section class="sec" id="edge-pnl">
+  <div class="wrap">
+    <span class="ey">Profit &amp; loss · every flagged edge · at the price we flagged it</span>
+    <h2>If you had bet 1 unit on every edge we flagged</h2>
+    <p class="sub">The same flagged edges as the closing line value above, settled as bets. <b style="color:var(--text)">BET</b> is EdgeDesk&rsquo;s strongest call: sharp-confirmed, a 3%+ edge at a US-regulated book with 5+ books behind the price. <b style="color:var(--text)">LEAN</b> is a qualified edge with a caveat. Each is the label the board showed at the moment it flagged, and the price is the one it flagged at: never the close, never a later number. Player props and game decisions keep their own ledger <a href="#pnl" style="color:var(--accent)">further down</a>.</p>
+    <div class="edp-method" id="edpMethod">1 unit flat stake at the price when flagged. Pushes = 0. Missing prices are not estimated.</div>
+    <div id="edpPub">
+      <div class="edrec-chips" data-edp="chips"></div>
+      <div data-edp="head"></div>
+      <div data-edp="cards"><div class="edrec-empty">Loading the profit &amp; loss of every flagged edge…</div></div>
+      <div data-edp="chart"></div>
+      <div data-edp="counts"></div>
+      <div data-edp="table"></div>
+    </div>
   </div>
 </section>
 
@@ -4944,6 +4963,18 @@ async function load(){
 $('yr').textContent=new Date().getFullYear();
 renderRecScope();
 load();
+</script>
+<!-- EDGE P&L (#edge-pnl): every flagged edge, 1u at the flag price, read straight
+     from public.pnl_summary (supabase/pnl_grades*.sql). No edit step, no login. -->
+<script src="/lib/edgedesk_edge_pnl.js?v=20261001a"></script>
+<script>
+(function () {
+  var host = document.getElementById('edpPub');
+  if (host && window.EDEdgePnl) window.EDEdgePnl.mount(host, {
+    get: sbGet, archive: REC_ARCHIVE,
+    dropRetired: function (rows) { return EDSPORTS.dropRetired(rows); }
+  });
+})();
 </script>
 <!-- PROFIT & LOSS (#pnl): public, units only, no login — the committed record/pnl/ rendered by lib/edgedesk_pnl_ui.js -->
 <script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
