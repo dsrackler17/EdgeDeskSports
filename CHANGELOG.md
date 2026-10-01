@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-01 — the landing board holds its own size
+
+The 17:03 Player props rebuild wrote `football/home/board.json` at 75,707 bytes, over the 64 KB the landing page allows. That turned Funnel tests and Collective suites red on `main`. Nothing was wrong with the data: a full NFL week plus a college week put props on 79 games, and `LIMITS` capped the cards per game but not the number of games.
+
+- **A size budget in the build** (`tools/home/build_home.js`, `fit`). Past 60 KB, the games furthest from kickoff give up their prop cards first. Each keeps its counts, and the page uses the research state's own props for that card. The cross-league top 12 is never trimmed. Items nothing points at any more are dropped. What was taken is counted in `props.counts.trimmed`.
+- **The board rebuilt** with the budget: 61,009 bytes. All 79 games keep their counts; the 8 latest lose their cards.
+- **Unchanged:** the page, the limits per game, the top list and every number on the board.
+- **Tests** (`tools/home/home.test.js`): a 120-game week built from a real research-grade opportunity, with these checks:
+  - it is over 64 KB without the budget and under it with;
+  - the top list is untouched and every id resolves;
+  - no item is left that nothing points at;
+  - the latest games lose their cards first and keep their counts;
+  - the trim is counted, and the build is deterministic.
+
 ## 2026-10-01 — the football record is graded in units; Profit & Loss is part of the record
 
 Every graded pick in the football model record now carries a profit or loss, and the Record tab shows it beside every win–loss figure. The separate Profit & Loss tab is gone: its content is the last part of the football record.
