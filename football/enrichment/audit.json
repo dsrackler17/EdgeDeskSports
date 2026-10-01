@@ -1,15 +1,15 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-01T14:28:42.129Z",
+ "generated_at": "2026-10-01T16:43:35.726Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-01T14:28:42.129Z",
-  "reliability_generated_at": "2026-10-01T14:28:42.129Z",
-  "enrichment_generated_at": "2026-10-01T14:28:33.846Z",
+  "at": "2026-10-01T16:43:35.726Z",
+  "reliability_generated_at": "2026-10-01T16:43:35.726Z",
+  "enrichment_generated_at": "2026-10-01T16:43:27.672Z",
   "counts": {
    "games": 117,
-   "mean": 85.5,
-   "median": 88,
+   "mean": 85.4,
+   "median": 87,
    "by_band": {
     "VERY_STRONG": 16,
     "LOW": 3,
@@ -20,11 +20,11 @@
    "missing_qb_status": 190,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 21,
+   "games_lacking_injury_information": 23,
    "unrated_meaningful_absences": 436,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 60,
+   "stale_evidence_records": 62,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -713,12 +713,12 @@
    },
    "401858246": {
     "game": "Boston College @ SMU",
-    "score": 89,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
+     "availability": 6,
      "stability": 2.5,
-     "availability": 4.6,
-     "qb_status": 2,
+     "qb_status": 4,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
@@ -728,8 +728,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858247": {
@@ -820,12 +820,12 @@
    },
    "401858251": {
     "game": "Stanford @ Wake Forest",
-    "score": 88,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
+     "availability": 6,
      "stability": 2.7,
-     "availability": 4.6,
-     "qb_status": 2,
+     "qb_status": 4,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
@@ -835,8 +835,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858252": {
@@ -2653,7 +2653,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-01T13:44:16.806Z",
+  "at": "2026-10-01T14:28:42.129Z",
   "counts": {
    "games": 117,
    "mean": 85.5,
@@ -2672,7 +2672,7 @@
    "unrated_meaningful_absences": 436,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 42,
+   "stale_evidence_records": 60,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -2680,35 +2680,13 @@
  },
  "what_improved": [],
  "what_degraded": [
-  "+18 stale evidence records (42 → 60)"
+  "-0.1 mean reliability (85.5 → 85.4)",
+  "-1 median reliability (88 → 87)",
+  "+2 games lacking injury information (21 → 23)",
+  "+2 stale evidence records (60 → 62)"
  ],
  "why": [],
  "history": [
-  {
-   "at": "2026-09-26T05:08:46.706Z",
-   "counts": {
-    "games": 126,
-    "mean": 81.6,
-    "median": 85,
-    "by_band": {
-     "VERY_STRONG": 14,
-     "ADEQUATE": 15,
-     "STRONG": 78,
-     "LOW": 15,
-     "CAUTION": 4
-    },
-    "missing_qb_status": 203,
-    "qb_conflicts_open": 9,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 351,
-    "fcs_games_thin_data": 15,
-    "games_under_two_market_sources": 126,
-    "stale_evidence_records": 11,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-26T09:56:54.930Z",
    "counts": {
@@ -4137,6 +4115,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 117,
     "stale_evidence_records": 60,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-01T16:43:35.726Z",
+   "counts": {
+    "games": 117,
+    "mean": 85.4,
+    "median": 87,
+    "by_band": {
+     "VERY_STRONG": 16,
+     "LOW": 3,
+     "STRONG": 80,
+     "ADEQUATE": 15,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 190,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 23,
+    "unrated_meaningful_absences": 436,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
+    "stale_evidence_records": 62,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
