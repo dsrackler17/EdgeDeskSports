@@ -91,8 +91,10 @@ function build() {
 --                      event's commence_time (5/15/45/90/180/360 min); modal
 --                      rows preferred; books-weighted mode (ties broken here
 --                      by the unweighted median — the browser weights it); no
---                      fresh row -> the same over every row, STALE; no row ->
---                      cfb.lines (no timestamp), STALE
+--                      fresh row -> the same over the newest capture's rows
+--                      (fbLatestCapture: within 5 min of the newest
+--                      last_seen_at), STALE; no row -> cfb.lines (no
+--                      timestamp), STALE
 --   buildSlate         not completed, kickoff in [now - 6 h, now + 10 d]
 -- THE TARGET RULE (what the fix installs; C and D measure against it):
 --   latest quote per (source, book) in cfb_lab_market_quotes — heartbeats
@@ -388,7 +390,8 @@ srows2 as (
   where r.side is not null
 ),
 sgame as (select game_id, bool_or(fresh) as any_fresh, max(last_seen_at) as newest_seen from srows2 group by game_id),
-suse as (select r.* from srows2 r join sgame g using (game_id) where r.fresh or not g.any_fresh),
+suse as (select r.* from srows2 r join sgame g using (game_id)
+  where r.fresh or (not g.any_fresh and r.last_seen_at >= g.newest_seen - interval '5 minutes')),
 suse2 as (select u.* from suse u where u.modal or not exists (select 1 from suse u2 where u2.game_id = u.game_id and u2.modal)),
 smed as (select game_id, percentile_cont(0.5) within group (order by v) as med from suse group by game_id),
 swt as (select game_id, v, sum(w) as wsum from suse2 group by game_id, v),

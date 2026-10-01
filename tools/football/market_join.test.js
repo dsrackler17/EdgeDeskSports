@@ -40,7 +40,8 @@ function chk(name, ok, detail) {
 }
 function section(t) { console.log('  · ' + t); }
 
-const BOOT = M.boot({ probe: ['fbMarketFromEvent', 'fbBooksBehind', 'fbWMedian', 'fbNflMarketFor', 'fbNflMarketSelfCheck', 'fbNflSelfCheckHTML', 'fbNflResearchState', 'FB_CODE_NAMES'] });
+const BOOT = M.boot({ probe: ['fbMarketFromEvent', 'fbBooksBehind', 'fbWMedian', 'fbNflMarketFor', 'fbNflMarketSelfCheck', 'fbNflSelfCheckHTML', 'fbNflResearchState', 'FB_CODE_NAMES',
+  'fbLatestCapture', 'fbPriceRefresh', 'FB_PRICE_REFRESH_MS'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 ['function _escHtml(', 'function edEsc('].forEach((sig) => {
@@ -117,7 +118,7 @@ section('4. no current quote: STALE, never current');
 {
   const old = AUDIT.rows.map((r) => Object.assign({}, r, { last_seen_at: ago(60 * 30) }));
   const m = T.fbMarketFromEvent({ home: SEA, away: LAC, t: KICK, rows: old }, SEA);
-  chk('every row older than the freshness window: the consensus of all rows, marked stale', m.stale === true && m.spread_line === 7 && m.spread_consensus.current === false, m.spread_consensus);
+  chk('every row older than the freshness window: the consensus of the last capture, marked stale', m.stale === true && m.spread_line === 7 && m.spread_consensus.current === false, m.spread_consensus);
   const S = win.FB.nfl;
   const g = { game_id: 'MJ2', season: 2026, week: 4, home_team: 'SEA', away_team: 'LAC', gameday: KICK.slice(0, 10), spread_line: -7, total_line: 42.5 };
   S.up = [{ g, t: Date.parse(KICK), week: 4, done: false }]; S.sig = {};
@@ -168,5 +169,108 @@ section('6. how many books: distinct books, never the sum of every row');
   chk('the research state (card and drivers) counts its books by the same rule', /books=fbBooksBehind\(\(fbP4QuotesFor\(/.test(rs));
 }
 
-console.log((fail ? 'FAILED ' : 'ALL GREEN ') + 'market join — ' + pass + ' passed, ' + fail + ' failed');
-if (fail) { failures.forEach((x) => console.log('  ✗ ' + x)); process.exit(1); }
+/* ---------------------------------------------------------------------- */
+section('7. stale quotes: the LAST capture, never every row on file (audit 2026-10-01)');
+{
+  /* Thursday night, PIT @ CLE, ten hours out: the morning's quotes have aged
+     past the 90-minute rung. `signals` still holds every point the line has
+     passed through — the opener at CLE -1 and a stop at PK, each dealt by
+     six books — beside the last capture at PIT -3 (eight books) and -2.5
+     (two). The old fallback took the books-weighted median of ALL of it:
+     +1 against a main line of +3, and the game read MARKET FAULT. */
+  const CLE = T.FB_CODE_NAMES.CLE || 'Cleveland Browns', PIT = T.FB_CODE_NAMES.PIT || 'Pittsburgh Steelers';
+  const K3 = new Date(NOW + 10 * 3600e3).toISOString();
+  const rows = [
+    row(CLE, -1, 6, 60 * 30, { point_is_modal: true }), row(PIT, 1, 6, 60 * 30, { point_is_modal: true }),
+    row(CLE, 1, 6, 60 * 20, { point_is_modal: true }), row(PIT, -1, 6, 60 * 20, { point_is_modal: true }),
+    row(CLE, 3, 8, 180, { point_is_modal: true }), row(PIT, -3, 8, 180, { point_is_modal: true }),
+    row(CLE, 2.5, 2, 180), row(PIT, -2.5, 2, 180),
+    { market: 'h2h', selection: CLE, best_dec: 1.95, first_best_dec: 1.95, last_seen_at: ago(60 * 30), first_seen_at: ago(60 * 31) },
+    { market: 'h2h', selection: PIT, best_dec: 1.95, first_best_dec: 1.95, last_seen_at: ago(60 * 30), first_seen_at: ago(60 * 31) },
+    { market: 'h2h', selection: CLE, best_dec: 2.3, first_best_dec: 1.95, last_seen_at: ago(180), first_seen_at: ago(60 * 31) },
+    { market: 'h2h', selection: PIT, best_dec: 1.65, first_best_dec: 1.95, last_seen_at: ago(180), first_seen_at: ago(60 * 31) }
+  ];
+  const all = [{ v: -1, w: 12 }, { v: 1, w: 12 }, { v: 3, w: 16 }, { v: 2.5, w: 4 }];
+  chk('the old rule\'s answer, reproduced: the median of every row on file is +1, two points off the +3 main line', T.fbWMedian(all) === 1);
+  const m = T.fbMarketFromEvent({ home: CLE, away: PIT, t: K3, rows }, CLE);
+  chk('the market is the last capture: PIT -3 (home +3), marked stale', m.stale === true && m.spread_line === -3 && m.spread_consensus.home_line === 3 && m.spread_consensus.current === false, m.spread_consensus);
+  chk('…checked against the median of that same capture: no MARKET FAULT', m.consensus_fault === null && m.spread_consensus.home_line_median === 3, [m.consensus_fault, m.spread_consensus]);
+  chk('…timestamped by that capture', m.at === rows[4].last_seen_at, m.at);
+  chk('…and the moneyline is that capture\'s price on BOTH sides, not the best price ever seen', JSON.stringify(m.quotes_h2h) === JSON.stringify([[2.3, 1.65]]), m.quotes_h2h);
+  const S = win.FB.nfl;
+  const g = { game_id: 'MJ7', season: 2026, week: 4, home_team: 'CLE', away_team: 'PIT', gameday: K3.slice(0, 10), spread_line: 3, total_line: 38.5 };
+  S.up = [{ g, t: Date.parse(K3), week: 4, done: false }];
+  S.sig = { 't:MJ7': { home: CLE, away: PIT, t: K3, rows } };
+  chk('the NFL self-check passes: aged quotes are STALE, not a MARKET FAULT', T.fbNflMarketSelfCheck().ok === true && T.fbNflSelfCheckHTML() === '', T.fbNflMarketSelfCheck());
+  const M7 = T.fbNflMarketFor(g, Date.parse(K3));
+  const st = T.fbNflResearchState({ status: 'PREDICTED', model: { fair_spread: 0.8 }, market: { spread_gap: 0.8 - M7.mkt.spread_line } }, M7.mkt, null);
+  chk('…and the game reads STALE MARKET, not MARKET FAULT', st.label === 'STALE MARKET' && st.rule === 'stale_market', st);
+  /* the snapshot rule itself */
+  const L = T.fbLatestCapture;
+  chk('one run\'s rows share a stamp; rows within five minutes of the newest are that run', L([{ at: ago(60) }, { at: ago(62) }, { at: ago(70) }, { at: null }]).length === 2
+    && L([{ at: ago(60) }, { at: ago(65) }]).length === 2 && L([{ at: ago(60) }, { at: ago(65.1) }]).length === 1);
+  chk('…and with no stamp anywhere, every row stands (nothing to order them by)', L([{ at: null }, {}]).length === 2 && L([]).length === 0);
+}
+
+/* ---------------------------------------------------------------------- */
+section('8. an open tab re-reads the prices on its own (audit 2026-10-01)');
+(async () => {
+  /* the tab loaded at breakfast: its quotes are three hours old, the
+     re-learn waits six, and capture re-priced the game half an hour ago */
+  const CLE = T.FB_CODE_NAMES.CLE || 'Cleveland Browns', PIT = T.FB_CODE_NAMES.PIT || 'Pittsburgh Steelers';
+  const K8 = new Date(NOW + 10 * 3600e3).toISOString();
+  const S = win.FB.nfl, F = win.FB;
+  const g = { game_id: 'MJ8', season: 2026, week: 4, home_team: 'CLE', away_team: 'PIT', gameday: K8.slice(0, 10), spread_line: 3, total_line: 38.5 };
+  const evRow = (sel, point, books, seenMin, o) => Object.assign(row(sel, point, books, seenMin, o), { event_id: 'ev8', home_team: CLE, away_team: PIT, commence_time: K8 });
+  const morning = [evRow(CLE, 3, 8, 180, { point_is_modal: true }), evRow(PIT, -3, 8, 180, { point_is_modal: true })];
+  const now = [evRow(CLE, 3, 8, 30, { point_is_modal: true }), evRow(PIT, -3, 8, 30, { point_is_modal: true })];
+  function stage() {
+    S.up = [{ g, t: Date.parse(K8), week: 4, done: false }];
+    S.sig = { ev8: { home: CLE, away: PIT, t: K8, rows: morning } };
+    S.state = S.state || {}; S.notes = [];
+    S.pricesAt = Date.now() - 3 * 3600e3; F.at = Date.now() - 3 * 3600e3; F.loading = null; F._priceP = null;
+    F._pred = { cached: true };
+  }
+  let reads = 0, answer = () => Promise.resolve(now);
+  win.sbGet = (q) => { reads++; return /sport_key=eq\.americanfootball_nfl/.test(q) ? answer() : Promise.resolve([]); };
+  win.RESEARCH_SUB = 'football';
+
+  stage();
+  chk('before: every quote the tab holds is past its limit, so the market reads STALE', T.fbNflMarketFor(g, Date.parse(K8)).mkt.stale === true);
+  const ok = await T.fbPriceRefresh();
+  chk('the five-minute cadence', T.FB_PRICE_REFRESH_MS === 5 * 60e3);
+  chk('the refresh re-reads the captured quotes and swaps them in', ok === true && reads >= 1 && S.sig.ev8 && S.sig.ev8.rows[0].last_seen_at === now[0].last_seen_at, S.sig);
+  chk('…the market is current again: no STALE_QUOTE on a game capture re-priced thirty minutes ago', T.fbNflMarketFor(g, Date.parse(K8)).mkt.stale === false);
+  chk('…the projection cache is dropped (it carries the odds stamp)', !F._pred.cached);
+  chk('…and the price stamp moves, so the next read waits its five minutes', Date.now() - S.pricesAt < 5000);
+  reads = 0;
+  chk('not due yet: no read', (await T.fbPriceRefresh()) === false && reads === 0);
+
+  stage(); answer = () => Promise.reject(new Error('db 503'));
+  const bad = await T.fbPriceRefresh();
+  chk('a failed read keeps the quotes the tab holds (they age into STALE on their own stamps)', bad === false && S.sig.ev8.rows === morning && F._pred.cached === true);
+  chk('…and the next tick tries again', F._priceP === null && Date.now() - S.pricesAt > 3600e3);
+
+  stage(); answer = () => Promise.resolve(now); reads = 0;
+  F.loading = Promise.resolve();
+  chk('a full reload in flight brings its own read: the refresh stands aside', (await T.fbPriceRefresh()) === false && reads === 0);
+  F.loading = null;
+
+  stage(); reads = 0; win.RESEARCH_SUB = 'tennis';
+  chk('another module on screen: nothing is read', (await T.fbPriceRefresh()) === false && reads === 0);
+  win.RESEARCH_SUB = 'football';
+
+  stage(); reads = 0;
+  const slow = new Promise((res) => setTimeout(() => res(now), 20));
+  answer = () => slow;
+  const pend = T.fbPriceRefresh();
+  F.at = Date.now();  /* a full reload landed while the read was in flight */
+  chk('a read overtaken by a full reload is dropped, never written over the newer one', (await pend) === false && S.sig.ev8.rows === morning);
+
+  const APP = BOOT.module.replace(/\s+/g, '');
+  chk('the refresh runs on its own clock and when the tab comes back', /setInterval\(fbPriceRefresh,60e3\)/.test(APP) && /if\(!document\.hidden\)fbPriceRefresh\(\)/.test(APP));
+  chk('the college board re-reads its quotes too, and drops the projection caches that took the old market', /fbSignalsRead\('americanfootball_ncaaf'\)/.test(APP) && /P\._pc=null;P\._pcm=null;P\._proj=null;P\._mkt=null;/.test(APP));
+})().catch((e) => chk('the price refresh ran', false, String(e && e.stack || e))).then(() => {
+  console.log((fail ? 'FAILED ' : 'ALL GREEN ') + 'market join — ' + pass + ' passed, ' + fail + ' failed');
+  if (fail) { failures.forEach((x) => console.log('  ✗ ' + x)); process.exit(1); }
+});

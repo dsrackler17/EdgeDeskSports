@@ -38,6 +38,7 @@
     "football:alternates:feed": "node football/cfb_terminal/alternates.js --feed-only --league cfb && node football/cfb_terminal/alternates.js --feed-only --league nfl",
     "football:ev:test": "node tools/football/quote_ev.test.js && node football/cfb_terminal/alternates.test.js",
     "football:ev:e2e": "node tools/football/quote_ev_ui.e2e.js",
+    "football:prices:e2e": "node tools/football/price_refresh.e2e.js",
     "cfb:lab:verify": "node football/cfb_lab/ledger.js verify",
     "cfb:lab:test": "node football/cfb_lab/tests.js && node football/cfb_lab/backfill.test.js && node football/cfb_lab/capture_feed.test.js && node football/cfb_lab/sql.test.js && node football/cfb_lab/ui.test.js && node football/cfb_lab/record_section.test.js && node football/cfb_lab/integrity.test.js && node football/cfb_lab/chaos.test.js && node football/cfb_lab/providers.test.js && node football/cfb_lab/sign_suite.test.js && node football/cfb_lab/frontend_contract.test.js && node football/cfb_lab/explain_guard.test.js && node football/cfb_lab/integrity_sql.test.js && node football/cfb_decision/integrity_gates.test.js && node football/cfb_market/sync.test.js",
     "cfb:lab:sync": "node football/cfb_lab/sync_supabase.js",

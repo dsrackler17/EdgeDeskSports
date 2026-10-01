@@ -47976,8 +47976,12 @@ function fbEnsureEngine(){
    depended on how Postgres happened to lay them out (audit 2026-09-30: SEA
    -3.0 and BUF -3.0 on a board whose books were at -6.5/-7). The capture's
    own modal-point flag (point_is_modal, supabase/capture_v9_qualification.sql)
-   is read too, so the main line can be told from an alternate. */
-function fbSignals(sportKey,signal){
+   is read too, so the main line can be told from an alternate.
+   fbSignals answers {} on a failed read (the board loads either way);
+   fbSignalsRead rejects, so the price refresh (fbPriceRefresh) can keep the
+   quotes it already holds rather than replace them with nothing. */
+function fbSignals(sportKey,signal){return fbSignalsRead(sportKey,signal).catch(function(){return {};});}
+function fbSignalsRead(sportKey,signal){
   var nowIso=new Date().toISOString();
   var hiIso=new Date(Date.now()+FB_LOOKAHEAD_D*864e5).toISOString();
   var q='signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,n_books,home_team,away_team,commence_time,last_seen_at,point_is_modal,modal_point'
@@ -47993,7 +47997,7 @@ function fbSignals(sportKey,signal){
     var ev={};
     (rows||[]).forEach(function(r){(ev[r.event_id]=ev[r.event_id]||{home:r.home_team,away:r.away_team,t:r.commence_time,rows:[]}).rows.push(r);});
     return ev;
-  }).catch(function(){return {};});
+  });
 }
 /* THE MARKET A GAP IS MEASURED AGAINST (audit 2026-09-30).
 
@@ -48014,9 +48018,14 @@ function fbSignals(sportKey,signal){
      - consensus_fault: the main line may not sit more than
        EDCanon.THRESHOLDS.market_consensus_pts from the books-weighted median
        of the same current rows (lib/edgedesk_canon.js marketConsensusFault);
-     - no current row: the same consensus over every row on file, marked
-       stale, so the research label reads STALE MARKET and the game leaves
-       the research ranking.
+     - no current row: the same consensus over the rows of the NEWEST
+       capture on file (fbLatestCapture), marked stale, so the research
+       label reads STALE MARKET and the game leaves the research ranking.
+       Never every row on file: `signals` keeps the opener and every point
+       the line has passed through, so after a real line move the
+       books-weighted median of the whole history sits off the last line
+       the books dealt, and a game whose quotes had merely aged read MARKET
+       FAULT and failed the NFL self-check (audit 2026-10-01, PIT @ CLE).
    spreads: home selection point -3 means home -3 -> spread_line=+3 (home must
    win by more than 3), matching the training target convention. */
 function fbMarketFromEvent(e,homeName){
@@ -48049,7 +48058,7 @@ function fbMarketFromEvent(e,homeName){
   /* the main number of a set of rows, by the rule above */
   function main(rows){
     var use=rows.filter(function(x){return x.fresh;}),stale=!use.length;
-    if(stale)use=rows.slice();
+    if(stale)use=fbLatestCapture(rows);
     if(!use.length)return null;
     var modal=use.filter(function(x){return x.modal;}),cand=modal.length?modal:use,med=fbWMedian(use),by={},best=null;
     cand.forEach(function(x){
@@ -48079,7 +48088,7 @@ function fbMarketFromEvent(e,homeName){
   }
   var mt=main(ov);
   if(mt){out.total_line=mt.v;out.total_book=mt.book;if(!out.at)out.at=mt.at;}
-  var hh=h2h.filter(function(x){return x.fresh;});if(!hh.length)hh=h2h;
+  var hh=h2h.filter(function(x){return x.fresh;});if(!hh.length)hh=fbLatestCapture(h2h);
   var decH=null,decA=null,decH0=null;
   hh.forEach(function(x){if(x.home){if(!decH||x.dec>decH){decH=x.dec;decH0=x.dec0;}}else if(!decA||x.dec>decA)decA=x.dec;});
   if(decH&&decA)out.quotes_h2h=[[decH,decA]];
@@ -48088,6 +48097,18 @@ function fbMarketFromEvent(e,homeName){
      difference is like-for-like. */
   if(decH&&decH0&&decH0>1)out.h2h_move={open:1/decH0,now:1/decH,at:out.first_seen};
   return out;
+}
+/* THE LAST BOARD EDGEDESK SAW, for a market with no current quote. One
+   capture run stamps every row it prices with the same last_seen_at, so the
+   rows within five minutes of the newest stamp are that run's board; a row
+   older than that was not on it (the line had moved off that point, or the
+   book had pulled it). Rows with no stamp count only when no row has one.
+   Self-contained: tools/football/cfb_board_repro_app.js lifts it by name. */
+function fbLatestCapture(rows){
+  var SNAPSHOT_MS=5*60e3,newest=-Infinity,i,t;
+  for(i=0;i<rows.length;i++){t=rows[i].at?Date.parse(rows[i].at):NaN;if(isFinite(t)&&t>newest)newest=t;}
+  if(!isFinite(newest))return rows.slice();
+  return rows.filter(function(x){var t2=x.at?Date.parse(x.at):NaN;return isFinite(t2)&&newest-t2<=SNAPSHOT_MS;});
 }
 /* the books-weighted median of a list of {v, w} */
 function fbWMedian(xs){
@@ -48700,7 +48721,7 @@ function fbLoadNfl(signal){
       return Promise.all([fbSignals('americanfootball_nfl',signal),coachingP,injP,venueP]);
     }).then(function(parts){
       var sig=parts[0];
-      S.sig=sig;
+      S.sig=sig;S.pricesAt=Date.now();
       /* the starter the model prices, then each side's regime signal (after the starter is settled) */
       S.inj=parts[2]||null;
       var nsub=fbNflReconcileStarters(S);
@@ -50652,7 +50673,7 @@ function fbP4Load(force,signal){
     FB.p4.linesAll=all;
     return fbSignals('americanfootball_ncaaf',signal);
   }).then(function(sig){
-    FB.p4.sig=sig||{};
+    FB.p4.sig=sig||{};FB.p4.pricesAt=Date.now();
     /* the build's committed inputs, in flight since the load began; the
        venue table the forecasts are located on is the build's merged one */
     return fbP4InputArtifacts(S.season);
@@ -62152,6 +62173,98 @@ function fbAutoRefresh(){
 }
 setInterval(fbAutoRefresh,15*60*1000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)fbAutoRefresh();});
+
+/* ---- keep the PRICES current on their own (audit 2026-10-01) ----------
+   The relearn above was the only thing that re-read the captured quotes, and
+   it waits six hours. A quote is current for 90 minutes a day out, 45 inside
+   six hours and 15 inside two (EDINTEL quote_ttl_buckets), while capture
+   re-prices the board every 10 to 30 minutes. So a Football tab left open
+   aged every quote it held past its limit by mid-morning: Thursday night's
+   game read NO DECISION · STALE_QUOTE on every market thirty minutes after
+   capture had re-priced it. The captured quotes are now re-read on their own
+   five-minute cadence while the module is on screen, without re-running the
+   model's data path, and the board repaints from them. A failed read keeps
+   the quotes already held (they age into STALE by their own timestamps,
+   which is the truthful answer) and is retried on the next tick. */
+var FB_PRICE_REFRESH_MS=5*60e3;
+function fbPricesDue(at){return !at||Date.now()-at>=FB_PRICE_REFRESH_MS;}
+function fbPriceRefresh(){
+  if(FB._priceP)return FB._priceP;
+  try{if(document.hidden||window.RESEARCH_SUB!=='football')return Promise.resolve(false);}catch(_){return Promise.resolve(false);}
+  var S=FB.nfl,P=FB.p4,jobs=[];
+  if(FB.at&&!FB.loading&&S.state&&fbPricesDue(S.pricesAt)){
+    var at0=FB.at;
+    jobs.push(fbSignalsRead('americanfootball_nfl').then(function(sig){
+      /* a full reload that started meanwhile brings its own, newer read */
+      if(FB.loading||FB.at!==at0)return false;
+      S.sig=sig||{};S.pricesAt=Date.now();
+      /* fbPredict caches by line, and its projection carries the odds stamp */
+      FB._pred={};
+      if(Object.keys(S.sig).length)S.notes=(S.notes||[]).filter(function(n){return !/^Live sportsbook prices are not available/.test(n);});
+      return true;
+    },function(){return false;}));
+  }
+  if(P.loadedAt&&!P._loading&&!P.engineErr&&fbPricesDue(P.pricesAt||P.loadedAt)){
+    var p0=P.loadedAt;
+    jobs.push(fbSignalsRead('americanfootball_ncaaf').then(function(sig){
+      if(P._loading||P.loadedAt!==p0)return false;
+      P.sig=sig||{};P.pricesAt=Date.now();
+      /* the per-game projection and market join are cached per load, and the
+         FBS projection takes the market as an input: rebuilt on next read */
+      P._pc=null;P._pcm=null;P._proj=null;P._mkt=null;
+      return true;
+    },function(){return false;}));
+  }
+  if(!jobs.length)return Promise.resolve(false);
+  FB._priceP=Promise.all(jobs).then(function(r){
+    FB._priceP=null;
+    var changed=r.some(Boolean);
+    if(changed)try{fbRepaintKeepingPlace();}catch(_){}
+    return changed;
+  },function(){FB._priceP=null;return false;});
+  return FB._priceP;
+}
+/* Repaint without taking the reader's place: the open sections and the
+   expanded FBS cards come back open, and the scroll position stays. A reader
+   typing into the board is never interrupted: the repaint waits a tick. */
+function fbRepaintKeepingPlace(){
+  var host=$('fbBody');if(!host)return false;
+  try{
+    var ae=document.activeElement;
+    if(ae&&ae!==document.body&&host.contains(ae)&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName||'')){
+      if(!FB._repaintWait)FB._repaintWait=setTimeout(function(){FB._repaintWait=null;fbRepaintKeepingPlace();},60e3);
+      return false;
+    }
+  }catch(_){}
+  var open=[],gates=[],y=null;
+  try{
+    y=window.scrollY;
+    Array.prototype.forEach.call(host.querySelectorAll('details[open]'),function(d){
+      var c=d.parentElement&&d.parentElement.closest?d.parentElement.closest('[id]'):null;if(!c||!c.id)return;
+      open.push([c.id,Array.prototype.indexOf.call(c.querySelectorAll('details'),d)]);
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('[id^="p4gate-"][data-open]'),function(el){gates.push(el.id.slice(7));});
+  }catch(_){}
+  window.renderFootball();
+  gates.forEach(function(gid){
+    /* reopened as fbP4Gate opens it, without counting a second visit */
+    try{
+      var el=document.getElementById('p4gate-'+gid),ar=document.getElementById('p4arr-'+gid),u=null;
+      if(!el||el.getAttribute('data-open'))return;
+      FB.p4.up.forEach(function(x){if(String(x.g.game_id)===String(gid))u=x;});
+      if(!u)return;
+      el.setAttribute('data-open','1');if(ar)ar.textContent='▾';
+      el.innerHTML='<div style="margin:8px 0 12px">'+fbP4Card(u)+(window.fbBriefBtn?fbBriefBtn('cfb',u.g,u):'')+'</div>';
+    }catch(_){}
+  });
+  open.forEach(function(o){
+    try{var c=document.getElementById(o[0]),d=c?c.querySelectorAll('details')[o[1]]:null;if(d)d.open=true;}catch(_){}
+  });
+  try{if(y!=null&&Math.abs(window.scrollY-y)>1)window.scrollTo(0,y);}catch(_){}
+  return true;
+}
+setInterval(fbPriceRefresh,60e3);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)fbPriceRefresh();});
 /* Lab bridge: the Lab's sandbox, scenario, sensitivity and feature tools
    re-run THIS engine on THIS slate. Everything the bridge exposes is a
    function the Football tab already calls; nothing is re-trained. */

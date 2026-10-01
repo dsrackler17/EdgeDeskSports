@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-01 — an open Football tab keeps its prices current; aged quotes are STALE, not a MARKET FAULT
+
+Thursday night's PIT @ CLE read NO DECISION · STALE_QUOTE on every market, and "NFL MARKET SELF-CHECK FAILED" named it as a MARKET FAULT. That was 30 minutes after capture had re-priced the game. Capture and pg_cron were healthy; the fault was in the page (`app.html`).
+
+- **Prices re-read every five minutes** (`fbPriceRefresh`). Before this, an open tab re-read the captured quotes only on its six-hour re-learn. Quotes go stale after 90 minutes a day out, 45 inside six hours and 15 inside two. Now the NFL and FBS boards re-read `signals` every five minutes while the Football module is on screen, and again when the tab comes back to the foreground, then repaint. Open sections, expanded FBS cards and the scroll position are kept. A failed read keeps the quotes already held, which then age into STALE on their own timestamps.
+- **No current quote: the last capture, not every row on file** (`fbLatestCapture`). `signals` keeps the opener and every point a line has passed through. After a line move, the median of that whole history sat off the last line the books dealt, so aged quotes read MARKET FAULT and failed the NFL self-check. The stale fallback now uses only the newest capture run's rows, for spreads, totals and the moneyline. It is still marked STALE and still leaves the research ranking.
+- **Unchanged:** capture, the freshness ladder, the self-check bound, the decision engine and every model. Current-quote behaviour is identical.
+- **Tests:**
+  - `tools/football/market_join.test.js` sections 7–8: the aged PIT @ CLE board (fails on the old code with the same self-check message), and the refresh, including a failed read, a reload in flight, another module on screen and a read overtaken by a reload.
+  - `tools/football/price_refresh.e2e.js` (`npm run football:prices:e2e`): the same case in Chromium. A three-hour-old capture reads stale with no market fault. After capture re-prices the game and the reader returns to the tab, the card decides on current quotes and the open section is still open.
+
 ## 2026-10-01 — profit and loss of every flagged edge, written by the database at settlement
 
 Every flag in `signals` now carries a recorded P&L: 1 unit flat, at the price frozen when the edge was flagged. It is written in the same transaction as its settlement, and shown on the public record beside closing-line value. `docs/pnl/EDGE_PNL.md` has the full account.
