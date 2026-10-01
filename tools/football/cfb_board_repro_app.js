@@ -48,7 +48,7 @@ function sandbox() {
   ctx.window.EDINTEL = { quoteState: (o) => { const a = (Date.now() - Date.parse(o.captured_at)) / 6e4; return { actionable: a < 180, status: a < 90 ? 'CURRENT' : (a < 180 ? 'AGING' : 'STALE') }; } };
   ctx.FBQEV = { alt: {} };
   vm.createContext(ctx);
-  vm.runInContext(['fbNorm', 'fbNum', 'fbWMedian', 'fbMarketFromEvent', 'fbQevQuotes', 'fbQevAltState'].map(extract).join('\n')
+  vm.runInContext(['fbNorm', 'fbNum', 'fbWMedian', 'fbBooksBehind', 'fbMarketFromEvent', 'fbQevQuotes', 'fbQevAltState'].map(extract).join('\n')
     + '\nthis.fbMarketFromEvent = fbMarketFromEvent; this.fbQevQuotes = fbQevQuotes;', ctx);
   return ctx;
 }
