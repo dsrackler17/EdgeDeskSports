@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-09-30T22:27:26.109Z",
+ "generated_at": "2026-10-01T06:18:17.322Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -77,28 +77,28 @@
   }
  ],
  "summary": {
-  "games": 114,
-  "mean": 84.4,
-  "median": 86,
+  "games": 117,
+  "mean": 85.5,
+  "median": 88,
   "percentiles": {
    "p10": 79,
-   "p25": 83,
-   "p50": 86,
-   "p75": 88,
-   "p90": 89
+   "p25": 84,
+   "p50": 88,
+   "p75": 89,
+   "p90": 92
   },
   "min": 59,
-  "max": 89,
+  "max": 94,
   "by_grade": [
    {
     "grade": "VERY_STRONG",
     "label": "VERY STRONG",
-    "n": 0
+    "n": 16
    },
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 93
+    "n": 80
    },
    {
     "grade": "ADEQUATE",
@@ -124,7 +124,7 @@
   "by_conference": [
    {
     "n": 16,
-    "mean": 86.8,
+    "mean": 87.1,
     "median": 88,
     "conference": "ACC"
    },
@@ -136,14 +136,14 @@
    },
    {
     "n": 13,
-    "mean": 86.5,
-    "median": 87,
+    "mean": 88.5,
+    "median": 89,
     "conference": "Big 12"
    },
    {
     "n": 16,
-    "mean": 84.2,
-    "median": 86,
+    "mean": 86.6,
+    "median": 89,
     "conference": "Big Ten"
    },
    {
@@ -165,21 +165,21 @@
     "conference": "MAC"
    },
    {
-    "n": 8,
-    "mean": 86.6,
+    "n": 10,
+    "mean": 87,
     "median": 88,
     "conference": "Mountain West"
    },
    {
-    "n": 6,
-    "mean": 84.7,
-    "median": 85.5,
+    "n": 7,
+    "mean": 85.4,
+    "median": 87,
     "conference": "Pac-12"
    },
    {
     "n": 14,
-    "mean": 84.2,
-    "median": 85.5,
+    "mean": 87.4,
+    "median": 89,
     "conference": "SEC"
    },
    {
@@ -209,9 +209,9 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 111,
-    "mean": 85.1,
-    "median": 86
+    "n": 114,
+    "mean": 86.2,
+    "median": 88
    },
    "fbs_fcs": {
     "n": 3,
@@ -226,7 +226,7 @@
    "missing_venue_coordinates": 0,
    "roster_conflicts": 3,
    "unstable_projections": 8,
-   "source_disagreement": 38,
+   "source_disagreement": 47,
    "thin_data": 3,
    "data_fault": 0
   },
@@ -240,7 +240,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.7,
+    "mean": 11.9,
     "max": 20
    },
    {
@@ -269,83 +269,89 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 114,
-   "mean": 75.8,
+   "n": 117,
+   "mean": 78.6,
    "median": 77,
    "p10": 73,
-   "p90": 77,
+   "p90": 92,
    "min": 48,
    "max": 92,
    "mode": 77,
-   "mode_n": 92,
+   "mode_n": 72,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 114,
-    "points": 277.8
+    "games": 117,
+    "points": 283.2
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 114,
-    "points": 158.4
+    "games": 117,
+    "points": 162.2
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 114,
-    "points": 156
-   },
-   {
-    "key": "availability",
-    "label": "Injury/availability information incomplete",
-    "games": 113,
-    "points": 570.3
-   },
-   {
-    "key": "qb_status",
-    "label": "QB status unconfirmed (can he play)",
-    "games": 113,
-    "points": 302
+    "games": 117,
+    "points": 161.4
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 97,
-    "points": 42.3
+    "games": 99,
+    "points": 42.9
+   },
+   {
+    "key": "availability",
+    "label": "Injury/availability information incomplete",
+    "games": 98,
+    "points": 465.7
+   },
+   {
+    "key": "qb_status",
+    "label": "QB status unconfirmed (can he play)",
+    "games": 96,
+    "points": 248
    },
    {
     "key": "qb_conflict",
     "label": "QB sources disagree",
     "games": 37,
-    "points": 46.5
+    "points": 45.9
+   },
+   {
+    "key": "attribution",
+    "label": "Player production attribution incomplete",
+    "games": 26,
+    "points": 51.6
    },
    {
     "key": "favorite_flips",
     "label": "Projection flips favorite under perturbation",
     "games": 23,
-    "points": 96.2
+    "points": 98.5
    },
    {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 22,
-    "points": 14.5
+    "games": 23,
+    "points": 15.1
+   },
+   {
+    "key": "player_identity",
+    "label": "Injury names unresolved",
+    "games": 13,
+    "points": 2.4
    },
    {
     "key": "contract_conflicts",
     "label": "Conflicting sources",
     "games": 6,
     "points": 8.4
-   },
-   {
-    "key": "attribution",
-    "label": "Player production attribution incomplete",
-    "games": 4,
-    "points": 6
    },
    {
     "key": "fcs_rating",
@@ -360,16 +366,16 @@
     "points": 12.2
    },
    {
+    "key": "prior_missing",
+    "label": "No prior-season rating",
+    "games": 3,
+    "points": 4.7
+   },
+   {
     "key": "fcs_dominated",
     "label": "Rating sample dominated by FCS opponents",
     "games": 2,
     "points": 3.4
-   },
-   {
-    "key": "prior_missing",
-    "label": "No prior-season rating",
-    "games": 2,
-    "points": 3
    },
    {
     "key": "venue",
@@ -380,28 +386,28 @@
   ]
  },
  "summary_without_evidence": {
-  "games": 114,
-  "mean": 84.1,
-  "median": 86,
+  "games": 117,
+  "mean": 85.4,
+  "median": 87,
   "percentiles": {
    "p10": 79,
    "p25": 83,
-   "p50": 86,
-   "p75": 88,
-   "p90": 89
+   "p50": 87,
+   "p75": 89,
+   "p90": 93
   },
   "min": 59,
-  "max": 89,
+  "max": 96,
   "by_grade": [
    {
     "grade": "VERY_STRONG",
     "label": "VERY STRONG",
-    "n": 0
+    "n": 17
    },
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 94
+    "n": 80
    },
    {
     "grade": "ADEQUATE",
@@ -427,7 +433,7 @@
   "by_conference": [
    {
     "n": 16,
-    "mean": 86.8,
+    "mean": 87.1,
     "median": 88,
     "conference": "ACC"
    },
@@ -439,14 +445,14 @@
    },
    {
     "n": 13,
-    "mean": 86.2,
-    "median": 87,
+    "mean": 88.8,
+    "median": 89,
     "conference": "Big 12"
    },
    {
     "n": 16,
-    "mean": 83.6,
-    "median": 86,
+    "mean": 86.6,
+    "median": 89,
     "conference": "Big Ten"
    },
    {
@@ -468,21 +474,21 @@
     "conference": "MAC"
    },
    {
-    "n": 8,
-    "mean": 84.1,
-    "median": 86,
+    "n": 10,
+    "mean": 85,
+    "median": 87.5,
     "conference": "Mountain West"
    },
    {
-    "n": 6,
-    "mean": 84,
-    "median": 84,
+    "n": 7,
+    "mean": 85.6,
+    "median": 87,
     "conference": "Pac-12"
    },
    {
     "n": 14,
-    "mean": 84.2,
-    "median": 85.5,
+    "mean": 87.8,
+    "median": 89,
     "conference": "SEC"
    },
    {
@@ -512,9 +518,9 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 111,
-    "mean": 84.7,
-    "median": 86
+    "n": 114,
+    "mean": 86.1,
+    "median": 88
    },
    "fbs_fcs": {
     "n": 3,
@@ -523,13 +529,13 @@
    }
   },
   "flags": {
-   "capped_by_qb": 18,
+   "capped_by_qb": 19,
    "capped_by_stale": 0,
    "missing_weather": 0,
    "missing_venue_coordinates": 0,
    "roster_conflicts": 5,
    "unstable_projections": 8,
-   "source_disagreement": 39,
+   "source_disagreement": 48,
    "thin_data": 3,
    "data_fault": 0
   },
@@ -543,7 +549,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.7,
+    "mean": 12.2,
     "max": 20
    },
    {
@@ -572,83 +578,89 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 114,
-   "mean": 75.8,
+   "n": 117,
+   "mean": 78.6,
    "median": 77,
    "p10": 73,
-   "p90": 77,
+   "p90": 92,
    "min": 48,
    "max": 92,
    "mode": 77,
-   "mode_n": 92,
+   "mode_n": 72,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
-    "key": "availability",
-    "label": "Injury/availability information incomplete",
-    "games": 114,
-    "points": 570.8
-   },
-   {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 114,
-    "points": 277.8
+    "games": 117,
+    "points": 283.2
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 114,
-    "points": 158.4
+    "games": 117,
+    "points": 162.2
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 114,
-    "points": 156.1
+    "games": 117,
+    "points": 158.8
    },
    {
-    "key": "qb_status",
-    "label": "QB status unconfirmed (can he play)",
-    "games": 113,
-    "points": 302
+    "key": "availability",
+    "label": "Injury/availability information incomplete",
+    "games": 115,
+    "points": 470.1
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 97,
-    "points": 42.3
+    "games": 99,
+    "points": 42.9
+   },
+   {
+    "key": "qb_status",
+    "label": "QB status unconfirmed (can he play)",
+    "games": 96,
+    "points": 248
    },
    {
     "key": "qb_conflict",
     "label": "QB sources disagree",
     "games": 38,
-    "points": 69.1
+    "points": 67.5
+   },
+   {
+    "key": "starters",
+    "label": "Starter evidence stale",
+    "games": 23,
+    "points": 15.1
    },
    {
     "key": "favorite_flips",
     "label": "Projection flips favorite under perturbation",
     "games": 22,
-    "points": 95.1
+    "points": 97.4
    },
    {
-    "key": "starters",
-    "label": "Starter evidence stale",
-    "games": 22,
-    "points": 14.5
+    "key": "player_identity",
+    "label": "Injury names unresolved",
+    "games": 13,
+    "points": 2.4
+   },
+   {
+    "key": "attribution",
+    "label": "Player production attribution incomplete",
+    "games": 12,
+    "points": 12.4
    },
    {
     "key": "contract_conflicts",
     "label": "Conflicting sources",
     "games": 5,
     "points": 7
-   },
-   {
-    "key": "attribution",
-    "label": "Player production attribution incomplete",
-    "games": 4,
-    "points": 4.3
    },
    {
     "key": "fcs_rating",
@@ -663,16 +675,16 @@
     "points": 12.2
    },
    {
+    "key": "prior_missing",
+    "label": "No prior-season rating",
+    "games": 3,
+    "points": 4.7
+   },
+   {
     "key": "fcs_dominated",
     "label": "Rating sample dominated by FCS opponents",
     "games": 2,
     "points": 3.4
-   },
-   {
-    "key": "prior_missing",
-    "label": "No prior-season rating",
-    "games": 2,
-    "points": 3
    },
    {
     "key": "venue",
@@ -683,49 +695,50 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-09-30T22:27:17.745Z",
-  "games_with_evidence": 114,
+  "artifact_generated_at": "2026-10-01T06:18:09.489Z",
+  "games_with_evidence": 117,
   "summary": {
-   "games": 114,
+   "games": 117,
    "frozen_games": 70,
    "qb": {
     "by_confirmation": {
-     "EXPECTED": 219,
+     "EXPECTED": 224,
+     "UNCERTAIN": 3,
      "CONFLICTED": 6,
-     "UNKNOWN": 1,
-     "UNCERTAIN": 2
+     "UNKNOWN": 1
     },
     "conflicts_detected": 33,
     "conflicts_resolved": 27,
     "conflicts_open": 6,
-    "status_known": 2,
-    "sides": 228
+    "status_known": 43,
+    "sides": 234
    },
    "availability": {
     "by_class": {
-     "PROVIDER_FAILED": 64,
+     "COMPREHENSIVE_OFFICIAL": 42,
      "NOT_REQUIRED": 18,
      "NO_SOURCE": 3,
-     "NOT_DUE_YET": 141,
-     "COMPREHENSIVE_OFFICIAL": 2
+     "NOT_DUE_YET": 125,
+     "PROVIDER_FAILED": 38,
+     "OFFICIAL_THIS_GAME": 8
     },
-    "fbs_teams_on_slate": 137,
-    "teams_covered": 2,
-    "fresh": 2,
+    "fbs_teams_on_slate": 138,
+    "teams_covered": 50,
+    "fresh": 50,
     "stale": 0,
-    "unavailable": 51,
-    "starters_known_pct": 0.9,
-    "starters_known": 48,
-    "starters_total": 5396,
+    "unavailable": 25,
+    "starters_known_pct": 18.8,
+    "starters_known": 1041,
+    "starters_total": 5540,
     "historical_rows_refused": 9
    },
    "player_quality": {
-    "projected_starters_rated_pct": 38.6,
-    "starters_rated": 2086,
-    "starters_total": 5400,
-    "key_contributors_rated_pct": 34.3,
-    "unrated_meaningful_absences": 30,
-    "unrated_critical_or_major_absences": 1
+    "projected_starters_rated_pct": 38.4,
+    "starters_rated": 2130,
+    "starters_total": 5544,
+    "key_contributors_rated_pct": 34.2,
+    "unrated_meaningful_absences": 436,
+    "unrated_critical_or_major_absences": 55
    },
    "fcs": {
     "rated_teams": 129,
@@ -767,9 +780,9 @@
     "average_books_per_game": null,
     "one_book_games": 0,
     "three_plus_book_games": 0,
-    "under_two_sources": 114,
+    "under_two_sources": 117,
     "stale_markets": 0,
-    "no_market": 114
+    "no_market": 117
    },
    "providers": [
     {
@@ -817,7 +830,7 @@
      "label": "Official conference availability reports",
      "kind": "availability",
      "state": "DEGRADED",
-     "reason": "97 of 164 calls failed (bad content ×97)",
+     "reason": "71 of 186 calls failed (bad content ×71)",
      "attributable_to": "provider"
     },
     {
@@ -865,7 +878,7 @@
      "label": "FCS rating bridge build",
      "kind": "fcs_ratings",
      "state": "HEALTHY",
-     "reason": "built 1h ago",
+     "reason": "built 9h ago",
      "attributable_to": null
     },
     {
@@ -934,7 +947,7 @@
     }
    ],
    "provider_failures": 4,
-   "stale_evidence_records": 19,
+   "stale_evidence_records": 11,
    "conflicts": 33
   }
  },
@@ -944,61 +957,61 @@
    {
     "key": "availability",
     "label": "Availability feed",
-    "games_affected": 113,
-    "current_points_lost": 872.3,
-    "maximum_recoverable_points": 718,
-    "games_recoverable": 95,
+    "games_affected": 98,
+    "current_points_lost": 713.7,
+    "maximum_recoverable_points": 578,
+    "games_recoverable": 80,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 430.8,
-    "enrichment_roi": 143.6,
+    "estimated_recoverable_points": 346.8,
+    "enrichment_roi": 115.6,
     "engineering_priority": 1
    },
    {
     "key": "qb_conflict",
     "label": "QB conflicts",
     "games_affected": 37,
-    "current_points_lost": 46.5,
-    "maximum_recoverable_points": 91,
-    "games_recoverable": 28,
+    "current_points_lost": 45.9,
+    "maximum_recoverable_points": 90,
+    "games_recoverable": 27,
     "cost": 2,
     "feasible": 0.8,
     "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
     "recover": "sides whose starter evidence disagrees",
-    "estimated_recoverable_points": 72.8,
-    "enrichment_roi": 36.4,
+    "estimated_recoverable_points": 72,
+    "enrichment_roi": 36,
     "engineering_priority": 2
    },
    {
     "key": "qb_identity",
     "label": "QB confirmation",
-    "games_affected": 114,
-    "current_points_lost": 156,
-    "maximum_recoverable_points": 115,
-    "games_recoverable": 66,
+    "games_affected": 117,
+    "current_points_lost": 161.4,
+    "maximum_recoverable_points": 121,
+    "games_recoverable": 67,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 57.5,
-    "enrichment_roi": 19.17,
+    "estimated_recoverable_points": 60.5,
+    "enrichment_roi": 20.17,
     "engineering_priority": 3
    },
    {
     "key": "starters",
     "label": "Starter evidence staleness",
-    "games_affected": 22,
-    "current_points_lost": 14.5,
-    "maximum_recoverable_points": 11,
-    "games_recoverable": 11,
+    "games_affected": 23,
+    "current_points_lost": 15.1,
+    "maximum_recoverable_points": 13,
+    "games_recoverable": 13,
     "cost": 1,
     "feasible": 0.9,
     "how": "the starter job re-reads on the refresh windows",
     "recover": "stale starter records",
-    "estimated_recoverable_points": 9.9,
-    "enrichment_roi": 9.9,
+    "estimated_recoverable_points": 11.7,
+    "enrichment_roi": 11.7,
     "engineering_priority": 4
    },
    {
@@ -1019,16 +1032,16 @@
    {
     "key": "attribution",
     "label": "Player-quality gaps",
-    "games_affected": 4,
-    "current_points_lost": 6,
-    "maximum_recoverable_points": 3,
-    "games_recoverable": 1,
+    "games_affected": 26,
+    "current_points_lost": 51.6,
+    "maximum_recoverable_points": 42,
+    "games_recoverable": 19,
     "cost": 4,
     "feasible": 0.3,
     "how": "measured production for linemen needs charting data no public feed carries",
     "recover": "absent starters with no measured player quality",
-    "estimated_recoverable_points": 0.9,
-    "enrichment_roi": 0.23,
+    "estimated_recoverable_points": 12.6,
+    "enrichment_roi": 3.15,
     "engineering_priority": 6
    },
    {
@@ -1049,8 +1062,8 @@
    {
     "key": "stability",
     "label": "Projection stability",
-    "games_affected": 114,
-    "current_points_lost": 374,
+    "games_affected": 117,
+    "current_points_lost": 381.7,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1064,8 +1077,8 @@
    {
     "key": "rating_sample",
     "label": "In-season rating sample",
-    "games_affected": 114,
-    "current_points_lost": 158.4,
+    "games_affected": 117,
+    "current_points_lost": 162.2,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1079,7 +1092,7 @@
    {
     "key": "market_sources",
     "label": "Market-source depth",
-    "games_affected": 114,
+    "games_affected": 117,
     "current_points_lost": null,
     "maximum_recoverable_points": null,
     "estimated_recoverable_points": null,
@@ -1094,9 +1107,9 @@
    }
   ],
   "potential": {
-   "games": 114,
-   "mean_score": 84.4,
-   "mean_potential": 94.2,
+   "games": 117,
+   "mean_score": 85.5,
+   "mean_potential": 94.3,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
  },
@@ -2152,14 +2165,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 84,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 90,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 83.7,
+    "raw": 90.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -2168,11 +2181,11 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.5,
+      "score": 15.3,
       "max": 20
      },
      "projection_stability": {
-      "score": 16.5,
+      "score": 16.2,
       "max": 20
      },
      "freshness": {
@@ -2188,52 +2201,45 @@
       "max": 10
      }
     },
-    "main_deduction": "the projected spread moves ±2.51 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.65 pts)",
+    "main_deduction": "the projected spread moves ±2.57 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.65 pts)",
     "potential": 95,
     "evidence_used": true,
     "stability": {
-     "sd": 2.51,
-     "p10": 13.17,
-     "p50": 16.71,
-     "p90": 20.26,
+     "sd": 2.57,
+     "p10": 15.08,
+     "p50": 18.66,
+     "p90": 22.25,
      "favorite_flip_rate": 0,
      "tier": "MODERATE"
     },
     "penalties": [
      {
       "component": "projection_stability",
-      "points": 3.5,
-      "reason": "the projected spread moves ±2.51 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.65 pts)",
+      "points": 3.8,
+      "reason": "the projected spread moves ±2.57 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.65 pts)",
       "family": "stability",
       "action_key": null
      },
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Vanderbilt failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Vanderbilt’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
+      "points": 2.3,
+      "reason": "Jared Curtis — uncertain; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json); listed questionable",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
      },
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Georgia failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Georgia’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
+      "points": 0.9,
+      "reason": "7 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Jared Curtis can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Gunner Stockton can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 0.7,
+      "reason": "Georgia non-QB absences rate 5/100 team impact (largest: RB5 Nate Frazier, questionable) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -2258,52 +2264,23 @@
      },
      {
       "component": "roster_availability",
-      "points": 0.5,
-      "reason": "Jared Curtis — expected; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
-     },
-     {
-      "component": "roster_availability",
       "points": 0.3,
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Vanderbilt",
-      "key": "availability:away",
-      "potential_gain": 5
-     },
-     {
-      "action": "Restore an injury/availability source for Georgia",
-      "key": "availability:home",
-      "potential_gain": 5
-     }
-    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
-     "qb_identity": 1
+     "attribution": 2,
+     "qb_identity": 3
     }
    },
    "reliability_without_evidence": {
-    "score": 84,
-    "grade": "STRONG"
+    "score": 92,
+    "grade": "VERY_STRONG"
    }
   },
   "401856706": {
@@ -2444,7 +2421,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "McNeese’s starter record was re-read 1.3h ago and describes evidence from an unknown time ago",
+      "reason": "McNeese’s starter record was re-read 9.2h ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -2540,14 +2517,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 85,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 94,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.3,
+    "raw": 93.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -2556,7 +2533,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8,
+      "score": 16.6,
       "max": 20
      },
      "projection_stability": {
@@ -2576,7 +2553,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Alabama failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Alabama’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±1.89 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
     "potential": 97,
     "evidence_used": true,
     "stability": {
@@ -2588,34 +2565,6 @@
      "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Alabama failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Alabama’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Mississippi State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Mississippi State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Keelon Russell can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Kamario Taylor can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
      {
       "component": "projection_stability",
       "points": 1.4,
@@ -2631,6 +2580,13 @@
       "action_key": "qb_identity:home"
      },
      {
+      "component": "roster_availability",
+      "points": 0.8,
+      "reason": "8 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
+     },
+     {
       "component": "team_data",
       "points": 0.7,
       "reason": "Alabama: 4 of 6 games for a full in-season sample",
@@ -2643,6 +2599,13 @@
       "reason": "Mississippi State: 4 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.6,
+      "reason": "Mississippi State non-QB absences rate 11/100 team impact (largest: WR5 Ayden Williams, out) — measured, not priced into the spread; plus 2 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -2666,49 +2629,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Alabama",
-      "key": "availability:away",
-      "potential_gain": 4
-     },
-     {
-      "action": "Restore an injury/availability source for Mississippi State",
-      "key": "availability:home",
-      "potential_gain": 4
-     },
-     {
-      "action": "Confirm Alabama’s starting QB (Keelon Russell)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Mississippi State’s starting QB (Kamario Taylor)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
-     "qb_identity": 2
+     "attribution": 1,
+     "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 85,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401856708": {
@@ -2719,14 +2650,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 80,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 80,
+    "raw": 88.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -2735,7 +2666,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.8,
+      "score": 17.2,
       "max": 20
      },
      "projection_stability": {
@@ -2747,7 +2678,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -2775,39 +2706,18 @@
       "action_key": null
      },
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Florida failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster (1 historical row refused); the impact of Florida’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Missouri failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Missouri’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Aaron Philo can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Austin Simmons can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 1.5,
       "reason": "the projected spread moves ±1.93 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.4,
+      "reason": "Missouri non-QB absences rate 14/100 team impact (largest: RB2 Ahmad Hardy, out) — measured, not priced into the spread; plus 7 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "team_data",
@@ -2850,40 +2760,48 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Florida",
-      "key": "availability:away",
-      "potential_gain": 5
      },
      {
-      "action": "Restore an injury/availability source for Missouri",
-      "key": "availability:home",
-      "potential_gain": 5
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "1 of 10 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.1,
+      "reason": "Florida non-QB absences rate 2/100 team impact (largest: WR1 Vernell Brown III, questionable) — measured, not priced into the spread",
+      "family": "availability",
+      "action_key": "availability:away"
+     }
+    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [
+     {
+      "action": "Rate the absent Missouri players (player-quality attribution)",
+      "key": "attribution:home",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm Florida’s starting QB (Aaron Philo)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Missouri’s starting QB (Austin Simmons)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 80,
+    "score": 89,
     "grade": "STRONG"
    }
   },
@@ -2895,14 +2813,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 94,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.6,
+    "raw": 93.8,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -2911,7 +2829,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.7,
+      "score": 16.9,
       "max": 20
      },
      "projection_stability": {
@@ -2931,7 +2849,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Kentucky failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Kentucky’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.28 pts)",
     "potential": 97,
     "evidence_used": true,
     "stability": {
@@ -2944,39 +2862,18 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Kentucky failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Kentucky’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers South Carolina failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of South Carolina’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Kenny Minchey can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether LaNorris Sellers can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 1.8,
       "reason": "the projected spread moves ±2 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.28 pts)",
       "family": "stability",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.4,
+      "reason": "South Carolina non-QB absences rate 2/100 team impact (largest: WR7 Jayden Sellers, out) — measured, not priced into the spread; plus 6 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -3001,6 +2898,13 @@
      },
      {
       "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Kentucky non-QB absences rate 3/100 team impact (largest: DB1 Jordan Castell, probable) — measured, not priced into the spread; plus 3 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
+     },
+     {
+      "component": "roster_availability",
       "points": 0.4,
       "reason": "LaNorris Sellers — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
@@ -3014,39 +2918,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Kentucky",
-      "key": "availability:away",
-      "potential_gain": 3
-     },
-     {
-      "action": "Restore an injury/availability source for South Carolina",
-      "key": "availability:home",
-      "potential_gain": 3
-     }
-    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 95,
+    "grade": "VERY_STRONG"
    }
   },
   "401856710": {
@@ -3057,14 +2939,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 85,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 84.6,
+    "raw": 92.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -3073,7 +2955,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.3,
+      "score": 16.6,
       "max": 20
      },
      "projection_stability": {
@@ -3093,7 +2975,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Auburn failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Auburn’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.18 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.29 pts)",
     "potential": 96,
     "evidence_used": true,
     "stability": {
@@ -3106,20 +2988,6 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Auburn failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Auburn’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Tennessee failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Tennessee’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 2.4,
       "reason": "the projected spread moves ±2.18 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.29 pts)",
@@ -3128,17 +2996,10 @@
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Byrum Brown can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Faizon Brandon can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "Tennessee non-QB absences rate 6/100 team impact (largest: TE2 Ethan Davis, out) — measured, not priced into the spread; plus 7 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -3181,41 +3042,26 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Auburn",
-      "key": "availability:away",
-      "potential_gain": 4
      },
      {
-      "action": "Restore an injury/availability source for Tennessee",
-      "key": "availability:home",
-      "potential_gain": 4
+      "component": "roster_availability",
+      "points": 0.2,
+      "reason": "2 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 85,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401856711": {
@@ -3226,14 +3072,14 @@
    "home_conference": "SEC",
    "away_conference": "SEC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 88,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 94,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 87.9,
+    "raw": 93.6,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -3242,7 +3088,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 18.2,
       "max": 20
      },
      "projection_stability": {
@@ -3282,34 +3128,6 @@
       "action_key": null
      },
      {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Southeastern Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Arkansas’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Southeastern Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Texas A&M’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Arkansas’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Texas A&M’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
       "component": "team_data",
       "points": 0.7,
       "reason": "Arkansas: 4 of 6 games for a full in-season sample",
@@ -3322,6 +3140,20 @@
       "reason": "Texas A&M: 4 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Arkansas non-QB absences rate 0/100 team impact (largest: DB4 John Howse IV, out) — measured, not priced into the spread; plus 3 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Texas A&M non-QB absences rate 8/100 team impact (largest: WR1 Mario Craver, questionable) — measured, not priced into the spread",
+      "family": "availability",
+      "action_key": "availability:home"
      },
      {
       "component": "roster_availability",
@@ -3345,34 +3177,14 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
+    "gates": [],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (Arkansas)",
-      "key": "availability:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Re-read availability inside the filing window (Texas A&M)",
-      "key": "availability:home",
-      "potential_gain": 1
-     }
-    ],
-    "recoverable_by_family": {
-     "availability": 6,
-     "qb_identity": 1
-    }
+    "next_actions": [],
+    "recoverable_by_family": {}
    },
    "reliability_without_evidence": {
-    "score": 88,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401856712": {
@@ -4572,7 +4384,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "Kansas’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4749,7 +4561,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Arizona State’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "Arizona State’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4829,14 +4641,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
     "score": 79,
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 85,
+    "raw": 89.7,
     "capped_by": [
      "QB_CONTESTED"
     ],
@@ -4847,7 +4659,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 10.9,
+      "score": 15.5,
       "max": 20
      },
      "projection_stability": {
@@ -4859,7 +4671,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 14,
+      "score": 14.1,
       "max": 15
      },
      "environment": {
@@ -4888,45 +4700,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Baylor’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Arizona State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
       "points": 1.7,
       "reason": "DJ Lagway — expected; the job is split by usage; measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
      },
      {
-      "component": "source_integrity",
-      "points": 1,
-      "reason": "the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:away"
-     },
-     {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Baylor’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Arizona State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.1,
+      "reason": "7 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "team_data",
@@ -4934,6 +4718,20 @@
       "reason": "Arizona State: 3 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "source_integrity",
+      "points": 0.9,
+      "reason": "the efficiency history could not resolve the same athlete",
+      "family": "qb_conflict",
+      "action_key": "qb_conflict:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.8,
+      "reason": "Baylor non-QB absences rate 0/100 team impact (largest: S5 Jacob Redding, out) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "team_data",
@@ -4945,7 +4743,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Arizona State’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "Arizona State’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4973,11 +4771,6 @@
     ],
     "gates": [
      {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     },
-     {
       "id": "QB_CONTESTED",
       "cap": 79,
       "binding": true
@@ -4988,26 +4781,36 @@
      {
       "action": "Confirm Baylor’s starting QB (DJ Lagway)",
       "key": "qb_identity:away",
-      "potential_gain": 8
+      "potential_gain": 12
      },
      {
-      "action": "Re-read availability inside the filing window (Baylor)",
-      "key": "availability:away",
+      "action": "Rate the absent Arizona State players (player-quality attribution)",
+      "key": "attribution:home",
       "potential_gain": 2
      },
      {
-      "action": "Re-read availability inside the filing window (Arizona State)",
-      "key": "availability:home",
-      "potential_gain": 2
+      "action": "Rate the absent Baylor players (player-quality attribution)",
+      "key": "attribution:away",
+      "potential_gain": 1
      },
      {
       "action": "Resolve Baylor’s starter conflict",
       "key": "qb_conflict:away",
       "potential_gain": 1
+     },
+     {
+      "action": "Confirm Arizona State’s starting QB (Cutter Boley)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read Arizona State’s starter evidence",
+      "key": "starters:home",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "qb_identity": 8
+     "qb_identity": 13
     }
    },
    "reliability_without_evidence": {
@@ -5023,14 +4826,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 88,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 92,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 87.8,
+    "raw": 92,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5039,7 +4842,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 16.8,
       "max": 20
      },
      "projection_stability": {
@@ -5051,7 +4854,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.9,
       "max": 15
      },
      "environment": {
@@ -5080,31 +4883,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of BYU’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of TCU’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
+      "points": 1.2,
+      "reason": "BYU non-QB absences rate 1/100 team impact (largest: S7 Raider Damuni, out) — measured, not priced into the spread; plus 8 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
       "points": 1,
-      "reason": "BYU’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "TCU’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "reason": "TCU non-QB absences rate 1/100 team impact (largest: PK2 Kyle Lemmermann, out) — measured, not priced into the spread; plus 8 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "team_data",
@@ -5123,7 +4912,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "BYU’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "BYU’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -5147,36 +4936,27 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (BYU)",
-      "key": "availability:away",
-      "potential_gain": 1
      },
      {
-      "action": "Re-read availability inside the filing window (TCU)",
-      "key": "availability:home",
-      "potential_gain": 1
+      "component": "source_integrity",
+      "points": 0.1,
+      "reason": "1 of 18 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 6,
-     "qb_identity": 1
+     "attribution": 2,
+     "qb_identity": 1,
+     "starters": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 88,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401856819": {
@@ -5187,14 +4967,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.6,
+    "raw": 92.6,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5203,7 +4983,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.9,
+      "score": 15.9,
       "max": 20
      },
      "projection_stability": {
@@ -5223,56 +5003,49 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers UCF failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of UCF’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "UCF non-QB absences rate 11/100 team impact (largest: TE1 Dylan Wade, questionable) — measured, not priced into the spread; plus 6 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
     "potential": 97,
     "evidence_used": true,
     "stability": {
-     "sd": 1.83,
-     "p10": 5.95,
-     "p50": 8.74,
-     "p90": 11.53,
+     "sd": 1.82,
+     "p10": 6.57,
+     "p50": 9.33,
+     "p90": 12.08,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers UCF failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of UCF’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Houston failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Houston’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Keyone Jenkins can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Conner Weigman can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "UCF non-QB absences rate 11/100 team impact (largest: TE1 Dylan Wade, questionable) — measured, not priced into the spread; plus 6 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "projection_stability",
       "points": 1.1,
-      "reason": "the projected spread moves ±1.83 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "reason": "the projected spread moves ±1.82 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
      {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Houston non-QB absences rate 1/100 team impact (largest: WR5 Stephon Johnson, questionable) — measured, not priced into the spread; plus 5 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Keyone Jenkins — expected (Keyone Jenkins opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json); listed probable",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
       "component": "source_integrity",
-      "points": 0.9,
+      "points": 0.8,
       "reason": "resolved by the source hierarchy: Keyone Jenkins opened the last game with 100% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:away"
@@ -5293,13 +5066,6 @@
      },
      {
       "component": "roster_availability",
-      "points": 0.5,
-      "reason": "Keyone Jenkins — expected (Keyone Jenkins opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
-     },
-     {
-      "component": "roster_availability",
       "points": 0.4,
       "reason": "Conner Weigman — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
@@ -5311,47 +5077,26 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for UCF",
-      "key": "availability:away",
-      "potential_gain": 3
      },
      {
-      "action": "Restore an injury/availability source for Houston",
-      "key": "availability:home",
-      "potential_gain": 3
-     },
-     {
-      "action": "Resolve UCF’s starter conflict",
-      "key": "qb_conflict:away",
-      "potential_gain": 1
+      "component": "source_integrity",
+      "points": 0.1,
+      "reason": "1 of 19 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
-     "qb_conflict": 1,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 85,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401856820": {
@@ -5362,14 +5107,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 89,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 89,
+    "raw": 93.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5378,7 +5123,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 16.9,
       "max": 20
      },
      "projection_stability": {
@@ -5390,7 +5135,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -5398,7 +5143,7 @@
       "max": 10
      }
     },
-    "main_deduction": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Cincinnati’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.14 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.48 pts)",
     "potential": 96,
     "evidence_used": true,
     "stability": {
@@ -5411,20 +5156,6 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Cincinnati’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Arizona’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 2.2,
       "reason": "the projected spread moves ±2.14 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.48 pts)",
@@ -5433,17 +5164,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Cincinnati’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
+      "points": 1.1,
+      "reason": "5 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Arizona’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.1,
+      "reason": "Arizona non-QB absences rate 13/100 team impact (largest: TE1 Cole Rusk, out) — measured, not priced into the spread; plus 5 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "team_data",
@@ -5479,24 +5210,26 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
+     },
      {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "1 of 13 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
     "missing": [],
     "next_actions": [],
     "recoverable_by_family": {
-     "availability": 7
+     "attribution": 2,
+     "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 89,
-    "grade": "STRONG"
+    "score": 93,
+    "grade": "VERY_STRONG"
    }
   },
   "401856821": {
@@ -5507,14 +5240,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 85,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 84.9,
+    "raw": 88.4,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5523,7 +5256,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 9.4,
+      "score": 12.9,
       "max": 20
      },
      "projection_stability": {
@@ -5571,35 +5304,21 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Texas Tech’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "Texas Tech non-QB absences rate 14/100 team impact (largest: CB1 Brice Pollock, probable) — measured, not priced into the spread; plus 8 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Colorado’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Texas Tech’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Colorado’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "Colorado non-QB absences rate 0/100 team impact (largest: WR3 Quentin Gibson, probable) — measured, not priced into the spread; plus 13 absences with UNKNOWN impact (no measured player quality), 5 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "source_integrity",
-      "points": 0.9,
+      "points": 0.8,
       "reason": "resolved by the source hierarchy: Will Hammond opened the last game with 93% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:away"
@@ -5631,47 +5350,59 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
+     },
      {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
+      "component": "source_integrity",
+      "points": 0.1,
+      "reason": "2 of 30 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
     "missing": [],
     "next_actions": [
      {
-      "action": "Re-read availability inside the filing window (Texas Tech)",
-      "key": "availability:away",
-      "potential_gain": 3
-     },
-     {
-      "action": "Re-read availability inside the filing window (Colorado)",
-      "key": "availability:home",
-      "potential_gain": 3
-     },
-     {
       "action": "Confirm Colorado’s starting QB (Julian Lewis)",
       "key": "qb_identity:home",
-      "potential_gain": 3
+      "potential_gain": 4
+     },
+     {
+      "action": "Rate the absent Texas Tech players (player-quality attribution)",
+      "key": "attribution:away",
+      "potential_gain": 2
+     },
+     {
+      "action": "Rate the absent Colorado players (player-quality attribution)",
+      "key": "attribution:home",
+      "potential_gain": 2
+     },
+     {
+      "action": "Resolve unmatched injury-report names",
+      "key": "player_identity",
+      "potential_gain": 1
      },
      {
       "action": "Resolve Texas Tech’s starter conflict",
       "key": "qb_conflict:away",
       "potential_gain": 1
+     },
+     {
+      "action": "Confirm Texas Tech’s starting QB (Will Hammond)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 6,
+     "attribution": 3,
+     "player_identity": 1,
      "qb_conflict": 1,
      "qb_identity": 4
     }
    },
    "reliability_without_evidence": {
-    "score": 84,
-    "grade": "STRONG"
+    "score": 90,
+    "grade": "VERY_STRONG"
    }
   },
   "401856822": {
@@ -5682,14 +5413,14 @@
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 94,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.7,
+    "raw": 93.5,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5698,7 +5429,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.8,
+      "score": 16.8,
       "max": 20
      },
      "projection_stability": {
@@ -5710,7 +5441,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -5718,7 +5449,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers West Virginia failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of West Virginia’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.02 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.35 pts)",
     "potential": 96,
     "evidence_used": true,
     "stability": {
@@ -5731,39 +5462,18 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers West Virginia failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of West Virginia’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Iowa State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Iowa State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Michael Hawkins Jr. can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Jaylen Raynor can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 1.8,
       "reason": "the projected spread moves ±2.02 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.35 pts)",
       "family": "stability",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.5,
+      "reason": "West Virginia non-QB absences rate 2/100 team impact (largest: CB3 Nick Taylor, probable) — measured, not priced into the spread; plus 5 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "team_data",
@@ -5778,6 +5488,13 @@
       "reason": "Iowa State: 4 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Iowa State non-QB absences rate 1/100 team impact (largest: CB5 Jaheim Singletary, questionable) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -5806,40 +5523,25 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for West Virginia",
-      "key": "availability:away",
-      "potential_gain": 3
      },
      {
-      "action": "Restore an injury/availability source for Iowa State",
-      "key": "availability:home",
-      "potential_gain": 3
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "1 of 11 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10
+     "attribution": 2
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 95,
+    "grade": "VERY_STRONG"
    }
   },
   "401856823": {
@@ -6402,7 +6104,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "BYU’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "BYU’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -6582,7 +6284,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "Kansas’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6646,14 +6348,14 @@
    "home_conference": "ACC",
    "away_conference": "ACC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.731,
+   "legacy_input_coverage": 0.885,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 90,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.5,
+    "raw": 89.5,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -6662,7 +6364,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.3,
+      "score": 16.3,
       "max": 20
      },
      "projection_stability": {
@@ -6703,17 +6405,10 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Atlantic Coast Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Pittsburgh’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Atlantic Coast Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Virginia Tech’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "Virginia Tech non-QB absences rate 6/100 team impact (largest: RB1 Bill Davis, questionable) — measured, not priced into the spread; plus 10 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "projection_stability",
@@ -6725,16 +6420,9 @@
      {
       "component": "roster_availability",
       "points": 1,
-      "reason": "Pittsburgh’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Virginia Tech’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "reason": "Pittsburgh non-QB absences rate 4/100 team impact (largest: DB4 Cruce Brookins, questionable) — measured, not priced into the spread; plus 8 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "team_data",
@@ -6779,33 +6467,16 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
+    "gates": [],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (Pittsburgh)",
-      "key": "availability:away",
-      "potential_gain": 3
-     },
-     {
-      "action": "Re-read availability inside the filing window (Virginia Tech)",
-      "key": "availability:home",
-      "potential_gain": 3
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 6
+     "attribution": 2
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 91,
+    "grade": "VERY_STRONG"
    }
   },
   "401858246": {
@@ -7531,7 +7202,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "North Carolina’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "North Carolina’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -7885,7 +7556,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Syracuse’s starter record was re-read 1.3h ago and describes evidence from 13 days ago",
+      "reason": "Syracuse’s starter record was re-read 9.2h ago and describes evidence from 13.3 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8560,7 +8231,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "North Carolina’s starter record was re-read 1.3h ago and describes evidence from 11.3 days ago",
+      "reason": "North Carolina’s starter record was re-read 9.2h ago and describes evidence from 11.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8921,7 +8592,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Syracuse’s starter record was re-read 1.3h ago and describes evidence from 13 days ago",
+      "reason": "Syracuse’s starter record was re-read 9.2h ago and describes evidence from 13.3 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -9297,14 +8968,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 85,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.2,
+    "raw": 92.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -9313,7 +8984,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.7,
+      "score": 16.2,
       "max": 20
      },
      "projection_stability": {
@@ -9333,7 +9004,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Purdue failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Purdue’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.12 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.38 pts)",
     "potential": 96,
     "evidence_used": true,
     "stability": {
@@ -9346,20 +9017,6 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Purdue failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Purdue’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Illinois failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster (1 historical row refused); the impact of Illinois’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 2.2,
       "reason": "the projected spread moves ±2.12 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.38 pts)",
@@ -9368,17 +9025,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Ryan Browne can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "Illinois non-QB absences rate 19/100 team impact (largest: WR2 Alex Perry, out) — measured, not priced into the spread; plus 10 absences with UNKNOWN impact (no measured player quality), 3 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Katin Houser can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1,
+      "reason": "Purdue non-QB absences rate 6/100 team impact (largest: TE3 Kylan Fox, out) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
@@ -9416,49 +9073,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Purdue",
-      "key": "availability:away",
-      "potential_gain": 4
-     },
-     {
-      "action": "Restore an injury/availability source for Illinois",
-      "key": "availability:home",
-      "potential_gain": 4
-     },
-     {
-      "action": "Confirm Purdue’s starting QB (Ryan Browne)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Illinois’s starting QB (Katin Houser)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 85,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401858473": {
@@ -9469,14 +9094,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 84,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 92,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 84.1,
+    "raw": 92.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -9485,7 +9110,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 9,
+      "score": 17.1,
       "max": 20
      },
      "projection_stability": {
@@ -9526,31 +9151,10 @@
      },
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Ohio State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Ohio State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Iowa failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Iowa’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Julian Sayin can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Hank Brown can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "9 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "team_data",
@@ -9565,6 +9169,13 @@
       "reason": "Iowa: 4 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Iowa non-QB absences rate 4/100 team impact (largest: DB9 Tyler Brown, out) — measured, not priced into the spread; plus 3 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -9588,49 +9199,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Ohio State",
-      "key": "availability:away",
-      "potential_gain": 5
-     },
-     {
-      "action": "Restore an injury/availability source for Iowa",
-      "key": "availability:home",
-      "potential_gain": 5
-     },
-     {
-      "action": "Confirm Ohio State’s starting QB (Julian Sayin)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Iowa’s starting QB (Hank Brown)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 84,
-    "grade": "STRONG"
+    "score": 93,
+    "grade": "VERY_STRONG"
    }
   },
   "401858474": {
@@ -9641,14 +9220,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
     "score": 79,
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 79.5,
+    "raw": 86.3,
     "capped_by": [
      "UNSTABLE"
     ],
@@ -9659,7 +9238,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.8,
+      "score": 15.8,
       "max": 20
      },
      "projection_stability": {
@@ -9671,7 +9250,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -9699,20 +9278,6 @@
       "action_key": null
      },
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Michigan failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Michigan’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Minnesota failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Minnesota’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 2,
       "reason": "the projected spread moves ±2.08 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.35 pts)",
@@ -9721,17 +9286,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Bryce Underwood can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "Michigan non-QB absences rate 8/100 team impact (largest: WR1 Andrew Marsh, questionable) — measured, not priced into the spread; plus 12 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Drake Lindsey can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "Minnesota non-QB absences rate 0/100 team impact (largest: RB4 A.J. Turner, probable) — measured, not priced into the spread; plus 11 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
@@ -9760,26 +9325,23 @@
       "reason": "Bryce Underwood — expected; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
+     },
+     {
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "2 of 25 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
     "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     },
      {
       "id": "UNSTABLE",
       "cap": 79,
       "binding": true
      }
     ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
+    "missing": [],
     "next_actions": [],
     "recoverable_by_family": {}
    },
@@ -9796,14 +9358,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 87,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 94,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 86.8,
+    "raw": 93.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -9812,7 +9374,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 9,
+      "score": 16,
       "max": 20
      },
      "projection_stability": {
@@ -9824,7 +9386,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.9,
       "max": 15
      },
      "environment": {
@@ -9832,7 +9394,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Maryland failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Maryland’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "Maryland non-QB absences rate 11/100 team impact (largest: RB2 Harry Dalton III, out) — measured, not priced into the spread; plus 16 absences with UNKNOWN impact (no measured player quality), 3 in a critical or major role",
     "potential": 98,
     "evidence_used": true,
     "stability": {
@@ -9846,31 +9408,17 @@
     "penalties": [
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Maryland failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Maryland’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "Maryland non-QB absences rate 11/100 team impact (largest: RB2 Harry Dalton III, out) — measured, not priced into the spread; plus 16 absences with UNKNOWN impact (no measured player quality), 3 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Nebraska failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Nebraska’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Malik Washington can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Anthony Colandrea can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.5,
+      "reason": "Nebraska non-QB absences rate 5/100 team impact (largest: WR3 Jacory Barney Jr., questionable) — measured, not priced into the spread; plus 11 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "projection_stability",
@@ -9913,41 +9461,26 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Maryland",
-      "key": "availability:away",
-      "potential_gain": 2
      },
      {
-      "action": "Restore an injury/availability source for Nebraska",
-      "key": "availability:home",
-      "potential_gain": 2
+      "component": "source_integrity",
+      "points": 0.1,
+      "reason": "1 of 35 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 3,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 87,
-    "grade": "STRONG"
+    "score": 96,
+    "grade": "VERY_STRONG"
    }
   },
   "401858476": {
@@ -10030,7 +9563,7 @@
      {
       "component": "roster_availability",
       "points": 1.5,
-      "reason": "Northwestern non-QB absences rate 10/100 team impact (largest: DB2 Damon Walters, questionable) — measured, not priced into the spread; plus 17 absences with UNKNOWN impact (no measured player quality)",
+      "reason": "Northwestern non-QB absences rate 12/100 team impact (largest: DB2 Damon Walters, questionable) — measured, not priced into the spread; plus 17 absences with UNKNOWN impact (no measured player quality)",
       "family": "attribution",
       "action_key": "attribution:home"
      },
@@ -10109,14 +9642,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 90,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 86.4,
+    "raw": 90.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -10125,7 +9658,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 11.7,
+      "score": 15.5,
       "max": 20
      },
      "projection_stability": {
@@ -10166,31 +9699,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Indiana’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "Rutgers non-QB absences rate 4/100 team impact (largest: RB1 Antwan Raymond, questionable) — measured, not priced into the spread; plus 7 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Rutgers’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Indiana’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Rutgers’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.3,
+      "reason": "Indiana non-QB absences rate 11/100 team impact (largest: RB3 Khobie Martin, out) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
@@ -10235,44 +9754,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
+    "gates": [],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (Indiana)",
-      "key": "availability:away",
-      "potential_gain": 3
-     },
-     {
-      "action": "Re-read availability inside the filing window (Rutgers)",
-      "key": "availability:home",
-      "potential_gain": 3
-     },
-     {
-      "action": "Confirm Indiana’s starting QB (Josh Hoover)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Rutgers’s starting QB (Dylan Lonergan)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 7,
-     "qb_identity": 2
+     "attribution": 3,
+     "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 92,
+    "grade": "VERY_STRONG"
    }
   },
   "401858478": {
@@ -10283,14 +9775,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 88,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 92,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 88.4,
+    "raw": 92.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -10299,7 +9791,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.8,
+      "score": 16.6,
       "max": 20
      },
      "projection_stability": {
@@ -10340,31 +9832,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Washington’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
+      "points": 1.5,
+      "reason": "USC non-QB absences rate 4/100 team impact (largest: TE1 Mark Bowman, questionable) — measured, not priced into the spread; plus 9 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Big Ten Conference’s report for this game is not due yet — nobody is assumed fit; the impact of USC’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Washington’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "USC’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:home"
+      "points": 1.1,
+      "reason": "Washington non-QB absences rate 11/100 team impact (largest: WR4 Christian Moss, out) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "team_data",
@@ -10395,44 +9873,17 @@
       "action_key": null
      }
     ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
+    "gates": [],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (Washington)",
-      "key": "availability:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Re-read availability inside the filing window (USC)",
-      "key": "availability:home",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Washington’s starting QB (Demond Williams Jr.)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm USC’s starting QB (Jayden Maiava)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 7,
+     "attribution": 3,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 88,
-    "grade": "STRONG"
+    "score": 94,
+    "grade": "VERY_STRONG"
    }
   },
   "401858479": {
@@ -10443,14 +9894,14 @@
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
-    "grade": "STRONG",
-    "grade_label": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
+    "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 85.7,
+    "raw": 92.6,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -10459,7 +9910,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 8.8,
+      "score": 15.9,
       "max": 20
      },
      "projection_stability": {
@@ -10471,7 +9922,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -10479,7 +9930,7 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Michigan State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Michigan State’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.02 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
     "potential": 96,
     "evidence_used": true,
     "stability": {
@@ -10492,39 +9943,25 @@
     },
     "penalties": [
      {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Michigan State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Michigan State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Wisconsin failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Wisconsin’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Alessio Milivojevic can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2,
-      "reason": "no source states whether Colton Joseph can play — silence is not health",
-      "family": "qb_status",
-      "action_key": "availability:home"
-     },
-     {
       "component": "projection_stability",
       "points": 1.8,
       "reason": "the projected spread moves ±2.02 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.5,
+      "reason": "Michigan State non-QB absences rate 17/100 team impact (largest: RB1 Camryn Edwards, out) — measured, not priced into the spread; plus 12 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.4,
+      "reason": "Wisconsin non-QB absences rate 5/100 team impact (largest: RB4 Abu Sama III, questionable) — measured, not priced into the spread; plus 7 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "attribution",
+      "action_key": "attribution:home"
      },
      {
       "component": "team_data",
@@ -10567,40 +10004,25 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
-     }
-    ],
-    "gates": [
-     {
-      "id": "QB_STATUS_UNCONFIRMED",
-      "cap": 89,
-      "binding": false
-     }
-    ],
-    "missing": [
-     "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
-    ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Michigan State",
-      "key": "availability:away",
-      "potential_gain": 3
      },
      {
-      "action": "Restore an injury/availability source for Wisconsin",
-      "key": "availability:home",
-      "potential_gain": 3
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "2 of 24 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
+    "gates": [],
+    "missing": [],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10
+     "attribution": 3
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 95,
+    "grade": "VERY_STRONG"
    }
   },
   "401858480": {
@@ -11914,14 +11336,14 @@
    "home_conference": "Pac-12",
    "away_conference": "Pac-12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.885,
    "reliability": {
     "contract": "cfb_reliability/2",
     "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 87.6,
+    "raw": 88.2,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11930,7 +11352,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 11.9,
+      "score": 12.6,
       "max": 20
      },
      "projection_stability": {
@@ -11942,7 +11364,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 14.1,
+      "score": 14,
       "max": 15
      },
      "environment": {
@@ -11950,32 +11372,18 @@
       "max": 10
      }
     },
-    "main_deduction": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Utah State’s absences cannot be assessed: no current availability read for this game",
+    "main_deduction": "the projected spread moves ±2.11 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.31 pts)",
     "potential": 97,
     "evidence_used": true,
     "stability": {
      "sd": 2.11,
-     "p10": 13.53,
-     "p50": 16.51,
-     "p90": 19.49,
+     "p10": 14.03,
+     "p50": 17.09,
+     "p90": 20.16,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Utah State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Boise State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
      {
       "component": "projection_stability",
       "points": 2.1,
@@ -11985,28 +11393,35 @@
      },
      {
       "component": "roster_availability",
-      "points": 1.3,
-      "reason": "Grady Brosterhous — expected (Grady Brosterhous opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json); identity not corroborated against the current roster",
+      "points": 2,
+      "reason": "no source states whether Maddux Madsen can play — silence is not health",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.8,
+      "reason": "no comprehensive report covers Utah State for this game; Utah State non-QB absences rate 15/100 team impact (largest: LB4 Bronson Olevao Jr., probable) — measured, not priced into the spread; plus 64 absences with UNKNOWN impact (no measured player quality), 6 in a critical or major role",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1.7,
+      "reason": "Grady Brosterhous — expected (Grady Brosterhous opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json); listed probable; identity not corroborated against the current roster",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Utah State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1,
-      "reason": "Boise State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
+      "points": 1.6,
+      "reason": "no comprehensive report covers Boise State for this game; Boise State non-QB absences rate 7/100 team impact (largest: WR3 Cameron Bates, questionable) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
+      "family": "availability",
       "action_key": "availability:home"
      },
      {
       "component": "source_integrity",
-      "points": 0.9,
+      "points": 0.8,
       "reason": "resolved by the source hierarchy: Grady Brosterhous opened the last game with 100% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:away"
@@ -12031,6 +11446,13 @@
       "reason": "Maddux Madsen — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "source_integrity",
+      "points": 0.3,
+      "reason": "10 of 85 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
     "gates": [
@@ -12040,16 +11462,18 @@
       "binding": false
      }
     ],
-    "missing": [],
+    "missing": [
+     "qb_availability:home"
+    ],
     "next_actions": [
      {
-      "action": "Re-read availability inside the filing window (Utah State)",
-      "key": "availability:away",
-      "potential_gain": 1
+      "action": "Confirm Boise State’s QB availability",
+      "key": "availability:home",
+      "potential_gain": 4
      },
      {
-      "action": "Re-read availability inside the filing window (Boise State)",
-      "key": "availability:home",
+      "action": "Refresh Utah State injury availability",
+      "key": "availability:away",
       "potential_gain": 1
      },
      {
@@ -12061,6 +11485,11 @@
       "action": "Confirm Utah State’s starting QB (Grady Brosterhous)",
       "key": "qb_identity:away",
       "potential_gain": 1
+     },
+     {
+      "action": "Confirm Boise State’s starting QB (Maddux Madsen)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
@@ -12070,7 +11499,7 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 87,
+    "score": 89,
     "grade": "STRONG"
    }
   },
@@ -12082,14 +11511,14 @@
    "home_conference": "Pac-12",
    "away_conference": "Pac-12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.731,
+   "legacy_input_coverage": 0.808,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 83,
+    "score": 87,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 82.9,
+    "raw": 86.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -12098,11 +11527,11 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 7.6,
+      "score": 10.9,
       "max": 20
      },
      "projection_stability": {
-      "score": 18.4,
+      "score": 19.2,
       "max": 20
      },
      "freshness": {
@@ -12110,7 +11539,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 13.2,
+      "score": 13.1,
       "max": 15
      },
      "environment": {
@@ -12118,32 +11547,18 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers Oregon State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Oregon State’s absences cannot be assessed: no current availability read for this game",
-    "potential": 97,
+    "main_deduction": "no source states whether Braden Atkinson can play — silence is not health",
+    "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 1.65,
-     "p10": -4.22,
-     "p50": -1.77,
-     "p90": 0.68,
-     "favorite_flip_rate": 0.047,
+     "sd": 1.73,
+     "p10": -6.02,
+     "p50": -3.72,
+     "p90": -1.42,
+     "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Oregon State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Oregon State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 3,
-      "reason": "every source that covers Colorado State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Colorado State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
-      "action_key": "availability:home"
-     },
      {
       "component": "roster_availability",
       "points": 2,
@@ -12160,28 +11575,42 @@
      },
      {
       "component": "roster_availability",
+      "points": 1.8,
+      "reason": "no comprehensive report covers Colorado State for this game; Colorado State non-QB absences rate 2/100 team impact (largest: S2 Elijah Mc-Cantos, doubtful) — measured, not priced into the spread; plus 24 absences with UNKNOWN impact (no measured player quality), 3 in a critical or major role",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
       "points": 1.7,
       "reason": "Ksaan Farrar — expected (Ksaan Farrar opened the last game with 98% of the dropbacks); measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json); identity not corroborated against the current roster",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
      },
      {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "no comprehensive report covers Oregon State for this game; 6 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
+     },
+     {
       "component": "projection_stability",
-      "points": 1.1,
-      "reason": "the projection flips favorite in 5% of sensitivity runs",
-      "family": "favorite_flips",
+      "points": 0.8,
+      "reason": "the projected spread moves ±1.73 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
       "action_key": null
      },
      {
       "component": "source_integrity",
-      "points": 0.9,
+      "points": 0.8,
       "reason": "resolved by the source hierarchy: Braden Atkinson opened the last game with 81% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:away"
      },
      {
       "component": "source_integrity",
-      "points": 0.9,
+      "points": 0.8,
       "reason": "resolved by the source hierarchy: Ksaan Farrar opened the last game with 98% of the dropbacks",
       "family": "qb_conflict",
       "action_key": "qb_conflict:home"
@@ -12208,11 +11637,11 @@
       "action_key": null
      },
      {
-      "component": "projection_stability",
-      "points": 0.5,
-      "reason": "the projected spread moves ±1.65 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
+      "component": "source_integrity",
+      "points": 0.3,
+      "reason": "5 of 33 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
     "gates": [
@@ -12224,25 +11653,28 @@
     ],
     "missing": [
      "qb_availability:home",
-     "availability:home",
-     "qb_availability:away",
-     "availability:away"
+     "qb_availability:away"
     ],
     "next_actions": [
      {
-      "action": "Restore an injury/availability source for Oregon State",
+      "action": "Confirm Oregon State’s QB availability",
       "key": "availability:away",
-      "potential_gain": 5
+      "potential_gain": 2
      },
      {
-      "action": "Restore an injury/availability source for Colorado State",
+      "action": "Confirm Colorado State’s QB availability",
       "key": "availability:home",
-      "potential_gain": 5
+      "potential_gain": 2
      },
      {
       "action": "Confirm Colorado State’s starting QB (Ksaan Farrar)",
       "key": "qb_identity:home",
       "potential_gain": 2
+     },
+     {
+      "action": "Rate the absent Oregon State players (player-quality attribution)",
+      "key": "attribution:away",
+      "potential_gain": 1
      },
      {
       "action": "Resolve Oregon State’s starter conflict",
@@ -12253,21 +11685,17 @@
       "action": "Resolve Colorado State’s starter conflict",
       "key": "qb_conflict:home",
       "potential_gain": 1
-     },
-     {
-      "action": "Confirm Oregon State’s starting QB (Braden Atkinson)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 10,
+     "attribution": 1,
+     "availability": 6,
      "qb_conflict": 2,
      "qb_identity": 2
     }
    },
    "reliability_without_evidence": {
-    "score": 81,
+    "score": 87,
     "grade": "STRONG"
    }
   },
@@ -12279,14 +11707,14 @@
    "home_conference": "Pac-12",
    "away_conference": "Pac-12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.846,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 88.3,
+    "raw": 87.1,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -12295,7 +11723,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 11.5,
       "max": 20
      },
      "projection_stability": {
@@ -12307,7 +11735,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -12336,30 +11764,30 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Texas State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
+      "points": 2,
+      "reason": "no source states whether Brad Jackson can play — silence is not health",
+      "family": "qb_status",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of San Diego State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
+      "points": 2,
+      "reason": "no source states whether Jayden Denegal can play — silence is not health",
+      "family": "qb_status",
       "action_key": "availability:home"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Texas State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
+      "points": 1.8,
+      "reason": "no comprehensive report covers Texas State for this game; Texas State non-QB absences rate 17/100 team impact (largest: WR2 Kylen Evans, questionable) — measured, not priced into the spread; plus 11 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
+      "family": "availability",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "San Diego State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
+      "points": 1.8,
+      "reason": "no comprehensive report covers San Diego State for this game; San Diego State non-QB absences rate 26/100 team impact (largest: RB1 Lucky Sutton, out) — measured, not priced into the spread; plus 23 absences with UNKNOWN impact (no measured player quality), 3 in a critical or major role",
+      "family": "availability",
       "action_key": "availability:home"
      },
      {
@@ -12389,6 +11817,178 @@
       "reason": "Jayden Denegal — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "4 of 47 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
+     }
+    ],
+    "gates": [
+     {
+      "id": "QB_STATUS_UNCONFIRMED",
+      "cap": 89,
+      "binding": false
+     }
+    ],
+    "missing": [
+     "qb_availability:home",
+     "qb_availability:away"
+    ],
+    "next_actions": [
+     {
+      "action": "Confirm Texas State’s QB availability",
+      "key": "availability:away",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm San Diego State’s QB availability",
+      "key": "availability:home",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm Texas State’s starting QB (Brad Jackson)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     }
+    ],
+    "recoverable_by_family": {
+     "availability": 8,
+     "qb_identity": 1
+    }
+   },
+   "reliability_without_evidence": {
+    "score": 88,
+    "grade": "STRONG"
+   }
+  },
+  "401860901": {
+   "game_id": "401860901",
+   "home": "Fresno State",
+   "away": "Boise State",
+   "kickoff": "2026-10-11T02:30:00.000Z",
+   "home_conference": "Pac-12",
+   "away_conference": "Pac-12",
+   "matchup_type": "conference",
+   "legacy_input_coverage": 0.769,
+   "reliability": {
+    "contract": "cfb_reliability/2",
+    "score": 87,
+    "grade": "STRONG",
+    "grade_label": "STRONG",
+    "tier": "STRONG",
+    "raw": 86.6,
+    "capped_by": [],
+    "gate_label": null,
+    "components": {
+     "team_data": {
+      "score": 18.7,
+      "max": 20
+     },
+     "roster_availability": {
+      "score": 12.8,
+      "max": 20
+     },
+     "projection_stability": {
+      "score": 15.1,
+      "max": 20
+     },
+     "freshness": {
+      "score": 15,
+      "max": 15
+     },
+     "source_integrity": {
+      "score": 15,
+      "max": 15
+     },
+     "environment": {
+      "score": 10,
+      "max": 10
+     }
+    },
+    "main_deduction": "the projection flips favorite in 14% of sensitivity runs",
+    "potential": 94,
+    "evidence_used": true,
+    "stability": {
+     "sd": 1.93,
+     "p10": -4.31,
+     "p50": -1.55,
+     "p90": 1.21,
+     "favorite_flip_rate": 0.141,
+     "tier": "MODERATE"
+    },
+    "penalties": [
+     {
+      "component": "projection_stability",
+      "points": 3.4,
+      "reason": "the projection flips favorite in 14% of sensitivity runs",
+      "family": "favorite_flips",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Boise State’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Fresno State’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 1.5,
+      "reason": "the projected spread moves ±1.93 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Boise State’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Fresno State’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Boise State: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Fresno State: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Maddux Madsen — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Jayden Mandal — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
      }
     ],
     "gates": [
@@ -12401,33 +12001,22 @@
     "missing": [],
     "next_actions": [
      {
-      "action": "Re-read availability inside the filing window (Texas State)",
+      "action": "Re-read availability inside the filing window (Boise State)",
       "key": "availability:away",
-      "potential_gain": 1
+      "potential_gain": 2
      },
      {
-      "action": "Re-read availability inside the filing window (San Diego State)",
+      "action": "Re-read availability inside the filing window (Fresno State)",
       "key": "availability:home",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Texas State’s starting QB (Brad Jackson)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm San Diego State’s starting QB (Jayden Denegal)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
+      "potential_gain": 2
      }
     ],
     "recoverable_by_family": {
-     "availability": 7,
-     "qb_identity": 1
+     "availability": 6
     }
    },
    "reliability_without_evidence": {
-    "score": 88,
+    "score": 87,
     "grade": "STRONG"
    }
   },
@@ -12612,14 +12201,14 @@
    "home_conference": "Pac-12",
    "away_conference": "Pac-12",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.769,
+   "legacy_input_coverage": 0.846,
    "reliability": {
     "contract": "cfb_reliability/2",
     "score": 79,
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 82.8,
+    "raw": 83.2,
     "capped_by": [
      "UNSTABLE"
     ],
@@ -12630,7 +12219,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 13.1,
       "max": 20
      },
      "projection_stability": {
@@ -12642,7 +12231,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14.8,
       "max": 15
      },
      "environment": {
@@ -12678,30 +12267,30 @@
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Fresno State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
+      "points": 2,
+      "reason": "no source states whether Jayden Mandal can play — silence is not health",
+      "family": "qb_status",
       "action_key": "availability:away"
      },
      {
       "component": "roster_availability",
-      "points": 2.3,
-      "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Washington State’s absences cannot be assessed: no current availability read for this game",
-      "family": "availability",
+      "points": 2,
+      "reason": "no source states whether Caden Pinnick can play — silence is not health",
+      "family": "qb_status",
       "action_key": "availability:home"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Fresno State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
-      "action_key": "availability:away"
+      "points": 1.1,
+      "reason": "no comprehensive report covers Fresno State for this game; 5 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
-      "points": 1,
-      "reason": "Washington State’s availability report is not due yet — nobody is assumed fit",
-      "family": "qb_status",
+      "points": 0.9,
+      "reason": "no comprehensive report covers Washington State for this game; Washington State non-QB absences rate 2/100 team impact (largest: TE2 Trey Leckner, probable) — measured, not priced into the spread; plus 5 absences with UNKNOWN impact (no measured player quality)",
+      "family": "availability",
       "action_key": "availability:home"
      },
      {
@@ -12738,6 +12327,13 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
+     },
+     {
+      "component": "source_integrity",
+      "points": 0.2,
+      "reason": "1 of 13 reported absences did not resolve to a unique athlete on the roster",
+      "family": "player_identity",
+      "action_key": "player_identity"
      }
     ],
     "gates": [
@@ -12752,7 +12348,10 @@
       "binding": true
      }
     ],
-    "missing": [],
+    "missing": [
+     "qb_availability:home",
+     "qb_availability:away"
+    ],
     "next_actions": [],
     "recoverable_by_family": {}
    },
@@ -13433,7 +13032,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Memphis’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "Memphis’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -14182,7 +13781,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "South Florida’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14380,7 +13979,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Samford’s starter record was re-read 1.3h ago and describes evidence from an unknown time ago",
+      "reason": "Samford’s starter record was re-read 9.2h ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -14599,7 +14198,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "South Florida’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15291,7 +14890,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Memphis’s starter record was re-read 1.3h ago and describes evidence from 11 days ago",
+      "reason": "Memphis’s starter record was re-read 9.2h ago and describes evidence from 11.3 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -15644,7 +15243,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "San José State’s starter record was re-read 2.2 days ago and describes evidence from 2.2 days ago",
+      "reason": "San José State’s starter record was re-read 2.5 days ago and describes evidence from 2.5 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -16010,7 +15609,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "North Dakota State’s starter record was re-read 1.3h ago and describes evidence from 10.8 days ago",
+      "reason": "North Dakota State’s starter record was re-read 9.2h ago and describes evidence from 11.2 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -16047,6 +15646,151 @@
     "next_actions": [],
     "recoverable_by_family": {
      "availability": 7
+    }
+   },
+   "reliability_without_evidence": {
+    "score": 89,
+    "grade": "STRONG"
+   }
+  },
+  "401864516": {
+   "game_id": "401864516",
+   "home": "Northern Illinois",
+   "away": "Air Force",
+   "kickoff": "2026-10-10T23:30:00.000Z",
+   "home_conference": "Mountain West",
+   "away_conference": "Mountain West",
+   "matchup_type": "conference",
+   "legacy_input_coverage": 0.769,
+   "reliability": {
+    "contract": "cfb_reliability/2",
+    "score": 89,
+    "grade": "STRONG",
+    "grade_label": "STRONG",
+    "tier": "STRONG",
+    "raw": 88.9,
+    "capped_by": [],
+    "gate_label": null,
+    "components": {
+     "team_data": {
+      "score": 18.3,
+      "max": 20
+     },
+     "roster_availability": {
+      "score": 12.2,
+      "max": 20
+     },
+     "projection_stability": {
+      "score": 18.4,
+      "max": 20
+     },
+     "freshness": {
+      "score": 15,
+      "max": 15
+     },
+     "source_integrity": {
+      "score": 15,
+      "max": 15
+     },
+     "environment": {
+      "score": 10,
+      "max": 10
+     }
+    },
+    "main_deduction": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Air Force’s absences cannot be assessed: no current availability read for this game",
+    "potential": 96,
+    "evidence_used": true,
+    "stability": {
+     "sd": 1.95,
+     "p10": -15.32,
+     "p50": -12.48,
+     "p90": -9.65,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
+    },
+    "penalties": [
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Air Force’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Northern Illinois’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 1.6,
+      "reason": "the projected spread moves ±1.95 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Air Force’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "Northern Illinois’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "team_data",
+      "points": 1,
+      "reason": "Air Force: 3 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.7,
+      "reason": "Liam Szarka — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Northern Illinois: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Taron Dickens — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "player production attributed at confidence 0.48; extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     }
+    ],
+    "gates": [
+     {
+      "id": "QB_STATUS_UNCONFIRMED",
+      "cap": 89,
+      "binding": false
+     }
+    ],
+    "missing": [],
+    "next_actions": [],
+    "recoverable_by_family": {
+     "availability": 6
     }
    },
    "reliability_without_evidence": {
@@ -16219,6 +15963,176 @@
     "grade": "STRONG"
    }
   },
+  "401864518": {
+   "game_id": "401864518",
+   "home": "UNLV",
+   "away": "North Dakota State",
+   "kickoff": "2026-10-10T23:00:00.000Z",
+   "home_conference": "Mountain West",
+   "away_conference": "Mountain West",
+   "matchup_type": "conference",
+   "legacy_input_coverage": 0.72,
+   "reliability": {
+    "contract": "cfb_reliability/2",
+    "score": 88,
+    "grade": "STRONG",
+    "grade_label": "STRONG",
+    "tier": "STRONG",
+    "raw": 87.9,
+    "capped_by": [],
+    "gate_label": null,
+    "components": {
+     "team_data": {
+      "score": 17.7,
+      "max": 20
+     },
+     "roster_availability": {
+      "score": 12.5,
+      "max": 20
+     },
+     "projection_stability": {
+      "score": 18.3,
+      "max": 20
+     },
+     "freshness": {
+      "score": 14.4,
+      "max": 15
+     },
+     "source_integrity": {
+      "score": 15,
+      "max": 15
+     },
+     "environment": {
+      "score": 10,
+      "max": 10
+     }
+    },
+    "main_deduction": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of North Dakota State’s absences cannot be assessed: no current availability read for this game",
+    "potential": 96,
+    "evidence_used": true,
+    "stability": {
+     "sd": 1.97,
+     "p10": 1.19,
+     "p50": 4.05,
+     "p90": 6.91,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
+    },
+    "penalties": [
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of North Dakota State’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2.3,
+      "reason": "Mountain West Conference’s report for this game is not due yet — nobody is assumed fit; the impact of UNLV’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 1.7,
+      "reason": "the projected spread moves ±1.97 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.42 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "team_data",
+      "points": 1.7,
+      "reason": "North Dakota State: no prior-season rating to carry; 4 of 6 games for a full in-season sample",
+      "family": "prior_missing",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "North Dakota State’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 1,
+      "reason": "UNLV’s availability report is not due yet — nobody is assumed fit",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "UNLV: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "North Dakota State’s starter record was re-read 9.2h ago and describes evidence from 11.2 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Nathan Hayes — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Jackson Arnold — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     }
+    ],
+    "gates": [
+     {
+      "id": "QB_STATUS_UNCONFIRMED",
+      "cap": 89,
+      "binding": false
+     }
+    ],
+    "missing": [],
+    "next_actions": [
+     {
+      "action": "Re-read availability inside the filing window (North Dakota State)",
+      "key": "availability:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read availability inside the filing window (UNLV)",
+      "key": "availability:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read North Dakota State’s starter evidence",
+      "key": "starters:away",
+      "potential_gain": 1
+     }
+    ],
+    "recoverable_by_family": {
+     "availability": 6,
+     "qb_identity": 1,
+     "starters": 1
+    }
+   },
+   "reliability_without_evidence": {
+    "score": 88,
+    "grade": "STRONG"
+   }
+  },
   "401864519": {
    "game_id": "401864519",
    "home": "San José State",
@@ -16341,7 +16255,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "San José State’s starter record was re-read 2.2 days ago and describes evidence from 2.2 days ago",
+      "reason": "San José State’s starter record was re-read 2.5 days ago and describes evidence from 2.5 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -18527,7 +18441,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Louisiana Tech’s starter record was re-read 1.3h ago and describes evidence from 11.1 days ago",
+      "reason": "Louisiana Tech’s starter record was re-read 9.2h ago and describes evidence from 11.4 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -20125,7 +20039,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Louisiana Tech’s starter record was re-read 1.3h ago and describes evidence from 11.1 days ago",
+      "reason": "Louisiana Tech’s starter record was re-read 9.2h ago and describes evidence from 11.4 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
