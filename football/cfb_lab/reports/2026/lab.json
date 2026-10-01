@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-01T03:07:30.000Z",
+ "generated_at": "2026-10-01T04:07:31.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 179,
-    "latest_snapshot_at": "2026-10-01T03:07:30.000Z",
+    "snapshots": 180,
+    "latest_snapshot_at": "2026-10-01T04:07:31.000Z",
     "upcoming_games": 114,
-    "avg_confidence_upcoming": 79.5
+    "avg_confidence_upcoming": 79.6
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 205,
-    "latest_snapshot_at": "2026-10-01T03:07:30.000Z",
+    "snapshots": 206,
+    "latest_snapshot_at": "2026-10-01T04:07:31.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 205,
-    "latest_snapshot_at": "2026-10-01T03:07:30.000Z",
+    "snapshots": 206,
+    "latest_snapshot_at": "2026-10-01T04:07:31.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77.5
    }
@@ -73,13 +73,13 @@
   "data_quality": {
    "games": 114,
    "counts": {
-    "GREEN": 55,
-    "YELLOW": 59,
+    "GREEN": 56,
+    "YELLOW": 58,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 57,
+     "YELLOW": 56,
      "RED": 0
     },
     "pbp_freshness": {
@@ -131,19 +131,6 @@
      ],
      "kickoff": "2026-10-03T23:45:00.000Z",
      "matchup": "McNeese @ LSU"
-    },
-    {
-     "game_id": "401864513",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-04T03:59:00.000Z",
-     "matchup": "San José State @ Hawai'i"
     },
     {
      "game_id": "401871090",
@@ -862,16 +849,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-01T03:07:30.000Z",
-    "quotes_total": 4087,
+    "last_quote_at": "2026-10-01T04:07:31.000Z",
+    "quotes_total": 4156,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1099,
-   "live_predictions": 589,
-   "quotes": 4087,
+   "predictions": 1102,
+   "live_predictions": 592,
+   "quotes": 4156,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
@@ -5705,45 +5692,45 @@
    "away": "San José State",
    "market": {
     "current": -3,
-    "open": -4.25,
+    "open": -4.5,
     "books": 1,
-    "as_of": "2026-09-29T12:08:29Z",
+    "as_of": "2026-10-01T04:07:31.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-27T15:07:15.000Z",
-     "margin": 7.27,
+     "prediction_ts": "2026-10-01T04:07:31.000Z",
+     "margin": 7.48,
      "fair": "Hawai'i -7.5",
-     "p_home": 0.6877,
-     "sigma": 14.857,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "p_home": 0.6928,
+     "sigma": 14.847,
+     "conf": 88,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 4.48,
+     "line": -3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
+     "prediction_ts": "2026-10-01T04:07:31.000Z",
      "margin": 2.04,
      "fair": "Hawai'i -2.0",
      "p_home": 0.5518,
-     "sigma": 15.797,
+     "sigma": 15.798,
      "conf": 85,
      "dq": "GREEN",
      "decision": "PASS",
@@ -5754,19 +5741,20 @@
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
+     "prediction_ts": "2026-10-01T04:07:31.000Z",
      "margin": 2.03,
      "fair": "Hawai'i -2.0",
      "p_home": 0.5518,
-     "sigma": 15.736,
+     "sigma": 15.737,
      "conf": 87,
      "dq": "GREEN",
      "decision": "PASS",
@@ -5777,6 +5765,7 @@
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     }
@@ -9998,8 +9987,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 57,
-  "games_with_verdict": 57,
+  "games_with_market": 58,
+  "games_with_verdict": 58,
   "raw_major_disagreements": 7,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10008,7 +9997,7 @@
   "data_fault": 0,
   "market_fault": 7,
   "verification_not_run": 0,
-  "average_raw_gap": 4.136,
+  "average_raw_gap": 4.142,
   "average_raw_gap_7plus": 11.616,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": null,
