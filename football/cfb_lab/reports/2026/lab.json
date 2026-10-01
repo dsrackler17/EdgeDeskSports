@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-01T06:07:29.000Z",
+ "generated_at": "2026-10-01T07:07:34.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,10 +46,10 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 180,
-    "latest_snapshot_at": "2026-10-01T04:07:31.000Z",
-    "upcoming_games": 114,
-    "avg_confidence_upcoming": 79.6
+    "snapshots": 183,
+    "latest_snapshot_at": "2026-10-01T07:07:34.000Z",
+    "upcoming_games": 117,
+    "avg_confidence_upcoming": 79.5
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 114,
+   "games": 117,
    "counts": {
     "GREEN": 56,
-    "YELLOW": 58,
+    "YELLOW": 61,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 56,
+     "YELLOW": 59,
      "RED": 0
     },
     "pbp_freshness": {
@@ -846,19 +846,58 @@
      ],
      "kickoff": "2026-10-10T22:00:00.000Z",
      "matchup": "San Diego State @ Oregon State"
+    },
+    {
+     "game_id": "401864518",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T23:00:00.000Z",
+     "matchup": "North Dakota State @ UNLV"
+    },
+    {
+     "game_id": "401864516",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-10T23:30:00.000Z",
+     "matchup": "Air Force @ Northern Illinois"
+    },
+    {
+     "game_id": "401860901",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-11T02:30:00.000Z",
+     "matchup": "Boise State @ Fresno State"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-01T06:07:29.000Z",
-    "quotes_total": 4220,
+    "last_quote_at": "2026-10-01T07:07:34.000Z",
+    "quotes_total": 4252,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1102,
-   "live_predictions": 592,
-   "quotes": 4220,
+   "predictions": 1105,
+   "live_predictions": 595,
+   "quotes": 4252,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
