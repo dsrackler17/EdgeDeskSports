@@ -485,9 +485,14 @@ chk('espn: scoreboard dates are Eastern calendar dates', () => S.etDate('2026-09
       && R.needsPrice({ kickoff: k(20), final: null, close: null }, now) === false);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 
-  /* the committed record itself, when present, must obey the same rules */
+  /* the committed record itself, when present, must obey the same rules.
+     FOOTBALL_RECORD_RULES_ONLY=1 skips this block: the record job runs the
+     rules BEFORE it rewrites the record (a record written by older code must
+     never block the run that rewrites it) and this whole file again AFTER,
+     on its own output, before it publishes (football-model-record.yml). */
   const dir = path.join(__dirname, '..', '..', 'record', 'football');
-  if (fs.existsSync(path.join(dir, 'summary.json'))) {
+  if (process.env.FOOTBALL_RECORD_RULES_ONLY === '1') console.log('rules only: the committed record is checked after it is rewritten');
+  else if (fs.existsSync(path.join(dir, 'summary.json'))) {
     ['nfl', 'cfb'].forEach((sp) => {
       /* the season ledgers only (<sport>_<season>.json, football_record.js): the CFB Model
          Lab publishes its own record, cfb_model_lab.json, beside them under another schema */

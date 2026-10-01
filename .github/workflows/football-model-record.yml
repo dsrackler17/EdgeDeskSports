@@ -70,7 +70,13 @@ jobs:
         with:
           node-version: '22'
 
+      # The rules first — but not the committed record's own checks: a record
+      # written by older code (one that priced picks at an assumed -110, say)
+      # must never block the run that rewrites it. Those checks run below, on
+      # this run's output, before anything is published.
       - name: The record's rules must pass before it is allowed to write
+        env:
+          FOOTBALL_RECORD_RULES_ONLY: '1'
         run: |
           node tools/record/football_record.test.js
           node football/personnel/personnel.test.js
@@ -89,6 +95,9 @@ jobs:
           node football/personnel/build_personnel.js --write
           node football/personnel/freeze.js --write
           node football/personnel/freeze.js --verify
+
+      - name: The record this run wrote obeys every rule (checked before it is published)
+        run: node tools/record/football_record.test.js
 
       - name: Publish the record
         run: |

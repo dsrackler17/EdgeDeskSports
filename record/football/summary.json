@@ -1,12 +1,12 @@
 {
  "schema": "edgedesk_football_model_record_summary_v1",
- "generated_at": "2026-10-01T18:55:42.488Z",
+ "generated_at": "2026-10-01T20:36:53.147Z",
  "season": 2026,
- "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final, and priced in units. Separate from the edges record, which grades flagged prices.",
+ "what": "The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.",
  "rules": [
   "Only numbers published before kickoff are recorded; the pick is the last pregame number and the first is kept beside it.",
   "Against the spread and the total, the model’s side is set by its number against the CLOSE and graded on the final.",
-  "P&L is 1 unit on every side the record takes, at that side’s closing price from the same source as the closing line. A spread or total whose closing price was never captured is priced at the standard −110 and marked; a moneyline is priced only at its real closing price. ROI = units ÷ units risked; a push returns the stake.",
+  "This is a record, not P&L: no entry price was captured with the model’s number, so its results are wins and losses. Closing prices are kept where the source gives them; nothing is ever priced at an assumed −110.",
   "CLV is in points: how far the market moved toward the side the model leaned, from the quote recorded with the number to the close, from the same source.",
   "No close, no final, no total: nothing is estimated. A final two feeds disagree on settles nothing."
  ],
@@ -39,8 +39,7 @@
     "final_no_close": 0,
     "graded": 32,
     "revised": 43,
-    "beyond_guard": 0,
-    "ml_unpriced": 0
+    "beyond_guard": 0
    },
    "ats": {
     "all": {
@@ -48,36 +47,21 @@
      "w": 19,
      "l": 11,
      "p": 2,
-     "pct": 63.3,
-     "units": 6.0394,
-     "risked": 30,
-     "roi": 20.1,
-     "at_close": 32,
-     "at_standard": 0
+     "pct": 63.3
     },
     "lean": {
      "n": 20,
      "w": 11,
      "l": 7,
      "p": 2,
-     "pct": 61.1,
-     "units": 2.7292,
-     "risked": 18,
-     "roi": 15.2,
-     "at_close": 20,
-     "at_standard": 0
+     "pct": 61.1
     },
     "big": {
      "n": 9,
      "w": 5,
      "l": 3,
      "p": 1,
-     "pct": 62.5,
-     "units": 1.4288,
-     "risked": 8,
-     "roi": 17.9,
-     "at_close": 9,
-     "at_standard": 0
+     "pct": 62.5
     }
    },
    "ou": {
@@ -86,36 +70,21 @@
      "w": 16,
      "l": 15,
      "p": 0,
-     "pct": 51.6,
-     "units": -0.4928,
-     "risked": 31,
-     "roi": -1.6,
-     "at_close": 31,
-     "at_standard": 0
+     "pct": 51.6
     },
     "lean": {
      "n": 14,
      "w": 8,
      "l": 6,
      "p": 0,
-     "pct": 57.1,
-     "units": 1.2545,
-     "risked": 14,
-     "roi": 9,
-     "at_close": 14,
-     "at_standard": 0
+     "pct": 57.1
     },
     "big": {
      "n": 5,
      "w": 4,
      "l": 1,
      "p": 0,
-     "pct": 80,
-     "units": 2.657,
-     "risked": 5,
-     "roi": 53.1,
-     "at_close": 5,
-     "at_standard": 0
+     "pct": 80
     }
    },
    "su": {
@@ -124,245 +93,6 @@
     "l": 11,
     "p": 0,
     "pct": 65.6
-   },
-   "ml": {
-    "n": 32,
-    "w": 21,
-    "l": 11,
-    "p": 0,
-    "pct": 65.6,
-    "units": 1.0801,
-    "risked": 32,
-    "roi": 3.4,
-    "at_close": 32,
-    "at_standard": 0
-   },
-   "net": {
-    "n": 95,
-    "w": 56,
-    "l": 37,
-    "p": 2,
-    "pct": 60.2,
-    "units": 6.6267,
-    "risked": 93,
-    "roi": 7.1,
-    "at_close": 95,
-    "at_standard": 0
-   },
-   "by_gap": {
-    "spread": [
-     {
-      "key": "0–1",
-      "n": 8,
-      "w": 4,
-      "l": 4,
-      "p": 0,
-      "pct": 50,
-      "units": -0.3512,
-      "risked": 8,
-      "roi": -4.4,
-      "at_close": 8,
-      "at_standard": 0
-     },
-     {
-      "key": "1–2",
-      "n": 4,
-      "w": 4,
-      "l": 0,
-      "p": 0,
-      "pct": 100,
-      "units": 3.6614,
-      "risked": 4,
-      "roi": 91.5,
-      "at_close": 4,
-      "at_standard": 0
-     },
-     {
-      "key": "2–4",
-      "n": 11,
-      "w": 6,
-      "l": 4,
-      "p": 1,
-      "pct": 60,
-      "units": 1.3004,
-      "risked": 10,
-      "roi": 13,
-      "at_close": 11,
-      "at_standard": 0
-     },
-     {
-      "key": "4–7",
-      "n": 7,
-      "w": 5,
-      "l": 2,
-      "p": 0,
-      "pct": 71.4,
-      "units": 2.4288,
-      "risked": 7,
-      "roi": 34.7,
-      "at_close": 7,
-      "at_standard": 0
-     },
-     {
-      "key": "7+",
-      "n": 2,
-      "w": 0,
-      "l": 1,
-      "p": 1,
-      "pct": 0,
-      "units": -1,
-      "risked": 1,
-      "roi": -100,
-      "at_close": 2,
-      "at_standard": 0
-     }
-    ],
-    "total": [
-     {
-      "key": "0–1",
-      "n": 7,
-      "w": 4,
-      "l": 3,
-      "p": 0,
-      "pct": 57.1,
-      "units": 0.7115,
-      "risked": 7,
-      "roi": 10.2,
-      "at_close": 7,
-      "at_standard": 0
-     },
-     {
-      "key": "1–2",
-      "n": 10,
-      "w": 4,
-      "l": 6,
-      "p": 0,
-      "pct": 40,
-      "units": -2.4588,
-      "risked": 10,
-      "roi": -24.6,
-      "at_close": 10,
-      "at_standard": 0
-     },
-     {
-      "key": "2–4",
-      "n": 9,
-      "w": 4,
-      "l": 5,
-      "p": 0,
-      "pct": 44.4,
-      "units": -1.4025,
-      "risked": 9,
-      "roi": -15.6,
-      "at_close": 9,
-      "at_standard": 0
-     },
-     {
-      "key": "4–7",
-      "n": 5,
-      "w": 4,
-      "l": 1,
-      "p": 0,
-      "pct": 80,
-      "units": 2.657,
-      "risked": 5,
-      "roi": 53.1,
-      "at_close": 5,
-      "at_standard": 0
-     },
-     {
-      "key": "7+",
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     }
-    ]
-   },
-   "splits": {
-    "favorite": {
-     "n": 12,
-     "w": 7,
-     "l": 4,
-     "p": 1,
-     "pct": 63.6,
-     "units": 2.1381,
-     "risked": 11,
-     "roi": 19.4,
-     "at_close": 12,
-     "at_standard": 0
-    },
-    "underdog": {
-     "n": 20,
-     "w": 12,
-     "l": 7,
-     "p": 1,
-     "pct": 63.2,
-     "units": 3.9013,
-     "risked": 19,
-     "roi": 20.5,
-     "at_close": 20,
-     "at_standard": 0
-    },
-    "home": {
-     "n": 20,
-     "w": 12,
-     "l": 6,
-     "p": 2,
-     "pct": 66.7,
-     "units": 4.719,
-     "risked": 18,
-     "roi": 26.2,
-     "at_close": 20,
-     "at_standard": 0
-    },
-    "away": {
-     "n": 12,
-     "w": 7,
-     "l": 5,
-     "p": 0,
-     "pct": 58.3,
-     "units": 1.3204,
-     "risked": 12,
-     "roi": 11,
-     "at_close": 12,
-     "at_standard": 0
-    },
-    "over": {
-     "n": 15,
-     "w": 7,
-     "l": 8,
-     "p": 0,
-     "pct": 46.7,
-     "units": -1.6596,
-     "risked": 15,
-     "roi": -11.1,
-     "at_close": 15,
-     "at_standard": 0
-    },
-    "under": {
-     "n": 16,
-     "w": 9,
-     "l": 7,
-     "p": 0,
-     "pct": 56.3,
-     "units": 1.1668,
-     "risked": 16,
-     "roi": 7.3,
-     "at_close": 16,
-     "at_standard": 0
-    }
-   },
-   "pricing": {
-    "unit": 1,
-    "standard_price": -110,
-    "basis": "the closing price of the side, from the source of the closing line; a spread or total with none at the standard -110; a moneyline only at its real price"
    },
    "clv": {
     "spread_entry": {
@@ -434,48 +164,14 @@
       "w": 10,
       "l": 6,
       "p": 0,
-      "pct": 62.5,
-      "units": 2.9141,
-      "risked": 16,
-      "roi": 18.2,
-      "at_close": 16,
-      "at_standard": 0
+      "pct": 62.5
      },
      "ou": {
       "n": 15,
       "w": 6,
       "l": 9,
       "p": 0,
-      "pct": 40,
-      "units": -3.5973,
-      "risked": 15,
-      "roi": -24,
-      "at_close": 15,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 16,
-      "w": 9,
-      "l": 7,
-      "p": 0,
-      "pct": 56.3,
-      "units": -3.5457,
-      "risked": 16,
-      "roi": -22.2,
-      "at_close": 16,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 47,
-      "w": 25,
-      "l": 22,
-      "p": 0,
-      "pct": 53.2,
-      "units": -4.2289,
-      "risked": 47,
-      "roi": -9,
-      "at_close": 47,
-      "at_standard": 0
+      "pct": 40
      },
      "clv": {
       "n": 16,
@@ -485,8 +181,7 @@
       "flat": 6,
       "lost": 2,
       "beat_pct": 50
-     },
-     "cum_units": -4.2289
+     }
     },
     {
      "week": 3,
@@ -497,48 +192,14 @@
       "w": 9,
       "l": 5,
       "p": 2,
-      "pct": 64.3,
-      "units": 3.1253,
-      "risked": 14,
-      "roi": 22.3,
-      "at_close": 16,
-      "at_standard": 0
+      "pct": 64.3
      },
      "ou": {
       "n": 16,
       "w": 10,
       "l": 6,
       "p": 0,
-      "pct": 62.5,
-      "units": 3.1045,
-      "risked": 16,
-      "roi": 19.4,
-      "at_close": 16,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 16,
-      "w": 12,
-      "l": 4,
-      "p": 0,
-      "pct": 75,
-      "units": 4.6258,
-      "risked": 16,
-      "roi": 28.9,
-      "at_close": 16,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 48,
-      "w": 31,
-      "l": 15,
-      "p": 2,
-      "pct": 67.4,
-      "units": 10.8556,
-      "risked": 46,
-      "roi": 23.6,
-      "at_close": 48,
-      "at_standard": 0
+      "pct": 62.5
      },
      "clv": {
       "n": 16,
@@ -548,8 +209,7 @@
       "flat": 3,
       "lost": 4,
       "beat_pct": 56.3
-     },
-     "cum_units": 6.6267
+     }
     },
     {
      "week": 4,
@@ -560,48 +220,14 @@
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "ou": {
       "n": 0,
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "clv": {
       "n": 0,
@@ -611,8 +237,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": 6.6267
+     }
     },
     {
      "week": 5,
@@ -623,48 +248,14 @@
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "ou": {
       "n": 0,
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "clv": {
       "n": 0,
@@ -674,8 +265,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": 6.6267
+     }
     }
    ],
    "break_even_pct": 52.38,
@@ -696,8 +286,7 @@
     "final_no_close": 0,
     "graded": 231,
     "revised": 249,
-    "beyond_guard": 4,
-    "ml_unpriced": 177
+    "beyond_guard": 4
    },
    "ats": {
     "all": {
@@ -705,36 +294,21 @@
      "w": 104,
      "l": 125,
      "p": 2,
-     "pct": 45.4,
-     "units": -30.3434,
-     "risked": 229,
-     "roi": -13.3,
-     "at_close": 60,
-     "at_standard": 171
+     "pct": 45.4
     },
     "lean": {
      "n": 179,
      "w": 81,
      "l": 98,
      "p": 0,
-     "pct": 45.3,
-     "units": -24.2415,
-     "risked": 179,
-     "roi": -13.5,
-     "at_close": 43,
-     "at_standard": 136
+     "pct": 45.3
     },
     "big": {
      "n": 128,
      "w": 59,
      "l": 69,
      "p": 0,
-     "pct": 46.1,
-     "units": -15.3024,
-     "risked": 128,
-     "roi": -12,
-     "at_close": 28,
-     "at_standard": 100
+     "pct": 46.1
     }
    },
    "ou": {
@@ -743,36 +317,21 @@
      "w": 83,
      "l": 80,
      "p": 0,
-     "pct": 50.9,
-     "units": -4.5943,
-     "risked": 163,
-     "roi": -2.8,
-     "at_close": 48,
-     "at_standard": 115
+     "pct": 50.9
     },
     "lean": {
      "n": 107,
      "w": 53,
      "l": 54,
      "p": 0,
-     "pct": 49.5,
-     "units": -5.9318,
-     "risked": 107,
-     "roi": -5.5,
-     "at_close": 28,
-     "at_standard": 79
+     "pct": 49.5
     },
     "big": {
      "n": 45,
      "w": 23,
      "l": 22,
      "p": 0,
-     "pct": 51.1,
-     "units": -1.2086,
-     "risked": 45,
-     "roi": -2.7,
-     "at_close": 17,
-     "at_standard": 28
+     "pct": 51.1
     }
    },
    "su": {
@@ -781,245 +340,6 @@
     "l": 42,
     "p": 0,
     "pct": 81.8
-   },
-   "ml": {
-    "n": 54,
-    "w": 37,
-    "l": 17,
-    "p": 0,
-    "pct": 68.5,
-    "units": -9.6832,
-    "risked": 54,
-    "roi": -17.9,
-    "at_close": 54,
-    "at_standard": 0
-   },
-   "net": {
-    "n": 448,
-    "w": 224,
-    "l": 222,
-    "p": 2,
-    "pct": 50.2,
-    "units": -44.6209,
-    "risked": 446,
-    "roi": -10,
-    "at_close": 162,
-    "at_standard": 286
-   },
-   "by_gap": {
-    "spread": [
-     {
-      "key": "0–1",
-      "n": 27,
-      "w": 10,
-      "l": 16,
-      "p": 1,
-      "pct": 38.5,
-      "units": -6.8321,
-      "risked": 26,
-      "roi": -26.3,
-      "at_close": 9,
-      "at_standard": 18
-     },
-     {
-      "key": "1–2",
-      "n": 25,
-      "w": 13,
-      "l": 11,
-      "p": 1,
-      "pct": 54.2,
-      "units": 0.7302,
-      "risked": 24,
-      "roi": 3,
-      "at_close": 8,
-      "at_standard": 17
-     },
-     {
-      "key": "2–4",
-      "n": 51,
-      "w": 22,
-      "l": 29,
-      "p": 0,
-      "pct": 43.1,
-      "units": -8.9391,
-      "risked": 51,
-      "roi": -17.5,
-      "at_close": 15,
-      "at_standard": 36
-     },
-     {
-      "key": "4–7",
-      "n": 49,
-      "w": 27,
-      "l": 22,
-      "p": 0,
-      "pct": 55.1,
-      "units": 2.5999,
-      "risked": 49,
-      "roi": 5.3,
-      "at_close": 10,
-      "at_standard": 39
-     },
-     {
-      "key": "7+",
-      "n": 79,
-      "w": 32,
-      "l": 47,
-      "p": 0,
-      "pct": 40.5,
-      "units": -17.9023,
-      "risked": 79,
-      "roi": -22.7,
-      "at_close": 18,
-      "at_standard": 61
-     }
-    ],
-    "total": [
-     {
-      "key": "0–1",
-      "n": 22,
-      "w": 11,
-      "l": 11,
-      "p": 0,
-      "pct": 50,
-      "units": -0.9961,
-      "risked": 22,
-      "roi": -4.5,
-      "at_close": 8,
-      "at_standard": 14
-     },
-     {
-      "key": "1–2",
-      "n": 34,
-      "w": 19,
-      "l": 15,
-      "p": 0,
-      "pct": 55.9,
-      "units": 2.3336,
-      "risked": 34,
-      "roi": 6.9,
-      "at_close": 12,
-      "at_standard": 22
-     },
-     {
-      "key": "2–4",
-      "n": 62,
-      "w": 30,
-      "l": 32,
-      "p": 0,
-      "pct": 48.4,
-      "units": -4.7232,
-      "risked": 62,
-      "roi": -7.6,
-      "at_close": 11,
-      "at_standard": 51
-     },
-     {
-      "key": "4–7",
-      "n": 35,
-      "w": 18,
-      "l": 17,
-      "p": 0,
-      "pct": 51.4,
-      "units": -0.7476,
-      "risked": 35,
-      "roi": -2.1,
-      "at_close": 12,
-      "at_standard": 23
-     },
-     {
-      "key": "7+",
-      "n": 10,
-      "w": 5,
-      "l": 5,
-      "p": 0,
-      "pct": 50,
-      "units": -0.461,
-      "risked": 10,
-      "roi": -4.6,
-      "at_close": 5,
-      "at_standard": 5
-     }
-    ]
-   },
-   "splits": {
-    "favorite": {
-     "n": 82,
-     "w": 41,
-     "l": 41,
-     "p": 0,
-     "pct": 50,
-     "units": -3.6023,
-     "risked": 82,
-     "roi": -4.4,
-     "at_close": 20,
-     "at_standard": 62
-    },
-    "underdog": {
-     "n": 149,
-     "w": 63,
-     "l": 84,
-     "p": 2,
-     "pct": 42.9,
-     "units": -26.7411,
-     "risked": 147,
-     "roi": -18.2,
-     "at_close": 40,
-     "at_standard": 109
-    },
-    "home": {
-     "n": 112,
-     "w": 53,
-     "l": 58,
-     "p": 1,
-     "pct": 47.7,
-     "units": -9.7644,
-     "risked": 111,
-     "roi": -8.8,
-     "at_close": 32,
-     "at_standard": 80
-    },
-    "away": {
-     "n": 119,
-     "w": 51,
-     "l": 67,
-     "p": 1,
-     "pct": 43.2,
-     "units": -20.579,
-     "risked": 118,
-     "roi": -17.4,
-     "at_close": 28,
-     "at_standard": 91
-    },
-    "over": {
-     "n": 126,
-     "w": 64,
-     "l": 62,
-     "p": 0,
-     "pct": 50.8,
-     "units": -3.8516,
-     "risked": 126,
-     "roi": -3.1,
-     "at_close": 38,
-     "at_standard": 88
-    },
-    "under": {
-     "n": 37,
-     "w": 19,
-     "l": 18,
-     "p": 0,
-     "pct": 51.4,
-     "units": -0.7427,
-     "risked": 37,
-     "roi": -2,
-     "at_close": 10,
-     "at_standard": 27
-    }
-   },
-   "pricing": {
-    "unit": 1,
-    "standard_price": -110,
-    "basis": "the closing price of the side, from the source of the closing line; a spread or total with none at the standard -110; a moneyline only at its real price"
    },
    "clv": {
     "spread_entry": {
@@ -1091,48 +411,14 @@
       "w": 34,
       "l": 51,
       "p": 0,
-      "pct": 40,
-      "units": -20.0906,
-      "risked": 85,
-      "roi": -23.6,
-      "at_close": 0,
-      "at_standard": 85
+      "pct": 40
      },
      "ou": {
       "n": 49,
       "w": 27,
       "l": 22,
       "p": 0,
-      "pct": 55.1,
-      "units": 2.5457,
-      "risked": 49,
-      "roi": 5.2,
-      "at_close": 0,
-      "at_standard": 49
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 134,
-      "w": 61,
-      "l": 73,
-      "p": 0,
-      "pct": 45.5,
-      "units": -17.5449,
-      "risked": 134,
-      "roi": -13.1,
-      "at_close": 0,
-      "at_standard": 134
+      "pct": 55.1
      },
      "clv": {
       "n": 0,
@@ -1142,8 +428,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": -17.5449
+     }
     },
     {
      "week": 3,
@@ -1154,48 +439,14 @@
       "w": 39,
       "l": 35,
       "p": 1,
-      "pct": 52.7,
-      "units": 0.4549,
-      "risked": 74,
-      "roi": 0.6,
-      "at_close": 0,
-      "at_standard": 75
+      "pct": 52.7
      },
      "ou": {
       "n": 56,
       "w": 31,
       "l": 25,
       "p": 0,
-      "pct": 55.4,
-      "units": 3.1821,
-      "risked": 56,
-      "roi": 5.7,
-      "at_close": 0,
-      "at_standard": 56
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 131,
-      "w": 70,
-      "l": 60,
-      "p": 1,
-      "pct": 53.8,
-      "units": 3.637,
-      "risked": 130,
-      "roi": 2.8,
-      "at_close": 0,
-      "at_standard": 131
+      "pct": 55.4
      },
      "clv": {
       "n": 0,
@@ -1205,8 +456,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": -13.9079
+     }
     },
     {
      "week": 4,
@@ -1217,48 +467,14 @@
       "w": 31,
       "l": 39,
       "p": 1,
-      "pct": 44.3,
-      "units": -10.7077,
-      "risked": 70,
-      "roi": -15.3,
-      "at_close": 60,
-      "at_standard": 11
+      "pct": 44.3
      },
      "ou": {
       "n": 58,
       "w": 25,
       "l": 33,
       "p": 0,
-      "pct": 43.1,
-      "units": -10.3221,
-      "risked": 58,
-      "roi": -17.8,
-      "at_close": 48,
-      "at_standard": 10
-     },
-     "ml": {
-      "n": 54,
-      "w": 37,
-      "l": 17,
-      "p": 0,
-      "pct": 68.5,
-      "units": -9.6832,
-      "risked": 54,
-      "roi": -17.9,
-      "at_close": 54,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 183,
-      "w": 93,
-      "l": 89,
-      "p": 1,
-      "pct": 51.1,
-      "units": -30.713,
-      "risked": 182,
-      "roi": -16.9,
-      "at_close": 162,
-      "at_standard": 21
+      "pct": 43.1
      },
      "clv": {
       "n": 71,
@@ -1268,8 +484,7 @@
       "flat": 17,
       "lost": 32,
       "beat_pct": 31
-     },
-     "cum_units": -44.6209
+     }
     },
     {
      "week": 5,
@@ -1280,48 +495,14 @@
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "ou": {
       "n": 0,
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "clv": {
       "n": 0,
@@ -1331,8 +512,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": -44.6209
+     }
     },
     {
      "week": 6,
@@ -1343,48 +523,14 @@
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "ou": {
       "n": 0,
       "w": 0,
       "l": 0,
       "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "ml": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
-     },
-     "net": {
-      "n": 0,
-      "w": 0,
-      "l": 0,
-      "p": 0,
-      "pct": null,
-      "units": 0,
-      "risked": 0,
-      "roi": null,
-      "at_close": 0,
-      "at_standard": 0
+      "pct": null
      },
      "clv": {
       "n": 0,
@@ -1394,8 +540,7 @@
       "flat": 0,
       "lost": 0,
       "beat_pct": null
-     },
-     "cum_units": -44.6209
+     }
     }
    ],
    "break_even_pct": 52.38,
@@ -1519,8 +664,7 @@
     "final_no_close": 0,
     "graded": 105,
     "revised": 127,
-    "beyond_guard": 0,
-    "ml_unpriced": 76
+    "beyond_guard": 0
    },
    "ats": {
     "all": {
@@ -1528,36 +672,21 @@
      "w": 49,
      "l": 56,
      "p": 0,
-     "pct": 46.7,
-     "units": -11.4208,
-     "risked": 105,
-     "roi": -10.9,
-     "at_close": 31,
-     "at_standard": 74
+     "pct": 46.7
     },
     "lean": {
      "n": 77,
      "w": 37,
      "l": 40,
      "p": 0,
-     "pct": 48.1,
-     "units": -6.3144,
-     "risked": 77,
-     "roi": -8.2,
-     "at_close": 22,
-     "at_standard": 55
+     "pct": 48.1
     },
     "big": {
      "n": 54,
      "w": 29,
      "l": 25,
      "p": 0,
-     "pct": 53.7,
-     "units": 1.3689,
-     "risked": 54,
-     "roi": 2.5,
-     "at_close": 13,
-     "at_standard": 41
+     "pct": 53.7
     }
    },
    "ou": {
@@ -1566,36 +695,21 @@
      "w": 54,
      "l": 50,
      "p": 0,
-     "pct": 51.9,
-     "units": -0.9576,
-     "risked": 104,
-     "roi": -0.9,
-     "at_close": 31,
-     "at_standard": 73
+     "pct": 51.9
     },
     "lean": {
      "n": 65,
      "w": 32,
      "l": 33,
      "p": 0,
-     "pct": 49.2,
-     "units": -4.0385,
-     "risked": 65,
-     "roi": -6.2,
-     "at_close": 17,
-     "at_standard": 48
+     "pct": 49.2
     },
     "big": {
      "n": 26,
      "w": 13,
      "l": 13,
      "p": 0,
-     "pct": 50,
-     "units": -1.3547,
-     "risked": 26,
-     "roi": -5.2,
-     "at_close": 12,
-     "at_standard": 14
+     "pct": 50
     }
    },
    "su": {
@@ -1604,30 +718,6 @@
     "l": 26,
     "p": 0,
     "pct": 75.2
-   },
-   "ml": {
-    "n": 29,
-    "w": 16,
-    "l": 13,
-    "p": 0,
-    "pct": 55.2,
-    "units": -9.7316,
-    "risked": 29,
-    "roi": -33.6,
-    "at_close": 29,
-    "at_standard": 0
-   },
-   "net": {
-    "n": 238,
-    "w": 119,
-    "l": 119,
-    "p": 0,
-    "pct": 50,
-    "units": -22.11,
-    "risked": 238,
-    "roi": -9.3,
-    "at_close": 91,
-    "at_standard": 147
    },
    "clv": {
     "spread_entry": {
@@ -1658,8 +748,7 @@
     "final_no_close": 0,
     "graded": 59,
     "revised": 88,
-    "beyond_guard": 0,
-    "ml_unpriced": 42
+    "beyond_guard": 0
    },
    "ats": {
     "all": {
@@ -1667,36 +756,21 @@
      "w": 26,
      "l": 31,
      "p": 2,
-     "pct": 45.6,
-     "units": -7.326,
-     "risked": 57,
-     "roi": -12.9,
-     "at_close": 17,
-     "at_standard": 42
+     "pct": 45.6
     },
     "lean": {
      "n": 45,
      "w": 20,
      "l": 25,
      "p": 0,
-     "pct": 44.4,
-     "units": -6.8012,
-     "risked": 45,
-     "roi": -15.1,
-     "at_close": 11,
-     "at_standard": 34
+     "pct": 44.4
     },
     "big": {
      "n": 26,
      "w": 11,
      "l": 15,
      "p": 0,
-     "pct": 42.3,
-     "units": -4.9999,
-     "risked": 26,
-     "roi": -19.2,
-     "at_close": 6,
-     "at_standard": 20
+     "pct": 42.3
     }
    },
    "ou": {
@@ -1705,36 +779,21 @@
      "w": 29,
      "l": 30,
      "p": 0,
-     "pct": 49.2,
-     "units": -3.6367,
-     "risked": 59,
-     "roi": -6.2,
-     "at_close": 17,
-     "at_standard": 42
+     "pct": 49.2
     },
     "lean": {
      "n": 42,
      "w": 21,
      "l": 21,
      "p": 0,
-     "pct": 50,
-     "units": -1.8933,
-     "risked": 42,
-     "roi": -4.5,
-     "at_close": 11,
-     "at_standard": 31
+     "pct": 50
     },
     "big": {
      "n": 19,
      "w": 10,
      "l": 9,
      "p": 0,
-     "pct": 52.6,
-     "units": 0.1461,
-     "risked": 19,
-     "roi": 0.8,
-     "at_close": 5,
-     "at_standard": 14
+     "pct": 52.6
     }
    },
    "su": {
@@ -1743,30 +802,6 @@
     "l": 13,
     "p": 0,
     "pct": 78
-   },
-   "ml": {
-    "n": 17,
-    "w": 13,
-    "l": 4,
-    "p": 0,
-    "pct": 76.5,
-    "units": -0.1521,
-    "risked": 17,
-    "roi": -0.9,
-    "at_close": 17,
-    "at_standard": 0
-   },
-   "net": {
-    "n": 135,
-    "w": 68,
-    "l": 65,
-    "p": 2,
-    "pct": 51.1,
-    "units": -11.1148,
-    "risked": 133,
-    "roi": -8.4,
-    "at_close": 51,
-    "at_standard": 84
    },
    "clv": {
     "spread_entry": {
@@ -1797,8 +832,7 @@
     "final_no_close": 0,
     "graded": 67,
     "revised": 34,
-    "beyond_guard": 4,
-    "ml_unpriced": 59
+    "beyond_guard": 4
    },
    "ats": {
     "all": {
@@ -1806,36 +840,21 @@
      "w": 29,
      "l": 38,
      "p": 0,
-     "pct": 43.3,
-     "units": -11.5966,
-     "risked": 67,
-     "roi": -17.3,
-     "at_close": 12,
-     "at_standard": 55
+     "pct": 43.3
     },
     "lean": {
      "n": 57,
      "w": 24,
      "l": 33,
      "p": 0,
-     "pct": 42.1,
-     "units": -11.1259,
-     "risked": 57,
-     "roi": -19.5,
-     "at_close": 10,
-     "at_standard": 47
+     "pct": 42.1
     },
     "big": {
      "n": 48,
      "w": 19,
      "l": 29,
      "p": 0,
-     "pct": 39.6,
-     "units": -11.6714,
-     "risked": 48,
-     "roi": -24.3,
-     "at_close": 9,
-     "at_standard": 39
+     "pct": 39.6
     }
    },
    "ou": {
@@ -1844,36 +863,21 @@
      "w": 0,
      "l": 0,
      "p": 0,
-     "pct": null,
-     "units": 0,
-     "risked": 0,
-     "roi": null,
-     "at_close": 0,
-     "at_standard": 0
+     "pct": null
     },
     "lean": {
      "n": 0,
      "w": 0,
      "l": 0,
      "p": 0,
-     "pct": null,
-     "units": 0,
-     "risked": 0,
-     "roi": null,
-     "at_close": 0,
-     "at_standard": 0
+     "pct": null
     },
     "big": {
      "n": 0,
      "w": 0,
      "l": 0,
      "p": 0,
-     "pct": null,
-     "units": 0,
-     "risked": 0,
-     "roi": null,
-     "at_close": 0,
-     "at_standard": 0
+     "pct": null
     }
    },
    "su": {
@@ -1882,30 +886,6 @@
     "l": 3,
     "p": 0,
     "pct": 95.5
-   },
-   "ml": {
-    "n": 8,
-    "w": 8,
-    "l": 0,
-    "p": 0,
-    "pct": 100,
-    "units": 0.2005,
-    "risked": 8,
-    "roi": 2.5,
-    "at_close": 8,
-    "at_standard": 0
-   },
-   "net": {
-    "n": 75,
-    "w": 37,
-    "l": 38,
-    "p": 0,
-    "pct": 49.3,
-    "units": -11.3961,
-    "risked": 75,
-    "roi": -15.2,
-    "at_close": 20,
-    "at_standard": 55
    },
    "clv": {
     "spread_entry": {
@@ -1954,8 +934,7 @@
     "ou": "loss",
     "ou_side": "over",
     "clv": -5,
-    "reliability": null,
-    "units": 1.5659
+    "reliability": null
    },
    {
     "game_id": "2026_03_LA_DEN",
@@ -1980,8 +959,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": 4,
-    "reliability": null,
-    "units": 0.7625
+    "reliability": null
    },
    {
     "game_id": "2026_03_BAL_DAL",
@@ -2006,8 +984,7 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 0,
-    "reliability": null,
-    "units": -0.4118
+    "reliability": null
    },
    {
     "game_id": "2026_03_LV_NO",
@@ -2032,8 +1009,7 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 0.5,
-    "reliability": null,
-    "units": -3
+    "reliability": null
    },
    {
     "game_id": "2026_03_ARI_SF",
@@ -2058,8 +1034,7 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 1,
-    "reliability": null,
-    "units": 0.1623
+    "reliability": null
    },
    {
     "game_id": "2026_03_MIN_TB",
@@ -2084,8 +1059,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 3,
-    "reliability": null,
-    "units": 0.8188
+    "reliability": null
    },
    {
     "game_id": "2026_03_LAC_BUF",
@@ -2110,8 +1084,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 2.5,
-    "reliability": null,
-    "units": 2.0702
+    "reliability": null
    },
    {
     "game_id": "2026_03_CAR_CLE",
@@ -2136,8 +1109,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 0,
-    "reliability": null,
-    "units": 2.9853
+    "reliability": null
    },
    {
     "game_id": "2026_03_NYJ_DET",
@@ -2162,8 +1134,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": 0,
-    "reliability": null,
-    "units": 1.2168
+    "reliability": null
    },
    {
     "game_id": "2026_03_HOU_IND",
@@ -2188,8 +1159,7 @@
     "ou": "loss",
     "ou_side": "over",
     "clv": 1,
-    "reliability": null,
-    "units": 0.9759
+    "reliability": null
    },
    {
     "game_id": "2026_03_NE_JAX",
@@ -2214,8 +1184,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 0.5,
-    "reliability": null,
-    "units": 2.4788
+    "reliability": null
    },
    {
     "game_id": "2026_03_KC_MIA",
@@ -2240,8 +1209,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": -1.5,
-    "reliability": null,
-    "units": 0.0363
+    "reliability": null
    }
   ],
   "cfb": [
@@ -2267,8 +1235,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": 2.5,
-    "reliability": 91,
-    "units": 0.7625
+    "reliability": 91
    },
    {
     "game_id": "401858240",
@@ -2292,8 +1259,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": -0.5,
-    "reliability": 90,
-    "units": -1.0909
+    "reliability": 90
    },
    {
     "game_id": "401864509",
@@ -2317,8 +1283,7 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 1,
-    "reliability": 80,
-    "units": 0.3703
+    "reliability": 80
    },
    {
     "game_id": "401860891",
@@ -2342,8 +1307,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": -1,
-    "reliability": 87,
-    "units": 1.9955
+    "reliability": 87
    },
    {
     "game_id": "401858241",
@@ -2367,8 +1331,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 4,
-    "reliability": 85,
-    "units": 1.8299
+    "reliability": 85
    },
    {
     "game_id": "401860895",
@@ -2392,8 +1355,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": -1,
-    "reliability": 82,
-    "units": 0.1127
+    "reliability": 82
    },
    {
     "game_id": "401866429",
@@ -2417,8 +1379,7 @@
     "ou": "loss",
     "ou_side": "over",
     "clv": -2,
-    "reliability": 90,
-    "units": -3
+    "reliability": 90
    },
    {
     "game_id": "401856697",
@@ -2442,8 +1403,7 @@
     "ou": "loss",
     "ou_side": "over",
     "clv": 0,
-    "reliability": 79,
-    "units": 0.3121
+    "reliability": 79
    },
    {
     "game_id": "401862782",
@@ -2467,8 +1427,7 @@
     "ou": "loss",
     "ou_side": "under",
     "clv": 2,
-    "reliability": 79,
-    "units": -1.7938
+    "reliability": 79
    },
    {
     "game_id": "401856703",
@@ -2492,8 +1451,7 @@
     "ou": "win",
     "ou_side": "under",
     "clv": 3,
-    "reliability": 92,
-    "units": 0.4973
+    "reliability": 92
    },
    {
     "game_id": "401856702",
@@ -2517,8 +1475,7 @@
     "ou": "loss",
     "ou_side": "over",
     "clv": 0,
-    "reliability": 91,
-    "units": -1.7333
+    "reliability": 91
    },
    {
     "game_id": "401856804",
@@ -2542,8 +1499,7 @@
     "ou": "win",
     "ou_side": "over",
     "clv": -1.5,
-    "reliability": 83,
-    "units": 2.0535
+    "reliability": 83
    }
   ]
  }
