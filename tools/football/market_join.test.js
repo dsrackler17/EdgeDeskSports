@@ -40,7 +40,7 @@ function chk(name, ok, detail) {
 }
 function section(t) { console.log('  · ' + t); }
 
-const BOOT = M.boot({ probe: ['fbMarketFromEvent', 'fbWMedian', 'fbNflMarketFor', 'fbNflMarketSelfCheck', 'fbNflSelfCheckHTML', 'fbNflResearchState', 'FB_CODE_NAMES'] });
+const BOOT = M.boot({ probe: ['fbMarketFromEvent', 'fbBooksBehind', 'fbWMedian', 'fbNflMarketFor', 'fbNflMarketSelfCheck', 'fbNflSelfCheckHTML', 'fbNflResearchState', 'FB_CODE_NAMES'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 ['function _escHtml(', 'function edEsc('].forEach((sig) => {
@@ -140,6 +140,32 @@ section('5. the college board reads the same market');
   chk('a college game whose only number is stale reads STALE MARKET and is not rankable', s.key === 'NO_MARKET' && s.rule === 'stale_market' && s.label === 'STALE MARKET' && s.rankable === false, s);
   const f = C.researchStatusFromProjection({ status: 'PREDICTED', model: { fair_spread: 6 }, scores: { confidence: 80 } }, { spread_line: 3, consensus_fault: { reason: 'MARKET FAULT: x' } }, { reliability: 80 });
   chk('a market off its own quotes reads MARKET FAULT with its reason, not rankable', f.key === 'MARKET_FAULT' && f.rule === 'market_fault_consensus' && f.rankable === false, f);
+}
+
+/* ---------------------------------------------------------------------- */
+section('6. how many books: distinct books, never the sum of every row');
+{
+  /* the 2026-10-01 board: seven books quoting both sides at eight points read
+     "112 books" (n_books summed over all sixteen rows) */
+  const H = 'New Mexico State Aggies', A = 'Western Kentucky Hilltoppers', K2 = new Date(NOW + 30 * 3600e3).toISOString();
+  const BK = ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'ESPN BET', 'Fanatics', 'BetRivers'], rows = [];
+  [-4.5, -4, -3.5, -3, -2.5, -2, -1.5, -1].forEach((pt, i) => {
+    rows.push(row(H, pt, 7, 5, { best_book: BK[i % 7], point_is_modal: pt === -2.5 }));
+    rows.push(row(A, -pt, 7, 5, { best_book: BK[(i + 3) % 7], point_is_modal: pt === -2.5 }));
+  });
+  const m = T.fbMarketFromEvent({ home: H, away: A, t: K2, rows }, H);
+  chk('seven books on sixteen current rows count as 7 books, not 112', m.stale === false && m.spread_consensus.books === 7, m.spread_consensus);
+  chk('…and the row sum is kept only under its honest name (quotes)', m.spread_consensus.quotes === 112, m.spread_consensus);
+  const busy = T.fbMarketFromEvent({ home: H, away: A, t: K2, rows: [row(H, -3, 9, 5, { best_book: 'X', point_is_modal: true }),
+    row(A, 3, 9, 5, { best_book: 'Y', point_is_modal: true }), row(H, -3.5, 2, 5, { best_book: 'Z' })] }, H);
+  chk('nine books on one line, three ever named best: 9 books (the busiest line is distinct books)', busy.spread_consensus.books === 9, busy.spread_consensus);
+  chk('the rule: the larger of the distinct books named and the busiest row', () => T.fbBooksBehind([]) === null
+    && T.fbBooksBehind([{ book: 'a', n_books: 1 }, { book: 'b', n_books: 1 }, { book: 'a', n_books: 1 }]) === 2 && T.fbBooksBehind([{ best_book: 'a', n_books: 5 }]) === 5);
+  const APP = BOOT.module.replace(/\s+/g, '');
+  const p4 = APP.slice(APP.indexOf('functionfbP4Market('), APP.indexOf('functionfbP4SchedCtx('));
+  chk('the board label prints that count (spread_consensus.books), never the quote sum', /\(c\.books\|\|0\)\+'book'/.test(p4) && !/c\.quotes/.test(p4));
+  const rs = APP.slice(APP.indexOf('functionfbResearchStateOf('), APP.indexOf('window.fbResearchStates='));
+  chk('the research state (card and drivers) counts its books by the same rule', /books=fbBooksBehind\(\(fbP4QuotesFor\(/.test(rs));
 }
 
 console.log((fail ? 'FAILED ' : 'ALL GREEN ') + 'market join — ' + pass + ' passed, ' + fail + ' failed');

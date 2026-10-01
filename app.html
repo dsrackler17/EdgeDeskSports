@@ -48067,12 +48067,13 @@ function fbMarketFromEvent(e,homeName){
       }
     });
     return {v:best.v,w:best.w,at:best.at,book:best.book,median:med,stale:stale,rows:use.length,
-      books:use.reduce(function(s,x){return s+x.w;},0),modal:!!modal.length};
+      books:fbBooksBehind(use.map(function(x){return {book:x.book,n_books:x.w};})),
+      quotes:use.reduce(function(s,x){return s+x.w;},0),modal:!!modal.length};
   }
   var ms=main(sp);
   if(ms){
     out.spread_line=ms.v===0?0:-ms.v;out.spread_book=ms.book;out.at=ms.at;out.stale=ms.stale;out.n_books=ms.w;
-    out.spread_consensus={home_line:ms.v,home_line_median:ms.median,rows:ms.rows,books:ms.books,current:!ms.stale,
+    out.spread_consensus={home_line:ms.v,home_line_median:ms.median,rows:ms.rows,books:ms.books,quotes:ms.quotes,current:!ms.stale,
       main_by:ms.modal?'the capture\u2019s modal point':'books-weighted mode of the current quotes'};
     if(C&&C.marketConsensusFault){var f=C.marketConsensusFault(ms.v,ms.median,'captured quotes for this game');if(f)out.consensus_fault=f;}
   }
@@ -48098,6 +48099,25 @@ function fbWMedian(xs){
     if(Math.abs(run-tot/2)<1e-9&&i+1<a.length)return (a[i].v+a[i+1].v)/2;
     return a[i].v;}}
   return a[a.length-1].v;
+}
+/* HOW MANY BOOKS ARE BEHIND A SET OF CAPTURED SPREAD ROWS. A signals row is
+   one (side, point), and its n_books is the books quoting that exact point,
+   so one row's count is distinct books but rows overlap: a book quoting both
+   sides at eight points sits on sixteen rows. SUMMING n_books counted it
+   sixteen times, so a game seven books priced read "112 books". The capture
+   names only each row's best book, so the distinct count it supports is the
+   larger of the busiest single row's books and the distinct books named.
+   ONE rule for the board's market label (fbP4Market), the research state's
+   market.books (fbResearchStateOf) and the research card that prints it. */
+function fbBooksBehind(rows){
+  var named={},busiest=0;
+  (rows||[]).forEach(function(x){
+    if(!x)return;
+    var b=x.book||x.best_book,n=fbNum(x.n_books);
+    if(b)named[b]=1;
+    if(n!=null&&n>busiest)busiest=n;
+  });
+  return Math.max(Object.keys(named).length,busiest)||null;
 }
 /* ---- shared per-game builders (cards, grading and CSV must agree) ---- */
 /* the international venues of the verified NFL stadium table, loaded with the board (fbLoadNfl) */
@@ -57576,7 +57596,8 @@ function fbResearchStateOf(r,c,x,ix){
   if(R&&q&&q[0]>1&&q[1]>1){try{mlh=R.decimalToAmerican(q[0]);mla=R.decimalToAmerican(q[1]);}catch(_){}}
   var books=null;
   if(cfb&&ix&&ix[r.gid]&&typeof fbP4QuotesFor==='function'){
-    try{var bs={};(fbP4QuotesFor(ix[r.gid])||[]).forEach(function(z){if(z&&z.actionable===true&&z.book)bs[z.book]=1;});books=Object.keys(bs).length||null;}catch(_){books=null;}
+    /* the board label's count (fbBooksBehind), over the same current rows */
+    try{books=fbBooksBehind((fbP4QuotesFor(ix[r.gid])||[]).filter(function(z){return z&&z.actionable===true;}));}catch(_){books=null;}
   }
   var rel={score:null,grade:null,tier:null,scored:false,main_deduction:null,stability:null,
     note:cfb?'reliability was not measured for this game':'the NFL model publishes no reliability score'};
