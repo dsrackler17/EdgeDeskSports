@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-01T01:07:23.000Z",
+ "generated_at": "2026-10-01T02:07:31.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 175,
-    "latest_snapshot_at": "2026-10-01T01:07:23.000Z",
+    "snapshots": 176,
+    "latest_snapshot_at": "2026-10-01T02:07:31.000Z",
     "upcoming_games": 114,
-    "avg_confidence_upcoming": 79.3
+    "avg_confidence_upcoming": 79.4
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 201,
-    "latest_snapshot_at": "2026-10-01T01:07:23.000Z",
+    "snapshots": 202,
+    "latest_snapshot_at": "2026-10-01T02:07:31.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 201,
-    "latest_snapshot_at": "2026-10-01T01:07:23.000Z",
+    "snapshots": 202,
+    "latest_snapshot_at": "2026-10-01T02:07:31.000Z",
     "upcoming_games": 80,
     "avg_confidence_upcoming": 77.5
    }
@@ -73,13 +73,13 @@
   "data_quality": {
    "games": 114,
    "counts": {
-    "GREEN": 52,
-    "YELLOW": 62,
+    "GREEN": 53,
+    "YELLOW": 61,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 60,
+     "YELLOW": 59,
      "RED": 0
     },
     "pbp_freshness": {
@@ -131,19 +131,6 @@
      ],
      "kickoff": "2026-10-03T23:45:00.000Z",
      "matchup": "McNeese @ LSU"
-    },
-    {
-     "game_id": "401860921",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-04T01:30:00.000Z",
-     "matchup": "Fresno State @ Washington State"
     },
     {
      "game_id": "401856817",
@@ -901,16 +888,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-01T01:07:23.000Z",
-    "quotes_total": 4018,
+    "last_quote_at": "2026-10-01T02:07:31.000Z",
+    "quotes_total": 4069,
     "last_result_at": "2026-09-27T15:07:15.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1087,
-   "live_predictions": 577,
-   "quotes": 4018,
+   "predictions": 1090,
+   "live_predictions": 580,
+   "quotes": 4069,
    "lines": 1066,
    "results": 282,
    "evaluations": 510,
@@ -5401,53 +5388,53 @@
    "home": "Washington State",
    "away": "Fresno State",
    "market": {
-    "current": -2.5,
-    "open": -0.25,
+    "current": -1.5,
+    "open": -1.5,
     "books": 1,
-    "as_of": "2026-09-29T12:08:29Z",
+    "as_of": "2026-10-01T02:07:31.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-27T15:07:15.000Z",
-     "margin": 2.56,
-     "fair": "Washington State -2.5",
-     "p_home": 0.5684,
-     "sigma": 14.858,
-     "conf": 75,
-     "dq": "YELLOW",
+     "prediction_ts": "2026-10-01T02:07:31.000Z",
+     "margin": -0.36,
+     "fair": "Fresno State -0.5",
+     "p_home": 0.4903,
+     "sigma": null,
+     "conf": 79,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -1.86,
+     "line": 1.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
-     "margin": -1.61,
+     "prediction_ts": "2026-10-01T02:07:31.000Z",
+     "margin": -1.63,
      "fair": "Fresno State -1.5",
-     "p_home": 0.4591,
-     "sigma": 15.839,
+     "p_home": 0.4587,
+     "sigma": 15.842,
      "conf": 83,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
-     "gap": -4.11,
-     "line": 2.5,
+     "gap": -3.13,
+     "line": 1.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -5456,21 +5443,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-29T12:07:43.000Z",
-     "margin": -1.32,
+     "prediction_ts": "2026-10-01T02:07:31.000Z",
+     "margin": -1.34,
      "fair": "Fresno State -1.5",
-     "p_home": 0.4664,
-     "sigma": 15.819,
+     "p_home": 0.4659,
+     "sigma": 15.82,
      "conf": 84,
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -3.82,
-     "line": 2.5,
+     "gap": -2.84,
+     "line": 1.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10037,8 +10024,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 54,
-  "games_with_verdict": 53,
+  "games_with_market": 55,
+  "games_with_verdict": 54,
   "raw_major_disagreements": 7,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10047,7 +10034,7 @@
   "data_fault": 0,
   "market_fault": 7,
   "verification_not_run": 0,
-  "average_raw_gap": 4.235,
+  "average_raw_gap": 4.192,
   "average_raw_gap_7plus": 11.616,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": null,
