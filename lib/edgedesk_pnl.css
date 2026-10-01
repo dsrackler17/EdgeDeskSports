@@ -236,6 +236,8 @@
 .pnl-prow input{flex:1 1 240px}
 .pnl-lbar{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .pnl-lbar input{flex:1 1 220px;min-width:0}
+/* the status control scrolls inside its own box, never the page */
+.pnl-lbar>[data-r="lstat"]{min-width:0;max-width:100%}
 .pnl-btn{border:1px solid var(--p-bd);background:var(--p-s2);color:var(--p-tx);border-radius:9px;min-height:42px;padding:0 14px;font:600 13px 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
 .pnl-btn[disabled]{opacity:.45;cursor:default}
 .pnl-lcount{font-size:13px;color:var(--p-dim);margin:6px 0 8px;line-height:1.5}

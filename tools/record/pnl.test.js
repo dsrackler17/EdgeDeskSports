@@ -73,7 +73,7 @@ chk('PUSH → push', P.normResult('PUSH') === 'push');
 chk('VOID / cancelled / DNP → void', ['VOID', 'cancelled', 'dnp'].every((x) => P.normResult(x) === 'void'));
 
 /* ── one row: status and the two strategies ─────────────────────────── */
-const base = { recommendation_id: 'x', game_date: '2026-09-20T17:00:00Z', stake_units: 0.5, entry_odds: -110 };
+const base = { recommendation_id: 'x', event_id: 'g', side: 'home', selection: 'BUF -3', game_date: '2026-09-20T17:00:00Z', stake_units: 0.5, entry_odds: -110 };
 let s = P.settle(Object.assign({}, base, { result: 'win' }));
 chk('a settled priced row is VERIFIED', s.pnl_status === 'VERIFIED' && s.pnl_eligible === true);
 chk('flat profit is at 1u', near(s.flat_profit_units, 0.9091));
@@ -110,13 +110,14 @@ chk('no recommended stake: flat P&L only', near(s.flat_profit_units, 0.9091) && 
   ['player prop Over', { market_type: 'player_prop', prop_market: 'pass_yds', side: 'over', entry_line: 276.5, entry_odds: -110, result: 'win' }, 0.9091],
   ['player prop Under', { market_type: 'player_prop', prop_market: 'receptions', side: 'under', entry_line: 3.5, entry_odds: -135, result: 'loss' }, -1]
 ].forEach(([label, row, want]) => {
-  const x = P.settle(Object.assign({ recommendation_id: label, stake_units: 1 }, row));
+  const x = P.settle(Object.assign({ recommendation_id: label, event_id: 'g', selection: label, game_date: '2026-09-20T17:00:00Z', stake_units: 1 }, row));
   chk(label + ': flat P&L ' + want, near(x.flat_profit_units, want), x.flat_profit_units);
 });
 
 /* ── aggregates over a known path ───────────────────────────────────── */
 function mk(i, date, result, odds, stake, extra) {
-  return P.settle(Object.assign({ recommendation_id: 'r' + i, game_date: date + 'T17:00:00Z', result, entry_odds: odds, stake_units: stake }, extra || {}));
+  /* a complete row, as the ledger writes one (a row with no game or no side is INVALID and graded nowhere) */
+  return P.settle(Object.assign({ recommendation_id: 'r' + i, event_id: 'g' + i, side: 'home', selection: 'Test ' + i, game_date: date + 'T17:00:00Z', result, entry_odds: odds, stake_units: stake }, extra || {}));
 }
 const rows = [
   mk(1, '2026-09-01', 'win', -110, 1, { model_edge_pct: 0.5, model_prob: 0.53, clv_points: 1.5, beat_close: true }),
