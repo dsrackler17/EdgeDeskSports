@@ -21,8 +21,8 @@
   "game_time": "2026-10-02T01:00:00.000Z",
   "game_when_label": "2026-10-02 01:00 UTC",
   "published_at": "2026-10-01T16:00:27.341Z",
-  "updated_at": "2026-10-01T22:40:30.716Z",
-  "generated_at": "2026-10-01T22:40:30.716Z",
+  "updated_at": "2026-10-01T23:07:39.304Z",
+  "generated_at": "2026-10-01T23:07:39.304Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Tulsa and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for North Texas and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1602,7 +1626,9 @@
         "failed": [
           "MARKET.quote_fresh",
           "MARKET.book_count",
-          "TEAM_STATE.state_stability"
+          "TEAM_STATE.state_stability",
+          "ROSTER.home_availability",
+          "ROSTER.away_availability"
         ],
         "incomplete": [],
         "favorite_flip": true,
@@ -1637,13 +1663,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
-        "tier": "STRONG",
-        "text": "82 · STRONG",
-        "sub": "main deduction: the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 82,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "pct": 78,
+        "tier": "ADEQUATE",
+        "text": "78 · ADEQUATE",
+        "sub": "main deduction: North Texas’s availability sources refused",
+        "score": 78,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
         "gate_label": null,
         "components": [
           {
@@ -1655,7 +1681,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11,
+            "score": 7.5,
             "max": 20
           },
           {
@@ -1667,7 +1693,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1683,23 +1709,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.62 pts)",
+        "main_deduction": "North Texas’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of North Texas’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (North Texas)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for North Texas",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Tulsa)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Tulsa",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1950,15 +1976,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_86a2b2bd0a557da7",
+  "snapshot_id": "snap_afef661340e38c1d",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-02T01:00:00.000Z",
-    "minutes_before_kickoff": 139,
+    "minutes_before_kickoff": 112,
     "published_at": "2026-10-01T16:00:27.341Z",
     "refreshed": false,
-    "at": "2026-10-01T22:40:30.716Z"
+    "at": "2026-10-01T23:07:39.304Z"
   },
   "featured": {
     "editorial_priority": 41.6,
@@ -2250,11 +2276,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-01T22:40:30.716Z"
+    "at": "2026-10-01T23:07:39.304Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-01T22:40:30.716Z",
+    "at": "2026-10-01T23:07:39.304Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2262,6 +2288,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T22:40:30.716Z"
+    "at": "2026-10-01T23:07:39.304Z"
   }
 }
