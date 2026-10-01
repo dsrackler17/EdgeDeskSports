@@ -186,6 +186,15 @@ section('7. model agreement from dispersion, not side counts');
   ok('a tight cluster is HIGH agreement', tight.consensus.agreement.tier === 'HIGH', tight.consensus.sd);
   ok('a spread is LOW agreement', wide.consensus.agreement.tier === 'LOW', wide.consensus.sd);
   ok('the score follows the SD', tight.consensus.agreement.score > wide.consensus.agreement.score);
+  /* two model numbers, one independent: no SD, so no tier (the committed slate
+     of 2026-10-01 carried such a game and the build threw on it) */
+  let one = null, err = null;
+  try { one = T.build(bundle({ models: [{ key: 'v1', label: 'V1', home_margin: 7.5, independent: true }, { key: 'v1_copy', label: 'V1 copy', home_margin: 7.4, independent: false }] })); } catch (e) { err = String(e && e.message); }
+  ok('one independent model: the build does not throw', one && !err, err);
+  ok('one independent model: agreement is unmeasured (no SD, no tier)', one && one.consensus.available && one.consensus.sd == null && one.consensus.agreement.tier == null, one && one.consensus);
+  ok('one independent model: no MODEL_DISAGREEMENT blocker is claimed', one && !(one.status.blockers || []).some((x) => x.code === 'MODEL_DISAGREEMENT'), one && one.status.blockers);
+  const said = one ? T.ask('Do the models agree?', one) : null;
+  ok('one independent model: the terminal says agreement was not measured', said && /not measured/.test(JSON.stringify(said)), said);
 }
 
 section('8. what would have to be wrong, and sensitivity');

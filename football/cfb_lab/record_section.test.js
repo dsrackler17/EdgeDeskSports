@@ -90,7 +90,11 @@ const count = (h, re) => (h.match(re) || []).length;
     if (E.pub.games.length) return;   // the committed record may already have graded games; the populated checks below cover those
     chk(E.name + ': empty state with the start date', h.indexOf(EMPTY_LINE) >= 0 && !/<table/.test(h));
     chk(E.name + ': the rules print even before anything is graded', ['official_prediction', 'closing_line', 'ats', 'clv', 'nothing_removed'].every((k) => h.indexOf(E.pub.rules[k].replace(/&/g, '&amp;').replace(/'/g, '&#39;')) >= 0) && /<dt>Official prediction<\/dt>/.test(h) && /<dt>Nothing removed<\/dt>/.test(h));
-    chk(E.name + ': counts of zero with the sample label, and dashes for the metrics', /<div class="n">0<\/div><div class="l">official predictions made/.test(h) && /<div class="n">0<\/div><div class="l">graded so far/.test(h) && /<span class="edlab-sl">small sample<\/span>/.test(h) && /<div class="n">—<\/div><div class="l">average miss on the margin/.test(h));
+    /* no graded games yet; the record may already hold official predictions
+       (the committed record of 2026-10-01 holds 2), so the count is read from
+       the record, not assumed to be zero */
+    const nPred = (E.pub.counts && E.pub.counts.official_predictions) || 0, nGraded = (E.pub.counts && E.pub.counts.graded) || 0;
+    chk(E.name + ': the record\'s counts with the sample label, and dashes for the metrics', h.indexOf('<div class="n">' + nPred + '</div><div class="l">official predictions made') >= 0 && h.indexOf('<div class="n">' + nGraded + '</div><div class="l">graded so far') >= 0 && /<span class="edlab-sl">small sample<\/span>/.test(h) && /<div class="n">—<\/div><div class="l">average miss on the margin/.test(h));
     chk(E.name + ': the BET-disabled, no-stake note is shown', /BET is disabled; no stake is claimed\./.test(h));
     chk(E.name + ': no "undefined", "NaN" or raw null', clean(h));
   });
