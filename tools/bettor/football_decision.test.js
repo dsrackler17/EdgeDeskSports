@@ -590,9 +590,21 @@ Object.keys(GAMES.games).forEach((gid) => {
   cfbReal.push({ o, d, orient });
 });
 chk('real CFB: replayed every game with captured two-sided prices', cfbReal.length > 0, cfbReal.length);
-chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT',
+/* A CALIBRATED probability that crosses the line is held at NO DECISION by
+   design (tools/football/quote_ev.test.js: "a CALIBRATED probability on the
+   other side of the line fails it too"), and live prices can put a real game
+   there: on 2026-10-01 DraftKings' Penn State -3 (+100) at Northwestern did,
+   the calibrator moving a 67% raw Northwestern cover to just under 50%. A RAW
+   contradiction on a real game is still a pricing bug and still fails here. */
+const calHold = (d) => d.decision === 'NO_DECISION' && (d.blockers || []).length > 0
+  && d.blockers.every((b) => b.code === 'EV_SIDE_CONTRADICTION' && /calibrated EV/.test(b.text) && !/% raw/.test(b.text));
+chk('the calibrated-crossing hold is told apart from a raw contradiction', calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +0.4% calibrated EV. …' }] })
+  && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw and +0.4% calibrated EV. …' }] })
+  && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw EV. …' }] })
+  && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'STALE_MARKET', text: 'stale' }] }));
+chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, and any a calibrated line-crossing holds at NO DECISION',
   cfbReal.every((x) => x.orient ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes).indexOf('DATA_FAULT') >= 0)
-    : (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0)),
+    : (calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
   cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '')));
 chk('real CFB: Syracuse @ UConn, flagged by the orientation invariant, gets no decision (left flagged, never priced)', (() => {
   const x = cfbReal.find((y) => y.o.game && y.o.game.home === 'UConn' && y.o.game.away === 'Syracuse');
