@@ -20,7 +20,7 @@ edges record.
 | Committed artifacts | `ledger_<season>.json` (the audit ledger), `rows_<season>.json` (the page's columnar copy), `summary.json` (every figure precomputed) | `record/pnl/` |
 | Database | `model_pnl` plus the append-only `model_pnl_corrections`, a trigger-derived P&L, a public view, SQL rollups / drawdown / a daily materialised series, and a reader's own dollars | `supabase/model_pnl.sql`, `supabase/model_pnl_analytics.sql` |
 | Sync | Sends the committed ledger through `model_pnl_upsert()`. Soft-fails without secrets. | `tools/record/pnl_sync.js` |
-| UI | The Record's Profit & Loss section | `lib/edgedesk_pnl_ui.js`, `lib/edgedesk_pnl.css`. It appears as a third book in the app (Records → *Profit & Loss*) and as `#pnl` on the public `record.html`. |
+| UI | The Records page's profit and loss: the verified P&L summary first, then the historical record, one chart, *How P&L works* and *Advanced Analytics* (both collapsed), and the ledger | `lib/edgedesk_pnl_ui.js`, `lib/edgedesk_pnl.css`. It is the top of the app's Records page (the detailed edges and football model records sit inside its Advanced Analytics) and `#pnl` on the public `record.html`. |
 | Job | The only writer of `record/pnl/`. Runs after Player props, CFB Model Lab and Football model record, plus an hourly sweep. | `.github/workflows/record-pnl.yml` |
 | Tests | Kernel, ledger, real PostgreSQL, real browser | `tools/record/pnl*.test.js`, `.github/workflows/record-pnl-tests.yml` |
 
@@ -42,6 +42,19 @@ Also left out:
 
 - `signals`, the edges record. Its own recorded P&L lives in the database beside it (`pnl_grades`, `docs/pnl/EDGE_PNL.md`), and is shown as its own section on the public record. The two layers are never summed.
 - The per-reader AI-desk tables (`stake_recommendations`, `recommendation_ledger`). Those are one reader's own answers, not the public model's recommendations.
+
+## The page
+
+The Records page answers one question before anything else: **is the model up or down?**
+
+1. **The summary.** Verified P&L only — settled BET recommendations with a captured entry price: net units (the largest number on the page), PROFIT / LOSS / EVEN, ROI, W-L-P, win rate, the number of bets, and the period. With nothing settled it says *Not enough settled priced bets yet*, with the settled and pending counts — never a giant 0.00u.
+2. **Tabs** ALL / CFB / NFL / PLAYER PROPS, each carrying its own net, and a period (Season — the default — / 30 days / 7 days / All time), a stake choice (flat 1u or EdgeDesk stakes) and *Include leans* (off by default).
+3. **One chart**: cumulative units and the running peak; under it current, peak and max drawdown.
+4. **Historical model results**: the model-record rows by market (spread, totals, moneyline) as wins and losses only, labelled *Record only — exact historical P&L unavailable because entry odds were not captured.* Never units.
+5. ***How P&L works*** and ***Advanced Analytics*** are collapsed. Advanced holds everything else: more numbers, drawdown, game markets vs player props, every breakdown, calibration, CLV vs P&L, player prop performance, data quality — and, in the app, the detailed edges and football model records.
+6. **The ledger**: date, sport, bet, odds, result, units; a row opens to its audit (model number, entry and closing lines, CLV, edge, book, model version, timestamps, corrections). Settled and pending are separate views; the verified total is the summary's net.
+
+**One dataset.** The page filters the ledger rows once — scope, period, BET (and LEAN only when included), flat or staked — and the summary, the tabs, the chart, the advanced figures and the ledger total are all computed from that set by the kernel. They cannot disagree. `tools/record/pnl_ui.test.js` checks it under every scope, period, stake and the leans switch.
 
 ## The rules
 
