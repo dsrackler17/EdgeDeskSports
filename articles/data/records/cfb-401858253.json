@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T13:02:40.989Z",
-  "generated_at": "2026-10-01T13:02:40.989Z",
+  "updated_at": "2026-10-01T20:19:13.710Z",
+  "generated_at": "2026-10-01T20:19:13.710Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Bovada and theScore Bet on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Florida State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Virginia and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff. 1 older row(s) on file were refused as HISTORICAL against this kickoff (published more than a week before it, or undated), so they say nothing about this game."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -249,7 +273,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T22:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
       "home": {
         "team": "Florida State",
@@ -327,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T19:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
-      "generated_at": "2026-09-30T21:09:42.089Z",
+      "generated_at": "2026-10-01T18:54:08.098Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -453,14 +477,14 @@
               "h": {
                 "v": "53.4",
                 "n": 53.4,
-                "rank": "#11 of 137",
-                "rank_n": 11,
+                "rank": "#12 of 137",
+                "rank_n": 12,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 1.1,
-                "rank_gap": 13
+                "rank_gap": 12
               }
             }
           ]
@@ -703,14 +727,14 @@
               "h": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#39 of 137",
-                "rank_n": 39,
+                "rank": "#41 of 137",
+                "rank_n": 41,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.3,
-                "rank_gap": 25
+                "rank_gap": 23
               }
             },
             {
@@ -744,21 +768,21 @@
               "a": {
                 "v": "57.5",
                 "n": 57.5,
-                "rank": "#27 of 137",
-                "rank_n": 27,
+                "rank": "#25 of 137",
+                "rank_n": 25,
                 "note": null
               },
               "h": {
                 "v": "57.9",
                 "n": 57.9,
-                "rank": "#15 of 137",
-                "rank_n": 15,
+                "rank": "#14 of 137",
+                "rank_n": 14,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.4,
-                "rank_gap": 12
+                "rank_gap": 11
               }
             },
             {
@@ -792,8 +816,8 @@
               "a": {
                 "v": "53.8",
                 "n": 53.8,
-                "rank": "#52 of 137",
-                "rank_n": 52,
+                "rank": "#53 of 137",
+                "rank_n": 53,
                 "note": null
               },
               "h": {
@@ -806,7 +830,7 @@
               "edge": {
                 "side": "a",
                 "gap": 1.7,
-                "rank_gap": 24
+                "rank_gap": 23
               }
             },
             {
@@ -823,14 +847,14 @@
               "h": {
                 "v": "50.6",
                 "n": 50.6,
-                "rank": "#93 of 137",
-                "rank_n": 93,
+                "rank": "#94 of 137",
+                "rank_n": 94,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 8.4,
-                "rank_gap": 80
+                "rank_gap": 81
               }
             },
             {
@@ -940,13 +964,13 @@
         },
         {
           "k": "Secondary",
-          "rank_gap": 80,
+          "rank_gap": 81,
           "gap": 8.4,
           "lead": "Virginia",
           "trail": "Florida State",
           "lead_cell": "59.0 · #13 of 137",
-          "trail_cell": "50.6 · #93 of 137",
-          "text": "Virginia 59.0 (#13 of 137) vs Florida State 50.6 (#93 of 137) — 80 places on the national board."
+          "trail_cell": "50.6 · #94 of 137",
+          "text": "Virginia 59.0 (#13 of 137) vs Florida State 50.6 (#94 of 137) — 81 places on the national board."
         },
         {
           "k": "Talent",
@@ -1002,13 +1026,13 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 25,
+          "rank_gap": 23,
           "gap": 0.3,
           "lead": "Florida State",
           "trail": "Virginia",
-          "lead_cell": "55.5 · #39 of 137",
+          "lead_cell": "55.5 · #41 of 137",
           "trail_cell": "55.2 · #64 of 137",
-          "text": "Florida State 55.5 (#39 of 137) vs Virginia 55.2 (#64 of 137) — 25 places on the national board."
+          "text": "Florida State 55.5 (#41 of 137) vs Virginia 55.2 (#64 of 137) — 23 places on the national board."
         },
         {
           "k": "Special teams",
@@ -1116,11 +1140,11 @@
           "team": "Florida State",
           "label": "secondary",
           "v": "50.6",
-          "rank": "#93 of 137",
+          "rank": "#94 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Virginia’s QB room rates 60.8 (#23 of 137) against Florida State’s secondary at 50.6 (#93 of 137). Virginia’s unit stands higher among its own position group, by 70 places."
+        "read": "Virginia’s QB room rates 60.8 (#23 of 137) against Florida State’s secondary at 50.6 (#94 of 137). Virginia’s unit stands higher among its own position group, by 71 places."
       },
       {
         "title": "Florida State QB room vs Virginia secondary",
@@ -1185,7 +1209,7 @@
           "team": "Virginia",
           "label": "running backs",
           "v": "57.5",
-          "rank": "#27 of 137",
+          "rank": "#25 of 137",
           "note": null
         },
         "def": {
@@ -1196,7 +1220,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Virginia’s running backs rates 57.5 (#27 of 137) against Florida State’s linebackers at 52.1 (#76 of 137). Virginia’s unit stands higher among its own position group, by 49 places."
+        "read": "Virginia’s running backs rates 57.5 (#25 of 137) against Florida State’s linebackers at 52.1 (#76 of 137). Virginia’s unit stands higher among its own position group, by 51 places."
       },
       {
         "title": "Florida State running backs vs Virginia linebackers",
@@ -1204,18 +1228,18 @@
           "team": "Florida State",
           "label": "running backs",
           "v": "57.9",
-          "rank": "#15 of 137",
+          "rank": "#14 of 137",
           "note": null
         },
         "def": {
           "team": "Virginia",
           "label": "linebackers",
           "v": "53.8",
-          "rank": "#52 of 137",
+          "rank": "#53 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Florida State’s running backs rates 57.9 (#15 of 137) against Virginia’s linebackers at 53.8 (#52 of 137). Florida State’s unit stands higher among its own position group, by 37 places."
+        "read": "Florida State’s running backs rates 57.9 (#14 of 137) against Virginia’s linebackers at 53.8 (#53 of 137). Florida State’s unit stands higher among its own position group, by 39 places."
       },
       {
         "title": "Virginia receivers vs Florida State secondary",
@@ -1230,11 +1254,11 @@
           "team": "Florida State",
           "label": "secondary",
           "v": "50.6",
-          "rank": "#93 of 137",
+          "rank": "#94 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Virginia’s receivers rates 55.2 (#64 of 137) against Florida State’s secondary at 50.6 (#93 of 137). Virginia’s unit stands higher among its own position group, by 29 places."
+        "read": "Virginia’s receivers rates 55.2 (#64 of 137) against Florida State’s secondary at 50.6 (#94 of 137). Virginia’s unit stands higher among its own position group, by 30 places."
       },
       {
         "title": "Florida State receivers vs Virginia secondary",
@@ -1242,7 +1266,7 @@
           "team": "Florida State",
           "label": "receivers",
           "v": "55.5",
-          "rank": "#39 of 137",
+          "rank": "#41 of 137",
           "note": null
         },
         "def": {
@@ -1253,7 +1277,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Florida State’s receivers rates 55.5 (#39 of 137) against Virginia’s secondary at 59.0 (#13 of 137). Virginia’s unit stands higher among its own position group, by 26 places."
+        "read": "Florida State’s receivers rates 55.5 (#41 of 137) against Virginia’s secondary at 59.0 (#13 of 137). Virginia’s unit stands higher among its own position group, by 28 places."
       }
     ],
     "roster": {
@@ -1412,7 +1436,7 @@
           "Stylistically the matchup favours Virginia by 0.8 points: ball control vs front disruption (-0.8 pts).",
           "Kicking: Virginia 57.5 (#15 of 137) vs Florida State 55.0 (#101 of 137) — 86 places on the national board.",
           "Depth: Virginia 54.6 (#4 of 137) vs Florida State 53.5 (#87 of 137) — 83 places on the national board.",
-          "Secondary: Virginia 59.0 (#13 of 137) vs Florida State 50.6 (#93 of 137) — 80 places on the national board."
+          "Secondary: Virginia 59.0 (#13 of 137) vs Florida State 50.6 (#94 of 137) — 81 places on the national board."
         ]
       },
       "underdog": {
@@ -1439,7 +1463,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 39h old",
+          "text": "odds is 46h old",
           "widening": null
         },
         {
@@ -1576,9 +1600,9 @@
       "difference_n": 1.196544235343346,
       "total_model": "51.7",
       "total_market": "51.5",
-      "book": "captured consensus (stale) · 2 books · best at Bovada",
+      "book": "captured consensus (stale) · 1 book · best at Bovada",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "39 hours old",
+      "capture_age": "46 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1616,7 +1640,7 @@
         "market_line_text": "Virginia -3.0",
         "market_home_margin": -3,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 2 books · best at Bovada",
+        "source": "captured consensus (stale) · 1 book · best at Bovada",
         "as_of": "2026-09-29T22:00:02.478+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1628,11 +1652,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "86 · STRONG",
-        "sub": "main deduction: Virginia’s availability report is not due yet",
-        "score": 86,
+        "text": "82 · STRONG",
+        "sub": "main deduction: Virginia’s availability sources refused",
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1646,7 +1670,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.5,
+            "score": 9,
             "max": 20
           },
           {
@@ -1658,7 +1682,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1674,18 +1698,18 @@
             "max": 10
           }
         ],
-        "main_deduction": "Virginia’s availability report is not due yet; the impact of Virginia’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Virginia’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Virginia’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Virginia)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Virginia",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Florida State)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Florida State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
@@ -1866,13 +1890,13 @@
         {
           "k": "Receivers",
           "a": "55.2  #64",
-          "h": "55.5  #39",
+          "h": "55.5  #41",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "57.5  #27",
-          "h": "57.9  #15",
+          "a": "57.5  #25",
+          "h": "57.9  #14",
           "note": null
         },
         {
@@ -1883,14 +1907,14 @@
         },
         {
           "k": "Linebackers",
-          "a": "53.8  #52",
+          "a": "53.8  #53",
           "h": "52.1  #76",
           "note": null
         },
         {
           "k": "Secondary",
           "a": "59.0  #13",
-          "h": "50.6  #93",
+          "h": "50.6  #94",
           "note": null
         },
         {
@@ -1923,7 +1947,7 @@
       "EdgeDesk’s line is Florida State +4.2 on a neutral read of the two teams, before any book is consulted. Projected total 51.7.",
       "Florida State wins 39% of the time in EdgeDesk’s simulation, Virginia 61%.",
       "Eight games in ten land between -26.2 and +15.8 for Florida State. A single result inside that band tells you nothing new about either team.",
-      "The market has Florida State +3.0 at captured consensus (stale) · 2 books · best at Bovada, 1.2 points from EdgeDesk’s number.",
+      "The market has Florida State +3.0 at captured consensus (stale) · 1 book · best at Bovada, 1.2 points from EdgeDesk’s number.",
       "Virginia quarterback: Beau Pribula — started the last game; no announcement for this one.",
       "Florida State quarterback: Ashton Daniels — started the last game; no announcement for this one."
     ],
@@ -1933,11 +1957,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T13:02:40.989Z"
+    "at": "2026-10-01T20:19:13.710Z"
   }
 }

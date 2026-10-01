@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T16:00:00.000Z",
   "game_when_label": "2026-10-03 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T13:02:40.989Z",
-  "generated_at": "2026-10-01T13:02:40.989Z",
+  "updated_at": "2026-10-01T20:19:13.710Z",
+  "generated_at": "2026-10-01T20:19:13.710Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and FanDuel on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Wake Forest and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Stanford and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -237,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-27T02:30:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
       "home": {
         "team": "Wake Forest",
@@ -309,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
-      "generated_at": "2026-09-30T21:09:42.089Z",
+      "generated_at": "2026-10-01T18:54:08.098Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -380,21 +404,21 @@
               "a": {
                 "v": "48.9",
                 "n": 48.9,
-                "rank": "#75 of 137",
-                "rank_n": 75,
+                "rank": "#76 of 137",
+                "rank_n": 76,
                 "note": null
               },
               "h": {
                 "v": "54.4",
                 "n": 54.4,
-                "rank": "#44 of 137",
-                "rank_n": 44,
+                "rank": "#43 of 137",
+                "rank_n": 43,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 5.5,
-                "rank_gap": 31
+                "rank_gap": 33
               }
             },
             {
@@ -630,8 +654,8 @@
               "a": {
                 "v": "57.2",
                 "n": 57.2,
-                "rank": "#77 of 137",
-                "rank_n": 77,
+                "rank": "#76 of 137",
+                "rank_n": 76,
                 "note": null
               },
               "h": {
@@ -644,7 +668,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.3,
-                "rank_gap": 23
+                "rank_gap": 22
               }
             },
             {
@@ -726,21 +750,21 @@
               "a": {
                 "v": "56.1",
                 "n": 56.1,
-                "rank": "#65 of 137",
-                "rank_n": 65,
+                "rank": "#66 of 137",
+                "rank_n": 66,
                 "note": null
               },
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#112 of 137",
-                "rank_n": 112,
+                "rank": "#111 of 137",
+                "rank_n": 111,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 1.1,
-                "rank_gap": 47
+                "rank_gap": 45
               }
             },
             {
@@ -774,8 +798,8 @@
               "a": {
                 "v": "51.1",
                 "n": 51.1,
-                "rank": "#88 of 137",
-                "rank_n": 88,
+                "rank": "#90 of 137",
+                "rank_n": 90,
                 "note": null
               },
               "h": {
@@ -788,7 +812,7 @@
               "edge": {
                 "side": "h",
                 "gap": 4.9,
-                "rank_gap": 57
+                "rank_gap": 59
               }
             },
             {
@@ -798,8 +822,8 @@
               "a": {
                 "v": "50.8",
                 "n": 50.8,
-                "rank": "#91 of 137",
-                "rank_n": 91,
+                "rank": "#92 of 137",
+                "rank_n": 92,
                 "note": null
               },
               "h": {
@@ -812,7 +836,7 @@
               "edge": {
                 "side": "h",
                 "gap": 9.8,
-                "rank_gap": 86
+                "rank_gap": 87
               }
             },
             {
@@ -902,13 +926,13 @@
       "away": [
         {
           "k": "Running backs",
-          "rank_gap": 47,
+          "rank_gap": 45,
           "gap": 1.1,
           "lead": "Stanford",
           "trail": "Wake Forest",
-          "lead_cell": "56.1 · #65 of 137",
-          "trail_cell": "55.0 · #112 of 137",
-          "text": "Stanford 56.1 (#65 of 137) vs Wake Forest 55.0 (#112 of 137) — 47 places on the national board."
+          "lead_cell": "56.1 · #66 of 137",
+          "trail_cell": "55.0 · #111 of 137",
+          "text": "Stanford 56.1 (#66 of 137) vs Wake Forest 55.0 (#111 of 137) — 45 places on the national board."
         },
         {
           "k": "Depth",
@@ -983,6 +1007,16 @@
           "text": "Wake Forest 72.0 (#9 of 137) vs Stanford 39.9 (#110 of 137) — 101 places on the national board."
         },
         {
+          "k": "Secondary",
+          "rank_gap": 87,
+          "gap": 9.8,
+          "lead": "Wake Forest",
+          "trail": "Stanford",
+          "lead_cell": "60.6 · #5 of 137",
+          "trail_cell": "50.8 · #92 of 137",
+          "text": "Wake Forest 60.6 (#5 of 137) vs Stanford 50.8 (#92 of 137) — 87 places on the national board."
+        },
+        {
           "k": "ETSR (overall)",
           "rank_gap": 86,
           "gap": 12.3,
@@ -991,16 +1025,6 @@
           "lead_cell": "+9.2 · #12 of 137",
           "trail_cell": "-3.1 · #98 of 137",
           "text": "Wake Forest +9.2 (#12 of 137) vs Stanford -3.1 (#98 of 137) — 86 places on the national board."
-        },
-        {
-          "k": "Secondary",
-          "rank_gap": 86,
-          "gap": 9.8,
-          "lead": "Wake Forest",
-          "trail": "Stanford",
-          "lead_cell": "60.6 · #5 of 137",
-          "trail_cell": "50.8 · #91 of 137",
-          "text": "Wake Forest 60.6 (#5 of 137) vs Stanford 50.8 (#91 of 137) — 86 places on the national board."
         }
       ],
       "measured": [],
@@ -1091,7 +1115,7 @@
           "team": "Stanford",
           "label": "QB room",
           "v": "57.2",
-          "rank": "#77 of 137",
+          "rank": "#76 of 137",
           "note": null
         },
         "def": {
@@ -1102,7 +1126,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s QB room rates 57.2 (#77 of 137) against Wake Forest’s secondary at 60.6 (#5 of 137). Wake Forest’s unit stands higher among its own position group, by 72 places."
+        "read": "Stanford’s QB room rates 57.2 (#76 of 137) against Wake Forest’s secondary at 60.6 (#5 of 137). Wake Forest’s unit stands higher among its own position group, by 71 places."
       },
       {
         "title": "Wake Forest QB room vs Stanford secondary",
@@ -1117,11 +1141,11 @@
           "team": "Stanford",
           "label": "secondary",
           "v": "50.8",
-          "rank": "#91 of 137",
+          "rank": "#92 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Wake Forest’s QB room rates 58.5 (#54 of 137) against Stanford’s secondary at 50.8 (#91 of 137). Wake Forest’s unit stands higher among its own position group, by 37 places."
+        "read": "Wake Forest’s QB room rates 58.5 (#54 of 137) against Stanford’s secondary at 50.8 (#92 of 137). Wake Forest’s unit stands higher among its own position group, by 38 places."
       },
       {
         "title": "Stanford offensive line vs Wake Forest defensive line",
@@ -1167,7 +1191,7 @@
           "team": "Stanford",
           "label": "running backs",
           "v": "56.1",
-          "rank": "#65 of 137",
+          "rank": "#66 of 137",
           "note": null
         },
         "def": {
@@ -1178,7 +1202,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Stanford’s running backs rates 56.1 (#65 of 137) against Wake Forest’s linebackers at 56.0 (#31 of 137). Wake Forest’s unit stands higher among its own position group, by 34 places."
+        "read": "Stanford’s running backs rates 56.1 (#66 of 137) against Wake Forest’s linebackers at 56.0 (#31 of 137). Wake Forest’s unit stands higher among its own position group, by 35 places."
       },
       {
         "title": "Wake Forest running backs vs Stanford linebackers",
@@ -1186,18 +1210,18 @@
           "team": "Wake Forest",
           "label": "running backs",
           "v": "55.0",
-          "rank": "#112 of 137",
+          "rank": "#111 of 137",
           "note": null
         },
         "def": {
           "team": "Stanford",
           "label": "linebackers",
           "v": "51.1",
-          "rank": "#88 of 137",
+          "rank": "#90 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Wake Forest’s running backs rates 55.0 (#112 of 137) against Stanford’s linebackers at 51.1 (#88 of 137). Stanford’s unit stands higher among its own position group, by 24 places."
+        "read": "Wake Forest’s running backs rates 55.0 (#111 of 137) against Stanford’s linebackers at 51.1 (#90 of 137). Stanford’s unit stands higher among its own position group, by 21 places."
       },
       {
         "title": "Stanford receivers vs Wake Forest secondary",
@@ -1231,11 +1255,11 @@
           "team": "Stanford",
           "label": "secondary",
           "v": "50.8",
-          "rank": "#91 of 137",
+          "rank": "#92 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Wake Forest’s receivers rates 55.4 (#51 of 137) against Stanford’s secondary at 50.8 (#91 of 137). Wake Forest’s unit stands higher among its own position group, by 40 places."
+        "read": "Wake Forest’s receivers rates 55.4 (#51 of 137) against Stanford’s secondary at 50.8 (#92 of 137). Wake Forest’s unit stands higher among its own position group, by 41 places."
       }
     ],
     "roster": {
@@ -1401,7 +1425,7 @@
         "team": "Stanford",
         "heading": "Why Stanford can keep it close",
         "bullets": [
-          "Running backs: Stanford 56.1 (#65 of 137) vs Wake Forest 55.0 (#112 of 137) — 47 places on the national board.",
+          "Running backs: Stanford 56.1 (#66 of 137) vs Wake Forest 55.0 (#111 of 137) — 45 places on the national board.",
           "Depth: Stanford 54.0 (#34 of 137) vs Wake Forest 53.7 (#69 of 137) — 35 places on the national board.",
           "Continuity: Stanford 48.4 (#49 of 137) vs Wake Forest 42.0 (#81 of 137) — 32 places on the national board.",
           "The outcome range is 14.8 points wide at one sigma — p10 -4.8 to p90 +37.2 for Wake Forest, so a projection of +17.2 still produces results a long way either side of it.",
@@ -1427,7 +1451,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 39h old",
+          "text": "odds is 46h old",
           "widening": null
         },
         {
@@ -1558,9 +1582,9 @@
       "difference_n": 4.744275548063705,
       "total_model": "54.4",
       "total_market": "53.5",
-      "book": "captured consensus (stale) · 2 books · best at theScore Bet",
+      "book": "captured consensus (stale) · 1 book · best at theScore Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "39 hours old",
+      "capture_age": "46 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1598,7 +1622,7 @@
         "market_line_text": "Wake Forest -12.5",
         "market_home_margin": 12.5,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 2 books · best at theScore Bet",
+        "source": "captured consensus (stale) · 1 book · best at theScore Bet",
         "as_of": "2026-09-29T22:00:02.478+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1610,11 +1634,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 81,
         "tier": "STRONG",
-        "text": "85 · STRONG",
-        "sub": "main deduction: the projected spread moves ±2.27 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 85,
+        "text": "81 · STRONG",
+        "sub": "main deduction: Stanford’s availability sources refused",
+        "score": 81,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1628,7 +1652,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1640,7 +1664,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1656,23 +1680,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the projected spread moves ±2.27 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.43 pts)",
+        "main_deduction": "Stanford’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Stanford’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Stanford)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Stanford",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Wake Forest)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Wake Forest",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1787,8 +1811,8 @@
         },
         {
           "k": "Talent",
-          "a": "48.9  #75",
-          "h": "54.4  #44",
+          "a": "48.9  #76",
+          "h": "54.4  #43",
           "note": null
         },
         {
@@ -1841,7 +1865,7 @@
         },
         {
           "k": "QB room",
-          "a": "57.2  #77",
+          "a": "57.2  #76",
           "h": "58.5  #54",
           "note": null
         },
@@ -1859,8 +1883,8 @@
         },
         {
           "k": "Running backs",
-          "a": "56.1  #65",
-          "h": "55.0  #112",
+          "a": "56.1  #66",
+          "h": "55.0  #111",
           "note": null
         },
         {
@@ -1871,13 +1895,13 @@
         },
         {
           "k": "Linebackers",
-          "a": "51.1  #88",
+          "a": "51.1  #90",
           "h": "56.0  #31",
           "note": null
         },
         {
           "k": "Secondary",
-          "a": "50.8  #91",
+          "a": "50.8  #92",
           "h": "60.6  #5",
           "note": null
         },
@@ -1911,7 +1935,7 @@
       "EdgeDesk’s line is Wake Forest -17.2 on a neutral read of the two teams, before any book is consulted. Projected total 54.4.",
       "Wake Forest wins 88% of the time in EdgeDesk’s simulation, Stanford 12%.",
       "Eight games in ten land between -4.8 and +37.2 for Wake Forest. A single result inside that band tells you nothing new about either team.",
-      "The market has Wake Forest -12.5 at captured consensus (stale) · 2 books · best at theScore Bet, 4.7 points from EdgeDesk’s number.",
+      "The market has Wake Forest -12.5 at captured consensus (stale) · 1 book · best at theScore Bet, 4.7 points from EdgeDesk’s number.",
       "Stanford quarterback: Davis Warren — started the last game; no announcement for this one.",
       "Wake Forest quarterback: Gio Lopez — started the last game; no announcement for this one."
     ],
@@ -1921,11 +1945,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T13:02:40.989Z"
+    "at": "2026-10-01T20:19:13.710Z"
   }
 }

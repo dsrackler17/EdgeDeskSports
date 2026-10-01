@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T19:30:00.000Z",
   "game_when_label": "2026-10-03 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T13:02:40.989Z",
-  "generated_at": "2026-10-01T13:02:40.989Z",
+  "updated_at": "2026-10-01T20:19:13.710Z",
+  "generated_at": "2026-10-01T20:19:13.710Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Bovada and BetOnline.ag on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -129,11 +129,35 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for North Dakota State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Wyoming and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
           {
             "field": "off_field",
             "side": "home",
@@ -231,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T19:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
       "home": {
         "team": "North Dakota State",
@@ -315,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-20T02:30:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
-      "generated_at": "2026-09-30T21:09:42.089Z",
+      "generated_at": "2026-10-01T18:54:08.098Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -732,8 +756,8 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#92 of 137",
-                "rank_n": 92,
+                "rank": "#94 of 137",
+                "rank_n": 94,
                 "note": null
               },
               "h": {
@@ -746,7 +770,7 @@
               "edge": {
                 "side": "a",
                 "gap": 2.1,
-                "rank_gap": 43
+                "rank_gap": 41
               }
             },
             {
@@ -928,13 +952,13 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 43,
+          "rank_gap": 41,
           "gap": 2.1,
           "lead": "Wyoming",
           "trail": "North Dakota State",
-          "lead_cell": "55.5 · #92 of 137",
+          "lead_cell": "55.5 · #94 of 137",
           "trail_cell": "53.4 · #135 of 137",
-          "text": "Wyoming 55.5 (#92 of 137) vs North Dakota State 53.4 (#135 of 137) — 43 places on the national board."
+          "text": "Wyoming 55.5 (#94 of 137) vs North Dakota State 53.4 (#135 of 137) — 41 places on the national board."
         },
         {
           "k": "Receivers",
@@ -1173,7 +1197,7 @@
           "team": "Wyoming",
           "label": "running backs",
           "v": "55.5",
-          "rank": "#92 of 137",
+          "rank": "#94 of 137",
           "note": null
         },
         "def": {
@@ -1184,7 +1208,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Wyoming’s running backs rates 55.5 (#92 of 137) against North Dakota State’s linebackers at 54.1 (#48 of 137). North Dakota State’s unit stands higher among its own position group, by 44 places."
+        "read": "Wyoming’s running backs rates 55.5 (#94 of 137) against North Dakota State’s linebackers at 54.1 (#48 of 137). North Dakota State’s unit stands higher among its own position group, by 46 places."
       },
       {
         "title": "North Dakota State running backs vs Wyoming linebackers",
@@ -1400,7 +1424,7 @@
         "bullets": [
           "Kicking: Wyoming 56.2 (#68 of 137) vs North Dakota State 54.0 (#128 of 137) — 60 places on the national board.",
           "Secondary: Wyoming 59.8 (#10 of 137) vs North Dakota State 53.3 (#68 of 137) — 58 places on the national board.",
-          "Running backs: Wyoming 55.5 (#92 of 137) vs North Dakota State 53.4 (#135 of 137) — 43 places on the national board.",
+          "Running backs: Wyoming 55.5 (#94 of 137) vs North Dakota State 53.4 (#135 of 137) — 41 places on the national board.",
           "The outcome range is 14.8 points wide at one sigma — p10 -6.7 to p90 +35.3 for North Dakota State, so a projection of +15.3 still produces results a long way either side of it.",
           "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 1%."
         ]
@@ -1424,7 +1448,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 39h old",
+          "text": "odds is 46h old",
           "widening": null
         },
         {
@@ -1555,9 +1579,9 @@
       "difference_n": 2.721046532632979,
       "total_model": "44.7",
       "total_market": "45.5",
-      "book": "captured consensus (stale) · 2 books · best at Bovada",
+      "book": "captured consensus (stale) · 1 book · best at Bovada",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "39 hours old",
+      "capture_age": "46 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1595,7 +1619,7 @@
         "market_line_text": "North Dakota State -18.0",
         "market_home_margin": 18,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 2 books · best at Bovada",
+        "source": "captured consensus (stale) · 1 book · best at Bovada",
         "as_of": "2026-09-29T22:00:02.478+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1607,11 +1631,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Wyoming’s availability report is not due yet",
-        "score": 88,
+        "text": "84 · STRONG",
+        "sub": "main deduction: Wyoming’s availability sources refused",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1625,7 +1649,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.7,
+            "score": 9.2,
             "max": 20
           },
           {
@@ -1637,7 +1661,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1653,23 +1677,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Wyoming’s availability report is not due yet; the impact of Wyoming’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Wyoming’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Wyoming’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Wyoming)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Wyoming",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (North Dakota State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for North Dakota State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1856,7 +1880,7 @@
         },
         {
           "k": "Running backs",
-          "a": "55.5  #92",
+          "a": "55.5  #94",
           "h": "53.4  #135",
           "note": null
         },
@@ -1908,7 +1932,7 @@
       "EdgeDesk’s line is North Dakota State -15.3 on a neutral read of the two teams, before any book is consulted. Projected total 44.7.",
       "North Dakota State wins 85% of the time in EdgeDesk’s simulation, Wyoming 15%.",
       "Eight games in ten land between -6.7 and +35.3 for North Dakota State. A single result inside that band tells you nothing new about either team.",
-      "The market has North Dakota State -18.0 at captured consensus (stale) · 2 books · best at Bovada, 2.7 points from EdgeDesk’s number.",
+      "The market has North Dakota State -18.0 at captured consensus (stale) · 1 book · best at Bovada, 2.7 points from EdgeDesk’s number.",
       "Wyoming quarterback: Tyler Hughes — started the last game; no announcement for this one.",
       "North Dakota State quarterback: Nathan Hayes — started the last game; no announcement for this one."
     ],
@@ -1918,11 +1942,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T13:02:40.989Z"
+    "at": "2026-10-01T20:19:13.710Z"
   }
 }
