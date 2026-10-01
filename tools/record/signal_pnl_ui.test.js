@@ -268,6 +268,11 @@ function site(req, res) {
       D.grades.forEach((g) => { byKey[g.sig_key] = g; });
       const off = st.pairs.filter((x) => { const g = byKey[x[0]]; return !g || g.pnl_status !== x[2] || (g.pnl_status === 'graded' ? Math.abs(Number(g.pnl_units) - x[1]) > 1e-9 : x[1] !== null); });
       chk(W + 'px app: every graded row carries its recorded P&L, equal to the database', st.state === 'ok' && st.n > 100 && st.synced === st.n && off.length === 0, [st.state, st.n, st.synced, off.slice(0, 3)]);
+      /* the edges record is a detailed record: it lives inside the Records
+         page's Advanced Analytics, closed until the reader opens it */
+      await pg.waitForSelector('#recPnlWrap [data-r="adv"] #recDetail', { state: 'attached', timeout: 15000 });
+      chk(W + 'px app: the edges record sits inside Advanced Analytics, closed by default', await pg.$eval('#recPnlWrap [data-r="adv"]', (el) => !el.open));
+      await pg.click('#recPnlWrap [data-r="adv"] > summary');
       await pg.evaluate(() => recGo('bets'));
       await pg.waitForSelector('#recTbl tbody tr.rrow', { timeout: 15000 });
       const heads = await pg.$$eval('#recTbl thead th', (els) => els.map((e) => e.textContent.replace(/[▴▾]/g, '').trim()));

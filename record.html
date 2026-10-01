@@ -6,7 +6,7 @@
 <title>EdgeDesk Record: our closing line value, unedited</title>
 <meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261001r">
 <link rel="stylesheet" href="/lib/edgedesk_edge_pnl.css?v=20261001a">
 <!-- NO LOGIN GATE. That is the entire point of this file.
      app.html redirects logged-out visitors to index.html. Its own gate comment
@@ -253,9 +253,9 @@ footer a:hover{color:var(--text)}
 
 <section class="sec" id="pnl">
   <div class="wrap">
-    <span class="ey">Profit &amp; loss · every recommendation at the price it was made</span>
-    <h2>If you had followed every EdgeDesk recommendation</h2>
-    <p class="sub">Every recommendation EdgeDesk classified BET, at the American price it recorded when it made the call, flat 1u or at the stake it recommended — never both at once. Nothing is re-priced with today’s odds, nothing is re-predicted with today’s model, and a result whose price was never captured counts in the win/loss record but never in P&amp;L: EdgeDesk does not assume −110. Losses stay, and a corrected result is logged on its row. Every figure is copied from record/pnl/, which tools/record/pnl_ledger.js writes from the settled ledgers; this page adds nothing of its own.</p>
+    <span class="ey">Profit &amp; loss · the model’s own recommendations</span>
+    <h2>Is the EdgeDesk model up or down?</h2>
+    <p class="sub">Settled BET recommendations at the price EdgeDesk recorded. Tap <b>How P&amp;L works</b> for the method.</p>
     <div id="pnlPub"><div class="edrec-empty">Loading the profit &amp; loss record…</div></div>
   </div>
 </section>
@@ -4967,8 +4967,8 @@ load();
 })();
 </script>
 <!-- PROFIT & LOSS (#pnl): public, units only, no login — the committed record/pnl/ rendered by lib/edgedesk_pnl_ui.js -->
-<script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
-<script src="/lib/edgedesk_pnl_ui.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pnl.js?v=20261001r"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20261001r"></script>
 <script>
 (function () {
   var host = document.getElementById('pnlPub');

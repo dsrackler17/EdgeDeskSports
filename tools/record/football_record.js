@@ -50,7 +50,7 @@ const MAX_ESPN_SUMMARIES = 40;
 /* A GRADED college game whose close carries no price is asked for one by its
    own id: ESPN's summary keeps the closing quote of a finished game, prices
    included. Newest first, capped per run, and at most PRICE_ASKS times per
-   game — a game ESPN never priced stays at the standard -110, and says so. */
+   game — a game ESPN never priced keeps no price, and nothing is assumed. */
 const PRICE_CHASE_DAYS = 120;
 const MAX_ESPN_PRICE_SUMMARIES = 60;
 const PRICE_ASKS = 3;
@@ -239,18 +239,17 @@ function compactRow(e) {
     ou: g.total && g.total.result, ou_side: g.total && g.total.side,
     clv: g.clv_entry && g.clv_entry.spread ? g.clv_entry.spread.pts : null,
     reliability: e.pick && e.pick.reliability ? e.pick.reliability.score : null,
-    units: g.pnl ? g.pnl.units : null,
   };
 }
 
 function buildSummary(ledgers, sums, now) {
   const out = {
     schema: C.SUMMARY_SCHEMA, generated_at: now, season: ledgers.nfl.season,
-    what: 'The football model’s own record: the number it published before kickoff, graded against the closing line and the final, and priced in units. Separate from the edges record, which grades flagged prices.',
+    what: 'The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.',
     rules: [
       'Only numbers published before kickoff are recorded; the pick is the last pregame number and the first is kept beside it.',
       'Against the spread and the total, the model’s side is set by its number against the CLOSE and graded on the final.',
-      'P&L is 1 unit on every side the record takes, at that side’s closing price from the same source as the closing line. A spread or total whose closing price was never captured is priced at the standard −110 and marked; a moneyline is priced only at its real closing price. ROI = units ÷ units risked; a push returns the stake.',
+      'This is a record, not P&L: no entry price was captured with the model’s number, so its results are wins and losses. Closing prices are kept where the source gives them; nothing is ever priced at an assumed −110.',
       'CLV is in points: how far the market moved toward the side the model leaned, from the quote recorded with the number to the close, from the same source.',
       'No close, no final, no total: nothing is estimated. A final two feeds disagree on settles nothing.',
     ],
@@ -267,7 +266,7 @@ function buildSummary(ledgers, sums, now) {
     Object.keys(ledgers.cfb.games).forEach((k) => { if (ledgers.cfb.games[k].group === grp) sub.games[k] = ledgers.cfb.games[k]; });
     const grades = {}; Object.keys(sub.games).forEach((k) => { grades[k] = sub.games[k].grade; });
     const s = C.summarize(sub, grades);
-    out.cfb_groups[grp] = { counts: s.counts, ats: s.ats, ou: s.ou, su: s.su, ml: s.ml, net: s.net, clv: { spread_entry: s.clv.spread_entry }, error: s.error };
+    out.cfb_groups[grp] = { counts: s.counts, ats: s.ats, ou: s.ou, su: s.su, clv: { spread_entry: s.clv.spread_entry }, error: s.error };
   });
   ['nfl', 'cfb'].forEach((sp) => {
     const done = Object.values(ledgers[sp].games).filter((e) => e.grade && (e.grade.status === 'GRADED' || e.grade.status === 'FINAL_NO_CLOSE'));
@@ -321,11 +320,8 @@ async function run(opts) {
 
 function line(s) {
   const a = s.ats.all, c = s.clv.spread_entry;
-  const u = (r) => (r.units > 0 ? '+' : '') + r.units.toFixed(2) + 'u';
-  return s.counts.recorded + ' recorded · ' + s.counts.graded + ' graded · ATS ' + a.w + '-' + a.l + '-' + a.p + ' ' + u(a)
-    + ' · O/U ' + s.ou.all.w + '-' + s.ou.all.l + '-' + s.ou.all.p + ' ' + u(s.ou.all) + ' · SU ' + s.su.w + '-' + s.su.l
-    + ' · ML ' + s.ml.w + '-' + s.ml.l + ' ' + u(s.ml) + ' (n=' + s.ml.n + ')'
-    + ' · NET ' + u(s.net) + ' ROI ' + (s.net.roi == null ? '—' : s.net.roi + '%') + ' (' + s.net.at_close + ' at the close, ' + s.net.at_standard + ' at -110)'
+  return s.counts.recorded + ' recorded · ' + s.counts.graded + ' graded · ATS ' + a.w + '-' + a.l + '-' + a.p
+    + ' · O/U ' + s.ou.all.w + '-' + s.ou.all.l + '-' + s.ou.all.p + ' · SU ' + s.su.w + '-' + s.su.l
     + ' · CLV ' + (c.n ? ((c.avg > 0 ? '+' : '') + c.avg + ' pts avg, beat the close ' + c.beat_pct + '% (n=' + c.n + ')') : 'n=0');
 }
 

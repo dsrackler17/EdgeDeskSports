@@ -12,9 +12,8 @@
      · CLV is points toward the side the model leaned, same source only
      · a final is set once and never overwritten; 0-0 is not a final
      · the ESPN reader never grades against the wrong team
-     · every graded pick is priced: its closing price when captured (only
-       for the line and book the close holds), else the marked standard -110
-       on a spread or total; a moneyline only at a real price
+     · a graded pick is priced only at its captured closing price (only for
+       the line and book the close holds); no price, no units — never -110
      · the CLI records a slate end to end, offline, and writes nothing
        unless asked
 
@@ -266,10 +265,9 @@ chk('summary tallies records, CLV and break-even', () => {
     && s.break_even_pct === 52.38 && s.weeks.length === 1 && L.games.A.grade.status === 'GRADED';
 });
 
-/* ------------------------------------------------------------ P&L
-   1u on every side the record takes, at the closing price of that side;
-   a spread or total with no captured price at the standard -110; a
-   moneyline only at a real price. */
+/* ------------------------------------------------------------ closing-price units
+   1u on a side the record took, at that side's CAPTURED closing price; no
+   captured price, no units — the record never assumes -110. */
 const near = (a, b) => a != null && Math.abs(a - b) < 1e-4;
 function priced(prices, final, over) {
   const r = graded(-6, 44, { home_line: -3, total: 45 }, Object.assign({ home_line: -4, total: 46 }, prices ? { prices } : {}), final || { home_score: 24, away_score: 17 }, over);
@@ -287,13 +285,16 @@ chk('P&L: a plus-money winner pays the price (+120 → +1.20u)', () => {
   const { g } = priced({ home: -105, away: -115, over: -140, under: 120 });       // under 46: 41 points → win
   return g.pnl.total.side === 'under' && g.pnl.total.odds === 120 && near(g.pnl.total.units, 1.2);
 });
-chk('P&L: no captured price → the standard -110, marked standard, never "close"', () => {
+chk('P&L: no captured price → no units at all, never an assumed -110', () => {
   const { g } = priced(null);
-  return g.pnl.spread.odds === -110 && g.pnl.spread.basis === 'standard' && near(g.pnl.spread.units, 0.9091)
-    && g.pnl.total.basis === 'standard';
+  return g.spread.result === 'win' && g.total.result === 'win' && g.pnl === null;
 });
-chk('P&L: a moneyline with no captured price carries no P&L (no standard moneyline exists)', () => {
+chk('P&L: a priced spread beside an unpriced total prices the spread alone', () => {
   const { g } = priced({ home: -105, away: -115 });
+  return g.pnl.spread.basis === 'close' && g.pnl.total === null && g.pnl.bets === 1;
+});
+chk('P&L: a moneyline with no captured price carries no P&L', () => {
+  const { g } = priced({ home: -105, away: -115, over: -110, under: -110 });
   return g.su.result === 'win' && g.pnl.ml === null && g.pnl.bets === 2;
 });
 chk('P&L: the moneyline is the straight-up pick at its closing price (-200 win → +0.50u)', () => {
@@ -314,7 +315,7 @@ chk('P&L: nothing before the final', () => {
 });
 chk('P&L: a price that is not an American price is dropped, never used', () => {
   const { e, g } = priced({ home: 50, away: 'abc', over: 0, under: null });
-  return !e.close.prices && g.pnl.spread.basis === 'standard';
+  return !e.close.prices && g.pnl === null;
 });
 
 chk('closing prices fill a held close only for the same line and the same book', () => {
@@ -347,28 +348,15 @@ chk('the last pregame quote carries its prices into the close, and a price move 
   return a && moved && e.close.prices.home === -120 && g.pnl.spread.odds === -120 && g.pnl.spread.basis === 'close';
 });
 
-chk('summary: units, risked, ROI and the price basis', () => {
+chk('summary: a record only — no units, no assumed price, whatever the prices held', () => {
   const L = C.emptyLedger('nfl', 2026);
-  const add = (id, line, close, fin, prices, week) => {
-    const p = C.projectionFromSlate('nfl', slateGame({ game_id: id, model_home_line: line, week: week || 3 }), { season: 2026 });
-    C.recordProjection(L, p, { published_at: '2026-09-24T12:00:00Z', now: '2026-09-24T12:00:00Z', market: { home_line: close, total: 45, source: 'nflverse', at: '2026-09-24T12:00:00Z' } });
-    C.setClose(L.games[id], Object.assign({ home_line: close, total: 45, source: 'nflverse' }, prices ? { prices } : {}), '2026-09-28T00:00:00Z');
-    C.setFinal(L.games[id], fin, '2026-09-28T00:00:00Z');
-  };
-  add('A', -6, -4, { home_score: 24, away_score: 17 }, { home: -105, away: -115, over: -110, under: -110, home_ml: -200, away_ml: 170 }, 2);  // home covers (win -105), total 41 vs 45 under? model 44 → under: win; ML home win
-  add('B', -1, -4, { home_score: 24, away_score: 17 }, null);                         // away loses at std; under wins at std; no ML price
-  add('C', -9, -3, { home_score: 20, away_score: 17 }, { home: -110, away: -110 });   // push; under wins at std (no total price)
+  const p = C.projectionFromSlate('nfl', slateGame({ game_id: 'A' }), { season: 2026 });
+  C.recordProjection(L, p, { published_at: '2026-09-24T12:00:00Z', now: '2026-09-24T12:00:00Z', market: { home_line: -4, total: 45, source: 'nflverse', at: '2026-09-24T12:00:00Z' } });
+  C.setClose(L.games.A, { home_line: -4, total: 45, source: 'nflverse', prices: { home: -105, away: -115 } }, '2026-09-28T00:00:00Z');
+  C.setFinal(L.games.A, { home_score: 24, away_score: 17 }, '2026-09-28T00:00:00Z');
   const s = C.gradeLedger(L, '2026-09-29T00:00:00Z');
-  const A = L.games.A.grade.pnl, B = L.games.B.grade.pnl, Cc = L.games.C.grade.pnl;
-  const sum = A.units + B.units + Cc.units;
-  return near(s.ats.all.units, A.spread.units + B.spread.units + Cc.spread.units)
-    && s.ats.all.risked === 2 && s.ats.all.at_close === 2 && s.ats.all.at_standard === 1
-    && near(s.net.units, sum) && s.net.n === A.bets + B.bets + Cc.bets
-    && s.ml.n === 1 && s.su.n === 3 && s.counts.ml_unpriced === 2 && s.su.units === undefined
-    && s.net.roi === Math.round(1000 * s.net.units / s.net.risked) / 10
-    && s.splits.home.n === 2 && s.splits.away.n === 1 && s.splits.favorite.n === 2 && s.splits.underdog.n === 1
-    && s.by_gap.spread.filter((b) => b.n).length >= 1 && s.by_gap.spread.reduce((a, b) => a + b.n, 0) === 3
-    && s.weeks.length === 2 && near(s.weeks[0].cum_units, s.weeks[0].net.units) && near(s.weeks[1].cum_units, sum);
+  const json = JSON.stringify(s);
+  return s.ats.all.w === 1 && s.ats.all.units === undefined && s.net === undefined && s.pricing === undefined && !/standard/.test(json);
 });
 
 /* ------------------------------------------------------------- sources */
@@ -512,16 +500,14 @@ chk('espn: scoreboard dates are Eastern calendar dates', () => S.etDate('2026-09
     });
     const sum = JSON.parse(fs.readFileSync(path.join(dir, 'summary.json'), 'utf8'));
     chk('committed summary: schema and both sports', sum.schema === C.SUMMARY_SCHEMA && sum.sports.nfl && sum.sports.cfb);
-    /* once the record is priced, its units are the sum of its games', and
-       every pick says how it was priced */
+    /* a pick carries units only at a captured closing price */
     ['nfl', 'cfb'].forEach((sp) => {
       const S = sum.sports[sp];
-      if (!S || !S.net) return;
+      if (!S) return;
       const L = JSON.parse(fs.readFileSync(path.join(dir, sp + '_' + sum.season + '.json'), 'utf8'));
       const picks = [];
       Object.values(L.games).forEach((e) => { const p = e.grade && e.grade.pnl; if (p) ['spread', 'total', 'ml'].forEach((k) => { if (p[k]) picks.push(p[k]); }); });
-      chk('committed ' + sp + ': net units are the sum of every graded pick', Math.abs(picks.reduce((a, x) => a + x.units, 0) - S.net.units) < 1e-3 && picks.length === S.net.n, [S.net.units, picks.length, S.net.n]);
-      chk('committed ' + sp + ': every pick is priced at its close or the marked standard -110', picks.every((x) => (x.basis === 'close' && x.odds != null) || (x.basis === 'standard' && x.odds === C.STANDARD_PRICE)));
+      chk('committed ' + sp + ': every priced pick is at a captured closing price, never an assumed -110', picks.every((x) => x.basis === 'close' && x.odds != null && C.cleanPrices({ home: x.odds })));
     });
   }
 

@@ -2085,6 +2085,9 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 <style id="recdash-style">
 /* ===== Records dashboard (v2) ===== */
 .recpane{animation:rfade .18s ease}
+/* the detailed records, inside the P&L's Advanced Analytics */
+.rec-detail-h{font-size:15px;margin:4px 0 10px;letter-spacing:-.01em}
+#recPnlWrap{margin-top:8px}
 @keyframes rfade{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
 .rec-note{font-size:10.5px;line-height:1.5;color:var(--faint);border-left:2px solid rgba(217,154,43,.5);padding:6px 0 6px 9px;margin:8px 0 10px}
 .rec-note b{color:var(--text)}
@@ -2101,36 +2104,6 @@ body.ed-large-text .set-lbl,body.ed-large-text .lead-sel{font-size:14px}
 .rtag.sim{color:var(--warn);border-color:rgba(217,154,43,.4)}
 .rtag.small{color:var(--neg);border-color:rgba(226,96,68,.4)}
 .rpos{color:var(--pos)}.rneg{color:var(--neg)}.rmut{color:var(--dim)}
-/* football record: the P&L block (net units, markets, running total, price basis) */
-.rfb-pnl{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 13px 11px;margin:0 0 12px}
-.rfb-pnl-top{display:grid;grid-template-columns:1fr;gap:12px}
-@media(min-width:640px){.rfb-pnl-top{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);align-items:center}}
-.rfb-hero .l{font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em}
-.rfb-hero .v{font-family:'Inter',sans-serif;font-size:40px;font-weight:700;line-height:1.1;margin:3px 0 2px;letter-spacing:-.01em}
-@media(min-width:560px){.rfb-hero .v{font-size:48px}}
-.rfb-hero .s{font-size:11.5px;color:var(--dim)}
-.rfb-mk{display:grid;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.rfb-mkr{display:grid;grid-template-columns:minmax(72px,1fr) auto auto minmax(76px,auto);gap:10px;align-items:baseline;padding:8px 11px;border-top:1px solid var(--border);background:var(--surface2);font-variant-numeric:tabular-nums}
-.rfb-mkr:first-child{border-top:0}
-.rfb-mkr .k{font-size:12px;font-weight:600}
-.rfb-mkr .r{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--dim)}
-.rfb-mkr .u{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;text-align:right;min-width:62px}
-.rfb-mkr .roi{font-size:10.5px;color:var(--faint);text-align:right}
-.rfb-chart{position:relative;margin:12px 0 4px;min-height:150px;outline:none;border-radius:8px;touch-action:pan-y}
-.rfb-chart:focus-visible{box-shadow:0 0 0 2px var(--accent)}
-.rfb-chart svg{display:block;max-width:100%}
-.rfb-ax{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:var(--faint);font-variant-numeric:tabular-nums}
-.rfb-tip{position:absolute;z-index:3;pointer-events:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;line-height:1.45;color:var(--text);white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-.rfb-cnote{font-size:11px;color:var(--faint);padding:20px 0;text-align:center}
-.rfb-basis{font-size:10.5px;line-height:1.5;color:var(--faint);margin-top:4px}
-.rfb-gt td{vertical-align:top}
-.rfb-gt td.rfb-gn{text-align:left;white-space:normal;min-width:120px;max-width:170px;line-height:1.35}
-.rfb-gt .rfb-ps{overflow:hidden;text-overflow:ellipsis;max-width:130px;margin-left:auto}
-.rfb-gt .rfb-pd{font-size:10px;margin-top:2px;line-height:1.3}
-.rfb-gt .rfb-pd .rtag{margin-left:2px}
-.rfb-tbl td{font-variant-numeric:tabular-nums;white-space:nowrap}
-.rfb-tbl td:first-child{white-space:normal;min-width:150px}
-#recPnlWrap{margin-top:22px;padding-top:16px;border-top:1px solid var(--border)}
 .rsports{display:grid;grid-template-columns:1fr;gap:9px;margin:8px 0 14px}
 @media(min-width:640px){.rsports{grid-template-columns:1fr 1fr}}
 .rsport{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;transition:transform .12s ease,border-color .15s ease}
@@ -2909,7 +2882,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260930p">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
-<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20260930a">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261001r">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3032,24 +3005,24 @@ body.focus .dk-focusnote{display:block}
   <!-- RECORD -->
   <section id="v-record" class="view hide">
     <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
-    <!-- BOOKS, NEVER MIXED. The edges record grades prices the capture
-         flagged (signals). The football record grades the number the
-         football model published (record/football/, written by
-         .github/workflows/football-model-record.yml) and PRICES it: every
-         graded pick in units, at its closing price. Profit & Loss is not a
-         book of its own any more — it is part of the football record: the
-         model's picks in units above, and EdgeDesk's BET recommendations
-         (record/pnl/) beneath them, each counted once. -->
+    <!-- IS THE MODEL UP OR DOWN? The first thing on the Records page, always:
+         EdgeDesk's verified P&L — settled BET recommendations at the entry
+         price it recorded (record/pnl/, tools/record/pnl_ledger.js) — with
+         the historical model record (wins and losses only, never units)
+         beneath it. Rendered by lib/edgedesk_pnl_ui.js. -->
+    <div id="recPnlWrap"></div>
+    <!-- DETAILED RECORDS. The edges record grades prices the capture flagged
+         (signals); the football model record grades the number the football
+         model published (record/football/). Neither reads the other. Both
+         live inside the P&L section's collapsed "Advanced Analytics" (moved
+         there when it mounts); without it, they stay here. -->
+    <div id="recDetail">
+    <h3 class="rec-detail-h">Detailed records</h3>
     <div class="stseg" id="recBook" role="tablist" aria-label="Which record">
       <button data-rb="edges" class="on" role="tab" aria-selected="true">Edges record</button>
-      <button data-rb="football" role="tab" aria-selected="false">Football record &amp; P&amp;L</button>
+      <button data-rb="football" role="tab" aria-selected="false">Football model record</button>
     </div>
     <div id="recFbWrap" class="hide"></div>
-    <!-- THE RECOMMENDATIONS' P&L, the last part of the football record: every
-         BET EdgeDesk recommended at the price it recorded, from record/pnl/
-         (tools/record/pnl_ledger.js). Rendered by lib/edgedesk_pnl_ui.js with
-         the model-record rows filtered out (they are priced above). -->
-    <div id="recPnlWrap" class="hide"></div>
     <div id="recEdgesWrap">
     <p class="lede">The auto-graded closing-line record of the <b style="color:var(--text);font-weight:600">edges the system flagged</b>. Entry prices are frozen at flag time, the close is snapshotted, and every row grades itself after the game. Nothing here is typed in by hand and nothing is estimated.</p>
     <!-- THE PROOF LAYER — static framing only; every number stays in the
@@ -3156,6 +3129,7 @@ body.focus .dk-focusnote{display:block}
       <div class="tblwrap"><table class="tbl" id="calibTbl"><thead><tr><th>Edge bucket</th><th>n</th><th>Pred</th><th>Win%</th><th>CLV</th></tr></thead><tbody></tbody></table></div>
     </div>
     </div><!-- /recEdgesWrap -->
+    </div><!-- /recDetail -->
   </section>
 
   <!-- LEDGER -->
@@ -3898,8 +3872,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
 <script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
 <!-- THE P&L BOOK (docs/pnl/DESIGN.md): the arithmetic and the Record section over record/pnl/ -->
-<script src="/lib/edgedesk_pnl.js?v=20260930a"></script>
-<script src="/lib/edgedesk_pnl_ui.js?v=20260930a"></script>
+<script src="/lib/edgedesk_pnl.js?v=20261001r"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20261001r"></script>
 <script src="/lib/edgedesk_market.js?v=20260929a"></script>
 <script src="/lib/edgedesk_execution.js?v=20260929a"></script>
 <script src="/lib/edgedesk_decision.js?v=20260930b"></script>
@@ -5194,7 +5168,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      this the bar shows nothing active and a reader loses their place. */
   var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record')loadRecord();if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/if(v==='pprops'){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}}else{try{if(/^#playerprops/.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}}/*ADDED: PLAYER PROPS terminal; its #playerprops link belongs to it alone*/
+  if(v==='record'){loadRecord();try{if(typeof rpnlOpen==='function')rpnlOpen(false);}catch(_){}}if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/if(v==='pprops'){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}}else{try{if(/^#playerprops/.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}}/*ADDED: PLAYER PROPS terminal; its #playerprops link belongs to it alone*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
@@ -10180,82 +10154,15 @@ function rfbRate(r){
 }
 function rfbKpi(n,l,s,cls){return '<div class="rkpi"><div class="n '+(cls||'')+'">'+n+'</div><div class="l">'+l+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>';}
 function rfbSmall(n){return n<RFB_MIN?'<span class="rtag small">n='+n+'</span>':'';}
-/* ---- units: 1u on every graded pick, at its closing price (record/football) ---- */
-function rfbU(v){if(v==null||!isFinite(v))return '—';var x=Math.round(v*100)/100;if(Math.abs(x)<0.005)x=0;return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(2)+'u';}
-function rfbUCls(v){return v==null||Math.abs(v)<0.005?'rmut':v>0?'rpos':'rneg';}
-function rfbRoi(r){if(!r||r.roi==null)return '—';var x=r.roi;return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1)+'%';}
-function rfbOdds(a){if(a==null||!isFinite(a))return '—';a=Math.round(a);return a>0?'+'+a:'−'+Math.abs(a);}
-/* a record and its units in one cell: "19-11-2 +6.04u" */
-function rfbRU(r){return r&&r.n?rfbRecStr(r)+' <span class="'+rfbUCls(r.units)+'">'+rfbU(r.units)+'</span>':'<span class="muted">—</span>';}
-/* the summary carries units once the record job has priced it */
-function rfbHasPnl(S){return !!(S&&S.net&&S.ats&&S.ats.all&&S.ats.all.units!=null);}
 
 function rfbHeadHTML(s){
-  return '<p class="lede">The football model’s <b style="color:var(--text);font-weight:600">own record, in wins and in units</b>, kept apart from the edges record. Every game below is the number the model published before kickoff — the same engine run the Football board shows — graded against the closing line and the final score, and priced: one unit on every side it took, at that side’s closing price. Nothing is typed in by hand and nothing is estimated.</p>'
+  return '<p class="lede">The football model’s <b style="color:var(--text);font-weight:600">own record</b>, kept apart from the edges record. Every game below is the number the model published before kickoff — the same engine run the Football board shows — graded against the closing line and the final score. Nothing is typed in by hand and nothing is estimated.</p>'
     +'<div class="ph"><div class="ey">How this record is kept</div>'
-    +'<div class="ph-chain"><span>Pregame number</span><span>Market at entry</span><span>Closing line &amp; price</span><span>Final</span><span>Graded in units</span></div>'
+    +'<div class="ph-chain"><span>Pregame number</span><span>Market at entry</span><span>Closing line</span><span>Final</span><span>Graded</span></div>'
     +'<div class="ph-two">'
-    +'<div class="ph-c"><b>Against the spread, and in units</b><div class="q">Was the model on the right side of the close — and what did it pay?</div><p>The model’s side is its last pregame number against the closing line, graded on the final margin. Each side is 1 unit at its real closing price; a spread or total whose price was never captured is priced at the standard −110 and marked. At −110 a side has to win 52.4% to break even.</p></div>'
+    +'<div class="ph-c"><b>Against the spread</b><div class="q">Was the model on the right side of the close?</div><p>The model’s side is its last pregame number against the closing line, graded on the final margin. At standard prices a side has to win 52.4% to break even.</p></div>'
     +'<div class="ph-c evid"><b>Closing-line value</b><div class="q">Did the market move toward the model?</div><p>Points the line moved toward the side the model leaned, from the market number recorded with the model’s number to the close. Over many games this is the evidence that a disagreement carried information.</p></div>'
     +'</div></div>';
-}
-
-/* THE P&L AT THE TOP OF THE RECORD: net units over every graded pick, the
-   three markets, the running total game by game, and how each was priced. */
-function rfbPnlHTML(sp,S){
-  if(!rfbHasPnl(S))return '<div class="rec-note"><b>Units are on their way.</b> This record has not been priced yet; the next run of the record job prices every graded pick at its closing price.</div>';
-  var N=S.net,a=S.ats.all,o=S.ou.all,m=S.ml||{},su=S.su||{};
-  if(!N.n)return '<div class="rec-note"><b>No graded pick to price yet.</b> Every side the model takes is priced in units once its game is final.</div>';
-  var src=sp==='nfl'?'nflverse consensus':'the ESPN book';
-  function row(k,r,extra){return '<div class="rfb-mkr"><span class="k">'+k+'</span><span class="r">'+rfbRecStr(r)+'</span><span class="u '+rfbUCls(r&&r.units)+'">'+(r&&r.n?rfbU(r.units):'—')+'</span><span class="roi">'+(r&&r.n?'ROI '+rfbRoi(r):(extra||''))+'</span></div>';}
-  var h='<div class="rfb-pnl">'
-    +'<div class="rfb-pnl-top">'
-    +'<div class="rfb-hero"><div class="l">Net units · every graded pick, 1u each</div>'
-    +'<div class="v '+rfbUCls(N.units)+'">'+rfbU(N.units)+'</div>'
-    +'<div class="s">'+rfbRecStr(N)+' · ROI '+rfbRoi(N)+' · '+N.risked+'u risked'+rfbSmall(N.n)+'</div></div>'
-    +'<div class="rfb-mk">'
-    +row('Spread',a)+row('Totals',o)
-    +row('Moneyline',m,su.n?'no closing moneyline yet':'')
-    +'</div></div>'
-    +'<div class="rfb-chart" id="rfbChart" role="img" aria-label="Running total of units, game by game"><div class="rskel" style="height:150px"></div></div>'
-    +'<div class="rfb-basis">'+rfbBasis(src,N,m,su,S.counts)+'</div>'
-    +'</div>';
-  return h;
-}
-/* how every pick above was priced, in one sentence */
-function rfbBasis(src,N,m,su,c){
-  var parts=[];
-  if(N.at_close)parts.push(N.at_close+' pick'+(N.at_close===1?'':'s')+' at the real closing price ('+src+')');
-  if(N.at_standard)parts.push('<span class="rtag sim">−110 std</span> '+N.at_standard+' spread/total pick'+(N.at_standard===1?'':'s')+' at the standard −110, because no closing price from '+src+' has been captured for '+(N.at_standard===1?'it':'them')+' yet; each switches to its real closing price once the record job reads one');
-  if(su.n)parts.push(m.n?'the moneyline is priced on '+m.n+' of '+su.n+' straight-up picks'+(c&&c.ml_unpriced?'; the rest have no closing moneyline and count in the straight-up record only':''):'no closing moneyline captured yet, so the '+su.n+' straight-up picks count in the record only');
-  return parts.join(' · ')+'.';
-}
-
-/* WHAT HAS WORKED: every cut of the record, in units, so the parts that make
-   money and the parts that lose it are side by side. */
-function rfbSplitsHTML(S){
-  if(!rfbHasPnl(S)||!S.net.n)return '';
-  var sp=S.splits||{},ats=S.ats,ou=S.ou;
-  var rows=[
-    ['Spread','every side',ats.all],['Spread','model 2+ pts off the close',ats.lean],['Spread','model 4+ pts off the close',ats.big],
-    ['Spread','on the favourite',sp.favorite],['Spread','on the underdog',sp.underdog],['Spread','home side',sp.home],['Spread','away side',sp.away],
-    ['Totals','every side',ou.all],['Totals','model 2+ pts off the close',ou.lean],['Totals','model 4+ pts off the close',ou.big],['Totals','over',sp.over],['Totals','under',sp.under],
-    ['Moneyline','the model’s favourite to win',S.ml,'no closing moneyline captured yet']
-  ];
-  function tr(x){var r=x[2]||{};return '<tr><td><span class="muted">'+x[0]+'</span> · '+x[1]+(x[3]&&!r.n?' <span class="muted">— '+x[3]+'</span>':'')+'</td><td>'+(r.n||0)+'</td><td>'+rfbRecStr(r)+'</td><td>'+rfbPct(r)+'</td><td class="'+rfbUCls(r.units)+'">'+(r.n?rfbU(r.units):'—')+'</td><td class="'+rfbUCls(r.roi)+'">'+rfbRoi(r)+'</td></tr>';}
-  var h='<h3 style="margin:16px 0 8px">What has worked</h3>'
-    +'<div class="tblwrap"><table class="tbl rfb-tbl"><thead><tr><th>Pick type</th><th>Bets</th><th>Record</th><th>Win %</th><th>Units</th><th>ROI</th></tr></thead><tbody>'+rows.map(tr).join('')+'</tbody></table></div>';
-  var G=S.by_gap;
-  if(G&&G.spread){
-    h+='<h3 style="margin:16px 0 8px">By how far the model was from the close</h3>'
-      +'<div class="tblwrap"><table class="tbl rfb-tbl"><thead><tr><th>Points off</th><th>Spread</th><th>Units</th><th>ROI</th><th>Totals</th><th>Units</th><th>ROI</th></tr></thead><tbody>';
-    G.spread.forEach(function(b,i){var t=(G.total||[])[i]||{};
-      h+='<tr><td>'+recEsc(b.key)+' pts</td><td>'+rfbRecStr(b)+'</td><td class="'+rfbUCls(b.units)+'">'+(b.n?rfbU(b.units):'—')+'</td><td class="'+rfbUCls(b.roi)+'">'+rfbRoi(b)+'</td>'
-        +'<td>'+rfbRecStr(t)+'</td><td class="'+rfbUCls(t.units)+'">'+(t.n?rfbU(t.units):'—')+'</td><td class="'+rfbUCls(t.roi)+'">'+rfbRoi(t)+'</td></tr>';});
-    h+='</tbody></table></div>';
-  }
-  h+='<div class="rec-note"><b>Reading a split.</b> Units say what a pick type has paid so far, not what it will pay: under '+RFB_MIN+' bets a split swings on a handful of games. A split that keeps paying as its sample grows, and whose side keeps beating the close, is the one that is real.</div>';
-  return h;
 }
 
 function rfbRender(){
@@ -10278,45 +10185,36 @@ function rfbRender(){
     h+='<div class="rec-note"><b>Nothing graded yet for this sport.</b> '+(c.recorded||0)+' pregame numbers are on the record; each one grades itself once its closing line and final score are in. '
       +(c.final_no_close?c.final_no_close+' finished game'+(c.final_no_close===1?' is':'s are')+' waiting on a closing line.':'')+'</div>';
   }
-  var small=rfbSmall(c.graded||0),hp=rfbHasPnl(S);
-  /* the units a record made, in its tile: "+6.04u · ROI +20.1%" */
-  function uSub(r){return hp&&r&&r.n?' · <span class="'+rfbUCls(r.units)+'">'+rfbU(r.units)+'</span> · ROI '+rfbRoi(r):'';}
-  h+=rfbPnlHTML(sp,S);
+  var small=rfbSmall(c.graded||0);
   h+='<div class="rkpis">'
-    +rfbKpi(rfbRecStr(ats.all),'vs the spread'+small,rfbPct(ats.all)+uSub(ats.all)+' · model side vs the close · break-even 52.4%',rfbRate(ats.all))
+    +rfbKpi(rfbRecStr(ats.all),'vs the spread'+small,rfbPct(ats.all)+' · model side vs the close · break-even 52.4%',rfbRate(ats.all))
     +rfbKpi(rfbPts(ce.avg)+(ce.n?' pts':''),'avg CLV'+rfbSmall(ce.n||0),ce.n?('beat the close '+ce.beat_pct+'% · '+ce.beat+' up, '+ce.flat+' flat, '+ce.lost+' down · n='+ce.n):'no game has both a recorded market number and a close yet',rfbCls(ce.avg))
-    +rfbKpi(rfbRecStr(ou.all),'totals',rfbPct(ou.all)+uSub(ou.all)+' · model side vs the closing total',rfbRate(ou.all))
-    +rfbKpi(rfbRecStr(S.su),'straight up',rfbPct(S.su)+' · the model’s favourite to win'+(hp&&S.ml&&S.ml.n?' · moneyline '+rfbRecStr(S.ml)+uSub(S.ml):''))
-    +rfbKpi(rfbRecStr(ats.lean),'spread, 2+ pt gaps',rfbPct(ats.lean)+uSub(ats.lean)+' · where the model disagreed with the close by 2 or more',rfbRate(ats.lean))
+    +rfbKpi(rfbRecStr(ou.all),'totals',rfbPct(ou.all)+' · model side vs the closing total',rfbRate(ou.all))
+    +rfbKpi(rfbRecStr(S.su),'straight up',rfbPct(S.su)+' · the model’s favourite to win')
+    +rfbKpi(rfbRecStr(ats.lean),'spread, 2+ pt gaps',rfbPct(ats.lean)+' · where the model disagreed with the close by 2 or more',rfbRate(ats.lean))
     +rfbKpi(er.n?(er.model_mae.toFixed(2)+' / '+er.close_mae.toFixed(2)):'—','margin miss: model / close',er.n?('average points off the real margin · model nearer on '+er.model_closer_pct+'% of '+er.n):'no graded game yet',er.n?(er.model_mae<=er.close_mae?'rpos':'rneg'):'rmut')
     +rfbKpi(rfbPts(cp.avg)+(cp.n?' pts':''),'CLV, last number',cp.n?('from the model’s final pregame number · beat the close '+cp.beat_pct+'% · n='+cp.n):'no pair yet',rfbCls(cp.avg))
     +rfbKpi(String(c.recorded||0),'games recorded',(c.graded||0)+' graded · '+(c.pregame||0)+' ahead · '+((c.awaiting_final||0)+(c.final_no_close||0))+' waiting on a final or close')
     +'</div>';
-  h+='<div class="rec-note"><b>How to read this.</b> A record against the spread swings a lot over a few dozen games, and so do its units; closing-line value settles far faster and is the number to watch. Units say what following the model would have paid; CLV says whether that was skill or a run of bounces. '
+  h+='<div class="rec-note"><b>How to read this.</b> A record against the spread swings a lot over a few dozen games; closing-line value settles far faster and is the number to watch. '
     +(cl.n?'On 2+ point disagreements at entry the average CLV is '+rfbPts(cl.avg)+' pts (n='+cl.n+'). ':'')
     +(te.n?'Totals CLV at entry: '+rfbPts(te.avg)+' pts (n='+te.n+'). ':'')
     +(S.brier&&S.brier.n?'Win-probability Brier score: '+S.brier.model.toFixed(3)+' (0.25 is a coin flip; lower is better). ':'')
     +(c.beyond_guard?c.beyond_guard+' game'+(c.beyond_guard===1?'':'s')+' finished more than '+S.guard_points+' pts from the close — graded and counted, flagged below. ':'')
     +'</div>';
-  h+=rfbSplitsHTML(S);
 
   if(sp==='cfb'&&s.cfb_groups){
     var G=s.cfb_groups,lab={p4:'Power 4 involved',other_fbs:'Other FBS',fbs_fcs:'FBS vs FCS'};
-    h+='<h3 style="margin:16px 0 8px">By matchup</h3><div class="tblwrap"><table class="tbl rfb-tbl"><thead><tr><th>Group</th><th>Graded</th><th>ATS</th><th>Totals</th><th>SU</th>'+(hp?'<th>Net units</th><th>ROI</th>':'')+'<th>CLV</th></tr></thead><tbody>';
+    h+='<h3 style="margin:16px 0 8px">By matchup</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Group</th><th>Graded</th><th>ATS</th><th>Totals</th><th>SU</th><th>CLV</th></tr></thead><tbody>';
     ['p4','other_fbs','fbs_fcs'].forEach(function(k){var g=G[k];if(!g)return;var gc=(g.clv&&g.clv.spread_entry)||{};
-      h+='<tr><td>'+lab[k]+'</td><td>'+(g.counts.graded||0)+' / '+(g.counts.recorded||0)+'</td><td class="'+rfbRate(g.ats.all)+'">'+(hp?rfbRU(g.ats.all):rfbRecStr(g.ats.all))+'</td><td>'+(hp?rfbRU(g.ou.all):rfbRecStr(g.ou.all))+'</td><td>'+rfbRecStr(g.su)+(hp&&g.ml&&g.ml.n?' <span class="'+rfbUCls(g.ml.units)+'">'+rfbU(g.ml.units)+'</span>':'')+'</td>'
-        +(hp?'<td class="'+rfbUCls(g.net&&g.net.units)+'">'+(g.net&&g.net.n?rfbU(g.net.units):'—')+'</td><td class="'+rfbUCls(g.net&&g.net.roi)+'">'+rfbRoi(g.net)+'</td>':'')
-        +'<td class="'+rfbCls(gc.avg)+'">'+rfbPts(gc.avg)+(gc.n?' <span class="muted">n='+gc.n+'</span>':'')+'</td></tr>';});
+      h+='<tr><td>'+lab[k]+'</td><td>'+(g.counts.graded||0)+' / '+(g.counts.recorded||0)+'</td><td class="'+rfbRate(g.ats.all)+'">'+rfbRecStr(g.ats.all)+'</td><td>'+rfbRecStr(g.ou.all)+'</td><td>'+rfbRecStr(g.su)+'</td><td class="'+rfbCls(gc.avg)+'">'+rfbPts(gc.avg)+(gc.n?' <span class="muted">n='+gc.n+'</span>':'')+'</td></tr>';});
     h+='</tbody></table></div>';
   }
   var W=(S.weeks||[]).filter(function(w){return w.graded||w.recorded;});
   if(W.length){
-    h+='<h3 style="margin:16px 0 8px">Week by week</h3><div class="tblwrap"><table class="tbl rfb-tbl"><thead><tr><th>Week</th><th>Graded</th><th>ATS</th><th>Totals</th>'+(hp?'<th>Moneyline</th><th>Week units</th><th>Running</th>':'')+'<th>Avg CLV</th></tr></thead><tbody>';
+    h+='<h3 style="margin:16px 0 8px">Week by week</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>Week</th><th>Graded</th><th>ATS</th><th>Totals</th><th>Avg CLV</th></tr></thead><tbody>';
     W.slice().reverse().forEach(function(w){
-      var played=w.net&&w.net.n;
-      h+='<tr><td>'+(w.week!=null?'Week '+w.week:'—')+'</td><td>'+w.graded+' / '+w.recorded+'</td><td class="'+rfbRate(w.ats)+'">'+(hp?rfbRU(w.ats):rfbRecStr(w.ats))+'</td><td>'+(hp?rfbRU(w.ou):rfbRecStr(w.ou))+'</td>'
-        +(hp?'<td>'+rfbRU(w.ml)+'</td><td class="'+(played?rfbUCls(w.net.units):'rmut')+'">'+(played?rfbU(w.net.units):'—')+'</td><td class="'+(played?rfbUCls(w.cum_units):'rmut')+'">'+(played?rfbU(w.cum_units):'—')+'</td>':'')
-        +'<td class="'+rfbCls(w.clv&&w.clv.avg)+'">'+(w.clv&&w.clv.n?rfbPts(w.clv.avg)+' <span class="muted">n='+w.clv.n+'</span>':'—')+'</td></tr>';
+      h+='<tr><td>'+(w.week!=null?'Week '+w.week:'—')+'</td><td>'+w.graded+' / '+w.recorded+'</td><td class="'+rfbRate(w.ats)+'">'+rfbRecStr(w.ats)+'</td><td>'+rfbRecStr(w.ou)+'</td><td class="'+rfbCls(w.clv&&w.clv.avg)+'">'+(w.clv&&w.clv.n?rfbPts(w.clv.avg)+' <span class="muted">n='+w.clv.n+'</span>':'—')+'</td></tr>';
     });
     h+='</tbody></table></div>';
   }
@@ -10327,68 +10225,7 @@ function rfbRender(){
   h+='<div class="rec-note" style="margin-top:14px"><b>Where every number comes from.</b> Model: '+recEsc(src.projection||'')+'. Market: '+recEsc(src.market||'')+'. Close: '+recEsc(src.close||'')+'. Final: '+recEsc(src.final||'')+'.</div>';
   if(s.rules&&s.rules.length)h+='<ul style="margin:6px 0 0;padding-left:18px;font-size:11px;color:var(--dim);line-height:1.55">'+s.rules.map(function(t){return '<li>'+recEsc(t)+'</li>';}).join('')+'</ul>';
   host.innerHTML=h;
-  rfbLedger(sp).then(function(L){if(RFB.sport===sp&&RFB.sum===s){rfbRenderGames(L);rfbChart(L);}});
-}
-
-/* THE RUNNING TOTAL, game by game in kickoff order: one line, one axis, in
-   units. Weeks are marked on the x-axis; hover, tap or the arrow keys show
-   the game behind each step. Drawn at the box's real width (redrawn on
-   resize), so the text never scales with the viewport. */
-function rfbChartPts(L){
-  if(!L||!L.games)return [];
-  var rows=Object.keys(L.games).map(function(k){return L.games[k];}).filter(function(e){return e.grade&&e.grade.pnl&&e.grade.pnl.bets;});
-  rows.sort(function(a,b){return Date.parse(a.kickoff)-Date.parse(b.kickoff)||(a.game_id<b.game_id?-1:1);});
-  var cum=0;
-  return rows.map(function(e){cum=Math.round((cum+e.grade.pnl.units)*10000)/10000;return {e:e,u:e.grade.pnl.units,c:cum,w:e.week};});
-}
-function rfbChart(L){
-  var box=$('rfbChart');if(!box)return;
-  var P=rfbChartPts(L);RFB.chartL=L;
-  if(!P.length){box.innerHTML='<div class="rfb-cnote">The running total starts with the first graded pick.</div>';return;}
-  var W=Math.max(260,box.clientWidth||600),H=156,pl=44,pr=12,pt=10,pb=24,iw=W-pl-pr,ih=H-pt-pb;
-  var lo=0,hi=0;P.forEach(function(p){if(p.c<lo)lo=p.c;if(p.c>hi)hi=p.c;});
-  /* clean ticks: a step of 1, 2, 5 or 10 × 10^k giving about four lines */
-  var span=Math.max(hi-lo,1),raw=span/4,mag=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)),st=[1,2,5,10].map(function(m){return m*mag;}).filter(function(s){return s>=raw;})[0]||mag*10;
-  lo=Math.floor(lo/st)*st;hi=Math.ceil(hi/st)*st;if(hi===lo)hi=lo+st;
-  var x=function(i){return pl+(P.length===1?iw/2:i*iw/(P.length-1));},y=function(v){return pt+(hi-v)*ih/(hi-lo);};
-  var s='<svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">';
-  for(var t=lo;t<=hi+1e-9;t+=st){var yy=Math.round(y(t))+.5;
-    s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+yy+'" y2="'+yy+'" stroke="'+(Math.abs(t)<1e-9?'var(--faint)':'var(--border)')+'" stroke-width="1"'+(Math.abs(t)<1e-9?' stroke-opacity=".7"':' stroke-opacity=".55"')+'/>'
-      +'<text x="'+(pl-6)+'" y="'+(yy+3.5)+'" text-anchor="end" class="rfb-ax">'+(t>0?'+':t<0?'−':'')+Math.abs(Math.round(t*100)/100)+'u</text>';}
-  /* week marks at the first game of each week */
-  var lastW=null;P.forEach(function(p,i){if(p.w===lastW)return;lastW=p.w;var xx=Math.round(x(i))+.5;
-    if(i>0)s+='<line x1="'+xx+'" x2="'+xx+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--border)" stroke-width="1" stroke-opacity=".55"/>';
-    s+='<text x="'+(xx+3)+'" y="'+(H-8)+'" class="rfb-ax">W'+(p.w!=null?p.w:'?')+'</text>';});
-  s+='<polyline fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="'+P.map(function(p,i){return x(i).toFixed(1)+','+y(p.c).toFixed(1);}).join(' ')+'"/>';
-  var last=P[P.length-1];
-  s+='<circle cx="'+x(P.length-1).toFixed(1)+'" cy="'+y(last.c).toFixed(1)+'" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';
-  s+='<g class="rfb-hov" style="display:none"><line y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--faint)" stroke-width="1"/><circle r="4.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></g>';
-  s+='</svg><div class="rfb-tip" hidden></div>';
-  box.innerHTML=s;box.tabIndex=0;
-  box.setAttribute('aria-label','Running total of units over '+P.length+' graded games: '+rfbU(last.c)+' after the last one. Use the arrow keys to step through the games.');
-  var g=box.querySelector('.rfb-hov'),tip=box.querySelector('.rfb-tip'),cur=-1;
-  function at(i){
-    if(i<0||i>=P.length){g.style.display='none';tip.hidden=true;cur=-1;return;}
-    cur=i;var p=P[i],e=p.e,pn=e.grade.pnl,xx=x(i),yy=y(p.c);
-    g.style.display='';g.querySelector('line').setAttribute('x1',xx);g.querySelector('line').setAttribute('x2',xx);
-    g.querySelector('circle').setAttribute('cx',xx);g.querySelector('circle').setAttribute('cy',yy);
-    var when='';try{when=new Date(e.kickoff).toLocaleDateString([], {month:'short',day:'numeric'});}catch(_){}
-    var parts=[['ATS',pn.spread],['Total',pn.total],['ML',pn.ml]].filter(function(q){return q[1];}).map(function(q){return q[0]+' '+rfbU(q[1].units);}).join(' · ');
-    tip.innerHTML='<b>'+recEsc(rfbTeam(e,'away'))+' @ '+recEsc(rfbTeam(e,'home'))+'</b> <span class="muted">'+recEsc(when)+(e.week!=null?' · W'+e.week:'')+'</span><br>'
-      +'Game <span class="'+rfbUCls(p.u)+'">'+rfbU(p.u)+'</span> <span class="muted">('+recEsc(parts)+')</span><br>Running total <b class="'+rfbUCls(p.c)+'">'+rfbU(p.c)+'</b>';
-    tip.hidden=false;
-    var tw=tip.offsetWidth||180;tip.style.left=Math.max(4,Math.min(W-tw-4,xx-tw/2))+'px';tip.style.top=(yy<H/2?yy+12:Math.max(2,yy-tip.offsetHeight-12))+'px';
-  }
-  function idx(cx){var r=box.getBoundingClientRect(),px=cx-r.left;return Math.max(0,Math.min(P.length-1,Math.round((px-pl)/(P.length===1?1:iw/(P.length-1)))));}
-  box.onpointermove=function(ev){at(idx(ev.clientX));};
-  box.onpointerdown=function(ev){at(idx(ev.clientX));};
-  box.onpointerleave=function(){at(-1);};
-  box.onblur=function(){at(-1);};
-  box.onkeydown=function(ev){
-    if(ev.key==='ArrowRight'||ev.key==='ArrowLeft'){ev.preventDefault();at(cur<0?(ev.key==='ArrowRight'?0:P.length-1):Math.max(0,Math.min(P.length-1,cur+(ev.key==='ArrowRight'?1:-1))));}
-    else if(ev.key==='Escape')at(-1);
-  };
-  RFB.chartW=box.clientWidth;
+  rfbLedger(sp).then(function(L){if(RFB.sport===sp&&RFB.sum===s)rfbRenderGames(L);});
 }
 
 function rfbRenderGames(L){
@@ -10405,67 +10242,62 @@ function rfbRenderGames(L){
   if(!rows.length){host.innerHTML=recEmptyHTML('empty',RFB.view==='graded'?'<b>No finished games on the record yet.</b>':'<b>No upcoming games on the record right now.</b>');return;}
   var shown=rows.slice(0,RFB.limit);
   function res(r){return r==='win'?'<span class="spill won">W</span>':r==='loss'?'<span class="spill lost">L</span>':r==='push'?'<span class="spill push">P</span>':'<span class="muted">—</span>';}
-  /* one pick in a cell: the side on the first line; its result, units and the
-     price it was graded at on the second (std = the standard −110, no closing price captured) */
-  function pick(side,result,pk,noPrice){
-    if(!side)return '<span class="muted">—</span>';
-    return '<div class="rfb-ps">'+recEsc(side)+'</div><div class="rfb-pd">'+res(result)
-      +(pk?' <span class="'+rfbUCls(pk.units)+'">'+rfbU(pk.units)+'</span> '
-        +(pk.basis==='standard'?'<span class="rtag sim" title="No closing price was captured: priced at the standard −110">std</span>':'<span class="muted">'+rfbOdds(pk.odds)+'</span>')
-        :(noPrice&&result?' <span class="muted" title="'+recEsc(noPrice)+'">no price</span>':''))+'</div>';
-  }
-  var h='<div class="rtblwrap"><table class="rtbl rfb-gt" style="min-width:900px"><thead><tr><th>Kickoff</th><th style="text-align:left">Game</th><th>Model</th><th>Market at entry</th><th>Close</th><th>Final</th><th>ATS</th><th>Totals</th><th>Moneyline</th><th>Units</th><th>CLV</th></tr></thead><tbody>';
+  var h='<div class="rtblwrap"><table class="rtbl" style="min-width:860px"><thead><tr><th>Kickoff</th><th style="text-align:left">Game</th><th>Model</th><th>Market at entry</th><th>Close</th><th>Final</th><th>ATS</th><th>Totals</th><th>CLV</th></tr></thead><tbody>';
   shown.forEach(function(e){
-    var g=e.grade||{},hc=rfbTeam(e,'home'),ac=rfbTeam(e,'away'),pn=g.pnl||{};
+    var g=e.grade||{},hc=rfbTeam(e,'home'),ac=rfbTeam(e,'away');
     var ent=e.entry&&e.entry.market,cl=e.close;
     var sideTxt=g.spread&&g.spread.side?rfbTeam(e,g.spread.side):null;
-    var ouTxt=g.total&&g.total.side?(g.total.side==='over'?'Over':'Under'):null;
+    var ouTxt=g.total&&g.total.side?(g.total.side==='over'?'O':'U'):null;
     var cv=g.clv_entry&&g.clv_entry.spread?g.clv_entry.spread.pts:null;
     var when='';try{when=new Date(e.kickoff).toLocaleDateString([], {month:'short',day:'numeric'});}catch(_){}
     var tip='First number '+rfbLine(e.first&&e.first.home_line)+(e.revisions?(' · revised '+e.revisions+'×'):'')+(ent?(' · entry quote '+(ent.book||ent.source||'')):'')+(cl&&cl.basis?' · close: '+cl.basis+(cl.book?' ('+cl.book+')':''):'')+(g.beyond_guard?' · beyond the line guard':'');
     h+='<tr title="'+recEsc(tip)+'"><td>'+recEsc(when)+(e.week!=null?' <span class="muted">w'+e.week+'</span>':'')+'</td>'
-      +'<td class="rfb-gn">'+recEsc(ac)+' @ '+recEsc(hc)+(g.beyond_guard?' <span class="rtag small">guard</span>':'')+'</td>'
-      +'<td><div>'+rfbLine(e.pick&&e.pick.home_line)+'</div>'+(e.pick&&e.pick.total!=null?'<div class="rfb-pd muted">'+Number(e.pick.total).toFixed(1)+'</div>':'')+'</td>'
-      +'<td>'+(ent&&ent.home_line!=null?'<div>'+rfbLine(ent.home_line)+'</div>'+(ent.total!=null?'<div class="rfb-pd muted">'+ent.total+'</div>':''):'<span class="muted">—</span>')+'</td>'
-      +'<td>'+(cl&&cl.home_line!=null?'<div>'+rfbLine(cl.home_line)+'</div>'+(cl.total!=null?'<div class="rfb-pd muted">'+cl.total+'</div>':''):'<span class="muted">'+(g.status==='PREGAME'?'ahead':'waiting')+'</span>')+'</td>'
+      +'<td style="text-align:left">'+recEsc(ac)+' @ '+recEsc(hc)+(g.beyond_guard?' <span class="rtag small">guard</span>':'')+'</td>'
+      +'<td>'+recEsc(hc)+' '+rfbLine(e.pick&&e.pick.home_line)+(e.pick&&e.pick.total!=null?' <span class="muted">'+Number(e.pick.total).toFixed(1)+'</span>':'')+'</td>'
+      +'<td>'+(ent&&ent.home_line!=null?rfbLine(ent.home_line)+(ent.total!=null?' <span class="muted">'+ent.total+'</span>':''):'<span class="muted">—</span>')+'</td>'
+      +'<td>'+(cl&&cl.home_line!=null?rfbLine(cl.home_line)+(cl.total!=null?' <span class="muted">'+cl.total+'</span>':''):'<span class="muted">'+(g.status==='PREGAME'?'ahead':'waiting')+'</span>')+'</td>'
       +'<td>'+(e.final?(e.final.away_score+'–'+e.final.home_score):'<span class="muted">—</span>')+'</td>'
-      +'<td>'+pick(sideTxt,g.spread&&g.spread.result,pn.spread)+'</td>'
-      +'<td>'+pick(ouTxt,g.total&&g.total.result,pn.total)+'</td>'
-      +'<td>'+pick(g.su&&g.su.side?rfbTeam(e,g.su.side):null,g.su&&g.su.result,pn.ml,'No closing moneyline was captured: straight-up result only')+'</td>'
-      +'<td class="'+(g.pnl?rfbUCls(g.pnl.units):'rmut')+'">'+(g.pnl?'<b>'+rfbU(g.pnl.units)+'</b>':'—')+'</td>'
+      +'<td>'+(sideTxt?recEsc(sideTxt)+' ':'')+res(g.spread&&g.spread.result)+'</td>'
+      +'<td>'+(ouTxt?ouTxt+' ':'')+res(g.total&&g.total.result)+'</td>'
       +'<td class="'+rfbCls(cv)+'">'+rfbPts(cv,1)+'</td></tr>';
   });
   h+='</tbody></table></div>';
   if(rows.length>shown.length)h+='<div class="rpager"><button class="rbtn" id="rfbMore">Show more ('+(rows.length-shown.length)+' left)</button></div>';
-  h+='<div class="rec-note" style="margin-top:8px">Lines are the home side’s, as a book prints them (negative = home favoured); the model, entry and close columns give the spread with the total beneath it. The ATS and totals columns name the side the model’s last pregame number took against the close; the moneyline column is the model’s favourite to win. Each side is 1 unit at the closing price printed beside it — <span class="rtag sim">std</span> is the standard −110, where no closing price was captured — and Units is the game’s total. CLV is measured from the entry: the first time the record held both the model’s number and a market number before kickoff.</div>';
+  h+='<div class="rec-note" style="margin-top:8px">Lines are the home side’s, as a book prints them (negative = home favoured). The ATS and totals columns name the side the model’s last pregame number took against the close. CLV is measured from the entry: the first time the record held both the model’s number and a market number before kickoff.</div>';
   host.innerHTML=h;
 }
 
 function recBook(b){
-  /* Profit & Loss is part of the football record now: 'pnl' (old links, a
-     saved choice) opens the football record at its recommendations part */
-  var toPnl=b==='pnl';
-  b=b==='football'||toPnl?'football':'edges';
+  /* the P&L is not a book: it is the top of the Records page ('pnl' from an
+     old link or a saved choice goes there) */
+  if(b==='pnl'){rpnlOpen(false);var pw=$('recPnlWrap');if(pw){try{pw.scrollIntoView({block:'start'});}catch(_){}}return;}
+  b=b==='football'?'football':'edges';
   var seg=$('recBook');if(!seg)return;
   var bs=seg.querySelectorAll('button');
   for(var i=0;i<bs.length;i++){var on=bs[i].dataset.rb===b;bs[i].classList.toggle('on',on);bs[i].setAttribute('aria-selected',on?'true':'false');}
   $('recEdgesWrap').classList.toggle('hide',b!=='edges');
   $('recFbWrap').classList.toggle('hide',b!=='football');
-  var pw=$('recPnlWrap');if(pw)pw.classList.toggle('hide',b!=='football');
+  REC_BOOK=b;
   try{localStorage.setItem('edgedesk_rec_book',b);}catch(_){}
-  if(b==='football'){rfbRender();rfbLoad().then(rfbRender);rpnlOpen(false);}
-  if(toPnl&&pw){try{pw.scrollIntoView({block:'start'});}catch(_){}}
+  if(b==='football'){rfbRender();rfbLoad().then(rfbRender);}
+}
+var REC_BOOK='edges';
+/* the detailed records were drawn while their section was closed: draw the
+   open one again at its real width */
+function recDetailOpened(open){
+  if(!open)return;
+  if(REC_BOOK==='football'){rfbRender();rfbLoad().then(rfbRender);}
+  else if(window.REC&&REC.loaded){if(REC.dirty){REC.dirty.charts=true;REC.dirty.analytics=true;}recGo(REC.tab||'overview');}
 }
 
 /* =====================================================================
-   PROFIT & LOSS OF THE RECOMMENDATIONS — the last part of the football
-   record. The model's picks are priced in units above (record/football);
-   lib/edgedesk_pnl_ui.js renders EdgeDesk's BET recommendations from the
-   committed record/pnl/ (tools/record/pnl_ledger.js) with the model-record
-   rows filtered out, so no pick is counted twice. Nothing here computes a
-   figure. Dollars appear only when THIS reader has set a unit or a
-   bankroll: their device settings, or — signed in — their own
-   bankroll_settings row (RLS: nobody else's is readable). Never a default.
+   PROFIT & LOSS — the top of the Records page. lib/edgedesk_pnl_ui.js
+   renders the committed record/pnl/ (tools/record/pnl_ledger.js); nothing
+   here computes a figure. The detailed records (#recDetail) are handed to
+   it and live inside its collapsed Advanced Analytics. Dollars appear only
+   when THIS reader has set a unit or a bankroll: their device settings, or —
+   signed in — their own bankroll_settings row (RLS: nobody else's is
+   readable). Never a default.
    ===================================================================== */
 var RPNL={ui:null,remote:null,remoteP:null};
 function rpnlUnit(){
@@ -10484,7 +10316,7 @@ function rpnlRemote(){
 }
 function rpnlOpen(force){
   var host=$('recPnlWrap');if(!host||!window.EDPnlUI)return;
-  if(!RPNL.ui)RPNL.ui=EDPnlUI.mount(host,{base:'',unitValue:rpnlUnit,surface:'record',filter:function(x){return x.source!=='model_record';}});
+  if(!RPNL.ui)RPNL.ui=EDPnlUI.mount(host,{base:'',unitValue:rpnlUnit,surface:'app',advanced:$('recDetail'),onAdvanced:recDetailOpened});
   else if(force)RPNL.ui.reload();
   else RPNL.ui.refresh();
   rpnlRemote();
@@ -10493,8 +10325,13 @@ window.recBook=recBook;
 window.EDFootballRecord={
   load:rfbLoad,
   summary:function(){return RFB.sum;},
-  /* the Football board's "Track record" drawer links here */
-  open:function(sport){RFB.sport=sport==='cfb'?'cfb':'nfl';show('record');recBook('football');}
+  /* the Football board's "Track record" drawer links here: the football
+     model record, inside Advanced Analytics, opened */
+  open:function(sport){
+    RFB.sport=sport==='cfb'?'cfb':'nfl';show('record');recBook('football');
+    var d=RPNL.ui&&RPNL.ui.openAdvanced?RPNL.ui.openAdvanced():null;
+    var el=$('recDetail');if(el){try{el.scrollIntoView({block:'start'});}catch(_){}}
+  }
 };
 (function rfbWire(){
   var seg=$('recBook');if(!seg)return;
@@ -10505,15 +10342,10 @@ window.EDFootballRecord={
     else if(b.dataset.rfv){RFB.view=b.dataset.rfv;RFB.limit=60;rfbRender();}
     else if(b.id==='rfbMore'){RFB.limit+=60;rfbLedger(RFB.sport).then(rfbRenderGames);}
   });
-  /* the header refresh reloads whichever book is open */
-  $('recRefresh').addEventListener('click',function(){if(!$('recFbWrap').classList.contains('hide'))rfbLoad(true).then(rfbRender);var pw=$('recPnlWrap');if(pw&&!pw.classList.contains('hide'))rpnlOpen(true);});
-  /* the running-total chart is drawn at its box's width: redraw when that changes */
-  var rt=null;
-  window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){
-    var box=$('rfbChart');if(box&&RFB.chartL&&!$('recFbWrap').classList.contains('hide')&&Math.abs((box.clientWidth||0)-(RFB.chartW||0))>24)rfbChart(RFB.chartL);
-  },150);});
+  /* the header refresh reloads the P&L and whichever record is open */
+  $('recRefresh').addEventListener('click',function(){if(!$('recFbWrap').classList.contains('hide'))rfbLoad(true).then(rfbRender);rpnlOpen(true);});
   var saved=null;try{saved=localStorage.getItem('edgedesk_rec_book');}catch(_){}
-  if(saved==='football'||saved==='pnl')recBook('football');
+  if(saved==='football')recBook(saved);
 })();
 
 /* =====================================================================

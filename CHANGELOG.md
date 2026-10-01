@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-01 — the Records page answers "is the model up or down?" first
+
+The Records page was an analytics dashboard: a reader had to read CLV, data-quality counts and pending totals to learn whether EdgeDesk makes money. It now opens on one answer, and everything else is one tap away.
+
+- **The summary, first** (`lib/edgedesk_pnl_ui.js`, `lib/edgedesk_pnl.css`). It shows the verified model P&L: settled BET recommendations with a captured entry price.
+  - Net units is the largest number on the page, followed by PROFIT, LOSS or EVEN, then ROI, W-L-P, win rate, the number of verified bets and the period.
+  - With nothing settled it reads **Not enough settled priced bets yet**, with the settled and pending counts. It never shows a giant 0.00u.
+- **Tabs** ALL / CFB / NFL / PLAYER PROPS, each with its own net.
+- **Controls:**
+  - a period: Season (the default), 30 days, 7 days or All time;
+  - a stake choice: flat 1u or EdgeDesk stakes;
+  - *Include leans*, off by default. PASS and WATCH are never bets.
+- **One chart**: cumulative units and the running peak, with current, peak and max drawdown under it. There is no drawdown wash.
+- **Historical model results**: spread, totals and moneyline as wins and losses only, labelled *Record only — exact historical P&L unavailable because entry odds were not captured.*
+- ***How P&L works*** and ***Advanced Analytics*** replace the long paragraphs and are collapsed.
+  - Advanced holds more numbers, drawdown, game markets vs props, every breakdown, calibration, CLV vs P&L, player performance and data quality.
+  - In the app it also holds the detailed records: Edges record and Football model record.
+- **The ledger** has six columns: date, sport, bet, odds, result, units. A row opens to its audit. Settled and pending are separate views, and the verified total is the summary's net.
+- **One dataset.** The summary, tabs, chart, advanced figures and ledger total are all computed from one filtered set of rows by `lib/edgedesk_pnl.js`, so they cannot disagree.
+- **The app** (`app.html`): the summary is the first thing under the Records header. The Profit & Loss tab is gone; an old link to it lands on the summary. The Football board's track-record link opens the football model record inside Advanced Analytics.
+- **The historical record is a record again.** The units added to the football model record on 2026-10-01 (#456) are gone from the page and from `record/football/summary.json`. The record job no longer assumes −110 for anything: a pick is priced only at a captured closing price (`grade.pnl`, auditable data the page does not show). The captured closing prices are kept.
+- **The public record** (`record.html#pnl`) uses the same component. Its long introduction is now one line.
+- **Tests:**
+  - `tools/record/pnl_ui.test.js` (192 checks) checks the summary, tabs, chart readout and ledger total against the kernel under every scope, period, stake and the leans switch. It also covers the empty state, the record-only historical card, the collapsed sections, the six-column ledger and audit, the app layout, phone widths and no horizontal scroll.
+  - `tools/record/signal_pnl_ui.test.js` opens Advanced Analytics to reach the edges record.
+  - `tools/record/football_record.test.js` covers no assumed −110 and a summary with no units.
+
 ## 2026-10-01 — the landing board holds its own size
 
 The 17:03 Player props rebuild wrote `football/home/board.json` at 75,707 bytes, over the 64 KB the landing page allows. That turned Funnel tests and Collective suites red on `main`. Nothing was wrong with the data: a full NFL week plus a college week put props on 79 games, and `LIMITS` capped the cards per game but not the number of games.
