@@ -235,4 +235,74 @@ function sandbox() {
   chk('the record is read from beside the page, never from the database', /record\/grades\.json/.test(block) && !/rest\/v1\/brief/.test(block));
 }
 
-done();
+/* ---- EVERY GAME'S BRIEF: the games that have left the board keep theirs ---- */
+{
+  const sb = sandbox();
+  const B = sb.win.EDBRIEF;
+  const MAN = JSON.parse(fs.readFileSync(path.join(ROOT, 'articles', 'data', 'index.json'), 'utf8'));
+  /* a persistent overlay, so what the brief draws can be read back */
+  const hostEl = { style: {}, innerHTML: '', scrollTop: 0, classList: { add() {}, remove() {} }, setAttribute() {} };
+  sb.ctx.document.getElementById = function (id) { return id === 'briefHost' ? hostEl : null; };
+  /* the page's two reads, served from the committed store */
+  const reads = [];
+  sb.ctx.fetch = function (url) {
+    reads.push(url);
+    const p = String(url).replace(/\?.*$/, '');
+    const file = path.join(ROOT, p.replace(/^\//, ''));
+    const ok = p.indexOf('/articles/data/') === 0 && fs.existsSync(file);
+    return Promise.resolve({ ok: ok, status: ok ? 200 : 404, json: function () { return Promise.resolve(JSON.parse(fs.readFileSync(file, 'utf8'))); } });
+  };
+
+  chk('the publisher desk offers All game briefs', /EDBRIEF\.openAll\(\)/.test(B.deskHTML('edges')) && /All game briefs/.test(B.deskHTML('football')));
+  chk('EDBRIEF exposes the list and the stored brief', ['openAll', 'openStored', 'allSet', 'allRows', 'allListHTML', 'storedSnapshot', 'storedNote', 'liveQ'].every(function (k) { return typeof B[k] === 'function'; }));
+
+  const rows = B.allRows(MAN);
+  const pregame = MAN.articles.filter(function (a) { return a.article_type === 'pregame' && (a.sport === 'CFB' || a.sport === 'NFL'); });
+  chk('the list carries every pregame CFB and NFL record, once each', rows.length === pregame.length && rows.length > 100 && new Set(rows.map(function (r) { return r.id; })).size === rows.length, { rows: rows.length, pregame: pregame.length });
+  chk('no postgame page is listed as a game brief', rows.every(function (r) { return !/^postgame-/.test(r.id); }));
+
+  const NOW = Date.parse('2026-10-01T15:00:00Z');
+  const past = B.allListHTML(rows, { when: 'past', sport: 'all', q: '' }, NOW);
+  const up = B.allListHTML(rows, { when: 'upcoming', sport: 'all', q: '' }, NOW);
+  chk('games that have kicked off are listed, each opening its own brief', /EDBRIEF\.openStored\(&quot;cfb-401856702&quot;\)/.test(past) && /Texas A&amp;M at LSU/.test(past), past.slice(0, 600));
+  chk('a game that has kicked off is never on the upcoming tab, and vice versa', !/cfb-401856702/.test(up) && !/cfb-401856705/.test(past) && /cfb-401856705/.test(up));
+  chk('already played reads newest first, upcoming soonest first', past.indexOf('Sat, Sep 26') < past.indexOf('Sat, Sep 19') && up.indexOf('Sat, Oct 3') < up.indexOf('Sat, Oct 10'));
+  const nflOnly = B.allListHTML(rows, { when: 'past', sport: 'NFL', q: '' }, NOW);
+  chk('the sport filter holds', /&quot;nfl-/.test(nflOnly) && !/&quot;cfb-/.test(nflOnly));
+  const lsu = B.allListHTML(rows, { when: 'past', sport: 'all', q: 'lsu' }, NOW);
+  chk('the team search holds', /cfb-401856702/.test(lsu) && !/Clemson/.test(lsu));
+  chk('a search that matches nothing says so', /No game matches/.test(B.allListHTML(rows, { when: 'past', q: 'zzzz' }, NOW)));
+
+  /* a stored brief is the record's own pregame research, untouched */
+  const rec = JSON.parse(fs.readFileSync(path.join(ROOT, 'articles', 'data', 'records', 'cfb-401856702.json'), 'utf8'));
+  const g = rows.filter(function (r) { return r.id === 'cfb-401856702'; })[0];
+  const snap = B.storedSnapshot(g, rec);
+  const html = P.briefHTML(snap);
+  chk('the stored brief carries the record research and no market card', snap.public.research && snap.public.cards.length === 0 && snap.internal.cards.length === 0 && snap.report_type === 'GAME' && snap.preset === 'CFB');
+  chk('the stored brief prints the pregame number the record holds', html.indexOf(P.esc(rec.research.projection.fair_spread_text)) >= 0, rec.research.projection.fair_spread_text);
+  chk('the stored brief is stamped with when its research was built, and says it is pregame', snap.generated_at === new Date(Date.parse(rec.generated_at)).toISOString() && snap.public.data_status.status === 'Pregame research');
+  chk('the note says the research predates kickoff and was not recomputed', /before kickoff/.test(B.storedNote(g, rec, NOW)) && /Nothing on this page was recomputed after the result/.test(B.storedNote(g, rec, NOW)));
+  chk('an upcoming stored brief points at the live board instead', /latest stored research/.test(B.storedNote(Object.assign({}, g, { t: NOW + 864e5 }), rec, NOW)));
+
+  /* the live board wins while the game is still on it, and never after kickoff */
+  sb.win.FB = { p4: { up: [{ g: { game_id: '401856702', home_team: 'LSU', away_team: 'Texas A&M' }, t: Date.parse(rec.game_time) }] } };
+  const lq = B.liveQ(g, Date.parse(rec.game_time) - 3600e3);
+  chk('an upcoming game on a loaded board opens the live brief, as the board button would', lq && lq.sport_key === 'americanfootball_ncaaf' && lq.home === 'LSU' && lq.away === 'Texas A&M');
+  chk('a game that has kicked off is never re-priced live', B.liveQ(g, Date.parse(rec.game_time) + 60e3) === null);
+  delete sb.win.FB;
+
+  /* the whole path: the list loads, the record loads, the brief draws */
+  const flow = B.openStored('cfb-401856702').then(function () {
+    const cur = B.current();
+    chk('openStored draws the stored brief from the committed record', cur && cur.report_key === 'GAME:STORED:cfb-401856702' && reads.some(function (u) { return /^\/articles\/data\/index\.json/.test(u); }) && reads.some(function (u) { return /^\/articles\/data\/records\/cfb-401856702\.json/.test(u); }), reads);
+    chk('the stored brief offers the way back to the list, and no card-only tools', /EDBRIEF\.openAll\(\)/.test(hostEl.innerHTML) && /Copy plain text/.test(hostEl.innerHTML) && !/Reader check/.test(hostEl.innerHTML) && !/Polish copy/.test(hostEl.innerHTML));
+    chk('the stored brief carries its research on the page', /EdgeDesk research|The EdgeDesk research|edb-res/.test(hostEl.innerHTML) && hostEl.innerHTML.indexOf(P.esc(rec.research.projection.fair_spread_text)) >= 0);
+    return B.openStored('cfb-0000000000');
+  }).then(function () {
+    chk('an id with no record says so rather than drawing an empty brief', /no stored research/.test(hostEl.innerHTML));
+  });
+
+  chk('finished NFL games keep a Game brief', /fbStoredBriefBtn\('nfl-'\+g\.game_id\)/.test(APP) && /EDBRIEF\.openStored\(&quot;nfl-2026_01_SF_LA&quot;\)/.test(sb.win.fbStoredBriefBtn('nfl-2026_01_SF_LA')));
+
+  flow.then(done, function (e) { chk('the stored brief flow ran', false, String(e && e.stack || e)); done(); });
+}

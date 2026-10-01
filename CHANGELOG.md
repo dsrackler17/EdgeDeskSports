@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-01 — every game keeps its brief: "All game briefs" on the publisher desk
+
+**What went away.** The football boards list upcoming games only. A game leaves the board once it is final or six hours
+past kickoff (`EDFbs.buildSlate`, the NFL `S.up` window), and its "Game brief" button leaves with it. The live builders
+(`fbBriefGame`, `fbNflBriefGame`) read that same upcoming slate, so a brief opened for a game that is no longer on it has
+no projection ("this game is not on EdgeDesk's upcoming FBS slate"). Finished NFL games in the week view had no brief
+button at all.
+
+**What brings it back.** The article pipeline already keeps a research record for every CFB and NFL game it has seen
+(`articles/data/records/`, ~430 games). The builders above produce it before kickoff, and the pipeline freezes it at kickoff.
+- **All game briefs** on the publisher desk (Edges and Football) lists every one of them, split into *Already played* and
+  *Upcoming*, filterable by CFB / NFL and by team.
+- A game that has kicked off opens the brief from its stored pregame record. The page says when the research was built and
+  that nothing was recomputed after the result. The footer's data check reads "Pregame research", not "Current".
+- A game still upcoming and on a loaded board opens the live brief, exactly as the board's own button does.
+- Copy for CMS, Copy plain text, Print and Share brief work on a stored brief. Refresh reloads it. Reader check and Polish
+  copy only read a market card, so they are hidden on a stored brief, which has no market card.
+- Finished NFL games in the week view carry a "Game brief" again (the stored pregame record).
+
+Nothing computes a number. Tests: `tools/presentation/app_presentation.test.js` (+22 checks, run against the committed
+records).
+
 ## 2026-09-30 — second follow-up: corrected intervals, the NFL regime signal (#4), the NFL neutral site, the audit's CLV cuts (#5), the two root causes (#3)
 
 While this pass was in progress, #444 and #445 (another session) shipped items 1, 2, 3, 5 and 6 of the follow-up (the
