@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-01 — the Records page leads with how the model has performed
+
+The page answered "can we calculate exact P&L?" before "how has the model performed?". With nothing priced settled yet, its first and largest message was "0 settled verified bets", above a graded record of 432-284-4. That made a tested model look untested.
+
+- **The headline is the best real figure in the view** (`lib/edgedesk_pnl_ui.js`):
+  - **MODEL P&L** (net units, ROI, W-L-P, bets, chart) once priced bets have settled;
+  - otherwise **MODEL PERFORMANCE**: 432-284-4, 60.3% won over 720 graded decisions, and each market's record:
+    - spread 123-136-4 (47.5%);
+    - totals 99-95 (51.0%);
+    - moneyline 210-53 (79.8%);
+    - player props waiting for settlement.
+  - It is marked record only and carries no units.
+- **The verified P&L's own status** is a small box under the headline: *Waiting for first priced settlements*, the pending priced bets and the first game.
+- **New order:**
+  - the headline;
+  - the verified P&L status;
+  - historical model results (by sport, *Historical P&L unavailable*, why pending — never repeating the headline);
+  - the filters (tabs, period, stake, leans);
+  - the ledger;
+  - *How P&L works* and *Advanced Analytics*, collapsed.
+- **Tabs** show each scope's net, else its record (ALL 432-284-4, CFB 376-247-2, NFL 56-37-2), else *Pending* — never — when graded data exists.
+- **The ledger has three views:**
+  - *Verified P&L*: odds and units, totalling the headline's net;
+  - *Historical graded*: date, sport, bet, result and record status *Verified* / *Record only*, counting the record's 720;
+  - *Pending*.
+
+  It opens on verified P&L once there is some, else on the graded history.
+- `tools/record/pnl_ui.test.js` (249 checks) pins:
+  - MODEL PERFORMANCE vs MODEL P&L, against the kernel;
+  - the status box and its pending count;
+  - the page order;
+  - the three ledger views and the history columns;
+  - the ledger opening on the history when nothing is verified.
+
 ## 2026-10-01 — the Records page populates from every graded recommendation
 
 The Records page showed 0, — and empty tables even though the ledger held 2,052 recommendations, 720 of them graded. Every figure was computed from verified priced bets only, and none had settled. The fix covers the pipeline first, then the page.
