@@ -205,6 +205,7 @@ async function main() {
     const tabs = {}; R.querySelectorAll('.pnl-tabs [data-scope]').forEach((b) => { tabs[b.getAttribute('data-scope')] = b.querySelector('.pnl-tab-v').textContent.trim(); });
     const svg = R.querySelector('.pnl-svg');
     return { state: (R.querySelector('.pnl-hero') || {}).getAttribute ? R.querySelector('.pnl-hero').getAttribute('data-state') : null, net: t('.pnl-net'), verdict: t('.pnl-verdict'), none: t('.pnl-hero-none'), sub: t('.pnl-hero-sub'), stats, tabs,
+      ey: t('.pnl-hero-ey'), perf: t('.pnl-perf-rec'), perfSub: t('.pnl-perf-sub'), hero: t('.pnl-hero'), status: t('[data-r="status"]'),
       hist: t('.pnl-hist'), lcount: t('.pnl-lcount'), chart: svg ? svg.getAttribute('aria-label') : null, under: t('.pnl-under'),
       how: R.querySelector('[data-r="how"]').open, adv: R.querySelector('[data-r="adv"]').open };
   }, sel);
@@ -239,19 +240,30 @@ async function main() {
   const histMatches = (h, s) => {
     h = h || '';
     if (!s.record.tracked) return h === '';
+    const unpriced = !s.record.record_only || /Historical P&L unavailable for [\d,]+ graded result/.test(h);
+    const noUnits = !/[+−-]?\d+\.\d\du/.test(h);
+    /* the hero leads with the record when nothing priced settled: the card then holds the rest, never the same numbers twice */
+    if (!s.n) return unpriced && noUnits && h.indexOf(s.record.record) < 0;
     const markets = Object.keys(s.hist).every((k) => !s.hist[k] || h.indexOf(s.hist[k]) >= 0);
     const head = s.record.graded ? h.indexOf(s.record.graded.toLocaleString('en-US') + ' graded') >= 0 && h.indexOf(s.record.record) >= 0 : /Waiting for settlement/.test(h);
-    const unpriced = !s.record.record_only || /Historical P&L unavailable for [\d,]+ graded result/.test(h);
-    return markets && head && unpriced && !/[+−-]?\d+\.\d\du/.test(h);
+    return markets && head && unpriced && noUnits;
   };
   /* the summary a reader sees, against the kernel */
   function heroMatches(tag, got, s) {
     if (!s.n) {
+      /* no verified P&L: the page leads with the graded record (MODEL PERFORMANCE), never with emptiness */
       const waiting = s.pending > 0;
-      chk(tag + ': nothing settled reads "' + (waiting ? 'waiting for first priced bets to settle' : 'no priced bets in this view yet') + '" — never a giant 0.00u',
-        got.state === (waiting ? 'waiting' : 'none') && got.net === null && (waiting ? /Waiting for first priced bets to settle/ : /No priced bets in this view yet/).test(got.none || ''), got);
+      if (s.record.graded) {
+        chk(tag + ': with no settled priced bet the top is MODEL PERFORMANCE — the graded record, never a 0.00u',
+          got.state === 'record' && /^Model performance/.test(got.ey || '') && got.perf === s.record.record && got.net === null
+          && (got.perfSub || '').indexOf(PNL.fmtPct(s.record.win_rate_pct, 1) + ' won') === 0 && (got.perfSub || '').indexOf(s.record.graded.toLocaleString('en-US') + ' graded decision') >= 0, [got.ey, got.perf, got.perfSub, s.record.record]);
+        chk(tag + ': the performance summary carries every market\'s record', Object.keys(s.hist).every((k) => !s.hist[k] || (got.hero || '').indexOf(s.hist[k]) >= 0), [got.hero, s.hist]);
+      } else chk(tag + ': nothing graded yet says so (what is tracked), never a zero', got.state === (s.record.tracked ? 'waiting' : 'none') && got.net === null && got.perf === null && /No graded results yet|Nothing tracked in this view yet/.test(got.none || ''), got);
+      chk(tag + ': the verified P&L is the small status box under it, honest about why it is empty',
+        (waiting ? /Waiting for first priced settlements/ : /No priced bets in this view yet/).test(got.status || '') && (!waiting || (got.status || '').indexOf(s.pending.toLocaleString('en-US') + ' priced bet') >= 0) && !/0\.00u/.test(got.status || ''), got.status);
       return;
     }
+    chk(tag + ': with settled priced bets the top is MODEL P&L, and no status box', /^Model P&L/.test(got.ey || '') && !got.status, [got.ey, got.status]);
     chk(tag + ': net units are the kernel\'s', got.net === PNL.fmtUnits(s.net_units), [got.net, s.net_units]);
     chk(tag + ': PROFIT / LOSS / EVEN follows the sign', got.verdict === verdict(s) && got.state === verdict(s).toLowerCase(), [got.verdict, s.net_units]);
     chk(tag + ': ROI, record, win rate and bets are the kernel\'s', got.stats.ROI === PNL.fmtPct(s.roi_pct, 1, true) && got.stats.Record === s.wins + '-' + s.losses + '-' + s.pushes
@@ -284,8 +296,8 @@ async function main() {
       chk(W + 'px public: the ledger has six columns: date, sport, bet, odds, result, units', JSON.stringify(heads) === JSON.stringify(['Date', 'Sport', 'Bet', 'Odds', 'Result', 'Units']), heads);
       chk(W + 'px public: no page error', !errors.length, errors);
       if (W === 375) {
-        const fold = await page.evaluate(() => { const h = document.querySelector('#pnlPub .pnl-hero'), t = document.querySelector('#pnlPub .pnl-tabs'); t.scrollIntoView({ block: 'start' }); return { tabsTop: t.getBoundingClientRect().top, heroBottom: h.getBoundingClientRect().bottom - t.getBoundingClientRect().top }; });
-        chk('375px: the four tabs, the options and the summary fit one phone screen', fold.heroBottom < 760, fold);
+        const fold = await page.evaluate(() => { const h = document.querySelector('#pnlPub .pnl-hero'); h.scrollIntoView({ block: 'start' }); return { heroBottom: h.getBoundingClientRect().bottom - h.getBoundingClientRect().top }; });
+        chk('375px: the summary leads and fits one phone screen', fold.heroBottom < 700, fold);
         await shot(page, 'record_375_fold');
       }
       if (W === 390) {
@@ -368,16 +380,18 @@ async function main() {
         chk('advanced: the player drill-down shows prop type, over/under and every recommendation', /By prop type/.test(drill) && /Game log/.test(drill), drill.slice(0, 200));
         await page.click('#pnlPub [data-r="adv"] > summary');
         /* the ledger: the summary's bets, auditable */
+        await page.click('#pnlPub [data-lstatus="history"]');
         await page.fill('#pnlPub [data-lq]', 'ppe_noprice');
         await page.waitForTimeout(250);
         const np = await text(page, '#pnlPub [data-r="lrows"] .pnl-lt tbody');
-        chk('ledger: a settled bet with no captured price says so and shows no profit', /no price/.test(np) && !/[+−]\d+\.\d\du/.test(np), np.slice(0, 300));
+        chk('ledger: a settled bet with no captured price is in the graded history as a record only, with no profit', /Record only/.test(np) && !/[+−]\d+\.\d\du/.test(np), np.slice(0, 300));
         await page.click('#pnlPub [data-r="lrows"] tr.pnl-lr');
         const audit = await text(page, '#pnlPub [data-r="lrows"] .pnl-audit');
         chk('ledger: the audit row names the model number, lines, CLV, edge, book, version, its state and why there is no P&L',
           ['Model number', 'Entry line', 'Closing line', 'CLV', 'Edge', 'Book', 'Model version', 'Recommended', 'State'].every((k) => audit.indexOf(k) >= 0) && /Settled · record only/.test(audit) && /Historical P&L unavailable — entry odds were not captured/.test(audit), audit.slice(0, 500));
         const corr = FX.ledger.rows.find((x) => x.corrected && x.rec_class === 'BET');
         if (corr) {
+          await page.click('#pnlPub [data-lstatus="verified"]');
           await page.fill('#pnlPub [data-lq]', corr.recommendation_id);
           await page.waitForTimeout(250);
           chk('ledger: a corrected row is marked', /corrected/.test(await text(page, '#pnlPub [data-r="lrows"]')));
@@ -386,14 +400,18 @@ async function main() {
         }
         await page.fill('#pnlPub [data-lq]', '');
         await page.click('#pnlPub [data-lstatus="pending"]');
+        chk('ledger: three views — verified P&L, historical graded, pending', (await page.$$eval('#pnlPub [data-lstatus]', (els) => els.map((e) => e.getAttribute('data-lstatus')))).join() === 'verified,history,pending');
         await page.waitForTimeout(100);
         const pend = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Result"]', (els) => els.map((e) => e.textContent.trim()));
         chk('ledger: the pending view holds pending bets only, never in the totals', pend.length === fxFlat.pending && pend.every((x) => x === 'Pending'), [pend.length, fxFlat.pending]);
-        await page.click('#pnlPub [data-lstatus="record"]');
+        await page.click('#pnlPub [data-lstatus="history"]');
         await page.waitForTimeout(100);
-        const roCount = await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount');
-        const roUnits = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Units"]', (els) => els.map((e) => e.textContent.trim()));
-        chk('ledger: the record-only view is the record card\'s unpriced results, with no units', roCount.indexOf(fxFlat.record.record_only.toLocaleString('en-US') + ' graded result') >= 0 && /historical P&L unavailable/.test(roCount) && roUnits.length > 0 && roUnits.every((x) => x === '—'), [roCount, roUnits.slice(0, 3)]);
+        const hCount = await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount');
+        const hHead = await page.$$eval('#pnlPub [data-r="lrows"] .pnl-lt thead th', (els) => els.map((e) => e.textContent.trim()));
+        const hStatus = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Status"]', (els) => els.map((e) => e.textContent.trim()));
+        chk('ledger: the historical graded view is the record\'s own rows — date, sport, bet, result, record status',
+          JSON.stringify(hHead) === JSON.stringify(['Date', 'Sport', 'Bet', 'Result', 'Record status']) && hCount.indexOf(fxFlat.record.graded.toLocaleString('en-US') + ' result') >= 0 && hCount.indexOf(fxFlat.record.record) >= 0
+          && hStatus.length > 0 && hStatus.every((x) => x === 'Verified' || x === 'Record only') && hStatus.some((x) => x === 'Record only'), [hHead, hCount, hStatus.slice(0, 4)]);
         await shot(page, 'record_1440_ledger', '#pnlPub [data-r="ledger"]');
       }
       await ctx.close();
@@ -408,11 +426,14 @@ async function main() {
       await page.waitForSelector('#recPnlWrap .pnl-lt', { timeout: 15000 });
       const top = await page.evaluate(() => {
         const head = document.querySelector('#v-record > .row-between'), hero = document.querySelector('#recPnlWrap .pnl-hero'), tabs = document.querySelector('#recPnlWrap .pnl-tabs');
-        return { first: head && head.nextElementSibling ? head.nextElementSibling.id : null, heroTop: hero.getBoundingClientRect().top + window.scrollY, tabsBottom: tabs.getBoundingClientRect().bottom + window.scrollY,
+        return { first: head && head.nextElementSibling ? head.nextElementSibling.id : null, heroTop: hero.getBoundingClientRect().top + window.scrollY, heroBottom: hero.getBoundingClientRect().bottom + window.scrollY, tabsBottom: tabs.getBoundingClientRect().bottom + window.scrollY,
+          order: Array.from(document.querySelectorAll('#recPnlWrap > [data-r]')).map((e) => e.getAttribute('data-r')),
           books: document.querySelectorAll('#recBook button').length, bookText: document.getElementById('recBook').textContent, detailInAdvanced: !!document.querySelector('#recPnlWrap [data-r="adv"] #recDetail') };
       });
       chk(W + 'px app: the P&L summary is the first thing under the Records header', top.first === 'recPnlWrap', top);
-      chk(W + 'px app: the summary and the four tabs are on the first screen', top.tabsBottom < 900, top);
+      chk(W + 'px app: the summary is on the first screen', top.heroBottom < 900, top);
+      chk(W + 'px app: the order — performance, verified P&L status, historical results, filters, ledger, then the collapsed sections',
+        JSON.stringify(top.order) === JSON.stringify(['hero', 'chart', 'status', 'hist', 'controls', 'ledger', 'how', 'adv']), top.order);
       chk(W + 'px app: no Profit & Loss book any more — the detailed records are two, inside Advanced Analytics', top.books === 2 && !/Profit & Loss/.test(top.bookText) && top.detailInAdvanced, top);
       heroMatches(W + 'px app', await read(page, '#recPnlWrap'), fxFlat);
       chk(W + 'px app: a reader with a unit gets the dollars toggle', !!(await page.$('#recPnlWrap [data-money="$"]')));
@@ -453,7 +474,7 @@ async function main() {
       await page.waitForSelector('#pnlPub .pnl-hero[data-state]', { timeout: 15000 });
       const got = await read(page, '#pnlPub');
       heroMatches(W + 'px real', got, rs);
-      if (!rs.n) chk(W + 'px real: the waiting summary counts the pending priced bets, BET only', (got.sub || '').indexOf(rs.pending.toLocaleString('en-US') + ' priced bet') >= 0, [got.sub, rs.pending]);
+      if (!rs.n) chk(W + 'px real: the verified P&L status counts the pending priced bets, BET only', (got.status || '').indexOf(rs.pending.toLocaleString('en-US') + ' priced bet') >= 0, [got.status, rs.pending]);
       chk(W + 'px real: the graded record is populated from the committed rows (' + rs.record.record + ' over ' + rs.record.graded + ')', histMatches(got.hist, rs) && (!rs.record.graded || rs.record.graded > 0), [got.hist, rs.record.record, rs.hist]);
       chk(W + 'px real: every tab shows what it holds — a net, a record or pending, never a bare dash when rows exist', ['all', 'cfb', 'nfl', 'props'].every((k) => got.tabs[k] === tabWant(expectOn(realRows, real.season, { scope: k }))), got.tabs);
       chk(W + 'px real: the pending line counts every pending recommendation and says why', !rs.waiting.total || ((got.hist || '').indexOf(rs.waiting.total.toLocaleString('en-US') + ' recommendation') >= 0 && (got.hist || '').indexOf(rs.waiting.reasons[0].label) >= 0), [got.hist, rs.waiting]);
@@ -465,12 +486,13 @@ async function main() {
       const whyN = await page.$$eval('#pnlPub [data-r="why"] li[data-reason]', (els) => els.map((e) => [e.getAttribute('data-reason'), Number(e.querySelector('b').textContent.replace(/,/g, ''))]));
       chk(W + 'px real: why pending — the reasons add up to every pending recommendation', whyN.reduce((a, x) => a + x[1], 0) === rs.waiting.total && whyN.every((x) => rs.waiting.reasons.some((r) => r.key === x[0] && r.n === x[1])), [whyN, rs.waiting]);
       chk(W + 'px real: every row\'s state, as the summary counts them', (await page.$$eval('#pnlPub [data-r="states"] .pnl-dqi[data-state]', (els) => els.map((e) => [e.getAttribute('data-state'), Number(e.querySelector('.pnl-dqn').textContent.replace(/,/g, ''))]))).every((x) => x[1] === rs.states[x[0]]));
+      if (!rs.n) chk(W + 'px real: with no verified P&L the ledger opens on the historical graded results, not on pending', await page.$eval('#pnlPub [data-lstatus="history"]', (b) => b.classList.contains('on')) && (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(rs.record.graded.toLocaleString('en-US') + ' result') >= 0);
       chk(W + 'px real: the agreement checks pass on the committed data', /All \d+ agreement checks pass/.test(await text(page, '#pnlPub [data-r="integrity"]')) && !(await page.$('#pnlPub .pnl-integrity')));
       if (W === 1440) {
         /* LIVE: a settlement run moves the stamp; the open page re-reads the ledger */
         feed = 'fixture';
         await page.evaluate(() => document.getElementById('pnlPub').__pnl.check());
-        await page.waitForFunction(() => document.querySelector('#pnlPub .pnl-hero').getAttribute('data-state') !== 'waiting' && document.querySelector('#pnlPub .pnl-hero').getAttribute('data-state') !== 'none', null, { timeout: 8000 }).catch(() => {});
+        await page.waitForFunction(() => ['profit', 'loss', 'even'].indexOf(document.querySelector('#pnlPub .pnl-hero').getAttribute('data-state')) >= 0, null, { timeout: 8000 }).catch(() => {});
         heroMatches('after a settlement run (stamp moved)', await read(page, '#pnlPub'), expect({}));
         feed = 'real';
       }

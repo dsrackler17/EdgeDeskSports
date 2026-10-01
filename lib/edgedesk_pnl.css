@@ -34,6 +34,17 @@
 .pnl-hero-sub{font-size:15px;color:var(--p-dim)}
 .pnl-hero-sub b{color:var(--p-tx);font-weight:700}
 .pnl-hero.pnl-skel .pnl-hero-none{color:var(--p-dim);font-weight:600}
+/* MODEL PERFORMANCE: the graded record leads when no priced bet has settled */
+.pnl-perf-rec{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.035em;line-height:1;margin:10px 0 4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-perf-sub{font-size:15px;color:var(--p-dim)}
+.pnl-perf-sub b{color:var(--p-tx);font-weight:700}
+.pnl-perf-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--p-bd)}
+/* the verified P&L's own status, small, while it has nothing settled */
+.pnl-status{border:1px dashed var(--p-bd);border-radius:12px;padding:10px 14px;margin:0 0 4px;background:transparent}
+.pnl-status-ey{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-status-v{font-size:15px;font-weight:700;margin-top:4px}
+.pnl-status-s{font-size:12.5px;color:var(--p-dim);margin-top:2px;line-height:1.45}
+.pnl-status-s b{color:var(--p-tx)}
 
 /* ---- the four views, each with its own net ------------------------------- */
 .pnl-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:12px;padding:4px}
@@ -42,6 +53,8 @@
 .pnl-tab-k{font:700 13px 'Inter',sans-serif;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
 .pnl-tab-v{font:600 13px 'JetBrains Mono',monospace;white-space:nowrap}
 @media(max-width:479px){.pnl-long{display:none}}
+.pnl-short{display:none}
+@media(max-width:479px){.pnl-short{display:inline}}
 .pnl-opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0 4px}
 .pnl-seg{display:flex;gap:2px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:10px;padding:3px;max-width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .pnl-seg::-webkit-scrollbar{display:none}
@@ -211,6 +224,8 @@
 .pnl-lt td[data-l="Bet"]{white-space:normal;font-weight:600;color:var(--p-tx);width:100%}
 .pnl-lt td[data-l="Units"],.pnl-lt th:last-child{text-align:right}
 .pnl-lt .pnl-pl{font-weight:700;font-variant-numeric:tabular-nums}
+.pnl-lt td[data-l="Status"],.pnl-ht th:last-child{text-align:right;white-space:nowrap}
+.pnl-lt td.pnl-rs.ver{color:var(--p-pos);font-weight:600}
 @media(max-width:640px){
   .pnl-tw-l{border:0;background:transparent}
   .pnl-lt tr.pnl-lr{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"bet bet bet units" "date sport odds res";column-gap:10px;row-gap:4px;padding:10px 12px;align-items:center}
@@ -223,6 +238,7 @@
   .pnl-lt td[data-l="Sport"]{grid-area:sport}
   .pnl-lt td[data-l="Odds"]{grid-area:odds}
   .pnl-lt td[data-l="Result"]{grid-area:res;text-align:right}
+  .pnl-lt td[data-l="Status"]{grid-area:units;text-align:right;font-size:12.5px}
   .pnl-lt tr.pnl-audit{display:block;padding:10px 12px}
   .pnl-lt tr.pnl-audit td{padding:0;background:transparent}
   .pnl-lt tr.pnl-audit td::before{display:none}
