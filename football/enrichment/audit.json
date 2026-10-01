@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-01T06:18:17.322Z",
+ "generated_at": "2026-10-01T13:39:19.569Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-01T06:18:17.322Z",
-  "reliability_generated_at": "2026-10-01T06:18:17.322Z",
-  "enrichment_generated_at": "2026-10-01T06:18:09.489Z",
+  "at": "2026-10-01T13:39:19.569Z",
+  "reliability_generated_at": "2026-10-01T13:39:19.569Z",
+  "enrichment_generated_at": "2026-10-01T13:39:11.411Z",
   "counts": {
    "games": 117,
    "mean": 85.5,
@@ -24,7 +24,7 @@
    "unrated_meaningful_absences": 436,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 11,
+   "stale_evidence_records": 42,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -2653,87 +2653,37 @@
   }
  },
  "previous": {
-  "at": "2026-09-30T22:27:26.109Z",
+  "at": "2026-10-01T06:18:17.322Z",
   "counts": {
-   "games": 114,
-   "mean": 84.4,
-   "median": 86,
+   "games": 117,
+   "mean": 85.5,
+   "median": 88,
    "by_band": {
-    "STRONG": 93,
+    "VERY_STRONG": 16,
     "LOW": 3,
+    "STRONG": 80,
     "ADEQUATE": 15,
     "CAUTION": 3
    },
-   "missing_qb_status": 225,
+   "missing_qb_status": 190,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 34,
-   "unrated_meaningful_absences": 30,
+   "games_lacking_injury_information": 21,
+   "unrated_meaningful_absences": 436,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 114,
-   "stale_evidence_records": 19,
+   "games_under_two_market_sources": 117,
+   "stale_evidence_records": 11,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "+1.1 mean reliability (84.4 → 85.5)",
-  "+2 median reliability (86 → 88)",
-  "-35 QB statuses missing (225 → 190)",
-  "-13 games lacking injury information (34 → 21)",
-  "-8 stale evidence records (19 → 11)",
-  "16 games moved STRONG → VERY STRONG"
- ],
+ "what_improved": [],
  "what_degraded": [
-  "+406 unrated meaningful absences (30 → 436)",
-  "+3 games under two market sources (114 → 117)"
+  "+31 stale evidence records (11 → 42)"
  ],
- "why": [
-  "the slate itself changed: 3 games entered the window, 0 left it (kicked off or rolled out)",
-  "Vanderbilt @ Georgia: STRONG → VERY STRONG (84 → 90); largest change: availability +6 pts; away QB EXPECTED → UNCERTAIN, home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Alabama @ Mississippi State: STRONG → VERY STRONG (85 → 94); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Kentucky @ South Carolina: STRONG → VERY STRONG (86 → 94); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Auburn @ Tennessee: STRONG → VERY STRONG (85 → 93); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Arkansas @ Texas A&M: STRONG → VERY STRONG (88 → 94); largest change: availability +4.2 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "BYU @ TCU: STRONG → VERY STRONG (88 → 92); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "UCF @ Houston: STRONG → VERY STRONG (86 → 93); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Cincinnati @ Arizona: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "West Virginia @ Iowa State: STRONG → VERY STRONG (86 → 94); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Pittsburgh @ Virginia Tech: STRONG → VERY STRONG (86 → 90); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Purdue @ Illinois: STRONG → VERY STRONG (85 → 93); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Ohio State @ Iowa: STRONG → VERY STRONG (84 → 92); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Maryland @ Nebraska: STRONG → VERY STRONG (87 → 94); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Indiana @ Rutgers: STRONG → VERY STRONG (86 → 90); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Washington @ USC: STRONG → VERY STRONG (88 → 92); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Michigan State @ Wisconsin: STRONG → VERY STRONG (86 → 93); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL"
- ],
+ "why": [],
  "history": [
-  {
-   "at": "2026-09-25T21:06:14.815Z",
-   "counts": {
-    "games": 129,
-    "mean": 81.4,
-    "median": 85,
-    "by_band": {
-     "VERY_STRONG": 14,
-     "ADEQUATE": 16,
-     "STRONG": 79,
-     "LOW": 16,
-     "CAUTION": 4
-    },
-    "missing_qb_status": 209,
-    "qb_conflicts_open": 9,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 17,
-    "unrated_meaningful_absences": 356,
-    "fcs_games_thin_data": 16,
-    "games_under_two_market_sources": 129,
-    "stale_evidence_records": 48,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-25T23:21:50.058Z",
    "counts": {
@@ -4162,6 +4112,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 117,
     "stale_evidence_records": 11,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-01T13:39:19.569Z",
+   "counts": {
+    "games": 117,
+    "mean": 85.5,
+    "median": 88,
+    "by_band": {
+     "VERY_STRONG": 16,
+     "LOW": 3,
+     "STRONG": 80,
+     "ADEQUATE": 15,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 190,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 21,
+    "unrated_meaningful_absences": 436,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
+    "stale_evidence_records": 42,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
