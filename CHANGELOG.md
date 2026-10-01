@@ -37,6 +37,8 @@ The Records page showed 0, — and empty tables even though the ledger held 2,05
   - writes a small `record/pnl/stamp.json` that the page polls;
   - fails (exit 2) if any integrity check fails.
 - **The backfill** is the same idempotent build. Run once on today's ledger, it gives the counts above; a second run changes nothing.
+  - The scheduled Record P&L job runs it on `main`: hourly at :41, and after every settlement job. Within the hour of this change, `record/pnl/` carries the states, the reasons and `stamp.json`.
+  - Until then the page derives each row's state and the graded record from the same rows itself, and it reloads once the first stamp appears.
 - **Database** (`supabase/model_pnl_states.sql`, additive):
   - `record_state` is set by a trigger and constrained (verified means priced; record only means no units);
   - `pending_reason` is written only by `model_pnl_reasons()`, which `tools/record/pnl_sync.js` now calls;

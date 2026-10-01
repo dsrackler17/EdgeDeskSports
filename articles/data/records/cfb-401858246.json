@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T16:00:00.000Z",
   "game_when_label": "2026-10-03 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T13:02:40.989Z",
-  "generated_at": "2026-10-01T13:02:40.989Z",
+  "updated_at": "2026-10-01T20:19:13.710Z",
+  "generated_at": "2026-10-01T20:19:13.710Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and BetOnline.ag on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for SMU and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff. 1 older row(s) on file were refused as HISTORICAL against this kickoff (published more than a week before it, or undated), so they say nothing about this game."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Boston College and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "ESPN injuries has a report on this player, but it was published 2022-10-30, more than a week ago, so it says nothing about this week. No current report is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -243,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T16:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
       "home": {
         "team": "SMU",
@@ -315,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-27T01:00:00.000Z",
-        "retrieved_at": "2026-09-30T21:08:54.685Z"
+        "retrieved_at": "2026-10-01T18:54:08.959Z"
       },
-      "generated_at": "2026-09-30T21:09:42.089Z",
+      "generated_at": "2026-10-01T18:54:08.098Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -361,7 +385,7 @@
               "note": "points vs an average FBS team, neutral field",
               "a": {
                 "v": "-4.2",
-                "n": -4.22,
+                "n": -4.23,
                 "rank": "#106 of 137",
                 "rank_n": 106,
                 "note": null
@@ -384,8 +408,8 @@
               "k": "Talent",
               "note": null,
               "a": {
-                "v": "32.1",
-                "n": 32.1,
+                "v": "32.0",
+                "n": 32,
                 "rank": "#134 of 137",
                 "rank_n": 134,
                 "note": null
@@ -399,7 +423,7 @@
               },
               "edge": {
                 "side": "h",
-                "gap": 35.3,
+                "gap": 35.4,
                 "rank_gap": 128
               }
             },
@@ -739,14 +763,14 @@
               "h": {
                 "v": "56.1",
                 "n": 56.1,
-                "rank": "#64 of 137",
-                "rank_n": 64,
+                "rank": "#65 of 137",
+                "rank_n": 65,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.6,
-                "rank_gap": 25
+                "rank_gap": 24
               }
             },
             {
@@ -780,15 +804,15 @@
               "a": {
                 "v": "51.7",
                 "n": 51.7,
-                "rank": "#81 of 137",
-                "rank_n": 81,
+                "rank": "#80 of 137",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
                 "v": "56.5",
                 "n": 56.5,
-                "rank": "#25 of 137",
-                "rank_n": 25,
+                "rank": "#24 of 137",
+                "rank_n": 24,
                 "note": null
               },
               "edge": {
@@ -971,12 +995,12 @@
         {
           "k": "Talent",
           "rank_gap": 128,
-          "gap": 35.3,
+          "gap": 35.4,
           "lead": "SMU",
           "trail": "Boston College",
           "lead_cell": "67.4 · #6 of 137",
-          "trail_cell": "32.1 · #134 of 137",
-          "text": "SMU 67.4 (#6 of 137) vs Boston College 32.1 (#134 of 137) — 128 places on the national board."
+          "trail_cell": "32.0 · #134 of 137",
+          "text": "SMU 67.4 (#6 of 137) vs Boston College 32.0 (#134 of 137) — 128 places on the national board."
         },
         {
           "k": "Offense",
@@ -1170,11 +1194,11 @@
           "team": "SMU",
           "label": "linebackers",
           "v": "56.5",
-          "rank": "#25 of 137",
+          "rank": "#24 of 137",
           "note": null
         },
         "complete": true,
-        "read": "Boston College’s running backs rates 55.5 (#89 of 137) against SMU’s linebackers at 56.5 (#25 of 137). SMU’s unit stands higher among its own position group, by 64 places."
+        "read": "Boston College’s running backs rates 55.5 (#89 of 137) against SMU’s linebackers at 56.5 (#24 of 137). SMU’s unit stands higher among its own position group, by 65 places."
       },
       {
         "title": "SMU running backs vs Boston College linebackers",
@@ -1182,18 +1206,18 @@
           "team": "SMU",
           "label": "running backs",
           "v": "56.1",
-          "rank": "#64 of 137",
+          "rank": "#65 of 137",
           "note": null
         },
         "def": {
           "team": "Boston College",
           "label": "linebackers",
           "v": "51.7",
-          "rank": "#81 of 137",
+          "rank": "#80 of 137",
           "note": null
         },
         "complete": true,
-        "read": "SMU’s running backs rates 56.1 (#64 of 137) against Boston College’s linebackers at 51.7 (#81 of 137). SMU’s unit stands higher among its own position group, by 17 places."
+        "read": "SMU’s running backs rates 56.1 (#65 of 137) against Boston College’s linebackers at 51.7 (#80 of 137). SMU’s unit stands higher among its own position group, by 15 places."
       },
       {
         "title": "Boston College receivers vs SMU secondary",
@@ -1417,7 +1441,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 39h old",
+          "text": "odds is 46h old",
           "widening": null
         },
         {
@@ -1542,9 +1566,9 @@
       "difference_n": 0.8402098301574021,
       "total_model": "53.6",
       "total_market": "55.0",
-      "book": "captured consensus (stale) · 2 books · best at theScore Bet",
+      "book": "captured consensus (stale) · 1 book · best at theScore Bet",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "39 hours old",
+      "capture_age": "46 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1582,7 +1606,7 @@
         "market_line_text": "SMU -20.5",
         "market_home_margin": 20.5,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 2 books · best at theScore Bet",
+        "source": "captured consensus (stale) · 1 book · best at theScore Bet",
         "as_of": "2026-09-29T22:00:02.478+00:00",
         "stale": true,
         "measured_from": "raw",
@@ -1594,11 +1618,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 81,
         "tier": "STRONG",
-        "text": "85 · STRONG",
-        "sub": "main deduction: the projected spread moves ±2.22 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 85,
+        "text": "81 · STRONG",
+        "sub": "main deduction: Boston College’s availability sources refused",
+        "score": 81,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1612,7 +1636,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1624,7 +1648,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1640,23 +1664,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the projected spread moves ±2.22 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.6 pts)",
+        "main_deduction": "Boston College’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Boston College’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Boston College)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Boston College",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (SMU)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for SMU",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1771,7 +1795,7 @@
         },
         {
           "k": "Talent",
-          "a": "32.1  #134",
+          "a": "32.0  #134",
           "h": "67.4  #6",
           "note": null
         },
@@ -1844,7 +1868,7 @@
         {
           "k": "Running backs",
           "a": "55.5  #89",
-          "h": "56.1  #64",
+          "h": "56.1  #65",
           "note": null
         },
         {
@@ -1855,8 +1879,8 @@
         },
         {
           "k": "Linebackers",
-          "a": "51.7  #81",
-          "h": "56.5  #25",
+          "a": "51.7  #80",
+          "h": "56.5  #24",
           "note": null
         },
         {
@@ -1895,7 +1919,7 @@
       "EdgeDesk’s line is SMU -19.7 on a neutral read of the two teams, before any book is consulted. Projected total 53.6.",
       "SMU wins 91% of the time in EdgeDesk’s simulation, Boston College 9%.",
       "Eight games in ten land between -2.3 and +39.7 for SMU. A single result inside that band tells you nothing new about either team.",
-      "The market has SMU -20.5 at captured consensus (stale) · 2 books · best at theScore Bet, 0.8 points from EdgeDesk’s number.",
+      "The market has SMU -20.5 at captured consensus (stale) · 1 book · best at theScore Bet, 0.8 points from EdgeDesk’s number.",
       "Boston College quarterback: Mason McKenzie — started the last game; no announcement for this one.",
       "SMU quarterback: Kevin Jennings — started the last game; no announcement for this one."
     ],
@@ -1905,11 +1929,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-09-30. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 4, built 2026-10-01. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T13:02:40.989Z"
+    "at": "2026-10-01T20:19:13.710Z"
   }
 }

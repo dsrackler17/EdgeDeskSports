@@ -166,4 +166,4 @@ npm run record:pnl:e2e        # the section in Chromium at 375 / 390 / 430 / 768
 
 1. Paste `supabase/model_pnl.sql`, then `supabase/model_pnl_states.sql`, then `supabase/model_pnl_analytics.sql`, into the SQL editor. Every report row should read `ok`. (`model_pnl_states.sql` is additive: on a database that already holds rows, it derives every row's state in place.)
 2. Merge. `record-pnl.yml` rebuilds `record/pnl/` after each settlement job and syncs it to Supabase when the secrets are set.
-3. Backfill: the first `record-pnl` run upserts the full committed ledger. This is historical NFL and CFB records without prices (marked, never priced), plus every priced recommendation.
+3. Backfill: the first `record-pnl` run after the merge rebuilds `record/pnl/` with every row's state, the pending reasons, the graded record and `stamp.json` (the same idempotent build; a page open at the time reloads when the stamp first appears), then upserts the full committed ledger. This is historical NFL and CFB records without prices (marked, never priced), plus every priced recommendation.
