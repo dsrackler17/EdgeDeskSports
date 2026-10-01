@@ -406,6 +406,20 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('the exact number on a whole line is a PUSH', byId.p.result === 'PUSH' && byId.p.units_won === 0, byId.p);
   chk('a player who did not play is VOID, not a loss', byId.v.result === 'VOID' && byId.v.units_won === 0, byId.v);
   chk('a game not yet final stays pending', !byId.pend);
+  {
+    /* the pending diagnostics: a started, unsettled prop keeps the grader's reason */
+    const after = Date.parse(game.kickoff) + 3600e3;
+    const lost = Object.assign(q('lost', BIJAN, 'rush_yds', 'over', 84.5, -105, 0.25), { game_id: '2026_04_NOPE', kickoff: game.kickoff, prop_id: 'y' });
+    const ps = G.pendingStatus(ds, rows.concat([lost]), graded, after);
+    chk('pending status: a started game that is not final says so (GAME_NOT_FINAL)', ps.pend && ps.pend.code === 'GAME_NOT_FINAL' && ps.pend.reason === 'game not final', ps.pend);
+    chk('pending status: a game the schedule feed does not know is a mapping problem', ps.lost && ps.lost.code === 'MISSING_MAPPING', ps.lost);
+    chk('pending status: settled rows and the calibration rows are never listed', !ps.w && !ps.l && !ps.f1, Object.keys(ps));
+    chk('pending status: before kickoff a prop is upcoming, not listed', Object.keys(G.pendingStatus(ds, rows, graded, Date.parse(game.kickoff) - 60e3)).length === 0);
+    const down = G.pendingStatus({ ok: false, error: 'HTTP 503' }, rows, graded, after);
+    chk('pending status: a run with no dataset says so per prop (DATASET_UNAVAILABLE)', down.pend && down.pend.code === 'DATASET_UNAVAILABLE' && /HTTP 503/.test(down.pend.reason), down.pend);
+    const doc = G.settlementFile('nfl', 2026, ds, ps, after);
+    chk('the settlement file counts the reasons', doc.schema === 'edgedesk_player_props_settlement_v1' && doc.dataset.ok === true && doc.counts.GAME_NOT_FINAL >= 1 && doc.counts.MISSING_MAPPING === 1, doc.counts);
+  }
   chk('CLV against the frozen close: bought 84.5, closed 86.5 → +2', byId.w.clv.available && byId.w.clv.line_clv === 2 && byId.w.clv.beat_close === true, byId.w.clv);
   chk('the final row is graded for calibration at the consensus line', byId.f1.result === (RUSH3 > 86.5 ? 'WIN' : 'LOSS') && byId.f1.p_over === 0.61);
   chk('grading is idempotent: settled rows are never re-graded', G.grade(ds, rows, graded, NOW).length === 0);

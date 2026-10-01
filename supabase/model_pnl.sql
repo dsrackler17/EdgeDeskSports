@@ -15,7 +15,7 @@
 --     model_pnl_corrections. Nothing is ever deleted.
 --   · RLS on, no client policy; readers get model_pnl_public (public fields).
 -- Idempotent and additive; ends in a report whose rows must all read ok.
--- Then run supabase/model_pnl_analytics.sql (the public view, rollups, dollars).
+-- Then model_pnl_states.sql (states, canonical) and model_pnl_analytics.sql.
 -- ============================================================================
 
 create table if not exists public.model_pnl (

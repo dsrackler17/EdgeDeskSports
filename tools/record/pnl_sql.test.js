@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   supabase/model_pnl.sql + model_pnl_analytics.sql, AGAINST A REAL
-   POSTGRESQL, AS REAL READERS.
+   supabase/model_pnl.sql + model_pnl_states.sql + model_pnl_analytics.sql,
+   AGAINST A REAL POSTGRESQL, AS REAL READERS.
 
    Proves, by acting as the service role, reader A, reader B and anon:
      - both files apply twice, every report row ok; the analytics file refuses
@@ -15,7 +15,11 @@
        recommendation half cannot be rewritten; nothing can be deleted;
      - the rollups and the drawdown equal the kernel's (parity);
      - anon reads the public view only; a reader's dollars come from their
-       own bankroll row and never from anyone else's.
+       own bankroll row and never from anyone else's;
+     - every row resolves to ONE state (record_state) exactly as the kernel
+       derives it; the build's pending reasons land through
+       model_pnl_reasons() only; the canonical record view is the table,
+       normalized, and the committed ledger lands with the same states.
 
    Run: node tools/record/pnl_sql.test.js
    =========================================================================== */
@@ -27,10 +31,10 @@ const PNL = require(path.join(PG.ROOT, 'lib', 'edgedesk_pnl.js'));
 
 const T = PG.kit('model_pnl SQL');
 const chk = T.chk;
-const CORE = path.join(PG.ROOT, 'supabase', 'model_pnl.sql'), ANA = path.join(PG.ROOT, 'supabase', 'model_pnl_analytics.sql');
-[['model_pnl.sql', fs.readFileSync(CORE, 'utf8')], ['model_pnl_analytics.sql', fs.readFileSync(ANA, 'utf8')]].forEach(([n, s]) => {
+const CORE = path.join(PG.ROOT, 'supabase', 'model_pnl.sql'), ANA = path.join(PG.ROOT, 'supabase', 'model_pnl_analytics.sql'), STA = path.join(PG.ROOT, 'supabase', 'model_pnl_states.sql');
+[['model_pnl.sql', fs.readFileSync(CORE, 'utf8')], ['model_pnl_states.sql', fs.readFileSync(STA, 'utf8')], ['model_pnl_analytics.sql', fs.readFileSync(ANA, 'utf8')]].forEach(([n, s]) => {
   chk(n + ': no psql meta-commands', !/^\\/m.test(s));
-  chk(n + ': idempotent create statements', /create or replace (function|view)/.test(s) && (/create table if not exists/.test(s) || /create materialized view if not exists/.test(s)));
+  chk(n + ': idempotent create statements', /create or replace (function|view)/.test(s) && (/create table if not exists/.test(s) || /create materialized view if not exists/.test(s) || /add column if not exists/.test(s)));
   chk(n + ': additive — nothing is dropped', !/\bdrop table\b/i.test(s) && !/\bdrop column\b/i.test(s) && !/\bdrop view\b/i.test(s));
   chk(n + ': it ends in a report', /CHECK THIS/.test(s) && /order by 1;\s*$/.test(s));
   chk(n + ': PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(s));
@@ -73,9 +77,14 @@ const ROWS = [
 try {
   const noDep = db.mustFail(() => db.applyFileAtomic(ANA));
   chk('the analytics file without model_pnl.sql stops and names the file', /model_pnl\.sql/.test(noDep || ''), noDep && noDep.slice(0, 200));
+  const noDepS = db.mustFail(() => db.applyFileAtomic(STA));
+  chk('the states file without model_pnl.sql stops and names the file', /model_pnl\.sql/.test(noDepS || ''), noDepS && noDepS.slice(0, 200));
   let out = db.applyFileAtomic(CORE);
   chk('model_pnl.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
   chk('and applies a second time, still all ok', !/CHECK THIS/.test(db.applyFileAtomic(CORE)));
+  out = db.applyFileAtomic(STA);
+  chk('model_pnl_states.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
+  chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(STA)));
   out = db.applyFileAtomic(ANA);
   chk('model_pnl_analytics.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
   chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(ANA)));
@@ -157,6 +166,39 @@ try {
   chk('scopes: props only', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'props');") === bets.filter((x) => x.market_group === 'prop' && x.pnl_status === 'VERIFIED').length);
   chk('the LEAN is not a bet, but can be read as its own class', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'all', 'LEAN');") === 1);
 
+  /* ── every row's one state, as the kernel derives it ────────────────── */
+  {
+    const stored = {};
+    db.sql("select recommendation_id || '|' || record_state || '|' || coalesce(state_reason, '') from public.model_pnl;").split('\n').forEach((l) => { const p = l.split('|'); stored[p[0]] = { st: p[1], why: p[2] }; });
+    const kernel = settleNew.concat([row(11, { entry_odds: 0 }), row(12, { entry_odds: 50 }), row(13, { entry_odds: 'abc' }), row(14, { entry_odds: -110, price_assumed: true })])
+      .filter((x) => x.recommendation_id !== 'pp:t2').map((x) => PNL.settle(x));
+    chk('every stored row\'s state is the kernel\'s (pending, verified, record only, void)', kernel.every((x) => stored[x.recommendation_id] && stored[x.recommendation_id].st === x.record_state),
+      kernel.filter((x) => !stored[x.recommendation_id] || stored[x.recommendation_id].st !== x.record_state).map((x) => [x.recommendation_id, x.record_state, stored[x.recommendation_id]]));
+    chk('states: the model record row is RECORD_ONLY, an assumed price RECORD_ONLY, a void VOID', stored['mr:nfl:g10:spread'].st === 'RECORD_ONLY' && stored['pp:t14'].st === 'RECORD_ONLY' && stored['pp:t9'].st === 'VOID');
+    const late = up([row(16, { recommended_at: '2026-09-26T18:00:00.000Z', result: 'pending', settled_at: null })]);
+    chk('a recommendation stamped after kickoff is INVALID, with the reason', late.inserted === 1 && db.sql("select record_state || '|' || state_reason from public.model_pnl where recommendation_id = 'pp:t16';") === 'INVALID|recommended after the game started');
+    up([row(15, { game_date: '2026-12-20T18:00:00.000Z', result: 'pending', settled_at: null, result_value: null })]);
+    const rs = (rows) => JSON.parse(db.service(`select public.model_pnl_reasons(${J(rows)});`));
+    chk('the build\'s pending reason lands', rs([{ recommendation_id: 'pp:t15', pending_reason: 'UPCOMING', record_state: 'PENDING' }]).updated === 1 && db.sql("select record_state || '|' || pending_reason from public.model_pnl where recommendation_id = 'pp:t15';") === 'PENDING|UPCOMING');
+    chk('sent again, it touches nothing', rs([{ recommendation_id: 'pp:t15', pending_reason: 'UPCOMING', record_state: 'PENDING' }]).updated === 0);
+    rs([{ recommendation_id: 'pp:t1', pending_reason: 'UPCOMING', record_state: 'VERIFIED' }]);
+    chk('a settled row never carries a pending reason', db.sql("select coalesce(pending_reason, 'null') from public.model_pnl where recommendation_id = 'pp:t1';") === 'null');
+    chk('an unknown reason is refused', db.mustFail(() => db.service(`select public.model_pnl_reasons(${J([{ recommendation_id: 'pp:t15', pending_reason: 'BECAUSE', record_state: 'PENDING' }])});`)) !== null);
+    rs([{ recommendation_id: 'pp:t15', pending_reason: null, record_state: 'INVALID', state_reason: 'the settlement reads "graded?", which is not a result' }]);
+    chk('the build\'s INVALID verdict lands with its reason', db.sql("select record_state || '|' || state_reason from public.model_pnl where recommendation_id = 'pp:t15';") === 'INVALID|the settlement reads "graded?", which is not a result');
+    rs([{ recommendation_id: 'pp:t15', pending_reason: 'MISSING_FINAL', record_state: 'PENDING' }]);
+    chk('and lifts when the build no longer says so', db.sql("select record_state || '|' || pending_reason from public.model_pnl where recommendation_id = 'pp:t15';") === 'PENDING|MISSING_FINAL');
+    chk('no client writes a reason', db.mustFail(() => db.anon(`select public.model_pnl_reasons(${J([{ recommendation_id: 'pp:t15', pending_reason: 'UPCOMING' }])});`)) !== null
+      && db.mustFail(() => db.as(A, `select public.model_pnl_reasons(${J([{ recommendation_id: 'pp:t15', pending_reason: 'UPCOMING' }])});`)) !== null);
+    chk('a VERIFIED state needs a captured price (constraint)', db.mustFail(() => db.sql("alter table public.model_pnl disable trigger model_pnl_state_trg; update public.model_pnl set record_state = 'VERIFIED' where recommendation_id = 'mr:nfl:g10:spread';")) !== null);
+    db.sql('alter table public.model_pnl enable trigger model_pnl_state_trg;');
+    /* the canonical record */
+    chk('anon reads the canonical record: one row per recommendation, the public rows', +db.anon('select count(*) from public.model_record_canonical;') === +db.anon('select count(*) from public.model_pnl_public;'));
+    chk('the canonical record carries the normalized names', db.anon("select id || '|' || recommendation_grade || '|' || settlement_result || '|' || pnl_units || '|' || record_state from public.model_record_canonical where id = 'bd:t3';") === 'bd:t3|BET|win|0.6667|VERIFIED');
+    chk('the canonical record carries no internal fields', db.mustFail(() => db.anon('select entry_odds_raw from public.model_record_canonical;')) !== null);
+    chk('the state counts add up to every public row', +db.anon('select sum(n) from public.model_record_states;') === +db.anon('select count(*) from public.model_record_canonical;'));
+  }
+
   /* ── the cached daily series ────────────────────────────────────────── */
   db.service('select public.model_pnl_refresh();');
   const last = db.sql("select cum_units from public.model_pnl_daily where scope = 'all' and mode = 'flat' order by day desc limit 1;");
@@ -167,7 +209,7 @@ try {
   /* ── who reads what ─────────────────────────────────────────────────── */
   chk('anon cannot read the table', db.mustFail(() => db.anon('select count(*) from public.model_pnl;')) !== null);
   chk('a signed-in reader cannot read the table either', db.mustFail(() => db.as(A, 'select count(*) from public.model_pnl;')) !== null);
-  chk('anon reads the public view', +db.anon('select count(*) from public.model_pnl_public;') === 14);
+  chk('anon reads the public view: every LIVE row', +db.anon('select count(*) from public.model_pnl_public;') === +db.sql("select count(*) from public.model_pnl where evaluation_mode in ('LIVE', 'LIVE_RECONSTRUCTED');") && +db.sql('select count(*) from public.model_pnl;') >= 14);
   chk('the public view carries no internal fields', db.mustFail(() => db.anon('select entry_odds_raw from public.model_pnl_public;')) !== null);
   chk('anon reads the corrections', +db.anon('select count(*) from public.model_pnl_corrections_public;') >= 2);
   chk('anon cannot write', db.mustFail(() => db.anon(`select public.model_pnl_upsert(${J([row(20)])});`)) !== null);
@@ -185,6 +227,14 @@ try {
       chk('the committed ledger (' + lf + ', ' + real.length + ' rows) is accepted row for row', rr.inserted === real.length && rr.refused.length === 0, rr.refused.slice(0, 3));
       chk('and synced again, it is unchanged', up(real).unchanged === real.length);
       chk('the database derives the same P&L status for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + lit('{' + real.map((x) => '"' + x.recommendation_id + '"').join(',') + '}') + "::text[]) and m.pnl_status is distinct from (" + J(Object.fromEntries(real.map((x) => [x.recommendation_id, x.pnl_status]))) + " ->> m.recommendation_id);") === '0');
+      const L0 = JSON.parse(fs.readFileSync(path.join(PG.ROOT, 'record', 'pnl', lf), 'utf8'));
+      if (L0.rows.length && L0.rows[0].record_state) {
+        const why = SY.reasonRows(L0);
+        for (let i = 0; i < why.length; i += 500) db.service(`select public.model_pnl_reasons(${J(why.slice(i, i + 500))});`);
+        const ids = lit('{' + L0.rows.map((x) => '"' + x.recommendation_id + '"').join(',') + '}') + '::text[]';
+        chk('the database derives the same one state for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + ids + ") and m.record_state is distinct from (" + J(Object.fromEntries(L0.rows.map((x) => [x.recommendation_id, x.record_state]))) + " ->> m.recommendation_id);") === '0');
+        chk('and holds the same pending reason for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + ids + ") and m.pending_reason is distinct from (" + J(Object.fromEntries(L0.rows.map((x) => [x.recommendation_id, x.pending_reason || null]))) + " ->> m.recommendation_id);") === '0');
+      }
     }
   }
 

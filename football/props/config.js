@@ -92,6 +92,8 @@ function leaguePaths(league, season) {
     calibration: path.join(base, 'calibration.json'),
     correlation: path.join(base, 'correlation.json'),
     performance: path.join(base, 'performance.json'),
+    /* why each started BET / LEAN is still unsettled (football/props/grade.js) */
+    settlement: path.join(base, 'settlement.json'),
     season_dir: path.join(base, String(season)),
     evaluations: path.join(base, String(season), 'evaluations.jsonl'),
     closes: path.join(base, String(season), 'closes.jsonl'),

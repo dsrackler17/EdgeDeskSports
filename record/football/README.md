@@ -40,7 +40,10 @@ No entry price was ever captured with the model's number, so this record is
 **wins and losses**. The Records page shows it that way, by market, under
 *Historical model results*, labelled *record only*. The Records page's P&L is
 only ever EdgeDesk's BET recommendations at the entry price it recorded
-(`record/pnl/`); this record is never turned into units there.
+(`record/pnl/`); this record is never turned into units there. Its rows are
+`RECORD_ONLY` in the P&L ledger: they fill the page's graded record (W-L-P by
+sport, market, model version and week) and are marked *Historical P&L
+unavailable*.
 
 What the record does keep, as auditable data:
 

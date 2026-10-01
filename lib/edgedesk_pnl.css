@@ -93,9 +93,31 @@
 .pnl-under b{font-weight:700;font-variant-numeric:tabular-nums;margin-left:4px}
 
 /* ---- the historical record: wins and losses, never units ----------------- */
-.pnl-hist{border:1px solid var(--p-bd);border-radius:14px;background:var(--p-s1);padding:14px 16px;margin:18px 0 0}
+.pnl-hist{border:1px solid var(--p-bd);border-radius:14px;background:var(--p-s1);padding:14px 16px;margin:12px 0 0}
 .pnl-hist-h{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
-.pnl-hist-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.pnl-hist-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px}
+.pnl-hm{min-width:0}
+.pnl-hm-w{font-size:11.5px;color:var(--p-warn);margin-top:2px}
+/* the graded record's headline: how many, W-L-P, win % — the second answer on the page */
+.pnl-hist-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;margin-top:10px;font-size:14px;color:var(--p-dim)}
+.pnl-hist-top b{color:var(--p-tx);font-weight:800;font-size:clamp(20px,5.4vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-ht-s{font-size:12.5px}
+.pnl-hist-by{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;font-size:12.5px;color:var(--p-dim);font-variant-numeric:tabular-nums}
+.pnl-hist-by b{color:var(--p-tx)}
+.pnl-link{background:none;border:0;padding:0;color:var(--p-acc);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pnl-link:focus-visible{outline:2px solid var(--p-acc);outline-offset:2px;border-radius:3px}
+/* an internal disagreement between the page's own figures */
+.pnl-integrity{border:1px solid var(--p-neg);background:rgba(226,96,68,.12);color:var(--p-tx);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;margin:0 0 10px;overflow-wrap:anywhere}
+/* "waiting for settlement": said once, never a table of zeros */
+.pnl-wait{border:1px dashed var(--p-bd);border-radius:10px;padding:12px 14px;color:var(--p-dim);font-size:13px;line-height:1.55;margin:8px 0}
+.pnl-wait b{color:var(--p-tx)}
+.pnl-why{margin-top:14px}
+.pnl-whyl{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--p-bd);border-radius:10px;overflow:hidden;max-width:560px}
+.pnl-whyl li{display:flex;justify-content:space-between;gap:12px;padding:7px 12px;font-size:13px;border-top:1px solid var(--p-bd)}
+.pnl-whyl li:first-child{border-top:0}
+.pnl-whyl li b{font-variant-numeric:tabular-nums}
+.pnl-whyl .pnl-whyt{background:var(--p-s2);font-weight:600}
+.pnl-tab-v[data-kind="record"]{font-size:12px}
 .pnl-hm-k{font-size:12px;color:var(--p-dim);font-weight:600}
 .pnl-hm-v{font-size:clamp(17px,4.6vw,22px);font-weight:700;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .pnl-hm-p{font-size:13px;color:var(--p-dim);margin-top:1px;font-variant-numeric:tabular-nums}

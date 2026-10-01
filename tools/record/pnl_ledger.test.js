@@ -122,6 +122,7 @@ function write(B) {
   fs.writeFileSync(B.files.ledger, JSON.stringify(B.ledger, null, 1) + '\n');
   fs.writeFileSync(B.files.summary, JSON.stringify(B.summary, null, 1) + '\n');
   fs.writeFileSync(B.files.rows, JSON.stringify(B.page));
+  fs.writeFileSync(B.files.stamp, JSON.stringify(B.stamp, null, 1) + '\n');
 }
 const byId = (B) => { const o = {}; B.ledger.rows.forEach((x) => { o[x.recommendation_id] = x; }); return o; };
 
@@ -247,6 +248,29 @@ try {
   const B9 = build('2026-09-30T07:00:00.000Z');
   chk('a duplicated source row is one recommendation', B9.report.duplicates_in_sources === 1 && B9.ledger.rows.filter((x) => x.recommendation_id === 'pp:ppe_over').length === 1);
 
+  /* ============================================================ one state per row, the record, pending reasons */
+  {
+    /* next week's prop, not settled: the pending row these checks read */
+    put('football/props/nfl/2026/evaluations.jsonl', jsonl(EVALS.concat([ev('ppe_next', { game_id: '2026_05_KC_JAX', kickoff: K3, week: 5, side: 'over', line: 1.5, market: 'pass_tds', american: 120, units: 0.5, edge_pp: 4 })])));
+    const BN = build('2026-09-30T08:00:00.000Z'), S9 = BN.summary, st = S9.states;
+    chk('every row resolves to exactly one state', st.total === BN.ledger.rows.length && PNL.STATE_ORDER.reduce((a, k) => a + st[k], 0) === st.total && BN.ledger.rows.every((x) => PNL.STATE_ORDER.indexOf(x.record_state) >= 0), st);
+    chk('states: verified, record only, void and pending are each counted', st.VERIFIED >= 5 && st.RECORD_ONLY >= 4 && st.VOID === 1 && st.PENDING === 1 && st.INVALID === 0, st);
+    const rec = S9.record.all;
+    chk('the graded record holds the model picks AND the bets, priced or not (never PASS / WATCH)', rec.graded === rec.verified + rec.record_only && rec.record_only >= 4 && rec.verified >= 5
+      && BN.ledger.rows.filter((x) => PNL.inRecord(x, false) && (x.record_state === 'VERIFIED' || x.record_state === 'RECORD_ONLY')).length === rec.graded, rec);
+    chk('the record by market adds up to the whole', S9.record.by.market.reduce((a, x) => a + x.graded, 0) === rec.graded, S9.record.by.market.map((x) => x.key + ' ' + x.graded));
+    chk('the pending prop has a reason, as of the run (its game is next week: UPCOMING)', byId(BN)['pp:ppe_next'].pending_reason === 'UPCOMING' && S9.pending_reasons.total === st.PENDING && S9.pending_reasons.reasons[0].key === 'UPCOMING', S9.pending_reasons);
+    chk('a settled row carries no pending reason', BN.ledger.rows.filter((x) => x.record_state !== 'PENDING').every((x) => x.pending_reason == null));
+    chk('the integrity checks of every scope pass and are published', S9.integrity.ok === true && Object.keys(S9.integrity.checks).length === PNL.SCOPE_ORDER.length * 3, S9.integrity);
+    chk('the page rows carry the state and the pending reason', core.PAGE_COLS.indexOf('record_state') >= 0 && core.PAGE_COLS.indexOf('pending_reason') >= 0
+      && core.expandRows(BN.page).find((x) => x.recommendation_id === 'pp:ppe_next').pending_reason === 'UPCOMING');
+    chk('the stamp counts the page rows', BN.stamp.schema === 'edgedesk_pnl_stamp_v1' && BN.stamp.rows === BN.page.rows.length && /^[0-9a-f]{16}$/.test(BN.stamp.digest), BN.stamp);
+    const again = build('2026-09-30T08:00:00.000Z');
+    chk('the stamp moves only when the rows do (a rebuild over the same facts keeps it)', again.stamp.digest === BN.stamp.digest, [again.stamp.digest, BN.stamp.digest]);
+    const later = build('2026-10-04T18:00:00.000Z');
+    chk('…and the clock alone moves a pending row\'s reason (kickoff passed: IN PROGRESS), which moves the stamp', byId(later)['pp:ppe_next'].pending_reason === 'IN_PROGRESS' && later.stamp.digest !== BN.stamp.digest, byId(later)['pp:ppe_next'].pending_reason);
+  }
+
   /* ============================================================ the page's copy */
   const back = core.expandRows(B9.page);
   chk('the page rows are the ledger rows, columnar', back.length === B9.ledger.rows.length && back.every((x, i) => x.recommendation_id === B9.ledger.rows[i].recommendation_id && x.flat_profit_units === (B9.ledger.rows[i].flat_profit_units == null ? null : B9.ledger.rows[i].flat_profit_units)));
@@ -256,6 +280,52 @@ try {
   fs.rmSync(TMP, { recursive: true, force: true });
 }
 function r2(v) { return Math.round(v * 100) / 100; }
+
+/* ============================================================ why "pending" — every reason, pinned */
+{
+  const KO = '2026-10-04T17:00:00.000Z', ko = Date.parse(KO), h = (n) => ko + n * 3600e3;
+  const prop = (o) => PNL.settle(Object.assign({ recommendation_id: 'pp:e1', market_group: 'prop', league: 'NFL', event_id: '2026_05_KC_JAX', game_date: KO, recommended_at: '2026-10-03T12:00:00.000Z', side: 'over', selection: 'Over 1.5', rec_class: 'BET', entry_odds: -110, stake_units: 1, result: 'pending' }, o));
+  const game = (o) => PNL.settle(Object.assign({ recommendation_id: 'bd:s1', market_group: 'game', league: 'CFB', event_id: '401', game_date: KO, recommended_at: '2026-10-03T12:00:00.000Z', side: 'home', selection: 'Utah -6.5', rec_class: 'BET', entry_odds: -110, stake_units: 1, result: 'pending' }, o));
+  const ctxP = (pending, checked) => ({ props: { NFL: { checked_at: checked, pending: pending } }, events: {}, finals: {} });
+  const why = (row, ctx, t) => core.pendingReason(row, ctx, t);
+  chk('pending: before kickoff → UPCOMING', why(prop(), ctxP({}, null), h(-1)) === 'UPCOMING');
+  chk('pending: inside the game window → IN_PROGRESS', why(prop(), ctxP({}, null), h(2)) === 'IN_PROGRESS');
+  chk('pending: the grader says the box is not published, within 48 h → AWAITING_STAT_FEED', why(prop(), ctxP({ e1: { code: 'STAT_FEED_PENDING' } }, new Date(h(10)).toISOString()), h(12)) === 'AWAITING_STAT_FEED');
+  chk('pending: …past 48 h → MISSING_PLAYER_STAT', why(prop(), ctxP({ e1: { code: 'STAT_FEED_PENDING' } }, new Date(h(60)).toISOString()), h(60)) === 'MISSING_PLAYER_STAT');
+  chk('pending: the grader says the game is not final, hours later → MISSING_FINAL', why(prop(), ctxP({ e1: { code: 'GAME_NOT_FINAL' } }, new Date(h(8)).toISOString()), h(8)) === 'MISSING_FINAL');
+  chk('pending: the game is not in the schedule feed → MISSING_MAPPING', why(prop(), ctxP({ e1: { code: 'MISSING_MAPPING' } }, new Date(h(8)).toISOString()), h(8)) === 'MISSING_MAPPING');
+  chk('pending: the grader could not load its dataset → SETTLEMENT_FAILED', why(prop(), ctxP({ e1: { code: 'DATASET_UNAVAILABLE' } }, new Date(h(8)).toISOString()), h(8)) === 'SETTLEMENT_FAILED');
+  chk('pending: the grader has not run since kickoff, shortly after → AWAITING_SETTLEMENT', why(prop(), ctxP({}, new Date(h(-5)).toISOString()), h(7)) === 'AWAITING_SETTLEMENT');
+  chk('pending: …and a day later → SETTLEMENT_FAILED (the job is not running)', why(prop(), ctxP({}, new Date(h(-5)).toISOString()), h(30)) === 'SETTLEMENT_FAILED');
+  chk('pending: the grader ran after kickoff, did not settle it and gave no reason → SETTLEMENT_FAILED', why(prop(), ctxP({}, new Date(h(20)).toISOString()), h(24)) === 'SETTLEMENT_FAILED');
+  const ctxG = (fin, known) => ({ props: {}, events: known ? { 401: { home: 'Utah' } } : {}, finals: fin ? { 401: { at: new Date(h(4)).toISOString() } } : {} });
+  chk('pending game: a final EdgeDesk holds, within the grader\'s window → AWAITING_SETTLEMENT', why(game(), ctxG(true, true), h(20)) === 'AWAITING_SETTLEMENT');
+  chk('pending game: a final held for days with no settlement → SETTLEMENT_FAILED', why(game(), ctxG(true, true), h(80)) === 'SETTLEMENT_FAILED');
+  chk('pending game: a known game with no final → MISSING_FINAL', why(game(), ctxG(false, true), h(20)) === 'MISSING_FINAL');
+  chk('pending game: a game EdgeDesk cannot place → MISSING_MAPPING', why(game(), ctxG(false, false), h(20)) === 'MISSING_MAPPING');
+  chk('a settled row has no pending reason', why(game({ result: 'win' }), ctxG(true, true), h(20)) === null);
+  chk('every reason the build gives is one the kernel words', ['UPCOMING', 'IN_PROGRESS', 'AWAITING_SETTLEMENT', 'AWAITING_STAT_FEED', 'MISSING_FINAL', 'MISSING_PLAYER_STAT', 'SETTLEMENT_FAILED', 'MISSING_MAPPING'].every((k) => !!PNL.PENDING_REASON[k]));
+}
+
+/* ============================================================ the real sources, rebuilt now (the backfill)
+   The canonical record is built from every committed source ledger with the
+   code under test — not from whatever an earlier build left in record/pnl —
+   and must hold together: one state per row, a reason for every pending row,
+   the record = its verified + record-only rows, every scope consistent. */
+{
+  const B = L.build({ root: ROOT, out: 'record/pnl', season: null, now: new Date().toISOString() });
+  const rows = B.ledger.rows, S = B.summary, st = S.states;
+  chk('real: every recommendation resolves to exactly one state', st.total === rows.length && PNL.STATE_ORDER.reduce((a, k) => a + st[k], 0) === rows.length, st);
+  chk('real: no row is left INVALID without a reason', rows.filter((x) => x.record_state === 'INVALID').every((x) => !!x.state_reason));
+  chk('real: every pending row says why', rows.filter((x) => x.record_state === 'PENDING').every((x) => !!PNL.PENDING_REASON[x.pending_reason]) && S.pending_reasons.total === st.PENDING, S.pending_reasons);
+  const rec = S.record.all;
+  chk('real: the graded record = its verified + record-only rows (' + rec.record + ' over ' + rec.graded + ')', rec.graded === rec.verified + rec.record_only && rec.graded === rec.wins + rec.losses + rec.pushes, rec);
+  chk('real: historical results with no entry price are kept in the record, never dropped', rows.filter((x) => x.source === 'model_record').every((x) => x.record_state === 'RECORD_ONLY' || x.record_state === 'VOID') && rec.record_only >= rows.filter((x) => x.source === 'model_record' && x.record_state === 'RECORD_ONLY').length);
+  chk('real: the integrity checks of every scope pass', S.integrity.ok, Object.keys(S.integrity.checks).filter((k) => !S.integrity.checks[k].ok).map((k) => k + ': ' + JSON.stringify(S.integrity.checks[k].failed)));
+  const page = core.expandRows(B.page);
+  const prec = PNL.gradedRecord(page.filter((x) => PNL.inRecord(x, false)));
+  chk('real: the page rows give the same record and states as the build', prec.record === rec.record && PNL.STATE_ORDER.every((k) => PNL.states(page)[k] === st[k]), [prec.record, rec.record]);
+}
 
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'P&L ledger — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

@@ -270,7 +270,7 @@ unit) and on the public `record.html#pnl` (units only).
 
 - **Design:** [`docs/pnl/DESIGN.md`](docs/pnl/DESIGN.md)
 - `npm run record:pnl` — rebuild `record/pnl/`; `record:pnl:test`, `record:pnl:sql`, `record:pnl:e2e` — the suites
-- `supabase/model_pnl.sql`, `supabase/model_pnl_analytics.sql` — the idempotent table, corrections audit, rollups and a reader's own dollars
+- `supabase/model_pnl.sql`, `supabase/model_pnl_states.sql`, `supabase/model_pnl_analytics.sql` — the idempotent table, corrections audit, every row's one state and the canonical record, rollups and a reader's own dollars
 
 ## Player Props — the prop research terminal (NFL and CFB)
 
