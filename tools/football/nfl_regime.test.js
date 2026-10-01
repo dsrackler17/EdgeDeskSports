@@ -240,10 +240,31 @@ const buildOpts = (inj) => ({ now: NOW, lookahead: 12, offline: true, fetchText:
   chk('every predicted game in the committed slate carries its regime state and the status of each priced starter (' + pred.length + ' games)',
     pred.length > 0 && pred.every((g) => g.regime && g.regime.version === R.version && g.regime.promoted === false
       && ['home_starter', 'away_starter'].every((s) => g[s] === null || STATUSES.indexOf(g[s].status) >= 0)), pred.filter((g) => !g.regime).map((g) => g.game_id));
+  /* the priced Washington starter follows the committed injury report, by the
+     builder's own rule (starterOf / fbNflReconcileStarters): the feed's
+     starter unless the report lists him OUT or DOUBTFUL. Daniels was OUT on
+     the week-3 report and off it as a designation on week 4's (limited,
+     elbow), so neither state is a fixed fact. The injury sync and the slate
+     build run separately: the report is held against the slate only when the
+     slate was built after it was retrieved. */
+  const REP = JSON.parse(read('football/injuries/nfl_' + SL.season + '.json'));
+  const UNAVAILABLE = /^(out|doubtful)$/i;
+  const synced = !!(REP.retrieved_at && SL.generated_at && Date.parse(SL.generated_at) >= Date.parse(REP.retrieved_at));
+  const repStatus = (team, id, name) => {
+    const p = ((REP.teams || {})[team] || {}).players || [];
+    const r = p.find((x) => (id && x.gsis_id === id) || (name && x.name === name));
+    return r ? String(r.status || '') : '';
+  };
   const was = pred.find((g) => g.game_id === '2026_04_IND_WAS');
-  chk('Colts @ Commanders (if on the slate): Daniels is not the priced starter, and no home field at Tottenham',
-    !was || (was.home_starter && was.home_starter.player_name !== 'Jayden Daniels' && /^INJURY_REPORT_REPLACEMENT/.test(was.home_starter.status)
-      && (was.contributions.spread.find((c) => c.key === 'baseline') || {}).points === 0), was && [was.home_starter, was.contributions && was.contributions.spread[0]]);
+  const wh = was && was.home_starter;
+  const followsReport = wh && (wh.status === 'SCHEDULE_FEED'
+    ? !synced || !UNAVAILABLE.test(repStatus('WAS', wh.player_id, wh.player_name))
+    : !!(wh.scheduled && wh.player_name !== wh.scheduled.player_name && UNAVAILABLE.test(String(wh.scheduled.status || ''))
+      && (!synced || UNAVAILABLE.test(repStatus('WAS', wh.scheduled.player_id, wh.scheduled.player_name)))));
+  chk('Colts @ Commanders (if on the slate): the priced Washington starter follows the committed injury report (' + (wh ? wh.player_name + ', ' + wh.status : 'none')
+    + '; Daniels ' + (repStatus('WAS', DAN[0], DAN[1]) || 'no designation') + '), and no home field at Tottenham',
+    !was || (followsReport && (was.contributions.spread.find((c) => c.key === 'baseline') || {}).points === 0),
+    was && [wh, synced, was.contributions && was.contributions.spread[0]]);
   const phj = pred.find((g) => g.game_id === '2026_05_PHI_JAX');
   chk('Eagles @ Jaguars (if on the slate): neutral, with the SITE note', !phj || ((phj.contributions.spread.find((c) => c.key === 'baseline') || {}).points === 0
     && (phj.data_quality.warnings || []).some((x) => /^SITE:/.test(x))));

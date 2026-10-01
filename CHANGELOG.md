@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-01 — the Washington starter check follows the injury report
+
+The committed-slate check in `tools/football/nfl_regime.test.js` required that Colts @ Commanders (week 4, Tottenham) never price Jayden Daniels. That was true on the week-3 report, which listed him OUT with an elbow injury. The week-4 report lists him as limited in practice with no game designation. The slate rebuilt at 18:54 UTC rightly priced him from the schedule feed, and Intelligence CI and Collective suites went red on every open PR.
+
+- The check now applies the builder's own rule (`starterOf` / `fbNflReconcileStarters`) to the committed report:
+  - a schedule-feed starter must not be OUT or DOUBTFUL on it;
+  - a replacement must name the scheduled starter as OUT or DOUBTFUL, and the report must still say so.
+- The report is held against the slate only when the slate was built after the report was retrieved, because the injury sync and the slate build run separately.
+- The no-home-field-at-Tottenham check is unchanged.
+- The fixture build in section 4 still pins the OUT-on-week-3 → Mariota substitution.
+
 ## 2026-10-01 — the Records page answers "is the model up or down?" first
 
 The Records page was an analytics dashboard: a reader had to read CLV, data-quality counts and pending totals to learn whether EdgeDesk makes money. It now opens on one answer, and everything else is one tap away.
