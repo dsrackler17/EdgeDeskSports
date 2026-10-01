@@ -1,0 +1,30 @@
+-- ============================================================================
+-- EDGEDESK — flagged-edge P&L: THE BACKFILL, AS A DRY RUN. Writes nothing.
+-- Apply signal_pnl.sql, signal_pnl_summary.sql and signal_pnl_sync.sql first.
+--
+-- Paste this into the SQL editor. It computes the P&L of every flag that has
+-- reached its close or its settlement and returns ONE table:
+--   mode    DRY RUN, and the exact statement that writes it
+--   counts  how many flags, what would be inserted / updated / left alone,
+--           graded vs void vs no flag price vs waiting on a result
+--   sample  20 rows: game, pick, price at flag, result, P&L (a few of each
+--           ungraded kind first, then graded ones; the same 20 every run)
+--   totals  per sport and all sports: graded, W-L-P, units, ROI, and every
+--           row that is not counted, with the reason
+--   check   the odds math (+150 win = 1.50, -110 win = 0.909, loss = -1,
+--           push = 0, void = not a bet)
+--
+-- When the numbers look right, write them (idempotent: run it twice and the
+-- second run inserts nothing and updates nothing):
+--
+--   select * from public.pnl_backfill(true);
+--
+-- That run ends with every check: pnl_summary = the raw SQL sum, settled flags
+-- with no P&L row = 0, rows out of sync = 0. Then, any time:
+--
+--   select * from public.pnl_handcheck(10);   -- 10 random rows vs the raw signal
+--   select * from public.pnl_verify();        -- every check, ok or CHECK THIS
+--   select public.pnl_reconciliation();       -- what the Records tab shows
+-- ============================================================================
+
+select * from public.pnl_backfill();

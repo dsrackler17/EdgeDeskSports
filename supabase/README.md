@@ -74,6 +74,25 @@ The analytics file adds:
 
 Run the core file first; the analytics file's guard says so. Report rows should all read `ok`. Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pnl/DESIGN.md`.
 
+### `signal_pnl.sql` + `signal_pnl_summary.sql` + `signal_pnl_sync.sql` — profit and loss of every flagged edge
+
+`pnl_grades` holds one row per flag in `signals` that has closed or settled. It is keyed by `sig_key` (primary key and foreign key, `on delete restrict`), so a flag can never grade twice.
+
+- **The arithmetic.** 1 unit flat, at the price frozen when the edge was flagged (`flagged_best_dec`), never the close.
+  - A win at +odds is odds/100, at −odds 100/|odds|; a loss is −1; a push is 0.
+  - Void / cancelled is not a bet.
+  - No valid flag price means `ungraded_missing_price`; nothing is estimated.
+  - `pnl_units_at_close` (at `closing_dec`) is a comparison only.
+- **Nothing invented, nothing lost.** `calc_version` is on every row, and a change to a settled row is appended to `pnl_grade_history`. The table refuses a figure its own math did not produce, and refuses deletes.
+- **The rollup.** `pnl_summary` covers all-time / month / week / day × sport × tier × market, with ROI = units ÷ risked.
+- **The hook.** An `AFTER UPDATE` trigger on `signals` writes the row in the same transaction as `settle` or `close`, and can never fail the settlement: errors go to `pnl_sync_errors`.
+- **The checks.** `pnl_reconciliation()` feeds Pipeline health on the Records tab.
+- **The backfill.** `pnl_backfill()` is a dry run (counts, a 20-row sample, totals per sport); `pnl_backfill(true)` writes it, idempotently.
+- **The audits.** `pnl_handcheck(10)` and `pnl_verify()`.
+- **Who reads.** RLS: anyone reads a row once its game has started; only the service role writes.
+
+Run the three files in that order (each under the paste limit; every report row `ok`), then `signal_pnl_backfill.sql` (the dry run). Tested against a real PostgreSQL by `tools/record/signal_pnl_sql.test.js`. See `docs/pnl/EDGE_PNL.md`.
+
 ### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
 Everything personal used to live in one browser. This gives each reader rows on
 their account, under row level security on `auth.uid()`, and nothing takes a

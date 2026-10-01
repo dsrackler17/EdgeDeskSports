@@ -3091,7 +3091,7 @@ body.focus .dk-focusnote{display:block}
       </div>
       <div class="rtblwrap" id="recTblWrap"><table class="rtbl" id="recTbl"><thead></thead><tbody></tbody></table></div>
       <div class="rpager" id="recPager"></div>
-      <div class="rec-note" style="margin-top:12px">Odds are the frozen flag price where capture stored one, otherwise the first-seen price and marked. Close is the de-vigged sharp fair at close, not a book quote. Stake, notes and confidence scores are not captured by the pipeline, so they are not shown or invented. Sim P/L is a flat 1 unit simulation, not money.</div>
+      <div class="rec-note" style="margin-top:12px">Odds are the frozen flag price where capture stored one, otherwise the first-seen price and marked. Close is the de-vigged sharp fair at close, not a book quote. Stake, notes and confidence scores are not captured by the pipeline, so they are not shown or invented. Sim P/L is a flat 1 unit simulation, not money. P&amp;L is the recorded figure: 1 unit flat stake at the price when flagged. Pushes = 0. Missing prices are not estimated.</div>
     </div>
 
     <!-- ANALYTICS -->
@@ -8744,6 +8744,51 @@ function recAm2Dec(s){s=String(s||'').trim();if(!s)return null;var a=+s;if(isNaN
    still counting toward the pool size and, if it carried a clv, toward every CLV
    average. It diluted every rate it appeared in without ever being scored. */
 function recProfitOf(r){var d=recDecOf(r);if(d==null)return null;if(r.result==='win')return d-1;if(r.result==='loss')return -1;if(r.result==='push'||r.result==='void')return 0;return null;}
+/* RECORDED P&L (supabase/signal_pnl*.sql, docs/pnl/EDGE_PNL.md). recProfitOf above
+   is this tab's own simulation and falls back to the first-seen price; the
+   recorded P&L is the row the database wrote when the game settled: 1 unit at
+   the price frozen at flag, never a substitute. A row with none says why. */
+var REC_PNL_COLS='sig_key,pnl_status,ungraded_reason,pnl_units,pnl_units_at_close,price_at_flag,calc_version';
+var REC_PNL_WHY={void:'void',ungraded_missing_price:'no flag price',ungraded_unsettled:'pending'};
+var REC_PNL_TIP={void:'The game or bet was cancelled, so it is not a bet and carries no P&L.',
+  ungraded_missing_price:'No price was saved when this was flagged. P&L is never estimated and never taken from the close.',
+  ungraded_unsettled:'Waiting on the result.'};
+/* Its own read, on the public key (pnl_grades and the reconciliation are public):
+   an optional layer that is not deployed yet must not read as a database outage,
+   so a failure here never touches ED_DB or the System health pill. */
+async function recPnlGet(q){
+  var r=await fetch(SB_URL+'/rest/v1/'+q,{headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY}});
+  if(!r.ok){var er=new Error('db '+r.status);er.status=r.status;try{er.body=await r.text();}catch(_){}throw er;}
+  return r.json();
+}
+async function recAttachPnl(rows){
+  REC.pnl={state:'loading'};
+  try{
+    var list=[];
+    for(var off=0;off<60000;off+=1000){var b=await recPnlGet('pnl_grades?select='+REC_PNL_COLS+'&order=sig_key.asc&limit=1000&offset='+off);list=list.concat(b||[]);if(!b||b.length<1000)break;}
+    var by={};list.forEach(function(p){by[p.sig_key]=p;});
+    rows.forEach(function(r){
+      var p=r.sig_key!=null?(by[r.sig_key]||null):null;
+      r._pnlRow=p;r._pnlStatus=p?p.pnl_status:null;
+      r._pnl=p&&p.pnl_status==='graded'?recNum(p.pnl_units):null;
+      r._pnlClose=p&&p.pnl_status==='graded'?recNum(p.pnl_units_at_close):null;
+    });
+    REC.pnl={state:'ok',n:list.length};
+  }catch(e){
+    var m=String((e&&(e.body||e.message))||e);
+    REC.pnl={state:(e&&e.status===404)||/PGRST205|42P01|does not exist|schema cache/i.test(m)?'missing':'error',err:m.slice(0,200)};
+  }
+}
+function recPnlCell(r){
+  if(r._unsupported)return '<span class="rmut">\u2014</span>';
+  var st=REC.pnl&&REC.pnl.state;
+  if(st==='loading'||!st)return '<span class="rmut">\u2026</span>';
+  if(st!=='ok')return '<span class="rmut" title="'+recEsc(st==='missing'?'Recorded P&L is not switched on yet (supabase/signal_pnl.sql).':'Recorded P&L could not be read: '+(REC.pnl.err||''))+'">\u2014</span>';
+  var p=r._pnlRow;
+  if(!p)return '<span class="rmut" title="No recorded P&L row for this flag yet. Pipeline health counts these.">not synced</span>';
+  if(p.pnl_status==='graded')return '<span class="'+recCls(r._pnl)+'">'+recU(r._pnl)+'</span>';
+  return '<span class="rmut" title="'+recEsc(REC_PNL_TIP[p.pnl_status]||'')+'">'+recEsc(REC_PNL_WHY[p.pnl_status]||p.pnl_status)+'</span>';
+}
 function recCloseFairDec(r){var p=recNum(r.closing_sharp_fair);return (p!=null&&p>0&&p<1)?1/p:null;}
 function recEdgeOf(r){var e=recNum(r.flagged_edge);return e;}
 function recU(v,dp){if(v==null||isNaN(v))return '\u2014';dp=dp==null?2:dp;return (v>=0?'+':'')+v.toFixed(dp)+'u';}
@@ -8762,7 +8807,7 @@ function recEmptyHTML(kind,body,retry){
 }
 
 /* ---- data load ---- */
-var REC_COLS='id,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav,flagged_policy,flagged_tier,flagged_reference_type,qual_reason';
+var REC_COLS='id,sig_key,event_id,sport_title,sport_key,market,selection,point,home_team,away_team,best_book,commence_time,first_seen_at,flagged_at,graded_at,first_best_dec,flagged_best_dec,best_dec,flagged_edge,edge,clv,result,beat_close,sharp_fair,consensus_fair,closing_sharp_fair,first_has_sharp,has_sharp,first_corrob_n,first_corrob_ref,n_books,n_books_eff,pin_dec,pin_opp_dec,is_fav,flagged_policy,flagged_tier,flagged_reference_type,qual_reason';
 
 async function loadRecord(force){
   if(REC.loading)return;
@@ -8842,6 +8887,7 @@ async function loadRecord(force){
       r._q=((r.selection||'')+' '+r._game+' '+(r.sport_title||'')+' '+(r.market||'')+' '+(r.best_book||'')+' '+(r.result||'')+' '+recD(r.commence_time)).toLowerCase();
     });
     REC.rows=rows;REC.loaded=true;REC.dirty={charts:true,analytics:true};REC.open={};
+    recAttachPnl(rows).then(function(){if(REC.rows===rows){try{recRenderTable();}catch(_){}}});
     recBuildFilterOptions();
     $('dbPill').textContent='DB \u2713';$('dbPill').className='pill ok';
     var t=new Date();$('recFresh').textContent=rows.length+' graded \u00b7 '+t.getHours()+':'+('0'+t.getMinutes()).slice(-2);
@@ -9236,6 +9282,26 @@ async function recPipelineHealth(){
     h+=row('grading',grade.txt,grade.min==null?null:grade.min<1440,'last result settled',
       grade.min==null?'nothing has ever been graded'
       :(grade.min>=1440?'no result settled in 24h \u2014 the settle job is stalled. Signals close fine and then sit ungraded, so the record cannot grow no matter how healthy everything above is.':''));
+    /* P&L SYNC (supabase/signal_pnl_sync.sql). Every settled flag must carry its
+       recorded P&L row: the hook writes it in the settlement's own transaction,
+       and pnl_reconciliation() counts what this browser cannot see. Settled
+       flags with no row should be 0. A read that fails says so; it never reads
+       as a broken P&L. */
+    var rc=null,rcErr=null;
+    try{rc=await recPnlGet('rpc/pnl_reconciliation');}catch(e){rcErr=e;}
+    if(rc&&typeof rc==='object'&&rc.settled_without_pnl!=null){
+      var pMiss=+rc.settled_without_pnl||0,pStale=(+rc.out_of_sync||0)+(+rc.closed_without_pnl||0),pErr=+rc.sync_errors_24h||0,pOk=pMiss===0&&pStale===0&&pErr===0;
+      var pLast=rc.last_write_at?recAgeTxt(rc.last_write_at).txt:null,pOver=+rc.overdue_unsettled||0;
+      h+=row('P&amp;L sync',pMiss+' missing',pOk,'settled flags with no recorded P&amp;L row (should be 0)'
+          +(pOk?' \u00b7 '+(rc.graded||0)+' graded, '+(rc.rows||0)+' rows'+(pLast?', last written '+pLast:''):''),
+        pOk?(pOver?pOver+' flags still have no result 36h after kickoff \u2014 the settle job, not P&amp;L':'')
+          :[pMiss?pMiss+' settled with no row':'',pStale?pStale+' out of date':'',pErr?pErr+' hook errors in 24h ('+recEsc(String(rc.last_error||'').slice(0,120))+')':''].filter(Boolean).join(' \u00b7 ')
+            +' \u2014 run select * from public.pnl_backfill(); in the SQL editor (a dry run), then pnl_backfill(true)');
+    }else{
+      var pOff=rcErr&&(rcErr.status===404||/PGRST202|could not find the function|schema cache/i.test(String(rcErr.body||'')));
+      h+=row('P&amp;L sync',pOff?'not on':'unreadable',null,'settled flags with no recorded P&amp;L row',
+        pOff?'supabase/signal_pnl_sync.sql has not been applied yet':'the reconciliation could not be read \u2014 this says nothing about the P&amp;L itself');
+    }
 
     /* State the counts, then say only what they actually support. The earlier
        version asserted a condition ("both at zero") without checking it, which
@@ -9380,7 +9446,8 @@ var REC_COLDEF=[
   {k:'_closeDec',l:'Close*',t:'De-vigged sharp fair price at close \u2014 not a book quote.',f:function(r){return r._closeAm!=null?r._closeAm:'\u2014';}},
   {k:'_clv',l:'CLV',t:'Closing Line Value: whether the frozen entry beat the sharp closing market. The one proven number here.',f:function(r){return '<span class="'+recCls(r._clv)+'">'+recPc(r._clv,1)+'</span>';}},
   {k:'_edge',l:'Edge',t:'Edge at flag: entry price vs the de-vigged fair, frozen at flag time.',f:function(r){return '<span class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</span>';}},
-  {k:'_profit',l:'Profit',t:'Flat 1-unit simulated profit/loss. A simulation, not money.',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
+  {k:'_profit',l:'Sim P/L',t:'Flat 1-unit simulated profit/loss, at the first-seen price where no flag price was stored (\u2020). A simulation, not money.',f:function(r){return '<span class="'+recCls(r._profit)+'">'+recU(r._profit)+'</span>';}},
+  {k:'_pnl',l:'P&amp;L',t:'Recorded P&L: 1 unit at the price frozen when the edge was flagged, written by the database the moment the game settled. Pushes = 0. Missing prices are not estimated.',f:recPnlCell},
   {k:'_stat',l:'Status',t:'Settlement status of the graded signal.',f:function(r){return recStatusPill(r);}}
 ];
 function recSortRows(){
@@ -9896,7 +9963,7 @@ var REC_EXPORT_FIELDS=[
   ['flagged_edge','edge_at_flag'],['edge','edge_at_close'],
   ['sharp_fair','sharp_fair_at_capture'],['consensus_fair','consensus_fair_at_capture'],['closing_sharp_fair','closing_sharp_fair'],
   ['_closeDec','close_fair_decimal'],['clv','clv'],['beat_close','beat_close'],['result','result'],
-  ['_profit','sim_profit_units_flat1u'],['_anchor','anchor'],['first_corrob_n','corroborating_books_at_capture'],
+  ['_profit','sim_profit_units_flat1u'],['_pnl','pnl_units_recorded'],['_pnlClose','pnl_units_at_close_recorded'],['_pnlStatus','pnl_status'],['_anchor','anchor'],['first_corrob_n','corroborating_books_at_capture'],
   ['first_corrob_ref','corroboration_reference'],['n_books','books_pricing'],['pin_dec','pinnacle_price_decimal'],['pin_opp_dec','pinnacle_opposite_decimal'],
   ['event_id','event_id']
 ];
@@ -10506,7 +10573,8 @@ function recReceiptHTML(r){
     '<div class="rcpt-hero-tag">'+heroLab+'</div>'+
     '<div class="rcpt-hero-chips">'+
       '<span class="rcpt-hchip">'+resChip+'</span>'+
-      '<span class="rcpt-hchip">P/L <b class="'+recCls(r._profit)+'">'+recU(r._profit)+'</b></span>'+
+      '<span class="rcpt-hchip">P&amp;L '+recPnlCell(r)+'</span>'+
+      '<span class="rcpt-hchip">Sim P/L <b class="'+recCls(r._profit)+'">'+recU(r._profit)+'</b></span>'+
       '<span class="rcpt-hchip">Edge <b class="'+recCls(r._edge)+'">'+recPc(r._edge,1)+'</b></span>'+
       (ev!=null?'<span class="rcpt-hchip">EV <b class="'+recCls(ev)+'">'+recU(ev)+'</b></span>':'')+
     '</div></div>';
