@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-09-30T23:12:33.534Z",
+ "generated_at": "2026-10-01T00:07:43.888Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 5,
+   "n": 7,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 13.07,
+   "average_gap": 12.26,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -60,6 +60,23 @@
     "market_at_snapshot": 24.5,
     "gap": 7.79,
     "toward": "Vanderbilt",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
+    "game_id": "401862792",
+    "game": "Temple @ South Florida",
+    "week": 5,
+    "at": "2026-10-01T00:07:35.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 14.91,
+    "market_at_snapshot": 6.5,
+    "gap": 8.41,
+    "toward": "South Florida",
     "books": 1,
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
@@ -117,10 +134,27 @@
     "favorite_flip": false,
     "closing_market": null,
     "final_margin": null
+   },
+   {
+    "game_id": "401856706",
+    "game": "McNeese @ LSU",
+    "week": 5,
+    "at": "2026-10-01T00:07:35.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 41.42,
+    "market_at_snapshot": 53.5,
+    "gap": 12.08,
+    "toward": "McNeese",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "outcomes": {
-   "BAD_INFORMATION": 5
+   "BAD_INFORMATION": 7
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -147,10 +181,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 5,
+   "n": 7,
    "settled": 0,
    "label": "small sample",
-   "average_gap": 13.07,
+   "average_gap": 12.26,
    "market_moved_toward_pct": null,
    "positive_clv_pct": null,
    "average_clv": null,
@@ -347,7 +381,7 @@
   }
  },
  "verdict_not_run": {
-  "n": 1,
-  "note": "1 raw 7+ gap game(s) have no gate verdict on file: the snapshot predates the gate wiring (2026-09-27 17:08 UTC) or its slate lacked the gate inputs. They are counted as NOT RUN, never judged in hindsight."
+  "n": 0,
+  "note": null
  }
 }
