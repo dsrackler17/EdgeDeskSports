@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-01T17:07:36.803Z",
- "board_generated_at": "2026-10-01T17:07:34.352Z",
+ "generated_at": "2026-10-01T18:07:36.462Z",
+ "board_generated_at": "2026-10-01T18:07:33.818Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,6 +15,26 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
+  {
+   "game_id": "401866434",
+   "game": "Ohio @ Kent State",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Ohio -6.4",
+   "market": "Ohio -3.5",
+   "books": 1,
+   "gap": 2.93,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
   {
    "game_id": "401858251",
    "game": "Stanford @ Wake Forest",
@@ -166,6 +186,72 @@
    ],
    "consistent": true,
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
+  {
+   "game_id": "401862790",
+   "game": "Texas Southern @ Florida Atlantic",
+   "kickoff": "2026-10-03T22:00:00.000Z",
+   "named": false,
+   "edgedesk": "Florida Atlantic -24.7",
+   "market": "Florida Atlantic -44.5",
+   "books": 1,
+   "gap": 19.82,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T22:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (FAU Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 3 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "FAIL",
+     "detail": "FAIL: an FCS opponent is priced from a pooled FCS rating, not its own"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "FAIL",
+     "detail": "FAIL: Texas Southern: starter unresolved (unknown) — must be resolved or scenario-weighted at this size"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Florida Atlantic: availability sources checked, nothing filed · PASS: Texas Southern: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "INCOMPLETE",
+     "detail": "INCOMPLETE: no independent ensemble number"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 22.1"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; current team states fail; resolved QB fail; submodel support incomplete."
   },
   {
    "game_id": "401856822",
@@ -358,72 +444,6 @@
    "requirements": null,
    "consistent": true,
    "verdict": "Under 7 pts: no integrity gate required; research status STALE MARKET."
-  },
-  {
-   "game_id": "401862790",
-   "game": "Texas Southern @ Florida Atlantic",
-   "kickoff": "2026-10-03T22:00:00.000Z",
-   "named": false,
-   "edgedesk": "Florida Atlantic -24.7",
-   "market": "Florida Atlantic -43.5",
-   "books": 0,
-   "gap": 18.82,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "NO_MARKET",
-   "research_label": "STALE MARKET",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT RUN",
-   "root_cause": null,
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "current team states",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    }
-   ],
-   "consistent": true,
-   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
    "game_id": "401858249",
