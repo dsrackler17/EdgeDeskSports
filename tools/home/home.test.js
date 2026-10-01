@@ -316,6 +316,43 @@ const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
   chk('build_home is deterministic: the same artifacts, the same file', JSON.stringify(a1) === JSON.stringify(a2));
   chk('a rebuild has the committed file\'s shape', a1.schema === S.schema && JSON.stringify(Object.keys(a1)) === JSON.stringify(Object.keys(S)) && JSON.stringify(Object.keys(a1.props)) === JSON.stringify(Object.keys(S.props)));
   chk('a rebuild keeps its own limits', a1.props.top.length <= BH.LIMITS.top && a1.props.top.every((id) => a1.props.items[id]) && Buffer.byteLength(JSON.stringify(a1)) < 64 * 1024);
+  /* THE SIZE BUDGET, on a week with far more games than any one hour has: a
+     real research-grade opportunity, copied onto 120 games a day apart in
+     kickoff. The file must stay under budget, the top list untouched, every
+     id resolvable, and the cards taken off the LATEST games first. */
+  {
+    const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'props', 'nfl', 'summary.json'), 'utf8'));
+    const evs = Array.isArray(real.events) ? real.events : Object.values(real.events || {});
+    const src = evs.map((e) => (e.top_opportunities || []).find((o) => o.research && o.research.grade)).filter(Boolean)[0];
+    const t0 = Date.parse('2026-10-02T12:00:00Z');
+    const many = [];
+    for (let i = 0; i < 120; i++) {
+      const key = 'nfl|2026_99_G' + i;
+      const kick = new Date(t0 + 3600e3 + i * 3600e3).toISOString();
+      const opps = [0, 1, 2].map((j) => Object.assign(JSON.parse(JSON.stringify(src)), { id: 'syn_' + i + '_' + j, prop_id: 'syn_' + i + '_' + j,
+        research: Object.assign({}, src.research, { grade: true, score: 50 + ((i * 7 + j) % 40) }),
+        event: Object.assign({}, src.event, { event_key: key, kickoff: kick }) }));
+      many.push({ event_key: key, game_id: '2026_99_G' + i, kickoff: kick, total_props: 40, priced_props: 30, evaluated_props: 20, research_grade_count: 3, top_opportunities: opps });
+    }
+    const fat = { counts: { events: 120, props: 4800, priced: 3600, evaluated: 2400, research_grade: 360 }, generated_at: '2026-10-02T11:00:00Z', events: many };
+    const readMany = (rel) => (rel === 'football/props/nfl/summary.json' ? fat : null);
+    const unbounded = BH.build({ now: '2026-10-02T12:00:00Z', read: readMany, budget: Infinity });
+    const B = BH.build({ now: '2026-10-02T12:00:00Z', read: readMany });
+    const P = B.props, size = Buffer.byteLength(JSON.stringify(B));
+    const carded = Object.keys(P.by_game).filter((k) => (P.by_game[k].top || []).length);
+    const bare = Object.keys(P.by_game).filter((k) => !(P.by_game[k].top || []).length);
+    const n = (k) => Number(k.split('_G')[1]);
+    chk('size budget: the fixture really is over budget without it', Buffer.byteLength(JSON.stringify(unbounded)) > 64 * 1024, Buffer.byteLength(JSON.stringify(unbounded)));
+    chk('size budget: a 120-game week builds under the budget', size <= BH.BUDGET_BYTES && size < 64 * 1024, size);
+    chk('size budget: the top list is never trimmed', JSON.stringify(P.top) === JSON.stringify(unbounded.props.top) && P.top.length === BH.LIMITS.top);
+    chk('size budget: every id printed resolves', P.top.concat(...carded.map((k) => P.by_game[k].top)).every((id) => P.items[id]));
+    chk('size budget: no item is printed that nothing points at', Object.keys(P.items).every((id) => P.top.indexOf(id) >= 0 || carded.some((k) => P.by_game[k].top.indexOf(id) >= 0)));
+    chk('size budget: the latest games give up their cards first, and keep their counts', bare.length > 0 && carded.length > 0
+      && Math.min(...bare.map(n)) > Math.max(...carded.map(n)) && bare.every((k) => P.by_game[k].research_grade === 3) && Object.keys(P.by_game).length === 120, { bare: bare.length, carded: carded.length });
+    chk('size budget: what was taken is counted', P.counts.trimmed && P.counts.trimmed.games === bare.length && P.counts.trimmed.budget_bytes === BH.BUDGET_BYTES, P.counts.trimmed);
+    chk('size budget: deterministic', JSON.stringify(B) === JSON.stringify(BH.build({ now: '2026-10-02T12:00:00Z', read: readMany })));
+    chk('size budget: a board under budget is left exactly as built', !a1.props.counts.trimmed || Buffer.byteLength(JSON.stringify(BH.build({ now: S.generated_at, budget: Infinity }))) > BH.BUDGET_BYTES);
+  }
   const noRead = BH.build({ now: S.generated_at, read: () => null });
   chk('with no artifacts it writes an empty board, not an invented one', noRead.props.top.length === 0 && Object.keys(noRead.props.items).length === 0 && Object.keys(noRead.game_ev).length === 0);
 

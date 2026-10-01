@@ -50,6 +50,15 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const OUT = path.join(ROOT, 'football', 'home', 'board.json');
 const LIMITS = { top: 12, per_game: 3, why: 2, concerns: 2, horizon_days: 8 };
+/* THE FILE'S SIZE IS A PROPERTY OF THE BUILD, not of how many games have
+   props that hour: the page's file must stay under 64 KB
+   (tools/home/home.test.js, tools/presentation/landing_interaction.test.js).
+   LIMITS cap the cards per game, not the number of games, and a full NFL
+   week plus a college week (79 games on 2026-10-01) printed 75 KB. Past the
+   budget, fit() takes the prop cards off the games furthest from kickoff
+   first — each keeps its counts, the page falls back to the research state's
+   own props for its card, and the cross-league top 12 is never touched. */
+const BUDGET_BYTES = 60 * 1024;
 
 function readJson(p) { try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return null; } }
 function num(v) { return typeof v === 'number' && isFinite(v) ? Math.round(v * 1e4) / 1e4 : null; }
@@ -110,8 +119,9 @@ function slimProp(o, ev) {
 function graded(o) { return !!(o && o.research && o.research.grade); }
 function byScore(a, b) { return ((b.research && b.research.score) || 0) - ((a.research && a.research.score) || 0); }
 
-function propsPart(summaries, now) {
+function propsPart(summaries, now, kick) {
   const counts = {}, top = [], byGame = {}, items = {};
+  kick = kick || {};
   const keep = (o, ev) => { const x = slimProp(o, ev); if (!x || !x.id) return null; items[x.id] = x; return x.id; };
   const horizon = now + LIMITS.horizon_days * 864e5;
   Object.keys(summaries).forEach((lg) => {
@@ -128,6 +138,7 @@ function propsPart(summaries, now) {
       const k = Date.parse(ev.kickoff);
       if (!isFinite(k) || k <= now || k > horizon) return;          /* pregame, inside the week */
       const key = ev.event_key || (lg + '|' + ev.game_id);
+      kick[key] = k;
       const tops = (ev.top_opportunities || []).filter(graded).sort(byScore);
       tops.forEach((o) => top.push({ o, ev }));
       byGame[key] = strip({
@@ -146,6 +157,37 @@ function propsPart(summaries, now) {
   counts.total = strip(total);
   const topIds = top.slice(0, LIMITS.top).map((x) => keep(x.o, x.ev)).filter(Boolean);
   return { counts, items, top: topIds, by_game: byGame };
+}
+
+/* the printed items still referenced by the top list or a game's cards */
+function prune(P) {
+  const used = {};
+  P.top.forEach((id) => { used[id] = true; });
+  Object.keys(P.by_game).forEach((k) => (P.by_game[k].top || []).forEach((id) => { used[id] = true; }));
+  let n = 0;
+  Object.keys(P.items).forEach((id) => { if (!used[id]) { delete P.items[id]; n++; } });
+  return n;
+}
+function bytes(o) { return Buffer.byteLength(JSON.stringify(o)); }
+/** Hold the board under BUDGET_BYTES: the latest-kickoff games give up their
+    prop cards first (counts kept), then — only if that is not enough — their
+    whole entry. Deterministic: kickoff, then key. What was taken is counted
+    in props.counts.trimmed. */
+function fit(out, kick, budget) {
+  budget = budget || BUDGET_BYTES;
+  if (bytes(out) <= budget) return out;
+  const P = out.props, latest = (a, b) => (kick[b] || 0) - (kick[a] || 0) || (a < b ? 1 : a > b ? -1 : 0);
+  const t = { games: 0, entries: 0, items: 0 };
+  const carded = Object.keys(P.by_game).filter((k) => (P.by_game[k].top || []).length).sort(latest);
+  for (let i = 0; i < carded.length && bytes(out) > budget; i++) {
+    delete P.by_game[carded[i]].top;
+    t.games++;
+    t.items += prune(P);
+  }
+  const all = Object.keys(P.by_game).sort(latest);
+  for (let i = 0; i < all.length && bytes(out) > budget; i++) { delete P.by_game[all[i]]; t.entries++; }
+  P.counts.trimmed = strip({ games: t.games, entries: t.entries || null, items: t.items, budget_bytes: budget });
+  return out;
 }
 
 /* the college game EV: the exact quote it is for, calibrated and raw apart */
@@ -204,7 +246,8 @@ function build(opts) {
   const summaries = { nfl: read('football/props/nfl/summary.json'), cfb: read('football/props/cfb/summary.json') };
   const board = read('football/cfb_terminal/board.json');
   const ratings = ratingsPart(read('football/rankings/current.json'), read('football/players/current.json'));
-  return {
+  const kick = {};
+  return fit({
     schema: 'edgedesk_home_static/1',
     generated_at: new Date(now).toISOString(),
     note: 'Copied from football/props/<league>/summary.json and football/cfb_terminal/board.json; nothing here is computed. The page re-judges every price age at view time.',
@@ -212,10 +255,10 @@ function build(opts) {
       props: { nfl: summaries.nfl ? summaries.nfl.generated_at : null, cfb: summaries.cfb ? summaries.cfb.generated_at : null },
       cfb_terminal: board ? board.generated_at : null
     }),
-    props: propsPart(summaries, now),
+    props: propsPart(summaries, now, kick),
     game_ev: gameEvPart(board, now),
     ratings
-  };
+  }, kick, opts.budget);
 }
 
 function main() {
@@ -232,11 +275,12 @@ function main() {
     if (!same) fs.writeFileSync(file, body);
     console.log('home board: ' + (same ? 'unchanged' : 'written') + ' · ' + Buffer.byteLength(body) + ' bytes · '
       + out.props.top.length + ' research-grade props (' + Object.keys(out.props.items).length + ' printed) · ' + Object.keys(out.props.by_game).length + ' games with props · '
-      + Object.keys(out.game_ev).length + ' college game EV quotes');
+      + Object.keys(out.game_ev).length + ' college game EV quotes'
+      + (out.props.counts.trimmed ? ' · held under ' + out.props.counts.trimmed.budget_bytes + ' bytes: cards taken off the ' + out.props.counts.trimmed.games + ' latest games' : ''));
   } else {
     process.stdout.write(JSON.stringify(out, null, 1) + '\n');
   }
 }
 
 if (require.main === module) main();
-module.exports = { build, slimProp, propsPart, gameEvPart, ratingsPart, LIMITS };
+module.exports = { build, slimProp, propsPart, gameEvPart, ratingsPart, fit, LIMITS, BUDGET_BYTES };
