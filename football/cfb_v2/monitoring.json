@@ -16,27 +16,56 @@
  "bet_enabled": false,
  "by_week": [
   {
+   "ats_at_close": 0.5,
+   "ats_at_freeze_line": 0.5,
+   "bias": -13.869,
+   "brier": 0.211,
+   "clv_mean": 0.0,
    "disagreement_c_d_mean": 1.738,
-   "final": 0,
+   "final": 2,
    "frozen_games": 56,
+   "largest_misses": [
+    {
+     "abs_error": 22.7,
+     "final": 21.0,
+     "game": "Western Kentucky @ New Mexico State",
+     "v2": -1.7
+    },
+    {
+     "abs_error": 5.0,
+     "final": -1.0,
+     "game": "North Texas @ Tulsa",
+     "v2": -6.0
+    }
+   ],
+   "mae": 13.869,
+   "mae_candidate_001_same_games": 13.721,
+   "mae_close": 10.375,
+   "mae_line_at_freeze": 10.375,
+   "mae_v1_same_games": 15.175,
+   "mae_v2_same_close_games": 13.869,
+   "mae_v2_same_line_at_freeze_games": 13.869,
+   "mae_v2_vs_candidate_001_games": 13.869,
+   "mae_v2_vs_v1_games": 13.869,
+   "rmse": 16.447,
    "week": 5
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.086,
+  "ens_pred": 0.079,
   "ens_pred_noise_q99": 0.186,
-  "ens_sd": 0.119,
+  "ens_sd": 0.125,
   "ens_sd_noise_q99": 0.186,
-  "pred_total": 0.063,
+  "pred_total": 0.065,
   "pred_total_noise_q99": 0.186,
   "reference_weeks": "week5",
-  "sigma": 0.166,
+  "sigma": 0.135,
   "sigma_noise_q99": 0.186
  },
- "generated_at": "2026-10-02T10:50:09Z",
+ "generated_at": "2026-10-02T16:25:42Z",
  "learning": {
-  "bias": null,
+  "bias": -13.869,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -47,15 +76,27 @@
     "sources": {
      "REPLAY": 215
     }
+   },
+   "edgedesk_cfb_v2.1.0": {
+    "bias": -13.869,
+    "fcs_not_priced_games": 0,
+    "games_scored": 2,
+    "mae": 13.869,
+    "major_miss_share": 0.0,
+    "sources": {
+     "FROZEN": 2
+    }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 0,
-  "mae": null,
-  "major_miss_share": null,
+  "games_scored": 2,
+  "mae": 13.869,
+  "major_miss_share": 0.0,
   "miss_classes": {},
   "model_version": "edgedesk_cfb_v2.1.0",
-  "sources": {}
+  "sources": {
+   "FROZEN": 2
+  }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
  "ok": true,
@@ -1736,8 +1777,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 0,
+  "final": 2,
   "frozen_games": 56,
-  "mae": null
+  "mae": 13.869
  }
 }
