@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T23:30:00.000Z",
   "game_when_label": "2026-10-03 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-01T20:19:13.710Z",
-  "generated_at": "2026-10-01T20:19:13.710Z",
+  "updated_at": "2026-10-02T00:41:41.842Z",
+  "generated_at": "2026-10-02T00:41:41.842Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Clemson and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Miami and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Atlantic Coast Conference requires an availability report for this game: filed two nights before a conference game, again the night before, and two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1423,7 +1447,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 46h old",
+          "text": "odds is 51h old",
           "widening": null
         },
         {
@@ -1562,7 +1586,7 @@
       "total_market": "48.0",
       "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "46 hours old",
+      "capture_age": "51 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1612,11 +1636,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 84,
+        "pct": 80,
         "tier": "STRONG",
-        "text": "84 · STRONG",
+        "text": "80 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.35 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 84,
+        "score": 80,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1630,7 +1654,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.3,
+            "score": 8.8,
             "max": 20
           },
           {
@@ -1642,7 +1666,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1662,19 +1686,19 @@
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Miami)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Miami",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Clemson)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Clemson",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1922,6 +1946,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-01T20:19:13.710Z"
+    "at": "2026-10-02T00:41:41.842Z"
   }
 }
