@@ -1,30 +1,30 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-01T22:49:26.154Z",
+ "generated_at": "2026-10-02T05:53:09.098Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-01T22:49:26.154Z",
-  "reliability_generated_at": "2026-10-01T22:49:26.154Z",
-  "enrichment_generated_at": "2026-10-01T22:49:01.893Z",
+  "at": "2026-10-02T05:53:09.098Z",
+  "reliability_generated_at": "2026-10-02T05:53:09.098Z",
+  "enrichment_generated_at": "2026-10-02T05:52:59.686Z",
   "counts": {
    "games": 117,
    "mean": 85.6,
    "median": 87,
    "by_band": {
-    "VERY_STRONG": 19,
+    "VERY_STRONG": 20,
     "LOW": 3,
-    "STRONG": 78,
+    "STRONG": 77,
     "ADEQUATE": 14,
     "CAUTION": 3
    },
-   "missing_qb_status": 183,
+   "missing_qb_status": 179,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 23,
-   "unrated_meaningful_absences": 465,
+   "games_lacking_injury_information": 24,
+   "unrated_meaningful_absences": 499,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 67,
+   "stale_evidence_records": 11,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -118,7 +118,7 @@
     "fam": {
      "stability": 3.8,
      "qb_identity": 3,
-     "attribution": 1.6,
+     "attribution": 1.3,
      "rating_sample": 1.4,
      "transfer_turnover": 0.3
     },
@@ -242,13 +242,12 @@
    },
    "401856711": {
     "game": "Arkansas @ Texas A&M",
-    "score": 94,
+    "score": 93,
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 3.3,
+     "attribution": 1.2,
      "rating_sample": 1.4,
-     "attribution": 0.5,
-     "availability": 0.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -477,16 +476,16 @@
    },
    "401856818": {
     "game": "BYU @ TCU",
-    "score": 92,
+    "score": 93,
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 2.4,
-     "attribution": 2.2,
+     "attribution": 1.4,
      "rating_sample": 1.7,
      "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3,
-     "player_identity": 0.1
+     "player_identity": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -551,7 +550,7 @@
      "qb_conflict": 0.8,
      "rating_sample": 1.4,
      "transfer_turnover": 0.3,
-     "player_identity": 0.1
+     "player_identity": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -568,11 +567,11 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 1.8,
-     "attribution": 2,
+     "attribution": 1.7,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
-     "transfer_turnover": 0.6,
-     "player_identity": 0.2
+     "player_identity": 0.3,
+     "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
@@ -692,11 +691,11 @@
    },
    "401858245": {
     "game": "Pittsburgh @ Virginia Tech",
-    "score": 90,
-    "grade": "VERY_STRONG",
+    "score": 89,
+    "grade": "STRONG",
     "fam": {
      "favorite_flips": 4.5,
-     "attribution": 2.5,
+     "attribution": 3,
      "stability": 1,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
@@ -761,7 +760,7 @@
      "stability": 3.3,
      "favorite_flips": 2.6,
      "qb_identity": 2.6,
-     "attribution": 2.7,
+     "attribution": 2.9,
      "rating_sample": 1.4,
      "transfer_turnover": 0.3
     },
@@ -776,12 +775,11 @@
    },
    "401858249": {
     "game": "Miami @ Clemson",
-    "score": 88,
-    "grade": "STRONG",
+    "score": 91,
+    "grade": "VERY_STRONG",
     "fam": {
      "stability": 3,
-     "availability": 4.6,
-     "qb_status": 2,
+     "attribution": 3,
      "qb_identity": 1.2,
      "rating_sample": 1.4,
      "transfer_turnover": 0.6
@@ -791,8 +789,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858250": {
@@ -852,7 +850,7 @@
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "EXPECTED"
+     "away": "UNCERTAIN"
     },
     "avail": {
      "home": "PROVIDER_FAILED",
@@ -980,7 +978,7 @@
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "EXPECTED"
+     "away": "UNCERTAIN"
     },
     "avail": {
      "home": "NOT_DUE_YET",
@@ -1139,10 +1137,11 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 4,
-     "attribution": 2.8,
+     "attribution": 3,
      "qb_identity": 1.3,
      "rating_sample": 1.4,
-     "transfer_turnover": 0.6
+     "transfer_turnover": 0.6,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
@@ -1387,17 +1386,17 @@
    },
    "401860899": {
     "game": "Oregon State @ Colorado State",
-    "score": 87,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "qb_status": 4,
      "availability": 1.8,
      "qb_identity": 2.4,
+     "stability": 1.3,
      "attribution": 1,
-     "stability": 0.8,
      "qb_conflict": 1.6,
      "rating_sample": 1.4,
-     "player_identity": 0.3
+     "player_identity": 0.4
     },
     "qb": {
      "home": "EXPECTED",
@@ -1479,7 +1478,7 @@
      "favorite_flips": 6,
      "stability": 2.4,
      "qb_status": 4,
-     "attribution": 1.1,
+     "attribution": 1.2,
      "availability": 0.9,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
@@ -1542,24 +1541,24 @@
    },
    "401862786": {
     "game": "North Texas @ Tulsa",
-    "score": 86,
-    "grade": "STRONG",
+    "score": 90,
+    "grade": "VERY_STRONG",
     "fam": {
      "stability": 2.4,
-     "availability": 4.6,
      "qb_identity": 2.5,
-     "qb_status": 2,
-     "qb_conflict": 0.9,
+     "attribution": 3,
+     "qb_conflict": 0.8,
      "rating_sample": 1.4,
-     "transfer_turnover": 0.3
+     "transfer_turnover": 0.3,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401862787": {
@@ -1838,15 +1837,15 @@
    },
    "401864513": {
     "game": "San José State @ Hawai'i",
-    "score": 88,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "stability": 1.5,
      "qb_conflict": 1,
-     "qb_status": 2,
+     "starters": 0.8,
      "rating_sample": 1.4,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1855,8 +1854,8 @@
      "away": "UNCERTAIN"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401864514": {
@@ -2651,73 +2650,47 @@
   }
  },
  "previous": {
-  "at": "2026-10-01T16:43:35.726Z",
+  "at": "2026-10-01T22:49:26.154Z",
   "counts": {
    "games": 117,
-   "mean": 85.4,
+   "mean": 85.6,
    "median": 87,
    "by_band": {
-    "VERY_STRONG": 16,
+    "VERY_STRONG": 19,
     "LOW": 3,
-    "STRONG": 80,
-    "ADEQUATE": 15,
+    "STRONG": 78,
+    "ADEQUATE": 14,
     "CAUTION": 3
    },
-   "missing_qb_status": 190,
+   "missing_qb_status": 183,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 23,
-   "unrated_meaningful_absences": 436,
+   "unrated_meaningful_absences": 465,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 62,
+   "stale_evidence_records": 67,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "+0.2 mean reliability (85.4 → 85.6)",
-  "-7 QB statuses missing (190 → 183)",
-  "3 games moved STRONG → VERY STRONG",
-  "1 game moved ADEQUATE → STRONG"
+  "-4 QB statuses missing (183 → 179)",
+  "-56 stale evidence records (67 → 11)",
+  "2 games moved STRONG → VERY STRONG"
  ],
  "what_degraded": [
-  "+29 unrated meaningful absences (436 → 465)",
-  "+5 stale evidence records (62 → 67)"
+  "+1 games lacking injury information (23 → 24)",
+  "+34 unrated meaningful absences (465 → 499)",
+  "1 game moved VERY STRONG → STRONG"
  ],
  "why": [
-  "Boston College @ SMU: STRONG → VERY STRONG (85 → 92); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Louisville @ NC State: ADEQUATE → STRONG (79 → 87); largest change: availability +4.6 pts; away QB EXPECTED → UNCERTAIN, home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Stanford @ Wake Forest: STRONG → VERY STRONG (85 → 93); largest change: availability +6 pts; home availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL, away availability PROVIDER_FAILED → COMPREHENSIVE_OFFICIAL",
-  "Virginia @ Florida State: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
+  "Pittsburgh @ Virginia Tech: VERY STRONG → STRONG (90 → 89); largest change: attribution -0.5 pts",
+  "Miami @ Clemson: STRONG → VERY STRONG (88 → 91); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
+  "North Texas @ Tulsa: STRONG → VERY STRONG (86 → 90); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
  ],
  "history": [
-  {
-   "at": "2026-09-26T11:36:03.915Z",
-   "counts": {
-    "games": 124,
-    "mean": 81.6,
-    "median": 85,
-    "by_band": {
-     "VERY_STRONG": 14,
-     "ADEQUATE": 15,
-     "STRONG": 76,
-     "LOW": 15,
-     "CAUTION": 4
-    },
-    "missing_qb_status": 203,
-    "qb_conflicts_open": 9,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 316,
-    "fcs_games_thin_data": 15,
-    "games_under_two_market_sources": 124,
-    "stale_evidence_records": 18,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-26T13:54:50.484Z",
    "counts": {
@@ -4146,6 +4119,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 117,
     "stale_evidence_records": 67,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-02T05:53:09.098Z",
+   "counts": {
+    "games": 117,
+    "mean": 85.6,
+    "median": 87,
+    "by_band": {
+     "VERY_STRONG": 20,
+     "LOW": 3,
+     "STRONG": 77,
+     "ADEQUATE": 14,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 179,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 24,
+    "unrated_meaningful_absences": 499,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
+    "stale_evidence_records": 11,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
