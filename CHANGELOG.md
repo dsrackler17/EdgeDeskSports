@@ -26,6 +26,9 @@ Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Perso
   - After a settlement run the test switches the served ledger to the fixture and waited for any profit / loss / even hero.
   - The real ledger now reads Loss (−7.16u) itself, so the wait returned before the re-read and compared the real figures.
   - It now waits for the fixture's own net. The page's re-read was never wrong.
+- **The home board's size-budget check found no card to copy** (`tools/home/home.test.js`):
+  - It builds a 120-game week from a real research-grade opportunity on the committed NFL props board. The 14:56Z board held 16 events and no opportunities between slates, so it crashed on `JSON.parse(undefined)`.
+  - When the board has none, it now copies the probe's committed props block (`tools/home/fixtures/props_block.json`). It also checks that a card was found.
 
 ## 2026-10-02 — the EV-by-spread chart lays out cleanly on wide alternate ladders
 
