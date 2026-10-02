@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-02T05:53:09.098Z",
+ "generated_at": "2026-10-02T12:51:13.054Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,26 +119,26 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 117,
+  "total": 115,
   "by_group": {
-   "other": 62,
    "p4": 59,
+   "other": 60,
    "independent": 4
   },
   "by_matchup": {
-   "conference": 104,
+   "conference": 102,
    "non_conference": 10,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "cusa": 7,
-   "american": 15,
    "acc": 16,
+   "cusa": 6,
    "bigten": 16,
    "sec": 14,
    "big12": 13,
    "independents": 4,
    "mwc": 10,
+   "american": 14,
    "mac": 13,
    "sunbelt": 12,
    "pac12": 7
@@ -206,11 +206,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 117
+  "PREDICTED": 115
  },
  "weather": {
-  "requested": 112,
-  "answered": 112,
+  "requested": 110,
+  "answered": 110,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -218,10 +218,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "112 of 112 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "110 of 110 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 117
+  "NO_MARKET": 115
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -290,12 +290,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 58,
-    "total": 117,
+    "non_power_games": 56,
+    "total": 115,
     "example": [
-     "Western Kentucky @ New Mexico State",
-     "North Texas @ Tulsa",
-     "Liberty @ Delaware"
+     "Liberty @ Delaware",
+     "Navy @ Air Force",
+     "Western Michigan @ Buffalo"
     ]
    }
   },
@@ -310,7 +310,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 104,
+    "conference_games": 102,
     "wrong": 0
    }
   },
@@ -342,8 +342,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 117,
-    "audit_total": 117
+    "slate": 115,
+    "audit_total": 115
    }
   },
   {
