@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-02T18:07:33.596Z",
- "board_generated_at": "2026-10-02T18:07:31.824Z",
+ "generated_at": "2026-10-02T19:07:39.153Z",
+ "board_generated_at": "2026-10-02T19:07:36.647Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -24,6 +24,26 @@
    "market": "Iowa State -3.0",
    "books": 1,
    "gap": 5.87,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856710",
+   "game": "Auburn @ Tennessee",
+   "kickoff": "2026-10-03T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Tennessee -10.4",
+   "market": "Tennessee -7.0",
+   "books": 1,
+   "gap": 3.36,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -61,9 +81,9 @@
    "kickoff": "2026-10-03T19:45:00.000Z",
    "named": true,
    "edgedesk": "James Madison -24.6",
-   "market": "James Madison -18.9",
+   "market": "James Madison -18.4",
    "books": 2,
-   "gap": 5.68,
+   "gap": 6.18,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -187,14 +207,14 @@
    "kickoff": "2026-10-03T23:30:00.000Z",
    "named": true,
    "edgedesk": "Miami -14.8",
-   "market": "Miami -16.5",
-   "books": 1,
-   "gap": 1.7,
+   "market": "Miami -16.0",
+   "books": 2,
+   "gap": 1.2,
    "gap_class": "ALIGNED",
    "favorite_flip": false,
    "research_status": "MARKET_ALIGNED",
    "research_label": "MARKET ALIGNED",
-   "decision_status": "NO_DECISION",
+   "decision_status": "PASS",
    "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
    "requirements": null,
@@ -208,64 +228,64 @@
    "named": true,
    "edgedesk": "UConn -7.8",
    "market": "Syracuse -7.0",
-   "books": 0,
+   "books": 1,
    "gap": 14.75,
    "gap_class": "MAJOR",
    "favorite_flip": true,
    "research_status": "DATA_FAULT",
    "research_label": "DATA FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT RUN",
-   "root_cause": null,
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
    "requirements": [
     {
      "requirement": "correct game",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-03T16:00:00.000Z"
     },
     {
      "requirement": "correct home/away",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Pratt & Whitney Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
     },
     {
      "requirement": "current team states",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: fewest current-season games behind a rating: 3 (at least 4 required at this size) — the number is still mostly the preseason prior"
     },
     {
      "requirement": "resolved QB",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: UConn: Kalieb Osborne (previous game) · PASS: Syracuse: Steve Angeli (previous game)"
     },
     {
      "requirement": "no abnormal availability",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: UConn: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
     },
     {
      "requirement": "submodel support",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "FAIL",
+     "detail": "FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 13.1"
     }
    ],
    "consistent": true,
-   "verdict": "DATA FAULT is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+   "verdict": "DATA FAULT is correct: fresh multi-book consensus fail; current team states fail; no abnormal availability fail; submodel support fail."
   },
   {
    "game_id": "401858247",

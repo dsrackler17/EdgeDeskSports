@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-02T18:07:31.824Z",
+ "as_of": "2026-10-02T19:07:36.647Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "cc882e7ef6573b39",
+ "inputs_key": "2b69087a7a5a624d",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 584,
+   "rows": 598,
    "mode": "LIVE",
-   "sha1": "b8b301ef8026"
+   "sha1": "dc0a6fa624e2"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -27,7 +27,7 @@
   {
    "file": "football/validation/pricing_nfl.json",
    "mode": "WALK_FORWARD",
-   "sha1": "ac7b0c7da501"
+   "sha1": "87c960666ef3"
   },
   {
    "file": "football/validation/pricing_cfb.json",
@@ -75,12 +75,12 @@
    "key": "WALK_FORWARD",
    "label": "Walk-forward",
    "available": true,
-   "n": 10487,
+   "n": 10503,
    "sample": {
     "key": "STRONGER_EVIDENCE",
     "label": "Meaningful sample",
-    "n": 10487,
-    "text": "n=10487 · Meaningful sample",
+    "n": 10503,
+    "text": "n=10503 · Meaningful sample",
     "recalibration": "PROPOSAL_ONLY",
     "note": "A product maturity label, not a scientific verdict."
    },
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "584 decision snapshots issued before kickoff; 3 settled"
+   "note": "598 decision snapshots issued before kickoff; 3 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 584,
+  "issued_snapshots": 598,
   "issued_by_decision": {
-   "NO_DECISION": 373,
-   "PASS": 200,
+   "NO_DECISION": 375,
+   "PASS": 212,
    "WATCH": 11
   },
   "graded_rows": 3,
@@ -12672,7 +12672,7 @@
    "sport": "NFL",
    "source": "football/validation/pricing_nfl.json",
    "mode": "WALK_FORWARD",
-   "generated_at": "2026-10-02T15:56:15.064Z",
+   "generated_at": "2026-09-16T16:30:19.183Z",
    "frame": {
     "engine": "football/engine.js edgedesk_football_v1.0.0",
     "params_trained_through": 2025,
@@ -12692,6 +12692,7 @@
      2013,
      2014,
      2015,
+     2016,
      2017,
      2018,
      2019,
@@ -12702,10 +12703,10 @@
      2024,
      2025
     ],
-    "games_scored": 2642,
-    "games_absorbed": 4653,
-    "refused": 119,
-    "without_team_week_rows": 778,
+    "games_scored": 2658,
+    "games_absorbed": 4889,
+    "refused": 103,
+    "without_team_week_rows": 542,
     "caveats": [
      "league-mean priors come from the shipped parameter set (trained through 2025); the club ratings start at zero",
      "the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here",
@@ -12715,86 +12716,86 @@
    "markets": {
     "spread": {
      "tier": "LEAN",
-     "tier_basis": "a disagreement of 4+ points cleared break-even (0.5316 over n=935, p 0.0289) but not a point above it: the model side is not a losing side at -110, and it is not yet a profit",
-     "n": 2642,
+     "tier_basis": "a disagreement of 1.5+ points cleared break-even (0.5275 over n=1892, p 0.0089) but not a point above it: the model side is not a losing side at -110, and it is not yet a profit",
+     "n": 2658,
      "pooled": {
-      "model_mae": 10.373,
-      "close_mae": 9.775
+      "model_mae": 10.382,
+      "close_mae": 9.803
      },
      "blend_held_out": {
       "n": 1893,
-      "brier": 0.2501,
+      "brier": 0.2502,
       "brier_base_rate": 0.25,
       "bins": [
        {
         "bucket": "0.4-0.48",
-        "n": 386,
-        "expected": 0.4708,
-        "observed": 0.4793,
-        "error_pp": 0.85,
+        "n": 391,
+        "expected": 0.4704,
+        "observed": 0.4936,
+        "error_pp": 2.32,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.48-0.52",
-        "n": 1344,
-        "expected": 0.498,
-        "observed": 0.4926,
-        "error_pp": -0.54,
+        "n": 1366,
+        "expected": 0.4976,
+        "observed": 0.4854,
+        "error_pp": -1.22,
         "sample": "STRONGER_EVIDENCE"
        },
        {
         "bucket": "0.52-0.6",
-        "n": 163,
-        "expected": 0.5314,
-        "observed": 0.5215,
-        "error_pp": -0.99,
+        "n": 136,
+        "expected": 0.5298,
+        "observed": 0.5588,
+        "error_pp": 2.9,
         "sample": "EARLY_SIGNAL"
        }
       ]
      },
      "raw_model_held_out": {
       "n": 1893,
-      "brier": 0.2626,
+      "brier": 0.2624,
       "brier_base_rate": 0.25,
       "bins": [
        {
         "bucket": "0-0.4",
-        "n": 362,
-        "expected": 0.3359,
-        "observed": 0.4696,
-        "error_pp": 13.37,
+        "n": 358,
+        "expected": 0.3363,
+        "observed": 0.4637,
+        "error_pp": 12.74,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.4-0.48",
-        "n": 385,
+        "n": 389,
         "expected": 0.4427,
-        "observed": 0.4753,
-        "error_pp": 3.26,
+        "observed": 0.4807,
+        "error_pp": 3.8,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.48-0.52",
-        "n": 228,
-        "expected": 0.5001,
-        "observed": 0.4693,
-        "error_pp": -3.08,
+        "n": 230,
+        "expected": 0.5003,
+        "observed": 0.4696,
+        "error_pp": -3.07,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.52-0.6",
-        "n": 411,
-        "expected": 0.5588,
-        "observed": 0.4988,
-        "error_pp": -6,
+        "n": 409,
+        "expected": 0.5586,
+        "observed": 0.4963,
+        "error_pp": -6.23,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.6-1",
         "n": 507,
-        "expected": 0.6838,
-        "observed": 0.5266,
-        "error_pp": -15.72,
+        "expected": 0.6828,
+        "observed": 0.5286,
+        "error_pp": -15.42,
         "sample": "STRONGER_EVIDENCE"
        }
       ]
@@ -12802,8 +12803,8 @@
      "sample": {
       "key": "STRONGER_EVIDENCE",
       "label": "Meaningful sample",
-      "n": 2642,
-      "text": "n=2642 · Meaningful sample",
+      "n": 2658,
+      "text": "n=2658 · Meaningful sample",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -12811,38 +12812,38 @@
     "total": {
      "tier": "RESEARCH",
      "tier_basis": "no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate",
-     "n": 2642,
+     "n": 2658,
      "pooled": {
-      "model_mae": 10.653,
-      "close_mae": 10.392
+      "model_mae": 10.659,
+      "close_mae": 10.419
      },
      "blend_held_out": {
       "n": 1918,
-      "brier": 0.2503,
+      "brier": 0.2505,
       "brier_base_rate": 0.25,
       "bins": [
        {
         "bucket": "0.4-0.48",
-        "n": 3,
-        "expected": 0.4758,
-        "observed": 1,
-        "error_pp": 52.42,
+        "n": 32,
+        "expected": 0.4739,
+        "observed": 0.5625,
+        "error_pp": 8.86,
         "sample": "DESCRIPTIVE_ONLY"
        },
        {
         "bucket": "0.48-0.52",
-        "n": 1845,
-        "expected": 0.5041,
-        "observed": 0.4878,
+        "n": 1771,
+        "expected": 0.5053,
+        "observed": 0.489,
         "error_pp": -1.63,
         "sample": "STRONGER_EVIDENCE"
        },
        {
         "bucket": "0.52-0.6",
-        "n": 70,
-        "expected": 0.5236,
-        "observed": 0.4857,
-        "error_pp": -3.79,
+        "n": 115,
+        "expected": 0.5273,
+        "observed": 0.4609,
+        "error_pp": -6.64,
         "sample": "EARLY_SIGNAL"
        }
       ]
@@ -12854,42 +12855,42 @@
       "bins": [
        {
         "bucket": "0-0.4",
-        "n": 323,
-        "expected": 0.352,
-        "observed": 0.4706,
-        "error_pp": 11.86,
+        "n": 320,
+        "expected": 0.3524,
+        "observed": 0.4688,
+        "error_pp": 11.64,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.4-0.48",
-        "n": 530,
-        "expected": 0.4459,
-        "observed": 0.4736,
-        "error_pp": 2.77,
+        "n": 537,
+        "expected": 0.4462,
+        "observed": 0.473,
+        "error_pp": 2.68,
         "sample": "STRONGER_EVIDENCE"
        },
        {
         "bucket": "0.48-0.52",
-        "n": 366,
+        "n": 359,
         "expected": 0.5007,
-        "observed": 0.4891,
-        "error_pp": -1.16,
+        "observed": 0.4903,
+        "error_pp": -1.04,
         "sample": "MODERATE_EVIDENCE"
        },
        {
         "bucket": "0.52-0.6",
-        "n": 497,
-        "expected": 0.5557,
-        "observed": 0.503,
-        "error_pp": -5.27,
-        "sample": "MODERATE_EVIDENCE"
+        "n": 501,
+        "expected": 0.5553,
+        "observed": 0.505,
+        "error_pp": -5.03,
+        "sample": "STRONGER_EVIDENCE"
        },
        {
         "bucket": "0.6-1",
-        "n": 202,
-        "expected": 0.6446,
-        "observed": 0.5198,
-        "error_pp": -12.48,
+        "n": 201,
+        "expected": 0.6443,
+        "observed": 0.5174,
+        "error_pp": -12.69,
         "sample": "MODERATE_EVIDENCE"
        }
       ]
@@ -12897,8 +12898,8 @@
      "sample": {
       "key": "STRONGER_EVIDENCE",
       "label": "Meaningful sample",
-      "n": 2642,
-      "text": "n=2642 · Meaningful sample",
+      "n": 2658,
+      "text": "n=2658 · Meaningful sample",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -12906,15 +12907,15 @@
     "moneyline": {
      "tier": "RESEARCH",
      "tier_basis": "the model does not improve on the de-vigged market win probability; the market is the fair price",
-     "n": 2631,
+     "n": 2647,
      "pooled": null,
      "blend_held_out": null,
      "raw_model_held_out": null,
      "sample": {
       "key": "STRONGER_EVIDENCE",
       "label": "Meaningful sample",
-      "n": 2631,
-      "text": "n=2631 · Meaningful sample",
+      "n": 2647,
+      "text": "n=2647 · Meaningful sample",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
@@ -14062,42 +14063,42 @@
    "code": "NO_SKILL_OVER_BASE_RATE",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL spread blend held out Brier 0.2501 does not beat the base rate 0.25 (n=1893, walk-forward).",
+   "text": "WARNING: NFL spread blend held out Brier 0.2502 does not beat the base rate 0.25 (n=1893, walk-forward).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "NO_SKILL_OVER_BASE_RATE",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL spread raw model held out Brier 0.2626 does not beat the base rate 0.25 (n=1893, walk-forward).",
+   "text": "WARNING: NFL spread raw model held out Brier 0.2624 does not beat the base rate 0.25 (n=1893, walk-forward).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL spread raw model held out bucket 0-0.4 predicted 33.6%, observed 47.0% (n=362).",
+   "text": "WARNING: NFL spread raw model held out bucket 0-0.4 predicted 33.6%, observed 46.4% (n=358).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL spread raw model held out bucket 0.52-0.6 predicted 55.9%, observed 49.9% (n=411).",
+   "text": "WARNING: NFL spread raw model held out bucket 0.52-0.6 predicted 55.9%, observed 49.6% (n=409).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL spread raw model held out bucket 0.6-1 predicted 68.4%, observed 52.7% (n=507).",
+   "text": "WARNING: NFL spread raw model held out bucket 0.6-1 predicted 68.3%, observed 52.9% (n=507).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "NO_SKILL_OVER_BASE_RATE",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL total blend held out Brier 0.2503 does not beat the base rate 0.25 (n=1918, walk-forward).",
+   "text": "WARNING: NFL total blend held out Brier 0.2505 does not beat the base rate 0.25 (n=1918, walk-forward).",
    "note": "This is a research alert, not an automatic change."
   },
   {
@@ -14111,21 +14112,21 @@
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL total raw model held out bucket 0-0.4 predicted 35.2%, observed 47.1% (n=323).",
+   "text": "WARNING: NFL total raw model held out bucket 0-0.4 predicted 35.2%, observed 46.9% (n=320).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL total raw model held out bucket 0.52-0.6 predicted 55.6%, observed 50.3% (n=497).",
+   "text": "WARNING: NFL total raw model held out bucket 0.52-0.6 predicted 55.5%, observed 50.5% (n=501).",
    "note": "This is a research alert, not an automatic change."
   },
   {
    "code": "WALK_FORWARD_CALIBRATION_MISS",
    "severity": "RESEARCH_ALERT",
    "source": "football/validation/pricing_nfl.json",
-   "text": "WARNING: NFL total raw model held out bucket 0.6-1 predicted 64.5%, observed 52.0% (n=202).",
+   "text": "WARNING: NFL total raw model held out bucket 0.6-1 predicted 64.4%, observed 51.7% (n=201).",
    "note": "This is a research alert, not an automatic change."
   },
   {
