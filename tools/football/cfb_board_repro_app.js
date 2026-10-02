@@ -105,7 +105,7 @@ function run() {
     const G = Q.evaluateGame(standIn(s.fair), qs, { game: { game_id: s.key, home: s.home, away: s.away, kickoff: s.kick }, now: now });
     const be = G.best_ev_quote;
     const stale = ['home', 'away'].map((x) => (G.sides[x] ? G.sides[x].quotes : [])).reduce((a, b) => a.concat(b), [])
-      .filter((q) => q.ev_unavailable_reason && /captured \d+ min ago/.test(q.ev_unavailable_reason || q.reason || ''));
+      .filter((q) => q.ev_unavailable_reason && /captured \d+[mhd] ago/.test(q.ev_unavailable_reason || q.reason || ''));
     const staleText = stale.length ? stale[0].team + ' ' + (stale[0].line > 0 ? '+' : '') + stale[0].line + ' — ' + stale[0].ev_unavailable_reason : null;
     const n = { home: s.ev.rows.filter((r) => r.selection === s.ev.home).length, away: s.ev.rows.filter((r) => r.selection === s.ev.away).length };
     return { scenario: s.key, game: s.game,

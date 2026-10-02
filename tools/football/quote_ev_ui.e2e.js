@@ -14,7 +14,9 @@
    number, with its book and capture time). The alternate-spread feed is a
    TEST FIXTURE built here and labelled so (a provider-shaped response run
    through football/cfb_terminal/alternates.js): EdgeDesk has no captured
-   alternates yet, and the page must still render the ladder when it does.
+   alternates yet, and the page must still render the ladder when it does —
+   a short one for the first priced game, and for the second a wide one with
+   a hole in it, on which the EV-by-spread chart must lay out cleanly.
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
    Run:  node tools/football/quote_ev_ui.e2e.js [--shots <dir>]
@@ -69,6 +71,23 @@ const SIGNALS = signalsFor();
    browser feed exactly as a live capture would. */
 const ALT = require(path.join(ROOT, 'football', 'cfb_terminal', 'alternates.js'));
 const ALT_GAME = SIGNALS.length ? SIGNALS[0] : null;
+/* TEST FIXTURE: a second game with the ladder that broke the EV-by-spread
+   chart (a Northwestern-shaped one): whole points far out at four- and
+   five-figure prices, a ten-point hole no book deals, then every half point
+   either side of the main line. Prices follow a normal curve with a vig. */
+const WIDE_GAME = ALT_GAME ? SIGNALS.find((r) => r.event_id !== ALT_GAME.event_id) || null : null;
+function wideOutcomes(G, home) {
+  const Phi = (z) => 0.5 * (1 + Math.tanh(0.7978845608 * (z + 0.044715 * z * z * z)));
+  const am = (p) => { p = Math.min(0.99, Math.max(0.09, p)); let a = Math.round((p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p) / 5) * 5;
+    if (Math.abs(a) < 100) a = a < 0 ? -105 : 100; return Math.max(-10000, Math.min(1000, a)); };
+  const offs = [];
+  for (let d = -6; d <= 13; d += 0.5) if (d) offs.push(d);
+  for (let d = 23; d <= 31; d += 1) offs.push(d);
+  const out = [];
+  offs.forEach((d) => { const hl = home.point + d;
+    out.push({ name: G.home_team, point: hl, price: am(Phi((d + 3) / 13) * 1.04 + 0.01) }, { name: G.away_team, point: -hl, price: am(1.02 - Phi((d - 1) / 13) * 0.96) }); });
+  return out;
+}
 function altFeed() {
   if (!ALT_GAME) return ALT.buildFeed({ league: 'cfb', now: NOW, ledger: [], rebuild: true });
   const home = SIGNALS.find((r) => r.event_id === ALT_GAME.event_id && r.selection === ALT_GAME.home_team);
@@ -80,13 +99,34 @@ function altFeed() {
     const hl = home.point + k * 0.5;
     outcomes.push({ name: ALT_GAME.home_team, point: hl, price: am(-10 - 25 * k) }, { name: ALT_GAME.away_team, point: -hl, price: am(-10 + 25 * k) });
   }
-  const provider = { id: ALT_GAME.event_id, commence_time: ALT_GAME.commence_time, home_team: ALT_GAME.home_team, away_team: ALT_GAME.away_team,
-    bookmakers: [{ key: 'fixturebook', title: 'FixtureBook (TEST FIXTURE)', markets: [{ key: 'alternate_spreads', last_update: new Date(NOW - 6 * 60000).toISOString(), outcomes }] }] };
+  const provider = (G, outs) => ({ id: G.event_id, commence_time: G.commence_time, home_team: G.home_team, away_team: G.away_team,
+    bookmakers: [{ key: 'fixturebook', title: 'FixtureBook (TEST FIXTURE)', markets: [{ key: 'alternate_spreads', last_update: new Date(NOW - 6 * 60000).toISOString(), outcomes: outs }] }] });
   const at = new Date(NOW - 5 * 60000).toISOString();
-  const parsed = ALT.parseEventOdds(provider, null, at, { league: 'cfb' });
-  const feed = ALT.buildFeed({ league: 'cfb', now: NOW, ledger: [], run: { polled: [ALT_GAME.event_id], quotes: parsed.quotes, observed_at: at } });
+  const polled = [ALT_GAME.event_id];
+  let quotes = ALT.parseEventOdds(provider(ALT_GAME, outcomes), null, at, { league: 'cfb' }).quotes;
+  const wideHome = WIDE_GAME && SIGNALS.find((r) => r.event_id === WIDE_GAME.event_id && r.selection === WIDE_GAME.home_team);
+  if (wideHome) { polled.push(WIDE_GAME.event_id); quotes = quotes.concat(ALT.parseEventOdds(provider(WIDE_GAME, wideOutcomes(WIDE_GAME, wideHome)), null, at, { league: 'cfb' }).quotes); }
+  const feed = ALT.buildFeed({ league: 'cfb', now: NOW, ledger: [], run: { polled, quotes, observed_at: at } });
   feed.provider = 'TEST FIXTURE (provider-shaped, parsed by alternates.js)';
   return feed;
+}
+/* the EV-by-spread chart, measured as drawn: text boxes that intersect, text
+   that leaves the chart, and how far its text is scaled from its CSS size */
+function chartLayout(g) {
+  const host = document.getElementById('p4gate-' + g);
+  return Array.from(host ? host.querySelectorAll('svg.qev-chart') : []).map((svg) => {
+    const sr = svg.getBoundingClientRect();
+    const ts = Array.from(svg.querySelectorAll('text')).map((t) => ({ s: t.textContent, r: t.getBoundingClientRect() })).filter((t) => t.r.width > 0);
+    const hit = [];
+    for (let i = 0; i < ts.length; i++) for (let j = i + 1; j < ts.length; j++) {
+      const a = ts[i].r, b = ts[j].r;
+      if (a.left < b.right - 0.5 && b.left < a.right - 0.5 && a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5) hit.push(ts[i].s + ' × ' + ts[j].s);
+    }
+    return { points: svg.querySelectorAll('circle.mk').length, texts: ts.length, overlaps: hit.slice(0, 8), n_overlaps: hit.length,
+      outside: ts.filter((t) => t.r.left < sr.left - 0.5 || t.r.right > sr.right + 0.5 || t.r.top < sr.top - 0.5 || t.r.bottom > sr.bottom + 0.5).map((t) => t.s),
+      scale: +(sr.width / svg.viewBox.baseVal.width).toFixed(3), gap: !!svg.querySelector('path.ln.gap'), tags: Array.from(svg.querySelectorAll('text.tg')).map((t) => t.textContent),
+      zero: Array.from(svg.querySelectorAll('text.yl')).map((t) => t.textContent) };
+  });
 }
 
 /* THE NFL: games.csv rebuilt from the committed NFL slate (upcoming games,
@@ -279,6 +319,42 @@ function siteHandler(req, res) {
     const sum = await page.$('#p4gate-' + openGid + ' .gx-grid');
     if (sum) await sum.screenshot({ path: path.join(SHOTS, 'card_summary.png') });
   }
+  /* the wide ladder: every number drawn, no label on another, text at its own size */
+  async function wideChart(pg, label) {
+    const wg = await pg.evaluate((home) => { const u = (window.FB.p4.up || []).find((x) => x.g.home_team === home); return u ? String(u.g.game_id) : null; }, WIDE_GAME && WIDE_GAME.home_team);
+    if (!wg) { chk(label + ': the wide-ladder fixture game is on the board', false, WIDE_GAME && WIDE_GAME.home_team); return null; }
+    await pg.evaluate((g) => window.fbP4Gate(g), wg);
+    await pg.waitForTimeout(800);
+    const out = {};
+    for (const side of ['home', 'away']) {
+      await pg.evaluate(([g, sd]) => window.fbQevSet(g, 'side', sd), [wg, side]);
+      await pg.waitForTimeout(250);
+      out[side] = (await pg.evaluate(chartLayout, wg))[0] || null;
+    }
+    const all = [out.home, out.away];
+    chk(label + ': the wide ladder draws every number on both sides', all.every((c) => c && c.points >= 40), all.map((c) => c && c.points));
+    chk(label + ': no chart label overprints another', all.every((c) => c && c.n_overlaps === 0), all.map((c) => c && c.overlaps));
+    chk(label + ': no chart label leaves the chart', all.every((c) => c && c.outside.length === 0), all.map((c) => c && c.outside));
+    chk(label + ': chart text is drawn at its own size (laid out at the measured width, not scaled)', all.every((c) => c && Math.abs(c.scale - 1) < 0.01), all.map((c) => c && c.scale));
+    chk(label + ': the hole no book deals is drawn dashed, never as a known stretch of curve', all.every((c) => c && c.gap), all.map((c) => c && c.gap));
+    chk(label + ': zero is "0%", never "+0%"', all.every((c) => c && c.zero.indexOf('0%') >= 0 && c.zero.indexOf('+0%') < 0), all.map((c) => c && c.zero));
+    chk(label + ': MAX EV is tagged on the chart', all.every((c) => c && c.tags.some((t) => /MAX EV/.test(t))), all.map((c) => c && c.tags));
+    return wg;
+  }
+  const wideGid = await wideChart(page, '1280px');
+  if (wideGid) {
+    const bp = await page.evaluate((g) => {
+      window.fbQevSet(g, 'side', 'home');                     /* the side whose far numbers are priced past −1000 */
+      const host = document.getElementById('p4gate-' + g), sec = host ? Array.from(host.querySelectorAll('.gd-sec')).find((x) => /^Buying points/.test(x.textContent)) : null;
+      const wrap = sec ? sec.nextElementSibling : null;
+      return wrap ? { rows: Array.from(wrap.querySelectorAll('tbody tr')).map((tr) => Array.from(tr.cells).map((t) => t.textContent)), fits: wrap.scrollWidth <= wrap.clientWidth + 1, sw: wrap.scrollWidth, cw: wrap.clientWidth } : null;
+    }, wideGid);
+    const far = bp ? bp.rows.filter((r) => { const m = /^\S+ (\S+) → \S+ (\S+)$/.exec(r[0]); return m && (Math.abs(+m[1]) > 1000 || Math.abs(+m[2]) > 1000); }) : [];
+    chk('buying points: no juice quoted in cents past ±1000 (−5000 → −10000 is never "5000¢")', far.length > 0 && far.every((r) => r[3] === '—'), far.slice(0, 6).map((r) => r[0] + ' | ' + r[3]));
+    chk('buying points: the table fits the card, its Read column on screen', bp && bp.fits, bp && { sw: bp.sw, cw: bp.cw });
+    chk('buying points: a signed number never reads "+-"', bp && !bp.rows.some((r) => r.some((t) => /\+-|\+−/.test(t))), bp && bp.rows.filter((r) => r.some((t) => /\+-|\+−/.test(t))).slice(0, 3));
+    if (SHOTS) { const el = await page.$('#gxs-' + String(wideGid + '_alts').replace(/[^a-zA-Z0-9]/g, '_')); if (el) await el.screenshot({ path: path.join(SHOTS, 'card_alts_wide.png') }); }
+  }
   chk('no page errors on the board or the card', D.errors.length === 0, D.errors);
 
   if (args.indexOf('--dbgcfb') >= 0) console.log(JSON.stringify(await page.evaluate(() => (window.fbDecisionsLive ? window.fbDecisionsLive() : []).filter((d) => d.sport === 'CFB' && d.decision !== 'PASS' && d.decision !== 'NO_DECISION').map((d) => ({ g: d.away + ' @ ' + d.home, disp: d.decision_display, sel: d.action && d.action.selection, alt: d.selected_is_alternate,
@@ -334,6 +410,7 @@ function siteHandler(req, res) {
   const mob = await M.page.evaluate(() => ({ overflow: document.documentElement.scrollWidth - window.innerWidth,
     subs: document.querySelectorAll('.qev-sub').length }));
   chk('pricing lines render on a phone', mob.subs > 0, mob);
+  await wideChart(M.page, '390px');
   chk('no page errors on a phone', M.errors.length === 0, M.errors);
   if (SHOTS) await M.page.screenshot({ path: path.join(SHOTS, 'board_390.png'), fullPage: false });
 

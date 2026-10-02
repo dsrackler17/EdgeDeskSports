@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-02 — the EV-by-spread chart lays out cleanly on wide alternate ladders
+
+On a wide ladder (Northwestern: +28.5 down to −2.5, a ten-point hole, prices to −10000) the *EdgeDesk EV by spread* chart printed every number's line, price and cover on top of its neighbours. MAIN overprinted MAX EV, and the curve ran through SAFEST +EV. The audit found more than one defect:
+
+- **Chart** (`app.html` `fbQevChartPlot`):
+  - it is laid out at the width it is drawn (`fbQevChartFit`, a ResizeObserver), so its text is no longer scaled 1.5× on a desktop card and 0.56× (about 5px) on a phone;
+  - axis labels are thinned until none collide. The tagged numbers, the numbers either side of a hole and the two ends are labelled first; hovering any point still gives its line, price, cover, break-even and book;
+  - a stretch of more than 2 pts with no number dealt is drawn short and dashed, never as a known stretch of curve;
+  - MAIN / SAFEST +EV / MAX EV sit above the curve with a halo. A tag that would overprint another moves to the other side of its point, or climbs above with a leader. One number carrying several tags reads `MAX EV · MAIN`;
+  - y ticks are round numbers, and zero reads `0%`, not `+0%`. All chart text is at least 10px, the app's type floor on phones.
+- **Buying points**:
+  - juice is not quoted in cents past ±1000, where −5000 → −10000 read `5000¢` for 1.0 pp of break-even (`EDQuoteEV.centsComparable`; also the card's price advantage and the step text);
+  - the key-margins cell wraps, so the Read column no longer scrolls off the card;
+  - a falling cover reads `−0.4 pp`, not `+-0.4 pp`.
+- **Ladder table**:
+  - a stale quote's reason uses the age column's units (`captured 17h ago`, not `captured 998 min ago`; `EDQuoteEV.ageText`);
+  - the LC note appears only when an LC row is shown, and no longer nests parentheses.
+- **The same defect in the research terminal** (`research/cfb/terminal.js` `frontierChart`):
+  - the axis labelled every other half point, however wide alternates made it. It now uses round ticks at a step whose labels clear each other;
+  - the FAIR / CURRENT / BETTABLE TO / TARGET labels stacked by `i % 3`, so a fourth overprinted the first, and a mark near the right edge was clipped. They now take the first free row, stay inside the plot and draw over the mark lines.
+- **Tests**:
+  - `tools/football/quote_ev_ui.e2e.js` adds a wide-ladder fixture game. At 1280px and 390px it checks: no chart label overprints or leaves the chart, the text is unscaled, the hole is dashed, `0%`, MAX EV tagged, no cents past ±1000, the table fits, and no `+-`. 54 checks. Nine of the new checks fail on the previous code;
+  - `tools/football/quote_ev.test.js` adds the age text and the cents rule (218 checks).
+
 ## 2026-10-01 — college player props on the Records page
 
 The college props were tracked but left off the page. There are 464 of them; every one is a LEAN while the college props model is EXPERIMENTAL. Without *Include leans*, the CFB view showed no player props at all.

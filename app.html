@@ -279,7 +279,7 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
 .qev-explain{font-size:12px;line-height:1.55;color:var(--dim);margin-top:10px}
 .qev-three{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;border-top:1px solid var(--border);padding-top:8px}
 .qev-decline{font-size:11px;line-height:1.5;color:var(--faint);margin-top:6px}
-.qev-t{width:100%;font-size:11.5px}.qev-t td,.qev-t th{white-space:nowrap}
+.qev-t{width:100%;font-size:11.5px}.qev-t td,.qev-t th{white-space:nowrap}.qev-t td.qev-wrap{white-space:normal;min-width:11em}
 .qev-t tr.qev-hl td{background:rgba(47,167,154,.07)}
 .qev-t tr.qev-dom td{opacity:.5}
 .qev-t tr.qev-hyp td{font-style:italic;color:var(--faint)}
@@ -293,14 +293,16 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
 .qev-opt.na{color:var(--faint)}.qev-ol{font-size:15px;font-weight:700;color:var(--text)}
 .qev-trade{font-size:11.5px;line-height:1.55;color:var(--dim);margin:6px 0 8px}.qev-trade b{color:var(--text);letter-spacing:.05em;font-size:10px}
 .qev-good{color:var(--pos)}.qev-bad{color:var(--dim)}
-.qev-chart{width:100%;height:auto;display:block;margin:4px 0 2px}
+.qev-chartbox{margin:4px 0 2px}.qev-chart{width:100%;height:auto;display:block}
 .qev-more{margin:6px 0 4px}.qev-more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);font-weight:600}
 .qev-chart line.g{stroke:var(--border);stroke-width:1}.qev-chart line.z{stroke:var(--faint);stroke-width:1;stroke-dasharray:3 3}
-.qev-chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.qev-chart .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}.qev-chart .ln.gap{stroke-dasharray:5 4;opacity:.5}
+.qev-chart line.ld{stroke:var(--faint);stroke-width:1;stroke-dasharray:1 2}
 .qev-chart .mk{fill:var(--accent);stroke:var(--surface);stroke-width:2}.qev-chart .dom .mk{fill:var(--surface);stroke:var(--accent);stroke-width:1.5}
 .qev-chart .hit{fill:transparent}.qev-chart .pt:hover .mk{r:6}
 .qev-chart text{font-family:'JetBrains Mono',monospace;fill:var(--faint);font-size:10px;text-anchor:middle}
-.qev-chart text.yl{text-anchor:end}.qev-chart text.rl{text-anchor:start}.qev-chart text.xl{fill:var(--dim)}.qev-chart text.xs{font-size:9px}.qev-chart text.tg{fill:var(--text);font-size:8.5px;font-weight:700;letter-spacing:.04em}
+.qev-chart text.yl{text-anchor:end}.qev-chart text.rl{text-anchor:start}.qev-chart text.xl{fill:var(--dim)}
+.qev-chart text.tg{fill:var(--text);font-weight:700;letter-spacing:.04em;text-anchor:start;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
 @media (max-width:560px){.qev-opts{grid-template-columns:1fr}.qev-sub{padding-left:4px}}
 /* drivers */
 .gx-drv{display:flex;flex-direction:column;gap:5px}
@@ -49977,7 +49979,7 @@ function fbV2Ensure(){
 /* QUOTE-LEVEL EV: the state and the static artifacts it reads (the card's
    pricing block, "QUOTE-LEVEL EXPECTED VALUE" below, explains the method).
    Loaded here, at board level, once each; a card never fetches. */
-var FBQEV={cal:null,tail:null,err:null,_p:null,tiers:null,_tp:null,alt:{},altP:{},ui:{},last:{}};
+var FBQEV={cal:null,tail:null,err:null,_p:null,tiers:null,_tp:null,alt:{},altP:{},ui:{},last:{},charts:{},chartW:0,ro:null,watchT:0};
 function fbQevReady(){return !!(window.EDQuoteEV&&(window.EDResearchCore||(window.EDResearch&&window.EDResearch.americanToDecimal)));}
 /* read-only: the last priced object for a game, and the last error a render
    swallowed — for the browser tests and a reader's console, never a writer */
@@ -54808,7 +54810,7 @@ function fbQevEv(x,cls){
   return '<b class="qev-ev '+(cls||t)+'">'+window.EDQuoteEV.signedPct(x,1)+'</b>';
 }
 function fbQevPrice(o){return o&&o.american_odds!=null?window.EDQuoteEV.priceText(o.american_odds)+(o.approximate_american?'*':''):'—';}
-function fbQevAge(o){return o&&o.quote_age_minutes!=null?(o.quote_age_minutes<60?Math.max(1,Math.round(o.quote_age_minutes))+'m':(o.quote_age_minutes<2880?Math.round(o.quote_age_minutes/60)+'h':Math.round(o.quote_age_minutes/1440)+'d')):'—';}
+function fbQevAge(o){return o&&o.quote_age_minutes!=null?(o.quote_age_minutes<60?Math.max(1,Math.round(o.quote_age_minutes))+'m':(o.quote_age_minutes<2880?Math.round(o.quote_age_minutes/60)+'h':Math.round(o.quote_age_minutes/1440)+'d')):'—';}   /* = EDQuoteEV.ageText, kept local: the engine loads separately and may be an older copy */
 function fbQevShort(team){var t=String(team||'');return t.length>14?t.split(/\s+/).map(function(w){return w.charAt(0);}).join('').toUpperCase().slice(0,4):t;}
 function fbQevTip(k){return fbEsc(window.EDQuoteEV.TOOLTIP[k]||'');}
 function fbQevFlagsHTML(list,cls){
@@ -54911,7 +54913,7 @@ function fbQevCardHTML(v){
   /* fair price vs market price */
   h+='<div class="qev-fair" title="'+fbQevTip('fair_odds')+'"><span><span class="qev-k">EdgeDesk fair price</span> <b>'+(b.model_fair_odds!=null?Q.priceText(b.model_fair_odds):'—')+'</b></span>'
     +'<span><span class="qev-k">Market price</span> <b>'+fbQevPrice(b)+'</b></span>'
-    +'<span><span class="qev-k">Price advantage</span> <b>'+(b.price_advantage_cents!=null?(b.price_advantage_cents>=0?'+':'−')+Math.abs(Math.round(b.price_advantage_cents))+' cents':'—')+'</b> <span class="mut">'+(b.price_advantage_cents>=0?'the market pays more than the model’s fair price':'the market pays less than the model’s fair price')+'</span></span></div>';
+    +'<span><span class="qev-k">Price advantage</span> <b>'+(b.price_advantage_cents!=null?(b.price_advantage_cents>=0?'+':'−')+Math.abs(Math.round(b.price_advantage_cents))+' cents':'—')+'</b> <span class="mut">'+(b.price_advantage_cents==null?(b.model_fair_odds!=null?'not quoted in cents past ±'+(Q.CENTS_MAX||1000)+': compare the break-even':''):(b.price_advantage_cents>=0?'the market pays more than the model’s fair price':'the market pays less than the model’s fair price'))+'</span></span></div>';
   var ln=Q.lineText(b.line)+' ('+fbQevPrice(b)+')';
   h+='<div class="qev-explain">At this exact '+fbEsc(ln)+' quote, EdgeDesk estimates a '+fbQevPct(b.model_cover_probability)+' probability of covering'
     +(push?' (pushes excluded: '+fbQevPct(b.model_push_probability)+' of games land exactly on '+Math.abs(b.line)+' and return the stake)':'')+'. '
@@ -55059,22 +55061,24 @@ function fbQevLadderInner(v){
         :'<td colspan="6" class="mut">EV unavailable · '+fbEsc(o.ev_unavailable_reason)+'</td>')
       +'<td class="num">'+fbQevAge(o)+'</td></tr>';
   }).join('');
+  var T=v.model.tail||{},within=typeof T.validated_within_pts==='number'?T.validated_within_pts:0;
+  var lcN=list.filter(function(o){return o.ev_available&&o.tail&&o.tail.status==='NOT_VALIDATED';}).length;
   h+='<div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Spread</th><th class="num">Best price</th><th>Book</th><th class="num" title="'+fbQevTip('cover')+'">Cover %</th><th class="num" title="'+fbQevTip('push')+'">Push %</th>'
     +'<th class="num" title="'+fbQevTip('break_even')+'">Break-even %</th><th class="num" title="'+fbQevTip('probability_edge')+'">Edge pp</th><th class="num" title="'+fbQevTip('model_ev')+'">EdgeDesk EV %</th>'
     +'<th class="num" title="'+fbQevTip('fair_odds')+'">Fair odds</th><th class="num">Quote age</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
     +'<div class="gx-foot">'+L.n_quotes+' priced quote'+(L.n_quotes===1?'':'s')+' across '+L.n_spreads+' number'+(L.n_spreads===1?'':'s')+'; '+L.n_dominated+' dominated (another quote has at least the cover probability and more EV). '
-    +'LC = low confidence: the line sits '+fbEsc(v.model.tail&&v.model.tail.validated_within_pts!=null?'more than '+v.model.tail.validated_within_pts+' pts':'too far')+' from the main line, beyond the range the alternate-line audit validated ('+fbEsc(v.model.tail&&v.model.tail.basis||'')+').</div>';
-  h+=fbQevChartSVG(S,mx,safe,mn);
+    +(lcN?'LC = low confidence: the line sits '+(within>0?'more than '+within+' pt'+(within===1?'':'s')+' from':'away from')+' the main line, beyond the range EdgeDesk has validated'+(T.basis?' — '+fbEsc(T.basis):'')+'.':'')+'</div>';
+  h+=fbQevChartSVG(S,mx,safe,mn,String(v.gid)+'|'+ui.side);
   /* buying points, one step at a time */
   if(L.steps.length){
     h+='<div class="gd-sec">Buying points · what each step costs and adds</div><div class="tblwrap"><table class="mini qev-t"><thead><tr><th>Step</th><th class="num">+Cover</th><th class="num">+Break-even</th><th class="num">Juice</th><th class="num">EV change</th><th>Key margins crossed</th><th>Read</th></tr></thead><tbody>'
       +L.steps.map(function(s){
         var keys=s.key_numbers.filter(function(k){return k.key;}).map(function(k){return k.abs_margin+' (model '+fbQevPct(k.model_mass,1)+(k.historical_share!=null?' · league '+fbQevPct(k.historical_share,1):'')+')';});
         return '<tr><td>'+fbEsc(Q.lineText(s.to_line)+' '+Q.priceText(s.to_odds)+' → '+Q.lineText(s.from_line)+' '+Q.priceText(s.from_odds))+'</td>'
-          +'<td class="num">+'+s.cover_gain_pp.toFixed(1)+' pp'+(s.push_change_pp&&Math.abs(s.push_change_pp)>=0.05?' <span class="mut">'+(s.push_change_pp>0?'+':'−')+Math.abs(s.push_change_pp).toFixed(1)+' push</span>':'')+'</td><td class="num">'+(s.break_even_cost_pp>=0?'+':'−')+Math.abs(s.break_even_cost_pp).toFixed(1)+' pp</td>'
-          +'<td class="num">'+(s.juice_cents==null?'—':(s.juice_cents>=0?s.juice_cents+'¢':'saves '+Math.abs(s.juice_cents)+'¢'))+'</td>'
+          +'<td class="num">'+(s.cover_gain_pp>=0?'+':'−')+Math.abs(s.cover_gain_pp).toFixed(1)+' pp'+(s.push_change_pp&&Math.abs(s.push_change_pp)>=0.05?' <span class="mut">'+(s.push_change_pp>0?'+':'−')+Math.abs(s.push_change_pp).toFixed(1)+' push</span>':'')+'</td><td class="num">'+(s.break_even_cost_pp>=0?'+':'−')+Math.abs(s.break_even_cost_pp).toFixed(1)+' pp</td>'
+          +'<td class="num"'+(s.juice_cents==null?' title="'+fbEsc('Not quoted in cents past ±'+(Q.CENTS_MAX||1000)+': there a cent is no unit of cost. +Break-even carries what these points cost.')+'"':'')+'>'+(s.juice_cents==null?'—':(s.juice_cents>=0?s.juice_cents+'¢':'saves '+Math.abs(s.juice_cents)+'¢'))+'</td>'
           +'<td class="num">'+(s.ev_change_pct>=0?'+':'−')+Math.abs(s.ev_change_pct).toFixed(1)+'</td>'
-          +'<td class="mut" title="'+fbQevTip('key_number')+'">'+(keys.length?fbEsc(keys.join(', ')):'—')+'</td>'
+          +'<td class="mut qev-wrap" title="'+fbQevTip('key_number')+'">'+(keys.length?fbEsc(keys.join(', ')):'—')+'</td>'
           +'<td class="'+(s.protection_worth_it?'qev-good':'qev-bad')+'">'+(s.protection_worth_it?'priced below model value':'costs more than model value')+'</td></tr>';
       }).join('')+'</tbody></table></div>'
       +'<div class="gx-foot">Each row buys the points between two adjacent numbers on the ladder. +Cover is what EdgeDesk’s distribution says the points add; +Break-even is what the extra juice costs in required win rate. '
@@ -55087,33 +55091,146 @@ function fbQevLadderInner(v){
   return h;
 }
 /* EV against the spread, one series on one axis. Cover probability rides in
-   the point labels and tooltips, not on a second scale. Hollow = dominated. */
-function fbQevChartSVG(S,mx,safe,mn){
+   the point labels and tooltips, not on a second scale. Hollow = dominated.
+   The plot is laid out at the width it is drawn — fbQevChartFit re-lays it
+   at its box's measured width — so its text is never scaled up or down.
+   Axis labels are thinned until no two collide (the tagged numbers, the
+   numbers either side of a hole and the two ends are labelled first); a
+   stretch of more than QEV_GAP_PTS with no number dealt is drawn short and
+   dashed, never as if the curve were known there; the MAIN / SAFEST +EV /
+   MAX EV tags sit above the curve and never overprint each other. */
+var QEV_GAP_PTS=2,QEV_GAP_DRAWN=1.5;
+function fbQevChartUnits(pts){
+  var u=[0],breaks=[];
+  for(var i=1;i<pts.length;i++){
+    var d=pts[i-1].line-pts[i].line;
+    if(d>QEV_GAP_PTS+1e-9){breaks.push(i);u.push(u[i-1]+QEV_GAP_DRAWN);}else u.push(u[i-1]+d);
+  }
+  return {u:u,breaks:breaks};
+}
+function fbQevChartSVG(S,mx,safe,mn,key){
   var pts=S.ladder.rows.map(function(r){return r.best;});
   if(pts.length<2)return '';
-  var W=600,H=190,pl=62,pr=18,pt=16,pb=46;
-  var xs=pts.map(function(o){return o.line;}),ys=pts.map(function(o){return o.expected_value;});
-  var x0=Math.min.apply(null,xs),x1=Math.max.apply(null,xs),y0=Math.min(0,Math.min.apply(null,ys)),y1=Math.max(0,Math.max.apply(null,ys));
-  if(x1-x0<1){x0-=0.5;x1+=0.5;}var yp=(y1-y0)*0.12||0.02;y0-=yp;y1+=yp;
-  function X(x){return pl+(W-pl-pr)*(x1===x0?0.5:(x1-x)/(x1-x0));}          /* safest (most points) on the left */
-  function Y(y){return pt+(H-pt-pb)*(1-(y-y0)/(y1-y0));}
-  var Q=window.EDQuoteEV,s='<svg class="qev-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+fbEsc('EdgeDesk EV by spread for '+S.team+', safest number on the left')+'">';
-  var ticks=[y0+yp,0,y1-yp].filter(function(t,i,a){return a.indexOf(t)===i;});
-  ticks.forEach(function(t){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(t).toFixed(1)+'" y2="'+Y(t).toFixed(1)+'" class="'+(t===0?'z':'g')+'"/><text x="'+(pl-6)+'" y="'+(Y(t)+3).toFixed(1)+'" class="yl">'+Q.signedPct(t,0)+'</text>';});
-  var path=pts.slice().sort(function(a,b){return b.line-a.line;}).map(function(o,i){return (i?'L':'M')+X(o.line).toFixed(1)+' '+Y(o.expected_value).toFixed(1);}).join(' ');
-  s+='<path d="'+path+'" class="ln"/>';
-  pts.forEach(function(o){
-    var cx=X(o.line).toFixed(1),cy=Y(o.expected_value).toFixed(1),tag=o===mx?'MAX EV':(o===safe?'SAFEST +EV':(o===mn?'MAIN':''));
-    s+='<g class="pt'+(o.dominated?' dom':'')+'"><circle cx="'+cx+'" cy="'+cy+'" r="12" class="hit"/><circle cx="'+cx+'" cy="'+cy+'" r="4.5" class="mk"/>'
-      +'<title>'+fbEsc(o.label+' · '+(o.sportsbook||'')+' · cover '+(100*o.model_cover_probability).toFixed(1)+'% · break-even '+(100*o.break_even_probability).toFixed(1)+'% · EV '+Q.signedPct(o.expected_value)+(o.dominated?' · dominated':'')+(tag?' · '+tag:''))+'</title></g>'
-      +'<text x="'+cx+'" y="'+(H-pb+14)+'" class="xl">'+fbEsc(Q.lineText(o.line))+'</text>'
-      +'<text x="'+cx+'" y="'+(H-pb+26)+'" class="xs">'+fbEsc(Q.priceText(o.american_odds))+'</text>'
-      +'<text x="'+cx+'" y="'+(H-pb+38)+'" class="xs">'+(100*o.model_cover_probability).toFixed(0)+'%</text>'
-      +(tag?'<text x="'+cx+'" y="'+(Number(cy)-9)+'" class="tg">'+tag+'</text>':'');
+  key=String(key||S.team);
+  FBQEV.charts[key]={S:S,mx:mx,safe:safe,mn:mn};
+  if(!FBQEV.watchT)FBQEV.watchT=setTimeout(fbQevChartWatch,0);
+  var w=FBQEV.chartW||640,gaps=fbQevChartUnits(pts).breaks.length;
+  return '<div class="gd-sec">EdgeDesk EV by spread · '+fbEsc(S.team)+'</div>'
+    +'<div class="qev-chartbox" data-qevk="'+fbEsc(key)+'" data-w="'+w+'">'+fbQevChartPlot(S,mx,safe,mn,w)+'</div>'
+    +'<div class="gx-foot">One point per available number (its best price). The curve need not be smooth: each point carries its own book’s price. Hollow points are dominated.'
+    +(gaps?' A dashed stretch spans numbers no book is dealing, drawn short.':'')
+    +' Where numbers crowd, the axis labels only some of them; hover any point for its line, price, cover probability, break-even and book.</div>';
+}
+function fbQevChartPlot(S,mx,safe,mn,W){
+  var Q=window.EDQuoteEV,pts=S.ladder.rows.map(function(r){return r.best;}),n=pts.length,i;
+  W=Math.max(240,Math.round(W)||640);
+  function tw(s,ls){return String(s).length*(6.05+(ls||0));}    /* JetBrains Mono at 10px: a 0.6em advance */
+  function same(a,b){return !!b&&Math.abs(a.line-b.line)<1e-9;}
+  /* y: round ticks, zero always one of them */
+  var ys=pts.map(function(o){return o.expected_value;});
+  var lo=Math.min(0,Math.min.apply(null,ys)),hi=Math.max(0,Math.max.apply(null,ys));
+  var raw=(hi-lo)/4||0.01,mag=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10));
+  var step=[1,2,2.5,5,10].map(function(k){return k*mag;}).filter(function(s){return s>=raw*(1-1e-9);})[0];
+  var k0=Math.floor(lo/step+1e-9),k1=Math.ceil(hi/step-1e-9);if(k1===k0)k1=k0+1;
+  var y0=k0*step,y1=k1*step,dp=Math.abs(Math.round(step*100)-step*100)>1e-6?1:0,ticks=[];
+  for(i=k0;i<=k1;i++)ticks.push({v:i*step,t:i===0?'0%':Q.signedPct(i*step,dp)});
+  var ylw=Math.max.apply(null,ticks.map(function(t){return tw(t.t);}));
+  /* x: the ladder's own spacing, a hole drawn short; the margins fit the end labels */
+  var lab=pts.map(function(o){return [Q.lineText(o.line),Q.priceText(o.american_odds),(100*o.model_cover_probability).toFixed(0)+'%'];});
+  var lw=lab.map(function(l){return Math.max(tw(l[0]),tw(l[1]),tw(l[2]));});
+  var pl=Math.ceil(Math.max(ylw+10,2+tw('cover')+8+lw[0]/2)),pr=Math.ceil(Math.max(8,lw[n-1]/2+2));
+  var lay=fbQevChartUnits(pts),U=lay.u[n-1]||1,PW=W-pl-pr,PH=132,pb=48;
+  var xs=pts.map(function(o,j){return pl+PW*lay.u[j]/U;});
+  function yp(v){return PH*(y1-v)/(y1-y0);}                   /* plot coordinates: 0 = top tick */
+  var pitch=xs.slice(1).map(function(x,j){return x-xs[j];}).sort(function(a,b){return a-b;})[Math.floor((n-1)/2)];
+  var R=Math.max(2.5,Math.min(4.5,pitch*0.38));
+  /* the tags: placed highest-EV first, above the curve under them; a tag that
+     would overprint one already placed tries the other side of its point,
+     then climbs above it */
+  var tags=[];
+  pts.forEach(function(o,j){
+    var t=[];if(same(o,mx))t.push('MAX EV');if(same(o,safe))t.push('SAFEST +EV');if(same(o,mn))t.push('MAIN');
+    if(t.length)tags.push({i:j,s:t.join(' · ')});
   });
-  s+='<text x="2" y="'+(H-pb+26)+'" class="xs rl">price</text><text x="2" y="'+(H-pb+38)+'" class="xs rl">cover</text>';
-  return '<div class="gd-sec">EdgeDesk EV by spread · '+fbEsc(S.team)+'</div>'+s+'</svg>'
-    +'<div class="gx-foot">One point per available number (its best price). The curve need not be smooth: each point carries its own book’s price. Hollow points are dominated. Hover a point for its cover probability, break-even and book.</div>';
+  tags.sort(function(a,b){return pts[b.i].expected_value-pts[a.i].expected_value;});
+  function crest(a,b){                                           /* the highest the curve is drawn between x=a and x=b */
+    var m=Infinity;
+    for(var j=0;j<n;j++){
+      var x=xs[j],y=yp(pts[j].expected_value);
+      if(x>=a-R-1&&x<=b+R+1)m=Math.min(m,y-R-1);
+      if(j&&xs[j-1]<b&&x>a){
+        var xa=xs[j-1],ya=yp(pts[j-1].expected_value);
+        [Math.max(a,xa),Math.min(b,x)].forEach(function(xx){m=Math.min(m,ya+(y-ya)*(xx-xa)/(x-xa)-1);});
+      }
+    }
+    return m;
+  }
+  var placed=[];
+  function hits(a,b,base){return placed.some(function(p){return a<p.b+6&&p.a<b+6&&base-9<p.base+3&&p.base-9<base+3;});}
+  tags.forEach(function(t){
+    var w=tw(t.s,0.4),x=xs[t.i];
+    var cands=[x-w/2,x+4-w,x-4].map(function(a0){                /* centred, then left of the point, then right of it */
+      var a=Math.min(Math.max(a0,pl-4),W-2-w);return {a:a,b:a+w,base:crest(a,a+w)-3};});
+    var pick=cands.filter(function(c){return !hits(c.a,c.b,c.base);})[0];
+    if(!pick){pick=cands[0];while(hits(pick.a,pick.b,pick.base))pick.base-=12;}
+    t.a=pick.a;t.b=pick.b;t.base=pick.base;placed.push(t);
+  });
+  var top=Math.min.apply(null,[-4].concat(placed.map(function(t){return t.base-10;})));
+  var pt=Math.ceil(4-top),H=pt+PH+pb;
+  function Y(v){return pt+yp(v);}
+  function f(v){return v.toFixed(1);}
+  var s='<svg class="qev-chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+fbEsc('EdgeDesk EV by spread for '+S.team+', safest number on the left')+'">';
+  ticks.forEach(function(t){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+f(Y(t.v))+'" y2="'+f(Y(t.v))+'" class="'+(t.v===0?'z':'g')+'"/><text x="'+(pl-8)+'" y="'+f(Y(t.v)+3.5)+'" class="yl">'+t.t+'</text>';});
+  /* the curve: solid between dealt numbers, dashed across a hole */
+  var solid='',gap='';
+  for(i=1;i<n;i++){
+    var seg=f(xs[i])+' '+f(Y(pts[i].expected_value)),from='M'+f(xs[i-1])+' '+f(Y(pts[i-1].expected_value));
+    if(lay.breaks.indexOf(i)>=0)gap+=from+'L'+seg;
+    else solid+=(!solid||lay.breaks.indexOf(i-1)>=0?from:'')+'L'+seg;
+  }
+  if(gap)s+='<path d="'+gap+'" class="ln gap"/>';
+  s+='<path d="'+solid+'" class="ln"/>';
+  /* a tag lifted off its own point keeps a leader down to it */
+  placed.forEach(function(t){
+    var x=xs[t.i],y=Y(pts[t.i].expected_value);
+    if(y-R-2-(pt+t.base)>12)s+='<line x1="'+f(x)+'" x2="'+f(x)+'" y1="'+f(pt+t.base+3)+'" y2="'+f(y-R-2)+'" class="ld"/>';
+  });
+  pts.forEach(function(o,j){
+    var near=Math.min(j?xs[j]-xs[j-1]:99,j<n-1?xs[j+1]-xs[j]:99),tag=tags.filter(function(t){return t.i===j;})[0];
+    s+='<g class="pt'+(o.dominated?' dom':'')+'"><circle cx="'+f(xs[j])+'" cy="'+f(Y(o.expected_value))+'" r="'+f(Math.max(R,Math.min(12,near/2)))+'" class="hit"/><circle cx="'+f(xs[j])+'" cy="'+f(Y(o.expected_value))+'" r="'+f(R)+'" class="mk"/>'
+      +'<title>'+fbEsc(o.label+' · '+(o.sportsbook||'')+' · cover '+(100*o.model_cover_probability).toFixed(1)+'% · break-even '+(100*o.break_even_probability).toFixed(1)+'% · EV '+Q.signedPct(o.expected_value)+(o.dominated?' · dominated':'')+(tag?' · '+tag.s:''))+'</title></g>';
+  });
+  /* the axis: tagged numbers, the numbers either side of a hole and the two ends first, then left to right wherever one fits */
+  var order=[],seen={},shown=[];
+  function add(j){if(j>=0&&j<n&&!seen[j]){seen[j]=1;order.push(j);}}
+  tags.forEach(function(t){add(t.i);});lay.breaks.forEach(function(b){add(b-1);add(b);});add(0);add(n-1);
+  for(i=0;i<n;i++)add(i);
+  order.forEach(function(j){if(shown.every(function(k){return Math.abs(xs[j]-xs[k])>=(lw[j]+lw[k])/2+8;}))shown.push(j);});
+  shown.forEach(function(j){
+    s+='<text x="'+f(xs[j])+'" y="'+(pt+PH+16)+'" class="xl">'+fbEsc(lab[j][0])+'</text>'
+      +'<text x="'+f(xs[j])+'" y="'+(pt+PH+29)+'" class="xs">'+fbEsc(lab[j][1])+'</text>'
+      +'<text x="'+f(xs[j])+'" y="'+(pt+PH+42)+'" class="xs">'+lab[j][2]+'</text>';
+  });
+  s+='<text x="2" y="'+(pt+PH+29)+'" class="xs rl">price</text><text x="2" y="'+(pt+PH+42)+'" class="xs rl">cover</text>';
+  placed.forEach(function(t){s+='<text x="'+f(t.a)+'" y="'+f(pt+t.base)+'" class="tg">'+t.s+'</text>';});
+  return s+'</svg>';
+}
+/* re-lay a chart at the width its box is actually drawn: on first paint, when
+   a collapsed section opens (0 → its width) and when the window resizes */
+function fbQevChartFit(box){
+  if(!box.isConnected){if(FBQEV.ro)FBQEV.ro.unobserve(box);return;}
+  var w=Math.round(box.clientWidth),c=FBQEV.charts[box.getAttribute('data-qevk')];
+  if(!c||w<120||Math.abs(w-Number(box.getAttribute('data-w')))<2)return;
+  FBQEV.chartW=w;box.setAttribute('data-w',String(w));
+  box.innerHTML=fbQevChartPlot(c.S,c.mx,c.safe,c.mn,w);
+}
+function fbQevChartWatch(){
+  FBQEV.watchT=0;
+  if(!FBQEV.ro&&window.ResizeObserver)FBQEV.ro=new ResizeObserver(function(es){es.forEach(function(e){fbQevChartFit(e.target);});});
+  Array.prototype.forEach.call(document.querySelectorAll('.qev-chartbox:not([data-ro])'),function(b){
+    b.setAttribute('data-ro','1');
+    if(FBQEV.ro)FBQEV.ro.observe(b);else fbQevChartFit(b);
+  });
 }
 
 /* ── THE VERIFIED-MAJOR ROWS: is the disagreement worth anything at the price? */
