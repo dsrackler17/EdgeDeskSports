@@ -21,8 +21,8 @@
   "game_time": "2026-10-03T00:00:00.000Z",
   "game_when_label": "2026-10-03 00:00 UTC",
   "published_at": "2026-10-02T14:00:29.239Z",
-  "updated_at": "2026-10-02T23:10:27.983Z",
-  "generated_at": "2026-10-02T23:10:27.983Z",
+  "updated_at": "2026-10-02T23:44:17.110Z",
+  "generated_at": "2026-10-02T23:44:17.110Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/penn-state-vs-northwestern-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1444,7 +1444,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 73h old",
+          "text": "odds is 74h old",
           "widening": null
         },
         {
@@ -1555,7 +1555,7 @@
       "total_market": "45.5",
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "73 hours old",
+      "capture_age": "74 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1912,16 +1912,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-02. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_b9fe3fd7e0e96779",
+  "snapshot_id": "snap_1539b74cf71e97aa",
   "publication_snapshot_id": "snap_b9fe3fd7e0e96779",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-03T00:00:00.000Z",
-    "minutes_before_kickoff": 50,
-    "published_at": "2026-10-02T14:00:29.239Z",
-    "refreshed": true,
-    "at": "2026-10-02T23:10:27.983Z"
+    "minutes_before_kickoff": 16,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-02T23:44:17.110Z"
   },
   "featured": {
     "editorial_priority": 38.5,
@@ -2212,111 +2212,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-02T23:10:27.983Z"
+    "at": "2026-10-02T23:44:17.110Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-02T23:10:27.983Z",
+    "ok": false,
+    "at": "2026-10-02T23:44:17.110Z",
     "blocking": [],
     "warnings": [],
-    "hold_reason": null
+    "hold_reason": "inside final pregame publication floor"
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-02T23:10:27.983Z"
-  },
-  "freshness": {
-    "at": "2026-10-02T23:10:27.983Z",
-    "fields": {
-      "market.line": {
-        "value": "Northwestern +3.0",
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 45.5,
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-02T23:44:17.110Z"
   }
 }
