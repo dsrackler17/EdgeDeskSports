@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-02T04:41:45.856Z",
+ "generated_at": "2026-10-02T04:56:27.933Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -10,7 +10,7 @@
    "file": "football/props/nfl/2026/evaluations.jsonl",
    "rows": 1079,
    "results_file": "football/props/nfl/2026/results.jsonl",
-   "results": 253
+   "results": 435
   },
   {
    "source": "player_props",
@@ -51358,8 +51358,8 @@
    "odds_captured_at": "2026-09-30T22:45:41.078Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -51367,15 +51367,35 @@
    "clv_points": -4,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T22:47:43.372Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -51431,7 +51451,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
@@ -51439,10 +51459,26 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3472,
@@ -51646,8 +51682,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -51655,15 +51691,35 @@
    "clv_points": 0,
    "clv_prob_pp": 1.84,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3636,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.75,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -51790,8 +51846,8 @@
    "odds_captured_at": "2026-10-01T21:20:39.490Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 268,
    "result_detail": null,
    "final_score": null,
    "closing_line": 185.5,
@@ -51799,15 +51855,35 @@
    "clv_points": -39,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T21:24:57.458Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 268
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 268 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2817,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.55,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -51862,29 +51938,49 @@
    "odds_captured_at": "2026-10-01T11:20:39.037Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
    "closing_odds": -114,
    "clv_points": 0,
    "clv_prob_pp": -0.8,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T11:23:32.793Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.505,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned"
+   "flat_profit_units": 0.9804,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null
   },
   {
    "recommendation_id": "pp:ppe_0dea367f",
@@ -51934,8 +52030,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 24,
    "result_detail": null,
    "final_score": null,
    "closing_line": 18.5,
@@ -51943,15 +52039,35 @@
    "clv_points": 0,
    "clv_prob_pp": 1.15,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 24
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 24 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4926,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.03,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52007,7 +52123,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 27,
    "result_detail": null,
    "final_score": null,
    "closing_line": 16.5,
@@ -52015,10 +52131,26 @@
    "clv_points": -13,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 27
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 27 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2632,
@@ -52079,7 +52211,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 11,
    "result_detail": null,
    "final_score": null,
    "closing_line": 8.5,
@@ -52087,10 +52219,26 @@
    "clv_points": -16,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T14:32:59.073Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 11
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 11 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
@@ -52222,8 +52370,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 40,
    "result_detail": null,
    "final_score": null,
    "closing_line": 34.5,
@@ -52231,15 +52379,35 @@
    "clv_points": 0,
    "clv_prob_pp": 1.29,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 40
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 40 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5074,
    "profit_units": null,
-   "flat_profit_units": 0.9709,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52294,8 +52462,8 @@
    "odds_captured_at": "2026-10-01T12:20:39.550Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -52303,15 +52471,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T12:23:41.007Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
    "profit_units": null,
-   "flat_profit_units": 0.885,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52367,7 +52555,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -52375,10 +52563,26 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5283,
@@ -52511,7 +52715,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 16,
    "result_detail": null,
    "final_score": null,
    "closing_line": 19.5,
@@ -52519,10 +52723,26 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 16
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 16 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5455,
@@ -52582,8 +52802,8 @@
    "odds_captured_at": "2026-10-01T18:21:00.146Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -52591,15 +52811,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T18:26:38.631Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
-   "profit_units": 0.2273,
-   "flat_profit_units": 0.9091,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52655,7 +52895,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 17.5,
@@ -52663,10 +52903,26 @@
    "clv_points": 0,
    "clv_prob_pp": -3.61,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T12:23:41.007Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5495,
@@ -52726,8 +52982,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -52735,15 +52991,35 @@
    "clv_points": -14,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2778,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.6,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52798,8 +53074,8 @@
    "odds_captured_at": "2026-10-01T07:20:47.975Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -52807,15 +53083,35 @@
    "clv_points": 0,
    "clv_prob_pp": -3.89,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T07:24:50.840Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52870,8 +53166,8 @@
    "odds_captured_at": "2026-09-30T18:45:51.034Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 40,
    "result_detail": null,
    "final_score": null,
    "closing_line": 34.5,
@@ -52879,15 +53175,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 40
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 40 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5025,
    "profit_units": null,
-   "flat_profit_units": 0.9901,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -52943,7 +53259,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 11,
    "result_detail": null,
    "final_score": null,
    "closing_line": 8.5,
@@ -52951,10 +53267,26 @@
    "clv_points": -6,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T20:28:03.829Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 11
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 11 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3676,
@@ -53014,8 +53346,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 2,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -53023,15 +53355,35 @@
    "clv_points": 0,
    "clv_prob_pp": -0.59,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 2
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 2 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4082,
    "profit_units": null,
-   "flat_profit_units": 1.45,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53159,7 +53511,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -53167,10 +53519,26 @@
    "clv_points": 4,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T08:46:57.843Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
@@ -53230,8 +53598,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 16.5,
@@ -53239,15 +53607,35 @@
    "clv_points": 0,
    "clv_prob_pp": -0.34,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5146,
    "profit_units": null,
-   "flat_profit_units": 0.9434,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53303,7 +53691,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 53,
    "result_detail": null,
    "final_score": null,
    "closing_line": 56.5,
@@ -53311,10 +53699,26 @@
    "clv_points": -23,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 53
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 53 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2632,
@@ -53374,8 +53778,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
@@ -53383,15 +53787,35 @@
    "clv_points": 0,
    "clv_prob_pp": 3.7,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5556,
-   "profit_units": 0.2,
-   "flat_profit_units": 0.8,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53446,8 +53870,8 @@
    "odds_captured_at": "2026-10-01T14:20:47.536Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 2,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -53455,15 +53879,35 @@
    "clv_points": 0,
    "clv_prob_pp": -4.88,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T14:32:59.073Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 2
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 2 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4016,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.49,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53518,8 +53962,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -53527,15 +53971,35 @@
    "clv_points": 0,
    "clv_prob_pp": 0.08,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4464,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.24,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53591,7 +54055,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 15,
    "result_detail": null,
    "final_score": null,
    "closing_line": 33.5,
@@ -53599,10 +54063,26 @@
    "clv_points": 3,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-02T00:03:34.138Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 15
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 15 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
@@ -53662,8 +54142,8 @@
    "odds_captured_at": "2026-10-01T08:20:51.485Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -53671,15 +54151,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T08:24:42.567Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5122,
    "profit_units": null,
-   "flat_profit_units": 0.9524,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53806,8 +54306,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 64,
    "result_detail": null,
    "final_score": null,
    "closing_line": 36.5,
@@ -53815,15 +54315,35 @@
    "clv_points": -13,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 64
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 64 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3333,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -53950,8 +54470,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -53959,15 +54479,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
    "profit_units": null,
-   "flat_profit_units": 0.9009,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54022,8 +54562,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 4,
    "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
@@ -54031,15 +54571,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 4
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 4 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3597,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.78,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54095,7 +54655,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 2,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -54103,10 +54663,26 @@
    "clv_points": 0,
    "clv_prob_pp": -0.62,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 2
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 2 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5556,
@@ -54167,7 +54743,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 11.5,
@@ -54175,10 +54751,26 @@
    "clv_points": 0,
    "clv_prob_pp": -2.89,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5215,
@@ -54238,8 +54830,8 @@
    "odds_captured_at": "2026-09-30T06:45:42.870Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 299,
    "result_detail": null,
    "final_score": null,
    "closing_line": 215.5,
@@ -54247,15 +54839,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T06:46:50.582Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 299
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 299 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5122,
    "profit_units": null,
-   "flat_profit_units": 0.9524,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54310,8 +54922,8 @@
    "odds_captured_at": "2026-10-01T22:22:47.904Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 6,
    "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
@@ -54319,15 +54931,35 @@
    "clv_points": 0,
    "clv_prob_pp": -1.06,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T22:28:28.717Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 6
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 6 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3846,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.6,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54382,8 +55014,8 @@
    "odds_captured_at": "2026-09-29T18:45:38.254Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 5,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -54391,15 +55023,35 @@
    "clv_points": 0,
    "clv_prob_pp": -3.76,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 5
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 5 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4902,
-   "profit_units": 0.26,
-   "flat_profit_units": 1.04,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54454,29 +55106,49 @@
    "odds_captured_at": "2026-10-01T16:21:02.274Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
    "closing_odds": null,
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T16:25:38.309Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned"
+   "flat_profit_units": 0.9009,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null
   },
   {
    "recommendation_id": "pp:ppe_44ac67d1",
@@ -54526,8 +55198,8 @@
    "odds_captured_at": "2026-09-30T00:45:03.353Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -54535,15 +55207,35 @@
    "clv_points": -10,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
    "profit_units": null,
-   "flat_profit_units": 0.9009,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54599,7 +55291,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -54607,10 +55299,26 @@
    "clv_points": 3,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T16:25:38.309Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
@@ -54671,7 +55379,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 16,
    "result_detail": null,
    "final_score": null,
    "closing_line": 19.5,
@@ -54679,10 +55387,26 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 16
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 16 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
@@ -54742,8 +55466,8 @@
    "odds_captured_at": "2026-10-01T00:20:46.448Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -54751,15 +55475,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T00:24:21.211Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5652,
    "profit_units": null,
-   "flat_profit_units": 0.7692,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -54815,7 +55559,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 16,
    "result_detail": null,
    "final_score": null,
    "closing_line": 19.5,
@@ -54823,10 +55567,26 @@
    "clv_points": 0,
    "clv_prob_pp": -6.43,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 16
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 16 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5745,
@@ -54887,7 +55647,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -54895,10 +55655,26 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
@@ -54958,8 +55734,8 @@
    "odds_captured_at": "2026-10-01T20:21:38.116Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -54967,15 +55743,35 @@
    "clv_points": 0,
    "clv_prob_pp": -2.13,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T20:28:03.829Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5192,
    "profit_units": null,
-   "flat_profit_units": 0.9259,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55030,8 +55826,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -55039,15 +55835,35 @@
    "clv_points": 0,
    "clv_prob_pp": -2.59,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
    "profit_units": null,
-   "flat_profit_units": 0.9091,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55174,8 +55990,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 9,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -55183,15 +55999,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 9
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 9 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
-   "profit_units": -0.25,
-   "flat_profit_units": -1,
+   "profit_units": 0.2273,
+   "flat_profit_units": 0.9091,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55246,8 +56082,8 @@
    "odds_captured_at": "2026-09-29T18:45:38.254Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 96,
    "result_detail": null,
    "final_score": null,
    "closing_line": 69.5,
@@ -55255,15 +56091,35 @@
    "clv_points": -20,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 96
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 96 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3077,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.25,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55318,8 +56174,8 @@
    "odds_captured_at": "2026-10-01T02:20:38.369Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -55327,15 +56183,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T02:23:14.276Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5652,
-   "profit_units": 0.1923,
-   "flat_profit_units": 0.7692,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55391,7 +56267,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 11,
    "result_detail": null,
    "final_score": null,
    "closing_line": 8.5,
@@ -55399,10 +56275,26 @@
    "clv_points": -11,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T13:24:18.015Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 11
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 11 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3125,
@@ -55463,7 +56355,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -55471,10 +56363,26 @@
    "clv_points": 4,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
@@ -55535,7 +56443,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 15,
    "result_detail": null,
    "final_score": null,
    "closing_line": 33.5,
@@ -55543,10 +56451,26 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 15
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 15 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
@@ -55606,8 +56530,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 6,
    "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
@@ -55615,15 +56539,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 6
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 6 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6364,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 0.5714,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55678,8 +56622,8 @@
    "odds_captured_at": "2026-10-01T19:20:47.788Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -55687,15 +56631,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T19:28:00.122Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55750,8 +56714,8 @@
    "odds_captured_at": "2026-10-01T21:20:39.490Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -55759,15 +56723,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T21:24:57.458Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5098,
    "profit_units": null,
-   "flat_profit_units": 0.9615,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55822,8 +56806,8 @@
    "odds_captured_at": "2026-09-29T18:45:38.254Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -55831,15 +56815,35 @@
    "clv_points": -3,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5146,
-   "profit_units": 0.2358,
-   "flat_profit_units": 0.9434,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -55895,7 +56899,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 11.5,
@@ -55903,10 +56907,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T15:25:46.100Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
@@ -55966,8 +56986,8 @@
    "odds_captured_at": "2026-09-30T00:45:03.353Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -55975,15 +56995,35 @@
    "clv_points": -3,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
    "profit_units": null,
-   "flat_profit_units": 0.885,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56038,8 +57078,8 @@
    "odds_captured_at": "2026-09-30T16:45:44.040Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -56047,15 +57087,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T16:47:02.211Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
-   "profit_units": 0.2212,
-   "flat_profit_units": 0.885,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56111,7 +57171,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 9,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -56119,10 +57179,26 @@
    "clv_points": -4,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 9
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 9 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3597,
@@ -56182,8 +57258,8 @@
    "odds_captured_at": "2026-09-29T18:45:38.254Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -56191,15 +57267,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6364,
    "profit_units": null,
-   "flat_profit_units": 0.5714,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56254,8 +57350,8 @@
    "odds_captured_at": "2026-10-01T15:20:52.644Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -56263,15 +57359,35 @@
    "clv_points": 0,
    "clv_prob_pp": -0.28,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T15:25:46.100Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5556,
    "profit_units": null,
-   "flat_profit_units": 0.8,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56327,7 +57443,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -56335,10 +57451,26 @@
    "clv_points": 0,
    "clv_prob_pp": -5.26,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T20:48:06.357Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5556,
@@ -56399,7 +57531,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -56407,10 +57539,26 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
@@ -56471,7 +57619,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -56479,10 +57627,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T16:25:38.309Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
@@ -56542,8 +57706,8 @@
    "odds_captured_at": "2026-10-01T22:22:47.904Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -56551,15 +57715,35 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T22:28:28.717Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56686,8 +57870,8 @@
    "odds_captured_at": "2026-09-30T14:45:45.379Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 89,
    "result_detail": null,
    "final_score": null,
    "closing_line": 39.5,
@@ -56695,15 +57879,35 @@
    "clv_points": -10,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T14:47:02.354Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 89
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 89 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.365,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.74,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56759,7 +57963,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 2,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -56767,10 +57971,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 2
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 2 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6078,
@@ -56830,8 +58050,8 @@
    "odds_captured_at": "2026-09-30T00:45:03.353Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -56839,15 +58059,35 @@
    "clv_points": 0,
    "clv_prob_pp": 2.28,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4,
    "profit_units": null,
-   "flat_profit_units": 1.5,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -56902,29 +58142,49 @@
    "odds_captured_at": "2026-10-01T13:20:53.457Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
    "closing_odds": -114,
    "clv_points": 0,
    "clv_prob_pp": -0.8,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T13:24:18.015Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.505,
-   "profit_units": 0,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned"
+   "profit_units": 0.2451,
+   "flat_profit_units": 0.9804,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null
   },
   {
    "recommendation_id": "pp:ppe_83517015",
@@ -56975,7 +58235,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 5,
    "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
@@ -56983,10 +58243,26 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T16:25:38.309Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 5
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 5 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2564,
@@ -57046,8 +58322,8 @@
    "odds_captured_at": "2026-09-30T00:45:03.353Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 43,
    "result_detail": null,
    "final_score": null,
    "closing_line": 11.5,
@@ -57055,15 +58331,35 @@
    "clv_points": -8,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 43
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 43 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3279,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.05,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57119,7 +58415,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": -1,
    "result_detail": null,
    "final_score": null,
    "closing_line": 6.5,
@@ -57127,10 +58423,26 @@
    "clv_points": 0,
    "clv_prob_pp": -1.29,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T15:25:46.100Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": -1
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → -1 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5098,
@@ -57190,8 +58502,8 @@
    "odds_captured_at": "2026-10-01T04:21:00.678Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 299,
    "result_detail": null,
    "final_score": null,
    "closing_line": 215.5,
@@ -57199,15 +58511,35 @@
    "clv_points": 0,
    "clv_prob_pp": -2.47,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T04:24:53.468Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 299
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 299 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5215,
    "profit_units": null,
-   "flat_profit_units": 0.9174,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57334,8 +58666,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 5,
    "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
@@ -57343,15 +58675,35 @@
    "clv_points": 0,
    "clv_prob_pp": 7.09,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 5
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 5 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3509,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.85,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57406,8 +58758,8 @@
    "odds_captured_at": "2026-09-30T18:45:51.034Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -57415,15 +58767,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
    "profit_units": null,
-   "flat_profit_units": 0.885,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57479,7 +58851,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 27,
    "result_detail": null,
    "final_score": null,
    "closing_line": 40.5,
@@ -57487,10 +58859,26 @@
    "clv_points": -9,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T02:23:14.276Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 27
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 27 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3968,
@@ -57550,8 +58938,8 @@
    "odds_captured_at": "2026-10-01T17:25:45.964Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 27,
    "result_detail": null,
    "final_score": null,
    "closing_line": 16.5,
@@ -57559,15 +58947,35 @@
    "clv_points": 0,
    "clv_prob_pp": 2.97,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T17:33:27.126Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 27
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 27 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4651,
    "profit_units": null,
-   "flat_profit_units": 1.15,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57623,7 +59031,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 27,
    "result_detail": null,
    "final_score": null,
    "closing_line": 40.5,
@@ -57631,10 +59039,26 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T18:26:38.631Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 27
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 27 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
@@ -57695,7 +59119,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 27,
    "result_detail": null,
    "final_score": null,
    "closing_line": 40.5,
@@ -57703,10 +59127,26 @@
    "clv_points": -19,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 27
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 27 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2941,
@@ -57910,8 +59350,8 @@
    "odds_captured_at": "2026-10-01T22:50:48.369Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 64,
    "result_detail": null,
    "final_score": null,
    "closing_line": 36.5,
@@ -57919,15 +59359,35 @@
    "clv_points": -23,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T22:57:00.090Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 64
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 64 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 3,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -57982,8 +59442,8 @@
    "odds_captured_at": "2026-10-01T18:50:57.928Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 74,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -57991,15 +59451,35 @@
    "clv_points": -19,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T18:56:22.535Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 74
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 74 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 3,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58055,7 +59535,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 2,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -58063,10 +59543,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T14:47:02.354Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 2
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 2 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6429,
@@ -58198,29 +59694,49 @@
    "odds_captured_at": "2026-10-01T12:20:39.550Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
    "closing_odds": null,
    "clv_points": 3,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T12:23:41.007Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5455,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned"
+   "flat_profit_units": 0.8333,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null
   },
   {
    "recommendation_id": "pp:ppe_9441d08e",
@@ -58270,8 +59786,8 @@
    "odds_captured_at": "2026-09-30T22:45:41.078Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -58279,15 +59795,35 @@
    "clv_points": 0,
    "clv_prob_pp": 3.61,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T22:47:43.372Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4902,
    "profit_units": null,
-   "flat_profit_units": 1.04,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58342,8 +59878,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 17.5,
@@ -58351,15 +59887,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T20:48:06.357Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0.8772,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58414,8 +59970,8 @@
    "odds_captured_at": "2026-09-30T18:45:51.034Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 17.5,
@@ -58423,15 +59979,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5215,
    "profit_units": null,
-   "flat_profit_units": 0.9174,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58486,8 +60062,8 @@
    "odds_captured_at": "2026-09-30T06:45:42.870Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 17.5,
@@ -58495,15 +60071,35 @@
    "clv_points": -3,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T06:46:50.582Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4651,
-   "profit_units": 0.2875,
-   "flat_profit_units": 1.15,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58630,8 +60226,8 @@
    "odds_captured_at": "2026-09-30T18:45:51.034Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -58639,15 +60235,35 @@
    "clv_points": -6,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0.8772,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58702,8 +60318,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 115,
    "result_detail": null,
    "final_score": null,
    "closing_line": 46.5,
@@ -58711,15 +60327,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 115
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 115 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58774,8 +60410,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -58783,15 +60419,35 @@
    "clv_points": 0,
    "clv_prob_pp": -2.59,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T20:48:06.357Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
-   "profit_units": 0.2273,
-   "flat_profit_units": 0.9091,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58846,8 +60502,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 1,
    "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
@@ -58855,15 +60511,35 @@
    "clv_points": 0,
    "clv_prob_pp": -0.06,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 1
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 1 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2564,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.9,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58918,8 +60594,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 74,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -58927,15 +60603,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 74
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 74 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5192,
    "profit_units": null,
-   "flat_profit_units": 0.9259,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -58991,7 +60687,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 16,
    "result_detail": null,
    "final_score": null,
    "closing_line": 19.5,
@@ -58999,10 +60695,26 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 16
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 16 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
@@ -59062,8 +60774,8 @@
    "odds_captured_at": "2026-10-01T12:20:39.550Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 25.5,
@@ -59071,15 +60783,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T12:23:41.007Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59134,8 +60866,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 33,
    "result_detail": null,
    "final_score": null,
    "closing_line": 29.5,
@@ -59143,15 +60875,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 33
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 33 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 0.8696,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59206,8 +60958,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
@@ -59215,15 +60967,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6296,
-   "profit_units": 0.1471,
-   "flat_profit_units": 0.5882,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59279,7 +61051,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -59287,10 +61059,26 @@
    "clv_points": 0,
    "clv_prob_pp": -7.15,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5745,
@@ -59350,8 +61138,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 17.5,
@@ -59359,15 +61147,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5283,
-   "profit_units": 0.2232,
-   "flat_profit_units": 0.8929,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59422,8 +61230,8 @@
    "odds_captured_at": "2026-09-30T00:45:03.353Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 89,
    "result_detail": null,
    "final_score": null,
    "closing_line": 39.5,
@@ -59431,15 +61239,35 @@
    "clv_points": -20,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 89
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 89 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2667,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 2.75,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59638,8 +61466,8 @@
    "odds_captured_at": "2026-09-30T04:45:39.704Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
@@ -59647,15 +61475,35 @@
    "clv_points": 0,
    "clv_prob_pp": 2.74,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T04:46:49.578Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5652,
    "profit_units": null,
-   "flat_profit_units": 0.7692,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59710,8 +61558,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -59719,15 +61567,35 @@
    "clv_points": 0,
    "clv_prob_pp": -3.96,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4878,
-   "profit_units": 0.2625,
-   "flat_profit_units": 1.05,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59782,8 +61650,8 @@
    "odds_captured_at": "2026-09-30T16:45:44.040Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -59791,15 +61659,35 @@
    "clv_points": -6,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T16:47:02.211Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
-   "profit_units": 0.2193,
-   "flat_profit_units": 0.8772,
+   "profit_units": -0.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59854,8 +61742,8 @@
    "odds_captured_at": "2026-10-01T13:20:53.457Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -59863,15 +61751,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T13:24:18.015Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
    "profit_units": null,
-   "flat_profit_units": 0.885,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -59927,7 +61835,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 96,
    "result_detail": null,
    "final_score": null,
    "closing_line": 69.5,
@@ -59935,10 +61843,26 @@
    "clv_points": -30,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T22:47:43.372Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 96
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 96 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
@@ -59999,7 +61923,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": -1,
    "result_detail": null,
    "final_score": null,
    "closing_line": 6.5,
@@ -60007,10 +61931,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T11:23:32.793Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": -1
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → -1 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
@@ -60070,8 +62010,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 93,
    "result_detail": null,
    "final_score": null,
    "closing_line": 75.5,
@@ -60079,15 +62019,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 93
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 93 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
    "profit_units": null,
-   "flat_profit_units": 0.9091,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60214,8 +62174,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 1,
    "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
@@ -60223,15 +62183,35 @@
    "clv_points": 0,
    "clv_prob_pp": -1.75,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 1
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 1 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6198,
    "profit_units": null,
-   "flat_profit_units": 0.6135,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60358,8 +62338,8 @@
    "odds_captured_at": "2026-10-01T22:22:47.904Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -60367,15 +62347,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T22:28:28.717Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4878,
    "profit_units": null,
-   "flat_profit_units": 1.05,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60430,8 +62430,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 7,
    "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
@@ -60439,15 +62439,35 @@
    "clv_points": 0,
    "clv_prob_pp": -1.69,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 7
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 7 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4651,
    "profit_units": null,
-   "flat_profit_units": 1.15,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60502,8 +62522,8 @@
    "odds_captured_at": "2026-09-29T13:25:10.746Z",
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 5,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -60511,15 +62531,35 @@
    "clv_points": 0,
    "clv_prob_pp": -4.75,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 5
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 5 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5,
    "profit_units": null,
-   "flat_profit_units": 1,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60575,7 +62615,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 15,
    "result_detail": null,
    "final_score": null,
    "closing_line": 33.5,
@@ -60583,10 +62623,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 15
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 15 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
@@ -60646,8 +62702,8 @@
    "odds_captured_at": "2026-10-01T00:20:46.448Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -60655,15 +62711,35 @@
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T00:24:21.211Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
    "profit_units": null,
-   "flat_profit_units": 0.9009,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60719,7 +62795,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 22,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -60727,10 +62803,26 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T19:57:41.849Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 22
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 22 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5192,
@@ -60790,8 +62882,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 299,
    "result_detail": null,
    "final_score": null,
    "closing_line": 215.5,
@@ -60799,15 +62891,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 299
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 299 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5349,
    "profit_units": null,
-   "flat_profit_units": 0.8696,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -60863,7 +62975,7 @@
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -60871,10 +62983,26 @@
    "clv_points": 0,
    "clv_prob_pp": 0.9,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T18:48:30.579Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5745,
@@ -61294,8 +63422,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 5,
    "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
@@ -61303,15 +63431,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T21:03:57.029Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 5
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 5 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4444,
    "profit_units": null,
-   "flat_profit_units": 1.25,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -61366,8 +63514,8 @@
    "odds_captured_at": "2026-10-01T18:21:00.146Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 24,
    "result_detail": null,
    "final_score": null,
    "closing_line": 18.5,
@@ -61375,15 +63523,35 @@
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T18:26:38.631Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 24
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 24 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5652,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 0.7692,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -61511,7 +63679,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 17,
    "result_detail": null,
    "final_score": null,
    "closing_line": 27.5,
@@ -61519,10 +63687,26 @@
    "clv_points": 3,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 17
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 17 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
@@ -61583,7 +63767,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "loss",
-   "result_value": 0,
+   "result_value": 1,
    "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
@@ -61591,10 +63775,26 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 1
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 1 (LOSS → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2793,
@@ -61654,8 +63854,8 @@
    "odds_captured_at": "2026-10-01T22:22:47.904Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 96,
    "result_detail": null,
    "final_score": null,
    "closing_line": 69.5,
@@ -61663,15 +63863,35 @@
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-10-01T22:28:28.717Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 96
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 96 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5305,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 0.885,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -61798,8 +64018,8 @@
    "odds_captured_at": "2026-09-30T16:45:44.040Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "loss",
-   "result_value": 0,
+   "result": "win",
+   "result_value": 74,
    "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
@@ -61807,15 +64027,35 @@
    "clv_points": -9,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T16:47:02.211Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "loss",
+       "to": "win"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 74
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 74 (LOSS → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3401,
    "profit_units": null,
-   "flat_profit_units": -1,
+   "flat_profit_units": 1.94,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -62086,8 +64326,8 @@
    "odds_captured_at": "2026-09-30T20:46:01.766Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "win",
-   "result_value": 0,
+   "result": "loss",
+   "result_value": 126,
    "result_detail": null,
    "final_score": null,
    "closing_line": 105.5,
@@ -62095,15 +64335,35 @@
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T20:48:06.357Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result": {
+       "from": "win",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": 0,
+       "to": 126
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 126 (WIN → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0.8772,
+   "flat_profit_units": -1,
    "pnl_status": "VERIFIED",
    "pnl_eligible": true,
    "pnl_note": "Verified P&L",
@@ -62159,7 +64419,7 @@
    "odds_captured_basis": "evaluation time (the price was current when EdgeDesk evaluated it)",
    "evaluation_mode": "LIVE",
    "result": "win",
-   "result_value": 0,
+   "result_value": 3,
    "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
@@ -62167,10 +64427,26 @@
    "clv_points": 0,
    "clv_prob_pp": 7.61,
    "beat_close": true,
-   "settled_at": "2026-10-02T04:40:19.870Z",
+   "settled_at": "2026-10-02T04:55:22.284Z",
    "first_recorded_at": "2026-09-30T02:14:19.571Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-02T04:56:27.933Z",
+     "fields": {
+      "result_value": {
+       "from": 0,
+       "to": 3
+      },
+      "settled_at": {
+       "from": "2026-10-02T04:40:19.870Z",
+       "to": "2026-10-02T04:55:22.284Z"
+      }
+     },
+     "reason": "official statistic changed: 0 → 3 (WIN → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5074,
