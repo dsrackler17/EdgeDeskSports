@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-02T05:07:42.808Z",
+ "generated_at": "2026-10-02T06:07:38.491Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
@@ -23,7 +23,7 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T00:53:47.573Z",
-    "to": "2026-10-01T22:49:26.154Z"
+    "to": "2026-10-02T05:53:09.098Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -128,6 +128,32 @@
   },
   {
    "from_at": "2026-09-27T17:07:13.246Z",
+   "to_at": "2026-10-02T05:53:09.098Z",
+   "old_fair": -1.75,
+   "new_fair": -4.69,
+   "change": -2.94,
+   "material": true,
+   "causes": [
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "TERMS_NOT_RECORDED",
+     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
+    }
+   ],
+   "game_id": "401860899",
+   "game": "Oregon State @ Colorado State",
+   "market_then": 3.5,
+   "market_now": 6.38,
+   "market_change": 2.88,
+   "status_then": "PASS",
+   "status_now": "NO_MARKET",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-09-27T17:07:13.246Z",
    "to_at": "2026-09-30T17:16:40.663Z",
    "old_fair": 2.56,
    "new_fair": -0.36,
@@ -227,32 +253,6 @@
    "market_now": -24.75,
    "market_change": 0.75,
    "status_then": "INVESTIGATE",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-10-01T18:54:59.890Z",
-   "old_fair": -1.75,
-   "new_fair": -3.72,
-   "change": -1.97,
-   "material": true,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401860899",
-   "game": "Oregon State @ Colorado State",
-   "market_then": 3.5,
-   "market_now": 6.38,
-   "market_change": 2.88,
-   "status_then": "PASS",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
