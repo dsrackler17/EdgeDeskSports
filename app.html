@@ -48041,7 +48041,18 @@ function fbSignalsRead(sportKey,signal){
        books-weighted median, then the home side's row);
      - consensus_fault: the main line may not sit more than
        EDCanon.THRESHOLDS.market_consensus_pts from the books-weighted median
-       of the same current rows (lib/edgedesk_canon.js marketConsensusFault);
+       of the same current rows (lib/edgedesk_canon.js marketConsensusFault)
+       that are priced near even money (MAIN_PROB). Inside 30 h of
+       kickoff the capture also buys every book's alternate ladder and files
+       it under 'spreads' (supabase/functions/capture/index.ts, v10), a row
+       per number of a range like -10.5 to +10.5 at several books each. A
+       ladder is not centred on the main line, so its median sat more than
+       1.5 pts off the number every book deals, and the only NFL game inside
+       the window, PIT @ CLE on Thursday night, read MARKET FAULT and failed
+       the NFL self-check (audit 2026-10-01 #2). A
+       book deals its main line near even and every ladder number off it,
+       so the near-even rows are the books' main lines; a row with no price
+       on file counts, as before;
      - no current row: the same consensus over the rows of the NEWEST
        capture on file (fbLatestCapture), marked stale, so the research
        label reads STALE MARKET and the game leaves the research ranking.
@@ -48058,6 +48069,9 @@ function fbMarketFromEvent(e,homeName){
   if(!e||!e.rows)return out;
   var W=typeof window!=='undefined'?window:{},I=W.EDINTEL||null,C=W.EDCanon||null;
   var T=(C&&C.THRESHOLDS)||{market_consensus_pts:1.5,stale_minutes:180};
+  /* near even money, as implied probability of the best price on the row
+     (-150 to +150): a book's main line, never a ladder number 3+ pts off it */
+  var MAIN_PROB=[0.40,0.60];
   var kick=e.t?Date.parse(e.t):null;
   function current(at,mk){
     if(!at)return false;
@@ -48073,7 +48087,7 @@ function fbMarketFromEvent(e,homeName){
     if(r.market==='spreads'&&r.point!=null&&isFinite(+r.point)){
       var side=sel===hN?'home':((aN?sel===aN:sel!==hN)?'away':null);
       if(side)sp.push({side:side,v:side==='home'?+r.point:(+r.point===0?0:-(+r.point)),w:w,book:r.best_book||null,at:r.last_seen_at||null,
-        modal:r.point_is_modal===true,fresh:current(r.last_seen_at,'spreads')});
+        modal:r.point_is_modal===true,fresh:current(r.last_seen_at,'spreads'),dec:fbNum(r.best_dec)});
     }
     if(r.market==='totals'&&/over/i.test(r.selection||'')&&r.point!=null&&isFinite(+r.point))
       ov.push({v:+r.point,w:w,book:r.best_book||null,at:r.last_seen_at||null,modal:r.point_is_modal===true,fresh:current(r.last_seen_at,'totals')});
@@ -48084,7 +48098,8 @@ function fbMarketFromEvent(e,homeName){
     var use=rows.filter(function(x){return x.fresh;}),stale=!use.length;
     if(stale)use=fbLatestCapture(rows);
     if(!use.length)return null;
-    var modal=use.filter(function(x){return x.modal;}),cand=modal.length?modal:use,med=fbWMedian(use),by={},best=null;
+    var even=use.filter(function(x){return x.dec==null||!(x.dec>1)||(1/x.dec>=MAIN_PROB[0]-1e-9&&1/x.dec<=MAIN_PROB[1]+1e-9);});
+    var modal=use.filter(function(x){return x.modal;}),cand=modal.length?modal:use,med=fbWMedian(even.length?even:use),by={},best=null;
     cand.forEach(function(x){
       var k=String(x.v),b=by[k]||(by[k]={v:x.v,w:0,home:false,at:null,book:null});
       b.w+=x.w;if(x.side==='home')b.home=true;

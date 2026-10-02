@@ -213,7 +213,53 @@ section('7. stale quotes: the LAST capture, never every row on file (audit 2026-
 }
 
 /* ---------------------------------------------------------------------- */
-section('8. an open tab re-reads the prices on its own (audit 2026-10-01)');
+section('8. the alternate ladder: the median is of main lines (audit 2026-10-01 #2)');
+{
+  /* Thursday night, PIT @ CLE, three hours out, every quote current. Inside
+     30 h of kickoff the capture also buys each book's alternate ladder and
+     files it under 'spreads': beside the main line (CLE +3, eight books,
+     near even) sits a row per number from -10.5 to +10.5 on both sides, five
+     books each, priced off even the further it runs. The median of all of
+     it is +0.5, 2.5 pts off the main line, and the board read MARKET FAULT. */
+  const CLE = T.FB_CODE_NAMES.CLE || 'Cleveland Browns', PIT = T.FB_CODE_NAMES.PIT || 'Pittsburgh Steelers';
+  const K9 = new Date(NOW + 3 * 3600e3).toISOString();
+  const Phi = (z) => { const t = 1 / (1 + 0.2316419 * Math.abs(z)), d = 0.3989423 * Math.exp(-z * z / 2);
+    const q = d * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274)))); return z > 0 ? 1 - q : q; };
+  /* a book's price at a home line v when the market is centred at `centre`: 4.5% margin, sd 13.5 */
+  const dec = (p) => Math.max(1.01, Math.round(100 / (p * 1.045)) / 100);
+  const ladder = (centre, books, seen) => {
+    const out = [];
+    for (let v = -10.5; v <= 10.5; v += 1) {
+      const pHome = Phi((v - centre) / 13.5);
+      out.push(row(CLE, v, books, seen, { best_dec: dec(pHome) }), row(PIT, -v, books, seen, { best_dec: dec(1 - pHome) }));
+    }
+    return out;
+  };
+  const rows = [row(CLE, 3, 8, 5, { point_is_modal: true, best_dec: 1.95 }), row(PIT, -3, 8, 5, { point_is_modal: true, best_dec: 1.91 })].concat(ladder(3, 5, 5));
+  const all = rows.map((r) => ({ v: r.selection === CLE ? r.point : -r.point, w: r.n_books }));
+  chk('the old rule\'s answer, reproduced: the median of every current row is +0.5, 2.5 pts off the +3 main line', T.fbWMedian(all) === 0.5, T.fbWMedian(all));
+  const m = T.fbMarketFromEvent({ home: CLE, away: PIT, t: K9, rows }, CLE);
+  chk('the market is the main line: PIT -3 (home +3), current', m.stale === false && m.spread_line === -3 && m.spread_consensus.home_line === 3, m.spread_consensus);
+  chk('…checked against the median of the rows dealt near even: +3, no MARKET FAULT', m.consensus_fault === null && m.spread_consensus.home_line_median === 3, [m.consensus_fault, m.spread_consensus]);
+  const S = win.FB.nfl;
+  const g = { game_id: 'MJ9', season: 2026, week: 4, home_team: 'CLE', away_team: 'PIT', gameday: K9.slice(0, 10), spread_line: 3, total_line: 38.5 };
+  S.up = [{ g, t: Date.parse(K9), week: 4, done: false }];
+  S.sig = { 't:MJ9': { home: CLE, away: PIT, t: K9, rows } };
+  chk('the NFL self-check passes with a ladder on file, and the board shows no banner', T.fbNflMarketSelfCheck().ok === true && T.fbNflMarketSelfCheck().checked === 1 && T.fbNflSelfCheckHTML() === '', T.fbNflMarketSelfCheck());
+  const M9 = T.fbNflMarketFor(g, Date.parse(K9));
+  const st = T.fbNflResearchState({ status: 'PREDICTED', model: { fair_spread: 0.8 }, market: { spread_gap: 0.8 - M9.mkt.spread_line } }, M9.mkt, null);
+  chk('…and the game does not read MARKET FAULT', st.label !== 'MARKET FAULT' && st.rule !== 'market_fault_consensus', st);
+  /* a ladder does not hide a real fault: the capture marks CLE +3 modal on
+     two books while six deal CLE +7 at even money, the ladder centred there */
+  const off = [row(CLE, 3, 2, 5, { point_is_modal: true, best_dec: 1.91 }), row(CLE, 7, 6, 5, { best_dec: 1.91 }), row(PIT, -7, 6, 5, { best_dec: 1.91 })].concat(ladder(7, 5, 5));
+  const mf = T.fbMarketFromEvent({ home: CLE, away: PIT, t: K9, rows: off }, CLE);
+  chk('…a main line 4 pts off the books\' even-money lines still reads MARKET FAULT', mf.consensus_fault && mf.consensus_fault.market === 3 && mf.consensus_fault.consensus === 7, mf.consensus_fault);
+  S.sig = { 't:MJ9': { home: CLE, away: PIT, t: K9, rows: off } };
+  chk('…and still fails the board', T.fbNflMarketSelfCheck().ok === false && /NFL MARKET SELF-CHECK FAILED/.test(T.fbNflSelfCheckHTML()), T.fbNflMarketSelfCheck());
+}
+
+/* ---------------------------------------------------------------------- */
+section('9. an open tab re-reads the prices on its own (audit 2026-10-01)');
 (async () => {
   /* the tab loaded at breakfast: its quotes are three hours old, the
      re-learn waits six, and capture re-priced the game half an hour ago */
