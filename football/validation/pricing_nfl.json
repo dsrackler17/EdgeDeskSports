@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pricing_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-09-16T16:30:19.183Z",
+ "generated_at": "2026-10-02T15:56:15.064Z",
  "frame": {
   "engine": "football/engine.js edgedesk_football_v1.0.0",
   "params_trained_through": 2025,
@@ -21,7 +21,6 @@
    2013,
    2014,
    2015,
-   2016,
    2017,
    2018,
    2019,
@@ -32,10 +31,10 @@
    2024,
    2025
   ],
-  "games_scored": 2658,
-  "games_absorbed": 4889,
-  "refused": 103,
-  "without_team_week_rows": 542,
+  "games_scored": 2642,
+  "games_absorbed": 4653,
+  "refused": 119,
+  "without_team_week_rows": 778,
   "caveats": [
    "league-mean priors come from the shipped parameter set (trained through 2025); the club ratings start at zero",
    "the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here",
@@ -65,26 +64,26 @@
  },
  "markets": {
   "spread": {
-   "n": 2658,
+   "n": 2642,
    "seasons": {
     "2016": {
-     "n": 228,
-     "model_mae": 9.783,
-     "close_mae": 9.248
+     "n": 220,
+     "model_mae": 9.929,
+     "close_mae": 9.139
     },
     "2017": {
-     "n": 243,
-     "model_mae": 11.151,
-     "close_mae": 10.309
+     "n": 235,
+     "model_mae": 10.927,
+     "close_mae": 10.098
     },
     "2018": {
      "n": 251,
-     "model_mae": 9.973,
+     "model_mae": 9.958,
      "close_mae": 9.799
     },
     "2019": {
      "n": 251,
-     "model_mae": 11.015,
+     "model_mae": 11.02,
      "close_mae": 10.086
     },
     "2020": {
@@ -119,107 +118,107 @@
     }
    },
    "pooled": {
-    "model_mae": 10.382,
-    "close_mae": 9.803
+    "model_mae": 10.373,
+    "close_mae": 9.775
    },
    "blend": {
     "holdouts": [
      {
       "season": 2019,
       "tune_seasons": "2016-2018",
-      "n_tune": 722,
+      "n_tune": 706,
       "n_test": 251,
       "coef": {
-       "intercept": -0.0315,
-       "close": 1.1022,
-       "model_minus_close": 0.1589
+       "intercept": 0.0817,
+       "close": 1.0798,
+       "model_minus_close": 0.1727
       },
-      "sigma_tune": 12.808,
-      "blend_mae": 10.104,
+      "sigma_tune": 12.659,
+      "blend_mae": 10.124,
       "close_mae": 10.086
      },
      {
       "season": 2020,
       "tune_seasons": "2016-2019",
-      "n_tune": 973,
+      "n_tune": 957,
       "n_test": 261,
       "coef": {
-       "intercept": -0.7368,
-       "close": 1.1505,
-       "model_minus_close": 0.188
+       "intercept": -0.686,
+       "close": 1.1423,
+       "model_minus_close": 0.2051
       },
-      "sigma_tune": 12.849,
-      "blend_mae": 9.822,
+      "sigma_tune": 12.744,
+      "blend_mae": 9.814,
       "close_mae": 9.77
      },
      {
       "season": 2021,
       "tune_seasons": "2016-2020",
-      "n_tune": 1234,
+      "n_tune": 1218,
       "n_test": 285,
       "coef": {
-       "intercept": -0.792,
-       "close": 1.1291,
-       "model_minus_close": 0.1775
+       "intercept": -0.7519,
+       "close": 1.1203,
+       "model_minus_close": 0.1871
       },
-      "sigma_tune": 12.813,
-      "blend_mae": 10.611,
+      "sigma_tune": 12.73,
+      "blend_mae": 10.609,
       "close_mae": 10.667
      },
      {
       "season": 2022,
       "tune_seasons": "2016-2021",
-      "n_tune": 1519,
+      "n_tune": 1503,
       "n_test": 284,
       "coef": {
-       "intercept": -0.6676,
-       "close": 1.1231,
-       "model_minus_close": 0.1651
+       "intercept": -0.633,
+       "close": 1.1155,
+       "model_minus_close": 0.1715
       },
-      "sigma_tune": 12.956,
-      "blend_mae": 8.784,
+      "sigma_tune": 12.891,
+      "blend_mae": 8.773,
       "close_mae": 8.783
      },
      {
       "season": 2023,
       "tune_seasons": "2016-2022",
-      "n_tune": 1803,
+      "n_tune": 1787,
       "n_test": 285,
       "coef": {
-       "intercept": -0.5536,
-       "close": 1.1109,
-       "model_minus_close": 0.1959
+       "intercept": -0.5249,
+       "close": 1.1048,
+       "model_minus_close": 0.2015
       },
-      "sigma_tune": 12.734,
-      "blend_mae": 10.014,
+      "sigma_tune": 12.675,
+      "blend_mae": 10.015,
       "close_mae": 9.984
      },
      {
       "season": 2024,
       "tune_seasons": "2016-2023",
-      "n_tune": 2088,
+      "n_tune": 2072,
       "n_test": 285,
       "coef": {
-       "intercept": -0.3092,
-       "close": 1.0889,
-       "model_minus_close": 0.1572
+       "intercept": -0.2773,
+       "close": 1.0812,
+       "model_minus_close": 0.1595
       },
-      "sigma_tune": 12.8,
-      "blend_mae": 9.651,
+      "sigma_tune": 12.749,
+      "blend_mae": 9.65,
       "close_mae": 9.704
      },
      {
       "season": 2025,
       "tune_seasons": "2016-2024",
-      "n_tune": 2373,
+      "n_tune": 2357,
       "n_test": 285,
       "coef": {
-       "intercept": -0.3811,
-       "close": 1.1565,
-       "model_minus_close": 0.232
+       "intercept": -0.3664,
+       "close": 1.1551,
+       "model_minus_close": 0.2411
       },
-      "sigma_tune": 12.78,
-      "blend_mae": 9.727,
+      "sigma_tune": 12.736,
+      "blend_mae": 9.728,
       "close_mae": 9.67
      }
     ],
@@ -229,140 +228,140 @@
      "close_mae": 9.805
     },
     "latest_coef": {
-     "intercept": -0.3811,
-     "close": 1.1565,
-     "model_minus_close": 0.232
+     "intercept": -0.3664,
+     "close": 1.1551,
+     "model_minus_close": 0.2411
     },
-    "latest_sigma": 12.78,
+    "latest_sigma": 12.736,
     "incremental_information": "the model adds information over the close"
    },
    "ats_vs_close": {
     "raw_model_oos": {
      "1": {
-      "n": 2122,
-      "wins": 1109,
-      "pushes": 52,
-      "win_pct": 0.5226,
-      "p_one_sided": 0.0196,
-      "seasons_above_half": 7,
+      "n": 2125,
+      "wins": 1103,
+      "pushes": 51,
+      "win_pct": 0.5191,
+      "p_one_sided": 0.0413,
+      "seasons_above_half": 6,
       "seasons_scored": 10
      },
      "2": {
-      "n": 1672,
-      "wins": 873,
-      "pushes": 38,
-      "win_pct": 0.5221,
-      "p_one_sided": 0.0371,
+      "n": 1684,
+      "wins": 876,
+      "pushes": 36,
+      "win_pct": 0.5202,
+      "p_one_sided": 0.0513,
       "seasons_above_half": 7,
       "seasons_scored": 10
      },
      "3": {
-      "n": 1295,
-      "wins": 675,
+      "n": 1298,
+      "wins": 678,
       "pushes": 28,
-      "win_pct": 0.5212,
-      "p_one_sided": 0.0667,
+      "win_pct": 0.5223,
+      "p_one_sided": 0.0568,
       "seasons_above_half": 8,
       "seasons_scored": 10
      },
      "4": {
-      "n": 942,
-      "wins": 498,
-      "pushes": 19,
-      "win_pct": 0.5287,
-      "p_one_sided": 0.0421,
-      "seasons_above_half": 6,
+      "n": 935,
+      "wins": 497,
+      "pushes": 18,
+      "win_pct": 0.5316,
+      "p_one_sided": 0.0289,
+      "seasons_above_half": 7,
       "seasons_scored": 10
      },
      "6": {
-      "n": 447,
-      "wins": 218,
+      "n": 446,
+      "wins": 226,
       "pushes": 9,
-      "win_pct": 0.4877,
-      "p_one_sided": 0.7148,
-      "seasons_above_half": 3,
+      "win_pct": 0.5067,
+      "p_one_sided": 0.4064,
+      "seasons_above_half": 4,
       "seasons_scored": 10
      },
      "0.5": {
-      "n": 2342,
-      "wins": 1223,
-      "pushes": 55,
-      "win_pct": 0.5222,
-      "p_one_sided": 0.0167,
-      "seasons_above_half": 7,
+      "n": 2344,
+      "wins": 1222,
+      "pushes": 54,
+      "win_pct": 0.5213,
+      "p_one_sided": 0.0204,
+      "seasons_above_half": 6,
       "seasons_scored": 10
      },
      "1.5": {
-      "n": 1892,
-      "wins": 998,
-      "pushes": 47,
-      "win_pct": 0.5275,
-      "p_one_sided": 0.0089,
-      "seasons_above_half": 7,
+      "n": 1914,
+      "wins": 1001,
+      "pushes": 45,
+      "win_pct": 0.523,
+      "p_one_sided": 0.0234,
+      "seasons_above_half": 6,
       "seasons_scored": 10
      }
     },
     "raw_model_later": {
      "1": {
-      "n": 1549,
-      "wins": 806,
+      "n": 1550,
+      "wins": 807,
       "pushes": 38,
-      "win_pct": 0.5203,
-      "p_one_sided": 0.0576,
+      "win_pct": 0.5206,
+      "p_one_sided": 0.0548,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "2": {
-      "n": 1207,
+      "n": 1206,
       "wins": 629,
       "pushes": 26,
-      "win_pct": 0.5211,
-      "p_one_sided": 0.075,
+      "win_pct": 0.5216,
+      "p_one_sided": 0.071,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "3": {
-      "n": 931,
-      "wins": 491,
+      "n": 934,
+      "wins": 492,
       "pushes": 20,
-      "win_pct": 0.5274,
-      "p_one_sided": 0.0506,
+      "win_pct": 0.5268,
+      "p_one_sided": 0.0544,
       "seasons_above_half": 6,
       "seasons_scored": 7
      },
      "4": {
-      "n": 674,
-      "wins": 366,
+      "n": 675,
+      "wins": 367,
       "pushes": 14,
-      "win_pct": 0.543,
-      "p_one_sided": 0.0141,
+      "win_pct": 0.5437,
+      "p_one_sided": 0.0128,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "6": {
-      "n": 324,
+      "n": 326,
       "wins": 165,
       "pushes": 6,
-      "win_pct": 0.5093,
-      "p_one_sided": 0.3906,
+      "win_pct": 0.5061,
+      "p_one_sided": 0.434,
       "seasons_above_half": 3,
       "seasons_scored": 7
      },
      "0.5": {
-      "n": 1715,
-      "wins": 890,
+      "n": 1714,
+      "wins": 891,
       "pushes": 40,
-      "win_pct": 0.519,
-      "p_one_sided": 0.0611,
+      "win_pct": 0.5198,
+      "p_one_sided": 0.0528,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "1.5": {
-      "n": 1377,
-      "wins": 723,
+      "n": 1380,
+      "wins": 725,
       "pushes": 33,
-      "win_pct": 0.5251,
-      "p_one_sided": 0.0334,
+      "win_pct": 0.5254,
+      "p_one_sided": 0.0316,
       "seasons_above_half": 5,
       "seasons_scored": 7
      }
@@ -382,21 +381,21 @@
       },
       {
        "bucket": "0.4-0.48",
-       "n": 391,
-       "predicted": 0.4704,
-       "observed": 0.4936
+       "n": 386,
+       "predicted": 0.4708,
+       "observed": 0.4793
       },
       {
        "bucket": "0.48-0.52",
-       "n": 1366,
-       "predicted": 0.4976,
-       "observed": 0.4854
+       "n": 1344,
+       "predicted": 0.498,
+       "observed": 0.4926
       },
       {
        "bucket": "0.52-0.6",
-       "n": 136,
-       "predicted": 0.5298,
-       "observed": 0.5588
+       "n": 163,
+       "predicted": 0.5314,
+       "observed": 0.5215
       },
       {
        "bucket": "0.6-1",
@@ -405,7 +404,7 @@
        "observed": null
       }
      ],
-     "brier": 0.2502,
+     "brier": 0.2501,
      "brier_base_rate": 0.25,
      "n": 1893
     },
@@ -413,71 +412,71 @@
      "buckets": [
       {
        "bucket": "0-0.4",
-       "n": 358,
-       "predicted": 0.3363,
-       "observed": 0.4637
-      },
-      {
-       "bucket": "0.4-0.48",
-       "n": 389,
-       "predicted": 0.4427,
-       "observed": 0.4807
-      },
-      {
-       "bucket": "0.48-0.52",
-       "n": 230,
-       "predicted": 0.5003,
+       "n": 362,
+       "predicted": 0.3359,
        "observed": 0.4696
       },
       {
+       "bucket": "0.4-0.48",
+       "n": 385,
+       "predicted": 0.4427,
+       "observed": 0.4753
+      },
+      {
+       "bucket": "0.48-0.52",
+       "n": 228,
+       "predicted": 0.5001,
+       "observed": 0.4693
+      },
+      {
        "bucket": "0.52-0.6",
-       "n": 409,
-       "predicted": 0.5586,
-       "observed": 0.4963
+       "n": 411,
+       "predicted": 0.5588,
+       "observed": 0.4988
       },
       {
        "bucket": "0.6-1",
        "n": 507,
-       "predicted": 0.6828,
-       "observed": 0.5286
+       "predicted": 0.6838,
+       "observed": 0.5266
       }
      ],
-     "brier": 0.2624,
+     "brier": 0.2626,
      "brier_base_rate": 0.25,
      "n": 1893
     },
     "basis": "P(cover at the close) = Phi((fair - close) / sigma) with fair the time-separated blend (or the raw model with the close-only sigma), scored on 2019-2025"
    },
-   "required_edge_points": 1.5,
+   "required_edge_points": 4,
    "tier": "LEAN",
-   "tier_basis": "a disagreement of 1.5+ points cleared break-even (0.5275 over n=1892, p 0.0089) but not a point above it: the model side is not a losing side at -110, and it is not yet a profit"
+   "tier_basis": "a disagreement of 4+ points cleared break-even (0.5316 over n=935, p 0.0289) but not a point above it: the model side is not a losing side at -110, and it is not yet a profit"
   },
   "total": {
-   "n": 2658,
+   "n": 2642,
    "seasons": {
     "2016": {
-     "n": 228,
-     "model_mae": 9.899,
-     "close_mae": 9.414
+     "n": 220,
+     "model_mae": 10.04,
+     "close_mae": 9.255
     },
     "2017": {
-     "n": 243,
-     "model_mae": 11.528,
-     "close_mae": 11.393
+     "n": 235,
+     "model_mae": 11.342,
+     "close_mae": 11.232
     },
     "2018": {
      "n": 251,
-     "model_mae": 11.062,
+     "model_mae": 11.051,
      "close_mae": 10.645
     },
     "2019": {
      "n": 251,
-     "model_mae": 10.907,
+     "model_mae": 10.9,
      "close_mae": 10.946
     },
     "2020": {
      "n": 261,
-     "model_mae": 10.992,
+     "model_mae": 10.994,
      "close_mae": 10.247
     },
     "2021": {
@@ -507,250 +506,250 @@
     }
    },
    "pooled": {
-    "model_mae": 10.659,
-    "close_mae": 10.419
+    "model_mae": 10.653,
+    "close_mae": 10.392
    },
    "blend": {
     "holdouts": [
      {
       "season": 2019,
       "tune_seasons": "2016-2018",
-      "n_tune": 722,
+      "n_tune": 706,
       "n_test": 251,
       "coef": {
-       "intercept": 3.4039,
-       "close": 0.9187,
-       "model_minus_close": -0.2248
+       "intercept": 1.176,
+       "close": 0.9675,
+       "model_minus_close": -0.1006
       },
-      "sigma_tune": 13.406,
-      "blend_mae": 10.985,
+      "sigma_tune": 13.297,
+      "blend_mae": 10.964,
       "close_mae": 10.946
      },
      {
       "season": 2020,
       "tune_seasons": "2016-2019",
-      "n_tune": 973,
+      "n_tune": 957,
       "n_test": 261,
       "coef": {
-       "intercept": 1.6164,
-       "close": 0.964,
-       "model_minus_close": -0.1036
+       "intercept": -0.3508,
+       "close": 1.0075,
+       "model_minus_close": -0.0037
       },
-      "sigma_tune": 13.455,
-      "blend_mae": 10.242,
+      "sigma_tune": 13.373,
+      "blend_mae": 10.247,
       "close_mae": 10.247
      },
      {
       "season": 2021,
       "tune_seasons": "2016-2020",
-      "n_tune": 1234,
+      "n_tune": 1218,
       "n_test": 285,
       "coef": {
-       "intercept": 2.1345,
-       "close": 0.9553,
-       "model_minus_close": -0.1803
+       "intercept": 0.5772,
+       "close": 0.9901,
+       "model_minus_close": -0.0966
       },
-      "sigma_tune": 13.36,
-      "blend_mae": 10.893,
+      "sigma_tune": 13.298,
+      "blend_mae": 10.862,
       "close_mae": 10.807
      },
      {
       "season": 2022,
       "tune_seasons": "2016-2021",
-      "n_tune": 1519,
+      "n_tune": 1503,
       "n_test": 284,
       "coef": {
-       "intercept": -0.0227,
-       "close": 1.0036,
-       "model_minus_close": -0.0015
+       "intercept": -1.327,
+       "close": 1.0328,
+       "model_minus_close": 0.0522
       },
-      "sigma_tune": 13.356,
-      "blend_mae": 10.414,
+      "sigma_tune": 13.301,
+      "blend_mae": 10.409,
       "close_mae": 10.398
      },
      {
       "season": 2023,
       "tune_seasons": "2016-2022",
-      "n_tune": 1803,
+      "n_tune": 1787,
       "n_test": 285,
       "coef": {
-       "intercept": -0.545,
-       "close": 1.0147,
-       "model_minus_close": 0.0349
+       "intercept": -1.6626,
+       "close": 1.0396,
+       "model_minus_close": 0.0786
       },
-      "sigma_tune": 13.334,
-      "blend_mae": 10.178,
+      "sigma_tune": 13.286,
+      "blend_mae": 10.176,
       "close_mae": 10.168
      },
      {
       "season": 2024,
       "tune_seasons": "2016-2023",
-      "n_tune": 2088,
+      "n_tune": 2072,
       "n_test": 285,
       "coef": {
-       "intercept": -0.7324,
-       "close": 1.0211,
-       "model_minus_close": 0.0846
+       "intercept": -1.7159,
+       "close": 1.0429,
+       "model_minus_close": 0.1203
       },
-      "sigma_tune": 13.294,
-      "blend_mae": 9.758,
+      "sigma_tune": 13.252,
+      "blend_mae": 9.763,
       "close_mae": 9.768
      },
      {
       "season": 2025,
       "tune_seasons": "2016-2024",
-      "n_tune": 2373,
+      "n_tune": 2357,
       "n_test": 285,
       "coef": {
-       "intercept": -0.4292,
-       "close": 1.0177,
-       "model_minus_close": 0.081
+       "intercept": -1.296,
+       "close": 1.0369,
+       "model_minus_close": 0.1138
       },
-      "sigma_tune": 13.208,
-      "blend_mae": 10.398,
+      "sigma_tune": 13.17,
+      "blend_mae": 10.395,
       "close_mae": 10.423
      }
     ],
     "pooled_holdout": {
      "n": 1936,
-     "blend_mae": 10.402,
+     "blend_mae": 10.394,
      "close_mae": 10.386
     },
     "latest_coef": {
-     "intercept": -0.4292,
-     "close": 1.0177,
-     "model_minus_close": 0.081
+     "intercept": -1.296,
+     "close": 1.0369,
+     "model_minus_close": 0.1138
     },
-    "latest_sigma": 13.208,
+    "latest_sigma": 13.17,
     "incremental_information": "the model adds information over the close"
    },
    "ats_vs_close": {
     "raw_model_oos": {
      "1": {
-      "n": 1923,
-      "wins": 980,
+      "n": 1926,
+      "wins": 993,
       "pushes": 16,
-      "win_pct": 0.5096,
-      "p_one_sided": 0.2058,
-      "seasons_above_half": 7,
+      "win_pct": 0.5156,
+      "p_one_sided": 0.0894,
+      "seasons_above_half": 8,
       "seasons_scored": 10
      },
      "2": {
-      "n": 1318,
-      "wins": 671,
+      "n": 1346,
+      "wins": 684,
       "pushes": 12,
-      "win_pct": 0.5091,
-      "p_one_sided": 0.2632,
-      "seasons_above_half": 6,
+      "win_pct": 0.5082,
+      "p_one_sided": 0.2835,
+      "seasons_above_half": 5,
       "seasons_scored": 10
      },
      "3": {
-      "n": 839,
-      "wins": 432,
+      "n": 887,
+      "wins": 451,
       "pushes": 9,
-      "win_pct": 0.5149,
-      "p_one_sided": 0.2037,
-      "seasons_above_half": 7,
+      "win_pct": 0.5085,
+      "p_one_sided": 0.3192,
+      "seasons_above_half": 6,
       "seasons_scored": 10
      },
      "4": {
-      "n": 510,
-      "wins": 270,
+      "n": 552,
+      "wins": 285,
       "pushes": 6,
-      "win_pct": 0.5294,
-      "p_one_sided": 0.0995,
+      "win_pct": 0.5163,
+      "p_one_sided": 0.2347,
       "seasons_above_half": 7,
       "seasons_scored": 10
      },
      "6": {
-      "n": 150,
-      "wins": 87,
+      "n": 174,
+      "wins": 95,
       "pushes": 2,
-      "win_pct": 0.58,
-      "p_one_sided": 0.0302,
+      "win_pct": 0.546,
+      "p_one_sided": 0.1277,
       "seasons_above_half": 3,
-      "seasons_scored": 3
+      "seasons_scored": 4
      },
      "0.5": {
-      "n": 2266,
-      "wins": 1163,
+      "n": 2259,
+      "wins": 1164,
       "pushes": 17,
-      "win_pct": 0.5132,
-      "p_one_sided": 0.1076,
+      "win_pct": 0.5153,
+      "p_one_sided": 0.0763,
       "seasons_above_half": 7,
       "seasons_scored": 10
      },
      "1.5": {
-      "n": 1603,
-      "wins": 818,
+      "n": 1619,
+      "wins": 823,
       "pushes": 13,
-      "win_pct": 0.5103,
-      "p_one_sided": 0.2121,
-      "seasons_above_half": 7,
+      "win_pct": 0.5083,
+      "p_one_sided": 0.2591,
+      "seasons_above_half": 6,
       "seasons_scored": 10
      }
     },
     "raw_model_later": {
      "1": {
-      "n": 1380,
-      "wins": 721,
+      "n": 1381,
+      "wins": 720,
       "pushes": 14,
-      "win_pct": 0.5225,
-      "p_one_sided": 0.0503,
+      "win_pct": 0.5214,
+      "p_one_sided": 0.0593,
       "seasons_above_half": 6,
       "seasons_scored": 7
      },
      "2": {
-      "n": 950,
+      "n": 952,
       "wins": 492,
       "pushes": 10,
-      "win_pct": 0.5179,
-      "p_one_sided": 0.1422,
+      "win_pct": 0.5168,
+      "p_one_sided": 0.1575,
       "seasons_above_half": 4,
       "seasons_scored": 7
      },
      "3": {
-      "n": 611,
+      "n": 612,
       "wins": 318,
       "pushes": 8,
-      "win_pct": 0.5205,
-      "p_one_sided": 0.1658,
+      "win_pct": 0.5196,
+      "p_one_sided": 0.1763,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "4": {
-      "n": 380,
-      "wins": 203,
+      "n": 379,
+      "wins": 201,
       "pushes": 5,
-      "win_pct": 0.5342,
-      "p_one_sided": 0.0998,
+      "win_pct": 0.5303,
+      "p_one_sided": 0.1292,
       "seasons_above_half": 5,
       "seasons_scored": 7
      },
      "6": {
-      "n": 116,
-      "wins": 67,
+      "n": 117,
+      "wins": 68,
       "pushes": 1,
-      "win_pct": 0.5776,
-      "p_one_sided": 0.0572,
+      "win_pct": 0.5812,
+      "p_one_sided": 0.048,
       "seasons_above_half": 2,
       "seasons_scored": 2
      },
      "0.5": {
-      "n": 1639,
-      "wins": 854,
+      "n": 1634,
+      "wins": 850,
       "pushes": 15,
-      "win_pct": 0.521,
-      "p_one_sided": 0.0465,
+      "win_pct": 0.5202,
+      "p_one_sided": 0.0539,
       "seasons_above_half": 6,
       "seasons_scored": 7
      },
      "1.5": {
-      "n": 1148,
-      "wins": 592,
+      "n": 1146,
+      "wins": 591,
       "pushes": 11,
       "win_pct": 0.5157,
-      "p_one_sided": 0.1508,
+      "p_one_sided": 0.1506,
       "seasons_above_half": 5,
       "seasons_scored": 7
      }
@@ -770,21 +769,21 @@
       },
       {
        "bucket": "0.4-0.48",
-       "n": 32,
-       "predicted": 0.4739,
-       "observed": 0.5625
+       "n": 3,
+       "predicted": 0.4758,
+       "observed": 1
       },
       {
        "bucket": "0.48-0.52",
-       "n": 1771,
-       "predicted": 0.5053,
-       "observed": 0.489
+       "n": 1845,
+       "predicted": 0.5041,
+       "observed": 0.4878
       },
       {
        "bucket": "0.52-0.6",
-       "n": 115,
-       "predicted": 0.5273,
-       "observed": 0.4609
+       "n": 70,
+       "predicted": 0.5236,
+       "observed": 0.4857
       },
       {
        "bucket": "0.6-1",
@@ -793,7 +792,7 @@
        "observed": null
       }
      ],
-     "brier": 0.2505,
+     "brier": 0.2503,
      "brier_base_rate": 0.25,
      "n": 1918
     },
@@ -801,33 +800,33 @@
      "buckets": [
       {
        "bucket": "0-0.4",
-       "n": 320,
-       "predicted": 0.3524,
-       "observed": 0.4688
+       "n": 323,
+       "predicted": 0.352,
+       "observed": 0.4706
       },
       {
        "bucket": "0.4-0.48",
-       "n": 537,
-       "predicted": 0.4462,
-       "observed": 0.473
+       "n": 530,
+       "predicted": 0.4459,
+       "observed": 0.4736
       },
       {
        "bucket": "0.48-0.52",
-       "n": 359,
+       "n": 366,
        "predicted": 0.5007,
-       "observed": 0.4903
+       "observed": 0.4891
       },
       {
        "bucket": "0.52-0.6",
-       "n": 501,
-       "predicted": 0.5553,
-       "observed": 0.505
+       "n": 497,
+       "predicted": 0.5557,
+       "observed": 0.503
       },
       {
        "bucket": "0.6-1",
-       "n": 201,
-       "predicted": 0.6443,
-       "observed": 0.5174
+       "n": 202,
+       "predicted": 0.6446,
+       "observed": 0.5198
       }
      ],
      "brier": 0.2548,
@@ -841,67 +840,67 @@
    "tier_basis": "no disagreement threshold cleared break-even and the cover probabilities do not beat the base rate"
   },
   "moneyline": {
-   "n": 2647,
+   "n": 2631,
    "holdouts": [
     {
      "season": 2019,
      "n_test": 250,
      "coef": {
-      "market": 1.122,
-      "model_minus_market": 0.2057
+      "market": 1.0506,
+      "model_minus_market": 0.0917
      }
     },
     {
      "season": 2020,
      "n_test": 260,
      "coef": {
-      "market": 1.1109,
-      "model_minus_market": 0.177
+      "market": 1.0565,
+      "model_minus_market": 0.092
      }
     },
     {
      "season": 2021,
      "n_test": 284,
      "coef": {
-      "market": 1.1547,
-      "model_minus_market": 0.2025
+      "market": 1.1215,
+      "model_minus_market": 0.1471
      }
     },
     {
      "season": 2022,
      "n_test": 282,
      "coef": {
-      "market": 1.1085,
-      "model_minus_market": 0.1763
+      "market": 1.0758,
+      "model_minus_market": 0.123
      }
     },
     {
      "season": 2023,
      "n_test": 285,
      "coef": {
-      "market": 1.1363,
-      "model_minus_market": 0.2129
+      "market": 1.1126,
+      "model_minus_market": 0.1721
      }
     },
     {
      "season": 2024,
      "n_test": 285,
      "coef": {
-      "market": 1.0929,
-      "model_minus_market": 0.1647
+      "market": 1.0686,
+      "model_minus_market": 0.1232
      }
     },
     {
      "season": 2025,
      "n_test": 284,
      "coef": {
-      "market": 1.1314,
-      "model_minus_market": 0.1973
+      "market": 1.1139,
+      "model_minus_market": 0.1656
      }
     }
    ],
    "brier": {
-    "blend_held_out": 0.2101,
+    "blend_held_out": 0.2102,
     "market_devigged": 0.21,
     "raw_model": 0.2298,
     "n": 1930
