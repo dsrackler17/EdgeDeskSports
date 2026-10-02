@@ -242,6 +242,32 @@ function siteHandler(req, res) {
   chk('CFB shows the calibrated EV beside the raw EV', board.sample.length > 0 && board.sample.every((t) => /Raw EV/.test(t) && /Calibrated [+−]\d/.test(t)), board.sample);
   chk('the decision is shown apart from the EV', board.sample.every((t) => /Decision/.test(t)), board.sample);
   chk('the board offers Highest EV, Lowest EV and Freshest quote sorts', ['Highest EV', 'Lowest EV', 'Freshest quote'].every((s) => board.sorts.indexOf(s) >= 0), board.sorts);
+  /* ONE CFB DISTRIBUTION, in the page: the loader fetched the versioned
+     quote-EV module, and the board priced McNeese @ LSU (its captured LSU
+     −52.5, home margin +52.5: past the ±45 table) on the terminal's curve —
+     football/cfb_terminal/build.js v1Dist at the SAME fair margin, σ and
+     market the page used (its quote-EV cache key) — monotone at every half point */
+  {
+    const TB = require(path.join(ROOT, 'football', 'cfb_terminal', 'build.js'));
+    const TS = []; for (let t = -40; t <= 90; t += 0.5) TS.push(t);
+    const got = await page.evaluate((ts) => {
+      const s = document.querySelector('script[data-fb^="lib/edgedesk_quote_ev.js"]');
+      const u = ((window.FB && window.FB.p4 && window.FB.p4.up) || []).find((x) => x.g.home_team === 'LSU' && /McNeese/.test(x.g.away_team));
+      const out = { src: s && s.getAttribute('src'), shared: !!(window.EDQuoteEV && typeof window.EDQuoteEV.cfbGameCover === 'function'), found: !!u, priced: !!(u && u._qev && u._qev.v && u._qev.v.model && u._qev.v.model.home_cover) };
+      if (!out.priced) return out;
+      const k = u._qev.key.split('|'), m = u._qev.v.model;
+      return Object.assign(out, { fair: +k[0], sigma: +k[1], market: k[2] === '' ? null : +k[2], basis: m.basis, cover: ts.map((t) => m.home_cover(t)) });
+    }, TS);
+    chk('the page loads the quote-EV module under its cache-busting version, with the shared CFB row', /\?v=\d{8}/.test(got.src || '') && got.shared, [got.src, got.shared]);
+    chk('McNeese @ LSU is on the board and priced against its captured LSU −52.5 (home margin +52.5, past the ±45 table)', got.priced && got.market === 52.5, [got.found, got.priced, got.market]);
+    if (got.priced) {
+      const want = TS.map((t) => TB.v1Dist(got.fair, got.sigma, got.market).cover(t));
+      chk('… the page’s ladder distribution equals the terminal’s curve at every half point (fair ' + got.fair.toFixed(2) + ', σ ' + got.sigma.toFixed(2) + ')',
+        TS.every((t, i) => Math.abs(got.cover[i].win - want[i].win) < 1e-12 && Math.abs(got.cover[i].push - want[i].push) < 1e-12) && /table’s edge \(home margin \+45\.0/.test(got.basis),
+        [got.basis].concat(TS.map((t, i) => [t, got.cover[i].win, want[i].win]).filter((x) => Math.abs(x[1] - x[2]) >= 1e-12).slice(0, 4)));
+      chk('… and it never rises with the line', got.cover.every((c, i) => i === 0 || (c.win <= got.cover[i - 1].win + 1e-12 && c.win + c.push <= got.cover[i - 1].win + got.cover[i - 1].push + 1e-12)));
+    }
+  }
   if (SHOTS) {
     fs.mkdirSync(SHOTS, { recursive: true });
     await page.evaluate(() => { const o = document.querySelector('[class*="onb"],[id*="onb"]'); void o; const b = document.querySelector('.qev-sub'); if (b) b.scrollIntoView(); });

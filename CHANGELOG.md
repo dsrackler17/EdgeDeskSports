@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-02 — the app's CFB ladder is the terminal's curve, whatever the market
+
+The entry below fixed the terminal. Two readers still fell back to the engine's per-line lookup (`EDCfbP4.dist.coverProbSpread`) whenever `cfbConditionedCover` refused a market outside the ±45 table, or there was no market: `app.html` `fbQevModelCfb` (the alternate ladder and the EV-by-spread chart) and `tools/football/ev_plausibility.js` `coverFor`. So the app priced McNeese @ LSU (LSU −52.5) on a curve that rose with the line (P(M > 18) 0.9270, P(M > 18.5) 0.9309 at fair +41.42, σ 14.9), while its comment said it read the terminal's distribution.
+
+- **One shared row** (`lib/edgedesk_quote_ev.js`):
+  - `cfbPmfRow(distributions, fair, marketMargin)` is the market margin clamped to `pmf_spread_range`, or the fair margin clamped the same way when there is no market. `cfbGameCover` reads `cfbConditionedCover` at that row.
+  - `cfbConditionedCover` itself is unchanged and still byte-identical to the pre-move function.
+  - `football/cfb_terminal/build.js` `v1PmfRow` now calls `cfbPmfRow`. The terminal build is unchanged: `cfb:terminal:check` passes with no new snapshot.
+- **The app** (`app.html` `fbQevModelCfb`):
+  - `mk.spread_line` is already a home margin (home −52.5 → +52.5, `fbMarketFromEvent`), the same variable as the terminal's `_consMargin`, so it is clamped as is.
+  - A market dropped for its orientation (`spread_fault`) counts as no market, as before, and so reads the fair margin.
+  - The basis says when the shape was read at the table's edge or at the fair margin. The engine's per-line call remains only for a params file with no table.
+  - `app.html` loads `lib/edgedesk_quote_ev.js?v=20261002a`. Both of its loads of the module carried no version before.
+- **The EV plausibility bound** (`tools/football/ev_plausibility.js`) measures z in the width of the same curve. `football/validation/ev_plausibility.json` was regenerated with the tool from fresh cfbfastR-data and nflverse caches. The old code reproduces the committed file exactly from those caches, so every change below comes from this fix:
+  - Affected CFB rows: 6 of 2,249 fit closes and 5 of 1,602 holdout closes lie past ±45, plus 22 synthetic off-by-7 lines.
+  - z* is unchanged (CFB 0.9601), so `PLAUSIBLE_Z` is unchanged. NFL is unchanged.
+  - Fit q99 moved from 0.8737 to 0.8785.
+  - Holdout off-by-7 lines caught by the new bound rose from 7.18% to 7.37% (13.17% to 13.36% with the rest of the integrity stack).
+  - The old flat 25% rule now flags 19.66% of real games (was 19.73%), and catches 98.56% of off-by-7 lines (was 98.63%).
+- **Tests**:
+  - `tools/football/quote_ev.test.js` §15 lifts `fbQevModelCfb` from `app.html` verbatim. At an out-of-table market, its mirror, the edge, an in-range market, no market and a faulted market, it must equal `v1Dist(...).cover` at every half point from −70 to +100, never rise, and price both sides of the ladder the same. `ev_plausibility.js` must measure the same width. Against the old `app.html` it fails 9 checks.
+  - `tools/football/quote_ev_ui.e2e.js` reads McNeese @ LSU off the rendered board, priced against its captured LSU −52.5. Its curve must equal the terminal's at the fair margin, σ and market the page used, and never rise. Against the old `app.html` it fails 3 checks.
+
 ## 2026-10-02 — every CFB curve is one distribution, whatever the market
 
 The two follow-ups from the entry below are closed. 47 of 115 stored CFB curves were incoherent: P(margin > t) rose with t. These were McNeese @ LSU (LSU −52.5, past the ±45 margin PMF table) and the 46 games with no market yet. All of them were built from the engine's per-line lookup (`football/cfb_p4/engine.js` `coverProbSpread`), which keys the table by whichever line it is asked about. Sampled at every half point, it stitched a different shape onto each threshold. Past ±45 it also switched to the pooled residual, which is neither shifted onto whole points nor stretched. McNeese @ LSU read 0.9457 at 17.5, 0.9270 at 18 and 0.9309 at 18.5.

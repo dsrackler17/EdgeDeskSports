@@ -566,5 +566,58 @@ section('14. audit 2026-09-30: the EV is priced from the displayed projection, a
   chk('NFL too: a verified 7-pt gap at −110 reads VERIFIED MAJOR', s7.key === 'VERIFIED_MAJOR' && G7.implausible_ev === null, [s7.key, G7.implausible_ev]);
 }
 
+section('15. one CFB distribution: the app’s ladder is the terminal’s curve, whatever the market');
+{
+  /* app.html fbQevModelCfb, lifted VERBATIM (brace-matched by name, never
+     re-typed) and run beside football/cfb_terminal/build.js v1Dist. Its two
+     neighbours only feed the calibrated layer and the moneyline, never
+     home_cover, so they are stubbed. */
+  const vm = require('vm');
+  const B = require(path.join(ROOT, 'football', 'cfb_terminal', 'build.js'));
+  const EVP_T = require(path.join(ROOT, 'tools', 'football', 'ev_plausibility.js'));
+  const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+  const extract = (name) => {
+    const i = APP.indexOf('function ' + name + '('); if (i < 0) throw new Error('app.html has no function ' + name);
+    for (let k = APP.indexOf('{', i), d = 0; k < APP.length; k++) { if (APP[k] === '{') d++; else if (APP[k] === '}' && --d === 0) return APP.slice(i, k + 1); }
+    throw new Error('unbalanced ' + name);
+  };
+  const P = window.EDCfbP4Params, D = P.distributions, base = (P.volatility && P.volatility.sigma_base) || D.sigma_margin;
+  const sb = { Math, isFinite, FBQEV: {}, window: { EDQuoteEV: Q, EDCfbP4Params: P, EDCfbP4: E1 },
+    fbQevCalReason: () => ({ validated: false, reason: 'stub' }), fbQevAdjustedCfb: () => ({ available: false, reason: 'stub' }) };
+  vm.createContext(sb);
+  vm.runInContext(extract('fbQevModelCfb'), sb);
+  /* mk.spread_line is a HOME MARGIN (fbMarketFromEvent: home −52.5 → +52.5), the terminal's _consMargin */
+  const app = (fair, sigma, mk) => sb.fbQevModelCfb({}, { status: 'PREDICTED', model: { fair_spread: fair, fair_total: null, home_win_prob: 0.5 }, layers: { uncertainty: { sigma: sigma, sigma_base: base } } }, mk, null);
+  const TS = []; for (let t = -70; t <= 100; t += 0.5) TS.push(t);
+  const same = (a, b) => TS.every((t) => { const x = a(t), y = b(t); return x.win === y.win && x.push === y.push && x.lose === y.lose; });
+  const firstRise = (c) => { for (let i = 1; i < TS.length; i++) { const p = c(TS[i - 1]), n = c(TS[i]); if (n.win > p.win + 1e-12 || n.win + n.push > p.win + p.push + 1e-12) return TS[i]; } return null; };
+  /* McNeese @ LSU, 2026-10-02: LSU −52.5 (home margin +52.5), fair +41.42 — the market past the table's +45 edge */
+  const L = app(41.42, 14.9, { spread_line: 52.5 }), T = B.v1Dist(41.42, 14.9, 52.5);
+  chk('McNeese @ LSU (LSU −52.5, outside the ±45 table): the app’s distribution IS the terminal’s v1Dist curve, at every half point −70…+100', L.available && T.pmf_row === 45 && same(L.home_cover, T.cover));
+  chk('… and it is monotone: P(M > t) and P(M ≥ t) never rise with t', firstRise(L.home_cover) === null, firstRise(L.home_cover));
+  const old = (t) => E1.dist.coverProbSpread(41.42, t, 14.9, base);
+  chk('… where the per-line engine call it replaces was not (P(M > 18.5) ' + old(18.5).win.toFixed(4) + ' > P(M > 18) ' + old(18).win.toFixed(4) + ')', old(18.5).win > old(18).win && firstRise(old) !== null);
+  chk('… priced on the ladder the same: both sides at every alternate the terminal would price', [-60.5, -52.5, -45, -41.5, -28, -17.5].every((hl) => ['home', 'away'].every((s) => {
+    const a = Q.sideProb(L.home_cover, s, s === 'home' ? hl : -hl), b = Q.sideProb(T.cover, s, s === 'home' ? hl : -hl); return a.win === b.win && a.push === b.push && a.loss === b.loss; })));
+  chk('… and says it read the table’s edge, not the market', /table’s edge \(home margin \+45\.0, the row nearest the market at \+52\.5\)/.test(L.basis), L.basis);
+  const M = app(-41.42, 14.9, { spread_line: -52.5 }), Tm = B.v1Dist(-41.42, 14.9, -52.5);
+  chk('the mirror (an away favourite past −45) reads the −45 edge in both, and is monotone', Tm.pmf_row === -45 && same(M.home_cover, Tm.cover) && firstRise(M.home_cover) === null);
+  chk('a market at +45.5 reads the same shape as one at +45 (continuous across the edge)', same(app(40, 14.9, { spread_line: 45.5 }).home_cover, app(40, 14.9, { spread_line: 45 }).home_cover));
+  chk('a market INSIDE the table is untouched: the shape is conditioned on the market itself, as before', same(app(1.3, 14.9, { spread_line: 6.5 }).home_cover, B.v1Dist(1.3, 14.9, 6.5).cover)
+    && same(app(1.3, 14.9, { spread_line: 6.5 }).home_cover, Q.cfbConditionedCover(D, 1.3, 6.5, 14.9, base)) && /as the engine conditions it/.test(app(1.3, 14.9, { spread_line: 6.5 }).basis));
+  /* no market, or one the orientation check dropped: the fair margin, clamped the same way */
+  const N = [[41.42, 14.9], [55.2, 15.4], [-3.1, 14.7]].map(([f, s]) => ({ f, s, a: app(f, s, {}), t: B.v1Dist(f, s, null), x: app(f, s, { spread_line: 52.5, spread_fault: 'opposite convention' }) }));
+  chk('with NO market (or a faulted one) the app conditions on the fair margin clamped to the table, as the terminal does (+41.4, +55.2 past the edge, −3.1)',
+    N.every((n) => same(n.a.home_cover, n.t.cover) && same(n.x.home_cover, n.t.cover) && firstRise(n.a.home_cover) === null) && N[1].t.pmf_row === 45, N.map((n) => n.t.pmf_row));
+  chk('… and never calls that a market', N.every((n) => /no market spread to condition it on/.test(n.a.basis)) && /table’s edge, home margin \+45\.0/.test(N[1].a.basis), N[1].a.basis);
+  chk('the shared row is the terminal’s: cfbPmfRow clamps the market (or the fair margin) to pmf_spread_range',
+    Q.cfbPmfRow(D, 41.42, 52.5) === 45 && Q.cfbPmfRow(D, -41.42, -52.5) === -45 && Q.cfbPmfRow(D, 1.3, 6.5) === 6.5 && Q.cfbPmfRow(D, 55.2, null) === 45 && Q.cfbPmfRow(D, -3.1, null) === -3.1 && Q.cfbPmfRow(D, null, null) === null);
+  /* the EV plausibility bound measures z in the width of the SAME distribution */
+  const ms = EVP_T.measure('CFB', { fair: 41.42, sigma: 14.9, sigma_base: base }, 52.5);
+  chk('tools/football/ev_plausibility.js measures an out-of-table market in the width of the terminal’s curve', ms && ms.sd === Q.distributionSpread(T.cover), [ms && ms.sd, Q.distributionSpread(T.cover)]);
+  chk('app.html fetches the quote-EV module under one cache-busting version everywhere it loads it',
+    (() => { const v = APP.match(/fbScript\('lib\/edgedesk_quote_ev\.js[^']*'\)/g) || []; return v.length >= 2 && v.every((s) => s === v[0]) && /\?v=\d{8}[a-z]*'/.test(v[0]); })());
+}
+
 console.log('\n' + (fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');
 if (fail) { failures.forEach((f) => console.log('  ✗ ' + f)); process.exit(1); }
