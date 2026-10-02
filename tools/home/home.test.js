@@ -323,7 +323,14 @@ const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
   {
     const real = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'props', 'nfl', 'summary.json'), 'utf8'));
     const evs = Array.isArray(real.events) ? real.events : Object.values(real.events || {});
-    const src = evs.map((e) => (e.top_opportunities || []).find((o) => o.research && o.research.grade)).filter(Boolean)[0];
+    /* the template card: a real research-grade opportunity from the committed
+       board when the week has one; between slates the board can hold none (16
+       NFL events and no opportunities on 2026-10-02), and then the probe's own
+       committed props block (tools/home/fixtures/props_block.json) */
+    const probe = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'props_block.json'), 'utf8')).props.top_opportunities;
+    const src = evs.map((e) => (e.top_opportunities || []).find((o) => o.research && o.research.grade)).filter(Boolean)[0]
+      || probe.find((o) => o.research && o.research.grade);
+    chk('size budget: a research-grade card to build the week from', !!src);
     const t0 = Date.parse('2026-10-02T12:00:00Z');
     const many = [];
     for (let i = 0; i < 120; i++) {
