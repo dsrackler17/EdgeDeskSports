@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-02 — a partial NFL replay no longer regrades the staking modes
+
+The follow-up from the entry below. `tools/intelligence/validate_staking.js` grades the NFL markets on the same engine replay (`validate_pricing.js` `replayNfl`). On the nightly run that could not fetch 2016, it wrote `staking_nfl.json` from 2,642 engine rows instead of 2,658, with 2016 missing from `seasons_loaded`. The staking kernel reads the MODE that file writes, and refuses to stake a SHADOW market.
+
+- **Guard**: with `--write`, a sport whose engine replay loaded some team-week seasons but not all of `replay_from`–`last` is refused.
+  - Its file is not written, and the committed one stands.
+  - The other sport is still written, and the run exits 3. The learning loop runs it under `continue-on-error`.
+- **Unchanged**: with no season cached at all, the replay is not partial. The Elo stand-in is still written, as documented, and labels itself (`engine.available: false`).
+- **Checked**:
+  - Full cache: written, content identical to the committed file.
+  - 2016 removed: NFL refused with exit 3, `staking_nfl.json` byte-identical, `staking_cfb.json` written.
+  - No cache: the Elo stand-in is written with exit 0, as before.
+
 ## 2026-10-02 — a partial NFL replay no longer reprices the board
 
 `main` went red at `a41195e` (learning loop, 15:56Z). Three checks failed on the same two assertions in `tools/bettor/football_decision.test.js`: Decision quality, Personal research CI and CFB research terminal. The board no longer matched the slate pricing kernel's fair line, off by 0.02 to 0.08 pts on 13 games, and PIT @ CLE was held without crossing.
