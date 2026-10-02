@@ -2,7 +2,7 @@
  "schema": "edgedesk_player_props_performance_v1",
  "league": "nfl",
  "season": 2026,
- "generated_at": "2026-10-02T08:32:04.034Z",
+ "generated_at": "2026-10-02T11:06:56.832Z",
  "note": "Bets are the first BET of each selection at its price, 1 row per selection, units as recommended. LEAN rows are graded at a flat 1U for information and never counted as bets.",
  "summary": {
   "n": 24,
@@ -397,9 +397,9 @@
   ]
  },
  "calibration": {
-  "n": 93,
-  "brier": 0.23658,
-  "ece": 0.12001,
+  "n": 97,
+  "brier": 0.22699,
+  "ece": 0.11288,
   "table": [
    {
     "bucket": "50–55%",
@@ -431,10 +431,10 @@
    },
    {
     "bucket": "70%+",
-    "n": 22,
-    "expected": 0.8746,
-    "observed": 0.7727,
-    "gap_pp": -10.18
+    "n": 26,
+    "expected": 0.8858,
+    "observed": 0.8077,
+    "gap_pp": -7.82
    }
   ],
   "sample": {
@@ -490,8 +490,8 @@
  },
  "markets": {
   "anytime_td": {
-   "n": 23,
-   "ece": 0.15669,
+   "n": 27,
+   "ece": 0.12574,
    "brier": 0.25899,
    "market_brier": 0.25083,
    "n_with_market": 14,
@@ -618,17 +618,17 @@
  },
  "calibration_state": {
   "state": "UNVALIDATED",
-  "n": 93,
-  "ece": 0.12001,
+  "n": 97,
+  "ece": 0.11288,
   "rule": "≥ 500 settled and ECE ≤ 0.03 → PARTIAL; ≥ 1000, ECE ≤ 0.02 and positive CLV → CALIBRATED"
  },
  "counts": {
-  "evaluations": 1232,
+  "evaluations": 1241,
   "results": 253,
   "bets": 24,
   "leans": 129,
   "finals": 100,
-  "void": 7,
-  "corrections": 182
+  "void": 3,
+  "corrections": 186
  }
 }
