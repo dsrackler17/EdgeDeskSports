@@ -4,7 +4,7 @@
   "game_id": "2026_04_PIT_CLE",
   "sport": "NFL",
   "snapshot_id": "snap_ec71ae426bbd0bb9",
-  "audited_at": "2026-10-02T15:30:40.788Z",
+  "audited_at": "2026-10-02T15:39:22.411Z",
   "theses": [
     {
       "schema": "edgedesk_thesis_v1",
@@ -950,7 +950,7 @@
     "game_id": "2026_04_PIT_CLE",
     "sport": "NFL",
     "snapshot_id": "snap_ec71ae426bbd0bb9",
-    "graded_at": "2026-10-02T15:30:40.788Z",
+    "graded_at": "2026-10-02T15:39:22.411Z",
     "final": {
       "home_team": "Cleveland Browns",
       "away_team": "Pittsburgh Steelers",
@@ -1005,8 +1005,14 @@
     },
     "bet_headline": "WIN",
     "closing_line": {
-      "available": false,
-      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+      "available": true,
+      "captured_home_margin": 3,
+      "closing_home_margin": 2.8,
+      "close_source": "EdgeDesk Collective captured close (collective_odds)",
+      "movement_points": 0.3,
+      "moved_toward_edgedesk": true,
+      "clv_points": 0.3,
+      "note": "The line moved 0.3 points toward the side EdgeDesk’s number leaned before kickoff. That is the market arriving where EdgeDesk already was, and over many games it is the only evidence that a disagreement carried information."
     },
     "model_accuracy": {
       "available": true,
@@ -1075,7 +1081,7 @@
       "suggested_investigation": "These claims carried 5.3 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-02T15:30:40.788Z"
+      "created_at": "2026-10-02T15:39:22.411Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -1099,7 +1105,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model.",
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-02T15:30:40.788Z"
+      "created_at": "2026-10-02T15:39:22.411Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -1123,7 +1129,7 @@
       "suggested_investigation": null,
       "bet_result": "WIN",
       "process_grade": "MIXED",
-      "created_at": "2026-10-02T15:30:40.788Z"
+      "created_at": "2026-10-02T15:39:22.411Z"
     }
   ]
 }
