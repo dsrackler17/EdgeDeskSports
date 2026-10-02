@@ -67,11 +67,12 @@ function quantile(xs, q) { const a = xs.slice().sort((x, y) => x - y); if (!a.le
 const DEC = Q.americanToDecimal(RULES.old_rule.price);
 
 /* the distribution each sport's EV is priced from, for a game with this fair
-   margin, at this market (the CFB shape is conditioned on the market spread,
-   exactly as app.html fbQevModelCfb and football/cfb_terminal/build.js do) */
+   margin, at this market (the CFB shape is conditioned on the market spread
+   clamped to the table's range, by the one function app.html fbQevModelCfb
+   and football/cfb_terminal/build.js v1Dist read: EDQuoteEV.cfbGameCover) */
 function coverFor(sport, row, marketMargin) {
   if (sport === 'NFL') return (t) => EF.dist.coverProbSpread('nfl', row.fair, t);
-  const hc = Q.cfbConditionedCover(P.distributions, row.fair, marketMargin, row.sigma, row.sigma_base);
+  const hc = Q.cfbGameCover(P.distributions, row.fair, marketMargin, row.sigma, row.sigma_base);
   return hc || ((t) => global.window.EDCfbP4.dist.coverProbSpread(row.fair, t, row.sigma, row.sigma_base));
 }
 /* z and the old rule's raw EV for one (row, market) pair */

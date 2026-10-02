@@ -47989,7 +47989,7 @@ function fbEnsureEngine(){
   return fbScript('football/params.js').then(function(){return fbScript('football/engine.js');})
     .then(function(){ if(!window.EDFootball||!window.EDFootballParams)throw new Error('engine loaded but globals missing'); })
     /* quote-level EV: optional, never gates the board */
-    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});})
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261002a').catch(function(){});})
     /* the NFL regime signal's fitted adjustment: display only while it is not
        promoted, so it never gates the board */
     .then(function(){return fbScript('football/nfl/regime_nfl.js').catch(function(){});});
@@ -50066,7 +50066,7 @@ function fbP4Ensure(){
     /* QUOTE-LEVEL EV (lib/edgedesk_quote_ev.js): optional in the same way — it
        prices captured quotes against the finished projection and moves no
        projected number, so a missing file never gates the board */
-    .then(function(){return fbScript('lib/edgedesk_quote_ev.js').catch(function(){});})
+    .then(function(){return fbScript('lib/edgedesk_quote_ev.js?v=20261002a').catch(function(){});})
     .then(function(){return fbScript('football/matchup/qb_context.js').catch(function(){});})
     .then(function(){return fbScript('football/matchup/forecast.js').catch(function(){});})
     .then(function(){return fbScript('football/venues/descriptions.js').catch(function(){});})
@@ -54504,9 +54504,10 @@ function fbGxDecomp(u,p){
    only gathers the inputs the page already holds and draws the result.
 
      probability   the champion's own outcome distribution (CFB: its margin PMF
-                   conditioned on the current market spread, centred on the
-                   PURE fair margin; NFL: the learned PMF keyed by EdgeDesk's
-                   own fair spread). A price never enters it.
+                   conditioned on the current market spread, clamped to the
+                   table's range — the fair margin when there is none —
+                   centred on the PURE fair margin; NFL: the learned PMF keyed
+                   by EdgeDesk's own fair spread). A price never enters it.
      quotes        the captured Odds API board (signals: the best price and its
                    book at every number each side is dealt at) plus the
                    alternate-spread feed when it is enabled (every book's own
@@ -54595,10 +54596,20 @@ function fbQevModelCfb(u,p,mk,anchor){
   var Q=window.EDQuoteEV,P=window.EDCfbP4Params,E=window.EDCfbP4;
   if(!p||p.status!=='PREDICTED'||!P||!E)return {available:false,reason:(p&&p.reason)||'no projection'};
   var m=p.model,unc=(p.layers&&p.layers.uncertainty)||{};
+  /* spread_line is a HOME MARGIN (home −52.5 → +52.5; fbMarketFromEvent), the
+     variable the table is keyed by. The shape is read at that margin CLAMPED to
+     the table's range (no market: at the fair margin, clamped the same way) by
+     EDQuoteEV.cfbGameCover — the row football/cfb_terminal/build.js v1Dist
+     reads — so the ladder is ONE distribution whatever the market. The engine's
+     per-line call keyed a different shape to every line past ±45 (P(margin > t)
+     rose with t: McNeese @ LSU, LSU −52.5); it stays only for a table-less params file. */
   var cond=mk&&mk.spread_line!=null&&!mk.spread_fault?mk.spread_line:null;
-  var hc=cond!=null?Q.cfbConditionedCover(P.distributions,m.fair_spread,cond,unc.sigma,unc.sigma_base):null,basis;
-  if(hc)basis='the champion’s empirical college margin distribution — its shape conditioned on the market spread as the engine conditions it, centred on EdgeDesk’s pure fair margin, stretched to this game’s σ';
-  else{hc=function(t){return E.dist.coverProbSpread(m.fair_spread,t,unc.sigma,unc.sigma_base);};basis='the champion’s margin distribution (no market spread to condition its shape on)';}
+  var row=Q.cfbPmfRow(P.distributions,m.fair_spread,cond),sg=function(x){return (x>0?'+':'')+x.toFixed(1);};
+  var hc=Q.cfbGameCover(P.distributions,m.fair_spread,cond,unc.sigma,unc.sigma_base),basis;
+  if(hc&&cond==null)basis='the champion’s empirical college margin distribution — its shape conditioned on EdgeDesk’s fair margin (no market spread to condition it on'+(row!==m.fair_spread?'; read at the table’s edge, home margin '+sg(row):'')+'), centred on that margin, stretched to this game’s σ';
+  else if(hc&&row!==cond)basis='the champion’s empirical college margin distribution — its shape read at the table’s edge (home margin '+sg(row)+', the row nearest the market at '+sg(cond)+'), centred on EdgeDesk’s pure fair margin, stretched to this game’s σ';
+  else if(hc)basis='the champion’s empirical college margin distribution — its shape conditioned on the market spread as the engine conditions it, centred on EdgeDesk’s pure fair margin, stretched to this game’s σ';
+  else{hc=function(t){return E.dist.coverProbSpread(m.fair_spread,t,unc.sigma,unc.sigma_base);};basis='the champion’s margin distribution (no empirical table to condition its shape on)';}
   var tc=fbQevCalReason('cfb|total|close','cfb','total'),mc=fbQevCalReason('cfb|moneyline|close','cfb','moneyline');
   var hwp=m.home_win_prob;
   if(mc.validated&&window.EDEV)hwp=window.EDEV.applyCalibrator(mc.cal.map,hwp);

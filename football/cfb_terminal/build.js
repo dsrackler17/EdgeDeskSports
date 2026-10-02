@@ -170,12 +170,11 @@ function v1CoverConditioned(fair, condMargin, sigma, sigmaBase) {
   return QEV.cfbConditionedCover(window.EDCfbP4Params.distributions, fair, condMargin, sigma, sigmaBase);
 }
 /* the table row the shape is read at: the market margin (or, with none, the
-   fair margin), clamped to the range the table was built over */
+   fair margin), clamped to the range the table was built over. The rule lives
+   in lib/edgedesk_quote_ev.js (cfbPmfRow, read by cfbGameCover) so app.html
+   fbQevModelCfb and tools/football/ev_plausibility.js read the SAME row. */
 function v1PmfRow(margin, marketMargin) {
-  const D = window.EDCfbP4Params.distributions || {}, rng = D.pmf_spread_range;
-  const at = num(marketMargin) != null ? marketMargin : num(margin);
-  if (at == null || !rng) return at;
-  return Math.min(rng[1], Math.max(rng[0], at));
+  return QEV.cfbPmfRow(window.EDCfbP4Params.distributions, margin, marketMargin);
 }
 function v1Dist(margin, sigma, marketMargin) {
   const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
