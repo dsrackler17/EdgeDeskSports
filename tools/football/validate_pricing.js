@@ -52,6 +52,8 @@
      node tools/football/validate_pricing.js --offline     # cached feeds only
      node tools/football/validate_pricing.js --sport cfb   # copy the CFB report
      node tools/football/validate_pricing.js --check       # exit 1 if the artifact is stale
+   Exit 3 (NFL) = a replay season's team-week file is missing after the fetch;
+   nothing is written and the committed validation stands.
    =========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -340,13 +342,19 @@ function buildCfb() {
   };
 }
 
+/** The replay seasons whose team-week file is not in the cache. */
+function missingTeamWeek() {
+  const missing = []; for (let s = RULES.replay_from; s <= RULES.last; s++) if (!fs.existsSync(STW(s))) missing.push(s);
+  return missing;
+}
+
 /** The historical team-week files the replay needs, fetched into the gitignored cache when absent (public, keyless). */
 async function ensureTeamWeek() {
-  const missing = []; for (let s = RULES.replay_from; s <= RULES.last; s++) if (!fs.existsSync(STW(s))) missing.push(s);
+  const missing = missingTeamWeek();
   for (const s of missing) {
     const url = 'https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_' + s + '.csv';
     try { const r = await fetch(url, { redirect: 'follow' }); if (!r.ok) throw new Error('HTTP ' + r.status); const t = await r.text(); fs.mkdirSync(CACHE, { recursive: true }); fs.writeFileSync(STW(s), t); console.log('fetched stats_team_week_' + s + '.csv'); }
-    catch (e) { console.error('could not fetch stats_team_week_' + s + '.csv: ' + e.message + ' (the season is skipped in the replay)'); }
+    catch (e) { console.error('could not fetch stats_team_week_' + s + '.csv: ' + e.message); }
   }
   return missing.length;
 }
@@ -354,9 +362,21 @@ async function ensureTeamWeek() {
 async function main() {
   const args = process.argv.slice(2);
   const sport = args.includes('--sport') ? args[args.indexOf('--sport') + 1] : 'nfl';
-  if (sport !== 'cfb' && !args.includes('--offline')) await ensureTeamWeek();
-  const art = sport === 'cfb' ? buildCfb() : buildNfl();
   const out = path.join(OUT_DIR, 'pricing_' + sport + '.json');
+  if (sport !== 'cfb' && !args.includes('--offline')) await ensureTeamWeek();
+  /* A SEASON THE REPLAY CANNOT LOAD IS NOT SKIPPED IN SILENCE. Without its
+     team-week rows the season's games are never absorbed, every later rating
+     starts from a different state, and the blend refits on fewer games: on
+     2026-10-02 one failed download of 2016 moved the NFL blend coefficients
+     the board and the slate pricing kernel both price with, and the committed
+     slate stopped agreeing with the board. A partial replay is not a
+     validation, so nothing is written and the last complete one stands. */
+  const gaps = sport === 'cfb' ? [] : missingTeamWeek();
+  if (gaps.length) {
+    console.error('pricing validation (' + sport + '): REFUSED — no team-week file for ' + gaps.join(', ') + '; a partial replay is not a validation, so ' + path.relative(ROOT, out) + ' and feature-status-nfl.json are left as they are');
+    process.exit(3);
+  }
+  const art = sport === 'cfb' ? buildCfb() : buildNfl();
   const m = art.markets;
   console.log(`pricing validation (${sport}): spread ${m.spread.tier}${m.spread.pooled ? ' model MAE ' + m.spread.pooled.model_mae + ' vs close ' + m.spread.pooled.close_mae : ''}${m.spread.blend && m.spread.blend.pooled_holdout ? ', blend held-out ' + m.spread.blend.pooled_holdout.blend_mae + ' vs close ' + m.spread.blend.pooled_holdout.close_mae + ' (c=' + (m.spread.blend.latest_coef || {}).model_minus_close + ')' : ''}; total ${m.total.tier}; moneyline ${m.moneyline.tier}`);
   if (m.spread.ats_vs_close) { const t = m.spread.ats_vs_close.raw_model_oos || m.spread.ats_vs_close.raw_model; Object.keys(t).sort((a, b) => a - b).forEach((k) => console.log(`  spread gap >= ${k}: n ${t[k].n} win ${t[k].win_pct} p ${t[k].p_one_sided}`)); }
