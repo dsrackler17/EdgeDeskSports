@@ -23,8 +23,8 @@
   "game_time": "2026-10-04T17:00:00.000Z",
   "game_when_label": "2026-10-04 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-09-30T17:58:21.981Z",
-  "generated_at": "2026-10-02T17:49:34.159Z",
+  "updated_at": "2026-10-02T22:08:00.364Z",
+  "generated_at": "2026-10-02T22:08:00.364Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.2-point gap is context only and the game is excluded from research ranking.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 48 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 49 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Pinnacle on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
@@ -117,8 +117,8 @@
         "note": "Quoted from the perspective of New York Giants, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 48 absorbed 2026 games.",
-      "sample_games": 48,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 49 absorbed 2026 games.",
+      "sample_games": 49,
       "seeded": true,
       "status": "STALE MARKET",
       "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.2-point gap is context only and the game is excluded from research ranking.",
@@ -401,8 +401,8 @@
               "a": {
                 "v": "−1.3 pp",
                 "n": -0.012525873703965223,
-                "rank": "#27 of 32",
-                "rank_n": 27,
+                "rank": "#28 of 32",
+                "rank_n": 28,
                 "note": null
               },
               "h": {
@@ -415,7 +415,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.011018208995276925,
-                "rank_gap": 10
+                "rank_gap": 11
               }
             }
           ]
@@ -722,6 +722,16 @@
           "text": "New York Giants −0.029 (#14 of 32) vs Arizona Cardinals +0.117 (#29 of 32) — 15 places on the league board."
         },
         {
+          "k": "Explosive run rate",
+          "rank_gap": 11,
+          "gap": 0.011018208995276925,
+          "lead": "New York Giants",
+          "trail": "Arizona Cardinals",
+          "lead_cell": "−0.2 pp · #17 of 32",
+          "trail_cell": "−1.3 pp · #28 of 32",
+          "text": "New York Giants −0.2 pp (#17 of 32) vs Arizona Cardinals −1.3 pp (#28 of 32) — 11 places on the league board."
+        },
+        {
           "k": "Run offence · EPA per carry",
           "rank_gap": 10,
           "gap": 0.03618768869603718,
@@ -730,16 +740,6 @@
           "lead_cell": "+0.023 · #10 of 32",
           "trail_cell": "−0.013 · #20 of 32",
           "text": "New York Giants +0.023 (#10 of 32) vs Arizona Cardinals −0.013 (#20 of 32) — 10 places on the league board."
-        },
-        {
-          "k": "Explosive run rate",
-          "rank_gap": 10,
-          "gap": 0.011018208995276925,
-          "lead": "New York Giants",
-          "trail": "Arizona Cardinals",
-          "lead_cell": "−0.2 pp · #17 of 32",
-          "trail_cell": "−1.3 pp · #27 of 32",
-          "text": "New York Giants −0.2 pp (#17 of 32) vs Arizona Cardinals −1.3 pp (#27 of 32) — 10 places on the league board."
         },
         {
           "k": "Defence · EPA allowed per play",
@@ -924,7 +924,7 @@
           "team": "Arizona Cardinals",
           "label": "explosive running",
           "v": "−1.3 pp",
-          "rank": "#27 of 32",
+          "rank": "#28 of 32",
           "note": null
         },
         "def": {
@@ -936,7 +936,7 @@
         },
         "complete": true,
         "net": 0.025898126296034784,
-        "read": "Arizona Cardinals’ explosive running rates −1.3 pp (#27 of 32) and New York Giants’ explosive runs allowed rates +3.8 pp (#32 of 32). Added the way the model adds them, this pairing sits +2.6 pp from the league mean, which favours Arizona Cardinals."
+        "read": "Arizona Cardinals’ explosive running rates −1.3 pp (#28 of 32) and New York Giants’ explosive runs allowed rates +3.8 pp (#32 of 32). Added the way the model adds them, this pairing sits +2.6 pp from the league mean, which favours Arizona Cardinals."
       },
       {
         "title": "New York Giants explosive running vs Arizona Cardinals explosive runs allowed",
@@ -1080,7 +1080,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 48 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 49 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1092,7 +1092,7 @@
           "Net passing EPA — New York Giants by 0.3 points (+0.3 pts).",
           "Points allowed: New York Giants −0.00 (#16 of 32) vs Arizona Cardinals +3.68 (#31 of 32) — 15 places on the league board.",
           "Pass defence · EPA allowed per dropback: New York Giants −0.029 (#14 of 32) vs Arizona Cardinals +0.117 (#29 of 32) — 15 places on the league board.",
-          "Run offence · EPA per carry: New York Giants +0.023 (#10 of 32) vs Arizona Cardinals −0.013 (#20 of 32) — 10 places on the league board."
+          "Explosive run rate: New York Giants −0.2 pp (#17 of 32) vs Arizona Cardinals −1.3 pp (#28 of 32) — 11 places on the league board."
         ]
       },
       "underdog": {
@@ -1166,7 +1166,7 @@
       "total_market": "44.5",
       "total_difference": "0.8 points",
       "book": "Pinnacle",
-      "capture_age": "20 hours old",
+      "capture_age": "72 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.2-point gap is context only and the game is excluded from research ranking.",
@@ -1240,7 +1240,7 @@
         },
         {
           "k": "Explosive run rate",
-          "a": "−1.3 pp  #27 of 32",
+          "a": "−1.3 pp  #28 of 32",
           "h": "−0.2 pp  #17 of 32",
           "note": "10+ yard runs per carry"
         },
@@ -1307,11 +1307,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 48 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 49 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-02T17:49:34.159Z"
+    "at": "2026-10-02T22:08:00.364Z"
   }
 }
