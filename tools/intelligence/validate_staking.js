@@ -52,6 +52,8 @@
      node tools/intelligence/validate_staking.js --sport nfl     # one
      node tools/intelligence/validate_staking.js --write         # write artifacts
      node tools/intelligence/validate_staking.js --json          # machine-readable
+   Exit 3 = a sport's engine replay loaded some team-week seasons but not all;
+   that sport's file is not written (the others are) and the committed one stands.
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -1021,6 +1023,22 @@ function print(rep) {
   });
 }
 
+/* The replay seasons a PARTIAL engine replay is missing, or null. With no
+   team-week season cached at all the replay is not partial: the Elo stand-in
+   is the documented fallback and labels itself. With some cached and some
+   not, the engine rows are a different replay (2026-10-02: one failed
+   download of 2016 dropped 16 engine rows), and the MODE the staking kernel
+   reads would be graded on it. */
+function partialReplay(rep) {
+  const eng = rep && rep.frame && rep.frame.engine;
+  const loaded = (eng && eng.seasons_loaded) || [];
+  if (!loaded.length) return null;
+  let VR = null;
+  try { VR = require(path.join(ROOT, 'tools', 'football', 'validate_pricing.js')).RULES; } catch (_) { return null; }
+  const missing = []; for (let s = VR.replay_from; s <= VR.last; s++) if (loaded.indexOf(s) < 0) missing.push(s);
+  return missing.length ? missing : null;
+}
+
 function main() {
   const args = process.argv.slice(2);
   const only = (args.find((a) => a.startsWith('--sport')) || '').split('=')[1] || (args.includes('--sport') ? args[args.indexOf('--sport') + 1] : null);
@@ -1032,6 +1050,12 @@ function main() {
     if (args.includes('--json')) console.log(JSON.stringify(rep, null, 1));
     else print(rep);
     if (args.includes('--write')) {
+      const gaps = partialReplay(rep);
+      if (gaps) {
+        console.error('  REFUSED staking_' + s + '.json: the engine replay has no team-week file for ' + gaps.join(', ') + '; a partial replay is not a validation, so the committed file is left as it is');
+        process.exitCode = 3;
+        continue;
+      }
       const file = path.join(OUT_DIR, 'staking_' + s + '.json');
       fs.mkdirSync(OUT_DIR, { recursive: true });
       fs.writeFileSync(file, JSON.stringify(rep, null, 1) + '\n');
