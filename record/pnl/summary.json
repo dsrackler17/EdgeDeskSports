@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v1",
- "generated_at": "2026-10-02T06:06:52.610Z",
+ "generated_at": "2026-10-02T06:08:30.064Z",
  "season": 2026,
  "strategy": "Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.",
  "rules": [
@@ -36,24 +36,19 @@
  ],
  "states": {
   "total": 2432,
-  "PENDING": 1548,
-  "VERIFIED": 155,
+  "PENDING": 1547,
+  "VERIFIED": 156,
   "RECORD_ONLY": 729,
   "VOID": 0,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 1548,
+  "total": 1547,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
     "n": 1510
-   },
-   {
-    "key": "AWAITING_SETTLEMENT",
-    "label": "Game finished, awaiting the settlement run",
-    "n": 1
    },
    {
     "key": "MISSING_FINAL",
@@ -613,7 +608,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-02T06:06:52.610Z",
+  "as_of": "2026-10-02T06:08:30.064Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -2208,21 +2203,21 @@
       },
       {
        "key": "Pass",
-       "n": 1,
+       "n": 2,
        "rows": 54,
-       "wins": 0,
+       "wins": 1,
        "losses": 1,
        "pushes": 0,
-       "record": "0-1",
-       "win_rate_pct": 0,
-       "net_units": -1,
-       "risked_units": 1,
-       "roi_pct": -100,
-       "avg_clv_points": 1,
-       "avg_clv_prob_pp": 1.89,
+       "record": "1-1",
+       "win_rate_pct": 50,
+       "net_units": -0.17,
+       "risked_units": 2,
+       "roi_pct": -8.33,
+       "avg_clv_points": 2.75,
+       "avg_clv_prob_pp": 4.62,
        "clv_hit_rate_pct": 100,
-       "avg_odds": -112,
-       "avg_edge_pct": -2.65,
+       "avg_odds": -116,
+       "avg_edge_pct": -3.6,
        "max_drawdown_units": -1,
        "record_only": {
         "n": 0,
@@ -2236,8 +2231,8 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 1,
-        "text": "n=1 · Very small sample — results may be unstable"
+        "n": 2,
+        "text": "n=2 · Very small sample — results may be unstable"
        }
       }
      ],
@@ -4147,21 +4142,21 @@
       },
       {
        "key": "Pass",
-       "n": 1,
+       "n": 2,
        "rows": 54,
-       "wins": 0,
+       "wins": 1,
        "losses": 1,
        "pushes": 0,
-       "record": "0-1",
-       "win_rate_pct": 0,
-       "net_units": -1,
-       "risked_units": 1,
-       "roi_pct": -100,
-       "avg_clv_points": 1,
-       "avg_clv_prob_pp": 1.89,
+       "record": "1-1",
+       "win_rate_pct": 50,
+       "net_units": -0.17,
+       "risked_units": 2,
+       "roi_pct": -8.33,
+       "avg_clv_points": 2.75,
+       "avg_clv_prob_pp": 4.62,
        "clv_hit_rate_pct": 100,
-       "avg_odds": -112,
-       "avg_edge_pct": -2.65,
+       "avg_odds": -116,
+       "avg_edge_pct": -3.6,
        "max_drawdown_units": -1,
        "record_only": {
         "n": 0,
@@ -4175,8 +4170,8 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 1,
-        "text": "n=1 · Very small sample — results may be unstable"
+        "n": 2,
+        "text": "n=2 · Very small sample — results may be unstable"
        }
       }
      ],
@@ -4513,8 +4508,8 @@
    },
    "data_quality": {
     "total": 2432,
-    "verified": 155,
-    "pending": 1548,
+    "verified": 156,
+    "pending": 1547,
     "voids": 0,
     "missing_entry_odds": 729,
     "simulated_price": 0,
@@ -5605,8 +5600,8 @@
    },
    "data_quality": {
     "total": 1230,
-    "verified": 2,
-    "pending": 597,
+    "verified": 3,
+    "pending": 596,
     "voids": 0,
     "missing_entry_odds": 631,
     "simulated_price": 0,
@@ -6647,8 +6642,8 @@
    },
    "data_quality": {
     "total": 790,
-    "verified": 2,
-    "pending": 59,
+    "verified": 3,
+    "pending": 58,
     "voids": 0,
     "missing_entry_odds": 729,
     "simulated_price": 0,
@@ -6663,7 +6658,7 @@
   {
    "source": "CFB Model Lab",
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 28,
+   "rows": 30,
    "reason": "research positions graded at an ASSUMED −110 (price_assumed); simulated, so never counted as verified P&L"
   },
   {
