@@ -21,8 +21,8 @@
   "game_time": "2026-10-02T23:00:00.000Z",
   "game_when_label": "2026-10-02 23:00 UTC",
   "published_at": "2026-10-02T13:00:28.761Z",
-  "updated_at": "2026-10-02T22:20:26.444Z",
-  "generated_at": "2026-10-02T22:20:26.444Z",
+  "updated_at": "2026-10-02T22:56:48.473Z",
+  "generated_at": "2026-10-02T22:56:48.473Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/pittsburgh-vs-virginia-tech-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1438,7 +1438,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 72h old",
+          "text": "odds is 73h old",
           "widening": null
         },
         {
@@ -1543,7 +1543,7 @@
       "total_market": "54.5",
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-09-29T22:00:02.478+00:00",
-      "capture_age": "72 hours old",
+      "capture_age": "73 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1685,7 +1685,7 @@
       "projection_status": {
         "key": "INJURY_UNCERTAINTY",
         "label": "INJURY UNCERTAINTY",
-        "text": "A supplied availability report lists 24 players with an unresolved status; the engine widens this game’s range for it."
+        "text": "A supplied availability report lists 23 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "MEDIUM",
@@ -1894,16 +1894,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-02. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_aa64261bbaaaac2b",
+  "snapshot_id": "snap_ee799a5b8bd745aa",
   "publication_snapshot_id": "snap_aa64261bbaaaac2b",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-02T23:00:00.000Z",
-    "minutes_before_kickoff": 40,
-    "published_at": "2026-10-02T13:00:28.761Z",
-    "refreshed": true,
-    "at": "2026-10-02T22:20:26.444Z"
+    "minutes_before_kickoff": 3,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-02T22:56:48.473Z"
   },
   "featured": {
     "editorial_priority": 41.5,
@@ -2201,111 +2201,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-02T22:20:26.444Z"
+    "at": "2026-10-02T22:56:48.473Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-02T22:20:26.444Z",
+    "ok": false,
+    "at": "2026-10-02T22:56:48.473Z",
     "blocking": [],
     "warnings": [],
-    "hold_reason": null
+    "hold_reason": "inside final pregame publication floor"
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-02T22:20:26.444Z"
-  },
-  "freshness": {
-    "at": "2026-10-02T22:20:26.444Z",
-    "fields": {
-      "market.line": {
-        "value": "Virginia Tech -3.5",
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 54.5,
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-02T22:56:48.473Z"
   }
 }
