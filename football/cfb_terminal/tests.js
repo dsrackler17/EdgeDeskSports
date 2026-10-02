@@ -325,18 +325,38 @@ section('13. the real slate, from the committed production artifacts');
   ok('the board has one row per research object', board.rows.length === objs.length);
   ok('board rows and research pages agree on status and fair line', board.rows.every((r) => games[r.game_id].status.key === r.status && games[r.game_id].edgedesk.fair_text === r.fair));
   ok('the default order is the research queue, not the gap', (() => { const gaps = board.rows.map((r) => r.gap || 0); return gaps.some((g, i) => i > 0 && g > gaps[i - 1]); })());
-  /* the conditioned PMF reproduces the engine at the market number */
+  /* the conditioned PMF reproduces the engine at the market number — inside
+     the table's range, where the engine conditions on the market too. Past
+     it the engine falls back to its pooled residual; the curve reads the
+     table's nearest edge instead (build.js v1Dist), so it stays one shape. */
   global.window = global.window || global;
   const E1 = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
-  const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || P.distributions.sigma_margin;
+  const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+  const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || P.distributions.sigma_margin, rng = P.distributions.pmf_spread_range;
+  const inTable = (m) => m >= rng[0] && m <= rng[1];
   let checked = 0, bad = [];
-  objs.filter((o) => o.edgedesk.available && o.disagreement.available).slice(0, 25).forEach((o) => {
+  objs.filter((o) => o.edgedesk.available && o.disagreement.available && inTable(o.disagreement.market_margin)).slice(0, 25).forEach((o) => {
     const d = B.v1Dist(o.edgedesk.home_margin, o.edgedesk.sigma, o.disagreement.market_margin);
     const mine = d.cover(o.disagreement.market_margin), eng = E1.dist.coverProbSpread(o.edgedesk.home_margin, o.disagreement.market_margin, o.edgedesk.sigma, base);
     checked++;
     if (!eng || Math.abs(mine.win - eng.win) > 1e-9 || Math.abs(mine.push - eng.push) > 1e-9) bad.push(o.game_id);
   });
-  ok('the price curve’s distribution equals the engine’s coverProbSpread at the market number (' + checked + ' games)', checked > 0 && bad.length === 0, bad);
+  ok('the price curve’s distribution equals the engine’s coverProbSpread at the market number, inside the table (' + checked + ' games)', checked > 0 && bad.length === 0, bad);
+  const edge = objs.filter((o) => o.edgedesk.available && o.disagreement.available && !inTable(o.disagreement.market_margin)).filter((o) => {
+    const m = o.disagreement.market_margin, d = B.v1Dist(o.edgedesk.home_margin, o.edgedesk.sigma, m), c = QEV.cfbConditionedCover(P.distributions, o.edgedesk.home_margin, Math.min(rng[1], Math.max(rng[0], m)), o.edgedesk.sigma, base);
+    return !c || [m - 7, m, m + 7].some((t) => Math.abs(d.cover(t).win - c(t).win) > 1e-9);
+  }).map((o) => o.game_id);
+  ok('past the table, the distribution is the one conditioned on the table’s nearest edge', edge.length === 0, edge);
+  /* THE STORED CURVE IS A DISTRIBUTION: P(margin > t) never rises with t, and
+     margins are whole points (no mass at a half point; P(M > 18) = P(M > 18.5)).
+     The engine's per-line lookup broke this for every game with no market
+     and every market past ±45 (McNeese @ LSU, 2026-10-02). */
+  const incoherent = objs.filter((o) => o.read_inputs && o.read_inputs.curve).filter((o) => {
+    const C = o.read_inputs.curve;
+    return C.win.some((w, i) => { const t = C.lo + i * C.step;
+      return (i > 0 && w > C.win[i - 1] + 1e-9) || (Number.isInteger(t) ? i + 1 < C.n && Math.abs(C.win[i + 1] - w) > 2e-6 : C.push[i] !== 0); });
+  }).map((o) => o.game_id);
+  ok('every stored curve is one coherent distribution on whole-point margins (' + objs.filter((o) => o.read_inputs && o.read_inputs.curve).length + ' curves)', incoherent.length === 0, incoherent);
   ok('every price curve is monotone', objs.every((o) => !o.price.available || o.price.curve.every((r, i, a) => i === 0 || r.cover <= a[i - 1].cover + 1e-9)));
   /* quote-level EV (lib/edgedesk_quote_ev.js), held on the same fresh build */
   const qe = board.rows.map((r) => ({ r, q: r.quote_ev }));

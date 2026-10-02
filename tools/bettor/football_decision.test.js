@@ -605,17 +605,18 @@ chk('the calibrated-crossing hold is told apart from a raw contradiction', calHo
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw and +0.4% calibrated EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'STALE_MARKET', text: 'stale' }] }));
-/* An incoherent stored curve is held at MALFORMED_PROJECTION, never priced.
-   Live data put one here: on 2026-10-02 McNeese @ LSU (LSU −52.5, outside the
-   ±45 range the margin PMF table is conditioned on) was built from the
-   engine's per-line lookup, which borrows a different shape at every half
-   point, and its curve rises with the line. */
-chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, one an incoherent curve holds at MALFORMED PROJECTION, and any a calibrated line-crossing holds at NO DECISION',
+chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, and any a calibrated line-crossing holds at NO DECISION',
   cfbReal.every((x) => x.orient ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes).indexOf('DATA_FAULT') >= 0)
-    : x.incoherent ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes) === 'MALFORMED_PROJECTION')
     : (calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
   cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '') + (x.incoherent ? ' (incoherent curve)' : '')));
-chk('real CFB: an incoherent curve is the exception, not the rule (at most one game)', cfbReal.filter((x) => x.incoherent).length <= 1, cfbReal.filter((x) => x.incoherent).map((x) => x.o.game_id));
+/* No stored curve breaks probability. On 2026-10-02 McNeese @ LSU (LSU −52.5,
+   outside the ±45 range the margin PMF table is conditioned on) was built from
+   the engine's per-line lookup, which borrows a different shape at every half
+   point, and its curve rose with the line; it was held at MALFORMED PROJECTION.
+   The build now reads one table row for the whole curve (the market clamped to
+   the table, or the fair margin with no market: football/cfb_terminal/build.js
+   v1Dist), so no game may be incoherent. */
+chk('real CFB: no replayed game has an incoherent curve (McNeese @ LSU reaches a decision)', cfbReal.filter((x) => x.incoherent).length === 0, cfbReal.filter((x) => x.incoherent).map((x) => x.o.game_id));
 chk('real CFB: Syracuse @ UConn, flagged by the orientation invariant, gets no decision (left flagged, never priced)', (() => {
   const x = cfbReal.find((y) => y.o.game && y.o.game.home === 'UConn' && y.o.game.away === 'Syracuse');
   return !x || (x.orient && x.d.decision === 'NO_DECISION');

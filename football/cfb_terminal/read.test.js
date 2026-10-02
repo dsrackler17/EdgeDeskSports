@@ -110,6 +110,43 @@ section('2. the curve: side orientation, home/away signs, integer pushes, half p
   chk('key-number mass: the game PMF on exactly 7 is P(margin = 7)', near(RD.massAt(C, 'home', 7), cov(7).push, 1e-6) && near(RD.massAt(C, 'away', -7), cov(7).push, 1e-6));
 }
 
+/* =================================================================== 2b */
+section('2b. the champion’s curve is ONE distribution, wherever the market is (football/cfb_terminal/build.js v1Dist)');
+{
+  const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+  const P = window.EDCfbP4Params, D = P.distributions, base = P.volatility.sigma_base, rng = D.pmf_spread_range;
+  /* the curve exactly as the build stores it (readBase: centred on the market, or the fair margin with none) */
+  const curveOf = (fair, sigma, mkt) => { const d = B.v1Dist(fair, sigma, mkt), c = mkt != null ? mkt : fair;
+    return { d, C: RD.buildCurve(d.cover, c, Math.min(60, Math.max(30, Math.ceil(Math.abs(fair - c)) + 24)), { conditioned_on: d.conditioned_on_market_margin }) }; };
+  /* a coherent curve on integer margins: P(M > t) never rises with t; it does
+     not move across a half point (P(M > 18) = P(M > 18.5)); it falls across a
+     whole number by exactly that number's mass (P(M > 17.5) − P(M > 18) = P(M = 18)) */
+  const incoherence = (C) => { for (let i = 0; i < C.n; i++) {
+    const t = C.lo + i * C.step, w = C.win[i], p = C.push[i];
+    if (i > 0 && w > C.win[i - 1] + 1e-9) return 'P(M > ' + t + ') rises to ' + w + ' from ' + C.win[i - 1];
+    if (Number.isInteger(t)) { if (i > 0 && Math.abs(C.win[i - 1] - w - p) > 2e-6) return 'mass at ' + t + ' is not the fall across it'; if (i + 1 < C.n && Math.abs(C.win[i + 1] - w) > 2e-6) return 'P(M > ' + t + ') ≠ P(M > ' + (t + 0.5) + ')'; }
+    else if (p !== 0) return 'push at the half point ' + t;
+  } return null; };
+  /* McNeese @ LSU, 2026-10-02: LSU −52.5, fair home margin 41.42 — the market past the table's +45 edge */
+  chk('the table covers ±45 (the case below sits outside it)', rng[0] === -45 && rng[1] === 45, rng);
+  const L = curveOf(41.42, 14.9, 52.5);
+  chk('a market OUTSIDE the table gives a coherent curve (McNeese @ LSU, LSU −52.5)', L.C && incoherence(L.C) === null, L.C && incoherence(L.C));
+  const gt = (C, t) => C.win[Math.round((t - C.lo) / C.step)];
+  chk('… whose P(M > 18) equals P(M > 18.5) and is below P(M > 17.5) (the stored curve broke both: 0.9270, 0.9309, 0.9457)',
+    near(gt(L.C, 18), gt(L.C, 18.5), 1e-9) && gt(L.C, 18) < gt(L.C, 17.5), [gt(L.C, 17.5), gt(L.C, 18), gt(L.C, 18.5)]);
+  chk('… conditioned on the table’s nearest edge (+45), re-centred and stretched as an in-range market is', L.d.pmf_row === 45 && [17.5, 18, 41.5, 52, 52.5, 60].every((t) => { const a = L.d.cover(t), b = QEV.cfbConditionedCover(D, 41.42, 45, 14.9, base)(t); return near(a.win, b.win) && near(a.push, b.push); }));
+  chk('… still recorded as conditioned on the market it was asked about, and saying where it read the table', L.C.conditioned_on_market_margin === 52.5 && /table’s edge \(home margin \+45\.0, the row nearest the current market at \+52\.5\)/.test(L.d.basis), L.d.basis);
+  chk('… continuous across the edge: a market at +45.5 reads the same shape as one at +45', [40, 44.5, 45, 45.5, 51].every((t) => near(B.v1Dist(40, 14.9, 45.5).cover(t).win, B.v1Dist(40, 14.9, 45).cover(t).win)));
+  const Lm = curveOf(-41.42, 14.9, -52.5);
+  chk('the mirror (an away favourite past −45) is coherent and reads the −45 edge', Lm.C && incoherence(Lm.C) === null && Lm.d.pmf_row === -45, Lm.C && incoherence(Lm.C));
+  chk('a market INSIDE the table is untouched: the shape is conditioned on the market itself', (() => { const d = B.v1Dist(1.3, 14.9, 6.5); return d.pmf_row === 6.5 && d.conditioned_on_market_margin === 6.5 && [-3, 0.5, 6.5, 7, 20].every((t) => near(d.cover(t).win, QEV.cfbConditionedCover(D, 1.3, 6.5, 14.9, base)(t).win)); })());
+  /* no market at all: the engine's per-line call stitched one shape per threshold here too */
+  const N0 = curveOf(41.42, 14.9, null), N1 = curveOf(55.2, 15.4, null), N2 = curveOf(-3.1, 14.7, null);
+  chk('with NO market the curve is coherent too (fair +41.4, +55.2 past the edge, −3.1)', [N0, N1, N2].every((x) => x.C && incoherence(x.C) === null), [N0, N1, N2].map((x) => x.C && incoherence(x.C)));
+  chk('… conditioned on EdgeDesk’s own fair margin, clamped to the table, and never labelled as a market', N0.d.pmf_row === 41.42 && N1.d.pmf_row === 45 && N2.d.pmf_row === -3.1
+    && [N0, N1, N2].every((x) => x.C.conditioned_on_market_margin === null && /no market spread/.test(x.d.basis)) && /table’s edge, home margin \+45\.0/.test(N1.d.basis), N1.d.basis);
+}
+
 /* =================================================================== 3 */
 section('3. no second calculation path: the Read prices exactly what the terminal prices');
 const G = JSON.parse(fs.readFileSync(path.join(__dirname, 'games.json'), 'utf8'));
