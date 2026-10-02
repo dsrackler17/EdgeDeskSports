@@ -2,7 +2,7 @@
 
 ## 2026-10-02 — four checks that went red on today's live data
 
-Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Personal research and Decision quality. Overnight the pipelines produced data the tests had never seen. Each cause was traced before anything changed:
+Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Personal research and Decision quality. Decision quality and Record P&L hid three more failures behind their first ones. Overnight the pipelines produced data the tests had never seen. Each cause was traced before anything changed:
 
 - **The decision grader attached a "close" the database refuses** (`football/cfb_terminal/decisions.js`):
   - Western Kentucky @ New Mexico State was evaluated at 23:07:32 on the 23:07:23 capture, the last before kickoff. That same capture was handed back as the row's close, with CLV 0.
@@ -16,9 +16,16 @@ Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Perso
   - McNeese @ LSU (LSU −52.5) lies outside the ±45 range the margin PMF table is conditioned on. Its curve came from the engine's per-line lookup, which borrows a different shape at each half point, so the stored P(margin > t) rises with the line.
   - The engine rightly holds it at MALFORMED_PROJECTION. The replay now reads the incoherence off the curve itself and requires exactly that hold, for at most one game.
   - The curve builder for such games is a follow-up.
+- **An NFL card showed college rows as its history** (`lib/edgedesk_decision_ui.js` `healthBinsFor`, found behind the first Decision quality failure):
+  - The Lab view's HISTORICAL BUCKETS preferred the LIVE decision buckets as soon as any live decision was graded. That ledger is the CFB terminal's, so the first three graded CFB rows replaced the NFL walk-forward buckets (n=1,893) on every NFL card.
+  - LIVE buckets now show only on a card of the sport every live row belongs to. `app.html` loads the file as `?v=20261002a`.
 - **The P&L parity check compared different rows** (`tools/record/pnl_sql.test.js`):
   - The real ledger is loaded into the same `model_pnl` table before the dollars check. The first 24 settled BETs (NFL props, PIT @ CLE) made the SQL net −7.24 u against the fixture-only −0.07 u.
   - The kernel and the SQL agree on every row. The check now gives the kernel the same rows the SQL reads, so it also proves parity on real data.
+- **The P&L page's live re-read check raced** (`tools/record/pnl_ui.test.js`, found behind the `pnl_sql` failure):
+  - After a settlement run the test switches the served ledger to the fixture and waited for any profit / loss / even hero.
+  - The real ledger now reads Loss (−7.16u) itself, so the wait returned before the re-read and compared the real figures.
+  - It now waits for the fixture's own net. The page's re-read was never wrong.
 
 ## 2026-10-02 — the EV-by-spread chart lays out cleanly on wide alternate ladders
 

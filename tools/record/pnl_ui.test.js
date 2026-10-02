@@ -517,7 +517,12 @@ async function main() {
         /* LIVE: a settlement run moves the stamp; the open page re-reads the ledger */
         feed = 'fixture';
         await page.evaluate(() => document.getElementById('pnlPub').__pnl.check());
-        await page.waitForFunction(() => ['profit', 'loss', 'even'].indexOf(document.querySelector('#pnlPub .pnl-hero').getAttribute('data-state')) >= 0, null, { timeout: 8000 }).catch(() => {});
+        /* wait for the fixture's own net: since 2026-10-02 the real ledger has
+           settled bets too, so a profit / loss / even hero no longer proves the
+           page re-read the ledger — it can still be showing the real one */
+        await page.waitForFunction((want) => { const h = document.querySelector('#pnlPub .pnl-hero'), n = document.querySelector('#pnlPub .pnl-net');
+          return !!h && ['profit', 'loss', 'even'].indexOf(h.getAttribute('data-state')) >= 0 && !!n && n.textContent.replace(/\s+/g, ' ').trim() === want; },
+        PNL.fmtUnits(expect({}).net_units), { timeout: 8000 }).catch(() => {});
         heroMatches('after a settlement run (stamp moved)', await read(page, '#pnlPub'), expect({}));
         feed = 'real';
       }
