@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-02T11:07:24.000Z",
+ "generated_at": "2026-10-02T12:07:23.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 250,
-    "latest_snapshot_at": "2026-10-02T11:07:24.000Z",
+    "snapshots": 251,
+    "latest_snapshot_at": "2026-10-02T12:07:23.000Z",
     "upcoming_games": 115,
     "avg_confidence_upcoming": 80.1
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 412,
-    "latest_snapshot_at": "2026-10-02T11:07:24.000Z",
+    "snapshots": 413,
+    "latest_snapshot_at": "2026-10-02T12:07:23.000Z",
     "upcoming_games": 112,
     "avg_confidence_upcoming": 76.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 412,
-    "latest_snapshot_at": "2026-10-02T11:07:24.000Z",
+    "snapshots": 413,
+    "latest_snapshot_at": "2026-10-02T12:07:23.000Z",
     "upcoming_games": 112,
     "avg_confidence_upcoming": 76.8
    }
@@ -900,16 +900,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-02T11:07:24.000Z",
-    "quotes_total": 5383,
+    "last_quote_at": "2026-10-02T12:07:23.000Z",
+    "quotes_total": 5417,
     "last_result_at": "2026-10-02T06:07:29.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 1584,
-   "live_predictions": 1074,
-   "quotes": 5383,
+   "predictions": 1587,
+   "live_predictions": 1077,
+   "quotes": 5417,
    "lines": 1094,
    "results": 284,
    "evaluations": 574,
@@ -1104,10 +1104,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T24",
+     "checkpoint": "T12",
      "origin": "LIVE",
-     "official": true,
-     "prediction_ts": "2026-10-02T00:07:28.000Z",
+     "official": false,
+     "prediction_ts": "2026-10-02T12:07:23.000Z",
      "margin": 2.14,
      "fair": "Northwestern -2.0",
      "p_home": 0.5565,
@@ -1117,17 +1117,17 @@
      "decision": "LEAN",
      "status": "LEAN",
      "side": "HOME",
-     "gap": 5.14,
-     "line": 3,
+     "gap": 4.64,
+     "line": 2.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T12",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-02T11:07:24.000Z",
+     "prediction_ts": "2026-10-02T12:07:23.000Z",
      "margin": -3.97,
      "fair": "Penn State -4.0",
      "p_home": 0.4001,
@@ -1146,10 +1146,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T12",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-02T11:07:24.000Z",
+     "prediction_ts": "2026-10-02T12:07:23.000Z",
      "margin": -3.98,
      "fair": "Penn State -4.0",
      "p_home": 0.3995,
@@ -12326,7 +12326,7 @@
   "data_fault": 0,
   "market_fault": 6,
   "verification_not_run": 0,
-  "average_raw_gap": 4.024,
+  "average_raw_gap": 4.016,
   "average_raw_gap_7plus": 11.975,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": null,
