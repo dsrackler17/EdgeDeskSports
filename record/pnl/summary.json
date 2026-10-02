@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v1",
- "generated_at": "2026-10-02T03:08:21.835Z",
+ "generated_at": "2026-10-02T04:01:29.529Z",
  "season": 2026,
  "strategy": "Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.",
  "rules": [
@@ -53,7 +53,12 @@
    {
     "key": "IN_PROGRESS",
     "label": "Game in progress",
-    "n": 193
+    "n": 40
+   },
+   {
+    "key": "AWAITING_STAT_FEED",
+    "label": "Game finished, awaiting the stat feed",
+    "n": 153
    }
   ]
  },
@@ -584,11 +589,11 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-02T03:08:21.835Z",
+  "as_of": "2026-10-02T04:01:29.529Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
-    "checked_at": "2026-10-02T00:15:07.630Z",
+    "checked_at": "2026-10-02T04:00:15.668Z",
     "dataset_ok": true,
     "started_unsettled": 153
    },
