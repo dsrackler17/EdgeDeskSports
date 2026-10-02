@@ -489,8 +489,26 @@
     var sx = function (x) { return ml + (x - x0) / ((x1 - x0) || 1) * (W - ml - mr); }, sy = function (y) { return mt + (1 - (y - y0) / ((y1 - y0) || 1)) * (H - mt - mb); };
     var svg = '<svg class="fr" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Model cover probability and break-even by line">';
     for (var gy = Math.ceil(y0 * 20) / 20; gy <= y1 + 1e-9; gy += 0.05) svg += '<line class="grid" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + sy(gy).toFixed(1) + '" y2="' + sy(gy).toFixed(1) + '"/><text class="ax" x="' + (ml - 6) + '" y="' + (sy(gy) + 3.5).toFixed(1) + '" text-anchor="end">' + Math.round(gy * 100) + '%</text>';
-    lad.forEach(function (p, i) { if (i % 2 === 0) svg += '<text class="ax" x="' + sx(p.line).toFixed(1) + '" y="' + (H - mb + 16) + '" text-anchor="middle">' + esc(bk(p.line)) + '</text>'; });
-    marks.forEach(function (m, i) { if (m.x < x0 || m.x > x1) return; svg += '<line class="mk mk-' + m.t.replace(/ /g, '') + '" x1="' + sx(m.x).toFixed(1) + '" x2="' + sx(m.x).toFixed(1) + '" y1="' + mt + '" y2="' + (H - mb) + '"/><text class="mkt" x="' + (sx(m.x) + 3).toFixed(1) + '" y="' + (mt + 10 + 11 * (i % 3)) + '">' + esc(m.t) + '</text>'; });
+    /* the axis: round numbers at the widest step whose labels clear each
+       other — an alternate far out widens the axis, and a label on every
+       other half point then overprinted its neighbours */
+    var ppt = (W - ml - mr) / ((x1 - x0) || 1), lw = Math.max.apply(null, xs.map(function (v) { return bk(v).length; })) * 6.05 + 10;
+    var tick = [1, 2, 5, 10, 20].filter(function (t) { return t * ppt >= lw; })[0] || 20;
+    for (var k = Math.ceil(x0 / tick - 1e-9); k * tick <= x1 + 1e-9; k++) {
+      var tw = bk(k * tick).length * 6.05, tx = Math.min(Math.max(sx(k * tick), tw / 2 + 2), W - 2 - tw / 2);
+      svg += '<text class="ax" x="' + tx.toFixed(1) + '" y="' + (H - mb + 16) + '" text-anchor="middle">' + esc(bk(k * tick)) + '</text>';
+    }
+    /* the marks: each label in the first row where it clears the labels
+       already there, on the side of its line that keeps it inside the plot */
+    var rows = [], mkt = '';
+    marks.filter(function (m) { return m.x >= x0 && m.x <= x1; }).sort(function (a, b) { return a.x - b.x; }).forEach(function (m) {
+      var x = sx(m.x), w = m.t.length * 6.1, a = x + 3 + w > W - 2 ? x - 3 - w : x + 3, row = 0;
+      while ((rows[row] || []).some(function (b) { return a < b[1] + 6 && b[0] < a + w + 6; })) row++;
+      (rows[row] = rows[row] || []).push([a, a + w]);
+      svg += '<line class="mk mk-' + m.t.replace(/ /g, '') + '" x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + mt + '" y2="' + (H - mb) + '"/>';
+      mkt += '<text class="mkt" x="' + a.toFixed(1) + '" y="' + (mt + 10 + 11 * row) + '">' + esc(m.t) + '</text>';
+    });
+    svg += mkt;                                                    /* every label over every mark line */
     var refBe = lad[0].break_even;
     svg += '<line class="ref" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + sy(refBe).toFixed(1) + '" y2="' + sy(refBe).toFixed(1) + '"/>';
     svg += '<path class="cov" d="' + lad.map(function (p, i) { return (i ? 'L' : 'M') + sx(p.line).toFixed(1) + ' ' + sy(p.cover).toFixed(1); }).join(' ') + '"/>';

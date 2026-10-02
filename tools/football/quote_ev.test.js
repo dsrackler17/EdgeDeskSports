@@ -129,6 +129,8 @@ section('3. fail closed');
   const stale = Q.priceQuote(M, q('away', 7, -110, { fresh: false, freshness_state: 'STALE', captured_at: '2026-09-28T01:00:00Z' }), ctx());
   chk('stale quote: EV unavailable · quote stale', stale.ev_unavailable_code === 'STALE' && /quote stale/.test(stale.ev_unavailable_reason));
   chk('stale quote: still reports its age', stale.quote_age_minutes === 660);
+  chk('stale quote: the age reads as the age column prints it (11h, never "660 min")', /captured 11h ago/.test(stale.ev_unavailable_reason), stale.ev_unavailable_reason);
+  chk('ages: minutes, then hours, then days', Q.ageText(41) === '41m' && Q.ageText(998) === '17h' && Q.ageText(37440) === '26d' && Q.ageText(null) === '—');
   const unk = Q.priceQuote(M, q('away', 7, -110, { captured_at: null, fresh: null }), ctx());
   chk('unknown capture time: unavailable', unk.ev_unavailable_code === 'QUOTE_TIME_UNKNOWN');
   const maxAge = Q.priceQuote(M, q('away', 7, -110, { fresh: null, captured_at: '2026-09-28T09:00:00Z' }), ctx({ max_age_minutes: 90 }));
@@ -281,6 +283,15 @@ section('8. the alternate ladder');
   const st = L.steps.find((s) => /\+7 → \+7\.5/.test(s.text));
   chk('buying the half point: cover gain, juice cents, EV change', st && st.cover_gain_pp > 0 && st.juice_cents === 10 && typeof st.ev_change_pct === 'number', st);
   chk('the half point onto 7 names the key number with the model mass and the league share', st && st.key_numbers.length === 1 && st.key_numbers[0].abs_margin === 7 && st.key_numbers[0].key === 'primary' && st.key_numbers[0].historical_share === 0.0851 && st.key_numbers[0].model_mass > 0, st && st.key_numbers);
+  {
+    /* past ±1000 a cent is no unit of cost: −5000 → −10000 is 5000 cents for 1.0 pp of break-even */
+    const Gx = Q.evaluateGame(model(), [q('away', 7, -110, { n_books: 5 }), q('away', 27.5, -5000, { market_type: 'alternate_spread' }), q('away', 28.5, -10000, { market_type: 'alternate_spread' })], ctx());
+    const sx = Gx.sides.away.ladder.steps.find((s) => s.from_line === 28.5);
+    chk('no juice cents between prices past ±1000, and the step text quotes none', sx && sx.juice_cents === null && !/cents/.test(sx.text) && sx.break_even_cost_pp > 0, sx);
+    chk('cents stay quoted inside ±1000', Q.centsComparable(-110, -1000) && Q.centsComparable(865, 335) && !Q.centsComparable(-5000, -10000) && !Q.centsComparable(-110, null));
+    const far = Gx.sides.away.quotes.find((o) => o.line === 28.5);
+    chk('price advantage is not quoted in cents past ±1000', far.price_advantage_cents === null);
+  }
   chk('protection value = extra cover − extra break-even', L.steps.every((s) => near(s.protection_value_pp, s.cover_gain_pp - s.break_even_cost_pp, 0.02)));
   chk('each step\'s verdict follows its EV change (EV counts the push; cover alone does not)', L.steps.length > 0 && L.steps.every((s) => s.protection_worth_it === (s.ev_change_pct > 0)
     && (s.ev_change_pct > 0 ? /priced below its model value/ : (s.ev_change_pct < 0 ? /costs more than the model says/ : /at its model value/)).test(s.text)), L.steps.map((s) => [s.ev_change_pct, s.text]));
