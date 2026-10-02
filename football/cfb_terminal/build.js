@@ -137,24 +137,63 @@ function typicalMove() {
    the market is where it is, and the bettor asks about other numbers. So the
    curve keeps the engine's conditioning on the CURRENT market margin and moves
    only the threshold. At threshold == market margin this reproduces the
-   engine's own coverProbSpread exactly (tests pin it). With no market, the
-   engine's own call is used unchanged. */
+   engine's own coverProbSpread exactly (tests pin it) whenever the market
+   sits inside the table (pmf_spread_range).
+
+   THE SHAPE IS ALWAYS ONE TABLE ROW. The engine's own call is no curve: it
+   keys the table by whichever line it is asked about, so sampled at every
+   half point it stitches a different borrowed shape onto each threshold,
+   and past the table's range it switches to the pooled residual, which is
+   neither re-centred onto an integer grid nor stretched. P(margin > t) then
+   rises with t (McNeese @ LSU, 2026-10-02, LSU -52.5: 0.946 at 17.5, 0.927
+   at 18). So:
+     - a market OUTSIDE the table conditions on the table's nearest edge
+       (the market margin clamped to pmf_spread_range). That row is the
+       kernel-weighted shape of the most lopsided spreads the table holds,
+       so it is the closest empirical shape to the game, and the curve stays
+       continuous as the market crosses the edge (45 and 45.5 read the same
+       row). The pooled residual re-centred on the fair margin was
+       considered and rejected: it is the shape of all games, mostly close
+       ones, and it jumps at the edge.
+     - with NO market, the shape is conditioned on EdgeDesk's own fair
+       margin, clamped the same way (the question a market at the fair
+       number would ask; football/cfb_terminal/decisions.js conditions its
+       closing distribution on its centre the same way).
+   Either way cfbConditionedCover builds it, re-centred by an integer shift
+   and stretched to this game's sigma exactly as an in-range market is, so
+   every curve is monotone and lives on integer margins. The engine's own
+   call remains only for a params file with no table. */
 /* the conditioned shape lives in lib/edgedesk_quote_ev.js (cfbConditionedCover),
    where the app's price ladder reads the SAME distribution; this name stays for
    the callers here and in football/cfb_ev/dataset.js */
 function v1CoverConditioned(fair, condMargin, sigma, sigmaBase) {
   return QEV.cfbConditionedCover(window.EDCfbP4Params.distributions, fair, condMargin, sigma, sigmaBase);
 }
+/* the table row the shape is read at: the market margin (or, with none, the
+   fair margin), clamped to the range the table was built over */
+function v1PmfRow(margin, marketMargin) {
+  const D = window.EDCfbP4Params.distributions || {}, rng = D.pmf_spread_range;
+  const at = num(marketMargin) != null ? marketMargin : num(margin);
+  if (at == null || !rng) return at;
+  return Math.min(rng[1], Math.max(rng[0], at));
+}
 function v1Dist(margin, sigma, marketMargin) {
   const P = window.EDCfbP4Params, base = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
   const s = num(sigma) || base;
   const md = E1.dist.marginDistribution(margin, s);
   const q = (x) => (md ? E1.dist.quantile(md, x) : null);
-  const cond = v1CoverConditioned(margin, marketMargin, s, base);
+  const mm = num(marketMargin), row = v1PmfRow(margin, mm);
+  const cond = v1CoverConditioned(margin, row, s, base);
+  const signed = (x) => (x > 0 ? '+' : '') + x.toFixed(1);
   return {
-    basis: cond ? 'the champion’s empirical college margin PMF, conditioned on the current market spread as the engine conditions it, re-centred on EdgeDesk’s fair margin and stretched to this game’s sigma'
-      : 'the champion’s empirical college margin PMF (EDCfbP4 dist.coverProbSpread), re-centred on its fair margin',
-    conditioned_on_market_margin: cond ? marketMargin : null,
+    basis: !cond ? 'the champion’s empirical college margin PMF (EDCfbP4 dist.coverProbSpread), re-centred on its fair margin'
+      : mm == null ? 'the champion’s empirical college margin PMF, conditioned on EdgeDesk’s fair margin (there is no market spread to condition on'
+        + (row !== margin ? '; read at the table’s edge, home margin ' + signed(row) : '') + '), re-centred on that margin and stretched to this game’s sigma'
+      : row !== mm ? 'the champion’s empirical college margin PMF, conditioned on the table’s edge (home margin ' + signed(row) + ', the row nearest the current market at '
+        + signed(mm) + '), re-centred on EdgeDesk’s fair margin and stretched to this game’s sigma'
+      : 'the champion’s empirical college margin PMF, conditioned on the current market spread as the engine conditions it, re-centred on EdgeDesk’s fair margin and stretched to this game’s sigma',
+    conditioned_on_market_margin: cond && mm != null ? mm : null,
+    pmf_row: cond ? row : null,
     sigma: s, sigma_base: base,
     quantiles: { p10: q(0.10), p25: q(0.25), p50: q(0.5), p75: q(0.75), p90: q(0.90) },
     cover: cond || function (line) { return E1.dist.coverProbSpread(margin, line, s, base); }

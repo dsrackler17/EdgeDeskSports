@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-02 — every CFB curve is one distribution, whatever the market
+
+The two follow-ups from the entry below are closed. 47 of 115 stored CFB curves were incoherent: P(margin > t) rose with t. These were McNeese @ LSU (LSU −52.5, past the ±45 margin PMF table) and the 46 games with no market yet. All of them were built from the engine's per-line lookup (`football/cfb_p4/engine.js` `coverProbSpread`), which keys the table by whichever line it is asked about. Sampled at every half point, it stitched a different shape onto each threshold. Past ±45 it also switched to the pooled residual, which is neither shifted onto whole points nor stretched. McNeese @ LSU read 0.9457 at 17.5, 0.9270 at 18 and 0.9309 at 18.5.
+
+- **One table row for the whole curve** (`football/cfb_terminal/build.js` `v1Dist`):
+  - A market outside the table now reads the table's nearest edge: the market margin clamped to `pmf_spread_range`. That row is the kernel-weighted shape of the most lopsided spreads on file. Markets at 45 and 45.5 read the same row, so the curve does not jump at the edge.
+  - With no market, the shape is conditioned on EdgeDesk's own fair margin, clamped the same way. `decisions.js` conditions its closing distribution on its centre in the same way.
+  - Either way `EDQuoteEV.cfbConditionedCover` builds the curve exactly as it builds an in-range market's. It is re-centred by a whole-point shift and stretched to the game's σ, so every curve is monotone and lives on whole-point margins. `cfbConditionedCover` itself is unchanged and still byte-identical to the pre-move function.
+  - The pooled residual re-centred on the fair margin was the other candidate, and was rejected. It is the shape of all games, mostly close ones, and it jumps at the table's edge.
+  - A curve now names the row it read. The basis text says when that row is the table's edge or the fair margin, and `v1Dist` returns `pmf_row`. `conditioned_on_market_margin` stays the market itself, or null with none.
+- **What changed and what did not**:
+  - The 68 curves conditioned on an in-range market are byte-identical.
+  - At an out-of-range market line the curve no longer equals the engine's own `coverProbSpread`, which there is the pooled residual. P(LSU covers −52.5) was 0.2193 and is now 0.2437 (σ 14.84).
+  - McNeese @ LSU is no longer held at MALFORMED PROJECTION:
+    - Replayed with its captured prices, and in a build at 13:00Z while its market was fresh, the bettor decision is PASS (EVALUABLE).
+    - At 16:34Z its last quote (12:07Z) is stale, so it reads NO DECISION for STALE_QUOTE alone.
+    - The EV read stays INVESTIGATE: an 11-point gap to the market is past the implausible-EV bound, as it was before.
+  - The committed calibration dataset (`football/cfb_ev/data/cfb_ev_calibration_rows_v1`) is left as frozen. 74 of its 27,870 rows (|market| > 45, all with `pmf_conditioned` 0) would now read a different raw cover: median |Δ| 0.039, max 0.096, including 9 of the 3,120 OOS close rows. `tournament.js --check` still reproduces `calibration.json` exactly. A dataset rebuild would pick up the new rows.
+- **Tests**:
+  - `football/cfb_terminal/read.test.js` §2b pins the McNeese @ LSU curve, its mirror, the table edge and three no-market curves. Each must be one coherent distribution: never rising, no mass at a half point, P(M > 18) = P(M > 18.5), and the fall across a whole number equal to its mass.
+  - `football/cfb_terminal/tests.js` holds every curve of a fresh build to the same rules. Its engine-parity check is now limited to markets inside the table, and past the table the curve must equal the edge-conditioned one.
+  - `tools/bettor/football_decision.test.js` is back to zero incoherent replayed games.
+- **Rebuilt** `football/cfb_terminal` (16:34Z): every game's curve is coherent and no DISTRIBUTION_SANITY check fails. The decision record (`decisions/2026/snapshots.jsonl`) gains 47 snapshots, one for each changed curve. The old code appends none at the same clock.
+
 ## 2026-10-02 — four checks that went red on today's live data
 
 Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Personal research and Decision quality. Decision quality and Record P&L hid three more failures behind their first ones. Overnight the pipelines produced data the tests had never seen. Each cause was traced before anything changed:
