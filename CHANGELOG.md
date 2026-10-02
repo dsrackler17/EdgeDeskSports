@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-02 — four checks that went red on today's live data
+
+Four PR checks failed on `main` itself: CFB research terminal, Record P&L, Personal research and Decision quality. Decision quality and Record P&L hid three more failures behind their first ones. Overnight the pipelines produced data the tests had never seen. Each cause was traced before anything changed:
+
+- **The decision grader attached a "close" the database refuses** (`football/cfb_terminal/decisions.js`):
+  - Western Kentucky @ New Mexico State was evaluated at 23:07:32 on the 23:07:23 capture, the last before kickoff. That same capture was handed back as the row's close, with CLV 0.
+  - The leakage audit (`CLOSE_BEFORE_EVALUATION`) and `supabase/decision_validation.sql` both require the close to be captured after the decision.
+  - A close is now attached only when captured after the evaluation (`closeAfter`). Otherwise the row grades without CLV, as a game with no captured close always has.
+  - The one row already written was repaired with the same rule (`withoutEarlyClose`): its close and CLV are now null and its result is unchanged.
+- **The Lab's first live checkpoints were graded** (`tools/validation/validation_engine.test.js`):
+  - 64 rows with origin `LIVE` now read as LIVE. They pass the same pregame audit, and their sample still cannot license a recalibration.
+  - The check that no Lab row was LIVE described a Lab with nothing graded yet. It now checks that only the Lab's own live checkpoints read as LIVE.
+- **An incoherent curve is held, not priced** (`tools/bettor/football_decision.test.js`):
+  - McNeese @ LSU (LSU −52.5) lies outside the ±45 range the margin PMF table is conditioned on. Its curve came from the engine's per-line lookup, which borrows a different shape at each half point, so the stored P(margin > t) rises with the line.
+  - The engine rightly holds it at MALFORMED_PROJECTION. The replay now reads the incoherence off the curve itself and requires exactly that hold, for at most one game.
+  - The curve builder for such games is a follow-up.
+- **An NFL card showed college rows as its history** (`lib/edgedesk_decision_ui.js` `healthBinsFor`, found behind the first Decision quality failure):
+  - The Lab view's HISTORICAL BUCKETS preferred the LIVE decision buckets as soon as any live decision was graded. That ledger is the CFB terminal's, so the first three graded CFB rows replaced the NFL walk-forward buckets (n=1,893) on every NFL card.
+  - LIVE buckets now show only on a card of the sport every live row belongs to. `app.html` loads the file as `?v=20261002a`.
+- **The P&L parity check compared different rows** (`tools/record/pnl_sql.test.js`):
+  - The real ledger is loaded into the same `model_pnl` table before the dollars check. The first 24 settled BETs (NFL props, PIT @ CLE) made the SQL net −7.24 u against the fixture-only −0.07 u.
+  - The kernel and the SQL agree on every row. The check now gives the kernel the same rows the SQL reads, so it also proves parity on real data.
+- **The P&L page's live re-read check raced** (`tools/record/pnl_ui.test.js`, found behind the `pnl_sql` failure):
+  - After a settlement run the test switches the served ledger to the fixture and waited for any profit / loss / even hero.
+  - The real ledger now reads Loss (−7.16u) itself, so the wait returned before the re-read and compared the real figures.
+  - It now waits for the fixture's own net. The page's re-read was never wrong.
+
 ## 2026-10-02 — the EV-by-spread chart lays out cleanly on wide alternate ladders
 
 On a wide ladder (Northwestern: +28.5 down to −2.5, a ten-point hole, prices to −10000) the *EdgeDesk EV by spread* chart printed every number's line, price and cover on top of its neighbours. MAIN overprinted MAX EV, and the curve ran through SAFEST +EV. The audit found more than one defect:
