@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_public_v1",
- "generated_at": "2026-10-02T03:07:38.000Z",
+ "generated_at": "2026-10-02T04:07:22.000Z",
  "season": 2026,
  "lab_started_at": "2026-09-27T12:00:00.000Z",
  "rules": {
@@ -10,28 +10,50 @@
   "clv": "points the close moved toward the side, (L_snapshot - L_close) x side (§9)",
   "nothing_removed": "every graded official prediction is listed below, losses included"
  },
- "models": [],
+ "models": [
+  "edgedesk_cfb_p4_v1.0.0"
+ ],
  "counts": {
   "official_predictions": 5,
-  "graded": 0,
+  "graded": 1,
   "label": "small sample"
  },
  "accuracy": {
-  "spread_mae": null,
-  "rmse": null,
-  "bias": null,
-  "win_brier": null,
+  "spread_mae": 20.58,
+  "rmse": 20.58,
+  "bias": 20.58,
+  "win_brier": 0.23873,
   "coverage_80": null,
-  "n": 0
+  "n": 1
  },
  "research_positions": {
-  "n": 0,
+  "n": 1,
   "label": "small sample",
-  "record": "0-0-0",
-  "ats_pct": null,
-  "clv_mean": null,
-  "positive_clv_pct": null,
+  "record": "0-1-0",
+  "ats_pct": 0,
+  "clv_mean": 1,
+  "positive_clv_pct": 1,
   "note": "LEAN/BET research positions graded at the snapshot number. BET is disabled; no stake is claimed."
  },
- "games": []
+ "games": [
+  {
+   "game_id": "401871049",
+   "week": 5,
+   "kickoff": "2026-10-02T00:00:00.000Z",
+   "home_team": "New Mexico State",
+   "away_team": "Western Kentucky",
+   "matchup": "Western Kentucky @ New Mexico State",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "official_line": "New Mexico State -0.5",
+   "home_win_probability": 0.5114,
+   "final": "13-34",
+   "abs_error": 20.58,
+   "decision": "LEAN",
+   "is_position": true,
+   "side": "AWAY",
+   "line": 2.5,
+   "result": "LOSS",
+   "clv": 1
+  }
+ ]
 }

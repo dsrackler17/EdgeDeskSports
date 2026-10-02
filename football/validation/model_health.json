@@ -2,27 +2,27 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-02T03:07:45.941Z",
+ "as_of": "2026-10-02T04:07:30.407Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "a2caef14d0d38bef",
+ "inputs_key": "f962ea7cc0bb9d34",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 438,
+   "rows": 439,
    "mode": "LIVE",
-   "sha1": "f3f7fbf109fc"
+   "sha1": "5c6b2cb204d4"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
-   "rows": 0,
+   "rows": 2,
    "mode": "LIVE",
-   "sha1": null
+   "sha1": "c7df7bae62a9"
   },
   {
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 510,
+   "rows": 542,
    "mode": "LIVE_RECONSTRUCTED / BACKTEST",
-   "sha1": "6d309af730eb"
+   "sha1": "33b6e41374be"
   },
   {
    "file": "football/validation/pricing_nfl.json",
@@ -90,27 +90,27 @@
    "key": "LIVE_DECISIONS",
    "label": "Live decisions",
    "available": true,
-   "n": 0,
+   "n": 2,
    "sample": {
     "key": "DESCRIPTIVE_ONLY",
     "label": "Too early to evaluate",
-    "n": 0,
-    "text": "n=0 · Too early to evaluate",
+    "n": 2,
+    "text": "n=2 · Too early to evaluate",
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "438 decision snapshots issued before kickoff; 0 settled"
+   "note": "439 decision snapshots issued before kickoff; 2 settled"
   },
   {
    "key": "LIVE_CLV",
    "label": "Live CLV",
-   "available": false,
-   "n": 0,
+   "available": true,
+   "n": 2,
    "sample": {
     "key": "DESCRIPTIVE_ONLY",
     "label": "Too early to evaluate",
-    "n": 0,
-    "text": "n=0 · Too early to evaluate",
+    "n": 2,
+    "text": "n=2 · Too early to evaluate",
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
@@ -133,19 +133,3383 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 438,
+  "issued_snapshots": 439,
   "issued_by_decision": {
    "NO_DECISION": 257,
-   "PASS": 171,
+   "PASS": 172,
    "WATCH": 10
   },
-  "graded_rows": 0,
+  "graded_rows": 2,
   "unit_of_analysis": "the first snapshot of each decision class per game",
   "report": {
    "schema": "edgedesk_validation_report_v1",
    "engine": "edgedesk_validation_v1",
-   "n": 0,
-   "modes": {},
+   "n": 2,
+   "modes": {
+    "LIVE": {
+     "mode": "LIVE",
+     "label": "Live",
+     "text": "Published before kickoff and captured at the time.",
+     "all": {
+      "mode": "LIVE",
+      "n": 2,
+      "settled": 2,
+      "decided": 2,
+      "wins": 0,
+      "losses": 2,
+      "pushes": 0,
+      "observed_cover": 0,
+      "observed_cover_interval": {
+       "lo": 0,
+       "hi": 0.6576
+      },
+      "expected_cover": 0.5009,
+      "expected_n": 2,
+      "calibration_error_pp": -50.09,
+      "mean_break_even": 0.5202,
+      "realized_edge_pp": -52.02,
+      "clv": {
+       "n": 2,
+       "mean": 0.5,
+       "median": 0.5,
+       "beat": 1,
+       "tie": 1,
+       "lose": 0,
+       "beat_rate": 0.5,
+       "tie_rate": 0.5,
+       "lose_rate": 0,
+       "beat_rate_interval": {
+        "lo": 0.0945,
+        "hi": 0.9055
+       },
+       "interval": {
+        "lo": -5.853,
+        "hi": 6.853
+       },
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 2,
+        "text": "n=2 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "clv_price_pp": {
+       "n": 2,
+       "mean": 0.944,
+       "median": 0.944,
+       "beat": 1,
+       "tie": 1,
+       "lose": 0,
+       "beat_rate": 0.5,
+       "tie_rate": 0.5,
+       "lose_rate": 0,
+       "beat_rate_interval": {
+        "lo": 0.0945,
+        "hi": 0.9055
+       },
+       "interval": {
+        "lo": -11.05,
+        "hi": 12.938
+       },
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 2,
+        "text": "n=2 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "clv_ev": {
+       "n": 2,
+       "mean": -0.021,
+       "median": -0.021,
+       "beat": 0,
+       "tie": 0,
+       "lose": 2,
+       "beat_rate": 0,
+       "tie_rate": 0,
+       "lose_rate": 1,
+       "beat_rate_interval": {
+        "lo": 0,
+        "hi": 0.6576
+       },
+       "interval": {
+        "lo": -0.059,
+        "hi": 0.017
+       },
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 2,
+        "text": "n=2 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "units_risked": 0,
+      "units_won": 0,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "flat_n": 2,
+      "sample": {
+       "key": "DESCRIPTIVE_ONLY",
+       "label": "Too early to evaluate",
+       "n": 2,
+       "text": "n=2 · Too early to evaluate",
+       "recalibration": "NOT_ALLOWED",
+       "note": "A product maturity label, not a scientific verdict."
+      },
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     },
+     "calibration": {
+      "mode": "LIVE",
+      "n": 2,
+      "bins": [
+       {
+        "lo": 0.5,
+        "hi": 0.52,
+        "label": "50%–52%",
+        "n": 2,
+        "expected": 0.5009,
+        "observed": 0,
+        "error_pp": -50.09,
+        "interval": {
+         "lo": 0,
+         "hi": 0.6576
+        },
+        "inside_interval": true,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 2,
+         "text": "n=2 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        }
+       }
+      ],
+      "brier": 0.2509,
+      "log_loss": 0.69494,
+      "ece": 0.5009,
+      "mce": 0.5009,
+      "base_rate": 0,
+      "base_rate_brier": 0,
+      "brier_skill_vs_base_rate": null,
+      "curve": [
+       {
+        "expected": 0.5009,
+        "observed": 0,
+        "n": 2
+       }
+      ],
+      "sample": {
+       "key": "DESCRIPTIVE_ONLY",
+       "label": "Too early to evaluate",
+       "n": 2,
+       "text": "n=2 · Too early to evaluate",
+       "recalibration": "NOT_ALLOWED",
+       "note": "A product maturity label, not a scientific verdict."
+      },
+      "recalibration": "NOT_ALLOWED",
+      "note": "Measurement only: this compares EdgeDesk’s probabilities with what happened. It never moves a probability toward 50%, and no calibration is changed from it below 200 observations."
+     },
+     "expectations": {
+      "mode": "LIVE",
+      "by_decision": {
+       "BET": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "LEAN": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "WATCH": {
+        "mode": "LIVE",
+        "n": 1,
+        "settled": 1,
+        "decided": 1,
+        "wins": 0,
+        "losses": 1,
+        "pushes": 0,
+        "observed_cover": 0,
+        "observed_cover_interval": {
+         "lo": 0,
+         "hi": 0.7935
+        },
+        "expected_cover": 0.5,
+        "expected_n": 1,
+        "calibration_error_pp": -50,
+        "mean_break_even": 0.5122,
+        "realized_edge_pp": -51.22,
+        "clv": {
+         "n": 1,
+         "mean": 0,
+         "median": 0,
+         "beat": 0,
+         "tie": 1,
+         "lose": 0,
+         "beat_rate": 0,
+         "tie_rate": 1,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 1,
+         "mean": 0,
+         "median": 0,
+         "beat": 0,
+         "tie": 1,
+         "lose": 0,
+         "beat_rate": 0,
+         "tie_rate": 1,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 1,
+         "mean": -0.024,
+         "median": -0.024,
+         "beat": 0,
+         "tie": 0,
+         "lose": 1,
+         "beat_rate": 0,
+         "tie_rate": 0,
+         "lose_rate": 1,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": -1,
+        "flat_n": 1,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 1,
+         "text": "n=1 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate"
+       },
+       "PASS": {
+        "mode": "LIVE",
+        "n": 1,
+        "settled": 1,
+        "decided": 1,
+        "wins": 0,
+        "losses": 1,
+        "pushes": 0,
+        "observed_cover": 0,
+        "observed_cover_interval": {
+         "lo": 0,
+         "hi": 0.7935
+        },
+        "expected_cover": 0.5018,
+        "expected_n": 1,
+        "calibration_error_pp": -50.18,
+        "mean_break_even": 0.5283,
+        "realized_edge_pp": -52.83,
+        "clv": {
+         "n": 1,
+         "mean": 1,
+         "median": 1,
+         "beat": 1,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": 1,
+         "tie_rate": 0,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0.2065,
+          "hi": 1
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 1,
+         "mean": 1.888,
+         "median": 1.888,
+         "beat": 1,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": 1,
+         "tie_rate": 0,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0.2065,
+          "hi": 1
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 1,
+         "mean": -0.018,
+         "median": -0.018,
+         "beat": 0,
+         "tie": 0,
+         "lose": 1,
+         "beat_rate": 0,
+         "tie_rate": 0,
+         "lose_rate": 1,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": -1,
+        "flat_n": 1,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 1,
+         "text": "n=1 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate"
+       }
+      },
+      "by_tier": {
+       "0.25U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "0.50U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "0.75U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "1.00U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       }
+      },
+      "checks": [
+       {
+        "check": "BET > LEAN",
+        "metric": "mean CLV (pts) and realized edge",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: BET n=0, LEAN n=0 (each needs 50)."
+       },
+       {
+        "check": "LEAN > PASS",
+        "metric": "mean CLV (pts) and realized edge",
+        "n": [
+         0,
+         1
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: LEAN n=0, PASS n=1 (each needs 50)."
+       },
+       {
+        "check": "0.50U > 0.25U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 0.50U n=0, 0.25U n=0."
+       },
+       {
+        "check": "0.75U > 0.50U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 0.75U n=0, 0.50U n=0."
+       },
+       {
+        "check": "1.00U > 0.75U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 1.00U n=0, 0.75U n=0."
+       }
+      ],
+      "alerts": [],
+      "rule": "Classes are compared only when each has 50+ settled decisions; tiers when the pair has 50+ (20+ each). A failure is a research alert: thresholds are never rewritten from it."
+     },
+     "segments": {
+      "sport": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "CFB"
+        }
+       ],
+       "not_measured": 0
+      },
+      "decision": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5,
+         "expected_n": 1,
+         "calibration_error_pp": -50,
+         "mean_break_even": 0.5122,
+         "realized_edge_pp": -51.22,
+         "clv": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.024,
+          "median": -0.024,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate",
+         "bucket": "WATCH"
+        },
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5018,
+         "expected_n": 1,
+         "calibration_error_pp": -50.18,
+         "mean_break_even": 0.5283,
+         "realized_edge_pp": -52.83,
+         "clv": {
+          "n": 1,
+          "mean": 1,
+          "median": 1,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 1.888,
+          "median": 1.888,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.018,
+          "median": -0.018,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate",
+         "bucket": "PASS"
+        }
+       ],
+       "not_measured": 0
+      },
+      "unit_tier": {
+       "buckets": [],
+       "not_measured": 2
+      },
+      "market": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "spread"
+        }
+       ],
+       "not_measured": 0
+      },
+      "confidence_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "70–79"
+        }
+       ],
+       "not_measured": 0
+      },
+      "calibration_source": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "partially calibrated"
+        }
+       ],
+       "not_measured": 0
+      },
+      "reliability_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "adequate"
+        }
+       ],
+       "not_measured": 0
+      },
+      "price_edge_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "<0 pp"
+        }
+       ],
+       "not_measured": 0
+      },
+      "calibrated_ev_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "<0%"
+        }
+       ],
+       "not_measured": 0
+      },
+      "gap_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5,
+         "expected_n": 1,
+         "calibration_error_pp": -50,
+         "mean_break_even": 0.5122,
+         "realized_edge_pp": -51.22,
+         "clv": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.024,
+          "median": -0.024,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate",
+         "bucket": "1–2 pts"
+        },
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5018,
+         "expected_n": 1,
+         "calibration_error_pp": -50.18,
+         "mean_break_even": 0.5283,
+         "realized_edge_pp": -52.83,
+         "clv": {
+          "n": 1,
+          "mean": 1,
+          "median": 1,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 1.888,
+          "median": 1.888,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.018,
+          "median": -0.018,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate",
+         "bucket": "2–4 pts"
+        }
+       ],
+       "not_measured": 0
+      },
+      "favorite": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "UNDERDOG"
+        }
+       ],
+       "not_measured": 0
+      },
+      "home_away": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "AWAY"
+        }
+       ],
+       "not_measured": 0
+      },
+      "division": {
+       "buckets": [],
+       "not_measured": 2
+      },
+      "key_exposure": {
+       "buckets": [],
+       "not_measured": 2
+      },
+      "market_quality": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "ACCEPTABLE"
+        }
+       ],
+       "not_measured": 0
+      },
+      "book_depth": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5,
+         "expected_n": 1,
+         "calibration_error_pp": -50,
+         "mean_break_even": 0.5122,
+         "realized_edge_pp": -51.22,
+         "clv": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.024,
+          "median": -0.024,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate",
+         "bucket": "1 book"
+        }
+       ],
+       "not_measured": 1
+      },
+      "quote_freshness": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "<15 min"
+        }
+       ],
+       "not_measured": 0
+      },
+      "model_version": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "edgedesk_cfb_p4_v1.0.0"
+        }
+       ],
+       "not_measured": 0
+      },
+      "calibration_version": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 2,
+         "settled": 2,
+         "decided": 2,
+         "wins": 0,
+         "losses": 2,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "expected_cover": 0.5009,
+         "expected_n": 2,
+         "calibration_error_pp": -50.09,
+         "mean_break_even": 0.5202,
+         "realized_edge_pp": -52.02,
+         "clv": {
+          "n": 2,
+          "mean": 0.5,
+          "median": 0.5,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -5.853,
+           "hi": 6.853
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0.944,
+          "median": 0.944,
+          "beat": 1,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.5,
+          "tie_rate": 0.5,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.0945,
+           "hi": 0.9055
+          },
+          "interval": {
+           "lo": -11.05,
+           "hi": 12.938
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 2,
+          "mean": -0.021,
+          "median": -0.021,
+          "beat": 0,
+          "tie": 0,
+          "lose": 2,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": -0.059,
+           "hi": 0.017
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 2,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate",
+         "bucket": "cfb_ev_calibration_v1"
+        }
+       ],
+       "not_measured": 0
+      },
+      "rules_version": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5018,
+         "expected_n": 1,
+         "calibration_error_pp": -50.18,
+         "mean_break_even": 0.5283,
+         "realized_edge_pp": -52.83,
+         "clv": {
+          "n": 1,
+          "mean": 1,
+          "median": 1,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 1.888,
+          "median": 1.888,
+          "beat": 1,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.2065,
+           "hi": 1
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.018,
+          "median": -0.018,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate",
+         "bucket": "football_decision_config_v2"
+        },
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": 0.5,
+         "expected_n": 1,
+         "calibration_error_pp": -50,
+         "mean_break_even": 0.5122,
+         "realized_edge_pp": -51.22,
+         "clv": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 1,
+          "mean": -0.024,
+          "median": -0.024,
+          "beat": 0,
+          "tie": 0,
+          "lose": 1,
+          "beat_rate": 0,
+          "tie_rate": 0,
+          "lose_rate": 1,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate",
+         "bucket": "football_decision_config_v2.1"
+        }
+       ],
+       "not_measured": 0
+      }
+     },
+     "leakage": {
+      "n": 2,
+      "violations": [
+       {
+        "id": "bds_a22ede42",
+        "game_id": "401871049",
+        "mode": "LIVE",
+        "code": "CLOSE_BEFORE_EVALUATION",
+        "text": "the \"closing\" line was captured before the evaluation — it cannot be the close"
+       }
+      ],
+      "ok": false,
+      "rule": "Every live row is decided before kickoff, on quotes and inputs captured no later than the evaluation; a close is captured after it; a walk-forward row never trains on its own season."
+     }
+    }
+   },
    "maturity": [
     {
      "key": "BACKTEST",
@@ -192,15 +3556,424 @@
    ],
    "rule": "Every figure carries its n and sample state; modes are never blended; nothing here changes a threshold or a calibration."
   },
-  "dashboard": {}
+  "dashboard": {
+   "LIVE": {
+    "label": "Live",
+    "live_decisions": {
+     "n": 2,
+     "settled": 2,
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 2,
+      "text": "n=2 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "clv": {
+     "n": 2,
+     "mean": 0.5,
+     "median": 0.5,
+     "beat": 1,
+     "tie": 1,
+     "lose": 0,
+     "beat_rate": 0.5,
+     "tie_rate": 0.5,
+     "lose_rate": 0,
+     "beat_rate_interval": {
+      "lo": 0.0945,
+      "hi": 0.9055
+     },
+     "interval": {
+      "lo": -5.853,
+      "hi": 6.853
+     },
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 2,
+      "text": "n=2 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "clv_price_pp": {
+     "n": 2,
+     "mean": 0.944,
+     "median": 0.944,
+     "beat": 1,
+     "tie": 1,
+     "lose": 0,
+     "beat_rate": 0.5,
+     "tie_rate": 0.5,
+     "lose_rate": 0,
+     "beat_rate_interval": {
+      "lo": 0.0945,
+      "hi": 0.9055
+     },
+     "interval": {
+      "lo": -11.05,
+      "hi": 12.938
+     },
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 2,
+      "text": "n=2 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "calibration": {
+     "n": 2,
+     "brier": 0.2509,
+     "log_loss": 0.69494,
+     "ece": 0.5009,
+     "bins": [
+      {
+       "lo": 0.5,
+       "hi": 0.52,
+       "label": "50%–52%",
+       "n": 2,
+       "expected": 0.5009,
+       "observed": 0,
+       "error_pp": -50.09,
+       "interval": {
+        "lo": 0,
+        "hi": 0.6576
+       },
+       "inside_interval": true,
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 2,
+        "text": "n=2 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      }
+     ],
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 2,
+      "text": "n=2 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "roi": {
+     "roi": null,
+     "n": 0,
+     "units_risked": 0,
+     "units_won": 0,
+     "flat_roi_hypothetical": -1,
+     "flat_n": 2
+    },
+    "cover_rate": {
+     "observed": 0,
+     "interval": {
+      "lo": 0,
+      "hi": 0.6576
+     },
+     "n": 2
+    },
+    "expected_vs_observed": {
+     "expected": 0.5009,
+     "observed": 0,
+     "error_pp": -50.09,
+     "n": 2
+    },
+    "by_decision": [
+     {
+      "bucket": "WATCH",
+      "n": 1,
+      "decided": 1,
+      "observed_cover": 0,
+      "expected_cover": 0.5,
+      "clv_mean": 0,
+      "clv_n": 1,
+      "clv_beat_rate": 0,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate"
+     },
+     {
+      "bucket": "PASS",
+      "n": 1,
+      "decided": 1,
+      "observed_cover": 0,
+      "expected_cover": 0.5018,
+      "clv_mean": 1,
+      "clv_n": 1,
+      "clv_beat_rate": 1,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate"
+     }
+    ],
+    "by_unit": [],
+    "by_sport": [
+     {
+      "bucket": "CFB",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_market": [
+     {
+      "bucket": "spread",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_confidence": [
+     {
+      "bucket": "70–79",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_reliability": [
+     {
+      "bucket": "adequate",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_ev": [
+     {
+      "bucket": "<0%",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_edge": [
+     {
+      "bucket": "<0 pp",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_gap": [
+     {
+      "bucket": "1–2 pts",
+      "n": 1,
+      "decided": 1,
+      "observed_cover": 0,
+      "expected_cover": 0.5,
+      "clv_mean": 0,
+      "clv_n": 1,
+      "clv_beat_rate": 0,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=1) vs expected 50.0% · Too early to evaluate"
+     },
+     {
+      "bucket": "2–4 pts",
+      "n": 1,
+      "decided": 1,
+      "observed_cover": 0,
+      "expected_cover": 0.5018,
+      "clv_mean": 1,
+      "clv_n": 1,
+      "clv_beat_rate": 1,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=1) vs expected 50.2% · Too early to evaluate"
+     }
+    ],
+    "by_calibration_source": [
+     {
+      "bucket": "partially calibrated",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_model_version": [
+     {
+      "bucket": "edgedesk_cfb_p4_v1.0.0",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "by_market_quality": [
+     {
+      "bucket": "ACCEPTABLE",
+      "n": 2,
+      "decided": 2,
+      "observed_cover": 0,
+      "expected_cover": 0.5009,
+      "clv_mean": 0.5,
+      "clv_n": 2,
+      "clv_beat_rate": 0.5,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=2) vs expected 50.1% · Too early to evaluate"
+     }
+    ],
+    "expectations": {
+     "checks": [
+      {
+       "check": "BET > LEAN",
+       "metric": "mean CLV (pts) and realized edge",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: BET n=0, LEAN n=0 (each needs 50)."
+      },
+      {
+       "check": "LEAN > PASS",
+       "metric": "mean CLV (pts) and realized edge",
+       "n": [
+        0,
+        1
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: LEAN n=0, PASS n=1 (each needs 50)."
+      },
+      {
+       "check": "0.50U > 0.25U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 0.50U n=0, 0.25U n=0."
+      },
+      {
+       "check": "0.75U > 0.50U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 0.75U n=0, 0.50U n=0."
+      },
+      {
+       "check": "1.00U > 0.75U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 1.00U n=0, 0.75U n=0."
+      }
+     ],
+     "alerts": []
+    },
+    "leakage": {
+     "ok": false,
+     "violations": 1
+    }
+   }
+  }
  },
  "cfb_lab": {
   "level": "model (fair line) and its research classes, CFB only",
-  "rows": 510,
+  "rows": 542,
   "report": {
    "schema": "edgedesk_validation_report_v1",
    "engine": "edgedesk_validation_v1",
-   "n": 510,
+   "n": 542,
    "modes": {
     "BACKTEST": {
      "mode": "BACKTEST",
@@ -4311,6 +8084,2508 @@
       "ok": true,
       "rule": "Every live row is decided before kickoff, on quotes and inputs captured no later than the evaluation; a close is captured after it; a walk-forward row never trains on its own season."
      }
+    },
+    "LIVE": {
+     "mode": "LIVE",
+     "label": "Live",
+     "text": "Published before kickoff and captured at the time.",
+     "all": {
+      "mode": "LIVE",
+      "n": 32,
+      "settled": 29,
+      "decided": 29,
+      "wins": 0,
+      "losses": 29,
+      "pushes": 0,
+      "observed_cover": 0,
+      "observed_cover_interval": {
+       "lo": 0,
+       "hi": 0.117
+      },
+      "expected_cover": 0.521,
+      "expected_n": 22,
+      "calibration_error_pp": null,
+      "mean_break_even": 0.5248,
+      "realized_edge_pp": -52.48,
+      "clv": {
+       "n": 29,
+       "mean": 0.897,
+       "median": 1,
+       "beat": 26,
+       "tie": 3,
+       "lose": 0,
+       "beat_rate": 0.8966,
+       "tie_rate": 0.1034,
+       "lose_rate": 0,
+       "beat_rate_interval": {
+        "lo": 0.7361,
+        "hi": 0.9642
+       },
+       "interval": {
+        "lo": 0.779,
+        "hi": 1.014
+       },
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 29,
+        "text": "n=29 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "clv_price_pp": {
+       "n": 3,
+       "mean": 0,
+       "median": 0,
+       "beat": 0,
+       "tie": 3,
+       "lose": 0,
+       "beat_rate": 0,
+       "tie_rate": 1,
+       "lose_rate": 0,
+       "beat_rate_interval": {
+        "lo": 0,
+        "hi": 0.5615
+       },
+       "interval": {
+        "lo": 0,
+        "hi": 0
+       },
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 3,
+        "text": "n=3 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "clv_ev": {
+       "n": 0,
+       "mean": null,
+       "median": null,
+       "beat": 0,
+       "tie": 0,
+       "lose": 0,
+       "beat_rate": null,
+       "tie_rate": null,
+       "lose_rate": null,
+       "interval": null,
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 0,
+        "text": "n=0 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      "units_risked": 0,
+      "units_won": 0,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "flat_n": 29,
+      "sample": {
+       "key": "DESCRIPTIVE_ONLY",
+       "label": "Too early to evaluate",
+       "n": 29,
+       "text": "n=29 · Too early to evaluate",
+       "recalibration": "NOT_ALLOWED",
+       "note": "A product maturity label, not a scientific verdict."
+      },
+      "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate"
+     },
+     "calibration": {
+      "mode": "LIVE",
+      "n": 22,
+      "bins": [
+       {
+        "lo": 0.5,
+        "hi": 0.52,
+        "label": "50%–52%",
+        "n": 2,
+        "expected": 0.5167,
+        "observed": 0,
+        "error_pp": -51.67,
+        "interval": {
+         "lo": 0,
+         "hi": 0.6576
+        },
+        "inside_interval": true,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 2,
+         "text": "n=2 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        }
+       },
+       {
+        "lo": 0.52,
+        "hi": 0.54,
+        "label": "52%–54%",
+        "n": 20,
+        "expected": 0.5215,
+        "observed": 0,
+        "error_pp": -52.15,
+        "interval": {
+         "lo": 0,
+         "hi": 0.1611
+        },
+        "inside_interval": false,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 20,
+         "text": "n=20 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        }
+       }
+      ],
+      "brier": 0.2715,
+      "log_loss": 0.73616,
+      "ece": 0.52106,
+      "mce": 0.5215,
+      "base_rate": 0,
+      "base_rate_brier": 0,
+      "brier_skill_vs_base_rate": null,
+      "curve": [
+       {
+        "expected": 0.5167,
+        "observed": 0,
+        "n": 2
+       },
+       {
+        "expected": 0.5215,
+        "observed": 0,
+        "n": 20
+       }
+      ],
+      "sample": {
+       "key": "DESCRIPTIVE_ONLY",
+       "label": "Too early to evaluate",
+       "n": 22,
+       "text": "n=22 · Too early to evaluate",
+       "recalibration": "NOT_ALLOWED",
+       "note": "A product maturity label, not a scientific verdict."
+      },
+      "recalibration": "NOT_ALLOWED",
+      "note": "Measurement only: this compares EdgeDesk’s probabilities with what happened. It never moves a probability toward 50%, and no calibration is changed from it below 200 observations."
+     },
+     "expectations": {
+      "mode": "LIVE",
+      "by_decision": {
+       "BET": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "LEAN": {
+        "mode": "LIVE",
+        "n": 10,
+        "settled": 10,
+        "decided": 10,
+        "wins": 0,
+        "losses": 10,
+        "pushes": 0,
+        "observed_cover": 0,
+        "observed_cover_interval": {
+         "lo": 0,
+         "hi": 0.2775
+        },
+        "expected_cover": 0.5193,
+        "expected_n": 4,
+        "calibration_error_pp": null,
+        "mean_break_even": 0.523,
+        "realized_edge_pp": -52.3,
+        "clv": {
+         "n": 10,
+         "mean": 0.8,
+         "median": 1,
+         "beat": 8,
+         "tie": 2,
+         "lose": 0,
+         "beat_rate": 0.8,
+         "tie_rate": 0.2,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0.4902,
+          "hi": 0.9433
+         },
+         "interval": {
+          "lo": 0.498,
+          "hi": 1.102
+         },
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 10,
+          "text": "n=10 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 2,
+         "mean": 0,
+         "median": 0,
+         "beat": 0,
+         "tie": 2,
+         "lose": 0,
+         "beat_rate": 0,
+         "tie_rate": 1,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.6576
+         },
+         "interval": {
+          "lo": 0,
+          "hi": 0
+         },
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 2,
+          "text": "n=2 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": -1,
+        "flat_n": 10,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 10,
+         "text": "n=10 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover 0.0% (n=10) vs expected 51.9% · Too early to evaluate"
+       },
+       "WATCH": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "PASS": {
+        "mode": "LIVE",
+        "n": 22,
+        "settled": 19,
+        "decided": 19,
+        "wins": 0,
+        "losses": 19,
+        "pushes": 0,
+        "observed_cover": 0,
+        "observed_cover_interval": {
+         "lo": 0,
+         "hi": 0.1682
+        },
+        "expected_cover": 0.5215,
+        "expected_n": 18,
+        "calibration_error_pp": null,
+        "mean_break_even": 0.5258,
+        "realized_edge_pp": -52.58,
+        "clv": {
+         "n": 19,
+         "mean": 0.947,
+         "median": 1,
+         "beat": 18,
+         "tie": 1,
+         "lose": 0,
+         "beat_rate": 0.9474,
+         "tie_rate": 0.0526,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0.7536,
+          "hi": 0.9906
+         },
+         "interval": {
+          "lo": 0.837,
+          "hi": 1.058
+         },
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 19,
+          "text": "n=19 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 1,
+         "mean": 0,
+         "median": 0,
+         "beat": 0,
+         "tie": 1,
+         "lose": 0,
+         "beat_rate": 0,
+         "tie_rate": 1,
+         "lose_rate": 0,
+         "beat_rate_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": -1,
+        "flat_n": 19,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 19,
+         "text": "n=19 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover 0.0% (n=19) vs expected 52.1% · Too early to evaluate"
+       }
+      },
+      "by_tier": {
+       "0.25U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "0.50U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "0.75U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       },
+       "1.00U": {
+        "mode": null,
+        "n": 0,
+        "settled": 0,
+        "decided": 0,
+        "wins": 0,
+        "losses": 0,
+        "pushes": 0,
+        "observed_cover": null,
+        "observed_cover_interval": null,
+        "expected_cover": null,
+        "expected_n": 0,
+        "calibration_error_pp": null,
+        "mean_break_even": null,
+        "realized_edge_pp": null,
+        "clv": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_price_pp": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "clv_ev": {
+         "n": 0,
+         "mean": null,
+         "median": null,
+         "beat": 0,
+         "tie": 0,
+         "lose": 0,
+         "beat_rate": null,
+         "tie_rate": null,
+         "lose_rate": null,
+         "interval": null,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 0,
+          "text": "n=0 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         }
+        },
+        "units_risked": 0,
+        "units_won": 0,
+        "roi": null,
+        "roi_n": 0,
+        "flat_roi_hypothetical": null,
+        "flat_n": 0,
+        "sample": {
+         "key": "DESCRIPTIVE_ONLY",
+         "label": "Too early to evaluate",
+         "n": 0,
+         "text": "n=0 · Too early to evaluate",
+         "recalibration": "NOT_ALLOWED",
+         "note": "A product maturity label, not a scientific verdict."
+        },
+        "text": "Observed cover — (n=0) · Too early to evaluate"
+       }
+      },
+      "checks": [
+       {
+        "check": "BET > LEAN",
+        "metric": "mean CLV (pts) and realized edge",
+        "n": [
+         0,
+         10
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: BET n=0, LEAN n=10 (each needs 50)."
+       },
+       {
+        "check": "LEAN > PASS",
+        "metric": "mean CLV (pts) and realized edge",
+        "n": [
+         10,
+         19
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: LEAN n=10, PASS n=19 (each needs 50)."
+       },
+       {
+        "check": "0.50U > 0.25U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 0.50U n=0, 0.25U n=0."
+       },
+       {
+        "check": "0.75U > 0.50U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 0.75U n=0, 0.50U n=0."
+       },
+       {
+        "check": "1.00U > 0.75U",
+        "n": [
+         0,
+         0
+        ],
+        "evaluated": false,
+        "ok": null,
+        "text": "Not evaluated: 1.00U n=0, 0.75U n=0."
+       }
+      ],
+      "alerts": [],
+      "rule": "Classes are compared only when each has 50+ settled decisions; tiers when the pair has 50+ (20+ each). A failure is a research alert: thresholds are never rewritten from it."
+     },
+     "segments": {
+      "sport": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 32,
+         "settled": 29,
+         "decided": 29,
+         "wins": 0,
+         "losses": 29,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.117
+         },
+         "expected_cover": 0.521,
+         "expected_n": 22,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 29,
+          "mean": 0.897,
+          "median": 1,
+          "beat": 26,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0.8966,
+          "tie_rate": 0.1034,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7361,
+           "hi": 0.9642
+          },
+          "interval": {
+           "lo": 0.779,
+           "hi": 1.014
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 29,
+           "text": "n=29 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 3,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.5615
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 3,
+           "text": "n=3 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 29,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 29,
+          "text": "n=29 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate",
+         "bucket": "CFB"
+        }
+       ],
+       "not_measured": 0
+      },
+      "decision": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 10,
+         "settled": 10,
+         "decided": 10,
+         "wins": 0,
+         "losses": 10,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.2775
+         },
+         "expected_cover": 0.5193,
+         "expected_n": 4,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.523,
+         "realized_edge_pp": -52.3,
+         "clv": {
+          "n": 10,
+          "mean": 0.8,
+          "median": 1,
+          "beat": 8,
+          "tie": 2,
+          "lose": 0,
+          "beat_rate": 0.8,
+          "tie_rate": 0.2,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.4902,
+           "hi": 0.9433
+          },
+          "interval": {
+           "lo": 0.498,
+           "hi": 1.102
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 10,
+           "text": "n=10 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 2,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 10,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 10,
+          "text": "n=10 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=10) vs expected 51.9% · Too early to evaluate",
+         "bucket": "LEAN"
+        },
+        {
+         "mode": "LIVE",
+         "n": 22,
+         "settled": 19,
+         "decided": 19,
+         "wins": 0,
+         "losses": 19,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.1682
+         },
+         "expected_cover": 0.5215,
+         "expected_n": 18,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5258,
+         "realized_edge_pp": -52.58,
+         "clv": {
+          "n": 19,
+          "mean": 0.947,
+          "median": 1,
+          "beat": 18,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.9474,
+          "tie_rate": 0.0526,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7536,
+           "hi": 0.9906
+          },
+          "interval": {
+           "lo": 0.837,
+           "hi": 1.058
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 19,
+           "text": "n=19 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 19,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 19,
+          "text": "n=19 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=19) vs expected 52.1% · Too early to evaluate",
+         "bucket": "PASS"
+        }
+       ],
+       "not_measured": 0
+      },
+      "unit_tier": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "market": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 32,
+         "settled": 29,
+         "decided": 29,
+         "wins": 0,
+         "losses": 29,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.117
+         },
+         "expected_cover": 0.521,
+         "expected_n": 22,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 29,
+          "mean": 0.897,
+          "median": 1,
+          "beat": 26,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0.8966,
+          "tie_rate": 0.1034,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7361,
+           "hi": 0.9642
+          },
+          "interval": {
+           "lo": 0.779,
+           "hi": 1.014
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 29,
+           "text": "n=29 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 3,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.5615
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 3,
+           "text": "n=3 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 29,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 29,
+          "text": "n=29 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate",
+         "bucket": "spread"
+        }
+       ],
+       "not_measured": 0
+      },
+      "confidence_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 32,
+         "settled": 29,
+         "decided": 29,
+         "wins": 0,
+         "losses": 29,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.117
+         },
+         "expected_cover": 0.521,
+         "expected_n": 22,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 29,
+          "mean": 0.897,
+          "median": 1,
+          "beat": 26,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0.8966,
+          "tie_rate": 0.1034,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7361,
+           "hi": 0.9642
+          },
+          "interval": {
+           "lo": 0.779,
+           "hi": 1.014
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 29,
+           "text": "n=29 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 3,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.5615
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 3,
+           "text": "n=3 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 29,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 29,
+          "text": "n=29 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate",
+         "bucket": "70–79"
+        }
+       ],
+       "not_measured": 0
+      },
+      "calibration_source": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "reliability_band": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "price_edge_band": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "calibrated_ev_band": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "gap_band": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 1,
+         "settled": 1,
+         "decided": 1,
+         "wins": 0,
+         "losses": 1,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.7935
+         },
+         "expected_cover": null,
+         "expected_n": 0,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5122,
+         "realized_edge_pp": -51.22,
+         "clv": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 1,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 1,
+          "text": "n=1 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=1) · Too early to evaluate",
+         "bucket": "1–2 pts"
+        },
+        {
+         "mode": "LIVE",
+         "n": 12,
+         "settled": 12,
+         "decided": 12,
+         "wins": 0,
+         "losses": 12,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.2425
+         },
+         "expected_cover": 0.5194,
+         "expected_n": 6,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.526,
+         "realized_edge_pp": -52.6,
+         "clv": {
+          "n": 12,
+          "mean": 0.833,
+          "median": 1,
+          "beat": 10,
+          "tie": 2,
+          "lose": 0,
+          "beat_rate": 0.8333,
+          "tie_rate": 0.1667,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.552,
+           "hi": 0.953
+          },
+          "interval": {
+           "lo": 0.586,
+           "hi": 1.081
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 12,
+           "text": "n=12 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 2,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 2,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.6576
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 2,
+           "text": "n=2 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 12,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 12,
+          "text": "n=12 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=12) vs expected 51.9% · Too early to evaluate",
+         "bucket": "2–4 pts"
+        },
+        {
+         "mode": "LIVE",
+         "n": 16,
+         "settled": 16,
+         "decided": 16,
+         "wins": 0,
+         "losses": 16,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.1936
+         },
+         "expected_cover": 0.5217,
+         "expected_n": 16,
+         "calibration_error_pp": -52.17,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 16,
+          "mean": 1,
+          "median": 1,
+          "beat": 16,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": 1,
+          "tie_rate": 0,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.8064,
+           "hi": 1
+          },
+          "interval": {
+           "lo": 1,
+           "hi": 1
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 16,
+           "text": "n=16 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 16,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 16,
+          "text": "n=16 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=16) vs expected 52.2% · Too early to evaluate",
+         "bucket": "4–7 pts"
+        }
+       ],
+       "not_measured": 3
+      },
+      "favorite": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 29,
+         "settled": 29,
+         "decided": 29,
+         "wins": 0,
+         "losses": 29,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.117
+         },
+         "expected_cover": 0.521,
+         "expected_n": 22,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 29,
+          "mean": 0.897,
+          "median": 1,
+          "beat": 26,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0.8966,
+          "tie_rate": 0.1034,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7361,
+           "hi": 0.9642
+          },
+          "interval": {
+           "lo": 0.779,
+           "hi": 1.014
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 29,
+           "text": "n=29 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 3,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.5615
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 3,
+           "text": "n=3 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 29,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 29,
+          "text": "n=29 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate",
+         "bucket": "UNDERDOG"
+        }
+       ],
+       "not_measured": 3
+      },
+      "home_away": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 29,
+         "settled": 29,
+         "decided": 29,
+         "wins": 0,
+         "losses": 29,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.117
+         },
+         "expected_cover": 0.521,
+         "expected_n": 22,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5248,
+         "realized_edge_pp": -52.48,
+         "clv": {
+          "n": 29,
+          "mean": 0.897,
+          "median": 1,
+          "beat": 26,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0.8966,
+          "tie_rate": 0.1034,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.7361,
+           "hi": 0.9642
+          },
+          "interval": {
+           "lo": 0.779,
+           "hi": 1.014
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 29,
+           "text": "n=29 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 3,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 3,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.5615
+          },
+          "interval": {
+           "lo": 0,
+           "hi": 0
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 3,
+           "text": "n=3 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 29,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 29,
+          "text": "n=29 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate",
+         "bucket": "AWAY"
+        }
+       ],
+       "not_measured": 3
+      },
+      "division": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "key_exposure": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "market_quality": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "book_depth": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "quote_freshness": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "model_version": {
+       "buckets": [
+        {
+         "mode": "LIVE",
+         "n": 8,
+         "settled": 7,
+         "decided": 7,
+         "wins": 0,
+         "losses": 7,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.3543
+         },
+         "expected_cover": null,
+         "expected_n": 0,
+         "calibration_error_pp": null,
+         "mean_break_even": 0.5256,
+         "realized_edge_pp": -52.56,
+         "clv": {
+          "n": 7,
+          "mean": 0.857,
+          "median": 1,
+          "beat": 6,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.8571,
+          "tie_rate": 0.1429,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.4869,
+           "hi": 0.9743
+          },
+          "interval": {
+           "lo": 0.508,
+           "hi": 1.207
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 7,
+           "text": "n=7 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 7,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 7,
+          "text": "n=7 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=7) · Too early to evaluate",
+         "bucket": "edgedesk_cfb_p4_v1.0.0"
+        },
+        {
+         "mode": "LIVE",
+         "n": 12,
+         "settled": 11,
+         "decided": 11,
+         "wins": 0,
+         "losses": 11,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.2588
+         },
+         "expected_cover": 0.5205,
+         "expected_n": 11,
+         "calibration_error_pp": -52.05,
+         "mean_break_even": 0.5246,
+         "realized_edge_pp": -52.46,
+         "clv": {
+          "n": 11,
+          "mean": 0.909,
+          "median": 1,
+          "beat": 10,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.9091,
+          "tie_rate": 0.0909,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.6226,
+           "hi": 0.9838
+          },
+          "interval": {
+           "lo": 0.707,
+           "hi": 1.112
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 11,
+           "text": "n=11 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 11,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 11,
+          "text": "n=11 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=11) vs expected 52.1% · Too early to evaluate",
+         "bucket": "edgedesk_cfb_v2.0.0"
+        },
+        {
+         "mode": "LIVE",
+         "n": 12,
+         "settled": 11,
+         "decided": 11,
+         "wins": 0,
+         "losses": 11,
+         "pushes": 0,
+         "observed_cover": 0,
+         "observed_cover_interval": {
+          "lo": 0,
+          "hi": 0.2588
+         },
+         "expected_cover": 0.5216,
+         "expected_n": 11,
+         "calibration_error_pp": -52.16,
+         "mean_break_even": 0.5246,
+         "realized_edge_pp": -52.46,
+         "clv": {
+          "n": 11,
+          "mean": 0.909,
+          "median": 1,
+          "beat": 10,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0.9091,
+          "tie_rate": 0.0909,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0.6226,
+           "hi": 0.9838
+          },
+          "interval": {
+           "lo": 0.707,
+           "hi": 1.112
+          },
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 11,
+           "text": "n=11 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_price_pp": {
+          "n": 1,
+          "mean": 0,
+          "median": 0,
+          "beat": 0,
+          "tie": 1,
+          "lose": 0,
+          "beat_rate": 0,
+          "tie_rate": 1,
+          "lose_rate": 0,
+          "beat_rate_interval": {
+           "lo": 0,
+           "hi": 0.7935
+          },
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 1,
+           "text": "n=1 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "clv_ev": {
+          "n": 0,
+          "mean": null,
+          "median": null,
+          "beat": 0,
+          "tie": 0,
+          "lose": 0,
+          "beat_rate": null,
+          "tie_rate": null,
+          "lose_rate": null,
+          "interval": null,
+          "sample": {
+           "key": "DESCRIPTIVE_ONLY",
+           "label": "Too early to evaluate",
+           "n": 0,
+           "text": "n=0 · Too early to evaluate",
+           "recalibration": "NOT_ALLOWED",
+           "note": "A product maturity label, not a scientific verdict."
+          }
+         },
+         "units_risked": 0,
+         "units_won": 0,
+         "roi": null,
+         "roi_n": 0,
+         "flat_roi_hypothetical": -1,
+         "flat_n": 11,
+         "sample": {
+          "key": "DESCRIPTIVE_ONLY",
+          "label": "Too early to evaluate",
+          "n": 11,
+          "text": "n=11 · Too early to evaluate",
+          "recalibration": "NOT_ALLOWED",
+          "note": "A product maturity label, not a scientific verdict."
+         },
+         "text": "Observed cover 0.0% (n=11) vs expected 52.2% · Too early to evaluate",
+         "bucket": "edgedesk_cfb_v2.1.0"
+        }
+       ],
+       "not_measured": 0
+      },
+      "calibration_version": {
+       "buckets": [],
+       "not_measured": 32
+      },
+      "rules_version": {
+       "buckets": [],
+       "not_measured": 32
+      }
+     },
+     "leakage": {
+      "n": 32,
+      "violations": [],
+      "ok": true,
+      "rule": "Every live row is decided before kickoff, on quotes and inputs captured no later than the evaluation; a close is captured after it; a walk-forward row never trains on its own season."
+     }
     }
    },
    "maturity": [
@@ -4920,6 +11195,401 @@
        "evaluated": false,
        "ok": null,
        "text": "Not evaluated: LEAN n=13, PASS n=12 (each needs 50)."
+      },
+      {
+       "check": "0.50U > 0.25U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 0.50U n=0, 0.25U n=0."
+      },
+      {
+       "check": "0.75U > 0.50U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 0.75U n=0, 0.50U n=0."
+      },
+      {
+       "check": "1.00U > 0.75U",
+       "n": [
+        0,
+        0
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: 1.00U n=0, 0.75U n=0."
+      }
+     ],
+     "alerts": []
+    },
+    "leakage": {
+     "ok": true,
+     "violations": 0
+    }
+   },
+   "LIVE": {
+    "label": "Live",
+    "live_decisions": {
+     "n": 32,
+     "settled": 29,
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 29,
+      "text": "n=29 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "clv": {
+     "n": 29,
+     "mean": 0.897,
+     "median": 1,
+     "beat": 26,
+     "tie": 3,
+     "lose": 0,
+     "beat_rate": 0.8966,
+     "tie_rate": 0.1034,
+     "lose_rate": 0,
+     "beat_rate_interval": {
+      "lo": 0.7361,
+      "hi": 0.9642
+     },
+     "interval": {
+      "lo": 0.779,
+      "hi": 1.014
+     },
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 29,
+      "text": "n=29 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "clv_price_pp": {
+     "n": 3,
+     "mean": 0,
+     "median": 0,
+     "beat": 0,
+     "tie": 3,
+     "lose": 0,
+     "beat_rate": 0,
+     "tie_rate": 1,
+     "lose_rate": 0,
+     "beat_rate_interval": {
+      "lo": 0,
+      "hi": 0.5615
+     },
+     "interval": {
+      "lo": 0,
+      "hi": 0
+     },
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 3,
+      "text": "n=3 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "calibration": {
+     "n": 22,
+     "brier": 0.2715,
+     "log_loss": 0.73616,
+     "ece": 0.52106,
+     "bins": [
+      {
+       "lo": 0.5,
+       "hi": 0.52,
+       "label": "50%–52%",
+       "n": 2,
+       "expected": 0.5167,
+       "observed": 0,
+       "error_pp": -51.67,
+       "interval": {
+        "lo": 0,
+        "hi": 0.6576
+       },
+       "inside_interval": true,
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 2,
+        "text": "n=2 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      },
+      {
+       "lo": 0.52,
+       "hi": 0.54,
+       "label": "52%–54%",
+       "n": 20,
+       "expected": 0.5215,
+       "observed": 0,
+       "error_pp": -52.15,
+       "interval": {
+        "lo": 0,
+        "hi": 0.1611
+       },
+       "inside_interval": false,
+       "sample": {
+        "key": "DESCRIPTIVE_ONLY",
+        "label": "Too early to evaluate",
+        "n": 20,
+        "text": "n=20 · Too early to evaluate",
+        "recalibration": "NOT_ALLOWED",
+        "note": "A product maturity label, not a scientific verdict."
+       }
+      }
+     ],
+     "sample": {
+      "key": "DESCRIPTIVE_ONLY",
+      "label": "Too early to evaluate",
+      "n": 22,
+      "text": "n=22 · Too early to evaluate",
+      "recalibration": "NOT_ALLOWED",
+      "note": "A product maturity label, not a scientific verdict."
+     }
+    },
+    "roi": {
+     "roi": null,
+     "n": 0,
+     "units_risked": 0,
+     "units_won": 0,
+     "flat_roi_hypothetical": -1,
+     "flat_n": 29
+    },
+    "cover_rate": {
+     "observed": 0,
+     "interval": {
+      "lo": 0,
+      "hi": 0.117
+     },
+     "n": 29
+    },
+    "expected_vs_observed": {
+     "expected": 0.521,
+     "observed": 0,
+     "error_pp": null,
+     "n": 29
+    },
+    "by_decision": [
+     {
+      "bucket": "LEAN",
+      "n": 10,
+      "decided": 10,
+      "observed_cover": 0,
+      "expected_cover": 0.5193,
+      "clv_mean": 0.8,
+      "clv_n": 10,
+      "clv_beat_rate": 0.8,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=10) vs expected 51.9% · Too early to evaluate"
+     },
+     {
+      "bucket": "PASS",
+      "n": 22,
+      "decided": 19,
+      "observed_cover": 0,
+      "expected_cover": 0.5215,
+      "clv_mean": 0.947,
+      "clv_n": 19,
+      "clv_beat_rate": 0.9474,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=19) vs expected 52.1% · Too early to evaluate"
+     }
+    ],
+    "by_unit": [],
+    "by_sport": [
+     {
+      "bucket": "CFB",
+      "n": 32,
+      "decided": 29,
+      "observed_cover": 0,
+      "expected_cover": 0.521,
+      "clv_mean": 0.897,
+      "clv_n": 29,
+      "clv_beat_rate": 0.8966,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate"
+     }
+    ],
+    "by_market": [
+     {
+      "bucket": "spread",
+      "n": 32,
+      "decided": 29,
+      "observed_cover": 0,
+      "expected_cover": 0.521,
+      "clv_mean": 0.897,
+      "clv_n": 29,
+      "clv_beat_rate": 0.8966,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate"
+     }
+    ],
+    "by_confidence": [
+     {
+      "bucket": "70–79",
+      "n": 32,
+      "decided": 29,
+      "observed_cover": 0,
+      "expected_cover": 0.521,
+      "clv_mean": 0.897,
+      "clv_n": 29,
+      "clv_beat_rate": 0.8966,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=29) vs expected 52.1% · Too early to evaluate"
+     }
+    ],
+    "by_reliability": [],
+    "by_ev": [],
+    "by_edge": [],
+    "by_gap": [
+     {
+      "bucket": "1–2 pts",
+      "n": 1,
+      "decided": 1,
+      "observed_cover": 0,
+      "expected_cover": null,
+      "clv_mean": 0,
+      "clv_n": 1,
+      "clv_beat_rate": 0,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=1) · Too early to evaluate"
+     },
+     {
+      "bucket": "2–4 pts",
+      "n": 12,
+      "decided": 12,
+      "observed_cover": 0,
+      "expected_cover": 0.5194,
+      "clv_mean": 0.833,
+      "clv_n": 12,
+      "clv_beat_rate": 0.8333,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=12) vs expected 51.9% · Too early to evaluate"
+     },
+     {
+      "bucket": "4–7 pts",
+      "n": 16,
+      "decided": 16,
+      "observed_cover": 0,
+      "expected_cover": 0.5217,
+      "clv_mean": 1,
+      "clv_n": 16,
+      "clv_beat_rate": 1,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=16) vs expected 52.2% · Too early to evaluate"
+     }
+    ],
+    "by_calibration_source": [],
+    "by_model_version": [
+     {
+      "bucket": "edgedesk_cfb_p4_v1.0.0",
+      "n": 8,
+      "decided": 7,
+      "observed_cover": 0,
+      "expected_cover": null,
+      "clv_mean": 0.857,
+      "clv_n": 7,
+      "clv_beat_rate": 0.8571,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=7) · Too early to evaluate"
+     },
+     {
+      "bucket": "edgedesk_cfb_v2.0.0",
+      "n": 12,
+      "decided": 11,
+      "observed_cover": 0,
+      "expected_cover": 0.5205,
+      "clv_mean": 0.909,
+      "clv_n": 11,
+      "clv_beat_rate": 0.9091,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=11) vs expected 52.1% · Too early to evaluate"
+     },
+     {
+      "bucket": "edgedesk_cfb_v2.1.0",
+      "n": 12,
+      "decided": 11,
+      "observed_cover": 0,
+      "expected_cover": 0.5216,
+      "clv_mean": 0.909,
+      "clv_n": 11,
+      "clv_beat_rate": 0.9091,
+      "roi": null,
+      "roi_n": 0,
+      "flat_roi_hypothetical": -1,
+      "sample": "DESCRIPTIVE_ONLY",
+      "text": "Observed cover 0.0% (n=11) vs expected 52.2% · Too early to evaluate"
+     }
+    ],
+    "by_market_quality": [],
+    "expectations": {
+     "checks": [
+      {
+       "check": "BET > LEAN",
+       "metric": "mean CLV (pts) and realized edge",
+       "n": [
+        0,
+        10
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: BET n=0, LEAN n=10 (each needs 50)."
+      },
+      {
+       "check": "LEAN > PASS",
+       "metric": "mean CLV (pts) and realized edge",
+       "n": [
+        10,
+        19
+       ],
+       "evaluated": false,
+       "ok": null,
+       "text": "Not evaluated: LEAN n=10, PASS n=19 (each needs 50)."
       },
       {
        "check": "0.50U > 0.25U",
@@ -6445,6 +13115,13 @@
    "source": "record/football/summary.json",
    "text": "WARNING: the CFB model record against the spread is 104-125-2 (45.4%, 95% interval 39.1–51.9%, n=229): the whole interval sits below the 52.4% break-even at −110.",
    "note": "This is a research alert, not an automatic change. It grades the published fair line, not bettor decisions."
+  },
+  {
+   "code": "LEAKAGE",
+   "severity": "INTEGRITY",
+   "source": "decision ledger · LIVE",
+   "text": "1 row(s) fail the leakage audit.",
+   "note": "Those rows are excluded from nothing automatically: a person must review them."
   }
  ]
 }
