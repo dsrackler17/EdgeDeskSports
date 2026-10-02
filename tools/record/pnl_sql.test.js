@@ -218,11 +218,13 @@ try {
   chk('anon calls the rollups', +db.anon("select bets from public.model_pnl_rollup('flat', 'all');") > 0);
 
   /* ── the real committed ledger passes every constraint ─────────────── */
+  let ledgerBets = [];                    /* its BETs now sit in model_pnl beside the fixture's */
   {
     const SY = require('./pnl_sync.js');
     const lf = fs.readdirSync(path.join(PG.ROOT, 'record', 'pnl')).filter((f) => /^ledger_\d{4}\.json$/.test(f)).sort().pop();
     if (lf) {
       const real = SY.tableRows(JSON.parse(fs.readFileSync(path.join(PG.ROOT, 'record', 'pnl', lf), 'utf8')));
+      ledgerBets = real.map((x) => PNL.settle(x)).filter((x) => x.rec_class === 'BET');
       const rr = up(real);
       chk('the committed ledger (' + lf + ', ' + real.length + ' rows) is accepted row for row', rr.inserted === real.length && rr.refused.length === 0, rr.refused.slice(0, 3));
       chk('and synced again, it is unchanged', up(real).unchanged === real.length);
@@ -245,7 +247,9 @@ try {
     grant select on public.bankroll_settings to authenticated;
     insert into public.bankroll_settings (user_id, base_unit_amount, unit_mode) values ('${A}', 25, 'fixed');
     insert into public.bankroll_settings (user_id, bankroll_amount, unit_mode, unit_percent) values ('${B}', 1000, 'percent', 0.02);`);
-  const net = PNL.summarize(bets, 'flat').net_units;
+  /* model_pnl holds the fixture AND the committed ledger (whose first BETs
+     settled 2026-10-02): the kernel reads the same BETs the SQL does */
+  const net = PNL.summarize(bets.concat(ledgerBets), 'flat').net_units;
   const da = db.as(A, "select unit_value || '|' || basis || '|' || net_dollars from public.model_pnl_my_dollars('flat', 'all');").split('|');
   chk('reader A: a $25 custom unit, net in dollars', +da[0] === 25 && da[1] === 'CUSTOM' && Math.abs(+da[2] - Math.round(net * 25 * 100) / 100) < 0.011, [da, net]);
   const dbb = db.as(B, "select unit_value || '|' || basis || '|' || net_dollars from public.model_pnl_my_dollars('flat', 'all');").split('|');

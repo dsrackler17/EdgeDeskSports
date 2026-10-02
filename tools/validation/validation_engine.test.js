@@ -189,10 +189,18 @@ section('the model autopsy');
 section('the committed ledgers read end to end');
 {
   const f = path.join(ROOT, 'football', 'cfb_lab', 'ledger', '2026', 'evaluations.jsonl');
-  const L = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map(JSON.parse).map(V.fromLabEvaluation);
+  const raw = fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map(JSON.parse);
+  const L = raw.map(V.fromLabEvaluation);
   const rep = V.report(L);
-  chk('the Lab ledger splits into BACKTEST and LIVE_RECONSTRUCTED', rep.modes.BACKTEST && rep.modes.LIVE_RECONSTRUCTED && !rep.modes.LIVE, Object.keys(rep.modes));
-  chk('its decision time is the checkpoint’s, so the live rows are pregame', rep.modes.LIVE_RECONSTRUCTED.leakage.ok, rep.modes.LIVE_RECONSTRUCTED.leakage.violations.slice(0, 3));
+  /* LIVE is the Lab's own real-time checkpoints (origin LIVE, football/cfb_lab/
+     checkpoint.js), graded once their games finish — the first landed on
+     2026-10-02. They read as LIVE, never folded into the reconstructed rows,
+     and are held to the same pregame rule; nothing else may read as LIVE. */
+  chk('the Lab ledger splits into BACKTEST and LIVE_RECONSTRUCTED, every row labelled', rep.modes.BACKTEST && rep.modes.LIVE_RECONSTRUCTED && L.every((x) => !!x.mode), Object.keys(rep.modes));
+  chk('a Lab row reads LIVE only when the Lab checkpointed it live', L.filter((x) => x.mode === 'LIVE').length === raw.filter((r) => r.origin === 'LIVE').length, Object.keys(rep.modes));
+  chk('its decision time is the checkpoint’s, so the live rows are pregame', rep.modes.LIVE_RECONSTRUCTED.leakage.ok && (!rep.modes.LIVE || rep.modes.LIVE.leakage.ok),
+    rep.modes.LIVE_RECONSTRUCTED.leakage.violations.concat(rep.modes.LIVE ? rep.modes.LIVE.leakage.violations : []).slice(0, 3));
+  chk('the Lab’s live sample never licenses a recalibration yet', !rep.modes.LIVE || rep.modes.LIVE.all.sample.recalibration === 'NOT_ALLOWED', rep.modes.LIVE && rep.modes.LIVE.all.sample);
   chk('the Lab’s side-stated line is kept (AWAY 8.5 stays +8.5)', L.some((x) => x.side === 'away' && x.line === 8.5));
   chk('every Lab figure is labelled too early (n < 50 settled)', rep.modes.LIVE_RECONSTRUCTED.all.sample.key === 'DESCRIPTIVE_ONLY');
 }

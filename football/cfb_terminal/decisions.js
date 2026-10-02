@@ -63,6 +63,24 @@ function base(season) { return 'football/cfb_terminal/decisions/' + season; }
    grades WITHOUT CLV (never invented) — a finished game never sits pending
    because a closing line was not captured. */
 const CLOSE_WAIT_HOURS = 36;
+/* A CLOSE IS CAPTURED AFTER THE DECISION: the leakage audit's rule
+   (lib/edgedesk_validation.js leakageAudit, CLOSE_BEFORE_EVALUATION) and the
+   database's (supabase/decision_validation.sql refuses the row). A decision
+   that evaluated the last capture before kickoff has no later close, so none
+   is attached and the row grades without CLV — never against its own number
+   handed back as the "close". */
+function closeAfter(c, evaluatedAt) {
+  const t = ms(c && c.observed_at), e = ms(evaluatedAt);
+  return c && (t == null || e == null || t > e) ? c : null;
+}
+/* the same rule over an evaluation already written: a close captured at or
+   before its evaluation is dropped with every CLV figure measured from it */
+function withoutEarlyClose(e) {
+  const t = ms(e && e.close_captured_at), v = ms(e && e.evaluated_at);
+  if (t == null || v == null || t > v) return e;
+  return Object.assign({}, e, { close_line: null, close_sharp_line: null, close_captured_at: null,
+    clv_points: null, clv_sharp_points: null, clv_price_pp: null, clv_ev: null, clv_basis: null });
+}
 function gradeable(r, c, kickoff, now) {
   if (!r || r.status !== 'FINAL' || num(r.final_margin) == null) return false;
   if (c) return true;
@@ -190,7 +208,7 @@ function ledger(season, results, ctx, now) {
   const newEvals = [];
   BT.firstPerClass(all).forEach((s) => {
     if (evalIds.has(s.snapshot_id)) return;
-    const r = res[String(s.game_id)], c = closes[String(s.game_id)];
+    const r = res[String(s.game_id)], c = closeAfter(closes[String(s.game_id)], s.evaluated_at);
     if (!gradeable(r, c, s.kickoff, now)) return;
     const o = opens[String(s.game_id)];
     const e = BT.gradeEvaluation(s, { open: o ? o.home_line : null, close: c ? c.home_line : null, close_captured_at: c ? c.observed_at || null : null, close_sharp: null },
@@ -271,4 +289,4 @@ function writeLedger(season, DL) {
   if (DL.new_grades.length) fs.appendFileSync(path.join(b, 'grades.jsonl'), DL.new_grades.map((x) => JSON.stringify(x)).join('\n') + '\n');
 }
 
-module.exports = { gradeable: gradeable, CLOSE_WAIT_HOURS: CLOSE_WAIT_HOURS, closingDistribution: closingDistribution, lean: lean, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };
+module.exports = { gradeable: gradeable, closeAfter: closeAfter, withoutEarlyClose: withoutEarlyClose, CLOSE_WAIT_HOURS: CLOSE_WAIT_HOURS, closingDistribution: closingDistribution, lean: lean, load: load, trackOf: trackOf, governanceOf: governanceOf, decideGame: decideGame, compact: compact, ledger: ledger, artifact: artifact, problems: problems, writeLedger: writeLedger, counts: counts, OUT: OUT };

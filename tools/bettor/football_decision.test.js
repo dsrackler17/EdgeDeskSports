@@ -587,7 +587,10 @@ Object.keys(GAMES.games).forEach((gid) => {
   const d = D.decide(I.inputFromFacts(facts, { model, quotes, qev_ctx: { now, game: { game_id: gid, home: o.game.home, away: o.game.away, kickoff: o.kickoff }, max_age_minutes: 180 } }, { now, sport: 'CFB' }));
   /* the orientation invariant (audit 2026-09-30 #5), on the replay's own numbers */
   const orient = require(path.join(ROOT, 'lib', 'edgedesk_canon.js')).orientationSuspect(ri.model.home_margin, -anchorLine);
-  cfbReal.push({ o, d, orient });
+  /* a stored curve that breaks probability — P(margin > t) rising with t —
+     read off the curve itself, not off the build's own DISTRIBUTION_SANITY flag */
+  const incoherent = ri.curve.win.some((w, i) => i > 0 && w > ri.curve.win[i - 1] + 1e-9);
+  cfbReal.push({ o, d, orient, incoherent });
 });
 chk('real CFB: replayed every game with captured two-sided prices', cfbReal.length > 0, cfbReal.length);
 /* A CALIBRATED probability that crosses the line is held at NO DECISION by
@@ -602,10 +605,17 @@ chk('the calibrated-crossing hold is told apart from a raw contradiction', calHo
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw and +0.4% calibrated EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'STALE_MARKET', text: 'stale' }] }));
-chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, and any a calibrated line-crossing holds at NO DECISION',
+/* An incoherent stored curve is held at MALFORMED_PROJECTION, never priced.
+   Live data put one here: on 2026-10-02 McNeese @ LSU (LSU −52.5, outside the
+   ±45 range the margin PMF table is conditioned on) was built from the
+   engine's per-line lookup, which borrows a different shape at every half
+   point, and its curve rises with the line. */
+chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, one an incoherent curve holds at MALFORMED PROJECTION, and any a calibrated line-crossing holds at NO DECISION',
   cfbReal.every((x) => x.orient ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes).indexOf('DATA_FAULT') >= 0)
+    : x.incoherent ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes) === 'MALFORMED_PROJECTION')
     : (calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
-  cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '')));
+  cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '') + (x.incoherent ? ' (incoherent curve)' : '')));
+chk('real CFB: an incoherent curve is the exception, not the rule (at most one game)', cfbReal.filter((x) => x.incoherent).length <= 1, cfbReal.filter((x) => x.incoherent).map((x) => x.o.game_id));
 chk('real CFB: Syracuse @ UConn, flagged by the orientation invariant, gets no decision (left flagged, never priced)', (() => {
   const x = cfbReal.find((y) => y.o.game && y.o.game.home === 'UConn' && y.o.game.away === 'Syracuse');
   return !x || (x.orient && x.d.decision === 'NO_DECISION');
