@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-02T05:10:26.073Z",
-  "open": 8,
-  "count": 8,
+  "generated_at": "2026-10-02T05:20:25.196Z",
+  "open": 9,
+  "count": 9,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -274,6 +274,35 @@
           "result": "Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211. Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211.",
           "severity": "high",
           "at": "2026-09-29T01:40:04.103Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:scoring:general",
+      "sport": "CFB",
+      "category": "scoring",
+      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-02T05:20:25.196Z",
+      "updated_at": "2026-10-02T05:20:25.196Z",
+      "evidence": [
+        {
+          "lesson_id": "401862786:total_miss",
+          "game_id": "401862786",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 60.1.",
+          "result": "The game finished with 89 points, an error of 28.9.",
+          "severity": "high",
+          "at": "2026-10-02T05:20:25.196Z"
         }
       ],
       "occurrences": 1,
