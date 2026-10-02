@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_fbs_epa_index_v1",
  "version": 1,
- "generated_at": "2026-10-01T18:54:19.026Z",
+ "generated_at": "2026-10-02T18:25:45.379Z",
  "season": 2026,
  "source": {
   "repository": "https://github.com/sportsdataverse/cfbfastR-cfb-data",
@@ -12,7 +12,7 @@
   },
   "manifest": null,
   "refreshed": {
-   "at": "2026-10-01T18:54:19.026Z",
+   "at": "2026-10-02T18:25:45.379Z",
    "commit": "main",
    "season": 2026
   }
@@ -26,63 +26,63 @@
     "file": "adv_passing_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_passing/parquet/adv_passing_2026.parquet",
     "ok": true,
-    "bytes": 116664,
-    "sha256": "85d9af10fba9585286d587cd25c2662b50e77f68c0235db6dbf8e3fe47f008bb",
+    "bytes": 116902,
+    "sha256": "0a6c30c3f6f2c436e9e7d73753c06d1a906b2d106ff4a08ece09286f0dd6ba34",
     "why": null,
-    "retrieved_at": "2026-10-01T18:54:19.026Z"
+    "retrieved_at": "2026-10-02T18:25:45.379Z"
    },
    {
     "file": "adv_team_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/adv_team/parquet/adv_team_2026.parquet",
     "ok": true,
-    "bytes": 143912,
-    "sha256": "37ea3b85cdd10a97f59a0cced0ec09fd91b22ed229144f91b1b8bca3b95e5a43",
+    "bytes": 144242,
+    "sha256": "62a43b781ed310b02a6d0e7b1d8868c4e916b926980dc18cb07d0899a223ec94",
     "why": null,
-    "retrieved_at": "2026-10-01T18:54:19.026Z"
+    "retrieved_at": "2026-10-02T18:25:45.379Z"
    },
    {
     "file": "cfb_schedules_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_schedules/parquet/cfb_schedules_2026.parquet",
     "ok": true,
-    "bytes": 89871,
-    "sha256": "9847952ba52279318018a259c07197df23392086f03bd6a308fd2cf60e83cd2c",
+    "bytes": 89888,
+    "sha256": "02c26782f7eccd9bfefa29907ed2c6fe0512b0dda51767430b081b6415519172",
     "why": null,
-    "retrieved_at": "2026-10-01T18:54:19.026Z"
+    "retrieved_at": "2026-10-02T18:25:45.379Z"
    },
    {
     "file": "cfb_rosters_2026.parquet",
     "url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-cfb-data/main/cfb/cfb_rosters/parquet/cfb_rosters_2026.parquet",
     "ok": true,
-    "bytes": 100197,
-    "sha256": "ee60d376a2550ce89a01ac256883992d71ccbb4ce06c8c6bf3c803da1dd5e8b1",
+    "bytes": 2829782,
+    "sha256": "2f439a7527d197e2a633398b10c1b1111fbb9f34ceeb08d06301340bd5f03bc6",
     "why": null,
-    "retrieved_at": "2026-10-01T18:54:19.026Z"
+    "retrieved_at": "2026-10-02T18:25:45.379Z"
    }
   ],
   "built": {
    "games": 888,
-   "passer_games": 1157,
-   "team_games": 662,
+   "passer_games": 1162,
+   "team_games": 666,
    "quarantined": 0,
    "issues": {
-    "epa_denominator_consistent": 1144,
-    "identity_unique_season_team_name": 908,
-    "identity_unmatched": 249,
+    "epa_denominator_consistent": 1153,
+    "identity_unique_season_team_name": 1153,
     "team_or_unnamed_passing_rows_excluded": 11,
-    "epa_denominator_unverified": 13
+    "identity_unmatched": 9,
+    "epa_denominator_unverified": 9
    }
   }
  },
  "freshness": {
-  "generated_at": "2026-10-01T18:54:19.026Z",
-  "observations_through": "2026-09-27T03:00:00.000Z",
-  "last_completed_game": "2026-09-27T03:00:00.000Z",
-  "observation_age_hours": 111.905,
+  "generated_at": "2026-10-02T18:25:45.379Z",
+  "observations_through": "2026-10-02T01:00:00.000Z",
+  "last_completed_game": "2026-10-02T01:00:00.000Z",
+  "observation_age_hours": 17.429,
   "completed_games_without_passing_data": 0,
   "coverage": "COMPLETE",
   "coverage_why": null,
   "source_commit": null,
-  "source_retrieved_at": "2026-10-01T18:54:19.026Z",
+  "source_retrieved_at": "2026-10-02T18:25:45.379Z",
   "source_age_hours": 0,
   "state": "FRESH",
   "why": null
@@ -90,51 +90,51 @@
  "coverage": {
   "season": 2026,
   "scheduled_fbs_involving_games": 888,
-  "completed_by_cutoff": 331,
-  "completed_games_with_passing_data": 331,
-  "passer_rows": 1144,
-  "passer_rows_with_athlete_id": 908,
+  "completed_by_cutoff": 333,
+  "completed_games_with_passing_data": 333,
+  "passer_rows": 1148,
+  "passer_rows_with_athlete_id": 1141,
   "identity": {
-   "repaired": 13,
+   "repaired": 2,
    "ambiguous": 1,
-   "unresolved": 235,
+   "unresolved": 6,
    "by_method": {
-    "initial_surname": 13
+    "initial_surname": 2
    },
-   "resolved_at_assembly": 908,
+   "resolved_at_assembly": 1153,
    "same_athlete_rows_merged": {
-    "groups": 13,
-    "rows_merged": 13,
+    "groups": 14,
+    "rows_merged": 14,
     "by_season": {
-     "2026": 13
+     "2026": 14
     }
    },
    "unresolved_reasons": {
-    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 232,
     "no athlete of that name is on this team’s roster for this season": 3,
+    "no EdgeDesk roster covers this programme — it is not FBS this season, so its passers have no athlete id in any file EdgeDesk holds": 3,
     "more than one roster name reduces to that initial and surname": 1
    }
   },
-  "players_in_artifact": 462,
-  "players_with_frozen_career": 338,
-  "players_with_current_season_games": 383,
+  "players_in_artifact": 660,
+  "players_with_frozen_career": 427,
+  "players_with_current_season_games": 581,
   "teams_in_artifact": 238,
   "fbs_teams": 138,
   "by_season": {
    "2026": {
     "games": 888,
-    "completed": 331,
+    "completed": 333,
     "fbs_teams": 138,
-    "passer_rows": 1144,
-    "passer_rows_with_athlete_id": 908,
-    "epa_reconciled_rows": 1131
+    "passer_rows": 1148,
+    "passer_rows_with_athlete_id": 1141,
+    "epa_reconciled_rows": 1139
    }
   },
   "starters": {
    "fbs_teams_with_a_starter_record": 138,
-   "with_a_resolved_player": 138,
-   "joined_to_this_artifact": 138,
-   "with_measured_epa_history": 138,
+   "with_a_resolved_player": 137,
+   "joined_to_this_artifact": 137,
+   "with_measured_epa_history": 137,
    "no_epa_history": 0,
    "unjoined": [],
    "note": "a starter with no measured history is NOT a starter with average history. He is reported with an empty sample and the reason."
