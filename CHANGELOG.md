@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-01 — college player props on the Records page
+
+The college props were tracked but left off the page. There are 464 of them; every one is a LEAN while the college props model is EXPERIMENTAL. Without *Include leans*, the CFB view showed no player props at all.
+
+- The **Player props** tile (`lib/edgedesk_pnl_ui.js` `marketTile`) shows the leans tracked beside the bets, in the CFB view and in every other view:
+  - CFB: *464 leans tracked*;
+  - All: *138 bets pending · 1,239 leans tracked*.
+
+  Once games finish it shows their W-L, marked leans.
+- The props view's headline counts every tracked prop: *1,377 recommendations tracked (138 bets, 1,239 leans)*.
+- The *Pending* ledger says the leans are tracked, with an *include leans* button that lists them.
+- Leans still never enter the record or the P&L unless the reader includes them. The college model's gating is unchanged.
+- `tools/record/pnl_ui.test.js`: 257 checks, against the committed data:
+  - the CFB tile's lean count;
+  - the CFB record unchanged;
+  - the pending note;
+  - one tap listing the college props.
+
 ## 2026-10-01 — the Records page leads with how the model has performed
 
 The page answered "can we calculate exact P&L?" before "how has the model performed?". With nothing priced settled yet, its first and largest message was "0 settled verified bets", above a graded record of 432-284-4. That made a tested model look untested.
