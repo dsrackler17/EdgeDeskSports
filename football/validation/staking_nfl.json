@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_staking_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-10-02T15:56:18.171Z",
+ "generated_at": "2026-10-02T17:11:48.146Z",
  "frame": {
   "archive": "football/pricing/lines_nfl.json",
   "games": 7325,
@@ -9,7 +9,7 @@
   "rating": "an Elo computed by this script from the archive’s own results in kickoff order, with a between-season regression to the mean; a game is rated by the state BEFORE it, so no result prices its own game",
   "engine": {
    "available": true,
-   "rows": 2642,
+   "rows": 2658,
    "seasons_loaded": [
     2006,
     2007,
@@ -21,6 +21,7 @@
     2013,
     2014,
     2015,
+    2016,
     2017,
     2018,
     2019,
@@ -31,10 +32,10 @@
     2024,
     2025
    ],
-   "joined": 2642,
+   "joined": 2658,
    "source": "football/engine.js replayed cold by tools/football/validate_pricing.js"
   },
-  "model_graded": "the SHIPPED engine (football/engine.js), replayed cold and joined to 2642 of 7325 archive games; per-market use is all-or-nothing and each holdout says which it got in model_source",
+  "model_graded": "the SHIPPED engine (football/engine.js), replayed cold and joined to 2658 of 7325 archive games; per-market use is all-or-nothing and each holdout says which it got in model_source",
   "blend": "margin ~ a + b*market + c*(model - market), the same form the shipped pricer uses, fitted on the seasons BEFORE each held-out season",
   "holdout_window": "2019 onward, one season at a time",
   "policy": {

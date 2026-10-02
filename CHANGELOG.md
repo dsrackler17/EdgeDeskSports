@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-02 — a partial NFL replay no longer reprices the board
+
+`main` went red at `a41195e` (learning loop, 15:56Z). Three checks failed on the same two assertions in `tools/bettor/football_decision.test.js`: Decision quality, Personal research CI and CFB research terminal. The board no longer matched the slate pricing kernel's fair line, off by 0.02 to 0.08 pts on 13 games, and PIT @ CLE was held without crossing.
+
+- **Cause**: `stats_team_week_2016.csv` failed to download on the nightly runner. `validate_pricing.js` logged "the season is skipped in the replay" and wrote the refit anyway.
+  - 2016 dropped out of `seasons_loaded`, and 236 fewer games were absorbed (4,889 to 4,653).
+  - The NFL blend refit without it: the 2019 holdout tuned on 706 games instead of 722. `latest_coef` moved from −0.3811 + 1.1565×market + 0.2320×(projection − market) to −0.3664 + 1.1551×market + 0.2411×(projection − market).
+  - The board reads these coefficients live. `football/nfl/slate.json` was still priced on the complete 2026-09-16 validation.
+- **Data**: `football/validation/pricing_nfl.json` and `feature-status-nfl.json` are restored to their pre-loop bytes.
+  - Re-running `validate_pricing.js` with all 20 seasons cached reproduces them exactly, apart from `generated_at`: model MAE 10.382, c = 0.232, `unchanged` on a second run. The slate needs no reprice.
+  - `staking_nfl.json` was regenerated with `validate_staking.js --write` from the same full cache. It keeps the loop's one new archive game (7,325) and restores the 16 2016 engine rows (2,658 joined).
+  - `--reprice` on the partial refit was tried and rejected. It fixes the two assertions, but on coefficients fitted without a season PIT @ CLE's blend lands 0.03 pts short of the market line, so the audit check fails instead.
+- **Guard** (`tools/football/validate_pricing.js`): if a replay season's team-week file is still missing after the fetch, the NFL validation refuses, exits 3 and writes nothing, so the last complete validation stands. This covers `pricing_nfl.json` and `feature-status-nfl.json`.
+  - Both callers (learning loop and weekly build) run it under `continue-on-error`.
+  - Checked with 2016 removed from the cache: exit 3, both files byte-identical. With the full cache: `unchanged`.
+
 ## 2026-10-02 — the app's CFB ladder is the terminal's curve, whatever the market
 
 The entry below fixed the terminal. Two readers still fell back to the engine's per-line lookup (`EDCfbP4.dist.coverProbSpread`) whenever `cfbConditionedCover` refused a market outside the ±45 table, or there was no market: `app.html` `fbQevModelCfb` (the alternate ladder and the EV-by-spread chart) and `tools/football/ev_plausibility.js` `coverFor`. So the app priced McNeese @ LSU (LSU −52.5) on a curve that rose with the line (P(M > 18) 0.9270, P(M > 18.5) 0.9309 at fair +41.42, σ 14.9), while its comment said it read the terminal's distribution.

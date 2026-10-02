@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_feature_status_nfl_v1",
- "generated_at": "2026-10-02T15:56:14.927Z",
+ "generated_at": "2026-09-16T16:30:19.038Z",
  "rules": {
   "min_holdout_seasons": 2,
   "p_max": 0.05,
@@ -22,69 +22,69 @@
     "status": "REJECTED",
     "pooled_improvement_mae": -0.002,
     "paired_t": -0.438,
-    "paired_p": 0.6617,
+    "paired_p": 0.6616,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.125,
+      "base_mae": 10.104,
+      "candidate_mae": 10.105,
       "improvement": -0.001,
-      "coef": 0.0078
+      "coef": 0.0117
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.819,
+      "base_mae": 9.822,
+      "candidate_mae": 9.827,
       "improvement": -0.005,
-      "coef": -0.1238
+      "coef": -0.1171
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
+      "base_mae": 10.611,
       "candidate_mae": 10.599,
       "improvement": 0.011,
-      "coef": -0.0906
+      "coef": -0.0853
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.78,
+      "base_mae": 8.784,
+      "candidate_mae": 8.791,
       "improvement": -0.007,
-      "coef": -0.1155
+      "coef": -0.1111
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.034,
+      "base_mae": 10.014,
+      "candidate_mae": 10.032,
       "improvement": -0.019,
-      "coef": -0.1113
+      "coef": -0.1078
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.637,
-      "improvement": 0.013,
-      "coef": -0.0403
+      "base_mae": 9.651,
+      "candidate_mae": 9.639,
+      "improvement": 0.012,
+      "coef": -0.0372
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.734,
+      "base_mae": 9.727,
+      "candidate_mae": 9.733,
       "improvement": -0.006,
-      "coef": -0.0676
+      "coef": -0.0645
      }
     ],
-    "latest_coef": -0.0676,
+    "latest_coef": -0.0645,
     "reasons": [
      "pooled improvement -0.002 below 0.02 points of MAE",
-     "paired p 0.6617 not below 0.05"
+     "paired p 0.6616 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -92,71 +92,71 @@
     "label": "division game",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.005,
-    "paired_t": -0.466,
-    "paired_p": 0.6411,
+    "pooled_improvement_mae": -0.004,
+    "paired_t": -0.382,
+    "paired_p": 0.7027,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.123,
-      "improvement": 0.001,
-      "coef": -1.7414
+      "base_mae": 10.104,
+      "candidate_mae": 10.099,
+      "improvement": 0.005,
+      "coef": -1.6276
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.839,
-      "improvement": -0.025,
-      "coef": -1.4616
+      "base_mae": 9.822,
+      "candidate_mae": 9.844,
+      "improvement": -0.022,
+      "coef": -1.3807
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.632,
-      "improvement": -0.023,
-      "coef": -0.7847
+      "base_mae": 10.611,
+      "candidate_mae": 10.631,
+      "improvement": -0.021,
+      "coef": -0.7283
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.76,
-      "improvement": 0.014,
-      "coef": -0.5112
+      "base_mae": 8.784,
+      "candidate_mae": 8.772,
+      "improvement": 0.013,
+      "coef": -0.4712
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
+      "base_mae": 10.014,
       "candidate_mae": 10.006,
       "improvement": 0.008,
-      "coef": -0.2877
+      "coef": -0.2558
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
+      "base_mae": 9.651,
       "candidate_mae": 9.658,
-      "improvement": -0.008,
-      "coef": -0.4428
+      "improvement": -0.007,
+      "coef": -0.4153
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.73,
-      "improvement": -0.002,
-      "coef": -0.2271
+      "base_mae": 9.727,
+      "candidate_mae": 9.728,
+      "improvement": -0.001,
+      "coef": -0.2055
      }
     ],
-    "latest_coef": -0.2271,
+    "latest_coef": -0.2055,
     "reasons": [
-     "pooled improvement -0.005 below 0.02 points of MAE",
-     "paired p 0.6411 not below 0.05"
+     "pooled improvement -0.004 below 0.02 points of MAE",
+     "paired p 0.7027 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -164,71 +164,71 @@
     "label": "dome or closed roof",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.006,
-    "paired_t": -1.368,
-    "paired_p": 0.1714,
+    "pooled_improvement_mae": -0.005,
+    "paired_t": -1.133,
+    "paired_p": 0.2572,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.121,
-      "improvement": 0.003,
-      "coef": 0.1249
+      "base_mae": 10.104,
+      "candidate_mae": 10.099,
+      "improvement": 0.004,
+      "coef": 0.137
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.849,
-      "improvement": -0.035,
-      "coef": 0.6212
+      "base_mae": 9.822,
+      "candidate_mae": 9.853,
+      "improvement": -0.031,
+      "coef": 0.5971
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.61,
-      "improvement": 0,
-      "coef": -0.3119
+      "base_mae": 10.611,
+      "candidate_mae": 10.609,
+      "improvement": 0.002,
+      "coef": -0.3095
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.772,
+      "base_mae": 8.784,
+      "candidate_mae": 8.783,
       "improvement": 0.001,
-      "coef": -0.5515
+      "coef": -0.5373
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.026,
-      "improvement": -0.011,
-      "coef": -0.6299
+      "base_mae": 10.014,
+      "candidate_mae": 10.025,
+      "improvement": -0.012,
+      "coef": -0.6205
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.658,
-      "improvement": -0.008,
-      "coef": -0.2903
+      "base_mae": 9.651,
+      "candidate_mae": 9.657,
+      "improvement": -0.006,
+      "coef": -0.2736
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.724,
-      "improvement": 0.005,
-      "coef": -0.2701
+      "base_mae": 9.727,
+      "candidate_mae": 9.723,
+      "improvement": 0.004,
+      "coef": -0.2689
      }
     ],
-    "latest_coef": -0.2701,
+    "latest_coef": -0.2689,
     "reasons": [
-     "pooled improvement -0.006 below 0.02 points of MAE",
-     "paired p 0.1714 not below 0.05"
+     "pooled improvement -0.005 below 0.02 points of MAE",
+     "paired p 0.2572 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -236,70 +236,70 @@
     "label": "kickoff temperature below 40F (outdoors)",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.011,
-    "paired_t": -2.346,
-    "paired_p": 0.019,
+    "pooled_improvement_mae": -0.009,
+    "paired_t": -2.183,
+    "paired_p": 0.029,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.186,
-      "improvement": -0.062,
-      "coef": -1.7551
+      "base_mae": 10.104,
+      "candidate_mae": 10.155,
+      "improvement": -0.051,
+      "coef": -1.5655
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.815,
+      "base_mae": 9.822,
+      "candidate_mae": 9.824,
       "improvement": -0.001,
-      "coef": -0.8982
+      "coef": -0.7688
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.614,
-      "improvement": -0.004,
-      "coef": -0.2777
+      "base_mae": 10.611,
+      "candidate_mae": 10.612,
+      "improvement": -0.001,
+      "coef": -0.1809
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.775,
-      "improvement": -0.002,
-      "coef": 0.1093
+      "base_mae": 8.784,
+      "candidate_mae": 8.788,
+      "improvement": -0.004,
+      "coef": 0.1801
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.02,
-      "improvement": -0.006,
-      "coef": -0.351
+      "base_mae": 10.014,
+      "candidate_mae": 10.019,
+      "improvement": -0.005,
+      "coef": -0.2869
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.655,
-      "improvement": -0.004,
-      "coef": -0.1913
+      "base_mae": 9.651,
+      "candidate_mae": 9.654,
+      "improvement": -0.003,
+      "coef": -0.1362
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.728,
+      "base_mae": 9.727,
+      "candidate_mae": 9.727,
       "improvement": 0,
-      "coef": 0.0514
+      "coef": 0.0977
      }
     ],
-    "latest_coef": 0.0514,
+    "latest_coef": 0.0977,
     "reasons": [
-     "pooled improvement -0.011 below 0.02 points of MAE"
+     "pooled improvement -0.009 below 0.02 points of MAE"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -307,71 +307,71 @@
     "label": "wind above 15 mph (outdoors)",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": 0.003,
-    "paired_t": 0.641,
-    "paired_p": 0.5217,
+    "pooled_improvement_mae": 0.004,
+    "paired_t": 0.673,
+    "paired_p": 0.5012,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.123,
+      "base_mae": 10.104,
+      "candidate_mae": 10.103,
       "improvement": 0.001,
-      "coef": 0.9034
+      "coef": 0.9788
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.8,
+      "base_mae": 9.822,
+      "candidate_mae": 9.807,
       "improvement": 0.015,
-      "coef": 1.5656
+      "coef": 1.5858
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.61,
-      "improvement": -0.001,
-      "coef": 1.2636
+      "base_mae": 10.611,
+      "candidate_mae": 10.611,
+      "improvement": 0,
+      "coef": 1.2763
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.764,
+      "base_mae": 8.784,
+      "candidate_mae": 8.776,
       "improvement": 0.009,
-      "coef": 0.8336
+      "coef": 0.8485
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.013,
+      "base_mae": 10.014,
+      "candidate_mae": 10.012,
       "improvement": 0.002,
-      "coef": 0.3746
+      "coef": 0.3897
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.652,
+      "base_mae": 9.651,
+      "candidate_mae": 9.653,
       "improvement": -0.002,
-      "coef": 0.6162
+      "coef": 0.6318
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.728,
+      "base_mae": 9.727,
+      "candidate_mae": 9.726,
       "improvement": 0.001,
-      "coef": 0.4061
+      "coef": 0.4135
      }
     ],
-    "latest_coef": 0.4061,
+    "latest_coef": 0.4135,
     "reasons": [
-     "pooled improvement 0.003 below 0.02 points of MAE",
-     "paired p 0.5217 not below 0.05"
+     "pooled improvement 0.004 below 0.02 points of MAE",
+     "paired p 0.5012 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -386,56 +386,56 @@
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.124,
+      "base_mae": 10.104,
+      "candidate_mae": 10.104,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.814,
+      "base_mae": 9.822,
+      "candidate_mae": 9.822,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.609,
+      "base_mae": 10.611,
+      "candidate_mae": 10.611,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.773,
+      "base_mae": 8.784,
+      "candidate_mae": 8.784,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.015,
+      "base_mae": 10.014,
+      "candidate_mae": 10.014,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.65,
+      "base_mae": 9.651,
+      "candidate_mae": 9.651,
       "improvement": 0,
       "coef": 0
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.728,
+      "base_mae": 9.727,
+      "candidate_mae": 9.727,
       "improvement": 0,
       "coef": 0
      }
@@ -452,70 +452,70 @@
     "market": "spread",
     "status": "REJECTED",
     "pooled_improvement_mae": -0.005,
-    "paired_t": -1.407,
-    "paired_p": 0.1595,
+    "paired_t": -1.74,
+    "paired_p": 0.0819,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.124,
-      "improvement": 0,
-      "coef": 0.0144
+      "base_mae": 10.104,
+      "candidate_mae": 10.103,
+      "improvement": 0.001,
+      "coef": -0.2337
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.813,
-      "improvement": 0.001,
-      "coef": 0.0879
+      "base_mae": 9.822,
+      "candidate_mae": 9.824,
+      "improvement": -0.002,
+      "coef": -0.0851
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.608,
-      "improvement": 0.001,
-      "coef": 0.0119
+      "base_mae": 10.611,
+      "candidate_mae": 10.625,
+      "improvement": -0.014,
+      "coef": -0.1258
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.779,
-      "improvement": -0.006,
-      "coef": 0.2949
+      "base_mae": 8.784,
+      "candidate_mae": 8.787,
+      "improvement": -0.003,
+      "coef": 0.1732
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.014,
+      "base_mae": 10.014,
+      "candidate_mae": 10.013,
       "improvement": 0.001,
-      "coef": 0.171
+      "coef": 0.0712
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.674,
-      "improvement": -0.024,
-      "coef": 0.3331
+      "base_mae": 9.651,
+      "candidate_mae": 9.667,
+      "improvement": -0.016,
+      "coef": 0.2458
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.735,
-      "improvement": -0.007,
-      "coef": 0.0998
+      "base_mae": 9.727,
+      "candidate_mae": 9.729,
+      "improvement": -0.002,
+      "coef": 0.0255
      }
     ],
-    "latest_coef": 0.0998,
+    "latest_coef": 0.0255,
     "reasons": [
      "pooled improvement -0.005 below 0.02 points of MAE",
-     "paired p 0.1595 not below 0.05"
+     "paired p 0.0819 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -523,71 +523,71 @@
     "label": "quarterbacks out or doubtful, home minus away",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.006,
-    "paired_t": -1.568,
-    "paired_p": 0.1169,
+    "pooled_improvement_mae": -0.005,
+    "paired_t": -1.945,
+    "paired_p": 0.0518,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.125,
-      "improvement": 0,
-      "coef": 0.6342
+      "base_mae": 10.104,
+      "candidate_mae": 10.102,
+      "improvement": 0.002,
+      "coef": 0.3229
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.813,
+      "base_mae": 9.822,
+      "candidate_mae": 9.822,
       "improvement": 0.001,
-      "coef": 0.4345
+      "coef": 0.1935
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.63,
-      "improvement": -0.021,
-      "coef": 0.6053
+      "base_mae": 10.611,
+      "candidate_mae": 10.625,
+      "improvement": -0.015,
+      "coef": 0.4086
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.769,
-      "improvement": 0.004,
-      "coef": 0.1764
+      "base_mae": 8.784,
+      "candidate_mae": 8.784,
+      "improvement": 0.001,
+      "coef": 0.0329
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.013,
+      "base_mae": 10.014,
+      "candidate_mae": 10.012,
       "improvement": 0.002,
-      "coef": 0.4389
+      "coef": 0.3252
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.673,
-      "improvement": -0.023,
-      "coef": 0.5509
+      "base_mae": 9.651,
+      "candidate_mae": 9.67,
+      "improvement": -0.019,
+      "coef": 0.4577
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
+      "base_mae": 9.727,
       "candidate_mae": 9.73,
-      "improvement": -0.001,
-      "coef": -0.1467
+      "improvement": -0.003,
+      "coef": -0.2373
      }
     ],
-    "latest_coef": -0.1467,
+    "latest_coef": -0.2373,
     "reasons": [
-     "pooled improvement -0.006 below 0.02 points of MAE",
-     "paired p 0.1169 not below 0.05"
+     "pooled improvement -0.005 below 0.02 points of MAE",
+     "paired p 0.0518 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -595,71 +595,71 @@
     "label": "players out or doubtful, all positions, home minus away",
     "market": "spread",
     "status": "CANDIDATE",
-    "pooled_improvement_mae": 0.004,
-    "paired_t": 1.428,
-    "paired_p": 0.1532,
+    "pooled_improvement_mae": 0.006,
+    "paired_t": 1.326,
+    "paired_p": 0.1848,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.125,
+      "base_mae": 10.104,
+      "candidate_mae": 10.105,
       "improvement": -0.001,
-      "coef": -0.0512
+      "coef": -0.1274
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.814,
-      "improvement": 0,
-      "coef": 0.0364
+      "base_mae": 9.822,
+      "candidate_mae": 9.823,
+      "improvement": -0.001,
+      "coef": -0.0209
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.611,
-      "improvement": -0.001,
-      "coef": 0.022
+      "base_mae": 10.611,
+      "candidate_mae": 10.61,
+      "improvement": 0,
+      "coef": -0.0245
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.776,
-      "improvement": -0.003,
-      "coef": -0.0243
+      "base_mae": 8.784,
+      "candidate_mae": 8.792,
+      "improvement": -0.008,
+      "coef": -0.0625
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.011,
-      "improvement": 0.003,
-      "coef": -0.0292
+      "base_mae": 10.014,
+      "candidate_mae": 10.007,
+      "improvement": 0.007,
+      "coef": -0.0601
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.644,
-      "improvement": 0.006,
-      "coef": -0.0243
+      "base_mae": 9.651,
+      "candidate_mae": 9.637,
+      "improvement": 0.014,
+      "coef": -0.0507
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.705,
-      "improvement": 0.023,
-      "coef": -0.1192
+      "base_mae": 9.727,
+      "candidate_mae": 9.7,
+      "improvement": 0.027,
+      "coef": -0.1413
      }
     ],
-    "latest_coef": -0.1192,
+    "latest_coef": -0.1413,
     "reasons": [
-     "pooled improvement 0.004 below 0.02 points of MAE",
-     "paired p 0.1532 not below 0.05"
+     "pooled improvement 0.006 below 0.02 points of MAE",
+     "paired p 0.1848 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -668,70 +668,70 @@
     "market": "spread",
     "status": "REJECTED",
     "pooled_improvement_mae": -0.002,
-    "paired_t": -1.158,
-    "paired_p": 0.2468,
+    "paired_t": -1.098,
+    "paired_p": 0.2721,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.125,
+      "base_mae": 10.104,
+      "candidate_mae": 10.104,
       "improvement": -0.001,
-      "coef": 0.0935
+      "coef": 0.0428
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.815,
-      "improvement": -0.001,
-      "coef": -0.0233
+      "base_mae": 9.822,
+      "candidate_mae": 9.824,
+      "improvement": -0.002,
+      "coef": -0.056
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
+      "base_mae": 10.611,
       "candidate_mae": 10.611,
-      "improvement": -0.001,
-      "coef": 0.0442
+      "improvement": 0,
+      "coef": 0.0138
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.778,
-      "improvement": -0.005,
-      "coef": -0.1124
+      "base_mae": 8.784,
+      "candidate_mae": 8.79,
+      "improvement": -0.006,
+      "coef": -0.1368
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.017,
-      "improvement": -0.002,
-      "coef": 0.0951
+      "base_mae": 10.014,
+      "candidate_mae": 10.015,
+      "improvement": -0.001,
+      "coef": 0.0713
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.65,
+      "base_mae": 9.651,
+      "candidate_mae": 9.651,
       "improvement": 0,
-      "coef": 0.1069
+      "coef": 0.0871
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.731,
-      "improvement": -0.002,
-      "coef": 0.1285
+      "base_mae": 9.727,
+      "candidate_mae": 9.728,
+      "improvement": -0.001,
+      "coef": 0.1093
      }
     ],
-    "latest_coef": 0.1285,
+    "latest_coef": 0.1093,
     "reasons": [
      "pooled improvement -0.002 below 0.02 points of MAE",
-     "paired p 0.2468 not below 0.05"
+     "paired p 0.2721 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -740,70 +740,70 @@
     "market": "spread",
     "status": "REJECTED",
     "pooled_improvement_mae": -0.002,
-    "paired_t": -0.831,
-    "paired_p": 0.4063,
+    "paired_t": -0.711,
+    "paired_p": 0.4772,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.135,
-      "improvement": -0.011,
-      "coef": -0.2029
+      "base_mae": 10.104,
+      "candidate_mae": 10.117,
+      "improvement": -0.013,
+      "coef": -0.256
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.816,
-      "improvement": -0.001,
-      "coef": 0.1673
+      "base_mae": 9.822,
+      "candidate_mae": 9.822,
+      "improvement": 0,
+      "coef": 0.1205
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.607,
-      "improvement": 0.002,
-      "coef": 0.0613
+      "base_mae": 10.611,
+      "candidate_mae": 10.609,
+      "improvement": 0.001,
+      "coef": 0.0274
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.781,
-      "improvement": -0.008,
-      "coef": 0.1126
+      "base_mae": 8.784,
+      "candidate_mae": 8.79,
+      "improvement": -0.006,
+      "coef": 0.0846
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
+      "base_mae": 10.014,
       "candidate_mae": 10.014,
       "improvement": 0,
-      "coef": -0.0772
+      "coef": -0.0988
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
+      "base_mae": 9.651,
       "candidate_mae": 9.65,
-      "improvement": 0,
-      "coef": 0
+      "improvement": 0.001,
+      "coef": -0.0161
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.727,
-      "improvement": 0.001,
-      "coef": -0.0168
+      "base_mae": 9.727,
+      "candidate_mae": 9.725,
+      "improvement": 0.002,
+      "coef": -0.0338
      }
     ],
-    "latest_coef": -0.0168,
+    "latest_coef": -0.0338,
     "reasons": [
      "pooled improvement -0.002 below 0.02 points of MAE",
-     "paired p 0.4063 not below 0.05"
+     "paired p 0.4772 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -811,71 +811,71 @@
     "label": "receivers and tight ends out or doubtful, home minus away",
     "market": "spread",
     "status": "REJECTED",
-    "pooled_improvement_mae": 0.003,
-    "paired_t": 0.592,
-    "paired_p": 0.554,
+    "pooled_improvement_mae": 0.005,
+    "paired_t": 0.832,
+    "paired_p": 0.4053,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.124,
-      "candidate_mae": 10.132,
-      "improvement": -0.008,
-      "coef": 0.2546
+      "base_mae": 10.104,
+      "candidate_mae": 10.11,
+      "improvement": -0.006,
+      "coef": 0.2127
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 9.814,
-      "candidate_mae": 9.826,
-      "improvement": -0.011,
-      "coef": 0.2573
+      "base_mae": 9.822,
+      "candidate_mae": 9.83,
+      "improvement": -0.008,
+      "coef": 0.2273
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.609,
-      "candidate_mae": 10.629,
-      "improvement": -0.019,
-      "coef": 0.2134
+      "base_mae": 10.611,
+      "candidate_mae": 10.627,
+      "improvement": -0.017,
+      "coef": 0.1911
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 8.773,
-      "candidate_mae": 8.773,
+      "base_mae": 8.784,
+      "candidate_mae": 8.785,
       "improvement": 0,
-      "coef": 0.0061
+      "coef": -0.0146
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.015,
-      "candidate_mae": 10.009,
-      "improvement": 0.005,
-      "coef": -0.1122
+      "base_mae": 10.014,
+      "candidate_mae": 10.008,
+      "improvement": 0.006,
+      "coef": -0.1282
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.65,
-      "candidate_mae": 9.629,
-      "improvement": 0.022,
-      "coef": -0.3492
+      "base_mae": 9.651,
+      "candidate_mae": 9.628,
+      "improvement": 0.023,
+      "coef": -0.3647
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 9.728,
-      "candidate_mae": 9.696,
-      "improvement": 0.033,
-      "coef": -0.416
+      "base_mae": 9.727,
+      "candidate_mae": 9.693,
+      "improvement": 0.034,
+      "coef": -0.428
      }
     ],
-    "latest_coef": -0.416,
+    "latest_coef": -0.428,
     "reasons": [
-     "pooled improvement 0.003 below 0.02 points of MAE",
-     "paired p 0.554 not below 0.05"
+     "pooled improvement 0.005 below 0.02 points of MAE",
+     "paired p 0.4053 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    }
@@ -885,71 +885,71 @@
     "label": "dome or closed roof",
     "market": "total",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.003,
-    "paired_t": -0.285,
-    "paired_p": 0.7759,
+    "pooled_improvement_mae": -0.002,
+    "paired_t": -0.166,
+    "paired_p": 0.8682,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.975,
-      "improvement": -0.011,
-      "coef": -0.6184
+      "base_mae": 10.985,
+      "candidate_mae": 10.986,
+      "improvement": -0.001,
+      "coef": -0.0928
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.249,
-      "improvement": -0.002,
-      "coef": -0.0548
+      "base_mae": 10.242,
+      "candidate_mae": 10.231,
+      "improvement": 0.011,
+      "coef": 0.3162
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.861,
-      "improvement": 0.001,
-      "coef": 1.156
+      "base_mae": 10.893,
+      "candidate_mae": 10.899,
+      "improvement": -0.005,
+      "coef": 1.5157
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.351,
-      "improvement": 0.058,
-      "coef": 1.2235
+      "base_mae": 10.414,
+      "candidate_mae": 10.347,
+      "improvement": 0.068,
+      "coef": 1.4744
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.176,
-      "improvement": 0,
-      "coef": 1.4998
+      "base_mae": 10.178,
+      "candidate_mae": 10.18,
+      "improvement": -0.002,
+      "coef": 1.7081
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
+      "base_mae": 9.758,
       "candidate_mae": 9.778,
-      "improvement": -0.015,
-      "coef": 1.5158
+      "improvement": -0.021,
+      "coef": 1.681
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.449,
-      "improvement": -0.055,
-      "coef": 1.3961
+      "base_mae": 10.398,
+      "candidate_mae": 10.462,
+      "improvement": -0.063,
+      "coef": 1.5441
      }
     ],
-    "latest_coef": 1.3961,
+    "latest_coef": 1.5441,
     "reasons": [
-     "pooled improvement -0.003 below 0.02 points of MAE",
-     "paired p 0.7759 not below 0.05"
+     "pooled improvement -0.002 below 0.02 points of MAE",
+     "paired p 0.8682 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -958,70 +958,70 @@
     "market": "total",
     "status": "REJECTED",
     "pooled_improvement_mae": -0.001,
-    "paired_t": -0.288,
-    "paired_p": 0.7734,
+    "paired_t": -0.435,
+    "paired_p": 0.6635,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.967,
-      "improvement": -0.002,
-      "coef": 0.4875
+      "base_mae": 10.985,
+      "candidate_mae": 10.985,
+      "improvement": 0,
+      "coef": 0.0718
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.251,
-      "improvement": -0.004,
-      "coef": -0.2249
+      "base_mae": 10.242,
+      "candidate_mae": 10.252,
+      "improvement": -0.01,
+      "coef": -0.5443
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.864,
-      "improvement": -0.002,
-      "coef": 0.3761
+      "base_mae": 10.893,
+      "candidate_mae": 10.894,
+      "improvement": -0.001,
+      "coef": 0.1142
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.405,
-      "improvement": 0.004,
-      "coef": 0.4891
+      "base_mae": 10.414,
+      "candidate_mae": 10.412,
+      "improvement": 0.002,
+      "coef": 0.2798
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.173,
+      "base_mae": 10.178,
+      "candidate_mae": 10.175,
       "improvement": 0.003,
-      "coef": 0.497
+      "coef": 0.3285
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.765,
-      "improvement": -0.002,
-      "coef": 0.3599
+      "base_mae": 9.758,
+      "candidate_mae": 9.759,
+      "improvement": -0.001,
+      "coef": 0.2067
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.397,
-      "improvement": -0.002,
-      "coef": 0.352
+      "base_mae": 10.398,
+      "candidate_mae": 10.399,
+      "improvement": -0.001,
+      "coef": 0.2166
      }
     ],
-    "latest_coef": 0.352,
+    "latest_coef": 0.2166,
     "reasons": [
      "pooled improvement -0.001 below 0.02 points of MAE",
-     "paired p 0.7734 not below 0.05"
+     "paired p 0.6635 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -1029,71 +1029,71 @@
     "label": "wind above 15 mph (outdoors)",
     "market": "total",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.009,
-    "paired_t": -0.99,
-    "paired_p": 0.3223,
+    "pooled_improvement_mae": -0.01,
+    "paired_t": -0.941,
+    "paired_p": 0.3466,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.973,
-      "improvement": -0.008,
-      "coef": -2.517
+      "base_mae": 10.985,
+      "candidate_mae": 10.997,
+      "improvement": -0.013,
+      "coef": -3.1282
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.303,
-      "improvement": -0.056,
-      "coef": -2.0229
+      "base_mae": 10.242,
+      "candidate_mae": 10.305,
+      "improvement": -0.063,
+      "coef": -2.4324
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.84,
-      "improvement": 0.022,
-      "coef": -0.7543
+      "base_mae": 10.893,
+      "candidate_mae": 10.862,
+      "improvement": 0.031,
+      "coef": -1.1143
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.422,
-      "improvement": -0.014,
-      "coef": -2.2961
+      "base_mae": 10.414,
+      "candidate_mae": 10.43,
+      "improvement": -0.015,
+      "coef": -2.5354
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.184,
+      "base_mae": 10.178,
+      "candidate_mae": 10.186,
       "improvement": -0.008,
-      "coef": -1.7729
+      "coef": -1.9612
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.75,
+      "base_mae": 9.758,
+      "candidate_mae": 9.746,
       "improvement": 0.012,
-      "coef": -1.9787
+      "coef": -2.1346
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.412,
-      "improvement": -0.017,
-      "coef": -1.9649
+      "base_mae": 10.398,
+      "candidate_mae": 10.418,
+      "improvement": -0.02,
+      "coef": -2.102
      }
     ],
-    "latest_coef": -1.9649,
+    "latest_coef": -2.102,
     "reasons": [
-     "pooled improvement -0.009 below 0.02 points of MAE",
-     "paired p 0.3223 not below 0.05"
+     "pooled improvement -0.01 below 0.02 points of MAE",
+     "paired p 0.3466 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -1101,71 +1101,71 @@
     "label": "division game",
     "market": "total",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.004,
-    "paired_t": -1.329,
-    "paired_p": 0.1837,
+    "pooled_improvement_mae": -0.005,
+    "paired_t": -1.451,
+    "paired_p": 0.1467,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.967,
-      "improvement": -0.002,
-      "coef": -0.2381
+      "base_mae": 10.985,
+      "candidate_mae": 10.989,
+      "improvement": -0.005,
+      "coef": -0.4563
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.268,
-      "improvement": -0.021,
-      "coef": -0.5546
+      "base_mae": 10.242,
+      "candidate_mae": 10.262,
+      "improvement": -0.02,
+      "coef": -0.702
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.861,
-      "improvement": 0.001,
-      "coef": 0.0234
+      "base_mae": 10.893,
+      "candidate_mae": 10.898,
+      "improvement": -0.005,
+      "coef": -0.1108
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.414,
-      "improvement": -0.006,
-      "coef": 0.3557
+      "base_mae": 10.414,
+      "candidate_mae": 10.419,
+      "improvement": -0.005,
+      "coef": 0.2657
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.175,
-      "improvement": 0.001,
-      "coef": 0.093
+      "base_mae": 10.178,
+      "candidate_mae": 10.177,
+      "improvement": 0,
+      "coef": 0.0235
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.763,
-      "improvement": 0,
-      "coef": 0.0011
+      "base_mae": 9.758,
+      "candidate_mae": 9.76,
+      "improvement": -0.002,
+      "coef": -0.0576
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.398,
-      "improvement": -0.004,
-      "coef": 0.3445
+      "base_mae": 10.398,
+      "candidate_mae": 10.402,
+      "improvement": -0.003,
+      "coef": 0.2898
      }
     ],
-    "latest_coef": 0.3445,
+    "latest_coef": 0.2898,
     "reasons": [
-     "pooled improvement -0.004 below 0.02 points of MAE",
-     "paired p 0.1837 not below 0.05"
+     "pooled improvement -0.005 below 0.02 points of MAE",
+     "paired p 0.1467 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -1173,71 +1173,71 @@
     "label": "players out or doubtful, both sides summed",
     "market": "total",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.002,
-    "paired_t": -0.726,
-    "paired_p": 0.4676,
+    "pooled_improvement_mae": -0.007,
+    "paired_t": -1.87,
+    "paired_p": 0.0615,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.975,
-      "improvement": -0.01,
-      "coef": -0.0646
+      "base_mae": 10.985,
+      "candidate_mae": 11.007,
+      "improvement": -0.023,
+      "coef": -0.1397
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.259,
-      "improvement": -0.012,
-      "coef": -0.0344
+      "base_mae": 10.242,
+      "candidate_mae": 10.272,
+      "improvement": -0.03,
+      "coef": -0.0866
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.856,
-      "improvement": 0.006,
-      "coef": 0.0973
+      "base_mae": 10.893,
+      "candidate_mae": 10.888,
+      "improvement": 0.005,
+      "coef": 0.0601
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.421,
-      "improvement": -0.012,
-      "coef": 0.0775
+      "base_mae": 10.414,
+      "candidate_mae": 10.422,
+      "improvement": -0.007,
+      "coef": 0.0483
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.18,
-      "improvement": -0.004,
-      "coef": -0.0223
+      "base_mae": 10.178,
+      "candidate_mae": 10.185,
+      "improvement": -0.008,
+      "coef": -0.0457
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.765,
-      "improvement": -0.003,
-      "coef": -0.0127
+      "base_mae": 9.758,
+      "candidate_mae": 9.764,
+      "improvement": -0.006,
+      "coef": -0.0328
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.378,
-      "improvement": 0.017,
-      "coef": 0.0646
+      "base_mae": 10.398,
+      "candidate_mae": 10.385,
+      "improvement": 0.014,
+      "coef": 0.0471
      }
     ],
-    "latest_coef": 0.0646,
+    "latest_coef": 0.0471,
     "reasons": [
-     "pooled improvement -0.002 below 0.02 points of MAE",
-     "paired p 0.4676 not below 0.05"
+     "pooled improvement -0.007 below 0.02 points of MAE",
+     "paired p 0.0615 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -1245,71 +1245,71 @@
     "label": "offensive linemen out or doubtful, both sides summed",
     "market": "total",
     "status": "REJECTED",
-    "pooled_improvement_mae": -0.003,
-    "paired_t": -1.171,
-    "paired_p": 0.2416,
+    "pooled_improvement_mae": -0.002,
+    "paired_t": -1.042,
+    "paired_p": 0.2976,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.984,
-      "improvement": -0.02,
-      "coef": -0.1994
+      "base_mae": 10.985,
+      "candidate_mae": 11.001,
+      "improvement": -0.016,
+      "coef": -0.1629
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.247,
-      "improvement": 0,
-      "coef": 0.0122
+      "base_mae": 10.242,
+      "candidate_mae": 10.241,
+      "improvement": 0.001,
+      "coef": 0.0344
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.865,
-      "improvement": -0.003,
-      "coef": -0.1236
+      "base_mae": 10.893,
+      "candidate_mae": 10.896,
+      "improvement": -0.002,
+      "coef": -0.1008
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.413,
-      "improvement": -0.004,
-      "coef": -0.1064
+      "base_mae": 10.414,
+      "candidate_mae": 10.417,
+      "improvement": -0.003,
+      "coef": -0.0879
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.171,
-      "improvement": 0.005,
-      "coef": -0.0531
+      "base_mae": 10.178,
+      "candidate_mae": 10.174,
+      "improvement": 0.003,
+      "coef": -0.0386
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.763,
+      "base_mae": 9.758,
+      "candidate_mae": 9.758,
       "improvement": 0,
-      "coef": -0.1626
+      "coef": -0.1514
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.395,
+      "base_mae": 10.398,
+      "candidate_mae": 10.399,
       "improvement": 0,
-      "coef": -0.137
+      "coef": -0.1283
      }
     ],
-    "latest_coef": -0.137,
+    "latest_coef": -0.1283,
     "reasons": [
-     "pooled improvement -0.003 below 0.02 points of MAE",
-     "paired p 0.2416 not below 0.05"
+     "pooled improvement -0.002 below 0.02 points of MAE",
+     "paired p 0.2976 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    },
@@ -1317,71 +1317,71 @@
     "label": "quarterbacks out or doubtful, both sides summed",
     "market": "total",
     "status": "CANDIDATE",
-    "pooled_improvement_mae": 0.006,
-    "paired_t": 1.765,
-    "paired_p": 0.0776,
+    "pooled_improvement_mae": 0.007,
+    "paired_t": 1.924,
+    "paired_p": 0.0544,
     "holdout_seasons": [
      {
       "season": 2019,
       "n": 251,
-      "base_mae": 10.964,
-      "candidate_mae": 10.97,
-      "improvement": -0.006,
-      "coef": -0.2155
+      "base_mae": 10.985,
+      "candidate_mae": 10.989,
+      "improvement": -0.004,
+      "coef": -0.159
      },
      {
       "season": 2020,
       "n": 261,
-      "base_mae": 10.247,
-      "candidate_mae": 10.244,
-      "improvement": 0.003,
-      "coef": 0.4264
+      "base_mae": 10.242,
+      "candidate_mae": 10.237,
+      "improvement": 0.005,
+      "coef": 0.4516
      },
      {
       "season": 2021,
       "n": 285,
-      "base_mae": 10.862,
-      "candidate_mae": 10.862,
+      "base_mae": 10.893,
+      "candidate_mae": 10.893,
       "improvement": 0,
-      "coef": 0.0568
+      "coef": 0.1039
      },
      {
       "season": 2022,
       "n": 284,
-      "base_mae": 10.409,
-      "candidate_mae": 10.411,
+      "base_mae": 10.414,
+      "candidate_mae": 10.416,
       "improvement": -0.002,
-      "coef": 0.3176
+      "coef": 0.3333
      },
      {
       "season": 2023,
       "n": 285,
-      "base_mae": 10.176,
-      "candidate_mae": 10.171,
+      "base_mae": 10.178,
+      "candidate_mae": 10.173,
       "improvement": 0.005,
-      "coef": 0.3753
+      "coef": 0.3931
      },
      {
       "season": 2024,
       "n": 285,
-      "base_mae": 9.763,
-      "candidate_mae": 9.756,
+      "base_mae": 9.758,
+      "candidate_mae": 9.751,
       "improvement": 0.007,
-      "coef": 0.4585
+      "coef": 0.4672
      },
      {
       "season": 2025,
       "n": 285,
-      "base_mae": 10.395,
-      "candidate_mae": 10.362,
+      "base_mae": 10.398,
+      "candidate_mae": 10.365,
       "improvement": 0.033,
-      "coef": 0.63
+      "coef": 0.6441
      }
     ],
-    "latest_coef": 0.63,
+    "latest_coef": 0.6441,
     "reasons": [
-     "pooled improvement 0.006 below 0.02 points of MAE",
-     "paired p 0.0776 not below 0.05"
+     "pooled improvement 0.007 below 0.02 points of MAE",
+     "paired p 0.0544 not below 0.05"
     ],
     "basis": "the blend with and without the candidate term, both fitted on seasons before the held-out season; a paired two-sided test over per-game absolute errors"
    }
