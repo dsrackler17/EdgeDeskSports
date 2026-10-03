@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T01:00:00.000Z",
   "game_when_label": "2026-10-10 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-02T22:08:00.364Z",
-  "generated_at": "2026-10-02T22:08:00.364Z",
+  "updated_at": "2026-10-03T11:33:32.384Z",
+  "generated_at": "2026-10-03T11:33:32.384Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1586,11 +1586,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
+        "pct": 78,
         "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the projection is unstable",
-        "score": 79,
+        "text": "78 · ADEQUATE",
+        "sub": "main deduction: the projection flips favorite in 34% of sensitivity runs",
+        "score": 78,
         "grade": "ADEQUATE",
         "grade_label": "ADEQUATE",
         "gate_label": null,
@@ -1628,15 +1628,29 @@
           {
             "key": "environment",
             "label": "Environment",
-            "score": 10,
+            "score": 8.5,
             "max": 10
           }
         ],
-        "main_deduction": "the projection is unstable: ±2.5 pts, favorite flips in 34% of runs",
-        "capped_by": [
-          "UNSTABLE"
+        "main_deduction": "the projection flips favorite in 34% of sensitivity runs",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Iowa)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Washington)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Capture a market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
+          }
         ],
-        "next_actions": [],
         "stability": {
           "tier": "UNSTABLE",
           "sd": 2.5,
@@ -1876,6 +1890,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-02T22:08:00.364Z"
+    "at": "2026-10-03T11:33:32.384Z"
   }
 }
