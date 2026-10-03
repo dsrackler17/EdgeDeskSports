@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-03T01:07:35.331Z",
+ "as_of": "2026-10-03T02:07:46.578Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "f5f35a7f825e17c9",
+ "inputs_key": "d8a7c23c777a74e3",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 671,
+   "rows": 675,
    "mode": "LIVE",
-   "sha1": "c6b1ffd09dff"
+   "sha1": "61065c35aeee"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "b705e29bdfff"
+   "sha1": "d164d66afdd2"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "671 decision snapshots issued before kickoff; 3 settled"
+   "note": "675 decision snapshots issued before kickoff; 3 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,9 +133,9 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 671,
+  "issued_snapshots": 675,
   "issued_by_decision": {
-   "NO_DECISION": 406,
+   "NO_DECISION": 410,
    "PASS": 253,
    "WATCH": 12
   },
@@ -12996,7 +12996,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-02T23:52:35.715Z",
+  "generated_at": "2026-10-03T01:27:11.371Z",
   "sports": {
    "nfl": {
     "versions": [
