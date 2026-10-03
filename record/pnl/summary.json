@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-03T23:19:50.270Z",
+ "generated_at": "2026-10-03T23:29:30.035Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -13,7 +13,7 @@
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 3731,
+  "rows": 3732,
   "bets": 195,
   "verified_bets": 24,
   "priced_decisions": 31,
@@ -1075,30 +1075,30 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 3731,
-  "PENDING": 2489,
-  "VERIFIED": 470,
+  "total": 3732,
+  "PENDING": 2476,
+  "VERIFIED": 484,
   "RECORD_ONLY": 731,
   "VOID": 41,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 2489,
+  "total": 2476,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 1732
+    "n": 1733
    },
    {
     "key": "IN_PROGRESS",
     "label": "Game in progress",
-    "n": 522
+    "n": 509
    },
    {
     "key": "MISSING_FINAL",
     "label": "Missing final",
-    "n": 235
+    "n": 234
    }
   ]
  },
@@ -1677,7 +1677,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-03T23:19:50.270Z",
+  "as_of": "2026-10-03T23:29:30.035Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -1692,7 +1692,7 @@
     "started_unsettled": 729
    }
   },
-  "finals_known": 334
+  "finals_known": 348
  },
  "views": {
   "all": {
@@ -4352,21 +4352,21 @@
       },
       {
        "key": "Watch",
-       "n": 6,
+       "n": 7,
        "rows": 9,
-       "wins": 2,
+       "wins": 3,
        "losses": 4,
        "pushes": 0,
-       "record": "2-4",
-       "win_rate_pct": 33.33,
-       "net_units": -2.02,
-       "risked_units": 6,
-       "roi_pct": -33.66,
-       "avg_clv_points": -0.08,
-       "avg_clv_prob_pp": -0.17,
-       "clv_hit_rate_pct": 33.3,
+       "record": "3-4",
+       "win_rate_pct": 42.86,
+       "net_units": -1.02,
+       "risked_units": 7,
+       "roi_pct": -14.57,
+       "avg_clv_points": -0.21,
+       "avg_clv_prob_pp": -0.49,
+       "clv_hit_rate_pct": 25,
        "avg_odds": -101,
-       "avg_edge_pct": -0.2,
+       "avg_edge_pct": -0.18,
        "max_drawdown_units": -2.0196,
        "record_only": {
         "n": 0,
@@ -4380,28 +4380,28 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 6,
-        "text": "n=6 · Very small sample — results may be unstable"
+        "n": 7,
+        "text": "n=7 · Very small sample — results may be unstable"
        }
       },
       {
        "key": "Pass",
-       "n": 19,
-       "rows": 64,
-       "wins": 11,
-       "losses": 7,
-       "pushes": 1,
-       "record": "11-7-1",
-       "win_rate_pct": 61.11,
-       "net_units": 2.88,
-       "risked_units": 18,
-       "roi_pct": 15.98,
-       "avg_clv_points": 0.63,
-       "avg_clv_prob_pp": 1.6,
-       "clv_hit_rate_pct": 78.6,
+       "n": 32,
+       "rows": 65,
+       "wins": 17,
+       "losses": 13,
+       "pushes": 2,
+       "record": "17-13-2",
+       "win_rate_pct": 56.67,
+       "net_units": 2.19,
+       "risked_units": 30,
+       "roi_pct": 7.31,
+       "avg_clv_points": 0.34,
+       "avg_clv_prob_pp": 0.85,
+       "clv_hit_rate_pct": 68.2,
        "avg_odds": -111,
-       "avg_edge_pct": -2.6,
-       "max_drawdown_units": -1.1304,
+       "avg_edge_pct": -2.52,
+       "max_drawdown_units": -4,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4411,11 +4411,11 @@
         "win_rate_pct": null
        },
        "sample": {
-        "key": "VERY_SMALL",
-        "label": "Very small sample",
+        "key": "SMALL",
+        "label": "Small sample",
         "warn": true,
-        "n": 19,
-        "text": "n=19 · Very small sample — results may be unstable"
+        "n": 32,
+        "text": "n=32 · Small sample — results may be unstable"
        }
       },
       {
@@ -7439,21 +7439,21 @@
       },
       {
        "key": "Watch",
-       "n": 6,
+       "n": 7,
        "rows": 9,
-       "wins": 2,
+       "wins": 3,
        "losses": 4,
        "pushes": 0,
-       "record": "2-4",
-       "win_rate_pct": 33.33,
-       "net_units": -2.02,
-       "risked_units": 6,
-       "roi_pct": -33.66,
-       "avg_clv_points": -0.08,
-       "avg_clv_prob_pp": -0.17,
-       "clv_hit_rate_pct": 33.3,
+       "record": "3-4",
+       "win_rate_pct": 42.86,
+       "net_units": -1.02,
+       "risked_units": 7,
+       "roi_pct": -14.57,
+       "avg_clv_points": -0.21,
+       "avg_clv_prob_pp": -0.49,
+       "clv_hit_rate_pct": 25,
        "avg_odds": -101,
-       "avg_edge_pct": -0.2,
+       "avg_edge_pct": -0.18,
        "max_drawdown_units": -2.0196,
        "record_only": {
         "n": 0,
@@ -7467,28 +7467,28 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 6,
-        "text": "n=6 · Very small sample — results may be unstable"
+        "n": 7,
+        "text": "n=7 · Very small sample — results may be unstable"
        }
       },
       {
        "key": "Pass",
-       "n": 19,
-       "rows": 64,
-       "wins": 11,
-       "losses": 7,
-       "pushes": 1,
-       "record": "11-7-1",
-       "win_rate_pct": 61.11,
-       "net_units": 2.88,
-       "risked_units": 18,
-       "roi_pct": 15.98,
-       "avg_clv_points": 0.63,
-       "avg_clv_prob_pp": 1.6,
-       "clv_hit_rate_pct": 78.6,
+       "n": 32,
+       "rows": 65,
+       "wins": 17,
+       "losses": 13,
+       "pushes": 2,
+       "record": "17-13-2",
+       "win_rate_pct": 56.67,
+       "net_units": 2.19,
+       "risked_units": 30,
+       "roi_pct": 7.31,
+       "avg_clv_points": 0.34,
+       "avg_clv_prob_pp": 0.85,
+       "clv_hit_rate_pct": 68.2,
        "avg_odds": -111,
-       "avg_edge_pct": -2.6,
-       "max_drawdown_units": -1.1304,
+       "avg_edge_pct": -2.52,
+       "max_drawdown_units": -4,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -7498,11 +7498,11 @@
         "win_rate_pct": null
        },
        "sample": {
-        "key": "VERY_SMALL",
-        "label": "Very small sample",
+        "key": "SMALL",
+        "label": "Small sample",
         "warn": true,
-        "n": 19,
-        "text": "n=19 · Very small sample — results may be unstable"
+        "n": 32,
+        "text": "n=32 · Small sample — results may be unstable"
        }
       },
       {
@@ -7872,9 +7872,9 @@
     }
    },
    "data_quality": {
-    "total": 3731,
-    "verified": 470,
-    "pending": 2489,
+    "total": 3732,
+    "verified": 484,
+    "pending": 2476,
     "voids": 41,
     "missing_entry_odds": 731,
     "simulated_price": 0,
@@ -9128,9 +9128,9 @@
     }
    },
    "data_quality": {
-    "total": 713,
-    "verified": 32,
-    "pending": 48,
+    "total": 714,
+    "verified": 46,
+    "pending": 35,
     "voids": 0,
     "missing_entry_odds": 633,
     "simulated_price": 0,
@@ -10700,9 +10700,9 @@
     }
    },
    "data_quality": {
-    "total": 811,
-    "verified": 32,
-    "pending": 48,
+    "total": 812,
+    "verified": 46,
+    "pending": 35,
     "voids": 0,
     "missing_entry_odds": 731,
     "simulated_price": 0,
@@ -10720,7 +10720,7 @@
   {
    "source": "CFB Model Lab",
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 64,
+   "rows": 90,
    "reason": "research positions graded at an ASSUMED −110 (price_assumed); simulated, so never counted as verified P&L"
   },
   {
@@ -10770,8 +10770,8 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 814,
-   "rows": 73,
+   "snapshots": 825,
+   "rows": 74,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
   {
