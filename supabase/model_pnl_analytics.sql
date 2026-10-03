@@ -37,6 +37,8 @@ create or replace view public.model_pnl_corrections_public as
 select c.recommendation_id, c.corrected_at, c.changed, c.reason from public.model_pnl_corrections c;
 
 -- the strategy's bets: scope all | nfl | cfb | props | game; mode flat | staked
+-- nfl / cfb are that league's game markets; props is every player prop, never
+-- also in its league's scope (lib/edgedesk_pnl.js SCOPES): all = nfl + cfb + props
 create or replace function public.model_pnl_bets(p_mode text default 'flat', p_scope text default 'all', p_class text default 'BET')
 returns table (recommendation_id text, league text, market_group text, market_type text, prop_label text, side text, entry_book text,
   model_version text, week int, rec_class text, stake numeric, profit numeric, entry_odds numeric, result text, clv_points numeric,
@@ -50,7 +52,7 @@ language sql stable security definer set search_path = public as $b$
   where p.pnl_status = 'VERIFIED' and p.rec_class = p_class
     and (p_mode <> 'staked' or (p.stake_units > 0 and p.profit_units is not null))
     and p.evaluation_mode in ('LIVE', 'LIVE_RECONSTRUCTED')
-    and (p_scope = 'all' or (p_scope = 'nfl' and p.league = 'NFL') or (p_scope = 'cfb' and p.league = 'CFB')
+    and (p_scope = 'all' or (p_scope = 'nfl' and p.league = 'NFL' and p.market_group = 'game') or (p_scope = 'cfb' and p.league = 'CFB' and p.market_group = 'game')
          or (p_scope = 'props' and p.market_group = 'prop') or (p_scope = 'game' and p.market_group = 'game'))
 $b$;
 

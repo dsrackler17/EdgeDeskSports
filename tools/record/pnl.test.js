@@ -249,6 +249,18 @@ chk('data quality: not P&L eligible = missing + simulated', dq.not_pnl_eligible 
   chk('record by sport / market / model version / week each add up to the whole', ['league', 'market', 'model_version', 'week'].every((k) => sumOf(RB[k]) === '2-1-1'), Object.keys(RB).map((k) => k + ' ' + sumOf(RB[k])));
   chk('record by market: spread 1-1, totals 0-0-1, props 1-0 (and one pending)', RB.market.map((x) => x.key + ' ' + x.record + (x.pending ? ' +' + x.pending : '')).join() === 'Spread 1-1,Total 0-0-1,Player Props 1-0 +1', RB.market.map((x) => x.key + ' ' + x.record));
 
+  /* the tabs: a player prop is its own record, never also its league's */
+  const grp = (x) => Object.assign({}, x, { market_group: x.market_type === 'player_prop' ? 'prop' : 'game' });
+  const rows3 = rows2.concat([S({ rec_class: 'BET', entry_odds: 105, result: 'loss', market_type: 'player_prop', league: 'CFB', week: 2 })]).map(grp);
+  const ids = (k) => P.scopeRows(rows3, k).map((x) => x.recommendation_id).sort();
+  chk('scopes: NFL and CFB hold only their game markets — no player prop', P.scopeRows(rows3, 'nfl').every((x) => x.league === 'NFL' && x.market_group === 'game') && P.scopeRows(rows3, 'cfb').every((x) => x.league === 'CFB' && x.market_group === 'game')
+    && ids('nfl').length === 2 && ids('cfb').length === 2, [ids('nfl'), ids('cfb')]);
+  chk('scopes: Player Props holds every prop, NFL and college, and nothing else', ids('props').length === 5 && P.scopeRows(rows3, 'props').every((x) => x.market_group === 'prop'), ids('props'));
+  chk('scopes: NFL + CFB + Player Props = All, each row exactly once', ids('nfl').concat(ids('cfb'), ids('props')).sort().join() === ids('all').join(), [ids('nfl'), ids('cfb'), ids('props')]);
+  const RB3 = P.recordBreakdowns(rows3.filter((x) => P.inRecord(x, false)));
+  chk('record by sport: NFL games, college games and player props apart — the tabs', RB3.league.map((x) => x.key + ' ' + x.record).join() === 'NFL 0-1-1,College Football 1-0,Player Props 1-1', RB3.league.map((x) => x.key + ' ' + x.record));
+  chk('P&L by sport: the priced props are not inside NFL', P.breakdowns(rows3, 'flat').league.map((x) => x.key + ' ' + x.n).join() === 'NFL 0,College Football 0,Player Props 2', P.breakdowns(rows3, 'flat').league.map((x) => x.key + ' ' + x.n));
+
   const pr = P.pendingReasons([Object.assign({}, rows2[4], { pending_reason: 'UPCOMING' }), Object.assign({}, rows2[4], { pending_reason: 'MISSING_PLAYER_STAT' }), rows2[4], rows2[0]]);
   chk('pending reasons: counted per reason, a row without one is UNKNOWN, settled rows ignored', pr.total === 3 && pr.reasons.map((x) => x.key + ' ' + x.n).join() === 'UPCOMING 1,MISSING_PLAYER_STAT 1,UNKNOWN 1', pr);
   chk('pending reasons: with the reader\'s clock, a reasonless row before its kickoff is UPCOMING — after it, still UNKNOWN (never guessed)',

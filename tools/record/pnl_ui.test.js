@@ -366,6 +366,23 @@ async function main() {
           await page.click('#pnlPub .pnl-tabs [data-scope="' + k + '"]');
           heroMatches('tab ' + k, await read(page, '#pnlPub'), expect({ scope: k }));
         }
+        /* a player prop is never in the NFL or CFB tab, a game market never in Player Props */
+        for (const k of ['nfl', 'cfb', 'props']) {
+          await page.click('#pnlPub .pnl-tabs [data-scope="' + k + '"]');
+          const want = k === 'props' ? 'prop' : 'game', stray = [];
+          for (const ls of ['verified', 'history', 'pending']) {
+            await page.click('#pnlPub [data-lstatus="' + ls + '"]');
+            const shown = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr', (els) => els.map((e) => e.getAttribute('data-row')));
+            shown.forEach((id) => { const x = ROWS.find((r) => r.recommendation_id === id); if (!x || x.market_group !== want) stray.push(ls + ':' + id); });
+          }
+          chk('tab ' + k + ': the ledger lists only ' + (k === 'props' ? 'player props' : 'game markets'), !stray.length, stray);
+          const opts = await page.$$eval('#pnlPub select[data-market] option', (els) => els.map((e) => e.value));
+          chk('tab ' + k + ': the market filter offers only the markets the view holds', k === 'props' ? opts.join() === 'all,player_prop' : opts.indexOf('player_prop') < 0 && opts.length === 4, opts);
+        }
+        await page.click('#pnlPub .pnl-tabs [data-scope="all"]');
+        await page.selectOption('#pnlPub select[data-market]', 'player_prop');
+        await page.click('#pnlPub .pnl-tabs [data-scope="nfl"]');
+        chk('switching to NFL from a props-only filter drops the filter, never an empty view', await page.$eval('#pnlPub select[data-market]', (e) => e.value) === 'all');
         await page.click('#pnlPub .pnl-tabs [data-scope="props"]');
         chk('tab props: the record card holds the props record only (no game markets), W-L-P, never units', histMatches(await text(page, '#pnlPub [data-r="hist"]'), expect({ scope: 'props' })) && !/Spread|Moneyline/.test(await text(page, '#pnlPub [data-r="hist"]')), await text(page, '#pnlPub [data-r="hist"]'));
         await page.click('#pnlPub .pnl-tabs [data-scope="all"]');
@@ -401,7 +418,7 @@ async function main() {
         await page.click('#pnlPub [data-r="adv"] > summary');
         await page.waitForSelector('#pnlPub [data-r="advbody"] .pnl-sec', { timeout: 5000 });
         const bdNames = await page.$$eval('#pnlPub [data-r="advbody"] .pnl-det > summary', (els) => els.map((e) => e.textContent));
-        ['By league', 'By market', 'By player prop type', 'By side', 'By book', 'By model edge', 'By recommendation grade', 'By unit size', 'By odds range', 'By week', 'By month', 'By price source', 'Model version performance'].forEach((n) => chk('advanced: breakdown present: ' + n, bdNames.some((x) => x.indexOf(n) === 0), bdNames));
+        ['By sport', 'By market', 'By player prop type', 'By side', 'By book', 'By model edge', 'By recommendation grade', 'By unit size', 'By odds range', 'By week', 'By month', 'By price source', 'Model version performance'].forEach((n) => chk('advanced: breakdown present: ' + n, bdNames.some((x) => x.indexOf(n) === 0), bdNames));
         const advTxt = await text(page, '#pnlPub [data-r="advbody"]');
         ['Where the record comes from', 'Edge calibration', 'CLV vs P&L', 'Drawdown', 'Game markets vs player props', 'Every recommendation\'s state', 'Why pending'].forEach((n) => chk('advanced: ' + n, advTxt.indexOf(n) >= 0));
         ['By sport', 'By market', 'By model version', 'By week', 'By grade'].forEach((n) => chk('advanced: the record, ' + n, bdNames.some((x) => x.indexOf(n) === 0), bdNames));
@@ -539,23 +556,31 @@ async function main() {
       chk(W + 'px real: every row\'s state, as the summary counts them', (await page.$$eval('#pnlPub [data-r="states"] .pnl-dqi[data-state]', (els) => els.map((e) => [e.getAttribute('data-state'), Number(e.querySelector('.pnl-dqn').textContent.replace(/,/g, ''))]))).every((x) => x[1] === rs.states[x[0]]));
       {
         /* the college player props: every one a LEAN while that model is EXPERIMENTAL — tracked on the page, never in the record or P&L unless leans are included */
-        const cfbLeans = PNL.scopeRows(realRows, 'cfb').filter((x) => (x.season == null || x.season === real.season) && x.market_group === 'prop' && x.rec_class === 'LEAN');
+        /* the college props (all leans while that model is EXPERIMENTAL) are
+           Player Props, never also the CFB tab: the props view tracks every lean */
+        chk(W + 'px real: the CFB and NFL tabs hold no player prop', ['cfb', 'nfl'].every((k) => PNL.scopeRows(realRows, k).every((x) => x.market_group === 'game')));
+        const propLeans = PNL.scopeRows(realRows, 'props').filter((x) => (x.season == null || x.season === real.season) && x.rec_class === 'LEAN');
+        const cfbLeans = propLeans.filter((x) => x.league === 'CFB');
         if (cfbLeans.length) {
-          await page.evaluate(() => { const o = document.getElementById('edmOnb'); if (o) o.remove(); document.querySelector('#pnlPub .pnl-tabs [data-scope="cfb"]').click(); });
+          await page.evaluate(() => { const o = document.getElementById('edmOnb'); if (o) o.remove(); document.querySelector('#pnlPub .pnl-tabs [data-scope="props"]').click(); });
           await page.waitForTimeout(200);
           const tile = await page.$eval('#pnlPub [data-market="player_prop"] .pnl-hm-l', (e) => [e.getAttribute('data-lean-count'), e.textContent]).catch(() => null);
-          chk(W + 'px real: the CFB view shows its player props — ' + cfbLeans.length + ' leans tracked', tile && +tile[0] === cfbLeans.length && tile[1].indexOf(cfbLeans.length.toLocaleString('en-US') + ' lean') === 0, tile);
+          chk(W + 'px real: the Player Props view shows every prop lean, college ones included — ' + propLeans.length + ' leans tracked', tile && +tile[0] === propLeans.length && tile[1].indexOf(propLeans.length.toLocaleString('en-US') + ' lean') === 0, tile);
           const rec = await read(page, '#pnlPub');
-          chk(W + 'px real: …and they stay out of the CFB record (leans are off)', (rec.perf || rec.hero || '').indexOf(expectOn(realRows, real.season, { scope: 'cfb' }).record.record) >= 0, rec.perf);
-          const cfbPending = cfbLeans.filter((x) => PNL.rowState(x) === 'PENDING').length;
-          if (cfbPending) {
+          chk(W + 'px real: …and they stay out of the props record (leans are off)', (rec.perf || rec.hero || '').indexOf(expectOn(realRows, real.season, { scope: 'props' }).record.record) >= 0, rec.perf);
+          const propPending = propLeans.filter((x) => PNL.rowState(x) === 'PENDING').length;
+          if (propPending) {
             await page.evaluate(() => document.querySelector('#pnlPub [data-lstatus="pending"]').click());
             await page.waitForTimeout(100);
-            chk(W + 'px real: the CFB pending ledger says the leans are tracked, one tap away', (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(cfbPending.toLocaleString('en-US') + ' player-prop lean') >= 0 && !!(await page.$('#pnlPub [data-leans-on]')));
+            chk(W + 'px real: the props pending ledger says the leans are tracked, one tap away', (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(propPending.toLocaleString('en-US') + ' player-prop lean') >= 0 && !!(await page.$('#pnlPub [data-leans-on]')));
             await page.evaluate(() => document.querySelector('#pnlPub [data-leans-on]').click());
             await page.waitForTimeout(200);
+            await page.fill('#pnlPub [data-lq]', 'CFB');
+            await page.waitForTimeout(300);
             const listed = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Sport"]', (els) => els.map((e) => e.textContent));
             chk(W + 'px real: including leans lists the college props', await page.$eval('#pnlPub [data-leans]', (c) => c.checked) && listed.length > 0 && listed.every((t) => /CFB/.test(t) && /Lean/.test(t)), listed.slice(0, 3));
+            await page.fill('#pnlPub [data-lq]', '');
+            await page.waitForTimeout(300);
             await page.evaluate(() => { const c = document.querySelector('#pnlPub [data-leans]'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
           }
           await page.evaluate(() => document.querySelector('#pnlPub .pnl-tabs [data-scope="all"]').click());

@@ -187,6 +187,11 @@ try {
   const kb = PNL.breakdown(bets, (x) => x.league, 'flat').map((x) => x.key + ':' + x.n + ':' + x.net_units).join(',');
   chk('by league: SQL equals the kernel breakdown', byLeague === kb, [byLeague, kb]);
   chk('scopes: props only', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'props');") === bets.filter((x) => x.market_group === 'prop' && x.pnl_status === 'VERIFIED').length);
+  const scopeSql = (k) => db.sql(`select bets || ':' || net_units from public.model_pnl_rollup('flat', 'all', '${k}');`);
+  const scopeKernel = (k) => { const m = PNL.summarize(PNL.scopeRows(bets, k), 'flat'); return m.n + ':' + (m.n ? m.net_units : 0); };
+  chk('scopes: NFL and CFB are their game markets, never a player prop — SQL equals the kernel', ['nfl', 'cfb', 'props', 'game'].every((k) => scopeSql(k) === scopeKernel(k)),
+    ['nfl', 'cfb', 'props', 'game'].map((k) => k + ' ' + scopeSql(k) + ' / ' + scopeKernel(k)));
+  chk('scopes: nfl + cfb + props = all, each bet once', ['nfl', 'cfb', 'props'].reduce((a, k) => a + +scopeSql(k).split(':')[0], 0) === +scopeSql('all').split(':')[0], ['nfl', 'cfb', 'props', 'all'].map(scopeSql));
   chk('the LEAN is not a bet, but can be read as its own class', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'all', 'LEAN');") === 1);
 
   /* ── every row's one state, as the kernel derives it ────────────────── */

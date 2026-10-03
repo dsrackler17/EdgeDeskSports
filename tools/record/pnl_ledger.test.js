@@ -167,8 +167,15 @@ try {
   chk('staked: risked 3.5u', ST.risked_units === 3.5, ST.risked_units);
   chk('flat and staked never mixed', F.net_units !== ST.net_units);
   chk('the chart series is chronological, one point per bet', S.views.all.flat.series.length === 5 && S.views.all.flat.series[0][0] <= S.views.all.flat.series[4][0]);
-  chk('scopes: NFL / CFB / props / game markets', S.views.nfl.flat.summary.n === 4 && S.views.cfb.flat.summary.n === 1 && S.views.props.flat.summary.n === 2 && S.views.game.flat.summary.n === 3,
+  chk('scopes: NFL games / CFB games / props / game markets', S.views.nfl.flat.summary.n === 2 && S.views.cfb.flat.summary.n === 1 && S.views.props.flat.summary.n === 2 && S.views.game.flat.summary.n === 3,
     ['nfl', 'cfb', 'props', 'game'].map((k) => S.views[k].flat.summary.n));
+  chk('scopes: a player prop is never also in its league\'s view — NFL + CFB + props = all, bets and units',
+    ['flat', 'staked'].every((m) => ['nfl', 'cfb', 'props'].reduce((a, k) => a + S.views[k][m].summary.n, 0) === S.views.all[m].summary.n
+      && Math.abs(['nfl', 'cfb', 'props'].reduce((a, k) => a + (S.views[k][m].summary.net_units || 0), 0) - S.views.all[m].summary.net_units) < 0.011),
+    ['nfl', 'cfb', 'props', 'all'].map((k) => [S.views[k].flat.summary.n, S.views[k].flat.summary.net_units]));
+  chk('scopes: the NFL and CFB views hold no player prop, the props view no game market',
+    S.views.nfl.flat.compare.props.n === 0 && S.views.cfb.flat.compare.props.n === 0 && S.views.props.flat.compare.game.n === 0,
+    ['nfl', 'cfb', 'props'].map((k) => [S.views[k].flat.compare.game.n, S.views[k].flat.compare.props.n]));
   chk('game markets vs props, side by side', S.views.all.flat.compare.game.n === 3 && S.views.all.flat.compare.props.n === 2);
   const grade = S.views.all.flat.breakdowns.grade;
   chk('by grade: BET, LEAN, WATCH, PASS (and the bare model number) each at flat 1u', grade.map((g) => g.key).join() === 'Bet,Lean,Watch,Pass,Model number', grade.map((g) => g.key));
