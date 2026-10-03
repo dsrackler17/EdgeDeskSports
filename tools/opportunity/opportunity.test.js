@@ -282,18 +282,18 @@ async function buildFixture() {
   /* ======================================================================= */
   section('the combined Card page');
   const U = require(path.join(ROOT, 'lib', 'edgedesk_decision_ui.js'));
-  const page = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'all', sort: 'kickoff' }, no_health: true });
+  const page = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'all', sort: 'kickoff' }, no_health: true, now: NOW });
   const text = (h) => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
   chk('the Card: 4 BETS, 1.25U total exposure, games and props on one bankroll', /<b>4<\/b><span>BETS/.test(page) && /<b>1\.25U<\/b><span>TOTAL EXPOSURE/.test(page) && /GAMES<\/i> 0\.50U/.test(page) && /PLAYER PROPS<\/i> 0\.75U/.test(page), text(page).slice(0, 400));
   chk('…BET split into GAME BETS and PLAYER PROPS, each prop with player, selection, price and book', /GAME BETS/.test(page) && />PLAYER PROPS</.test(page) && page.indexOf(eQB.player_name) > 0 && page.indexOf(eQB.book) > 0);
   chk('…the correlated-exposure warning', /CORRELATED EXPOSURE/.test(page) && /share game-script dependency/.test(page));
   chk('…every filter, old and new', ['All', 'Games', 'Props', 'Bets', 'Leans', 'Watching', 'Pass', 'No decision', 'NFL', 'CFB', '0.25U', '0.50U', '0.75U', '1.00U'].every((f) => page.indexOf('>' + f + '<') >= 0) && /Group by game/.test(page));
-  const pg = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'all', sort: 'kickoff', group: true }, no_health: true });
+  const pg = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'all', sort: 'kickoff', group: true }, no_health: true, now: NOW });
   chk('Group by game: TOTAL GAME EXPOSURE 1.25U under the one game', /TOTAL GAME EXPOSURE/.test(pg) && /<b>1\.25U<\/b>/.test(pg) && />PROPS</.test(pg) && />GAME</.test(pg));
-  const pp = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'props', sub: 'passing', sort: 'kickoff' }, no_health: true });
+  const pp = U.cardPageHTML([gdec], { entries: [eQB, eWR, eRB], view: { filter: 'props', sub: 'passing', sort: 'kickoff' }, no_health: true, now: NOW });
   chk('Props › Passing shows the passing prop only', pp.indexOf(eQB.player_name) > 0 && /All props/.test(pp) && pp.indexOf('edd-r-saved') === pp.lastIndexOf('edd-r-saved'));
   chk('no card prints tout language', !BANNED.test(text(page)) && !BANNED.test(text(pg)));
-  const plain = U.cardPageHTML([gdec], { entries: [], view: { filter: 'all', sort: 'kickoff' }, no_health: true });
+  const plain = U.cardPageHTML([gdec], { entries: [], view: { filter: 'all', sort: 'kickoff' }, no_health: true, now: NOW });
   chk('with nothing saved the Card is the game Card it always was (no prop rows, no type line)', !/edd-r-saved/.test(plain) && !/edd-kpi-type/.test(plain) && /<b>0\.50U<\/b><span>TOTAL EXPOSURE/.test(plain));
 
   /* ---- the record split */
