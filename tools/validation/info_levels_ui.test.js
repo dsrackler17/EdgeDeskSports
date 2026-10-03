@@ -154,7 +154,7 @@ section('model health on the Card page: n beside every percentage');
   chk('research alerts are shown, each saying nothing changes automatically', /RESEARCH ALERTS/.test(h) && /never an automatic change/.test(h) && (h.match(/class="edd-alert/g) || []).length >= 3);
   chk('modes are labelled apart (Backtest vs Live (reconstructed))', /CFB Lab · Backtest/.test(text(h)) && /CFB Lab · Live \(reconstructed\)/.test(text(h)));
   chk('the published record is labelled model-level', /the published fair line, not bettor decisions/.test(text(h)));
-  const page = U.cardPageHTML(Object.values(CASES), { view: { filter: 'all', sort: 'kickoff' } });
+  const page = U.cardPageHTML(Object.values(CASES), { view: { filter: 'all', sort: 'kickoff' }, now: NOW });
   chk('the Card page carries the model health section and the export', /MODEL HEALTH/.test(page) && /Export decisions \(CSV\)/.test(page));
 }
 section('exposure safeguards warn before the limit');
@@ -170,7 +170,8 @@ section('exposure safeguards warn before the limit');
   chk('opted in: the position past the window limit is held, with the reason', held.held.length === 1 && /kickoff window limit/.test(held.held[0].text) && held.total_units <= 2, held.held);
   chk('a remote settings row never resets the device limits', BK.fromRow({ bankroll_amount: 1000 }, { max_units_per_game: 0.5 }).max_units_per_game === 0.5);
   const sm = { exposure: ex };
-  const page = U.cardPageHTML([Object.assign({}, CASES.BET, { kickoff: '2026-10-03T17:00:00Z' })], { view: { filter: 'all', sort: 'kickoff' }, no_health: true });
+  /* on the fixture's clock: a kickoff read against the wall clock passed (2026-10-03 17:00 UTC) and emptied the Card */
+  const page = U.cardPageHTML([Object.assign({}, CASES.BET, { kickoff: KICK })], { view: { filter: 'all', sort: 'kickoff' }, no_health: true, now: NOW });
   chk('the Card page prints the limits', /Limits/.test(page) && /Per kickoff window/.test(page), text(page).match(/EXPOSURE.{0,300}/));
 }
 

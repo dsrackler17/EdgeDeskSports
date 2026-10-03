@@ -609,9 +609,21 @@ chk('the calibrated-crossing hold is told apart from a raw contradiction', calHo
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw and +0.4% calibrated EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'EV_SIDE_CONTRADICTION', text: 'EV SIDE CONTRADICTION: … shows +3.1% raw EV. …' }] })
   && !calHold({ decision: 'NO_DECISION', blockers: [{ code: 'STALE_MARKET', text: 'stale' }] }));
-chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, and any a calibrated line-crossing holds at NO DECISION',
+/* An FBS–FCS mismatch can open a gap past the guard bound, and the guard holds
+   it at DATA FAULT by design (lib/cfb_terminal.js guard_gap): on 2026-10-03
+   DraftKings had Florida Atlantic −47.5 against Texas Southern while the model
+   made it FAU by 24.7, a 22.8-point gap. Only an FCS game may be held this
+   way; a gap past the bound on an FBS game still fails here. */
+const guardHold = (x) => !!(x.o.game && x.o.game.fcs) && x.d.decision === 'NO_DECISION' && (x.d.blockers || []).length > 0
+  && x.d.blockers.every((b) => b.code === 'DATA_FAULT' && /guard bound/.test(b.text));
+const gb = { code: 'DATA_FAULT', text: 'A 22.8-point gap is past the 21-point guard bound and unverified.' };
+chk('the FCS guard hold is told apart from any other data fault', guardHold({ o: { game: { fcs: true } }, d: { decision: 'NO_DECISION', blockers: [gb] } })
+  && !guardHold({ o: { game: { fcs: false } }, d: { decision: 'NO_DECISION', blockers: [gb] } })
+  && !guardHold({ o: { game: { fcs: true } }, d: { decision: 'NO_DECISION', blockers: [{ code: 'DATA_FAULT', text: 'inverted spread' }] } })
+  && !guardHold({ o: { game: { fcs: true } }, d: { decision: 'NO_DECISION', blockers: [gb, { code: 'STALE_MARKET', text: 'stale' }] } }));
+chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, any a calibrated line-crossing holds at NO DECISION, and any FCS mismatch the guard bound holds at DATA FAULT',
   cfbReal.every((x) => x.orient ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes).indexOf('DATA_FAULT') >= 0)
-    : (calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
+    : (guardHold(x) || calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
   cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '') + (x.incoherent ? ' (incoherent curve)' : '')));
 /* No stored curve breaks probability. On 2026-10-02 McNeese @ LSU (LSU −52.5,
    outside the ±45 range the margin PMF table is conditioned on) was built from

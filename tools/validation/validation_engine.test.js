@@ -200,7 +200,11 @@ section('the committed ledgers read end to end');
   chk('a Lab row reads LIVE only when the Lab checkpointed it live', L.filter((x) => x.mode === 'LIVE').length === raw.filter((r) => r.origin === 'LIVE').length, Object.keys(rep.modes));
   chk('its decision time is the checkpoint’s, so the live rows are pregame', rep.modes.LIVE_RECONSTRUCTED.leakage.ok && (!rep.modes.LIVE || rep.modes.LIVE.leakage.ok),
     rep.modes.LIVE_RECONSTRUCTED.leakage.violations.concat(rep.modes.LIVE ? rep.modes.LIVE.leakage.violations : []).slice(0, 3));
-  chk('the Lab’s live sample never licenses a recalibration yet', !rep.modes.LIVE || rep.modes.LIVE.all.sample.recalibration === 'NOT_ALLOWED', rep.modes.LIVE && rep.modes.LIVE.all.sample);
+  /* No sample state licenses an automatic recalibration: past 200 settled the
+     most it allows is a PROPOSAL (the Lab's live sample passed 500 on 2026-10-03,
+     where this check had assumed it would still read NOT_ALLOWED). */
+  chk('the Lab’s live sample never licenses an automatic recalibration, and its state matches its size', !rep.modes.LIVE || (['NOT_ALLOWED', 'PROPOSAL_ONLY'].indexOf(rep.modes.LIVE.all.sample.recalibration) >= 0
+    && rep.modes.LIVE.all.sample.recalibration === V.sampleState(rep.modes.LIVE.all.sample.n).recalibration), rep.modes.LIVE && rep.modes.LIVE.all.sample);
   chk('the Lab’s side-stated line is kept (AWAY 8.5 stays +8.5)', L.some((x) => x.side === 'away' && x.line === 8.5));
   chk('every Lab figure is labelled too early (n < 50 settled)', rep.modes.LIVE_RECONSTRUCTED.all.sample.key === 'DESCRIPTIVE_ONLY');
 }
