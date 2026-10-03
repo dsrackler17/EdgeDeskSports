@@ -256,6 +256,7 @@ select option:checked{background-color:var(--surface2,#221c15);color:var(--text,
    carry the direction, never a fill or a flash; unavailable reads as a dash
    with its reason, never as 0.0% */
 .qev-sub{cursor:pointer;border-bottom:1px solid var(--border);padding:0 2px 7px 22px}
+.qev-why{font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-right:8px}
 .qev-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:3px 14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--dim);line-height:1.45}
 .qev-row.warn{border-left:2px solid var(--warn);padding-left:6px}.qev-row.audit{border-left:2px solid var(--faint);padding-left:6px;opacity:.85}
 .qev-k{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
@@ -1772,6 +1773,9 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fbs-confmenu{margin:2px 0 2px 86px;padding:6px 8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;display:flex;flex-direction:column;gap:4px}
 .fbs-confgrp{display:flex;align-items:center;gap:8px;min-width:0}
 .fbs-counts{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:10.5px;color:var(--dim);margin:0 0 8px}
+/* games that kicked off and left a pregame board (fbKickedOffNoteHTML) */
+.fb-kicked{font-size:11.5px;line-height:1.5;color:var(--dim);border:1px dashed var(--border);border-radius:8px;padding:7px 10px;margin:0 0 10px}
+.fb-kicked b{color:var(--text)}.fb-kicked .fbs-chip{margin-left:4px;vertical-align:baseline}
 .fbs-count b{color:var(--text);font-weight:700}
 .fbs-badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.03em;border:1px solid var(--border);border-radius:4px;padding:1px 4px;margin-right:3px;color:var(--dim);white-space:nowrap;vertical-align:middle}
 .fbs-badge.g-p4{color:var(--accent);border-color:rgba(47,167,154,.4)}
@@ -1779,6 +1783,8 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 .fbs-badge.fcs{color:var(--faint)}
 /* the CFB research view (lib/cfb_research_view.js) */
 .rv-cell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* the strongest label is also the longest: it wraps inside its column rather than clipping to "VERIFIED MAJOR DISA" */
+.fbs-grid .rv-row .rv-lab{white-space:normal}
 .rv-lab{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.05em;border:1px solid var(--border);border-radius:5px;padding:1px 5px;white-space:nowrap;color:var(--dim)}
 .rv-lab.accent{color:var(--accent);border-color:rgba(47,167,154,.45)}
 .rv-lab.warn{color:var(--warn);border-color:rgba(217,154,43,.45)}
@@ -1808,6 +1814,31 @@ textarea{min-height:110px;font-family:'JetBrains Mono',monospace;resize:vertical
 @media(max-width:560px){
   .rv-row{grid-template-columns:12px 56px minmax(104px,1fr) 108px 94px 90px 32px 32px 120px!important}
   .rv-row .rv-conf{display:none}
+}
+/* ...and on a phone the row RESTACKS rather than scrolling sideways. The grid
+   used to keep its 700px desktop width inside an overflow box, so on a 390px
+   screen the market, the gap, the label and the end of the price line under
+   each game sat past the right edge, clipped mid-word ("NO DEC") — a board
+   that read as broken when nothing was. Three lines per game instead: the
+   kickoff and the teams; EdgeDesk's fair line, the market, CONF and REL; the
+   gap and the research label. The header row restacks the same way, so it
+   still names every column above it. Children, in order: arrow, kick, game,
+   conference, fair, market, gap, conf, rel, label (fbP4BoardHTML). */
+@media(max-width:560px){
+  .fbs-grid{min-width:0!important}
+  .fbs-grid .rv-row{grid-template-columns:12px 50px minmax(0,1fr) minmax(0,1fr) 30px 30px!important;gap:3px 6px!important;align-items:start!important}
+  .fbs-grid .rv-row>:nth-child(1){grid-area:1/1/2/2}
+  .fbs-grid .rv-row>:nth-child(2){grid-area:1/2/4/3}
+  .fbs-grid .rv-row>:nth-child(3){grid-area:1/3/2/7}
+  .fbs-grid .rv-row>:nth-child(4){display:none}
+  .fbs-grid .rv-row>:nth-child(5){grid-area:2/3/3/4}
+  .fbs-grid .rv-row>:nth-child(6){grid-area:2/4/3/5}
+  .fbs-grid .rv-row>:nth-child(7){grid-area:3/3/4/4}
+  .fbs-grid .rv-row>:nth-child(8){grid-area:2/5/3/6}
+  .fbs-grid .rv-row>:nth-child(9){grid-area:2/6/3/7}
+  .fbs-grid .rv-row>:nth-child(10){grid-area:3/4/4/7}
+  .fbs-grid .rv-row .rv-cell{white-space:normal;overflow:visible}
+  .fbs-grid .qev-sub{padding-left:4px}
 }
 .rv-mv{font-size:8.5px;font-weight:700;letter-spacing:.04em;white-space:nowrap}.rv-mv.warn{color:var(--warn)}.rv-mv.neg{color:var(--neg)}
 .rv-desk{border:1px solid var(--border);border-radius:12px;background:var(--bg);padding:9px 10px;margin:8px 0 10px}
@@ -2881,7 +2912,7 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260930p">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261003a">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
@@ -47530,6 +47561,42 @@ var FB=window.FB={sport:'nfl',scope:'auto',at:0,builtAt:null,loading:null,engine
   cfb:{state:null,up:[],absorbed:0,curSeason:null,notes:[],gate:null,sig:{},lines:{}},
   _cache:{},_pred:{}};
 var FB_TTL_MS=30*60*1000, FB_LOOKAHEAD_D=12;
+/* A GAME THAT HAS KICKED OFF IS NOT ON A PREGAME BOARD (audit 2026-10-03).
+   Both slates keep a game for six hours after kickoff until the schedule feed
+   marks it completed, and the feeds mark a Saturday's games completed hours
+   after they end. The quote read asks only for games that have not started
+   (fbSignalsRead: commence_time >= now) and EdgeDesk holds no in-game price,
+   so every such game rendered as a pregame row reading NO MARKET · EV
+   unavailable · no priced quote — and, sorted by kickoff, they filled the top
+   of the board: at 3:39 PM CT on Saturday 2026-10-03 the 27 games that had
+   kicked off since 11 AM stood above the 21 that were priced, and the board
+   read as if the price feed were broken. The slates themselves keep a started
+   game (the AI desk and the game briefs still resolve one to its pregame
+   research); the BOARDS, their counters and their exports read the pregame
+   games only, and say how many have kicked off. Read against the clock at
+   render time, so a game leaves the board at its kickoff on an open tab. */
+function fbKickedOff(u,now){
+  var t=u&&u.t;
+  return typeof t==='number'&&isFinite(t)&&t<=(now==null?Date.now():now);
+}
+function fbPregame(list,now){
+  now=now==null?Date.now():now;
+  return (list||[]).filter(function(u){return !fbKickedOff(u,now);});
+}
+function fbStartedOf(list,now){
+  now=now==null?Date.now():now;
+  return (list||[]).filter(function(u){return fbKickedOff(u,now);});
+}
+/* one line above a board that has lost games to their kickoffs: how many,
+   which, and where their pregame research still is */
+function fbKickedOffNoteHTML(started,names){
+  var n=started.length;if(!n)return '';
+  var shown=started.slice(0,3).map(names).filter(Boolean);
+  return '<div class="fb-kicked"><b>'+n+' game'+(n===1?' has':'s have')+' kicked off</b> and left this board'
+    +(shown.length?(' ('+fbEsc(shown.join(', '))+(n>shown.length?(' and '+(n-shown.length)+' more'):'')+')'):'')
+    +'. EdgeDesk carries no in-game prices, so a started game has no quote to research. '
+    +'<button class="fbs-chip" onclick="try{EDBRIEF.openAll()}catch(e){}">Their pregame research</button></div>';
+}
 var FB_URL_GAMES='https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv';
 function FB_URL_STW(y){return '/football/nfl/stats_team_week_'+y+'.csv';}
 function FB_URL_CFB(y){return 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_'+y+'.csv';}
@@ -48006,9 +48073,43 @@ function fbEnsureEngine(){
    is read too, so the main line can be told from an alternate.
    fbSignals answers {} on a failed read (the board loads either way);
    fbSignalsRead rejects, so the price refresh (fbPriceRefresh) can keep the
-   quotes it already holds rather than replace them with nothing. */
+   quotes it already holds rather than replace them with nothing.
+
+   A FAILED READ IS NOT AN EMPTY MARKET (audit 2026-10-03). The {} above used
+   to be indistinguishable from "no book has a line": when the database
+   answered 503 (PGRST002, Saturday 2026-10-03 20:36 UTC, the minute a reader
+   was looking) every game on the board read NO MARKET · no priced quote, as
+   if the whole slate had no prices, and nothing said the read had failed. The
+   failure is now recorded per sport (FB_SIG_ERR), the boards say so above
+   their rows (fbPricesDownHTML), and the price refresh retries every minute
+   rather than every five until a read succeeds. */
+var FB_SIG_ERR={};
+function fbPricesDown(sportKey){return FB_SIG_ERR[sportKey]||null;}
 function fbSignals(sportKey,signal){return fbSignalsRead(sportKey,signal).catch(function(){return {};});}
 function fbSignalsRead(sportKey,signal){
+  return fbSignalsReadRaw(sportKey,signal).then(function(ev){
+    delete FB_SIG_ERR[sportKey];return ev;
+  },function(e){
+    /* a superseded load is not a failure. The sentence is the reader's, not
+       the operator's: System health names the cause in full (edDbReason) */
+    if(!(e&&e.name==='AbortError'))FB_SIG_ERR[sportKey]={at:Date.now(),status:(e&&e.status)||null,
+      why:(e&&e.status)?('the price database did not answer (HTTP '+e.status+')'):'the price database could not be reached'};
+    throw e;
+  });
+}
+/* the banner a board carries while its last quote read failed */
+function fbPricesDownHTML(sportKey,sig,heldAt){
+  var E=fbPricesDown(sportKey);if(!E)return '';
+  var held=sig&&Object.keys(sig).length;
+  var at=heldAt?new Date(heldAt):null;
+  return '<div class="flbanner demo fb-prices-down" style="margin-bottom:10px"><b>Live prices could not be loaded</b> — '+fbEsc(E.why)+'. '
+    +(held
+      ?('The quotes below are the last ones read'+(at?(' ('+('0'+at.getHours()).slice(-2)+':'+('0'+at.getMinutes()).slice(-2)+')'):'')
+        +'; each ages into STALE on its own timestamp.')
+      :'Until a read succeeds, a game reading NO MARKET means EdgeDesk could not read its price, not that no book has a line.')
+    +' Retrying every minute.</div>';
+}
+function fbSignalsReadRaw(sportKey,signal){
   var nowIso=new Date().toISOString();
   var hiIso=new Date(Date.now()+FB_LOOKAHEAD_D*864e5).toISOString();
   var q='signals?select=event_id,market,selection,point,best_dec,first_best_dec,first_seen_at,best_book,n_books,home_team,away_team,commence_time,last_seen_at,point_is_modal,modal_point'
@@ -48769,7 +48870,7 @@ function fbLoadNfl(signal){
       var nsub=fbNflReconcileStarters(S);
       if(nsub)S.notes.push(nsub+' upcoming NFL starter'+(nsub===1?' was':'s were')+' listed OUT or DOUBTFUL on the injury report and '+(nsub===1?'is':'are')+' priced with the club\u2019s most recent other starter (each game says which).');
       fbNflOpenGames(S).forEach(function(u){try{u.g._regime=fbNflRegimeFor(S,u.g);}catch(_){u.g._regime=null;}});
-      if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
+      if(!Object.keys(sig).length&&!fbPricesDown('americanfootball_nfl'))S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');
       /* wait briefly for the roster; a slow roster host never holds the board */
       var settled=false;
       qbP.then(function(){if(settled&&FB.at&&window.RESEARCH_SUB==='football'){try{window.renderFootball();}catch(_){}}});
@@ -54841,11 +54942,13 @@ function fbQevExecutable(o,ref){
   return !!o&&o.american_odds!=null&&o.american_odds>=A.min_odds&&o.american_odds<=A.max_odds&&(!ref||ref.line==null||o.line==null||Math.abs(o.line-ref.line)<=A.nearby_points+1e-9);
 }
 /* the compact pricing block a board row carries */
-function fbQevRowHTML(v){
+/* o.decision===false: the caller has already shown the decision (the board's
+   row leads with the decision engine's own chip), so it is not said twice */
+function fbQevRowHTML(v,o){
   if(!v)return '';
   var Q=window.EDQuoteEV,G=v.g,b=G.best_ev_quote,dec=fbQevDecisionText(v);
-  var decHTML='<span class="qev-dec" title="'+fbEsc(dec.why)+'"><span class="qev-k">Decision</span> <span class="gx-st '+dec.cls+'">'+fbEsc(dec.text)+'</span>'
-    +(v.decision.short?' <span class="mut">· '+fbEsc(v.decision.short)+'</span>':'')+'</span>';
+  var decHTML=(o&&o.decision===false)?'':('<span class="qev-dec" title="'+fbEsc(dec.why)+'"><span class="qev-k">Decision</span> <span class="gx-st '+dec.cls+'">'+fbEsc(dec.text)+'</span>'
+    +(v.decision.short?' <span class="mut">· '+fbEsc(v.decision.short)+'</span>':'')+'</span>');
   if(!b)return '<div class="qev-row na"><span class="qev-k">EV</span> <b class="qev-na" title="'+fbEsc('EV unavailable · '+G.ev_unavailable_reason+'. Unavailable is not zero: nothing was computed.')+'">—</b>'
     +' <span class="mut">EV unavailable · '+fbEsc(G.ev_unavailable_reason)+'</span>'+decHTML+'</div>';
   var warn=b.ev_state==='RAW_UNVERIFIED',audit=b.ev_state==='AUDIT_ONLY';
@@ -56736,11 +56839,17 @@ function fbP4EnsureProj(){
     catch(err){S._proj[gid]={status:'BLOCKED',reason:(err&&err.message)||'engine threw'};}
   });
 }
+/* the board's rows: the PREGAME games of the slate (fbKickedOff). A game that
+   has kicked off has no quote to join and is not research anyone can act on,
+   so it is counted above the board (fbP4KickedOffHTML), never listed in it. */
 function fbP4Rows(){
-  var S=FB.p4,out=[];
+  var S=FB.p4,out=[],now=Date.now();
   fbP4EnsureProj();
-  (S.up||[]).forEach(function(u){out.push(fbP4Row(u));});
+  (S.up||[]).forEach(function(u){if(!fbKickedOff(u,now))out.push(fbP4Row(u));});
   return out;
+}
+function fbP4KickedOffHTML(){
+  return fbKickedOffNoteHTML(fbStartedOf(FB.p4.up),function(u){return u.g.away_team+' @ '+u.g.home_team;});
 }
 /* WHAT AN EXPORT CONTAINS: exactly the rows on screen. The site's count, the
    downloaded rows, the API rows and the Collective rows have to reconcile
@@ -56924,13 +57033,15 @@ function fbP4CountsHTML(c){
   function cell(label,v,color){
     return '<span class="fbs-count"><b'+(color?(' style="color:'+color+'"'):'')+'>'+v+'</b> <span class="mut">'+fbEsc(label)+'</span></span>';
   }
+  /* a failed price read with nothing held is not a slate with no market */
+  var down=!!fbPricesDown('americanfootball_ncaaf')&&!Object.keys(FB.p4.sig||{}).length;
   return '<div class="fbs-counts mono">'
     +cell('on the FBS slate',c.total)
     +cell('shown',c.visible)
     +cell('with a market quote',c.with_market)
     +cell('research-grade',c.research,'var(--accent)')
     +cell('thin data',c.thin,'var(--dim)')
-    +cell('no market',c.no_market,'var(--faint)')
+    +cell(down?'unpriced (price read failed)':'no market',c.no_market,down?'var(--warn)':'var(--faint)')
     +cell('data faults',c.faults,c.faults?'var(--neg)':null)
     +'</div>';
 }
@@ -56938,8 +57049,9 @@ function fbP4CountsHTML(c){
    answer a reader can act on. */
 function fbP4EmptyHTML(rows,c){
   var f=fbP4FiltersEnsure();
-  if(!rows.length)return '<div class="empty">No game involving an FBS team kicks off inside the next '
-    +FB_LOOKAHEAD_D_P4()+' days in this schedule feed.</div>';
+  if(!rows.length)return '<div class="empty">'+(fbStartedOf(FB.p4.up).length
+      ?'Every game on this slate has kicked off. The next one appears here as soon as the schedule feed carries a game that has not started.'
+      :('No game involving an FBS team kicks off inside the next '+FB_LOOKAHEAD_D_P4()+' days in this schedule feed.'))+'</div>';
   if(f.conferences.length===1){
     var cf=fbP4ConfKnown(f.conferences[0]);
     var n=0;rows.forEach(function(r){if(r.meta.conference_ids.indexOf(f.conferences[0])>=0)n++;});
@@ -56970,10 +57082,23 @@ function fbP4ConfBadge(side){
 }
 /* the pricing line under a board row: the best exact quote's EV, or why none */
 function fbP4QevSub(r){
+  /* the price read failed and nothing is held: one honest line, not an EV
+     "unavailable · no priced quote" and a NO DECISION that read as fact */
+  if(fbPricesDown('americanfootball_ncaaf')&&!Object.keys(FB.p4.sig||{}).length)
+    return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')"><span class="qev-why mut">Price unavailable — the price read failed; retrying every minute</span></div>';
   var v=null;try{v=fbQevGameCfb(r.u,r.p);}catch(e){v=null;FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);}
   if(!v)return '';
   var dc=null;try{dc=fbDecisionCfb(r.u,r.p);}catch(_){dc=null;}
-  return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')">'+(dc&&window.EDDecisionUI?window.EDDecisionUI.chipHTML(dc):'')+fbQevRowHTML(v)+'</div>';
+  /* ONE DECISION per line. The row used to lead with the decision engine's
+     chip and end with the price line's own copy of the same decision, which
+     on a phone was the half clipped off the screen — and when the two were
+     worded differently ("no market" first, "game started" off-screen) the
+     visible one was the less true. The chip leads; its reason rides beside
+     it when the chip does not already say it. */
+  var chip=dc&&window.EDDecisionUI?window.EDDecisionUI.chipHTML(dc):'';
+  var why=chip&&v.decision&&v.decision.short&&chip.toLowerCase().indexOf(fbEsc(String(v.decision.short)).toLowerCase())<0
+    ?'<span class="mut qev-why">'+fbEsc(v.decision.short)+'</span>':'';
+  return '<div class="qev-sub" onclick="fbP4Gate(\''+fbEsc(r.gid)+'\')">'+chip+why+fbQevRowHTML(v,chip?{decision:false}:null)+'</div>';
 }
 function fbP4BoardHTML(){
   var S=FB.p4;
@@ -56985,7 +57110,7 @@ function fbP4BoardHTML(){
     +' · WEEK '+fbEsc(String(wk))+' · '+c.visible+' OF '+c.total+' GAMES</span>'
     +'<span>LAST SYNC '+('0'+sync.getHours()).slice(-2)+':'+('0'+sync.getMinutes()).slice(-2)+'</span></div>';
   var grid='display:grid;grid-template-columns:14px 76px minmax(170px,1fr) 148px 116px 120px 112px 136px;gap:2px 8px;align-items:center';
-  var html=head+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c);
+  var html=head+fbPricesDownHTML('americanfootball_ncaaf',S.sig,S.pricesAt)+fbP4StatusStrip()+fbP4FilterBarHTML(rows,visible)+fbP4CountsHTML(c)+fbP4KickedOffHTML();
   if(!visible.length)return html+fbP4EmptyHTML(rows,c);
   try{html+=fbP4DeskHTML(visible);}catch(_){}
   try{html+=fbP4QueueHTML(visible);}catch(_){}
@@ -56997,7 +57122,7 @@ function fbP4BoardHTML(){
      the view, the columns this board always had. */
   var RV=!!window.EDCfbResearchView;
   if(RV)grid='display:grid;grid-template-columns:14px 72px minmax(128px,1fr) 96px 118px 104px 100px 34px 34px 126px;gap:2px 6px;align-items:center';
-  html+='<div style="overflow-x:auto"><div class="mono" style="font-size:11px;min-width:700px">'
+  html+='<div style="overflow-x:auto"><div class="mono fbs-grid" style="font-size:11px;min-width:700px">'
     +'<div'+(RV?' class="rv-row"':'')+' style="'+grid+';color:var(--faint);border-bottom:1px solid var(--border);padding:4px 2px">'
     +(RV
       ?'<span></span><span>KICK</span><span>GAME</span><span class="rv-conf">CONFERENCE</span><span>EDGEDESK FAIR</span><span>MARKET</span><span>MARKET GAP</span>'
@@ -57162,9 +57287,11 @@ function fbRecDisagrees(cls){
 /* normalised rows over every game the module is monitoring: the NFL slate
    (always) and the whole FBS slate (once that board has been opened) */
 function fbGameRows(){
-  var rows=[];
+  /* pregame games only (fbKickedOff): a started game is no game to research,
+     and counted here it inflated NO MARKET on every Saturday afternoon */
+  var rows=[],now=Date.now();
   if(FB.at&&FB.nfl.state&&window.EDFootball){
-    FB.nfl.up.forEach(function(u){
+    fbPregame(FB.nfl.up,now).forEach(function(u){
       var g=u.g,M=fbNflMarketFor(g,u.t),p;
       try{p=fbPredict('nfl',fbNflGameReq(g),M.mkt,fbNum(g.season));}catch(_){return;}
       var r={sport:'nfl',gid:String(g.game_id),home:M.homeName,away:M.awayName,hc:g.home_team,ac:g.away_team,t:u.t,week:g.week,
@@ -57188,7 +57315,7 @@ function fbGameRows(){
     });
   }
   if(FB.p4&&FB.p4.loadedAt&&!FB.p4.engineErr&&window.EDCfbP4&&window.EDCfbP4Params){
-    FB.p4.up.forEach(function(u){
+    fbPregame(FB.p4.up,now).forEach(function(u){
       var g=u.g,c=fbP4ProjCached(u),p=c.p,mkt=c.mkt;
       var r={sport:'p4',gid:String(g.game_id),home:g.home_team,away:g.away_team,hc:g.home_team,ac:g.away_team,t:u.t,week:g.week,
         p:p,mkt:mkt,src:mkt.book||null,book:mkt.book||null,at:mkt.as_of?Date.parse(mkt.as_of):null,
@@ -58347,6 +58474,14 @@ window.fbFocusGame=function(sport,gid){
 window.fbOpenGame=function(sport,gid){
   gid=String(gid);
   try{if(window.EDMine&&window.EDMine.trackGame)window.EDMine.trackGame(sport,gid);}catch(_){}
+  /* a game that has kicked off has left the board (fbKickedOff), so a link to
+     it would wait for a row that never paints: it opens the research EdgeDesk
+     stored before kickoff instead (or says plainly there is none) */
+  var ko=false;
+  ((sport==='nfl'?FB.nfl.up:FB.p4.up)||[]).forEach(function(u){if(String(u.g.game_id)===gid&&fbKickedOff(u))ko=true;});
+  if(ko&&window.EDBRIEF&&window.EDBRIEF.openStored){
+    try{window.EDBRIEF.openStored((sport==='nfl'?'nfl-':'cfb-')+gid);return;}catch(_){}
+  }
   FB.ui.focus={sport:sport,gid:gid};
   FB.ui.pendingOpen={sport:sport,gid:gid};
   if(sport==='nfl'){
@@ -62295,6 +62430,7 @@ function fbRenderBoard(host){
      (Model status drawer / System Health), not at the top of the board */
   var html='';
   if(S.notes&&S.notes.length)html+='<div class="flbanner demo" style="margin-bottom:10px">'+S.notes.map(fbEsc).join('<br>')+'</div>';
+  html+=fbPricesDownHTML('americanfootball_nfl',S.sig,S.pricesAt);
   /* the market self-check fails the board loudly, above every row */
   try{html+=fbNflSelfCheckHTML();}catch(_){}
   /* NFL: scoped board — auto window, one week (predictions + grading), or season */
@@ -62313,11 +62449,18 @@ function fbRenderBoard(host){
     html+=fbRatingsBoard('nfl');
     host.innerHTML=html;return;
   }
-  if(!S.up.length){
-    html+='<div class="empty" style="margin-bottom:12px">No NFL games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector above to scan any week of the season.</div>'+fbRatingsBoard('nfl');
+  /* pregame games only (fbKickedOff); the started ones are counted, not carded */
+  var nowN=Date.now(),upN=fbPregame(S.up,nowN),koN=fbStartedOf(S.up,nowN);
+  html+=fbKickedOffNoteHTML(koN,function(u){
+    var C=FB_CODE_NAMES;return (C[u.g.away_team]||u.g.away_team)+' @ '+(C[u.g.home_team]||u.g.home_team);});
+  if(!upN.length){
+    html+='<div class="empty" style="margin-bottom:12px">'+(koN.length
+      ?'Every NFL game in this window has kicked off. Use the week selector above to read the week, graded or not.'
+      :('No NFL games inside the next '+FB_LOOKAHEAD_D+' days in the schedule feed. Use the week selector above to scan any week of the season.'))
+      +'</div>'+fbRatingsBoard('nfl');
     host.innerHTML=html;return;
   }
-  html+=S.up.map(fbGameCardNfl).join('');
+  html+=upN.map(fbGameCardNfl).join('');
   html+=fbRatingsBoard('nfl');
   host.innerHTML=html;
 }
@@ -62355,13 +62498,16 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden)fbAu
    the quotes already held (they age into STALE by their own timestamps,
    which is the truthful answer) and is retried on the next tick. */
 var FB_PRICE_REFRESH_MS=5*60e3;
-function fbPricesDue(at){return !at||Date.now()-at>=FB_PRICE_REFRESH_MS;}
+function fbPricesDue(at,sportKey){
+  /* a failed read is retried on the next one-minute tick, not in five */
+  return !at||Date.now()-at>=(sportKey&&fbPricesDown(sportKey)?60e3:FB_PRICE_REFRESH_MS);
+}
 function fbPriceRefresh(){
   if(FB._priceP)return FB._priceP;
   try{if(document.hidden||window.RESEARCH_SUB!=='football')return Promise.resolve(false);}catch(_){return Promise.resolve(false);}
   var S=FB.nfl,P=FB.p4,jobs=[];
-  if(FB.at&&!FB.loading&&S.state&&fbPricesDue(S.pricesAt)){
-    var at0=FB.at;
+  if(FB.at&&!FB.loading&&S.state&&fbPricesDue(S.pricesAt,'americanfootball_nfl')){
+    var at0=FB.at,downN=!!fbPricesDown('americanfootball_nfl');
     jobs.push(fbSignalsRead('americanfootball_nfl').then(function(sig){
       /* a full reload that started meanwhile brings its own, newer read */
       if(FB.loading||FB.at!==at0)return false;
@@ -62370,10 +62516,11 @@ function fbPriceRefresh(){
       FB._pred={};
       if(Object.keys(S.sig).length)S.notes=(S.notes||[]).filter(function(n){return !/^Live sportsbook prices are not available/.test(n);});
       return true;
-    },function(){return false;}));
+    /* a read that has just started failing repaints once, so the board says so */
+    },function(){return !downN&&!!fbPricesDown('americanfootball_nfl');}));
   }
-  if(P.loadedAt&&!P._loading&&!P.engineErr&&fbPricesDue(P.pricesAt||P.loadedAt)){
-    var p0=P.loadedAt;
+  if(P.loadedAt&&!P._loading&&!P.engineErr&&fbPricesDue(P.pricesAt||P.loadedAt,'americanfootball_ncaaf')){
+    var p0=P.loadedAt,downC=!!fbPricesDown('americanfootball_ncaaf');
     jobs.push(fbSignalsRead('americanfootball_ncaaf').then(function(sig){
       if(P._loading||P.loadedAt!==p0)return false;
       P.sig=sig||{};P.pricesAt=Date.now();
@@ -62381,7 +62528,7 @@ function fbPriceRefresh(){
          FBS projection takes the market as an input: rebuilt on next read */
       P._pc=null;P._pcm=null;P._proj=null;P._mkt=null;
       return true;
-    },function(){return false;}));
+    },function(){return !downC&&!!fbPricesDown('americanfootball_ncaaf');}));
   }
   if(!jobs.length)return Promise.resolve(false);
   FB._priceP=Promise.all(jobs).then(function(r){
