@@ -329,6 +329,20 @@ function r2(v) { return Math.round(v * 100) / 100; }
   chk('real: the graded record = its verified + record-only rows (' + rec.record + ' over ' + rec.graded + ')', rec.graded === rec.verified + rec.record_only && rec.graded === rec.wins + rec.losses + rec.pushes, rec);
   chk('real: historical results with no entry price are kept in the record, never dropped', rows.filter((x) => x.source === 'model_record').every((x) => x.record_state === 'RECORD_ONLY' || x.record_state === 'VOID' || (x.record_state === 'VERIFIED' && x.price_source === 'snapshot' && x.stake_source === 'default')) && rec.record_only >= rows.filter((x) => x.source === 'model_record' && x.record_state === 'RECORD_ONLY').length);
   chk('real: the integrity checks of every scope pass', S.integrity.ok, Object.keys(S.integrity.checks).filter((k) => !S.integrity.checks[k].ok).map((k) => k + ': ' + JSON.stringify(S.integrity.checks[k].failed)));
+  /* the closing price of every graded model pick: the record's own (grade.pnl, the price it keeps with the closing line) */
+  const MR = {}; ['nfl', 'cfb'].forEach((sp) => { const f = path.join(ROOT, 'record', 'football', sp + '_' + S.season + '.json'); if (fs.existsSync(f)) MR[sp.toUpperCase()] = JSON.parse(fs.readFileSync(f, 'utf8')).games || {}; });
+  const KIND = { spread: 'spread', total: 'total', moneyline: 'ml' };
+  const mrRows = rows.filter((x) => x.source === 'model_record' && (x.record_state === 'RECORD_ONLY' || x.record_state === 'VERIFIED'));
+  const badClose = mrRows.filter((x) => { const g = (MR[x.league] || {})[x.event_id], q = g && g.grade && g.grade.pnl && g.grade.pnl[KIND[x.market_type]];
+    return q ? !(q.side === x.side && q.odds === x.closing_odds) : x.closing_odds != null; });
+  chk('real: every graded model pick carries the closing price the record kept for its side (grade.pnl), and none it did not', mrRows.length > 0 && !badClose.length, badClose.slice(0, 3).map((x) => [x.recommendation_id, x.side, x.closing_odds]));
+  chk('real: a closing price filled in later is never logged as a correction', !rows.some((x) => (x.corrections || []).some((c) => c.fields && c.fields.closing_odds && c.fields.closing_odds.from == null)));
+  chk('real: a closing price never makes a pick verified — the model picks stay record only unless locked to a stored quote', mrRows.every((x) => x.record_state === 'RECORD_ONLY' || x.price_source === 'snapshot'));
+  ['NFL', 'CFB'].forEach((lg) => {
+    const want = Object.values(MR[lg] || {}).reduce((a, g) => a + (g.grade && g.grade.pnl ? g.grade.pnl.units : 0), 0);
+    const got = PNL.gradedPnl(mrRows.filter((x) => x.league === lg).map((x) => PNL.settle(x)), 'flat').summary;
+    chk('real: ' + lg + ' graded-price units = the record\'s own closing-price units (' + Math.round(want * 100) / 100 + 'u)', got.n ? Math.abs(got.net_units - want) < 0.011 : want === 0, [got.n, got.net_units, want]);
+  });
   const page = core.expandRows(B.page);
   const prec = PNL.gradedRecord(page.filter((x) => PNL.inRecord(x, false)));
   chk('real: the page rows give the same record and states as the build', prec.record === rec.record && PNL.STATE_ORDER.every((k) => PNL.states(page)[k] === st[k]), [prec.record, rec.record]);

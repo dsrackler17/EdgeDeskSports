@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-10-03 — NFL and CFB tabs show P&L, not just the record
+
+After the props were split out, the NFL tab showed only its record (58-38-2): none of its 98 game picks had a verified price. EdgeDesk stored no NFL game quote before 2026-10-03.
+
+- **P&L at the graded price.** Every graded pick is priced at the line it was graded at, so the units and the record describe the same picks (`lib/edgedesk_pnl.js` `gradedPnl`).
+  - The model's game picks are graded against the closing line, so they are priced at that line's closing price: nflverse consensus for the NFL, the ESPN book (DraftKings) for college.
+  - Player props keep the price captured with the pick.
+  - A pick with no closing price (40 CFB moneylines) is left out and counted, never assumed.
+- **The ledger now carries that closing price** (`tools/record/pnl_core.js`). Each model pick's `closing_odds` is the side's price that the model record already keeps with the closing line (`grade.pnl`, `pricePick`).
+  - Filling a price that was empty is not logged as a correction, in the build or the database.
+  - It never makes a pick verified.
+- **The page:**
+  - Each tab shows its units with its record under them.
+  - A new *P&L at the graded price* card sits above Verified P&L, labeled as not Verified P&L.
+  - NFL and CFB history rows read e.g. "+124 close · +1.24u not verified".
+  - *How P&L works* explains the difference.
+- **On the 2026 ledger** (flat 1u):
+
+  | Tab | P&L | Picks | Record |
+  |---|---|---|---|
+  | NFL | +7.87u (+8.2% ROI) | 98 | 58-38-2 |
+  | CFB | −38.49u (−6.4%) | 600 of 640 | |
+  | Player Props | −7.17u | 24 | |
+  | All | −37.79u | | |
+
+  - NFL by market: spread +7.04u, totals −1.49u, moneyline +2.32u.
+- **Verified P&L is unchanged.** It is still only a price EdgeDesk captured at or before the decision: 31 priced, −4.96u flat.
+- `record/pnl/` picks up the closing prices on the next *Record P&L* run.
+- **Tests:**
+  - `pnl.test.js` 183;
+  - `pnl_ledger.test.js` 104: every model pick's closing price equals the record's `grade.pnl`; NFL and CFB units equal the record's own closing-price units; no correction logged;
+  - `pnl_ui.test.js` 497 on the rebuilt ledger, 493 on the committed one. They cover the tab units and record, the new card, the history rows and the real NFL tab.
+
 ## 2026-10-03 — the Record's NFL tab no longer counts the player props
 
 On the Record page the NFL tab, the Player Props tab and All all read −7.17u. The 24 settled priced bets were all NFL player props, and each prop was counted twice: once under NFL, because that tab took every row with `league = 'NFL'`, and again under Player Props. The CFB tab had the same flaw for college props (all leans so far, so it hid behind the leans toggle).

@@ -369,6 +369,10 @@ function modelRecordRows(L, file, everyFrom) {
     const mode = /^git\b/.test(String(e.provenance || '')) ? 'LIVE_RECONSTRUCTED' : 'LIVE';
     const entryMkt = e.entry && e.entry.market ? e.entry.market : null;
     const sameFamily = entryMkt && C.family(entryMkt.source) === C.family(c.source);
+    /* the closing price of the graded side, as the record captured it with the
+       closing line (football_record_core pricePick: nflverse consensus for the
+       NFL, the ESPN book for college) — never an entry price, never assumed */
+    const closeOdds = (kind, gr) => { const q = gr && C.pricePick(kind, gr.side, gr.result, c); return q ? q.odds : null; };
     const baseRow = {
       source: 'model_record', source_ref: { file: file, id: String(e.game_id) },
       sport: 'football', league: lg, season: num(e.season), week: num(e.week),
@@ -390,7 +394,7 @@ function modelRecordRows(L, file, everyFrom) {
         selection: code(side) + ' ' + lineText(sl), model_line: p.home_line != null ? r2(side === 'home' ? p.home_line : -p.home_line) : null,
         entry_line: entryMkt && entryMkt.home_line != null ? r2(side === 'home' ? entryMkt.home_line : -entryMkt.home_line) : null,
         model_prob: null, model_gap_points: num(g.spread.gap),
-        result: g.spread.result, result_value: f.home_score - f.away_score, closing_line: r2(sl),
+        result: g.spread.result, result_value: f.home_score - f.away_score, closing_line: r2(sl), closing_odds: closeOdds('spread', g.spread),
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
       }, modelPricing(e, lg, 'spread', side, r2(sl), bookName, everyFrom)));
     }
@@ -401,7 +405,7 @@ function modelRecordRows(L, file, everyFrom) {
         recommendation_id: 'mr:' + sport + ':' + e.game_id + ':total', market_type: 'total', side: side, team: null, opponent: null,
         selection: (side === 'over' ? 'Over ' : 'Under ') + c.total, model_line: num(p.total), entry_line: entryMkt ? num(entryMkt.total) : null,
         model_prob: null, model_gap_points: num(g.total.gap),
-        result: g.total.result, result_value: f.home_score + f.away_score, closing_line: c.total,
+        result: g.total.result, result_value: f.home_score + f.away_score, closing_line: c.total, closing_odds: closeOdds('total', g.total),
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
       }, modelPricing(e, lg, 'total', side, num(c.total), bookName, everyFrom)));
     }
@@ -411,7 +415,7 @@ function modelRecordRows(L, file, everyFrom) {
         recommendation_id: 'mr:' + sport + ':' + e.game_id + ':moneyline', market_type: 'moneyline', side: side, team: code(side), opponent: code(side === 'home' ? 'away' : 'home'),
         selection: code(side) + ' ML', model_line: null, entry_line: null,
         model_prob: wp != null ? r4(side === 'home' ? wp : 1 - wp) : null, model_gap_points: null,
-        result: g.su.result, result_value: f.home_score - f.away_score, closing_line: null,
+        result: g.su.result, result_value: f.home_score - f.away_score, closing_line: null, closing_odds: closeOdds('ml', g.su),
         clv_points: null, clv_prob_pp: null, beat_close: null
       }, modelPricing(e, lg, 'moneyline', side, null, bookName, everyFrom)));
     }
