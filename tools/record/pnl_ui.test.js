@@ -45,6 +45,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const L = require('./pnl_ledger.js');
 const FR = require('./football_record_core.js');
 const PNL = require(path.join(ROOT, 'lib', 'edgedesk_pnl.js'));
+const RCK = require(path.join(ROOT, 'lib', 'edgedesk_record_card.js'));
 const args = process.argv.slice(2);
 const SHOTS = args.indexOf('--shots') >= 0 ? args[args.indexOf('--shots') + 1] : null;
 
@@ -329,7 +330,7 @@ async function main() {
       const got = await read(page, '#pnlPub');
       heroMatches(W + 'px public', got, fxFlat);
       chk(W + 'px public: the order — performance, P&L at the graded price, Verified P&L, its chart, historical results, filters, ledger', JSON.stringify(await page.$$eval('#pnlPub > [data-r]', (els) => els.map((e) => e.getAttribute('data-r'))))
-        === JSON.stringify(['hero', 'graded', 'verified', 'chart', 'hist', 'controls', 'ledger', 'how', 'adv']));
+        === JSON.stringify(['hero', 'graded', 'verified', 'chart', 'hist', 'controls', 'ledger', 'how', 'adv', 'share']));
       chk(W + 'px public: each tab carries its own net (All, CFB, NFL, Player Props)', ['all', 'cfb', 'nfl', 'props'].every((k) => got.tabs[k] === tabWant(expect({ scope: k }))), got.tabs);
       chk(W + 'px public: …with its graded record under the units', ['all', 'cfb', 'nfl', 'props'].every((k) => got.tabRec[k] === tabRecWant(expect({ scope: k }))), got.tabRec);
       gradedMatches(W + 'px public', got, fxFlat);
@@ -407,6 +408,35 @@ async function main() {
         await page.selectOption('#pnlPub select[data-market]', 'player_prop');
         await page.click('#pnlPub .pnl-tabs [data-scope="nfl"]');
         chk('switching to NFL from a props-only filter drops the filter, never an empty view', await page.$eval('#pnlPub select[data-market]', (e) => e.value) === 'all');
+        /* SHARE: the view on screen as an image and a post (lib/edgedesk_record_card.js) */
+        chk('share: the button names the view it shares', (await text(page, '#pnlPub [data-share]')) === 'Share NFL games', await text(page, '#pnlPub [data-share]'));
+        await page.click('#pnlPub [data-share]');
+        await page.waitForSelector('#pnlPub [data-r="share"]:not([hidden]) [data-shcanvas][data-format="x_landscape"]', { timeout: 10000 });
+        const shD = await page.$eval('#pnlPub [data-r="share"]', (el) => { const d = el.querySelector('[role="dialog"]'); return { modal: d && d.getAttribute('aria-modal'), label: d && document.getElementById(d.getAttribute('aria-labelledby')).textContent, focus: document.activeElement === el.querySelector('[data-shclose]') }; });
+        chk('share: a modal dialog, named, with focus on its close button', shD.modal === 'true' && shD.label === 'Share this record' && shD.focus, shD);
+        const nflS = expect({ scope: 'nfl' }), sTxt = await page.$eval('#pnlPub [data-shtext]', (e) => e.textContent);
+        chk('share: the post carries the view\'s record, its units and the link back to this view, under 280', sTxt.indexOf(nflS.record.record) >= 0 && (!nflS.graded.summary.n || sTxt.indexOf(PNL.fmtUnits(nflS.graded.summary.net_units)) >= 0)
+          && sTxt.indexOf('https://edgedesksports.com/record.html?view=nfl#pnl') >= 0 && RCK.tweetLength(sTxt) <= 280, sTxt);
+        for (const f of Object.keys(RCK.FORMATS)) {
+          await page.click('#pnlPub [data-shfmt="' + f + '"]');
+          await page.waitForSelector('#pnlPub [data-shcanvas][data-format="' + f + '"]', { timeout: 5000 });
+          const cv = await page.$eval('#pnlPub [data-shcanvas]', (c) => [c.width, c.height, c.toDataURL('image/png').length]);
+          chk('share: ' + f + ' is drawn at ' + RCK.FORMATS[f].w + '×' + RCK.FORMATS[f].h, cv[0] === RCK.FORMATS[f].w && cv[1] === RCK.FORMATS[f].h && cv[2] > 20000, cv);
+        }
+        const [shDl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('#pnlPub [data-shact="download"]')]);
+        chk('share: Download saves the image, named for the view and size', shDl.suggestedFilename() === 'edgedesk-record-nfl-story.png' && /Image saved/.test(await text(page, '#pnlPub [data-shstatus]')), shDl.suggestedFilename());
+        await page.keyboard.press('Escape');
+        chk('share: Escape closes it, focus back on the button', await page.$eval('#pnlPub [data-r="share"]', (e) => e.hidden) && await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-share')));
+        await page.click('#pnlPub [data-share]');
+        await page.waitForSelector('#pnlPub [data-r="share"]:not([hidden])');
+        await page.mouse.click(4, 4);
+        chk('share: a tap outside the card closes it', await page.$eval('#pnlPub [data-r="share"]', (e) => e.hidden));
+        {
+          const dl = await open({ width: 390, height: 844 }, 'record.html?view=props');
+          await dl.page.waitForSelector('#pnlPub .pnl-tabs [data-scope].on', { timeout: 15000 });
+          chk('share: a shared link (?view=props) opens the view it was shared from', await dl.page.$eval('#pnlPub .pnl-tabs .on', (b) => b.getAttribute('data-scope')) === 'props' && !dl.errors.length, dl.errors);
+          await dl.ctx.close();
+        }
         await page.click('#pnlPub .pnl-tabs [data-scope="props"]');
         chk('tab props: the record card holds the props record only (no game markets), W-L-P, never units', histMatches(await text(page, '#pnlPub [data-r="hist"]'), expect({ scope: 'props' })) && !/Spread|Moneyline/.test(await text(page, '#pnlPub [data-r="hist"]')), await text(page, '#pnlPub [data-r="hist"]'));
         await page.click('#pnlPub .pnl-tabs [data-scope="all"]');
@@ -533,8 +563,8 @@ async function main() {
       });
       chk(W + 'px app: the P&L summary is the first thing under the Records header', top.first === 'recPnlWrap', top);
       chk(W + 'px app: the summary is on the first screen', top.heroBottom < 900, top);
-      chk(W + 'px app: the order — performance, P&L at the graded price, Verified P&L, its chart, historical results, filters, ledger, then the collapsed sections',
-        JSON.stringify(top.order) === JSON.stringify(['hero', 'graded', 'verified', 'chart', 'hist', 'controls', 'ledger', 'how', 'adv']), top.order);
+      chk(W + 'px app: the order — performance, P&L at the graded price, Verified P&L, its chart, historical results, filters, ledger, then the collapsed sections (and the share dialog, closed)',
+        JSON.stringify(top.order) === JSON.stringify(['hero', 'graded', 'verified', 'chart', 'hist', 'controls', 'ledger', 'how', 'adv', 'share']), top.order);
       chk(W + 'px app: no Profit & Loss book any more — the detailed records are two, inside Advanced Analytics', top.books === 2 && !/Profit & Loss/.test(top.bookText) && top.detailInAdvanced, top);
       heroMatches(W + 'px app', await read(page, '#recPnlWrap'), fxFlat);
       chk(W + 'px app: a reader with a unit gets the dollars toggle', !!(await page.$('#recPnlWrap [data-money="$"]')));

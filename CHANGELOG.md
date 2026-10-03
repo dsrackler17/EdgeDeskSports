@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-03 — share the Record: an image and a post for X or anywhere
+
+- **A Share button on the Record**, on the public page and the app. It shares the view on screen: the tab (All, CFB, NFL, Player Props), the period, the market and the stake basis.
+- **The card** (`lib/edgedesk_record_card.js`) comes in three sizes: X post 1600×900, square 1080×1080 and story 1080×1920. It shows:
+  - the units at the graded price, the ROI and the record;
+  - each market's units;
+  - the sample size.
+  - It also says how the units were priced ("at the closing price · not Verified P&L"), prints Verified P&L beside them, and carries "21+".
+  - It computes nothing: every number is one the page already printed, from the same kernel.
+- **The actions:**
+  - **Share…** opens the phone's share sheet with the image attached (X, Messages, Instagram).
+  - **Download image** saves the PNG.
+  - **Post on X** opens a post with the text and link.
+  - **Copy text** and **Copy link** copy each one.
+  - The post stays under 280 characters, counting the link as 23 the way X does.
+- **The link opens the same view:** `record.html?view=nfl#pnl`.
+- **Tests:**
+  - `tools/record/record_card.test.js` (72, now in *Record P&L tests* and `npm run record:pnl:test`): what the card says, the post's length, and that every size keeps every word in the frame, with the boxes above the notes and the notes above the footer.
+  - `pnl_ui.test.js`: the dialog and its focus, every size drawn, Download, Escape and an outside tap, and the `?view=` link.
+
 ## 2026-10-03 — NFL and CFB tabs show P&L, not just the record
 
 After the props were split out, the NFL tab showed only its record (58-38-2): none of its 98 game picks had a verified price. EdgeDesk stored no NFL game quote before 2026-10-03.

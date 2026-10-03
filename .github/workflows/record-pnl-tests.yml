@@ -12,6 +12,7 @@ on:
   pull_request:
     paths:
       - 'lib/edgedesk_pnl*.js'
+      - 'lib/edgedesk_record_card.js'
       - 'lib/edgedesk_pnl.css'
       - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
@@ -35,6 +36,7 @@ on:
     branches: [main]
     paths:
       - 'lib/edgedesk_pnl*.js'
+      - 'lib/edgedesk_record_card.js'
       - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
       - 'tools/record/price_lock.js'
@@ -69,6 +71,8 @@ jobs:
         run: node tools/record/verified_pnl.test.js
       - name: The record's quote ledger (every priced pregame reading of every NFL and college game the model prices, kept append-only; the lock prices a pick from it only at or before the decision)
         run: node tools/record/quote_ledger.test.js
+      - name: The Record's share card (what it says, the post under 280, every format keeps every piece inside the image)
+        run: node tools/record/record_card.test.js
       - name: The database (idempotent upsert, derived P&L, the price lock, verification and its reasons, verified_pnl_* parity and integrity, RLS, a reader's own dollars)
         env:
           PNL_SQL_REQUIRED: '1'
