@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-03 — two checks that went red on the live slates
+
+Decision quality, Personal research CI and CFB research terminal failed on `main` itself, on every open PR. Two tests read the committed live slates, and those slates moved:
+
+- **`tools/bettor/football_decision.test.js`** required PIT @ CLE to be held at the market line. That game kicked off on 2026-10-02 and left the NFL slate, so the check could not find it.
+  - It now checks the audit games still on the slate: LA @ PHI is still held.
+  - The rule itself is still checked on every slate game.
+- **`football/cfb_terminal/read.test.js`** proves an LLM's invented probability is refused, using a fixed "71.3% to cover". This week's selected read carries a 71.4% win probability, so 71.3% is a fact within the audit's tolerance, and was rightly accepted.
+  - The test now picks a percentage the facts do not hold: 72.4% on today's slate.
+
 ## 2026-10-03 — Verified P&L audited against production; the disconnects fixed
 
 The audit traced a spread, a total, a moneyline and a player prop from the decision to the page (`docs/pnl/AUDIT.md`), and checked production's run logs.

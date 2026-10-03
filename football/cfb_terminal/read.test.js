@@ -551,8 +551,12 @@ section('20. the explanation boundary carries the Read and refuses to contradict
   chk('the deterministic explanation names the read and passes its own audit', /EdgeDesk Read:/.test(txt) && X.auditExplanation(txt, f).ok, X.auditExplanation(txt, f).issues);
   const bad = X.auditExplanation('The EdgeDesk Read is certified: bet ' + o.read.side_team + ' now. It is uncertain.', f);
   chk('an LLM calling the read certified or a bet is refused', !bad.ok && bad.issues.some((i) => i.code === 'READ_CERTIFIED_CLAIM' || i.code === 'BET_CLAIM_NOT_OFFICIAL'));
-  const inv = X.auditExplanation('EdgeDesk makes it a big edge; the number is 71.3% to cover. It is uncertain.', f);
-  chk('an LLM inventing a probability not in the facts is refused', !inv.ok && inv.issues.some((i) => i.code === 'NUMBER_NOT_IN_FACTS'));
+  /* a percentage the facts do not hold: a fixed one can collide with the live
+     slate (71.3% did, once a selected read carried a 71.4% win probability) */
+  let fake = 71.3;
+  while ((f.numbers || []).some((a) => Math.abs(a - fake) <= 0.5)) fake = Math.round((fake + 1.1) * 10) / 10;
+  const inv = X.auditExplanation('EdgeDesk makes it a big edge; the number is ' + fake + '% to cover. It is uncertain.', f);
+  chk('an LLM inventing a probability not in the facts is refused', fake < 100 && !inv.ok && inv.issues.some((i) => i.code === 'NUMBER_NOT_IN_FACTS'), [fake, inv.issues]);
   if (MI) chk('the market-language audit finds nothing to refuse in any read reason', GAMES.filter((x) => x.read).every((x) => MI.auditMarketLanguage(x.read.market_movement_summary.text || '', null).problems.filter((p) => /not measurable/.test(p)).length === 0));
 }
 
