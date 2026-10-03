@@ -46,7 +46,7 @@ const CODES = {
   MARKET_INVALID:       { runlog: 'DATA_QUALITY', severity: 'WARNING',  retry: 1, meaning: 'a quote failed sanity bounds or belongs to another game' },
   DATABASE_DEADLOCK:    { runlog: 'DATABASE',     severity: 'WARNING',  retry: 5, meaning: '40P01 deadlock / 40001 serialization failure: the server rolled the transaction back' },
   DATABASE_TIMEOUT:     { runlog: 'DATABASE',     severity: 'WARNING',  retry: 3, meaning: '55P03 lock_timeout / 57014 statement_timeout' },
-  DATABASE_UNAVAILABLE: { runlog: 'TRANSIENT',    severity: 'WARNING',  retry: 8, meaning: '08xxx connection, 53xxx resources, 57P0x shutdown / starting up' },
+  DATABASE_UNAVAILABLE: { runlog: 'TRANSIENT',    severity: 'WARNING',  retry: 4, meaning: '08xxx connection, 53xxx resources, 57P0x shutdown / starting up' },
   DATABASE_CONSTRAINT:  { runlog: 'DATABASE',     severity: 'WARNING',  retry: 1, meaning: 'a write refused by an integrity rule (23xxx, 22xxx, append-only trigger, guard)' },
   DATABASE_SCHEMA:      { runlog: 'SCHEMA',       severity: 'CRITICAL', retry: 1, meaning: 'a table, column or function is missing: the migration is not applied' },
   PIPELINE_CONFLICT:    { runlog: 'DATABASE',     severity: 'INFO',     retry: 1, meaning: 'another run holds the job lock; this one exits cleanly (runlog RunLock uses DATABASE)' },

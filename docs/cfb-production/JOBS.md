@@ -105,7 +105,7 @@ V1 pipeline (above) and in pathspecs that do not write the shared file.
 | AUTH (401/403, 28xxx, 42501) | AUTH | no | CRITICAL |
 | DATABASE_DEADLOCK (40P01, 40001) | DATABASE | yes (5) | WARNING, CRITICAL when exhausted |
 | DATABASE_TIMEOUT (55P03, 57014) | DATABASE | yes (3) | WARNING |
-| DATABASE_UNAVAILABLE (08, 53, 57P0x, PGRST000-002) | TRANSIENT | yes (8, about 1.5-3 min) | WARNING |
+| DATABASE_UNAVAILABLE (08, 53, 57P0x, PGRST000-002) | TRANSIENT | yes (4; 8 in a mirror chunk, about 1.5-3 min) | WARNING |
 | DATABASE_CONSTRAINT (23xxx, 22xxx, P0001, append-only refusals) | DATABASE | no | WARNING |
 | PIPELINE_CONFLICT (lock held) | DATABASE (as `RunLock`) | no — clean exit | INFO |
 | UNKNOWN | UNKNOWN | no | WARNING |

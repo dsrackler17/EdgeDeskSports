@@ -11,10 +11,8 @@
    RETRY ONLY WHAT IS TRANSIENT (taxonomy.js):
      DATABASE_DEADLOCK    40P01 / 40001   5 attempts
      DATABASE_TIMEOUT     55P03 / 57014   3 attempts
-     DATABASE_UNAVAILABLE 08 / 53 / 57P0x 8 attempts (about 1.5-3 min: PostgREST answers
-                          503 PGRST002 until Postgres is back, and a few seconds
-                          did not outlast it — 2026-10-03 20:24 UTC, the hourly
-                          Model Lab mirror failed ~50 s before the database returned)
+     DATABASE_UNAVAILABLE 08 / 53 / 57P0x 4 attempts
+                          (8 in a mirror chunk, postRows: about 1.5-3 min)
      PROVIDER_TRANSIENT   5xx without a SQLSTATE, 408, network, timeout
      PROVIDER_RATE_LIMIT  429 (Retry-After honoured, capped)
    Anything else — AUTH, a schema error, a constraint refusal, a permanent
@@ -39,8 +37,8 @@ const T = require('./taxonomy.js');
 const DEFAULTS = {
   chunk: 500,
   timeoutMs: 60000,
-  base: { DATABASE_DEADLOCK: 200, DATABASE_TIMEOUT: 500, DATABASE_UNAVAILABLE: 2000, PROVIDER_TRANSIENT: 1000, PROVIDER_RATE_LIMIT: 2000 },
-  cap: { DATABASE_DEADLOCK: 4000, DATABASE_TIMEOUT: 8000, DATABASE_UNAVAILABLE: 60000, PROVIDER_TRANSIENT: 15000, PROVIDER_RATE_LIMIT: 60000 },
+  base: { DATABASE_DEADLOCK: 200, DATABASE_TIMEOUT: 500, DATABASE_UNAVAILABLE: 1000, PROVIDER_TRANSIENT: 1000, PROVIDER_RATE_LIMIT: 2000 },
+  cap: { DATABASE_DEADLOCK: 4000, DATABASE_TIMEOUT: 8000, DATABASE_UNAVAILABLE: 15000, PROVIDER_TRANSIENT: 15000, PROVIDER_RATE_LIMIT: 60000 },
 };
 const INCIDENT_CODES = new Set(['DATABASE_DEADLOCK', 'DATABASE_TIMEOUT']);
 
@@ -134,6 +132,22 @@ function keyGroups(rows) {
   return Array.from(groups.values());
 }
 
+/* A MIRROR OUTLASTS A SHORT OUTAGE. While Postgres is unreachable PostgREST
+   answers 503 PGRST002, and the default DATABASE_UNAVAILABLE budget (~5-8 s)
+   ran out inside one (2026-10-03 20:24 UTC: the hourly Model Lab published,
+   then failed on its mirror). Mirror rows are write-once and idempotent, so a
+   chunk waits about 1.5-3 min for the database before the stage fails; a
+   caller's own attempts / base / cap still win. Every other call (the gate's
+   flag, lock and heartbeat) keeps the short default so it never stalls a job. */
+const MIRROR_PATIENCE = { attempts: { DATABASE_UNAVAILABLE: 8 }, base: { DATABASE_UNAVAILABLE: 2000 }, cap: { DATABASE_UNAVAILABLE: 60000 } };
+function mirrorRetry(opts) {
+  return Object.assign({}, opts, {
+    attempts: Object.assign({}, MIRROR_PATIENCE.attempts, opts.attempts),
+    base: Object.assign({}, MIRROR_PATIENCE.base, opts.base),
+    cap: Object.assign({}, MIRROR_PATIENCE.cap, opts.cap),
+  });
+}
+
 /* Insert-only mirror: chunked POSTs, ignore-duplicates, classified bounded retry per chunk. Returns rows sent. */
 async function postRows(url, key, table, onConflict, rows, opts) {
   opts = opts || {};
@@ -144,7 +158,7 @@ async function postRows(url, key, table, onConflict, rows, opts) {
     for (const chunk of keyGroups(slice)) {
       await withRetry(() => request(url + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
         method: 'POST', headers: headers(key, { prefer: 'resolution=ignore-duplicates,return=minimal' }), body: JSON.stringify(chunk) }, opts),
-      Object.assign({ label: table + ' rows ' + i + '-' + (i + slice.length - 1) }, opts));
+      Object.assign({ label: table + ' rows ' + i + '-' + (i + slice.length - 1) }, mirrorRetry(opts)));
       sent += chunk.length;
     }
   }
@@ -188,4 +202,4 @@ function incidentSink(o) {
   };
 }
 
-module.exports = { withRetry, backoff, request, postRows, keyGroups, rpc, headers, incidentSink, DEFAULTS, sleep };
+module.exports = { withRetry, backoff, request, postRows, keyGroups, rpc, headers, incidentSink, DEFAULTS, MIRROR_PATIENCE, sleep };
