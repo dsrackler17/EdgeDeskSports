@@ -170,7 +170,9 @@ section('exposure safeguards warn before the limit');
   chk('opted in: the position past the window limit is held, with the reason', held.held.length === 1 && /kickoff window limit/.test(held.held[0].text) && held.total_units <= 2, held.held);
   chk('a remote settings row never resets the device limits', BK.fromRow({ bankroll_amount: 1000 }, { max_units_per_game: 0.5 }).max_units_per_game === 0.5);
   const sm = { exposure: ex };
-  const page = U.cardPageHTML([Object.assign({}, CASES.BET, { kickoff: '2026-10-03T17:00:00Z' })], { view: { filter: 'all', sort: 'kickoff' }, no_health: true });
+  /* a kickoff ahead of the real clock: the Card drops a game that has kicked
+     off (a fixed '2026-10-03T17:00:00Z' went red at that minute) */
+  const page = U.cardPageHTML([Object.assign({}, CASES.BET, { kickoff: new Date(Date.now() + 6 * 3600e3).toISOString() })], { view: { filter: 'all', sort: 'kickoff' }, no_health: true });
   chk('the Card page prints the limits', /Limits/.test(page) && /Per kickoff window/.test(page), text(page).match(/EXPOSURE.{0,300}/));
 }
 
