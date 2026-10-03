@@ -187,6 +187,11 @@ try {
   const kb = PNL.breakdown(bets, (x) => x.league, 'flat').map((x) => x.key + ':' + x.n + ':' + x.net_units).join(',');
   chk('by league: SQL equals the kernel breakdown', byLeague === kb, [byLeague, kb]);
   chk('scopes: props only', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'props');") === bets.filter((x) => x.market_group === 'prop' && x.pnl_status === 'VERIFIED').length);
+  const scopeSql = (k) => db.sql(`select bets || ':' || net_units from public.model_pnl_rollup('flat', 'all', '${k}');`);
+  const scopeKernel = (k) => { const m = PNL.summarize(PNL.scopeRows(bets, k), 'flat'); return m.n + ':' + (m.n ? m.net_units : 0); };
+  chk('scopes: NFL and CFB are their game markets, never a player prop — SQL equals the kernel', ['nfl', 'cfb', 'props', 'game'].every((k) => scopeSql(k) === scopeKernel(k)),
+    ['nfl', 'cfb', 'props', 'game'].map((k) => k + ' ' + scopeSql(k) + ' / ' + scopeKernel(k)));
+  chk('scopes: nfl + cfb + props = all, each bet once', ['nfl', 'cfb', 'props'].reduce((a, k) => a + +scopeSql(k).split(':')[0], 0) === +scopeSql('all').split(':')[0], ['nfl', 'cfb', 'props', 'all'].map(scopeSql));
   chk('the LEAN is not a bet, but can be read as its own class', +db.sql("select bets from public.model_pnl_rollup('flat', 'all', 'all', 'LEAN');") === 1);
 
   /* ── every row's one state, as the kernel derives it ────────────────── */
@@ -367,6 +372,11 @@ try {
       chk('and synced again, it is unchanged', up(real).unchanged === real.length);
       chk('the database derives the same P&L status for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + lit('{' + real.map((x) => '"' + x.recommendation_id + '"').join(',') + '}') + "::text[]) and m.pnl_status is distinct from (" + J(Object.fromEntries(real.map((x) => [x.recommendation_id, x.pnl_status]))) + " ->> m.recommendation_id);") === '0');
       const L0 = JSON.parse(fs.readFileSync(path.join(PG.ROOT, 'record', 'pnl', lf), 'utf8'));
+      /* the evidence, as the sync sends it: every stored quote a locked price cites */
+      const ev = SY.citedQuotes(L0, PG.ROOT, +lf.match(/\d{4}/)[0]);
+      chk('every quote the committed ledger\'s locked prices cite is in the committed quote ledgers', !ev.missing.length, ev.missing.slice(0, 3));
+      const qp = ev.rows.length ? JSON.parse(db.service(`select public.model_pnl_quotes_put(${J(ev.rows)});`)) : { refused: [] };
+      chk('… and the database accepts every one', !qp.refused.length, qp.refused.slice(0, 3));
       if (L0.rows.length && L0.rows[0].record_state) {
         const why = SY.reasonRows(L0);
         for (let i = 0; i < why.length; i += 500) db.service(`select public.model_pnl_reasons(${J(why.slice(i, i + 500))});`);

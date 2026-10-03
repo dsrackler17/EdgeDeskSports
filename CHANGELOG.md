@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-03 — the Record's NFL tab no longer counts the player props
+
+On the Record page the NFL tab, the Player Props tab and All all read −7.17u. The 24 settled priced bets were all NFL player props, and each prop was counted twice: once under NFL, because that tab took every row with `league = 'NFL'`, and again under Player Props. The CFB tab had the same flaw for college props (all leans so far, so it hid behind the leans toggle).
+
+- **The tabs now partition the ledger** (`lib/edgedesk_pnl.js` `SCOPES`). NFL and CFB are that league's game markets only: spread, total and moneyline. Player Props holds every prop, NFL or college. All = CFB + NFL + Player Props, and each row is in exactly one.
+  - On the committed 2026 ledger at flat 1u: All −4.96u = CFB +2.21u (7 priced) + NFL 58-38-2 (98 graded, none priced yet) + Player Props −7.17u (24 priced, 160 pending).
+  - The NFL ledger lists 0 verified, 98 history and 0 pending. Before, it showed 24 / 122 / 160, with the props mixed in.
+- **By sport** (the record card on All, *Where the record comes from*, and Advanced, which was *By league*) now reads NFL, College Football and Player Props. A prop is no longer inside its league's row.
+- **The market filter** offers only the markets a tab holds. Moving to NFL or CFB while *Player props* is selected resets the filter to *All markets*, so the view is never empty. The Verified P&L card on NFL / CFB no longer shows an empty Player Props cell.
+- **The database copy agrees:** `model_pnl_bets` (`supabase/model_pnl_analytics.sql`) uses the same scopes. `record/pnl/summary.json` picks up the new precomputed views on the next *Record P&L* run.
+- **Tests:**
+  - `pnl.test.js` 177 (the partition and by sport);
+  - `pnl_ledger.test.js` 99 (NFL + CFB + props = All, in both strategies);
+  - `pnl_sql.test.js` 206 (SQL scopes equal the kernel). It also loads the stored quotes that the committed ledger's locked prices cite, as the sync does. Since the 2026-10-03 rebuild priced 7 CFB picks from stored quotes, the suite had failed 3 checks on `main` (`snapshot_quote_missing: 7`). The quotes were all there; the test never loaded them;
+  - `pnl_ui.test.js` 466: no tab's ledger lists the other's rows, and the college prop leans are checked on Player Props now instead of CFB.
+
 ## 2026-10-03 — two checks that went red on the live slates
 
 Decision quality, Personal research CI and CFB research terminal failed on `main` itself, on every open PR. Two tests read the committed live slates, and those slates moved:

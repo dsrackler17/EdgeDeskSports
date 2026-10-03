@@ -87,7 +87,7 @@ It answers **how has the model performed?** and **would the priced decisions hav
 2. **Verified P&L**, directly under it, with its chart (§ Verified P&L): net units, ROI, the priced decisions, *N of M graded decisions included · K record-only excluded*, units risked, and each market's own figures.
 3. **Historical model results**: what the two cards do not already say. That is the split by sport; how many graded decisions are **record only** and why (no stored quote, the line had moved, no source for the league); and how many recommendations are pending and why. Never units, never the same numbers twice.
 4. **Filters**:
-   - tabs ALL / CFB / NFL / PLAYER PROPS, each carrying its verified net, else its graded record, else *Pending*;
+   - tabs ALL / CFB / NFL / PLAYER PROPS, each carrying its verified net, else its graded record, else *Pending*. CFB and NFL are game markets only; every prop is under PLAYER PROPS, so ALL = CFB + NFL + PLAYER PROPS;
    - a market (All / Spread / Totals / Moneyline / Player props);
    - a period (Season, the default; 30 days; 7 days; All time);
    - a stake choice (Recorded stakes, the default, or Flat 1u);
