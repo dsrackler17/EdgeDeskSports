@@ -207,9 +207,13 @@ section('the committed ledgers read end to end');
   chk('a Lab row reads LIVE only when the Lab checkpointed it live', L.filter((x) => x.mode === 'LIVE').length === raw.filter((r) => r.origin === 'LIVE').length, Object.keys(rep.modes));
   chk('its decision time is the checkpoint’s, so the live rows are pregame', rep.modes.LIVE_RECONSTRUCTED.leakage.ok && (!rep.modes.LIVE || rep.modes.LIVE.leakage.ok),
     rep.modes.LIVE_RECONSTRUCTED.leakage.violations.concat(rep.modes.LIVE ? rep.modes.LIVE.leakage.violations : []).slice(0, 3));
-  chk('the Lab’s live sample never licenses a recalibration yet', !rep.modes.LIVE || rep.modes.LIVE.all.sample.recalibration === 'NOT_ALLOWED', rep.modes.LIVE && rep.modes.LIVE.all.sample);
-  /* audit 2026-10-03: 600 LIVE rows were 19 games (3 model versions × ~10
-     checkpoints each) and read "n=550 · Meaningful sample" */
+  /* No sample state licenses an automatic recalibration: past 200 settled the
+     most it allows is a PROPOSAL, and the state must match the sample's size. */
+  chk('the Lab’s live sample never licenses an automatic recalibration, and its state matches its size', !rep.modes.LIVE || (['NOT_ALLOWED', 'PROPOSAL_ONLY'].indexOf(rep.modes.LIVE.all.sample.recalibration) >= 0
+    && rep.modes.LIVE.all.sample.recalibration === V.sampleState(rep.modes.LIVE.all.sample.n).recalibration), rep.modes.LIVE && rep.modes.LIVE.all.sample);
+  /* …and its size is GAMES (audit 2026-10-03): the Lab's first 600 live rows
+     were 19 games (3 model versions × ~10 checkpoints each) and read
+     "n=550 · Meaningful sample", a proposal license on 19 results */
   const liveGames = new Set(L.filter((x) => x.mode === 'LIVE' && (x.result === 'win' || x.result === 'loss')).map((x) => x.game_id)).size;
   chk('the Lab’s live sample state counts games, never model × checkpoint rows', !rep.modes.LIVE
     || (rep.modes.LIVE.all.independent_n === liveGames && rep.modes.LIVE.all.sample.n === liveGames && rep.modes.LIVE.all.decided >= liveGames),

@@ -223,13 +223,8 @@ chk('K: only the BET is total exposure', ex.total_units === bet.recommended_unit
 chk('K: …by sport, by kickoff window and by market too', Object.keys(ex.by_sport).length === 1 && ex.by_sport.CFB.units === bet.recommended_units && Object.keys(ex.by_market).join() === 'spread' && Object.keys(ex.by_window).length === 1);
 chk('K: NO DECISION never counts', !BK.countsAsExposure(withUnits(noMarket, 1)));
 chk('K: a decision object claiming source "placed" still needs to be a BET', !BK.countsAsExposure(Object.assign(withUnits(lean, 0.5), { source: 'placed' })) && BK.countsAsExposure({ source: 'placed', units: 0.5 }));
-/* The Card counts only games that have not kicked off, by the REAL clock
-   (EDOpportunity.cardExposure → isOpen). This page used to render the fixture's
-   fixed KICK, so the suite went red the moment KICK passed (19:30 UTC on
-   2026-10-03): the BET dropped out and exposure read 0.00U. The page gets a
-   kickoff ahead of whenever the suite runs. */
-const LATER = new Date(Date.now() + 6 * 3600e3).toISOString();
-const cardPage = U.cardPageHTML(book.map((d, i) => Object.assign({}, d, { game_id: 'x' + i, kickoff: LATER })), { view: { filter: 'all', sort: 'kickoff' } });
+/* on the fixture's own clock: read against the wall clock, the BET's 19:30 UTC kickoff passed on 2026-10-03 and its exposure vanished from the card */
+const cardPage = U.cardPageHTML(book.map((d, i) => Object.assign({}, d, { game_id: 'x' + i })), { view: { filter: 'all', sort: 'kickoff' }, now: NOW });
 chk('K: the card header’s exposure is the BET’s alone', new RegExp('<b>' + bet.recommended_units.toFixed(2) + 'U</b><span>TOTAL EXPOSURE').test(cardPage), text(cardPage).slice(0, 300));
 chk('the card header: BET and exposure first, LEAN and WATCH second, PASS and NO DECISION subdued', cardPage.indexOf('edd-kpi-main') < cardPage.indexOf('edd-kpis-2') && cardPage.indexOf('edd-kpis-2') < cardPage.indexOf('edd-kpis-3') && /<b>1<\/b> pass/.test(cardPage) && /no decision/.test(cardPage));
 chk('the exposure block says what it counts: TOTAL · BY SPORT · BY KICKOFF WINDOW · BY MARKET', /EXPOSURE <small>active BET decisions only/.test(cardPage) && /Total/.test(cardPage) && /By sport/.test(cardPage) && /By kickoff window/.test(cardPage) && /By market/.test(cardPage));
