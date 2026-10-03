@@ -1,0 +1,651 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401858476",
+  "game_id": "401858476",
+  "sport": "CFB",
+  "snapshot_id": "snap_252cf6c9f9107a24",
+  "audited_at": "2026-10-03T05:11:31.259Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Northwestern -2.1 with a fair total of 48.8, which makes Northwestern the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 2.1,
+      "favours_side": "home",
+      "favours_team": "Northwestern",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 2.137833074461055,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Penn State winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Northwestern is ahead on the scoreboard in a way that looks like Northwestern -2.1 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Northwestern -2.1 where the market has Northwestern +3.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 5.1 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 5.1,
+      "favours_side": "home",
+      "favours_team": "Northwestern",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 5.1,
+        "unit": "points",
+        "market_margin": -3,
+        "market_text": "Northwestern +3.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Northwestern +3.0 and Northwestern -2.1.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Playing at Northwestern is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Northwestern’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Northwestern",
+      "expected_signal": null,
+      "falsifier": "Penn State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Penn State by 1.2 points: field position — worth -1.2 of the EdgeDesk number, in Penn State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 1.2,
+      "favours_side": "away",
+      "favours_team": "Penn State",
+      "expected_signal": null,
+      "falsifier": "Northwestern winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Penn State is the better football team by 0.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -0.8 of the EdgeDesk number, in Penn State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 0.8,
+      "favours_side": "away",
+      "favours_team": "Penn State",
+      "expected_signal": null,
+      "falsifier": "Northwestern winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Penn State’s pass offense rates 45.2 (#90 of 136) against Northwestern’s pass defense at 50.4 (#63 of 137). Northwestern’s unit stands higher among its own position group, by 27 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Penn State pass offense handles Northwestern pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Penn State’s run offense rates 40.0 (#117 of 137) against Northwestern’s run defense at 30.2 (#132 of 137). Penn State’s unit stands higher among its own position group, by 15 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Penn State run offense handles Northwestern run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Northwestern’s pass offense rates 69.5 (#3 of 136) against Penn State’s pass defense at 73.1 (#1 of 137). Penn State’s unit stands higher among its own position group, by 2 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Northwestern pass offense handles Penn State pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Northwestern’s run offense rates 53.7 (#50 of 137) against Penn State’s run defense at 55.2 (#49 of 137). Penn State’s unit stands higher among its own position group, by 1 place.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Northwestern run offense handles Penn State run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Penn State holds the largest measured edge in this matchup: Penn State 65.4 (#6 of 137) vs Northwestern 42.5 (#114 of 137) — 108 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "defence",
+      "weight": 27,
+      "favours_side": "away",
+      "favours_team": "Penn State",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Northwestern winning that category on the day.",
+      "watch": "Whether Penn State’s edge in Defense shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Defense"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Northwestern holds the largest measured edge in this matchup: Northwestern 61.8 (#11 of 137) vs Penn State 40.9 (#120 of 137) — 109 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "matchup",
+      "weight": 27.3,
+      "favours_side": "home",
+      "favours_team": "Northwestern",
+      "expected_signal": null,
+      "falsifier": "Penn State winning that category on the day.",
+      "watch": "Whether Northwestern’s edge in Offense shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Offense"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: 2.45 FBS-equivalent games played.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on Northwestern — low sample size.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Northwestern -2.1 with a fair total of 48.8, which makes Northwestern the better team here by that margin on this field.",
+      "weight": 2.1,
+      "favours_team": "Northwestern",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 2.137833074461055,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 21,
+          "away": -21,
+          "diff": 21
+        }
+      ],
+      "observed_result": "Northwestern Wildcats won by 21 where EdgeDesk projected a 2.1-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Northwestern -2.1 where the market has Northwestern +3.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 5.1 points disagreement.",
+      "weight": 5.1,
+      "favours_team": "Northwestern",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 5.1,
+        "unit": "points",
+        "market_margin": -3,
+        "market_text": "Northwestern +3.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 21,
+          "away": -21,
+          "diff": 21
+        }
+      ],
+      "observed_result": "Northwestern Wildcats won by 21.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Northwestern Wildcats beat a margin of -3"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Northwestern is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Northwestern’s favour.",
+      "weight": 4.1,
+      "favours_team": "Northwestern",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours Penn State by 1.2 points: field position — worth -1.2 of the EdgeDesk number, in Penn State’s favour.",
+      "weight": 1.2,
+      "favours_team": "Penn State",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Penn State is the better football team by 0.8 points on opponent-adjusted results — but about 64% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -0.8 of the EdgeDesk number, in Penn State’s favour.",
+      "weight": 0.8,
+      "favours_team": "Penn State",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Penn State’s pass offense rates 45.2 (#90 of 136) against Northwestern’s pass defense at 50.4 (#63 of 137). Northwestern’s unit stands higher among its own position group, by 27 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Penn State’s run offense rates 40.0 (#117 of 137) against Northwestern’s run defense at 30.2 (#132 of 137). Penn State’s unit stands higher among its own position group, by 15 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Northwestern’s pass offense rates 69.5 (#3 of 136) against Penn State’s pass defense at 73.1 (#1 of 137). Penn State’s unit stands higher among its own position group, by 2 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Northwestern’s run offense rates 53.7 (#50 of 137) against Penn State’s run defense at 55.2 (#49 of 137). Penn State’s unit stands higher among its own position group, by 1 place.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "defence",
+      "claim": "Penn State holds the largest measured edge in this matchup: Penn State 65.4 (#6 of 137) vs Northwestern 42.5 (#114 of 137) — 108 places on the national board.",
+      "weight": 27,
+      "favours_team": "Penn State",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": false,
+          "label": "yards per play",
+          "unit": "yards",
+          "why": "the box score for this game published no yards per play"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no yards per play"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "matchup",
+      "claim": "Northwestern holds the largest measured edge in this matchup: Northwestern 61.8 (#11 of 137) vs Penn State 40.9 (#120 of 137) — 109 places on the national board.",
+      "weight": 27.3,
+      "favours_team": "Northwestern",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Offense"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: 2.45 FBS-equivalent games played.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 10
+    },
+    "graded": 2,
+    "total": 12,
+    "not_observable": 10,
+    "headline": "1 of 2 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401858476",
+    "sport": "CFB",
+    "snapshot_id": "snap_252cf6c9f9107a24",
+    "graded_at": "2026-10-03T05:11:31.259Z",
+    "final": {
+      "home_team": "Northwestern Wildcats",
+      "away_team": "Penn State Nittany Lions",
+      "home_score": 34,
+      "away_score": 13,
+      "margin": 21,
+      "total_points": 47,
+      "winner": "Northwestern Wildcats"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Northwestern",
+      "point": 3,
+      "line_text": "Northwestern +3",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
+      "market_home_margin": 3,
+      "model_home_margin": -2.1,
+      "gap": 5.1,
+      "why": "EdgeDesk’s own number sat 5.1 points toward Northwestern of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at Pinnacle. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 45.5,
+      "model_total": 48.8,
+      "gap": 3.3,
+      "why": "EdgeDesk’s fair total of 48.8 sat 3.3 points above the captured total of 45.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 24,
+        "side": "home",
+        "point": 3,
+        "team": "Northwestern",
+        "line_text": "Northwestern +3"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 47,
+        "line": 45.5,
+        "side": "over",
+        "by": 1.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "home",
+        "team": "Northwestern"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 2.1,
+      "actual_home_margin": 21,
+      "margin_error": 18.9,
+      "right_side": true,
+      "projected_total": 48.8,
+      "actual_total": 47,
+      "total_error": 1.8,
+      "projected_score": {
+        "away": 23,
+        "home": 25
+      },
+      "inside_published_range": true,
+      "range_text": "-20.9 → +23.1 (Northwestern)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "blowout",
+        "severity": "medium",
+        "label": "A 21-point margin",
+        "text": "Once a game is this far apart both teams stop playing the game they were rated on — the leader runs clock, the trailer throws — so late-game rates describe the situation rather than either team."
+      }
+    ],
+    "verdict": {
+      "key": "right_untested",
+      "line": "The number landed, in a game whose scoreline came largely from outside the matchup. That is a result, not a verification."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858476:unobservable",
+      "game_id": "401858476",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858476",
+      "snapshot_id": "snap_252cf6c9f9107a24",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "9 of the claims in this article rested on model, passing, rushing, defence, matchup.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-03T05:11:31.259Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858476:disagreement_landed",
+      "game_id": "401858476",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858476",
+      "snapshot_id": "snap_252cf6c9f9107a24",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Northwestern -2.1 where the market has Northwestern +3.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 5.1 points disagreement.",
+      "actual_result": "Northwestern Wildcats won by 21. the result landed on EdgeDesk’s side of the market number: Northwestern Wildcats beat a margin of -3",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-03T05:11:31.259Z"
+    }
+  ]
+}
