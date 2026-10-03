@@ -33,8 +33,9 @@ const T = PG.kit('model_pnl SQL');
 const chk = T.chk;
 const CORE = path.join(PG.ROOT, 'supabase', 'model_pnl.sql'), ANA = path.join(PG.ROOT, 'supabase', 'model_pnl_analytics.sql'), STA = path.join(PG.ROOT, 'supabase', 'model_pnl_states.sql');
 const VER = path.join(PG.ROOT, 'supabase', 'model_pnl_verified.sql'), VIEWS = path.join(PG.ROOT, 'supabase', 'model_pnl_verified_views.sql');
+const QUO = path.join(PG.ROOT, 'supabase', 'model_pnl_quotes.sql');
 [['model_pnl.sql', fs.readFileSync(CORE, 'utf8')], ['model_pnl_states.sql', fs.readFileSync(STA, 'utf8')], ['model_pnl_analytics.sql', fs.readFileSync(ANA, 'utf8')],
-  ['model_pnl_verified.sql', fs.readFileSync(VER, 'utf8')], ['model_pnl_verified_views.sql', fs.readFileSync(VIEWS, 'utf8')]].forEach(([n, s]) => {
+  ['model_pnl_verified.sql', fs.readFileSync(VER, 'utf8')], ['model_pnl_quotes.sql', fs.readFileSync(QUO, 'utf8')], ['model_pnl_verified_views.sql', fs.readFileSync(VIEWS, 'utf8')]].forEach(([n, s]) => {
   chk(n + ': no psql meta-commands', !/^\\/m.test(s));
   chk(n + ': idempotent create statements', /create or replace (function|view)/.test(s) && (/create table if not exists/.test(s) || /create materialized view if not exists/.test(s) || /add column if not exists/.test(s) || /create index if not exists/.test(s)));
   chk(n + ': additive — nothing is dropped', !/\bdrop table\b/i.test(s) && !/\bdrop column\b/i.test(s) && !/\bdrop view\b/i.test(s));
@@ -76,6 +77,7 @@ const ROWS = [
   row(10, { recommendation_id: 'mr:nfl:g10:spread', source: 'model_record', rec_class: 'MODEL', stake_units: 0, entry_odds: null, market_group: 'game', market_type: 'spread', selection: 'DEN +3.5', side: 'home', prop_market: null, player_id: null, result: 'loss', evaluation_mode: 'LIVE_RECONSTRUCTED' })
 ];
 
+let tail = null;
 try {
   const noDep = db.mustFail(() => db.applyFileAtomic(ANA));
   chk('the analytics file without model_pnl.sql stops and names the file', /model_pnl\.sql/.test(noDep || ''), noDep && noDep.slice(0, 200));
@@ -92,9 +94,16 @@ try {
   chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(ANA)));
   const noDepV = db.mustFail(() => db.applyFileAtomic(VIEWS));
   chk('the verified views without model_pnl_verified.sql stop and name the file', /model_pnl_verified\.sql/.test(noDepV || ''), noDepV && noDepV.slice(0, 200));
+  const noDepQ = db.mustFail(() => db.applyFileAtomic(QUO));
+  chk('the evidence table without model_pnl_verified.sql stops and names the file', /model_pnl_verified\.sql/.test(noDepQ || ''), noDepQ && noDepQ.slice(0, 200));
   out = db.applyFileAtomic(VER);
   chk('model_pnl_verified.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-900));
   chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(VER)));
+  const noDepVQ = db.mustFail(() => db.applyFileAtomic(VIEWS));
+  chk('the verified views without model_pnl_quotes.sql stop and name the file', /model_pnl_quotes\.sql/.test(noDepVQ || ''), noDepVQ && noDepVQ.slice(0, 200));
+  out = db.applyFileAtomic(QUO);
+  chk('model_pnl_quotes.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-700));
+  chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(QUO)));
   out = db.applyFileAtomic(VIEWS);
   chk('model_pnl_verified_views.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
   chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(VIEWS)));
@@ -228,11 +237,39 @@ try {
       price_ref: { source: 'cfb_lab_quotes', quote_id: 'cfbq_000000000000000000000030', event_id: 'g30', market: 'spread', side: 'home', line: -13.5, book: 'draftkings', observed_at: '2026-09-12T21:07:00.000Z', decided_at: '2026-09-12T22:24:40.000Z' },
       price_lookup: null, price_locked_at: '2026-10-03T12:00:00.000Z' };
     const st = (id) => db.sql("select record_state || '|' || pnl_verified || '|' || coalesce(pnl_exclusion_reason, 'null') || '|' || coalesce(flat_profit_units::text, 'null') || '|' || coalesce(profit_units::text, 'null') || '|' || coalesce(stake_source, 'null') || '|' || coalesce(price_source, 'null') from public.model_pnl where recommendation_id = '" + id + "';");
+    /* THE EVIDENCE: the stored quote the lock will cite, copied once, append-only */
+    const quote = { quote_id: 'cfbq_000000000000000000000030', source: 'cfb_lab_quotes', league: 'CFB', game_id: 'g30', book: 'draftkings', market_type: 'spread',
+      observed_at: '2026-09-12T21:07:00.000Z', kickoff_ts: '2026-09-13T02:15:00.000Z', home_line: -13.5, total_points: null, price_home: -108, price_away: -112, price_over: null, price_under: null,
+      source_file: 'football/cfb_lab/ledger/2026/quotes' };
+    const qput = (rows) => JSON.parse(db.service(`select public.model_pnl_quotes_put(${J(rows)});`));
+    let qp = qput([quote]);
+    chk('model_pnl_quotes: a cited quote is copied once', qp.inserted === 1 && qp.refused.length === 0, qp);
+    qp = qput([quote]);
+    chk('… sent again, unchanged', qp.inserted === 0 && qp.unchanged === 1, qp);
+    qp = qput([Object.assign({}, quote, { price_home: -110 })]);
+    chk('… a different quote under the same id is refused, named — the stored one stands', qp.refused.length === 1 && db.sql("select price_home::text from public.model_pnl_quotes where quote_id = 'cfbq_000000000000000000000030';") === '-108', qp);
+    qp = qput([Object.assign({}, quote, { quote_id: 'late1', observed_at: '2026-09-13T02:15:00.000Z' })]);
+    chk('… a quote read at or after kickoff is refused (constraint)', qp.refused.length === 1 && /model_pnl_quotes_pregame/.test(qp.refused[0].error), qp);
+    chk('… never edited', db.mustFail(() => db.service("update public.model_pnl_quotes set price_home = -105 where quote_id = 'cfbq_000000000000000000000030';")) !== null);
+    chk('… never deleted', db.mustFail(() => db.service("delete from public.model_pnl_quotes where quote_id = 'cfbq_000000000000000000000030';")) !== null);
+    chk('… readers read it', db.anon("select price_home::text from public.model_pnl_quotes where quote_id = 'cfbq_000000000000000000000030';") === '-108');
+    chk('… readers cannot write it', db.mustFail(() => db.anon(`select public.model_pnl_quotes_put(${J([Object.assign({}, quote, { quote_id: 'x1' })])});`)) !== null
+      && db.mustFail(() => db.anon("insert into public.model_pnl_quotes (quote_id, source, league, game_id, book, market_type, observed_at) values ('x2','s','CFB','g','b','spread', now());")) !== null);
     let u = up([mr()]);
     chk('a model number with no stored price lands record-only, with its reason', u.inserted === 1 && st('mr:cfb:g30:spread') === 'RECORD_ONLY|false|historical_price_unavailable|null|null|null|null', [u, st('mr:cfb:g30:spread')]);
     u = up([mr(lockFields)]);
     chk('THE PRICE LOCK: the stored pre-decision quote attaches ONCE — verified, at the default 1u', u.updated === 1 && u.price_locked === 1 && st('mr:cfb:g30:spread') === 'VERIFIED|true|null|0.925926|0.925926|default|snapshot', [u, st('mr:cfb:g30:spread')]);
     chk('the lock is stamped', db.sql("select (price_locked_at is not null)::text from public.model_pnl where recommendation_id = 'mr:cfb:g30:spread';") === 'true');
+    const integ = (k) => db.sql("select failures::text from public.verified_pnl_integrity() where check_key = '" + k + "';");
+    chk('the locked price is checked against the stored quote it cites: same game, number, time and price', integ('snapshot_quote_mismatch') === '0' && integ('snapshot_quote_missing') === '0');
+    chk('no CFB Model Lab mirror deployed: that cross-check is simply not listed', integ('lab_mirror_mismatch') === '');
+    /* where the lab's own mirror is deployed (production: public.cfb_lab_market_quotes), the lock is checked against it too */
+    db.sql("create table public.cfb_lab_market_quotes (quote_id text primary key, game_id text, observed_at timestamptz, price_home integer, price_away integer, price_over integer, price_under integer);");
+    db.sql("insert into public.cfb_lab_market_quotes values ('cfbq_000000000000000000000030', 'g30', '2026-09-12T21:07:00Z', -108, -112, null, null);");
+    chk('… the lab mirror agrees with the lock: 0', integ('lab_mirror_mismatch') === '0');
+    chk('… and a lab mirror row that disagrees is an integrity error', /lab=1/.test(db.mustFail(() => db.sql(`do $t$ declare a bigint; begin
+      update public.cfb_lab_market_quotes set price_home = -120 where quote_id = 'cfbq_000000000000000000000030';
+      select failures into a from public.verified_pnl_integrity() where check_key = 'lab_mirror_mismatch'; raise exception 'lab=%', a; end $t$;`)) || ''));
     chk('sent again, nothing changes', up([mr(lockFields)]).unchanged === 1);
     const moved = up([mr(Object.assign({}, lockFields, { entry_odds: -110, odds_captured_at: '2026-09-12T22:07:00.000Z' }))]);
     chk('a later price (the market moved) never overwrites the locked one', moved.updated === 0 && moved.price_locked === 0
@@ -245,6 +282,18 @@ try {
     const late = up([row(40, { recommendation_id: 'bd:t40', source: 'bettor_decision', market_group: 'game', market_type: 'spread', side: 'home', selection: 'Utah -6.5', prop_market: null, player_id: null,
       game_date: '2026-09-20T17:00:00.000Z', recommended_at: '2026-09-10T12:00:00.000Z', odds_captured_at: '2026-09-10T13:00:00.000Z' })]);
     chk('a price captured after the decision is PRICE_AFTER_DECISION: record only, no units', late.inserted === 1 && st('bd:t40') === 'RECORD_ONLY|false|price_after_decision|null|null|explicit|decision', st('bd:t40'));
+    /* the cross-check catches a lock that does not match its quote, and one whose quote is missing (each tried in a transaction that rolls back) */
+    const tryLock = (q, entryOdds) => db.mustFail(() => db.service(`do $t$ declare a bigint; b bigint; begin
+      ${q ? `perform public.model_pnl_quotes_put(${J([q])});` : ''}
+      perform public.model_pnl_upsert(${J([mr(Object.assign({}, lockFields, { recommendation_id: 'mr:cfb:g33:spread', event_id: 'g33', entry_odds: entryOdds,
+        price_ref: Object.assign({}, lockFields.price_ref, { quote_id: 'q33', event_id: 'g33' }) }))])});
+      select failures into a from public.verified_pnl_integrity() where check_key = 'snapshot_quote_mismatch';
+      select failures into b from public.verified_pnl_integrity() where check_key = 'snapshot_quote_missing';
+      raise exception 'mismatch=% missing=%', a, b; end $t$;`)) || '';
+    const q33 = Object.assign({}, quote, { quote_id: 'q33', game_id: 'g33' });
+    chk('a locked price that differs from the stored quote it cites is an integrity error', /mismatch=1 missing=0/.test(tryLock(Object.assign({}, q33, { price_home: -115 }), -108)), tryLock(Object.assign({}, q33, { price_home: -115 }), -108));
+    chk('a locked price whose quote is not in model_pnl_quotes is an integrity error', /mismatch=0 missing=1/.test(tryLock(null, -108)), tryLock(null, -108));
+    chk('the same lock with its matching quote reads 0 / 0', /mismatch=0 missing=0/.test(tryLock(q33, -108)));
     const elsewhere = up([mr(Object.assign({}, lockFields, { recommendation_id: 'mr:cfb:g31:spread', event_id: 'g31' }))]);
     chk('a stored-quote price recorded for another game is refused (constraint)', elsewhere.refused.length === 1 && /model_pnl_verified_rules/.test(elsewhere.refused[0].error), elsewhere);
     chk('a default stake on a WATCH is refused (constraint)', db.mustFail(() => db.service("insert into public.model_pnl (recommendation_id, source, league, event_id, market_group, market_type, selection, rec_class, stake_units, stake_source, entry_odds) values ('w1','bettor_decision','CFB','g','game','spread','X -3','WATCH',1,'default',-110);")) !== null);
@@ -348,7 +397,31 @@ try {
   chk('a reader with no bankroll gets units only, never a default dollar amount', db.as(C, "select coalesce(unit_value::text, 'null') || '|' || basis || '|' || coalesce(net_dollars::text, 'null') from public.model_pnl_my_dollars('flat', 'all');") === 'null|NOT_SET|null');
   chk('anon cannot ask for dollars', db.mustFail(() => db.anon("select * from public.model_pnl_my_dollars('flat', 'all');")) !== null);
   chk('reader A cannot see reader B\'s bankroll', db.as(A, 'select count(*) from public.bankroll_settings;') === '1');
+
+  /* ── the sync job: the database must say what the page says ─────────── */
+  tail = (async () => {
+    const SY = require('./pnl_sync.js');
+    /* PostgREST's rpc over this server: a set-returning function answers rows, a scalar (jsonb) one its value */
+    const SCALAR = ['model_pnl_upsert', 'model_pnl_quotes_put', 'model_pnl_reasons', 'model_pnl_refresh'];
+    const rpcDb = { rpc: async (schema, fn, args) => {
+      const a = Object.keys(args || {}).map((k) => k + ' => ' + (typeof args[k] === 'string' ? lit(args[k]) : J(args[k]))).join(', ');
+      const out = JSON.parse(db.service(`select coalesce(json_agg(t), '[]') from ${schema}.${fn}(${a}) t;`));
+      return SCALAR.indexOf(fn) >= 0 ? out[0] : out;
+    } };
+    const all = JSON.parse(db.sql("select coalesce(json_agg(t), '[]') from (select recommendation_id, rec_class, record_state, pnl_status, result, entry_odds, stake_units, flat_profit_units, profit_units, to_char(game_date at time zone 'utc', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') as game_date, recommended_at, market_type, market_group, league, week, price_source, stake_source, evaluation_mode from public.model_pnl) t;"));
+    const P = await SY.parity(rpcDb, { rows: all });
+    const P26 = await SY.parity(rpcDb, { season: 2026, rows: all.filter((x) => String(x.game_date || '').slice(0, 10) >= '2026-03-01') });
+    chk('sync parity is per season: the 2026 ledger against the 2026 window of a table that may hold other seasons', P26.ok && P26.window.from === '2026-03-01' && P26.window.to === '2027-02-28', P26);
+    chk('… a leap-year February is whole', SY.seasonWindow(2027).to === '2028-02-29');
+    chk('sync parity: the database and the kernel over the same rows agree, every integrity check 0', P.ok && !P.diffs.length && !P.integrity.length, P);
+    const short = all.filter((x) => x.recommendation_id !== 'mr:cfb:g30:spread');
+    const P2 = await SY.parity(rpcDb, { rows: short });
+    chk('sync parity: a page one verified decision short of the database is caught, by field', !P2.ok && P2.diffs.some((d) => d.field === 'total_verified_bets' && d.mode === 'staked'), P2.diffs);
+    chk('a missing function is read as a missing schema (exit 3), not a pass', SY.schemaMissing({ code: 'PGRST202', message: 'Could not find the function public.model_pnl_upsert' })
+      && SY.schemaMissing(new Error('RPC public.verified_pnl_summary -> 404: {"code":"PGRST202"}')) && !SY.schemaMissing(new Error('timeout')) && SY.EXIT.SCHEMA === 3 && SY.EXIT.PARITY === 4);
+  })();
 } finally {
-  db.stop();
+  if (!tail) db.stop();
 }
-process.exit(T.done());
+if (tail) tail.catch((e) => chk('the sync parity checks ran', false, String(e.stack || e))).then(() => { db.stop(); process.exit(T.done()); });
+else process.exit(T.done());

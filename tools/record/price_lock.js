@@ -97,20 +97,90 @@ function index(rows, sourceKey) {
   Object.keys(by).forEach((k) => by[k].sort((a, b) => ms(a.observed_at) - ms(b.observed_at) || String(a.quote_id).localeCompare(String(b.quote_id))));
   return by;
 }
-/** Every configured snapshot source for a league and season, from disk. */
-function readQuotes(root, season, league) {
+function readLines(f, rows) {
+  fs.readFileSync(f, 'utf8').split('\n').forEach((l) => { if (!l) return; try { rows.push(JSON.parse(l)); } catch (_) { /* a torn line is not a quote */ } });
+}
+/** The raw rows of one configured source (a directory of .jsonl files, or one file). */
+function sourceRows(root, season, s) {
+  const rows = [];
+  const sub = (x) => x.replace('{season}', String(season)).replace('{sport}', String(s.league).toLowerCase());
+  if (s.dir) {
+    const dir = path.join(root || ROOT, sub(s.dir));
+    if (fs.existsSync(dir)) fs.readdirSync(dir).filter((f) => /\.jsonl$/.test(f)).sort().forEach((f) => readLines(path.join(dir, f), rows));
+  } else if (s.file) {
+    const f = path.join(root || ROOT, sub(s.file));
+    if (fs.existsSync(f)) readLines(f, rows);
+  }
+  return rows;
+}
+/**
+ * Every configured snapshot source for a league and season, from disk, by
+ * game. `override` replaces a source's rows by its key (a run passes its own
+ * ledger as it will leave it, written or not).
+ */
+function readQuotes(root, season, league, override) {
   const out = {};
   (SNAP.sources || []).filter((s) => !league || s.league === league).forEach((s) => {
-    const dir = path.join(root || ROOT, s.dir.replace('{season}', String(season)));
-    if (!fs.existsSync(dir)) return;
-    const rows = [];
-    fs.readdirSync(dir).filter((f) => /\.jsonl$/.test(f)).sort().forEach((f) => {
-      fs.readFileSync(path.join(dir, f), 'utf8').split('\n').forEach((l) => { if (!l) return; try { rows.push(JSON.parse(l)); } catch (_) { /* a torn line is not a quote */ } });
-    });
+    const rows = override && override[s.key] ? override[s.key] : sourceRows(root, season, s);
     const ix = index(rows, s.key);
     Object.keys(ix).forEach((k) => { out[k] = (out[k] || []).concat(ix[k]); });
   });
   return out;
+}
+/**
+ * What each source covers: its first and last stored priced quote and how many
+ * games — the earliest point from which a league's model decisions can carry
+ * a verified price.
+ */
+function coverage(root, season) {
+  return (SNAP.sources || []).map((s) => {
+    const ix = index(sourceRows(root, season, s), s.key), ids = Object.keys(ix);
+    let first = null, last = null;
+    ids.forEach((k) => ix[k].forEach((q) => { const t = ms(q.observed_at); if (first == null || t < first) first = t; if (last == null || t > last) last = t; }));
+    return { key: s.key, league: s.league, covers: s.covers || null, games: ids.length, first_capture: first == null ? null : iso(first), last_capture: last == null ? null : iso(last) };
+  });
+}
+/**
+ * Per league, the first stored quote of a source that covers every game the
+ * model publishes a number on (coverage() rows) — the earliest point from which
+ * every model decision of that league can carry a verified price; null while
+ * that league's ledger holds no quote yet.
+ */
+function everyGameFrom(cov) {
+  const out = {};
+  (SNAP.sources || []).forEach((s) => { if (s.covers === 'every_model_game' && !(s.league in out)) out[s.league] = null; });
+  (cov || []).forEach((c) => {
+    if (c.covers !== 'every_model_game' || !c.first_capture) return;
+    if (out[c.league] == null || ms(c.first_capture) < ms(out[c.league])) out[c.league] = c.first_capture;
+  });
+  return out;
+}
+
+/**
+ * The stored quotes the locked prices cite — refs: [{ source, quote_id, league }]
+ * (price_ref) — as raw rows in the database's evidence shape
+ * (supabase/model_pnl_verified.sql model_pnl_quotes), plus the refs not found.
+ */
+function evidence(root, season, refs) {
+  const want = {};
+  (refs || []).forEach((r) => { if (r && r.quote_id) (want[r.source] = want[r.source] || new Set()).add(String(r.quote_id)); });
+  const rows = [], seen = new Set();
+  (SNAP.sources || []).forEach((s) => {
+    if (!want[s.key]) return;
+    const file = (s.file || s.dir).replace('{season}', String(season)).replace('{sport}', String(s.league).toLowerCase());
+    sourceRows(root, season, s).forEach((q) => {
+      const id = q && q.quote_id != null ? String(q.quote_id) : null;
+      if (!id || !want[s.key].has(id) || seen.has(s.key + '|' + id) || !normalize(q, s.key)) return;
+      seen.add(s.key + '|' + id);
+      rows.push({ quote_id: id, source: s.key, league: s.league, game_id: String(q.game_id), book: q.book, market_type: q.market_type,
+        observed_at: iso(q.observed_at), kickoff_ts: q.kickoff_ts ? iso(q.kickoff_ts) : null,
+        home_line: q.market_type === 'spread' ? num(q.home_line) : null, total_points: q.market_type === 'total' ? num(q.total_points) : null,
+        price_home: num(q.price_home), price_away: num(q.price_away), price_over: num(q.price_over), price_under: num(q.price_under), source_file: file });
+    });
+  });
+  const missing = [];
+  Object.keys(want).forEach((k) => want[k].forEach((id) => { if (!seen.has(k + '|' + id)) missing.push({ source: k, quote_id: id }); }));
+  return { rows, missing };
 }
 
 /* ---------------------------------------------------------------- as-of */
@@ -201,4 +271,4 @@ function priceFor(entry, sel) {
   return { status: 'locked', odds: odds, line: mt === 'moneyline' ? null : line, book: entry.book, observed_at: entry.observed_at, quote_id: entry.quote_id, source: entry.source, locked_at: entry.locked_at || null };
 }
 
-module.exports = { LOCK_SCHEMA, MARKETS, CONFIG, normalize, index, readQuotes, marketAt, lockPick, priceFor, maxAgeMs, bookKey };
+module.exports = { LOCK_SCHEMA, MARKETS, CONFIG, normalize, index, readQuotes, sourceRows, coverage, everyGameFrom, evidence, marketAt, lockPick, priceFor, maxAgeMs, bookKey };

@@ -227,9 +227,36 @@ try {
   chk('a source that re-prices a locked decision is refused: the ledger keeps the locked price and raises an alert',
     byId(B3)['mr:cfb:401999001:spread'].entry_odds === -108 && B3.report.integrity_alerts.some((a) => a.field === 'entry_odds'), B3.report.integrity_alerts);
 
-  /* the NFL: no stored-quote source, so record only, and it says why */
-  const nfl = core.modelPricing({ game_id: 'x', pick: { at: PUB } }, 'NFL', 'spread', 'home', -3, (b) => b);
-  chk('an NFL model decision is record only: EdgeDesk stores no timestamped NFL game price', nfl.price_lookup.why === 'no_snapshot_source' && /nflverse/.test(nfl.price_lookup.detail));
+  /* THE EVIDENCE the sync copies to model_pnl_quotes: every quote a locked price cites, from the committed ledger it lives in */
+  const SY = require('./pnl_sync.js');
+  const cited = B1.ledger.rows.filter((x) => x.price_source === 'snapshot');
+  const ev = SY.citedQuotes(B1.ledger, TMP, 2026);
+  chk('the sync finds every quote a locked price cites, in its committed ledger', cited.length > 0 && ev.missing.length === 0
+    && ev.rows.length === new Set(cited.map((x) => x.price_ref.quote_id)).size, [cited.length, ev.rows.length, ev.missing]);
+  chk('… each one the same game, time and price the lock recorded', cited.every((x) => { const q = ev.rows.find((r) => r.quote_id === x.price_ref.quote_id);
+    const px = x.market_type === 'total' ? (x.side === 'over' ? q.price_over : q.price_under) : (x.side === 'home' ? q.price_home : q.price_away);
+    return q && q.game_id === x.event_id && q.observed_at === x.odds_captured_at && px === x.entry_odds && q.source === x.price_ref.source && Date.parse(q.observed_at) <= Date.parse(x.recommended_at); }));
+  const ghost = { rows: [Object.assign({}, cited[0], { price_ref: Object.assign({}, cited[0].price_ref, { quote_id: 'nope' }) })] };
+  chk('… and a cited quote that is in no committed ledger is named, not skipped', SY.citedQuotes(ghost, TMP, 2026).missing.some((m) => m.quote_id === 'nope'));
+
+  /* where stored prices begin: a decision published before its league's
+     every-game quote ledger began is record only, and says so */
+  const nfl = core.modelPricing({ game_id: 'x', pick: { at: PUB } }, 'NFL', 'spread', 'home', -3, (b) => b, { NFL: null });
+  chk('an NFL model decision with no stored quote, before the NFL quote ledger began: record only, before_capture', nfl.price_lookup.why === 'before_capture'
+    && nfl.price_lookup.status === 'historical_price_unavailable' && /not started yet/.test(nfl.price_lookup.detail) && nfl.entry_odds === undefined, nfl.price_lookup);
+  const early = core.modelPricing({ game_id: 'x', pick: { at: '2026-09-20T12:00:00Z' } }, 'CFB', 'total', 'over', 50, (b) => b, { CFB: '2026-10-03T15:47:00.000Z' });
+  chk('… a college decision published before the first stored quote names when the prices begin', early.price_lookup.why === 'before_capture' && /2026-10-03T15:47:00.000Z/.test(early.price_lookup.detail));
+  const late = core.modelPricing({ game_id: 'x', pick: { at: '2026-10-04T12:00:00Z' } }, 'CFB', 'total', 'over', 50, (b) => b, { CFB: '2026-10-03T15:47:00.000Z' });
+  chk('… one published after it with nothing stored is a plain no_snapshot (never blamed on the start date)', late.price_lookup.why === 'no_snapshot');
+  const missLock = core.modelPricing({ game_id: 'x', pick: { at: '2026-09-20T12:00:00Z', price_lock: { total: { status: 'historical_price_unavailable', why: 'stale', detail: 'old' } } } }, 'CFB', 'total', 'over', 50, (b) => b, { CFB: '2026-10-03T15:47:00.000Z' });
+  chk('… a lookup that found a quote keeps its own reason (stale stays stale)', missLock.price_lookup.why === 'stale', missLock.price_lookup);
+  const noSrc = core.modelPricing({ game_id: 'x', pick: { at: PUB } }, 'UFL', 'spread', 'home', -3, (b) => b, {});
+  chk('… a league with no stored-quote source at all: no_snapshot_source', noSrc.price_lookup.why === 'no_snapshot_source');
+  const evf = PL.everyGameFrom([{ key: 'cfb_lab_quotes', league: 'CFB', covers: 'lab_games', first_capture: '2026-09-27T15:07:15.000Z' },
+    { key: 'record_quotes', league: 'CFB', covers: 'every_model_game', first_capture: '2026-10-03T15:47:00.000Z' }, { key: 'record_quotes', league: 'NFL', covers: 'every_model_game', first_capture: null }]);
+  chk('the earliest every-game point per league: the lab\'s 71 games do not count as every game; a league with nothing stored yet is null', evf.CFB === '2026-10-03T15:47:00.000Z' && evf.NFL === null, evf);
+  chk('the summary says where the stored prices begin', B1.summary.verified.price_sources && 'CFB' in B1.summary.verified.price_sources.every_game_from
+    && B1.summary.verified.price_sources.sources.some((x) => x.key === 'record_quotes' && x.league === 'NFL'), B1.summary.verified.price_sources);
 
   /* ============================================ the row audit names every fault */
   const good = R1['mr:cfb:401999001:spread'];

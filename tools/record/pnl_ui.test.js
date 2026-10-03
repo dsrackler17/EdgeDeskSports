@@ -394,6 +394,8 @@ async function main() {
         chk('help: a click elsewhere closes it', await page.$eval('#pnlPub .pnl-pop', (el) => el.hidden));
         await page.click('#pnlPub [data-r="how"] > summary');
         chk('How P&L works: the method, on demand', /stake × 100 ÷ \|odds\|/.test(await text(page, '#pnlPub [data-r="how"]')) && /never assumes −110/.test(await text(page, '#pnlPub [data-r="how"]')) && /at or before/.test(await text(page, '#pnlPub [data-r="how"]')));
+        chk('How P&L works: where EdgeDesk\'s stored game prices begin, per league', /Where stored prices begin/.test(await text(page, '#pnlPub [data-r="pricestart"]'))
+          && /College Football/.test(await text(page, '#pnlPub [data-r="pricestart"]')) && /NFL/.test(await text(page, '#pnlPub [data-r="pricestart"]')), await text(page, '#pnlPub [data-r="pricestart"]'));
         /* Advanced Analytics: everything else, built when opened */
         chk('advanced: nothing is built while closed', !(await page.$('#pnlPub [data-r="advbody"] .pnl-sec')));
         await page.click('#pnlPub [data-r="adv"] > summary');

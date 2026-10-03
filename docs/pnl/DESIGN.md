@@ -18,9 +18,11 @@ edges record.
 | Kernel | American-odds profit, flat vs staked, ROI, drawdown, streaks, CLV, calibration, breakdowns, sample labels. Browser + Node, one implementation. | `lib/edgedesk_pnl.js` (`window.EDPnl`) |
 | Ledger builder | Reads the source ledgers and writes one row per recommendation. Idempotent, logs corrections, never deletes. | `tools/record/pnl_core.js`, `tools/record/pnl_ledger.js` |
 | Price lock | The quote EdgeDesk stored at or before a model number was published, frozen on the pick; the historical backfill is the same lookup. Config: the default stake and the freshness limits. | `tools/record/price_lock.js`, `tools/record/pnl_config.json`, `football_record_core.js` `lockPrice` |
+| Quote ledger | Every priced pregame ESPN reading of every NFL and college game the model publishes a number on, kept append-only (written on a change and on a heartbeat, never after kickoff): the stored price a model decision can be locked to. NFL games are matched through nflverse's own ESPN id. | `tools/record/quote_ledger.js`, written by `tools/record/football_record.js` to `record/football/quotes/<sport>_<season>.jsonl` |
 | Committed artifacts | `ledger_<season>.json` (the audit ledger), `rows_<season>.json` (the page's columnar copy), `summary.json` (every figure precomputed) | `record/pnl/` |
-| Database | `model_pnl` plus the append-only `model_pnl_corrections`, a trigger-derived P&L and **record state**, the build's pending reasons, the canonical record view, a public view, SQL rollups / drawdown / a daily materialised series, and a reader's own dollars; **Verified P&L**: `pnl_verified` / `pnl_exclusion_reason` / `stake_source` / the one-time price lock by trigger, and `verified_pnl_decisions` / `_summary` / `_breakdown` / `_series` / `_integrity` | `supabase/model_pnl.sql`, `supabase/model_pnl_states.sql`, `supabase/model_pnl_analytics.sql`, `supabase/model_pnl_verified.sql`, `supabase/model_pnl_verified_views.sql`, `supabase/verified_pnl_report.sql` (read only) |
-| Sync | Sends the committed ledger through `model_pnl_upsert()`, then the pending reasons through `model_pnl_reasons()`. Soft-fails without secrets. | `tools/record/pnl_sync.js` |
+| Database | `model_pnl` plus the append-only `model_pnl_corrections`, a trigger-derived P&L and **record state**, the build's pending reasons, the canonical record view, a public view, SQL rollups / drawdown / a daily materialised series, and a reader's own dollars; **Verified P&L**: `pnl_verified` / `pnl_exclusion_reason` / `stake_source` / the one-time price lock by trigger, `model_pnl_quotes` (the stored quote every locked price cites, append-only), and `verified_pnl_decisions` / `_summary` / `_breakdown` / `_series` / `_integrity` | `supabase/model_pnl.sql`, `supabase/model_pnl_states.sql`, `supabase/model_pnl_analytics.sql`, `supabase/model_pnl_verified.sql`, `supabase/model_pnl_quotes.sql`, `supabase/model_pnl_verified_views.sql` (in that order), `supabase/verified_pnl_report.sql` (read only) |
+| Sync | Sends every stored quote a locked price cites through `model_pnl_quotes_put()`, the committed ledger through `model_pnl_upsert()`, then the pending reasons through `model_pnl_reasons()`. Then it proves the database says what the page says: `verified_pnl_summary()` against the kernel's card over the same ledger (both strategies) and `verified_pnl_integrity()` at 0. Without secrets it logs and exits 0. With them it never fails quietly: a missing schema exits 3, a disagreement exits 4, each with an error annotation and a run-summary line. | `tools/record/pnl_sync.js` |
+| Schema deploy | Manual: the SQL suite on a throwaway PostgreSQL, then the six files in order with `ON_ERROR_STOP`, then the sync and the A–I report. Opt-in: re-apply `bettor_decisions.sql`. | `.github/workflows/deploy-record-pnl.yml` |
 | UI | The Records page's profit and loss: the view (tabs, period, stake, leans), the verified P&L summary, its chart, the graded record directly under it, *How P&L works* and *Advanced Analytics* (both collapsed), and the ledger | `lib/edgedesk_pnl_ui.js`, `lib/edgedesk_pnl.css`. It is the top of the app's Records page (the detailed edges and football model records sit inside its Advanced Analytics) and `#pnl` on the public `record.html`. |
 | Job | The only writer of `record/pnl/`. Runs after Player props, CFB Model Lab and Football model record, plus an hourly sweep. | `.github/workflows/record-pnl.yml` |
 | Tests | Kernel, ledger, Verified P&L (price lock, backfill, audit), real PostgreSQL, real browser | `tools/record/pnl*.test.js`, `tools/record/verified_pnl.test.js`, `.github/workflows/record-pnl-tests.yml` |
@@ -161,7 +163,7 @@ Anything else carries exactly one `pnl_exclusion_reason` (`lib/edgedesk_pnl.js` 
 |---|---|
 | `missing_settlement` | not settled (or an unreadable settlement) |
 | `missing_price` | the source never captured a price with the decision |
-| `historical_price_unavailable` | a model number with no stored quote for that exact selection at or before it; `price_lookup.why` says which case: `no_snapshot`, `stale`, `line_moved`, `no_side_price` or `no_snapshot_source` (the NFL) |
+| `historical_price_unavailable` | a model number with no stored quote for that exact selection at or before it; `price_lookup.why` says which case: `before_capture` (published before EdgeDesk stored every game's quotes for that league), `no_snapshot`, `stale`, `line_moved`, `no_side_price` or `no_snapshot_source` (a league with no stored-quote source) |
 | `price_after_decision` | the only price was captured after the decision |
 | `invalid_odds` / `simulated_price` / `missing_stake` | a malformed price, an assumed price, an invalid stake |
 | `missing_selection` / `recommended_after_start` | an invalid row |
@@ -189,7 +191,7 @@ The model record publishes a number and is graded against the close. Nothing cap
 
 | Step | Rule |
 |---|---|
-| Source | Stored, timestamped, per-side sportsbook quotes. Today that is `football/cfb_lab/ledger/<season>/quotes/` (ESPN / DraftKings, captured hourly, append-only). Configured in `tools/record/pnl_config.json` `price_snapshots.sources`. |
+| Source | Stored, timestamped, per-side sportsbook quotes, configured in `tools/record/pnl_config.json` `price_snapshots.sources`: the CFB Model Lab's `football/cfb_lab/ledger/<season>/quotes/` (ESPN / DraftKings, hourly, append-only, the lab's games only, from 2026-09-27T15:07Z), and the record's own `record/football/quotes/<sport>_<season>.jsonl` (every game the model prices, NFL and CFB, from its first run after this change). A source says what it `covers`: `every_model_game` sets the earliest point from which every decision of a league can be verified. |
 | As of | Per book, the latest ordinary pregame quote observed at or before the decision. The lab writes on change plus a heartbeat, so that row *is* the price then, while it is younger than 6 h (90 min inside 3 h of kickoff, the decision engine's limit). Older: `stale`. |
 | Never | A quote after the decision, the close, today's odds, an assumed −110, a provider average ("consensus"), or the best price across books (line shopping after the fact). |
 | Which book | The book of the decision's own market (the record's ESPN book). Otherwise the most recent quote, with ties going to the lower payout. |
@@ -204,7 +206,8 @@ The model record publishes a number and is graded against the close. Nothing cap
 ### Price locking for new decisions
 
 - **Props and BETs** carry their price from the moment they are made (write-once ledgers). Nothing changes for them.
-- **Model numbers.** Every hourly *Football model record* run locks each new or revised pick against the quotes stored at or before its publication. The record-pnl job then picks the lock up on its next run.
+- **Model numbers.** Every hourly *Football model record* run first keeps every priced pregame ESPN reading of every game ahead (the quote ledger), then locks each new or revised pick against the quotes stored at or before its publication. Because the job runs hourly and a heartbeat is written at least every 6 h (every 50 min inside 3 h of kickoff), a number published between two runs finds the previous run's reading. The record-pnl job then picks the lock up on its next run.
+- **Before capture.** A model number published before its league's every-game quote ledger began, with nothing stored for its game, is record only with `price_lookup.why = before_capture`. `summary.json` `verified.price_sources` gives the first stored quote per league, and *How P&L works* prints it.
 - **Live odds** keep refreshing everywhere else. The P&L price attached to a decision never moves.
 
 ### Integrity
@@ -223,7 +226,7 @@ These are checked by `EDPnl.auditRows` (the ledger build fails on any), `verifie
 - a row outside Verified P&L with no reason;
 - graded ≠ verified + record only.
 
-Where `cfb_lab_market_quotes` is deployed, every locked price is also checked against the quote it names.
+In the database, every locked price is also checked against the stored quote it cites in `model_pnl_quotes`: same game, market, number, time and price, and never after the decision (`snapshot_quote_mismatch`, `snapshot_quote_missing`). Where the CFB Model Lab's own mirror `cfb_lab_market_quotes` is deployed (production), lab-sourced locks are checked against that independent copy too (`lab_mirror_mismatch`).
 
 ### The page
 
@@ -290,9 +293,17 @@ There is no new table: `model_pnl` already held the immutable financial snapshot
   | Player props | 24 | −1.79u | −29.8% | 0 (155 priced, pending) |
 - **The backfill locked 7 CFB model decisions** (5 moneylines, 1 spread, 1 total) from the lab's stored quotes. The quotes start 2026-09-27, and only 5 graded games fall inside them.
 - **Why the rest stay record only:**
-  - 625 have no stored quote at all;
-  - 98 are NFL, where EdgeDesk stores no timestamped game price;
-  - 8 had a stored quote at the decision for another number than the one graded.
+  - 723 were published before EdgeDesk stored every game's quotes for their league (`before_capture`): 625 CFB with no lab quote, 98 NFL, where nothing stored a timestamped game price until the quote ledger;
+  - 8 had a stored quote at the decision for another number than the one graded (`line_moved`).
+- **Where stored prices begin** (the earliest point from which Verified P&L can be calculated):
+
+  | Decisions | From |
+  |---|---|
+  | Player props, BETs | their first decision: the price is captured with it (the props ledger began 2026-09-30) |
+  | CFB games the lab tracks | 2026-09-27T15:07:15Z, the lab's first stored quote |
+  | Every CFB and NFL game the model prices | the quote ledger's first run after this change merges; `summary.json` `verified.price_sources.every_game_from` records the moment |
+
+- **The audit.** `docs/pnl/AUDIT.md` traces a spread, a total, a moneyline and a player prop from the decision to the page, row by row, and lists what production was missing.
 - **Every lab-covered game that settles from here is priced automatically**, about 66 more games across weeks 5–6.
 - **0 integrity errors.**
 - **Checked and not usable:**
@@ -317,7 +328,7 @@ npm run record:pnl            # rebuild record/pnl/ from the settled ledgers
 npm run record:pnl:dry        # what would change
 npm run record:pnl:check      # exit 1 if record/pnl/ is stale
 npm run record:pnl:sync       # the idempotent copy into Supabase (needs SB_URL / SB_SERVICE_ROLE)
-npm run record:pnl:test       # kernel + ledger + Verified P&L
+npm run record:pnl:test       # kernel + ledger + Verified P&L + the quote ledger
 npm run record:pnl:verified   # Verified P&L: the arithmetic, the price lock, the backfill, the audit
 npm run record:pnl:backfill   # lock historical prices from the stored quotes, then rebuild record/pnl/ (offline)
 npm run record:pnl:sql        # both migrations against a real PostgreSQL
@@ -326,7 +337,7 @@ npm run record:pnl:e2e        # the section in Chromium at 375 / 390 / 430 / 768
 
 ## Deploy
 
-1. Paste `supabase/model_pnl.sql`, then `supabase/model_pnl_states.sql`, then `supabase/model_pnl_analytics.sql`, then **`supabase/model_pnl_verified.sql`** and **`supabase/model_pnl_verified_views.sql`**, into the SQL editor. Every report row should read `ok`.
+1. Run **Deploy Record P&L schema** (`.github/workflows/deploy-record-pnl.yml`, manual). It tests the SQL on a throwaway PostgreSQL, applies `supabase/model_pnl.sql`, `model_pnl_states.sql`, `model_pnl_analytics.sql`, **`model_pnl_verified.sql`**, **`model_pnl_quotes.sql`** and **`model_pnl_verified_views.sql`** in that order (each in one transaction, stopping at the first error or `CHECK THIS`), syncs, and prints the A–I report. It needs `SB_DB_URL`. Without it, paste the six files into the SQL editor in that order; every report row should read `ok`.
    - `model_pnl_states.sql` and `model_pnl_verified.sql` are additive: on a database that already holds rows, they derive every row's state, stake source and verification in place.
    - `model_pnl_verified.sql` supersedes the derive trigger and the upsert, so re-apply it whenever `model_pnl.sql` is re-applied.
 1a. **The Verified P&L backfill.** This needs no database and no network: the quote ledgers are committed.

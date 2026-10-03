@@ -14,6 +14,7 @@ and the app shows the two as separate records (Records → *Advanced Analytics* 
 | `nfl_<season>.json` | one entry per NFL game: first number, last pregame number (the pick), the entry (first model + market pair), close, final, grade |
 | `cfb_<season>.json` | the same for every FBS game on the slate, with conference, group and matchup type |
 | `summary.json` | per-sport totals the app reads: ATS / totals / straight-up records, CLV, margin error, Brier, by week, by CFB group |
+| `quotes/<sport>_<season>.jsonl` | **the quote ledger**: every priced pregame ESPN reading (a named book's line and its prices) of every game the model publishes a number on, one row per (book, game, market), written when a value changes and on a heartbeat (at least every 6 h, every 50 min inside 3 h of kickoff), never at or after kickoff. Append-only. NFL rows are keyed by the nflverse game id, matched through nflverse's own ESPN id. `tools/record/quote_ledger.js` |
 
 Written by `tools/record/football_record.js` from
 `.github/workflows/football-model-record.yml` (hourly in season, and right after
@@ -40,13 +41,16 @@ No entry price was ever captured with the model's number, so this record is
 **wins and losses** — except where EdgeDesk's own quote capture stored one
 first. **The price lock** (`pick.price_lock`, `tools/record/price_lock.js`):
 every run freezes on each pick the market as the quotes EdgeDesk stored saw it
-at the moment the number was published (college football: the CFB Model Lab's
-hourly ESPN quotes). A quote observed after the number, and the close, are
+at the moment the number was published: the CFB Model Lab's hourly ESPN
+quotes (from 2026-09-27, the lab's games only) and this record's own quote
+ledger (`quotes/`, every NFL and college game it prices, from its first run
+after 2026-10-03). A quote observed after the number, and the close, are
 never used. A locked market is never rewritten. The Records page prices a graded
 side from it only when the stored quote was for the exact number it was graded
 at, at the default stake (`tools/record/pnl_config.json`). Everything else stays
-**record only**, with the reason. The NFL has no stored-quote source, so its
-picks stay record only. The Records page shows it that way, by market, under
+**record only**, with the reason. A pick published before its league's quote
+ledger began says so (`before_capture`): the NFL's whole history, and every
+college game the lab did not track. The Records page shows it that way, by market, under
 *Historical model results*, labelled *record only*. The Records page's P&L is
 only ever EdgeDesk's BET recommendations at the entry price it recorded
 (`record/pnl/`); this record is never turned into units there. Its rows are

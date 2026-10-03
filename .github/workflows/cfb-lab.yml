@@ -209,7 +209,9 @@ jobs:
           # fail soft only while supabase/cfb_market.sql is not applied (404 / PGRST205 warns)
           node football/cfb_market/sync_supabase.js
           # the bettor decision ledger (supabase/bettor_decisions.sql); fail soft until that file is applied
-          node football/cfb_terminal/decisions_sync.js || echo "::warning::bettor decision sync skipped (apply supabase/bettor_decisions.sql)"
+          # a 23514 on bettor_decision_snapshots_decision_check is not a missing file: production
+          # runs a bettor_decisions.sql older than the v2 engine's WATCH / LEAN (re-apply it)
+          node football/cfb_terminal/decisions_sync.js || echo "::warning::bettor decision sync failed — read the error above. 23514 on bettor_decision_snapshots_decision_check: production runs a pre-WATCH supabase/bettor_decisions.sql; re-apply it (Deploy Record P&L schema, apply_bettor_decisions). 404 / PGRST205: apply supabase/bettor_decisions.sql"
 
       - name: Fail the run if any lab step failed
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.run.outputs.status != '0' }}

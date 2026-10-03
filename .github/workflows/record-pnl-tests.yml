@@ -18,6 +18,7 @@ on:
       - 'tools/record/price_lock.js'
       - 'tools/record/verified_pnl*'
       - 'tools/record/football_record*'
+      - 'tools/record/quote_ledger*'
       - 'tools/record/signal_pnl*'
       - 'supabase/model_pnl*.sql'
       - 'supabase/signal_pnl*.sql'
@@ -29,6 +30,7 @@ on:
       - 'app.html'
       - 'record.html'
       - '.github/workflows/record-pnl*.yml'
+      - '.github/workflows/deploy-record-pnl.yml'
   push:
     branches: [main]
     paths:
@@ -36,6 +38,7 @@ on:
       - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
       - 'tools/record/price_lock.js'
+      - 'tools/record/quote_ledger*'
       - 'tools/record/verified_pnl*'
       - 'tools/record/signal_pnl*'
       - 'supabase/model_pnl*.sql'
@@ -64,6 +67,8 @@ jobs:
         run: node tools/record/pnl_ledger.test.js
       - name: Verified P&L (no price = no verified P&L; the price lock at or before the decision, frozen; an idempotent backfill; graded = priced + record only)
         run: node tools/record/verified_pnl.test.js
+      - name: The record's quote ledger (every priced pregame reading of every NFL and college game the model prices, kept append-only; the lock prices a pick from it only at or before the decision)
+        run: node tools/record/quote_ledger.test.js
       - name: The database (idempotent upsert, derived P&L, the price lock, verification and its reasons, verified_pnl_* parity and integrity, RLS, a reader's own dollars)
         env:
           PNL_SQL_REQUIRED: '1'

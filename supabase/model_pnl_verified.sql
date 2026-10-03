@@ -11,8 +11,8 @@
 --     model number priced by its stored pre-decision quote, at the default).
 --   · THE PRICE LOCK: a row with no price may receive one ONCE (price_source
 --     'snapshot', price_ref = the stored quote); then it is frozen like the rest.
---   · verified_pnl_* : the decisions, summary, breakdowns, cumulative series
---     and the integrity checks, aggregated here, never on the page.
+--   · model_pnl_quotes.sql (next) keeps the stored quote every locked price
+--     cites; model_pnl_verified_views.sql (last) aggregates and checks.
 -- Idempotent and additive; ends in a report whose rows must all read ok.
 -- ============================================================================
 do $g$ begin

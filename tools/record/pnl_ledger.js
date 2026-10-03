@@ -40,6 +40,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const core = require('./pnl_core.js');
+const PL = require('./price_lock.js');
 const PNL = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_pnl.js'));
 const { writeIfChanged, strip } = require(path.join(__dirname, '..', 'football', 'write_if_changed.js'));
 
@@ -97,13 +98,17 @@ function load(root, season) {
     rows.push(...got);
     sources.push({ source: 'bettor_decision', file: rel(root, sf), snapshots: snaps.length, rows: got.length, evaluations_file: rel(root, ef) });
   });
+  /* where EdgeDesk's stored quotes begin: a model decision published before
+     its league's every-game quote ledger began is record only, and says so */
+  const coverage = PL.coverage(root, season), everyFrom = PL.everyGameFrom(coverage);
   records.forEach((x) => {
     if (!x.L) return;
-    const got = core.modelRecordRows(x.L, rel(root, x.file));
+    const got = core.modelRecordRows(x.L, rel(root, x.file), everyFrom);
     rows.push(...got);
-    sources.push({ source: 'model_record', league: x.sport.toUpperCase(), file: rel(root, x.file), rows: got.length, note: 'no price captured: record-only rows' });
+    sources.push({ source: 'model_record', league: x.sport.toUpperCase(), file: rel(root, x.file), rows: got.length,
+      note: 'priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only' });
   });
-  return { rows, sources, excluded: excluded(root, season), ctx: settlementContext(root, season, events) };
+  return { rows, sources, excluded: excluded(root, season), ctx: settlementContext(root, season, events), prices: { coverage: coverage, every_game_from: everyFrom } };
 }
 
 /* what the settling jobs say about the rows they have not settled yet, and
@@ -156,7 +161,7 @@ function build(o) {
     sources: src.sources,
     rows: M.rows
   };
-  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts,
+  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts, prices: src.prices,
     settlement: { as_of: generated, props: src.ctx.status, finals_known: Object.keys(src.ctx.finals).length } });
   summary.sources = src.sources;
   summary.ledger_file = rel(o.root, lf);

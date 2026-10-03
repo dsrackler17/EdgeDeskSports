@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-03 — Verified P&L audited against production; the disconnects fixed
+
+The audit traced a spread, a total, a moneyline and a player prop from the decision to the page (`docs/pnl/AUDIT.md`), and checked production's run logs.
+
+- **Production had no `model_pnl` at all.** Every *Record P&L* run since the table was written called `model_pnl_upsert`, got `PGRST202` (no such function), and went green: the sync caught the error and exited 0, so not even the step's warning fired.
+  - `tools/record/pnl_sync.js` now never fails quietly. A missing schema exits 3 and a database that disagrees with the page exits 4, each with an error annotation and a run-summary line. The step is `continue-on-error`: the page is already published and never waits on the database, but the run shows the failure.
+  - After every sync it proves the database says what the page says: `verified_pnl_summary()` against the kernel's card over the same ledger (both strategies), and `verified_pnl_integrity()` at 0.
+  - **Deploy Record P&L schema** (`.github/workflows/deploy-record-pnl.yml`, manual) tests the SQL on a throwaway PostgreSQL, applies the six files in order with `ON_ERROR_STOP`, syncs and prints the A–I report.
+- **A locked price now resolves to a database row.** `supabase/model_pnl_quotes.sql` adds `model_pnl_quotes`, the stored quote every locked price cites, copied once by the sync and append-only. The integrity checks compare every snapshot price with its quote: same game, market, number, time and price. Where production's `cfb_lab_market_quotes` mirror exists, they compare with that independent copy too.
+- **Old model decisions cannot be priced, and now say why.** The model record never stored a price before its numbers. The lab's quotes start 2026-09-27T15:07Z and cover its 71 games only. Nothing stored a timestamped NFL game price. 723 of the 731 record-only decisions now read `before_capture`; the other 8 read `line_moved`.
+- **From now on every model game gets a stored price.** `tools/record/quote_ledger.js`: every hourly *Football model record* run keeps every priced pregame ESPN reading of every NFL and college game the model prices, in `record/football/quotes/<sport>_<season>.jsonl`.
+  - The rows are append-only and use the lab's write-on-change and heartbeat rule; nothing is kept at or after kickoff.
+  - NFL games are matched through nflverse's own ESPN id.
+  - The price lock reads this ledger beside the lab's. `summary.json` `verified.price_sources` and *How P&L works* say where each league's stored prices begin.
+- **The BET decisions' own mirror** was refusing every WATCH / LEAN decision. Production runs the 2026-09-28 18:28 `bettor_decisions.sql`, whose check predates them (23514 on `bds_0b368e37`), and the log called it "skipped". The schema deploy can re-apply the current file (`apply_bettor_decisions`), which accepts all 706 ledger rows. `cfb-lab.yml` now says what the error means.
+- **Tests:**
+  - `tools/record/quote_ledger.test.js` (19, end to end on the committed slates);
+  - `verified_pnl.test.js` 76;
+  - `pnl_sql.test.js` 200 (the evidence table, the cross-checks, the sync's parity);
+  - `pnl_ui.test.js` 457.
+
 ## 2026-10-03 — Verified P&L: no price, no verified P&L
 
 The Records page's Verified P&L said there were no priced bets. In fact two things were true. The P&L counted only `BET` rows. And the 738 graded model decisions (CFB 385-253-2, NFL) had no price at all: the model record never captured one, and its only stored prices were closing prices.

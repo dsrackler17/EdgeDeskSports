@@ -9,9 +9,25 @@
         "key": "cfb_lab_quotes",
         "league": "CFB",
         "dir": "football/cfb_lab/ledger/{season}/quotes",
-        "what": "ESPN sportsbook quotes the CFB Model Lab captures hourly before kickoff; append-only, written when a value changes and on a heartbeat (football/cfb_lab/lab_core.js dedupeDecision)."
+        "covers": "lab_games",
+        "what": "ESPN sportsbook quotes the CFB Model Lab captures hourly before kickoff for the games it tracks; append-only, written when a value changes and on a heartbeat (football/cfb_lab/lab_core.js dedupeDecision). From 2026-09-27T15:07Z."
+      },
+      {
+        "key": "record_quotes",
+        "league": "CFB",
+        "file": "record/football/quotes/cfb_{season}.jsonl",
+        "covers": "every_model_game",
+        "what": "The football model record's own quote ledger (tools/record/quote_ledger.js): every priced ESPN pregame reading of every college game the model publishes a number on, kept hourly under the lab's write-on-change + heartbeat rule. From its first run after 2026-10-03."
+      },
+      {
+        "key": "record_quotes",
+        "league": "NFL",
+        "file": "record/football/quotes/nfl_{season}.jsonl",
+        "covers": "every_model_game",
+        "what": "The same ledger for the NFL: ESPN's named-book line and prices, matched to the record's nflverse game id through nflverse's own ESPN id. The nflverse consensus line is a reference, not a price, and is never used. From its first run after 2026-10-03."
       }
     ],
+    "covers_note": "lab_games: only the games the CFB Model Lab tracks. every_model_game: every game the model publishes a number on — its first stored quote in a league is the earliest moment from which every model decision of that league can carry a verified price; a decision published before it is record only (price_lookup why before_capture).",
     "max_age_hours": 6,
     "max_age_note": "The lab writes a quote when it changes and at least every 6 hours (HEARTBEAT_H), so a book's latest quote at or before the decision is its price then for 6 hours; past that the game went unobserved and the price is not vouched for.",
     "close_zone_hours": 3,

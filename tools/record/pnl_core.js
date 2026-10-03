@@ -326,15 +326,25 @@ function decisionRows(snaps, evals, events, file) {
 const NO_SOURCE = {
   NFL: 'EdgeDesk stores no timestamped sportsbook price for NFL game markets: the nflverse consensus line it reads is a reference, not a price (no book, no capture time)'
 };
+/** a decision with no stored quote, published before its league's every-game
+    quote ledger began (everyFrom: PL.everyGameFrom, per league) */
+function beforeCapture(e, lg, everyFrom) {
+  if (!everyFrom || !(lg in everyFrom)) return null;
+  const at = Date.parse((e.pick && e.pick.at) || ''), from = everyFrom[lg] ? Date.parse(everyFrom[lg]) : null;
+  if (!Number.isFinite(at) || (from != null && at >= from)) return null;
+  return { status: 'historical_price_unavailable', why: 'before_capture',
+    detail: 'published ' + new Date(at).toISOString() + ', before EdgeDesk began storing every ' + lg + ' game\'s sportsbook quotes'
+      + (from != null ? ' (' + everyFrom[lg] + ')' : ' (not started yet)') + '; no quote was kept at or before this number, and a later one is never used' };
+}
 /** the P&L half of one graded model-record selection: its locked price at the
     default stake, or why it has none (price_lookup) */
-function modelPricing(e, lg, mt, side, line, bookName) {
+function modelPricing(e, lg, mt, side, line, bookName, everyFrom) {
   const lock = e.pick && e.pick.price_lock;
   const hasSource = (PL.CONFIG.price_snapshots.sources || []).some((x) => x.league === lg);
   if (!hasSource) return { price_lookup: { status: 'historical_price_unavailable', why: 'no_snapshot_source', detail: NO_SOURCE[lg] || 'EdgeDesk has no stored-quote source for ' + lg + ' game markets' } };
-  if (!lock) return { price_lookup: { status: 'historical_price_unavailable', why: 'no_snapshot', detail: 'EdgeDesk stored no priced quote for this game' } };
+  if (!lock) return { price_lookup: beforeCapture(e, lg, everyFrom) || { status: 'historical_price_unavailable', why: 'no_snapshot', detail: 'EdgeDesk stored no priced quote for this game' } };
   const r = PL.priceFor(lock[mt], { market_type: mt, side: side, line: line });
-  if (r.status !== 'locked') return { price_lookup: { status: r.status, why: r.why, detail: r.detail } };
+  if (r.status !== 'locked') return { price_lookup: (r.why === 'no_snapshot' && beforeCapture(e, lg, everyFrom)) || { status: r.status, why: r.why, detail: r.detail } };
   return {
     entry_odds: r.odds, entry_book: r.book, entry_book_name: bookName(r.book), odds_captured_at: r.observed_at,
     odds_captured_basis: 'the quote EdgeDesk stored at or before the number was published (' + r.source + ')',
@@ -346,7 +356,7 @@ function modelPricing(e, lg, mt, side, line, bookName) {
 }
 let FR = null;
 function frCore() { if (!FR) FR = require(path.join(__dirname, 'football_record_core.js')); return FR; }
-function modelRecordRows(L, file) {
+function modelRecordRows(L, file, everyFrom) {
   if (!L || !L.games) return [];
   const C = frCore();
   const sport = String(L.sport || '').toLowerCase(), lg = sport.toUpperCase();
@@ -382,7 +392,7 @@ function modelRecordRows(L, file) {
         model_prob: null, model_gap_points: num(g.spread.gap),
         result: g.spread.result, result_value: f.home_score - f.away_score, closing_line: r2(sl),
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
-      }, modelPricing(e, lg, 'spread', side, r2(sl), bookName)));
+      }, modelPricing(e, lg, 'spread', side, r2(sl), bookName, everyFrom)));
     }
     if (g.total && g.total.side && g.total.result && c.total != null) {
       const side = g.total.side;
@@ -393,7 +403,7 @@ function modelRecordRows(L, file) {
         model_prob: null, model_gap_points: num(g.total.gap),
         result: g.total.result, result_value: f.home_score + f.away_score, closing_line: c.total,
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
-      }, modelPricing(e, lg, 'total', side, num(c.total), bookName)));
+      }, modelPricing(e, lg, 'total', side, num(c.total), bookName, everyFrom)));
     }
     if (g.su && g.su.side && g.su.result) {
       const side = g.su.side, wp = num(p.home_win_prob);
@@ -403,7 +413,7 @@ function modelRecordRows(L, file) {
         model_prob: wp != null ? r4(side === 'home' ? wp : 1 - wp) : null, model_gap_points: null,
         result: g.su.result, result_value: f.home_score - f.away_score, closing_line: null,
         clv_points: null, clv_prob_pp: null, beat_close: null
-      }, modelPricing(e, lg, 'moneyline', side, null, bookName)));
+      }, modelPricing(e, lg, 'moneyline', side, null, bookName, everyFrom)));
     }
   });
   return out;
@@ -545,6 +555,14 @@ function summarize(ledger, meta) {
   verified.audit = { errors: audit.length, by_check: audit.reduce((a, x) => { a[x.check] = (a[x.check] || 0) + 1; return a; }, {}), first: audit.slice(0, 20) };
   verified.price_lookup = rows.filter((x) => x.source === 'model_record' && PNL.rowState(x) === 'RECORD_ONLY').reduce((a, x) => {
     const w = (x.price_lookup && x.price_lookup.why) || 'unknown'; a[w] = (a[w] || 0) + 1; return a; }, {});
+  /* where the stored prices begin (first captures only: stable from run to run) */
+  if (meta && meta.prices) {
+    verified.price_sources = {
+      every_game_from: meta.prices.every_game_from,
+      what: 'every_game_from: per league, the first quote of the ledger that stores every game the model prices — the earliest point from which every model decision of that league can be verified. Player props and BET decisions carry the price captured with the decision itself.',
+      sources: (meta.prices.coverage || []).map((c) => ({ key: c.key, league: c.league, covers: c.covers, first_capture: c.first_capture }))
+    };
+  }
   return {
     schema: SUMMARY_SCHEMA, engine: PNL.VERSION, generated_at: meta && meta.generated_at ? meta.generated_at : null,
     season: ledger.season, strategy: 'Verified P&L: every graded EdgeDesk decision — the model\'s published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default ' + DEFAULT_STAKE.toFixed(2) + 'u when it recorded none. Flat: 1.00u each. Never mixed.',

@@ -1,7 +1,7 @@
 -- ============================================================================
 -- EDGEDESK — VERIFIED P&L, read side: the decisions, the summary, the
 -- breakdowns, the cumulative series and the integrity checks. Apply after
--- supabase/model_pnl_verified.sql. docs/pnl/DESIGN.md § Verified P&L
+-- supabase/model_pnl_verified.sql and model_pnl_quotes.sql. docs/pnl/DESIGN.md § Verified P&L
 --   · the strategy is the graded record's picks — the model's published
 --     number and every BET (LEAN when asked) — that settled at a verified
 --     price: graded = priced + record only, always.
@@ -16,6 +16,7 @@
 do $g$ begin
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'model_pnl' and column_name = 'pnl_verified') then
     raise exception 'apply supabase/model_pnl_verified.sql first'; end if;
+  if to_regclass('public.model_pnl_quotes') is null then raise exception 'apply supabase/model_pnl_quotes.sql first'; end if;
 end $g$;
 
 -- every graded-record decision in the vocabulary of the Verified P&L spec
@@ -127,16 +128,27 @@ begin
     ('no_reason', 'a decision outside Verified P&L with no reason', 'error', (select count(*) from p where not pnl_verified and pnl_exclusion_reason is null)),
     ('reconcile', 'graded decisions ≠ verified priced + record only', 'error', (select abs(graded - ver - ro) from g))
   ) v(a, b, c, d);
-  -- every stored-quote price against the quote it names, where the quote mirror is deployed
+  -- every stored-quote price against the stored quote it names (model_pnl_quotes)
+  select count(*) filter (where q.quote_id is not null and (q.game_id is distinct from m.event_id or q.market_type is distinct from m.market_type
+      or q.observed_at is distinct from m.odds_captured_at or q.observed_at > m.recommended_at
+      or (m.market_type <> 'moneyline' and (case when m.market_type = 'total' then q.total_points
+            else case when m.side = 'home' then q.home_line else -q.home_line end end) is distinct from (m.price_ref ->> 'line')::numeric)
+      or (case when m.market_type = 'total' then case when m.side = 'over' then q.price_over else q.price_under end
+          else case when m.side = 'home' then q.price_home else q.price_away end end) is distinct from m.entry_odds)),
+    count(*) filter (where q.quote_id is null)
+    into m, x
+    from public.model_pnl m left join public.model_pnl_quotes q on q.quote_id = m.price_ref ->> 'quote_id'
+    where m.price_source = 'snapshot';
+  return query select 'snapshot_quote_mismatch'::text, 'a locked price that differs from the stored quote it cites'::text, 'error'::text, m::bigint;
+  return query select 'snapshot_quote_missing'::text, 'a locked price whose stored quote is not in model_pnl_quotes'::text, 'error'::text, x::bigint;
+  -- and, where the CFB Model Lab's own quote mirror is deployed, against that independent copy
   if to_regclass('public.cfb_lab_market_quotes') is not null then
     execute $q$ select count(*) filter (where q.quote_id is not null and (q.game_id is distinct from m.event_id or q.observed_at is distinct from m.odds_captured_at
-        or q.observed_at > m.recommended_at or (case when m.market_type = 'total' then case when m.side = 'over' then q.price_over else q.price_under end
-          else case when m.side = 'home' then q.price_home else q.price_away end end) is distinct from m.entry_odds)),
-        count(*) filter (where q.quote_id is null)
+        or (case when m.market_type = 'total' then case when m.side = 'over' then q.price_over else q.price_under end
+          else case when m.side = 'home' then q.price_home else q.price_away end end) is distinct from m.entry_odds))
       from public.model_pnl m left join public.cfb_lab_market_quotes q on q.quote_id = m.price_ref ->> 'quote_id'
-      where m.price_source = 'snapshot' $q$ into m, x;
-    return query select 'snapshot_quote_mismatch'::text, 'a locked price that differs from its stored quote'::text, 'error'::text, m::bigint;
-    return query select 'snapshot_quote_not_mirrored'::text, 'a locked price whose quote has not reached the database mirror yet'::text, 'info'::text, x::bigint;
+      where m.price_source = 'snapshot' and m.price_ref ->> 'source' = 'cfb_lab_quotes' $q$ into m;
+    return query select 'lab_mirror_mismatch'::text, 'a locked price that differs from the CFB Model Lab''s own mirrored quote'::text, 'error'::text, m::bigint;
   end if;
 end $i$;
 
