@@ -40,6 +40,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const core = require('./pnl_core.js');
+const PL = require('./price_lock.js');
+const PNL = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_pnl.js'));
 const { writeIfChanged, strip } = require(path.join(__dirname, '..', 'football', 'write_if_changed.js'));
 
 const ROOT_DEFAULT = path.join(__dirname, '..', '..');
@@ -96,13 +98,17 @@ function load(root, season) {
     rows.push(...got);
     sources.push({ source: 'bettor_decision', file: rel(root, sf), snapshots: snaps.length, rows: got.length, evaluations_file: rel(root, ef) });
   });
+  /* where EdgeDesk's stored quotes begin: a model decision published before
+     its league's every-game quote ledger began is record only, and says so */
+  const coverage = PL.coverage(root, season), everyFrom = PL.everyGameFrom(coverage);
   records.forEach((x) => {
     if (!x.L) return;
-    const got = core.modelRecordRows(x.L, rel(root, x.file));
+    const got = core.modelRecordRows(x.L, rel(root, x.file), everyFrom);
     rows.push(...got);
-    sources.push({ source: 'model_record', league: x.sport.toUpperCase(), file: rel(root, x.file), rows: got.length, note: 'no price captured: record-only rows' });
+    sources.push({ source: 'model_record', league: x.sport.toUpperCase(), file: rel(root, x.file), rows: got.length,
+      note: 'priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only' });
   });
-  return { rows, sources, excluded: excluded(root, season), ctx: settlementContext(root, season, events) };
+  return { rows, sources, excluded: excluded(root, season), ctx: settlementContext(root, season, events), prices: { coverage: coverage, every_game_from: everyFrom } };
 }
 
 /* what the settling jobs say about the rows they have not settled yet, and
@@ -155,7 +161,7 @@ function build(o) {
     sources: src.sources,
     rows: M.rows
   };
-  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts,
+  const summary = core.summarize(ledger, { generated_at: generated, excluded_sources: src.excluded, integrity_alerts: M.report.integrity_alerts, prices: src.prices,
     settlement: { as_of: generated, props: src.ctx.status, finals_known: Object.keys(src.ctx.finals).length } });
   summary.sources = src.sources;
   summary.ledger_file = rel(o.root, lf);
@@ -171,9 +177,13 @@ function main() {
   const B = build(o);
   const q = core.summarize(B.ledger, {}).views.all.data_quality;
   console.log('[pnl] season ' + B.season + ': ' + B.ledger.rows.length + ' rows · added ' + B.report.added + ' · settled ' + B.report.settled + ' · corrected ' + B.report.corrected
-    + ' · unchanged ' + B.report.unchanged + (B.report.kept_missing_source ? ' · kept (source missing) ' + B.report.kept_missing_source : ''));
+    + ' · unchanged ' + B.report.unchanged + (B.report.kept_missing_source ? ' · kept (source missing) ' + B.report.kept_missing_source : '')
+    + ' · prices locked ' + B.report.price_locked + (B.report.lock_kept ? ' · locks kept past their source ' + B.report.lock_kept : ''));
   console.log('[pnl] verified ' + q.verified + ' · pending ' + q.pending + ' · void ' + q.voids + ' · no entry price ' + q.missing_entry_odds + ' · simulated ' + q.simulated_price
     + ' · BET rows ' + B.summary.counts.bets + ' (verified ' + B.summary.counts.verified_bets + ')');
+  const V = B.summary.verified, vc = V.views.all.staked;
+  console.log('[pnl] VERIFIED P&L: ' + vc.priced + ' priced of ' + vc.graded + ' graded (' + vc.record_only + ' record only) · net ' + PNL.fmtUnits(vc.net_units) + ' · risked ' + (vc.risked_units == null ? '—' : vc.risked_units.toFixed(2) + 'u')
+    + ' · ROI ' + PNL.fmtPct(vc.roi_pct, 2, true) + ' · reconciles ' + (V.reconcile.ok ? 'yes' : 'NO') + ' · audit errors ' + V.audit.errors);
   const st = B.summary.states, rec = B.summary.record.all;
   console.log('[pnl] states: ' + ['PENDING', 'VERIFIED', 'RECORD_ONLY', 'VOID', 'INVALID'].map((k) => k + ' ' + st[k]).join(' · ') + ' (of ' + st.total + ')');
   console.log('[pnl] graded record ' + rec.record + ' over ' + rec.graded + ' (' + rec.verified + ' verified, ' + rec.record_only + ' record only)');
@@ -196,6 +206,7 @@ function main() {
   /* a disagreement between the page's figures is an internal error: the
      files are written (they are the evidence), the run fails loudly */
   if (!B.summary.integrity.ok) { console.error('[pnl] the integrity checks failed — see above'); return 2; }
+  if (B.summary.verified.audit.errors || !B.summary.verified.reconcile.ok) { console.error('[pnl] the Verified P&L audit failed: ' + JSON.stringify(B.summary.verified.audit.by_check) + ' reconcile ' + JSON.stringify(B.summary.verified.reconcile)); return 2; }
   return 0;
 }
 

@@ -18,8 +18,9 @@
 # ledger's correction history can never be lost to a push race.
 #
 # NO SECRET is needed to publish (GITHUB_TOKEN commits). The Supabase copy
-# (supabase/model_pnl.sql) is written only on main and only when SB_URL /
-# SB_SERVICE_ROLE are set; without them it logs and moves on.
+# (supabase/model_pnl*.sql) is written only on main and only when SB_URL /
+# SB_SERVICE_ROLE are set; without them it logs and moves on. With them it is
+# checked against the page on every run, and a failure is shown, never hidden.
 name: Record P&L
 
 on:
@@ -59,6 +60,7 @@ jobs:
         run: |
           node tools/record/pnl.test.js
           node tools/record/pnl_ledger.test.js
+          node tools/record/verified_pnl.test.js
 
       - name: Rebuild the P&L ledger and the Record's summary from the settled ledgers
         run: node tools/record/pnl_ledger.js --write
@@ -69,8 +71,18 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main 'record: profit & loss — every recommendation at its recorded price' -- record/pnl/
 
-      - name: Idempotent copy to Supabase (model_pnl)
+      # NEVER A SILENT GREEN. Until 2026-10-03 this step ended in
+      # `|| echo ::warning::`, and production had never been given model_pnl:
+      # every run logged PGRST202 and passed. Now a database without the schema
+      # exits 3 and one that disagrees with the page (verified_pnl_summary vs
+      # the Record card, any integrity check above 0) exits 4, each with an
+      # error annotation and a line in the run summary. The page is published
+      # above and never waits on the database, so the step may fail without
+      # failing the job; the run shows it. Fix: the "Deploy Record P&L schema"
+      # workflow.
+      - name: Copy to Supabase and prove it says what the page says (model_pnl)
+        continue-on-error: true
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node tools/record/pnl_sync.js || echo "::warning::P&L sync skipped (apply supabase/model_pnl.sql, model_pnl_states.sql and model_pnl_analytics.sql)"
+        run: node tools/record/pnl_sync.js

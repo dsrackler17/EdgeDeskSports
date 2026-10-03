@@ -394,6 +394,31 @@ function setFinal(e, f, nowIso) {
   return true;
 }
 
+/* ------------------------------------------------------------ price lock
+
+   THE PRICE A PICK WAS PUBLISHED AT (tools/record/price_lock.js). The record
+   never captured a price with the model's number; EdgeDesk's own quote
+   capture did, on its own clock. This freezes on the pick each market as
+   those STORED quotes stood at the moment the number was published — a
+   quote observed after it is never used, and neither is the close. A locked
+   market is never rewritten; a revised number is a new pick with its own
+   lock. The lock prices a graded side only when the stored quote was for the
+   exact number it was graded at (tools/record/pnl_core.js). The number
+   itself is untouched: the lock is read from quotes that already existed
+   when it was published, so it can be attached later (the backfill) and
+   still say only what was true then. */
+const PL = require('./price_lock.js');
+function lockPrice(e, quotes, nowIso) {
+  if (!e || !e.pick || ms(e.pick.at) == null) return false;
+  const book = (e.market_pick && e.market_pick.book) || (e.entry && e.entry.market && e.entry.market.book) || (e.close && e.close.book) || null;
+  const r = PL.lockPick(quotes || [], { decided_at: e.pick.at, kickoff: e.kickoff, prefer_book: book, now: nowIso }, e.pick.price_lock);
+  if (!r.changed) return false;
+  /* a game EdgeDesk stored no quote for at all carries no lock (and says so by not having one) */
+  if (!e.pick.price_lock && PL.MARKETS.every((m) => r.lock[m] && r.lock[m].why === 'no_snapshot')) return false;
+  e.pick.price_lock = r.lock;
+  return true;
+}
+
 /* ---------------------------------------------------------------- grading */
 
 function sideResult(side, diff) {
@@ -630,6 +655,6 @@ function gradeLedger(ledger, nowIso) {
 module.exports = {
   SCHEMA, SUMMARY_SCHEMA, GUARD, LEAN, BREAK_EVEN_PCT, MODEL, PRECLOSE_HOURS,
   emptyLedger, projectionFromSlate, groupOf, recordProjection, fillMarket, noteQuote, closeFromLastQuote, setClose, setFinal,
-  fillClosePrices, lacksClosePrice, cleanPrices, pricePick, pnlOf,
+  fillClosePrices, lacksClosePrice, cleanPrices, pricePick, pnlOf, lockPrice,
   gradeGame, gradeLedger, summarize, clvPts, leanSpread, leanTotal, family, num,
 };

@@ -171,8 +171,8 @@ try {
     ['nfl', 'cfb', 'props', 'game'].map((k) => S.views[k].flat.summary.n));
   chk('game markets vs props, side by side', S.views.all.flat.compare.game.n === 3 && S.views.all.flat.compare.props.n === 2);
   const grade = S.views.all.flat.breakdowns.grade;
-  chk('by grade: BET, LEAN, WATCH, PASS each at flat 1u', grade.map((g) => g.key).join() === 'Bet,Lean,Watch,Pass', grade.map((g) => g.key));
-  chk('by market: spread, moneyline, total, player props', S.views.all.flat.breakdowns.market.map((m) => m.key).join() === 'Spread,Moneyline,Total,Player Props', S.views.all.flat.breakdowns.market.map((m) => m.key));
+  chk('by grade: BET, LEAN, WATCH, PASS (and the bare model number) each at flat 1u', grade.map((g) => g.key).join() === 'Bet,Lean,Watch,Pass,Model number', grade.map((g) => g.key));
+  chk('by market: spread, total, moneyline, player props — the card\'s order', S.views.all.flat.breakdowns.market.map((m) => m.key).join() === 'Spread,Total,Moneyline,Player Props', S.views.all.flat.breakdowns.market.map((m) => m.key));
   chk('by book: only books with a captured price', S.books.indexOf('DraftKings') >= 0 && S.books.indexOf('consensus') < 0, S.books);
   chk('by model version: versions are never merged', S.views.all.flat.breakdowns.model_version.map((m) => m.key).join() === 'edgedesk_cfb_p4_v1.0.0,edgedesk_football_v1.0.0,edgedesk_football_v1.1.0,edgedesk_props_model_v1', S.views.all.flat.breakdowns.model_version.map((m) => m.key));
   chk('by unit size: the staked tiers', S.views.all.staked.breakdowns.unit_size.map((u) => u.key).join() === '0.25u,0.50u,0.75u,1.00u');
@@ -320,7 +320,7 @@ function r2(v) { return Math.round(v * 100) / 100; }
   chk('real: every pending row says why', rows.filter((x) => x.record_state === 'PENDING').every((x) => !!PNL.PENDING_REASON[x.pending_reason]) && S.pending_reasons.total === st.PENDING, S.pending_reasons);
   const rec = S.record.all;
   chk('real: the graded record = its verified + record-only rows (' + rec.record + ' over ' + rec.graded + ')', rec.graded === rec.verified + rec.record_only && rec.graded === rec.wins + rec.losses + rec.pushes, rec);
-  chk('real: historical results with no entry price are kept in the record, never dropped', rows.filter((x) => x.source === 'model_record').every((x) => x.record_state === 'RECORD_ONLY' || x.record_state === 'VOID') && rec.record_only >= rows.filter((x) => x.source === 'model_record' && x.record_state === 'RECORD_ONLY').length);
+  chk('real: historical results with no entry price are kept in the record, never dropped', rows.filter((x) => x.source === 'model_record').every((x) => x.record_state === 'RECORD_ONLY' || x.record_state === 'VOID' || (x.record_state === 'VERIFIED' && x.price_source === 'snapshot' && x.stake_source === 'default')) && rec.record_only >= rows.filter((x) => x.source === 'model_record' && x.record_state === 'RECORD_ONLY').length);
   chk('real: the integrity checks of every scope pass', S.integrity.ok, Object.keys(S.integrity.checks).filter((k) => !S.integrity.checks[k].ok).map((k) => k + ': ' + JSON.stringify(S.integrity.checks[k].failed)));
   const page = core.expandRows(B.page);
   const prec = PNL.gradedRecord(page.filter((x) => PNL.inRecord(x, false)));

@@ -2884,7 +2884,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20260930p">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
-<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261001u">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003v">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3008,10 +3008,10 @@ body.focus .dk-focusnote{display:block}
   <section id="v-record" class="view hide">
     <div class="row-between"><h2 style="margin:0">Records</h2><span class="spacer"></span><span class="freshness" id="recFresh">&#8212;</span><button class="refreshbtn" title="Refresh" id="recRefresh">&#8635;</button></div>
     <!-- IS THE MODEL UP OR DOWN? The first thing on the Records page, always:
-         EdgeDesk's verified P&L — settled BET recommendations at the entry
-         price it recorded (record/pnl/, tools/record/pnl_ledger.js) — with
-         the historical model record (wins and losses only, never units)
-         beneath it. Rendered by lib/edgedesk_pnl_ui.js. -->
+         MODEL PERFORMANCE (every graded decision, W-L-P, never units) and
+         VERIFIED P&L (only the graded decisions settled at a price EdgeDesk
+         captured at or before the decision — record/pnl/,
+         tools/record/pnl_ledger.js). Rendered by lib/edgedesk_pnl_ui.js. -->
     <div id="recPnlWrap"></div>
     <!-- DETAILED RECORDS. The edges record grades prices the capture flagged
          (signals); the football model record grades the number the football
@@ -3874,8 +3874,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
 <script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
 <!-- THE P&L BOOK (docs/pnl/DESIGN.md): the arithmetic and the Record section over record/pnl/ -->
-<script src="/lib/edgedesk_pnl.js?v=20261001u"></script>
-<script src="/lib/edgedesk_pnl_ui.js?v=20261001u"></script>
+<script src="/lib/edgedesk_pnl.js?v=20261003v"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20261003v"></script>
 <script src="/lib/edgedesk_market.js?v=20260929a"></script>
 <script src="/lib/edgedesk_execution.js?v=20260929a"></script>
 <script src="/lib/edgedesk_decision.js?v=20260930b"></script>

@@ -79,6 +79,7 @@ jobs:
           FOOTBALL_RECORD_RULES_ONLY: '1'
         run: |
           node tools/record/football_record.test.js
+          node tools/record/quote_ledger.test.js
           node football/personnel/personnel.test.js
 
       - name: Record, close, settle and grade

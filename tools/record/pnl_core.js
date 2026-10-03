@@ -14,9 +14,12 @@
                                                                         its price (EDDecisionTrack.firstPerClass)
                       …/evaluations.jsonl                               EDDecisionTrack.gradeEvaluation
      model record     record/football/<sport>_<season>.json             the published number, graded at the
-                                                                        close — NO PRICE was ever captured, so
-                                                                        these rows carry a result and never a
-                                                                        P&L figure
+                                                                        close. Priced ONLY through its pick's
+                                                                        price lock (tools/record/price_lock.js):
+                                                                        the quote EdgeDesk stored at or before
+                                                                        the number was published, for the exact
+                                                                        number graded — at the default stake.
+                                                                        Otherwise a result, never a P&L figure.
 
    The arithmetic is lib/edgedesk_pnl.js (EDPnl.settle): the P&L of a row is
    derived from its own entry price, stake and result, nothing else.
@@ -44,6 +47,10 @@
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 const PNL = require(path.join(ROOT, 'lib', 'edgedesk_pnl.js'));
+const PL = require('./price_lock.js');
+/* the stake a graded pick risks when its source recorded none (the model's
+   published number), frozen on the row together with its price */
+const DEFAULT_STAKE = PNL.validStake(PL.CONFIG.default_stake_units) > 0 ? PL.CONFIG.default_stake_units : PNL.DEFAULT_STAKE_UNITS;
 
 const LEDGER_SCHEMA = 'edgedesk_pnl_ledger_v1';
 const SUMMARY_SCHEMA = 'edgedesk_pnl_summary_v1';
@@ -51,8 +58,14 @@ const SUMMARY_SCHEMA = 'edgedesk_pnl_summary_v1';
 /* the recommendation half: frozen once written */
 const FROZEN = ['source', 'sport', 'league', 'season', 'week', 'event_id', 'home', 'away', 'game_date', 'model_version', 'engine_version',
   'market_group', 'market_type', 'prop_market', 'player_id', 'player_name', 'team', 'opponent', 'position', 'side', 'selection',
-  'model_line', 'entry_line', 'entry_odds', 'entry_book', 'price_assumed', 'model_prob', 'model_edge_pct', 'ev_pct', 'rec_class',
-  'stake_units', 'recommended_at', 'odds_captured_at', 'evaluation_mode'];
+  'model_line', 'entry_line', 'price_assumed', 'model_prob', 'model_edge_pct', 'ev_pct', 'rec_class',
+  'recommended_at', 'evaluation_mode'];
+/* THE PRICE LOCK: the price, its book and capture time, and the stake it
+   risks. Frozen like the rest of the recommendation, with one exception: a
+   row that has no price may receive one ONCE (a model-record decision whose
+   stored pre-decision quote is matched by the price lock), after which it
+   never changes. */
+const LOCK = ['entry_odds', 'entry_book', 'odds_captured_at', 'stake_units', 'stake_source', 'price_source', 'price_ref'];
 /* the settlement half: may change, only as a logged correction */
 const SETTLEMENT = ['result', 'result_value', 'final_score', 'closing_line', 'closing_odds', 'clv_points', 'clv_prob_pp', 'beat_close', 'settled_at'];
 /* rows from these evaluation modes were never a recommendation that existed at the time */
@@ -220,6 +233,8 @@ function propRows(league, evals, results, events, file) {
       model_prob: r4(num(x.p_side)), model_edge_pct: r2(num(x.edge_pp)), ev_pct: x.ev != null ? r2(100 * num(x.ev)) : null,
       rec_class: x.decision, confidence: num(x.confidence), stage: x.stage || null,
       stake_units: x.decision === 'BET' ? (num(x.units) != null ? num(x.units) : 0) : 0,
+      stake_source: x.decision === 'BET' && num(x.units) > 0 ? 'explicit' : null,
+      price_source: x.american != null ? 'decision' : null, price_ref: null,
       recommended_at: iso(x.evaluated_at),
       odds_captured_at: iso(x.quote_captured_at || x.evaluated_at),
       odds_captured_basis: x.quote_captured_at ? 'quote capture' : 'evaluation time (the price was current when EdgeDesk evaluated it)',
@@ -284,6 +299,8 @@ function decisionRows(snaps, evals, events, file) {
       ev_pct: r2(num(s.decision_ev_pct != null ? s.decision_ev_pct : s.calibrated_ev_pct)),
       rec_class: cls, confidence: num(s.decision_confidence != null ? s.decision_confidence : s.confidence_score), stage: s.validation_state || null,
       stake_units: cls === 'BET' ? (num(s.recommended_units) || 0) : 0,
+      stake_source: cls === 'BET' && num(s.recommended_units) > 0 ? 'explicit' : null,
+      price_source: q.odds != null ? 'decision' : null, price_ref: null,
       recommended_at: iso(s.evaluated_at),
       odds_captured_at: iso(q.captured_at || s.quote_captured_at),
       odds_captured_basis: 'quote capture',
@@ -303,10 +320,43 @@ function decisionRows(snaps, evals, events, file) {
   return out;
 }
 
-/* ---- the football model record (no price, ever) --------------------- */
+/* ---- the football model record --------------------------------------
+   A result always; a price only through the pick's price lock. */
+/* why a league's model decisions can carry no stored price at all */
+const NO_SOURCE = {
+  NFL: 'EdgeDesk stores no timestamped sportsbook price for NFL game markets: the nflverse consensus line it reads is a reference, not a price (no book, no capture time)'
+};
+/** a decision with no stored quote, published before its league's every-game
+    quote ledger began (everyFrom: PL.everyGameFrom, per league) */
+function beforeCapture(e, lg, everyFrom) {
+  if (!everyFrom || !(lg in everyFrom)) return null;
+  const at = Date.parse((e.pick && e.pick.at) || ''), from = everyFrom[lg] ? Date.parse(everyFrom[lg]) : null;
+  if (!Number.isFinite(at) || (from != null && at >= from)) return null;
+  return { status: 'historical_price_unavailable', why: 'before_capture',
+    detail: 'published ' + new Date(at).toISOString() + ', before EdgeDesk began storing every ' + lg + ' game\'s sportsbook quotes'
+      + (from != null ? ' (' + everyFrom[lg] + ')' : ' (not started yet)') + '; no quote was kept at or before this number, and a later one is never used' };
+}
+/** the P&L half of one graded model-record selection: its locked price at the
+    default stake, or why it has none (price_lookup) */
+function modelPricing(e, lg, mt, side, line, bookName, everyFrom) {
+  const lock = e.pick && e.pick.price_lock;
+  const hasSource = (PL.CONFIG.price_snapshots.sources || []).some((x) => x.league === lg);
+  if (!hasSource) return { price_lookup: { status: 'historical_price_unavailable', why: 'no_snapshot_source', detail: NO_SOURCE[lg] || 'EdgeDesk has no stored-quote source for ' + lg + ' game markets' } };
+  if (!lock) return { price_lookup: beforeCapture(e, lg, everyFrom) || { status: 'historical_price_unavailable', why: 'no_snapshot', detail: 'EdgeDesk stored no priced quote for this game' } };
+  const r = PL.priceFor(lock[mt], { market_type: mt, side: side, line: line });
+  if (r.status !== 'locked') return { price_lookup: (r.why === 'no_snapshot' && beforeCapture(e, lg, everyFrom)) || { status: r.status, why: r.why, detail: r.detail } };
+  return {
+    entry_odds: r.odds, entry_book: r.book, entry_book_name: bookName(r.book), odds_captured_at: r.observed_at,
+    odds_captured_basis: 'the quote EdgeDesk stored at or before the number was published (' + r.source + ')',
+    stake_units: DEFAULT_STAKE, stake_source: 'default', price_source: 'snapshot',
+    price_ref: { source: r.source, quote_id: r.quote_id, event_id: String(e.game_id), market: mt, side: side, line: r.line, book: r.book,
+      observed_at: r.observed_at, decided_at: lock.decided_at, locked_at: r.locked_at },
+    result_detail: 'graded at the closing number; priced at the quote EdgeDesk stored for that number before the model published it'
+  };
+}
 let FR = null;
 function frCore() { if (!FR) FR = require(path.join(__dirname, 'football_record_core.js')); return FR; }
-function modelRecordRows(L, file) {
+function modelRecordRows(L, file, everyFrom) {
   if (!L || !L.games) return [];
   const C = frCore();
   const sport = String(L.sport || '').toLowerCase(), lg = sport.toUpperCase();
@@ -327,6 +377,7 @@ function modelRecordRows(L, file) {
       market_group: 'game', prop_market: null, player_id: null, player_name: null, position: null,
       entry_odds: null, entry_book: entryMkt ? entryMkt.book || null : null, entry_book_name: entryMkt ? entryMkt.book || null : null,
       price_assumed: false, model_edge_pct: null, ev_pct: null, rec_class: 'MODEL', confidence: null, stage: null, stake_units: 0,
+      stake_source: null, price_source: null, price_ref: null,
       recommended_at: iso(p.at), odds_captured_at: null, odds_captured_basis: 'no price was captured with the model record',
       evaluation_mode: mode, closing_odds: null, final_score: f.away_score + '–' + f.home_score, settled_at: iso(f.at), source_corrections: [],
       result_detail: 'graded at the closing line; the model record never captured a price'
@@ -341,7 +392,7 @@ function modelRecordRows(L, file) {
         model_prob: null, model_gap_points: num(g.spread.gap),
         result: g.spread.result, result_value: f.home_score - f.away_score, closing_line: r2(sl),
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
-      }));
+      }, modelPricing(e, lg, 'spread', side, r2(sl), bookName, everyFrom)));
     }
     if (g.total && g.total.side && g.total.result && c.total != null) {
       const side = g.total.side;
@@ -352,7 +403,7 @@ function modelRecordRows(L, file) {
         model_prob: null, model_gap_points: num(g.total.gap),
         result: g.total.result, result_value: f.home_score + f.away_score, closing_line: c.total,
         clv_points: cv, clv_prob_pp: null, beat_close: cv == null || Math.abs(cv) < 1e-9 ? null : cv > 0
-      }));
+      }, modelPricing(e, lg, 'total', side, num(c.total), bookName, everyFrom)));
     }
     if (g.su && g.su.side && g.su.result) {
       const side = g.su.side, wp = num(p.home_win_prob);
@@ -362,7 +413,7 @@ function modelRecordRows(L, file) {
         model_prob: wp != null ? r4(side === 'home' ? wp : 1 - wp) : null, model_gap_points: null,
         result: g.su.result, result_value: f.home_score - f.away_score, closing_line: null,
         clv_points: null, clv_prob_pp: null, beat_close: null
-      }));
+      }, modelPricing(e, lg, 'moneyline', side, null, bookName, everyFrom)));
     }
   });
   return out;
@@ -377,7 +428,7 @@ function merge(prev, fresh, now) {
   const old = {};
   ((prev && prev.rows) || []).forEach((x) => { old[x.recommendation_id] = x; });
   const seen = {};
-  const report = { added: 0, settled: 0, corrected: 0, unchanged: 0, kept_missing_source: 0, integrity_alerts: [], duplicates_in_sources: 0 };
+  const report = { added: 0, settled: 0, corrected: 0, unchanged: 0, kept_missing_source: 0, integrity_alerts: [], duplicates_in_sources: 0, price_locked: 0, lock_kept: 0 };
   const rows = [];
   fresh.forEach((f) => {
     if (seen[f.recommendation_id]) { report.duplicates_in_sources++; return; }
@@ -386,6 +437,7 @@ function merge(prev, fresh, now) {
     let row;
     if (!o) {
       row = Object.assign({}, f, { first_recorded_at: at, corrections: [], corrected: false });
+      if (f.price_source === 'snapshot') { row.price_locked_at = at; report.price_locked++; }
       if ((f.source_corrections || []).length) { row.corrections = f.source_corrections.map((c) => ({ at: c.at, fields: c.fields, reason: c.reason, origin: 'source' })); row.corrected = true; }
       report.added++;
     } else {
@@ -397,8 +449,28 @@ function merge(prev, fresh, now) {
           report.integrity_alerts.push({ recommendation_id: f.recommendation_id, field: k, ledger: o[k], source: f[k], action: 'kept the recorded value' });
         }
       });
+      /* the price lock: set once on a row that had no price, frozen after */
+      const wasPriced = o.entry_odds != null || !!o.price_assumed, nowPriced = f.entry_odds != null || !!f.price_assumed;
+      if (!wasPriced && nowPriced) {
+        LOCK.forEach((k) => { row[k] = f[k] === undefined ? null : f[k]; });
+        row.price_locked_at = at;
+        report.price_locked++;
+      } else {
+        LOCK.forEach((k) => {
+          if (same(o[k], f[k])) return;
+          if (o[k] === undefined) { row[k] = f[k] === undefined ? null : f[k]; return; }      /* a field this ledger did not keep yet */
+          /* a stored-quote lock outlives the quote file it came from */
+          if (wasPriced && !nowPriced && o.price_source === 'snapshot') { report.lock_kept++; return; }
+          report.integrity_alerts.push({ recommendation_id: f.recommendation_id, field: k, ledger: o[k], source: f[k], action: 'kept the recorded value' });
+        });
+      }
       /* descriptive fields that are not part of the call may be refreshed */
-      ['event_label', 'entry_book_name', 'prop_label', 'prop_category', 'prop_category_label', 'result_detail', 'source_ref', 'odds_captured_basis', 'confidence', 'stage', 'model_gap_points', 'team', 'opponent'].forEach((k) => { if (f[k] !== undefined) row[k] = f[k]; });
+      ['event_label', 'prop_label', 'prop_category', 'prop_category_label', 'source_ref', 'confidence', 'stage', 'model_gap_points', 'team', 'opponent', 'price_lookup'].forEach((k) => { if (f[k] !== undefined) row[k] = f[k]; });
+      /* …and the words about the result, unless they describe a price the row no longer takes from its source */
+      if (f.result_detail !== undefined && (row.price_source === f.price_source || row.price_source !== 'snapshot')) row.result_detail = f.result_detail;
+      /* the words that go with the price follow the price the row actually holds */
+      if (same(row.entry_book, f.entry_book)) ['entry_book_name', 'odds_captured_basis'].forEach((k) => { if (f[k] !== undefined) row[k] = f[k]; });
+      if (row.entry_odds != null) delete row.price_lookup;
       /* the settlement half */
       const wasSettled = o.result && o.result !== 'pending';
       const changes = {};
@@ -470,17 +542,41 @@ function summarize(ledger, meta) {
       integrity[k + '|' + m[0] + (m[1] ? '+leans' : '')] = { ok: I.ok, n: I.n, failed: I.failed };
     });
   });
+  /* VERIFIED P&L: the card of every scope and strategy, and the proof that
+     graded = priced + record only */
+  const verified = { what: PNL.HELP.verified, default_stake_units: DEFAULT_STAKE, views: {} };
+  PNL.SCOPE_ORDER.forEach((k) => {
+    const sub = PNL.scopeRows(rows, k);
+    verified.views[k] = { staked: PNL.verifiedCard(sub, 'staked'), flat: PNL.verifiedCard(sub, 'flat') };
+  });
+  const allCard = verified.views.all.staked;
+  verified.reconcile = { graded: allCard.graded, priced: allCard.priced, record_only: allCard.record_only, ok: allCard.graded === allCard.priced + allCard.record_only };
+  const audit = PNL.auditRows(rows);
+  verified.audit = { errors: audit.length, by_check: audit.reduce((a, x) => { a[x.check] = (a[x.check] || 0) + 1; return a; }, {}), first: audit.slice(0, 20) };
+  verified.price_lookup = rows.filter((x) => x.source === 'model_record' && PNL.rowState(x) === 'RECORD_ONLY').reduce((a, x) => {
+    const w = (x.price_lookup && x.price_lookup.why) || 'unknown'; a[w] = (a[w] || 0) + 1; return a; }, {});
+  /* where the stored prices begin (first captures only: stable from run to run) */
+  if (meta && meta.prices) {
+    verified.price_sources = {
+      every_game_from: meta.prices.every_game_from,
+      what: 'every_game_from: per league, the first quote of the ledger that stores every game the model prices — the earliest point from which every model decision of that league can be verified. Player props and BET decisions carry the price captured with the decision itself.',
+      sources: (meta.prices.coverage || []).map((c) => ({ key: c.key, league: c.league, covers: c.covers, first_capture: c.first_capture }))
+    };
+  }
   return {
     schema: SUMMARY_SCHEMA, engine: PNL.VERSION, generated_at: meta && meta.generated_at ? meta.generated_at : null,
-    season: ledger.season, strategy: 'Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.',
+    season: ledger.season, strategy: 'Verified P&L: every graded EdgeDesk decision — the model\'s published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default ' + DEFAULT_STAKE.toFixed(2) + 'u when it recorded none. Flat: 1.00u each. Never mixed.',
     rules: [
-      'Historical P&L uses the recommendation and the price that existed at the time; nothing is re-predicted or re-priced.',
-      'No captured entry price, no P&L: the result counts in the win/loss record and is marked "P&L unavailable — entry price not captured". EdgeDesk never assumes −110.',
+      'NO PRICE = NO VERIFIED P&L. A decision is in Verified P&L only when it settled (win, loss or push) at a valid American price that existed at or before the decision. Everything else is in the record only, with its reason.',
+      'Historical P&L uses the decision and the price that existed at the time; nothing is re-predicted or re-priced, a closing price is never used as an entry price, and EdgeDesk never assumes −110.',
+      'A model-record decision is priced only from a quote EdgeDesk stored at or before the number was published, for the exact number it was graded at; that price and the default stake are then frozen.',
       'A price the source assumed rather than captured is simulated and never counted as verified P&L.',
       'ROI = net profit ÷ total risked × 100. A push or a void returns the stake: it adds nothing to risked or to P&L.',
       'Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted.'
     ],
-    counts: { rows: rows.length, bets: rows.filter(isBet).length, verified_bets: rows.filter((x) => isBet(x) && x.pnl_status === 'VERIFIED').length, corrected: rows.filter((x) => x.corrected).length },
+    counts: { rows: rows.length, bets: rows.filter(isBet).length, verified_bets: rows.filter((x) => isBet(x) && x.pnl_status === 'VERIFIED').length,
+      priced_decisions: allCard.priced, graded_decisions: allCard.graded, record_only_decisions: allCard.record_only, corrected: rows.filter((x) => x.corrected).length },
+    verified: verified,
     model_versions: versions, books: books,
     states: PNL.states(rows),
     pending_reasons: PNL.pendingReasons(rows),
@@ -504,13 +600,13 @@ const PAGE_COLS = ['recommendation_id', 'source', 'league', 'season', 'week', 'e
   'model_gap_points', 'rec_class', 'confidence', 'stake_units', 'recommended_at', 'odds_captured_at', 'evaluation_mode',
   'result', 'result_value', 'final_score', 'closing_line', 'closing_odds', 'clv_points', 'clv_prob_pp', 'beat_close', 'settled_at',
   'corrected', 'corrections', 'source_missing', 'implied_prob', 'flat_profit_units', 'profit_units', 'pnl_status', 'missing_entry_odds',
-  'record_state', 'state_reason', 'pending_reason'];
+  'record_state', 'state_reason', 'pending_reason', 'stake_source', 'price_source', 'pnl_exclusion_reason', 'price_why'];
 function pageRows(ledger) {
   const ci = PAGE_COLS.indexOf('corrections'), si = PAGE_COLS.indexOf('state_reason'), sti = PAGE_COLS.indexOf('record_state');
   return {
     schema: PAGE_SCHEMA, season: ledger.season, generated_at: ledger.generated_at, cols: PAGE_COLS,
     rows: (ledger.rows || []).map((x) => {
-      const r = PAGE_COLS.map((k) => (x[k] === undefined ? null : x[k]));
+      const r = PAGE_COLS.map((k) => (k === 'price_why' ? (x.price_lookup && x.price_lookup.why) || null : x[k] === undefined ? null : x[k]));
       if (Array.isArray(r[ci]) && !r[ci].length) r[ci] = null;
       /* the page words every state but INVALID itself; only an invalid row's reason rides along */
       if (r[sti] !== 'INVALID') r[si] = null;
@@ -527,6 +623,6 @@ function expandRows(page) {
 module.exports = {
   PAGE_SCHEMA, PAGE_COLS, pageRows, expandRows,
   LEDGER_SCHEMA, SUMMARY_SCHEMA, FROZEN, SETTLEMENT, SCOPES, GRADE_LABEL, MARKET_LABEL,
-  propRows, decisionRows, modelRecordRows, eventIndex, finalIndex, pendingReason, IN_PLAY_HOURS, STAT_FEED_HOURS, SETTLE_GRACE_HOURS,
+  propRows, decisionRows, modelRecordRows, modelPricing, LOCK, DEFAULT_STAKE, eventIndex, finalIndex, pendingReason, IN_PLAY_HOURS, STAT_FEED_HOURS, SETTLE_GRACE_HOURS,
   latestResults, merge, finish, summarize, breakdowns, view, isBet, propMeta
 };
