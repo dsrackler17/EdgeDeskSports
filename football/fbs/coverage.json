@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-03T21:29:39.080Z",
+ "generated_at": "2026-10-03T23:10:16.887Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,29 +119,29 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 106,
+  "total": 99,
   "by_group": {
-   "p4": 53,
-   "independent": 3,
-   "other": 56
+   "other": 56,
+   "p4": 46,
+   "independent": 2
   },
   "by_matchup": {
-   "conference": 96,
-   "non_conference": 7,
+   "conference": 90,
+   "non_conference": 6,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "sec": 14,
-   "big12": 12,
-   "acc": 13,
-   "independents": 3,
-   "bigten": 14,
-   "mac": 13,
+   "mac": 12,
+   "sec": 12,
    "mwc": 9,
+   "acc": 11,
+   "bigten": 13,
    "american": 12,
    "sunbelt": 12,
    "pac12": 7,
-   "cusa": 4
+   "big12": 10,
+   "cusa": 5,
+   "independents": 2
   }
  },
  "ok": true,
@@ -195,11 +195,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 106
+  "PREDICTED": 99
  },
  "weather": {
-  "requested": 101,
-  "answered": 101,
+  "requested": 94,
+  "answered": 94,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -207,10 +207,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "101 of 101 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "94 of 94 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 106
+  "NO_MARKET": 99
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -280,11 +280,11 @@
    "ok": true,
    "detail": {
     "non_power_games": 53,
-    "total": 106,
+    "total": 99,
     "example": [
-     "Western Michigan @ Buffalo",
      "Toledo @ Ball State",
-     "Samford @ UAB"
+     "Samford @ UAB",
+     "Wyoming @ North Dakota State"
     ]
    }
   },
@@ -299,7 +299,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 96,
+    "conference_games": 90,
     "wrong": 0
    }
   },
@@ -331,8 +331,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 106,
-    "audit_total": 106
+    "slate": 99,
+    "audit_total": 99
    }
   },
   {
