@@ -541,7 +541,11 @@ const plain = withRow.filter((y) => !boardHeld(y) && y.row.fair_status !== 'BLEN
 chk('real NFL: where neither engine holds the blend, the board reproduces the slate pricing kernel’s fair line', plain.length > 0 && plain.every((y) => Math.abs(y.x.d.canonical.decision_fair_home_spread - y.row.fair_line) < 0.02), plain.filter((y) => Math.abs(y.x.d.canonical.decision_fair_home_spread - y.row.fair_line) >= 0.02).map((y) => [y.x.g.game_id, y.x.d.canonical.decision_fair_home_spread, y.row.fair_line]));
 chk('real NFL: the kernel holds (BLENDED_HELD, at the market line) exactly the games whose blend crosses the market line against the projection', withRow.every((y) => (y.row.fair_status === 'BLENDED_HELD') === crosses(y) && (y.row.fair_status !== 'BLENDED_HELD' || Math.abs(y.row.fair_line - y.row.market_line) < 1e-9)),
   withRow.filter((y) => (y.row.fair_status === 'BLENDED_HELD') !== crosses(y)).map((y) => [y.x.g.game_id, y.row.fair_status, y.row.fair_line, y.row.market_line, Math.round(rawBlend(y) * 100) / 100]));
-chk('real NFL: the audit games are held by the kernel — PIT @ CLE, ARI @ NYG, LA @ PHI', ['2026_04_PIT_CLE', '2026_04_LA_PHI'].every((id) => withRow.some((y) => y.x.g.game_id === id && y.row.fair_status === 'BLENDED_HELD')), withRow.filter((y) => /PIT_CLE|ARI_NYG|LA_PHI/.test(y.x.g.game_id)).map((y) => [y.x.g.game_id, y.row.fair_status]));
+/* the audit's named games, while they are on the live slate: a game leaves it
+   once it kicks off (PIT @ CLE, 2026-10-02), and the rule itself is checked on
+   every slate game just above */
+const auditOnSlate = ['2026_04_PIT_CLE', '2026_04_LA_PHI'].filter((id) => withRow.some((y) => y.x.g.game_id === id));
+chk('real NFL: the audit games still on the slate are held by the kernel — PIT @ CLE, LA @ PHI', auditOnSlate.every((id) => withRow.some((y) => y.x.g.game_id === id && y.row.fair_status === 'BLENDED_HELD')), withRow.filter((y) => /PIT_CLE|ARI_NYG|LA_PHI/.test(y.x.g.game_id)).map((y) => [y.x.g.game_id, y.row.fair_status]));
 const heldB = withRow.filter(boardHeld);
 chk('real NFL: the board holds some real games (the rule is exercised, not vacuous)', heldB.length > 0, heldB.length);
 /* "just far enough": at the held centre the projection's side covers the
