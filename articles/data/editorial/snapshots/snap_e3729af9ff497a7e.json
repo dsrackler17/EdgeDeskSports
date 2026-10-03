@@ -1,0 +1,4199 @@
+{
+  "schema": "edgedesk_pregame_snapshot_v1",
+  "snapshot_id": "snap_e3729af9ff497a7e",
+  "article_id": "cfb-401862792",
+  "key": "CFB:401862792",
+  "game_id": "401862792",
+  "sport": "CFB",
+  "season": 2026,
+  "week": 5,
+  "captured_at": "2026-10-03T18:50:28.014Z",
+  "kickoff": "2026-10-03T23:30:00.000Z",
+  "generation_version": "editorial_v1",
+  "game": {
+    "sport": "CFB",
+    "game_id": "401862792",
+    "home": "South Florida",
+    "away": "Temple",
+    "home_short": null,
+    "away_short": null,
+    "kickoff": "2026-10-03T23:30:00.000Z",
+    "when_label": "2026-10-03 23:30 UTC",
+    "venue": "Raymond James Stadium",
+    "neutral_site": false,
+    "conference_line": "American Athletic conference game",
+    "week": 5,
+    "season": 2026,
+    "network": null
+  },
+  "featured": {
+    "editorial_priority": 36.6,
+    "status": "featured",
+    "window_label": "Saturday night",
+    "window_key": "saturday_night",
+    "national_window": true,
+    "stage": "regular",
+    "stage_label": null,
+    "rivalry_label": null,
+    "home_rank": 82,
+    "away_rank": 76,
+    "rank_pool": 136,
+    "model_disagreement": 8.4,
+    "manual_override": null,
+    "components": [
+      {
+        "key": "national_window",
+        "label": "Saturday night kickoff",
+        "points": 22,
+        "tier": "VERIFIED_FACT",
+        "detail": "kickoff 19:30 ET on Sat — converted from the kickoff timestamp"
+      },
+      {
+        "key": "familiarity",
+        "label": "Conference game",
+        "points": 5,
+        "tier": "VERIFIED_FACT",
+        "detail": null
+      },
+      {
+        "key": "model_disagreement",
+        "label": "EdgeDesk differs from the market by 8.4 points",
+        "points": 9.6,
+        "tier": "EDGEDESK_MODEL",
+        "detail": "South Florida -14.9 against South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — DATA FAULT · the gap earns 9.6 of a possible 24 because the price is current. A gap alone orders no research and implies no expected value."
+      }
+    ]
+  },
+  "model": {
+    "priced": true,
+    "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+    "fair_spread": 14.909959582036702,
+    "fair_spread_text": "South Florida -14.9",
+    "fair_spread_raw_text": "South Florida -14.9",
+    "near_pickem": false,
+    "favourite": "South Florida",
+    "underdog": "Temple",
+    "margin": "14.9",
+    "total": "55.1",
+    "total_n": 55.1,
+    "score": {
+      "away": {
+        "team": "Temple",
+        "points": "20"
+      },
+      "home": {
+        "team": "South Florida",
+        "points": "35"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "win_prob": {
+      "home": "South Florida",
+      "away": "Temple",
+      "home_pct": 84,
+      "away_pct": 16,
+      "home_text": "84%",
+      "away_text": "16%",
+      "bounded": false,
+      "bounded_note": null,
+      "favourite": "South Florida",
+      "favourite_pct": 84,
+      "favourite_text": "84%"
+    },
+    "moneyline": null,
+    "outcome_range": {
+      "basis_team": "South Florida",
+      "p10": "-7.1",
+      "median": "+13.9",
+      "p90": "+34.9",
+      "sigma": "14.8",
+      "volatility": "20.02",
+      "volatility_discriminates": false,
+      "note": "Quoted from South Florida’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+    },
+    "confidence_pct": 82,
+    "confidence_absent_reason": null,
+    "status": "DATA FAULT",
+    "status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+    "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+    "absent_reason": null
+  },
+  "market": {
+    "available": true,
+    "model": "South Florida -14.9",
+    "model_raw": "South Florida -14.9",
+    "market": "South Florida -6.5",
+    "difference": "8.4 points",
+    "difference_n": 8.409959582036702,
+    "total_model": "55.1",
+    "total_market": "49.0",
+    "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
+    "captured": "2026-09-29T22:00:02.478+00:00",
+    "capture_age": "93 hours old",
+    "stale": false,
+    "classification": "DATA FAULT",
+    "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+    "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+  },
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and Bovada on 2026-09-29, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "research_view": {
+    "contract": "cfb_research_brief/1",
+    "view": "cfb_research_view/1",
+    "game_id": "401862792",
+    "home": "South Florida",
+    "away": "Temple",
+    "projected": true,
+    "engine_status": "PREDICTED",
+    "label": {
+      "key": "NO_MARKET",
+      "label": "STALE MARKET",
+      "rule": "stale_market",
+      "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
+    },
+    "disagreement": {
+      "status": "MARKET_FAULT",
+      "verified": false,
+      "raw_market_gap": 8.41,
+      "verified_market_gap": null,
+      "calibrated_gap": 6.52,
+      "root_cause": "STALE_MARKET",
+      "failed": [
+        "MARKET.quote_fresh",
+        "MARKET.book_count",
+        "MODEL.calibration"
+      ],
+      "incomplete": [],
+      "favorite_flip": false,
+      "manual_review": false
+    },
+    "fair": {
+      "line_text": "South Florida -14.9",
+      "favorite_team": "South Florida",
+      "underdog_team": "Temple",
+      "display_fair_spread": 14.9,
+      "raw_home_margin": 14.91,
+      "raw_line_text": "South Florida -14.91",
+      "is_near_pickem": false
+    },
+    "market_gap": {
+      "available": true,
+      "points": 8.41,
+      "toward_team": "South Florida",
+      "text": "8.4 pts toward South Florida",
+      "market_line_text": "South Florida -6.5",
+      "market_home_margin": 6.5,
+      "favorite_differs": false,
+      "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
+      "as_of": "2026-09-29T22:00:02.478+00:00",
+      "stale": true,
+      "measured_from": "raw",
+      "note": null
+    },
+    "confidence": {
+      "score": 82,
+      "tier": "HIGH",
+      "label": "High"
+    },
+    "reliability": {
+      "pct": 83,
+      "tier": "STRONG",
+      "text": "83 · STRONG",
+      "sub": "main deduction: Temple’s availability report is not due yet",
+      "score": 83,
+      "grade": "STRONG",
+      "grade_label": "STRONG",
+      "gate_label": null,
+      "components": [
+        {
+          "key": "team_data",
+          "label": "Team data",
+          "score": 18.7,
+          "max": 20
+        },
+        {
+          "key": "roster_availability",
+          "label": "Roster/status",
+          "score": 12,
+          "max": 20
+        },
+        {
+          "key": "projection_stability",
+          "label": "Stability",
+          "score": 18,
+          "max": 20
+        },
+        {
+          "key": "freshness",
+          "label": "Freshness",
+          "score": 12.3,
+          "max": 15
+        },
+        {
+          "key": "source_integrity",
+          "label": "Source integrity",
+          "score": 13.3,
+          "max": 15
+        },
+        {
+          "key": "environment",
+          "label": "Environment",
+          "score": 8.5,
+          "max": 10
+        }
+      ],
+      "main_deduction": "Temple’s availability report is not due yet; the impact of Temple’s absences cannot be assessed: no graded availability read",
+      "capped_by": [],
+      "next_actions": [
+        {
+          "action": "Re-read availability inside the filing window (Temple)",
+          "potential_gain": 3,
+          "text": "up to +3"
+        },
+        {
+          "action": "Re-read availability inside the filing window (South Florida)",
+          "potential_gain": 3,
+          "text": "up to +3"
+        },
+        {
+          "action": "Refresh the market quote",
+          "potential_gain": 2,
+          "text": "up to +2"
+        }
+      ],
+      "stability": {
+        "tier": "STABLE",
+        "sd": 2.07,
+        "favorite_flip_rate": 0
+      },
+      "scale": "0-100 reliability score, not a probability"
+    },
+    "drivers": {
+      "team": "South Florida",
+      "none": false,
+      "text": null,
+      "reasons": [
+        {
+          "kind": "component",
+          "key": "rating",
+          "points": 8.23,
+          "text": "+8.2 pts team-strength edge (opponent-adjusted results)"
+        },
+        {
+          "kind": "component",
+          "key": "hfa",
+          "points": 4.08,
+          "text": "+4.1 pts home-field advantage"
+        },
+        {
+          "kind": "component",
+          "key": "matchup",
+          "points": 2.6,
+          "text": "+2.6 pts stylistic matchup"
+        }
+      ]
+    },
+    "best_available_line": {
+      "available": false,
+      "reason": "every captured quote is past its freshness limit, so none is shown as available"
+    },
+    "projection_status": {
+      "key": "STABLE",
+      "label": "STABLE",
+      "text": "EdgeDesk’s number is unchanged since the latest published number."
+    },
+    "stability": {
+      "tier": "LOW",
+      "label": "Low",
+      "text": "the stored numbers span 3.3 pts across 3 readings"
+    },
+    "published": [
+      {
+        "at": "2026-09-23T14:27:27.019Z",
+        "source": "first published",
+        "home_margin": 18.25,
+        "text": "South Florida -18.3"
+      },
+      {
+        "at": "2026-09-30T17:15:56.240Z",
+        "source": "latest published",
+        "home_margin": 14.91,
+        "text": "South Florida -14.9"
+      }
+    ],
+    "revisions": 6,
+    "change_since_published": {
+      "comparable": true,
+      "points": 0,
+      "toward_team": "Temple",
+      "since_at": "2026-09-30T17:15:56.240Z",
+      "text": "unchanged since the latest published number"
+    },
+    "what_changed": {
+      "available": true,
+      "summary": "EdgeDesk moved 3.3 points toward Temple since the first published number.",
+      "attribution_text": "Projection changed 3.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+      "market": "Market moved 0.5 pts toward South Florida (espn · Draft Kings)",
+      "model_version": null
+    },
+    "parity": {
+      "ok": true,
+      "gaps": []
+    },
+    "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+  },
+  "drivers": {
+    "rows": [
+      {
+        "points": "+8.2",
+        "points_n": 8.23207289643603,
+        "text": "South Florida is the better football team by 8.2 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team",
+        "favours": "South Florida"
+      },
+      {
+        "points": "+4.1",
+        "points_n": 4.082,
+        "text": "Playing at South Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+        "favours": "South Florida"
+      },
+      {
+        "points": "+2.6",
+        "points_n": 2.5957586997977398,
+        "text": "Stylistically the matchup favours South Florida by 2.6 points: ball control vs front disruption",
+        "favours": "South Florida"
+      }
+    ],
+    "basis": "Points are the engine’s own contributions to the projected spread, from South Florida’s perspective, and they sum toward it.",
+    "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+    "empty": null
+  },
+  "matchups": [
+    {
+      "title": "Temple pass offense vs South Florida pass defense",
+      "att": {
+        "team": "Temple",
+        "label": "pass offense",
+        "v": "54.9",
+        "rank": "#41 of 136",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "pass defense",
+        "v": "43.7",
+        "rank": "#104 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s pass offense rates 54.9 (#41 of 136) against South Florida’s pass defense at 43.7 (#104 of 137). Temple’s unit stands higher among its own position group, by 63 places."
+    },
+    {
+      "title": "Temple run offense vs South Florida run defense",
+      "att": {
+        "team": "Temple",
+        "label": "run offense",
+        "v": "62.6",
+        "rank": "#12 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "run defense",
+        "v": "52.4",
+        "rank": "#60 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s run offense rates 62.6 (#12 of 137) against South Florida’s run defense at 52.4 (#60 of 137). Temple’s unit stands higher among its own position group, by 48 places."
+    },
+    {
+      "title": "South Florida pass offense vs Temple pass defense",
+      "att": {
+        "team": "South Florida",
+        "label": "pass offense",
+        "v": null,
+        "rank": null,
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "pass defense",
+        "v": "46.3",
+        "rank": "#86 of 137",
+        "note": null
+      },
+      "complete": false,
+      "read": "Temple’s pass defense is measurable at 46.3 (#86 of 137). South Florida’s pass offense is not, so the pairing cannot be scored."
+    },
+    {
+      "title": "South Florida run offense vs Temple run defense",
+      "att": {
+        "team": "South Florida",
+        "label": "run offense",
+        "v": "45.0",
+        "rank": "#95 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "run defense",
+        "v": "44.1",
+        "rank": "#94 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "South Florida’s run offense rates 45.0 (#95 of 137) against Temple’s run defense at 44.1 (#94 of 137). Temple’s unit stands higher among its own position group, by 1 place."
+    },
+    {
+      "title": "Temple QB room vs South Florida secondary",
+      "att": {
+        "team": "Temple",
+        "label": "QB room",
+        "v": "58.1",
+        "rank": "#59 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "secondary",
+        "v": "56.3",
+        "rank": "#37 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s QB room rates 58.1 (#59 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 22 places."
+    },
+    {
+      "title": "South Florida QB room vs Temple secondary",
+      "att": {
+        "team": "South Florida",
+        "label": "QB room",
+        "v": "54.6",
+        "rank": "#116 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "secondary",
+        "v": "47.8",
+        "rank": "#120 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "South Florida’s QB room rates 54.6 (#116 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 4 places."
+    },
+    {
+      "title": "Temple offensive line vs South Florida defensive line",
+      "att": {
+        "team": "Temple",
+        "label": "offensive line",
+        "v": "52.9",
+        "rank": "#53 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "defensive line",
+        "v": "58.7",
+        "rank": "#16 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s offensive line rates 52.9 (#53 of 137) against South Florida’s defensive line at 58.7 (#16 of 137). South Florida’s unit stands higher among its own position group, by 37 places."
+    },
+    {
+      "title": "South Florida offensive line vs Temple defensive line",
+      "att": {
+        "team": "South Florida",
+        "label": "offensive line",
+        "v": "57.6",
+        "rank": "#14 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "defensive line",
+        "v": "49.0",
+        "rank": "#117 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "South Florida’s offensive line rates 57.6 (#14 of 137) against Temple’s defensive line at 49.0 (#117 of 137). South Florida’s unit stands higher among its own position group, by 103 places."
+    },
+    {
+      "title": "Temple running backs vs South Florida linebackers",
+      "att": {
+        "team": "Temple",
+        "label": "running backs",
+        "v": "55.3",
+        "rank": "#101 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "linebackers",
+        "v": "57.5",
+        "rank": "#17 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s running backs rates 55.3 (#101 of 137) against South Florida’s linebackers at 57.5 (#17 of 137). South Florida’s unit stands higher among its own position group, by 84 places."
+    },
+    {
+      "title": "South Florida running backs vs Temple linebackers",
+      "att": {
+        "team": "South Florida",
+        "label": "running backs",
+        "v": "53.4",
+        "rank": "#136 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "linebackers",
+        "v": "49.7",
+        "rank": "#115 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "South Florida’s running backs rates 53.4 (#136 of 137) against Temple’s linebackers at 49.7 (#115 of 137). Temple’s unit stands higher among its own position group, by 21 places."
+    },
+    {
+      "title": "Temple receivers vs South Florida secondary",
+      "att": {
+        "team": "Temple",
+        "label": "receivers",
+        "v": "54.6",
+        "rank": "#97 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "South Florida",
+        "label": "secondary",
+        "v": "56.3",
+        "rank": "#37 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "Temple’s receivers rates 54.6 (#97 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 60 places."
+    },
+    {
+      "title": "South Florida receivers vs Temple secondary",
+      "att": {
+        "team": "South Florida",
+        "label": "receivers",
+        "v": "55.2",
+        "rank": "#63 of 137",
+        "note": null
+      },
+      "def": {
+        "team": "Temple",
+        "label": "secondary",
+        "v": "47.8",
+        "rank": "#120 of 137",
+        "note": null
+      },
+      "complete": true,
+      "read": "South Florida’s receivers rates 55.2 (#63 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 57 places."
+    }
+  ],
+  "advantages": {
+    "away": [
+      {
+        "k": "Run offense",
+        "rank_gap": 83,
+        "gap": 17.6,
+        "lead": "Temple",
+        "trail": "South Florida",
+        "lead_cell": "62.6 · #12 of 137",
+        "trail_cell": "45.0 · #95 of 137",
+        "text": "Temple 62.6 (#12 of 137) vs South Florida 45.0 (#95 of 137) — 83 places on the national board."
+      },
+      {
+        "k": "QB room",
+        "rank_gap": 57,
+        "gap": 3.5,
+        "lead": "Temple",
+        "trail": "South Florida",
+        "lead_cell": "58.1 · #59 of 137",
+        "trail_cell": "54.6 · #116 of 137",
+        "text": "Temple 58.1 (#59 of 137) vs South Florida 54.6 (#116 of 137) — 57 places on the national board."
+      },
+      {
+        "k": "Offense",
+        "rank_gap": 54,
+        "gap": 9.4,
+        "lead": "Temple",
+        "trail": "South Florida",
+        "lead_cell": "58.3 · #21 of 137",
+        "trail_cell": "48.9 · #75 of 137",
+        "text": "Temple 58.3 (#21 of 137) vs South Florida 48.9 (#75 of 137) — 54 places on the national board."
+      },
+      {
+        "k": "Continuity",
+        "rank_gap": 49,
+        "gap": 13,
+        "lead": "Temple",
+        "trail": "South Florida",
+        "lead_cell": "41.4 · #84 of 137",
+        "trail_cell": "28.4 · #133 of 137",
+        "text": "Temple 41.4 (#84 of 137) vs South Florida 28.4 (#133 of 137) — 49 places on the national board."
+      },
+      {
+        "k": "Running backs",
+        "rank_gap": 35,
+        "gap": 1.9,
+        "lead": "Temple",
+        "trail": "South Florida",
+        "lead_cell": "55.3 · #101 of 137",
+        "trail_cell": "53.4 · #136 of 137",
+        "text": "Temple 55.3 (#101 of 137) vs South Florida 53.4 (#136 of 137) — 35 places on the national board."
+      }
+    ],
+    "home": [
+      {
+        "k": "Defensive line",
+        "rank_gap": 101,
+        "gap": 9.7,
+        "lead": "South Florida",
+        "trail": "Temple",
+        "lead_cell": "58.7 · #16 of 137",
+        "trail_cell": "49.0 · #117 of 137",
+        "text": "South Florida 58.7 (#16 of 137) vs Temple 49.0 (#117 of 137) — 101 places on the national board."
+      },
+      {
+        "k": "Linebackers",
+        "rank_gap": 98,
+        "gap": 7.8,
+        "lead": "South Florida",
+        "trail": "Temple",
+        "lead_cell": "57.5 · #17 of 137",
+        "trail_cell": "49.7 · #115 of 137",
+        "text": "South Florida 57.5 (#17 of 137) vs Temple 49.7 (#115 of 137) — 98 places on the national board."
+      },
+      {
+        "k": "Secondary",
+        "rank_gap": 83,
+        "gap": 8.5,
+        "lead": "South Florida",
+        "trail": "Temple",
+        "lead_cell": "56.3 · #37 of 137",
+        "trail_cell": "47.8 · #120 of 137",
+        "text": "South Florida 56.3 (#37 of 137) vs Temple 47.8 (#120 of 137) — 83 places on the national board."
+      },
+      {
+        "k": "Depth",
+        "rank_gap": 46,
+        "gap": 0.5,
+        "lead": "South Florida",
+        "trail": "Temple",
+        "lead_cell": "54.1 · #32 of 137",
+        "trail_cell": "53.6 · #78 of 137",
+        "text": "South Florida 54.1 (#32 of 137) vs Temple 53.6 (#78 of 137) — 46 places on the national board."
+      },
+      {
+        "k": "Offensive line",
+        "rank_gap": 39,
+        "gap": 4.7,
+        "lead": "South Florida",
+        "trail": "Temple",
+        "lead_cell": "57.6 · #14 of 137",
+        "trail_cell": "52.9 · #53 of 137",
+        "text": "South Florida 57.6 (#14 of 137) vs Temple 52.9 (#53 of 137) — 39 places on the national board."
+      }
+    ],
+    "measured": [],
+    "measured_note": null,
+    "unproven": [],
+    "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+  },
+  "compare": {
+    "cols": [
+      "Temple",
+      "South Florida"
+    ],
+    "groups": [
+      {
+        "title": "Team rating",
+        "rows": [
+          {
+            "cat": "overall",
+            "k": "ETSR (overall)",
+            "note": "points vs an average FBS team, neutral field",
+            "a": {
+              "v": "-0.8",
+              "n": -0.8,
+              "rank": "#76 of 137",
+              "rank_n": 76,
+              "note": null
+            },
+            "h": {
+              "v": "-1.1",
+              "n": -1.07,
+              "rank": "#82 of 137",
+              "rank_n": 82,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 0.3,
+              "rank_gap": 6
+            }
+          },
+          {
+            "cat": "talent",
+            "k": "Talent",
+            "note": null,
+            "a": {
+              "v": "48.6",
+              "n": 48.6,
+              "rank": "#79 of 137",
+              "rank_n": 79,
+              "note": null
+            },
+            "h": {
+              "v": "42.9",
+              "n": 42.9,
+              "rank": "#104 of 137",
+              "rank_n": 104,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 5.7,
+              "rank_gap": 25
+            }
+          },
+          {
+            "cat": "performance",
+            "k": "Performance",
+            "note": null,
+            "a": {
+              "v": "52.1",
+              "n": 52.1,
+              "rank": "#61 of 137",
+              "rank_n": 61,
+              "note": null
+            },
+            "h": {
+              "v": "44.7",
+              "n": 44.7,
+              "rank": "#93 of 137",
+              "rank_n": 93,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 7.4,
+              "rank_gap": 32
+            }
+          },
+          {
+            "cat": "scheme_fit",
+            "k": "Scheme fit",
+            "note": "personnel against this team’s own tendencies",
+            "a": {
+              "v": "50.5",
+              "n": 50.5,
+              "rank": "#64 of 137",
+              "rank_n": 64,
+              "note": null
+            },
+            "h": {
+              "v": "51.8",
+              "n": 51.8,
+              "rank": "#30 of 137",
+              "rank_n": 30,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 1.3,
+              "rank_gap": 34
+            }
+          }
+        ]
+      },
+      {
+        "title": "Units",
+        "rows": [
+          {
+            "cat": "offense",
+            "k": "Offense",
+            "note": null,
+            "a": {
+              "v": "58.3",
+              "n": 58.3,
+              "rank": "#21 of 137",
+              "rank_n": 21,
+              "note": null
+            },
+            "h": {
+              "v": "48.9",
+              "n": 48.9,
+              "rank": "#75 of 137",
+              "rank_n": 75,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 9.4,
+              "rank_gap": 54
+            }
+          },
+          {
+            "cat": "defense",
+            "k": "Defense",
+            "note": null,
+            "a": {
+              "v": "43.9",
+              "n": 43.9,
+              "rank": "#106 of 137",
+              "rank_n": 106,
+              "note": null
+            },
+            "h": {
+              "v": "44.4",
+              "n": 44.4,
+              "rank": "#102 of 137",
+              "rank_n": 102,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.5,
+              "rank_gap": 4
+            }
+          },
+          {
+            "cat": "special_teams",
+            "k": "Special teams",
+            "note": null,
+            "a": {
+              "v": "50.4",
+              "n": 50.4,
+              "rank": "#56 of 130",
+              "rank_n": 56,
+              "note": null
+            },
+            "h": {
+              "v": "50.8",
+              "n": 50.8,
+              "rank": "#41 of 130",
+              "rank_n": 41,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.4,
+              "rank_gap": 15
+            }
+          },
+          {
+            "cat": "run_offense",
+            "k": "Run offense",
+            "note": null,
+            "a": {
+              "v": "62.6",
+              "n": 62.6,
+              "rank": "#12 of 137",
+              "rank_n": 12,
+              "note": null
+            },
+            "h": {
+              "v": "45.0",
+              "n": 45,
+              "rank": "#95 of 137",
+              "rank_n": 95,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 17.6,
+              "rank_gap": 83
+            }
+          },
+          {
+            "cat": "pass_offense",
+            "k": "Pass offense",
+            "note": null,
+            "a": {
+              "v": "54.9",
+              "n": 54.9,
+              "rank": "#41 of 136",
+              "rank_n": 41,
+              "note": null
+            },
+            "h": {
+              "v": null,
+              "n": null,
+              "rank": null,
+              "rank_n": null,
+              "note": null
+            },
+            "edge": null
+          },
+          {
+            "cat": "run_defense",
+            "k": "Run defense",
+            "note": null,
+            "a": {
+              "v": "44.1",
+              "n": 44.1,
+              "rank": "#94 of 137",
+              "rank_n": 94,
+              "note": null
+            },
+            "h": {
+              "v": "52.4",
+              "n": 52.4,
+              "rank": "#60 of 137",
+              "rank_n": 60,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 8.3,
+              "rank_gap": 34
+            }
+          },
+          {
+            "cat": "pass_defense",
+            "k": "Pass defense",
+            "note": null,
+            "a": {
+              "v": "46.3",
+              "n": 46.3,
+              "rank": "#86 of 137",
+              "rank_n": 86,
+              "note": null
+            },
+            "h": {
+              "v": "43.7",
+              "n": 43.7,
+              "rank": "#104 of 137",
+              "rank_n": 104,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 2.6,
+              "rank_gap": 18
+            }
+          }
+        ]
+      },
+      {
+        "title": "Position groups",
+        "rows": [
+          {
+            "cat": "qb",
+            "k": "QB room",
+            "note": null,
+            "a": {
+              "v": "58.1",
+              "n": 58.1,
+              "rank": "#59 of 137",
+              "rank_n": 59,
+              "note": null
+            },
+            "h": {
+              "v": "54.6",
+              "n": 54.6,
+              "rank": "#116 of 137",
+              "rank_n": 116,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 3.5,
+              "rank_gap": 57
+            }
+          },
+          {
+            "cat": "ol",
+            "k": "Offensive line",
+            "note": null,
+            "a": {
+              "v": "52.9",
+              "n": 52.9,
+              "rank": "#53 of 137",
+              "rank_n": 53,
+              "note": null
+            },
+            "h": {
+              "v": "57.6",
+              "n": 57.6,
+              "rank": "#14 of 137",
+              "rank_n": 14,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 4.7,
+              "rank_gap": 39
+            }
+          },
+          {
+            "cat": "wr",
+            "k": "Receivers",
+            "note": null,
+            "a": {
+              "v": "54.6",
+              "n": 54.6,
+              "rank": "#97 of 137",
+              "rank_n": 97,
+              "note": null
+            },
+            "h": {
+              "v": "55.2",
+              "n": 55.2,
+              "rank": "#63 of 137",
+              "rank_n": 63,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.6,
+              "rank_gap": 34
+            }
+          },
+          {
+            "cat": "te",
+            "k": "Tight ends",
+            "note": "rated by the player layer; the board publishes no national TE rank",
+            "a": {
+              "v": "55.2",
+              "n": 55.2,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "h": {
+              "v": "55.3",
+              "n": 55.3,
+              "rank": null,
+              "rank_n": null,
+              "note": "rated, held out of the national rank by the confidence gate"
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.1,
+              "rank_gap": null
+            }
+          },
+          {
+            "cat": "rb",
+            "k": "Running backs",
+            "note": null,
+            "a": {
+              "v": "55.3",
+              "n": 55.3,
+              "rank": "#101 of 137",
+              "rank_n": 101,
+              "note": null
+            },
+            "h": {
+              "v": "53.4",
+              "n": 53.4,
+              "rank": "#136 of 137",
+              "rank_n": 136,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 1.9,
+              "rank_gap": 35
+            }
+          },
+          {
+            "cat": "dl",
+            "k": "Defensive line",
+            "note": null,
+            "a": {
+              "v": "49.0",
+              "n": 49,
+              "rank": "#117 of 137",
+              "rank_n": 117,
+              "note": null
+            },
+            "h": {
+              "v": "58.7",
+              "n": 58.7,
+              "rank": "#16 of 137",
+              "rank_n": 16,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 9.7,
+              "rank_gap": 101
+            }
+          },
+          {
+            "cat": "lb",
+            "k": "Linebackers",
+            "note": null,
+            "a": {
+              "v": "49.7",
+              "n": 49.7,
+              "rank": "#115 of 137",
+              "rank_n": 115,
+              "note": null
+            },
+            "h": {
+              "v": "57.5",
+              "n": 57.5,
+              "rank": "#17 of 137",
+              "rank_n": 17,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 7.8,
+              "rank_gap": 98
+            }
+          },
+          {
+            "cat": "secondary",
+            "k": "Secondary",
+            "note": null,
+            "a": {
+              "v": "47.8",
+              "n": 47.8,
+              "rank": "#120 of 137",
+              "rank_n": 120,
+              "note": null
+            },
+            "h": {
+              "v": "56.3",
+              "n": 56.3,
+              "rank": "#37 of 137",
+              "rank_n": 37,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 8.5,
+              "rank_gap": 83
+            }
+          },
+          {
+            "cat": "k_room",
+            "k": "Kicking",
+            "note": null,
+            "a": {
+              "v": "55.9",
+              "n": 55.9,
+              "rank": "#79 of 137",
+              "rank_n": 79,
+              "note": null
+            },
+            "h": {
+              "v": "55.9",
+              "n": 55.9,
+              "rank": "#78 of 137",
+              "rank_n": 78,
+              "note": null
+            },
+            "edge": {
+              "side": "even",
+              "gap": 0,
+              "rank_gap": 1
+            }
+          }
+        ]
+      },
+      {
+        "title": "Roster shape",
+        "rows": [
+          {
+            "cat": "depth",
+            "k": "Depth",
+            "note": "quality behind the projected starters",
+            "a": {
+              "v": "53.6",
+              "n": 53.6,
+              "rank": "#78 of 137",
+              "rank_n": 78,
+              "note": null
+            },
+            "h": {
+              "v": "54.1",
+              "n": 54.1,
+              "rank": "#32 of 137",
+              "rank_n": 32,
+              "note": null
+            },
+            "edge": {
+              "side": "h",
+              "gap": 0.5,
+              "rank_gap": 46
+            }
+          },
+          {
+            "cat": "continuity",
+            "k": "Continuity",
+            "note": "how much of last season is still here",
+            "a": {
+              "v": "41.4",
+              "n": 41.4,
+              "rank": "#84 of 137",
+              "rank_n": 84,
+              "note": null
+            },
+            "h": {
+              "v": "28.4",
+              "n": 28.4,
+              "rank": "#133 of 137",
+              "rank_n": 133,
+              "note": null
+            },
+            "edge": {
+              "side": "a",
+              "gap": 13,
+              "rank_gap": 49
+            }
+          }
+        ]
+      }
+    ],
+    "one_sided_team": null,
+    "one_sided_note": null
+  },
+  "uncertainty": {
+    "items": [
+      {
+        "sev": "MEDIUM",
+        "label": "market disagreement",
+        "text": "The market disagrees by 8.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "sample",
+        "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "stale",
+        "text": "odds is 93h old",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Temple — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Temple — extreme transfer turnover",
+        "text": "72% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Temple — thin offensive data",
+        "text": "188 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "Temple — thin defensive data",
+        "text": "241 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "South Florida — injury uncertainty",
+        "text": "100% of projected starter value has no availability record.",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "South Florida — extreme transfer turnover",
+        "text": "82% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "South Florida — thin offensive data",
+        "text": "96 offensive plays observed. Too few offensive snaps to score the offensive contract",
+        "widening": null
+      },
+      {
+        "sev": "MEDIUM",
+        "label": "South Florida — thin defensive data",
+        "text": "245 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+        "widening": null
+      },
+      {
+        "sev": "LOW",
+        "label": "early season",
+        "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 1%.",
+        "widening": "1%"
+      },
+      {
+        "sev": "LOW",
+        "label": "missing",
+        "text": "weather not supplied",
+        "widening": null
+      },
+      {
+        "sev": "LOW",
+        "label": "missing",
+        "text": "home injury report not supplied",
+        "widening": null
+      }
+    ],
+    "unmeasured": [
+      {
+        "item": "Home starting quarterback",
+        "why": "starting QB not supplied for home"
+      },
+      {
+        "item": "Away starting quarterback",
+        "why": "starting QB not supplied for away"
+      },
+      {
+        "item": "Home availability / injuries",
+        "why": "no injury report supplied for home"
+      },
+      {
+        "item": "Away availability / injuries",
+        "why": "no injury report supplied for away"
+      },
+      {
+        "item": "Weather at kickoff",
+        "why": "no weather supplied"
+      },
+      {
+        "item": "Off-field, culture and NIL situation",
+        "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+      },
+      {
+        "item": "Coaching and coordinator continuity",
+        "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+      },
+      {
+        "item": "Motivation, lookahead and locker-room state",
+        "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+      },
+      {
+        "item": "Temple — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      },
+      {
+        "item": "Temple — availability and injuries",
+        "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+      },
+      {
+        "item": "South Florida — recruiting ratings",
+        "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+      },
+      {
+        "item": "South Florida — availability and injuries",
+        "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+      }
+    ],
+    "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+  },
+  "missing": [
+    "South Florida — pass offense: no rating was published for this category.",
+    "No availability report reached Ajani Sheppard — unknown is carried as unknown, never as healthy.",
+    "No availability report reached Luke Kromenhoek — unknown is carried as unknown, never as healthy."
+  ],
+  "panels": [],
+  "roster": {
+    "cols": [
+      "Temple",
+      "South Florida"
+    ],
+    "rows": [
+      {
+        "k": "Returning production value",
+        "note": "share of last season’s production value still on the roster",
+        "a": "28%",
+        "h": "18%",
+        "edge": {
+          "side": "a",
+          "gap": 0.10000000000000003
+        }
+      },
+      {
+        "k": "Returning headcount",
+        "note": "share of the roster that was here last season",
+        "a": "43%",
+        "h": "32%",
+        "edge": {
+          "side": "a",
+          "gap": 0.11599999999999999
+        }
+      },
+      {
+        "k": "QB-room continuity",
+        "note": "is the projected starter last season’s player",
+        "a": "17%",
+        "h": "0%",
+        "edge": {
+          "side": "a",
+          "gap": 0.167
+        }
+      },
+      {
+        "k": "Offensive-line continuity",
+        "note": null,
+        "a": "53%",
+        "h": "50%",
+        "edge": {
+          "side": "a",
+          "gap": 0.026000000000000023
+        }
+      },
+      {
+        "k": "Returning starters",
+        "note": null,
+        "a": "65%",
+        "h": "25%",
+        "edge": {
+          "side": "a",
+          "gap": 0.396
+        }
+      },
+      {
+        "k": "Transfers in / out",
+        "note": "portal movement counted from the roster feed",
+        "a": "21 in / 8 out",
+        "h": "42 in / 25 out",
+        "edge": null
+      },
+      {
+        "k": "Transfer starters in / out",
+        "note": null,
+        "a": "1 in / 1 out",
+        "h": "8 in / 3 out",
+        "edge": null
+      },
+      {
+        "k": "Starter quality",
+        "note": "projected starters, weighted by position value",
+        "a": "56.2",
+        "h": "54.9",
+        "edge": {
+          "side": "a",
+          "gap": 1.3000000000000043
+        }
+      },
+      {
+        "k": "Rotation quality",
+        "note": null,
+        "a": "53.4",
+        "h": "56.1",
+        "edge": {
+          "side": "h",
+          "gap": 2.700000000000003
+        }
+      },
+      {
+        "k": "Depth quality",
+        "note": "behind the projected starters",
+        "a": "53.6",
+        "h": "54.1",
+        "edge": {
+          "side": "h",
+          "gap": 0.5
+        }
+      },
+      {
+        "k": "Availability records",
+        "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+        "a": "none on file — 100% unknown",
+        "h": "none on file — 100% unknown",
+        "edge": null
+      },
+      {
+        "k": "Data confidence",
+        "note": "how much EdgeDesk knows about this roster, not how good it is",
+        "a": "31%",
+        "h": "31%",
+        "edge": {
+          "side": "a",
+          "gap": 0.0010000000000000009
+        }
+      }
+    ],
+    "highlights": [
+      {
+        "k": "Rotation quality",
+        "lead": "South Florida",
+        "text": "South Florida leads on rotation quality — Temple 53.4, South Florida 56.1."
+      },
+      {
+        "k": "Starter quality",
+        "lead": "Temple",
+        "text": "Temple leads on starter quality — Temple 56.2, South Florida 54.9."
+      },
+      {
+        "k": "Depth quality",
+        "lead": "South Florida",
+        "text": "South Florida leads on depth quality — Temple 53.6, South Florida 54.1."
+      },
+      {
+        "k": "Returning starters",
+        "lead": "Temple",
+        "text": "Temple leads on returning starters — Temple 65%, South Florida 25%."
+      },
+      {
+        "k": "QB-room continuity",
+        "lead": "Temple",
+        "text": "Temple leads on qb-room continuity — Temple 17%, South Florida 0%."
+      }
+    ],
+    "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+  },
+  "lede": [
+    "Temple carries the stronger underlying team rating — -0.8 against -1.1, a 0.3-point separation on a neutral field before home advantage, travel or rest.",
+    "EdgeDesk makes it South Florida -14.9 before any sportsbook number is consulted, with South Florida winning 84% of simulations.",
+    "The position-group comparison shows where the separation comes from: the widest measured gap is defensive line, where South Florida leads Temple by 101 places nationally.",
+    "Data confidence on this matchup is 82% — high by this board’s standards, so the margin is the strongest part of the read."
+  ],
+  "headline": "EdgeDesk projects South Florida 35, Temple 20.",
+  "state": {
+    "label": "DATA FAULT",
+    "note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+    "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+  },
+  "facts": [
+    {
+      "id": "game.away",
+      "claim": "the away team",
+      "value": "Temple",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.away"
+    },
+    {
+      "id": "game.home",
+      "claim": "the home team",
+      "value": "South Florida",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.home"
+    },
+    {
+      "id": "game.kickoff",
+      "claim": "the kickoff time",
+      "value": "2026-10-03T23:30:00.000Z",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.kickoff"
+    },
+    {
+      "id": "game.venue",
+      "claim": "the venue",
+      "value": "Raymond James Stadium",
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.venue"
+    },
+    {
+      "id": "game.neutral_site",
+      "claim": "whether the game is at a neutral site",
+      "value": false,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.neutral_site"
+    },
+    {
+      "id": "game.week",
+      "claim": "the week",
+      "value": 5,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.week"
+    },
+    {
+      "id": "game.season",
+      "claim": "the season",
+      "value": 2026,
+      "tier": "VERIFIED_FACT",
+      "source": "cfbfastR schedules",
+      "path": "game.season"
+    },
+    {
+      "id": "game.network",
+      "claim": "the television network",
+      "value": null,
+      "tier": "UNKNOWN",
+      "source": "no broadcast-rights feed is held by this repository",
+      "path": null
+    },
+    {
+      "id": "model.fair_spread",
+      "claim": "the EdgeDesk fair spread",
+      "value": "South Florida -14.9",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread_text"
+    },
+    {
+      "id": "model.fair_spread_n",
+      "claim": "the EdgeDesk fair spread, numerically",
+      "value": 14.909959582036702,
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.fair_spread"
+    },
+    {
+      "id": "model.favourite",
+      "claim": "the team EdgeDesk makes the favourite",
+      "value": "South Florida",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.favourite"
+    },
+    {
+      "id": "model.underdog",
+      "claim": "the team EdgeDesk makes the underdog",
+      "value": "Temple",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.underdog"
+    },
+    {
+      "id": "model.total",
+      "claim": "the EdgeDesk fair total",
+      "value": "55.1",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.total"
+    },
+    {
+      "id": "model.score",
+      "claim": "the EdgeDesk projected score",
+      "value": "20-35",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.score"
+    },
+    {
+      "id": "model.win_prob",
+      "claim": "the EdgeDesk win probability",
+      "value": "South Florida 84%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.win_prob"
+    },
+    {
+      "id": "model.range",
+      "claim": "the EdgeDesk outcome range",
+      "value": "-7.1 to +34.9 from South Florida’s perspective",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.outcome_range"
+    },
+    {
+      "id": "model.confidence",
+      "claim": "EdgeDesk’s data confidence",
+      "value": "82%",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.confidence_pct"
+    },
+    {
+      "id": "model.status",
+      "claim": "EdgeDesk’s research state on this game",
+      "value": "DATA FAULT",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.status"
+    },
+    {
+      "id": "model.validation",
+      "claim": "what EdgeDesk has proved about this model out of sample",
+      "value": "UNPROVEN — research only. Nothing on this page is graded as a bet.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.validation"
+    },
+    {
+      "id": "model.engine",
+      "claim": "the model version behind these numbers",
+      "value": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "projection.engine"
+    },
+    {
+      "id": "market.spread",
+      "claim": "the sportsbook spread EdgeDesk compared against",
+      "value": "South Florida -6.5",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote at captured consensus (stale) · 1 book · best at Hard Rock Bet",
+      "path": "market.market"
+    },
+    {
+      "id": "market.book",
+      "claim": "the book the quote came from",
+      "value": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
+      "tier": "VERIFIED_FACT",
+      "source": "the capture record",
+      "path": "market.book"
+    },
+    {
+      "id": "market.difference",
+      "claim": "the gap between EdgeDesk and the market",
+      "value": "8.4 points",
+      "tier": "CALCULATED_METRIC",
+      "source": "EdgeDesk’s own number minus the captured price",
+      "path": "market.difference"
+    },
+    {
+      "id": "market.total",
+      "claim": "the sportsbook total",
+      "value": "49.0",
+      "tier": "VERIFIED_FACT",
+      "source": "a captured sportsbook quote",
+      "path": "market.total_market"
+    },
+    {
+      "id": "market.capture_age",
+      "claim": "how old the captured quote was at capture",
+      "value": "93 hours old",
+      "tier": "CALCULATED_METRIC",
+      "source": "the capture record",
+      "path": "market.capture_age"
+    },
+    {
+      "id": "market.classification",
+      "claim": "how EdgeDesk classifies the gap",
+      "value": "DATA FAULT",
+      "tier": "INTERPRETATION",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "market.classification"
+    },
+    {
+      "id": "research.label",
+      "claim": "EdgeDesk’s research label for this game",
+      "value": "STALE MARKET",
+      "tier": "INTERPRETATION",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.label"
+    },
+    {
+      "id": "research.gap",
+      "claim": "the market gap, measured from EdgeDesk’s raw margin",
+      "value": "8.4 pts toward South Florida",
+      "tier": "CALCULATED_METRIC",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.market_gap"
+    },
+    {
+      "id": "research.confidence",
+      "claim": "EdgeDesk’s confidence tier",
+      "value": "High",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.confidence"
+    },
+    {
+      "id": "research.reliability",
+      "claim": "EdgeDesk’s reliability score: 0-100 data quality, freshness, source agreement and projection stability — not a probability",
+      "value": "83 · STRONG",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.reliability"
+    },
+    {
+      "id": "research.lean.0",
+      "claim": "a measured reason EdgeDesk leans South Florida",
+      "value": "+8.2 pts team-strength edge (opponent-adjusted results)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.drivers.reasons[0]"
+    },
+    {
+      "id": "research.lean.1",
+      "claim": "a measured reason EdgeDesk leans South Florida",
+      "value": "+4.1 pts home-field advantage",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.drivers.reasons[1]"
+    },
+    {
+      "id": "research.lean.2",
+      "claim": "a measured reason EdgeDesk leans South Florida",
+      "value": "+2.6 pts stylistic matchup",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.drivers.reasons[2]"
+    },
+    {
+      "id": "research.status",
+      "claim": "the projection’s status against its own published history",
+      "value": "STABLE",
+      "tier": "EDGEDESK_MODEL",
+      "source": "the EdgeDesk research view (cfb_research_view/1)",
+      "path": "research_view.projection_status"
+    },
+    {
+      "id": "driver.0",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "South Florida is the better football team by 8.2 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team (+8.2)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[0]"
+    },
+    {
+      "id": "driver.1",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Playing at South Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[1]"
+    },
+    {
+      "id": "driver.2",
+      "claim": "a published driver of the EdgeDesk number",
+      "value": "Stylistically the matchup favours South Florida by 2.6 points: ball control vs front disruption (+2.6)",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "drivers.rows[2]"
+    },
+    {
+      "id": "matchup.0",
+      "claim": "a published matchup read",
+      "value": "Temple’s pass offense rates 54.9 (#41 of 136) against South Florida’s pass defense at 43.7 (#104 of 137). Temple’s unit stands higher among its own position group, by 63 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[0]"
+    },
+    {
+      "id": "matchup.1",
+      "claim": "a published matchup read",
+      "value": "Temple’s run offense rates 62.6 (#12 of 137) against South Florida’s run defense at 52.4 (#60 of 137). Temple’s unit stands higher among its own position group, by 48 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[1]"
+    },
+    {
+      "id": "matchup.2",
+      "claim": "a published matchup read",
+      "value": "Temple’s pass defense is measurable at 46.3 (#86 of 137). South Florida’s pass offense is not, so the pairing cannot be scored.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[2]"
+    },
+    {
+      "id": "matchup.3",
+      "claim": "a published matchup read",
+      "value": "South Florida’s run offense rates 45.0 (#95 of 137) against Temple’s run defense at 44.1 (#94 of 137). Temple’s unit stands higher among its own position group, by 1 place.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[3]"
+    },
+    {
+      "id": "matchup.4",
+      "claim": "a published matchup read",
+      "value": "Temple’s QB room rates 58.1 (#59 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 22 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[4]"
+    },
+    {
+      "id": "matchup.5",
+      "claim": "a published matchup read",
+      "value": "South Florida’s QB room rates 54.6 (#116 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 4 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[5]"
+    },
+    {
+      "id": "matchup.6",
+      "claim": "a published matchup read",
+      "value": "Temple’s offensive line rates 52.9 (#53 of 137) against South Florida’s defensive line at 58.7 (#16 of 137). South Florida’s unit stands higher among its own position group, by 37 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[6]"
+    },
+    {
+      "id": "matchup.7",
+      "claim": "a published matchup read",
+      "value": "South Florida’s offensive line rates 57.6 (#14 of 137) against Temple’s defensive line at 49.0 (#117 of 137). South Florida’s unit stands higher among its own position group, by 103 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[7]"
+    },
+    {
+      "id": "matchup.8",
+      "claim": "a published matchup read",
+      "value": "Temple’s running backs rates 55.3 (#101 of 137) against South Florida’s linebackers at 57.5 (#17 of 137). South Florida’s unit stands higher among its own position group, by 84 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[8]"
+    },
+    {
+      "id": "matchup.9",
+      "claim": "a published matchup read",
+      "value": "South Florida’s running backs rates 53.4 (#136 of 137) against Temple’s linebackers at 49.7 (#115 of 137). Temple’s unit stands higher among its own position group, by 21 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[9]"
+    },
+    {
+      "id": "matchup.10",
+      "claim": "a published matchup read",
+      "value": "Temple’s receivers rates 54.6 (#97 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 60 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[10]"
+    },
+    {
+      "id": "matchup.11",
+      "claim": "a published matchup read",
+      "value": "South Florida’s receivers rates 55.2 (#63 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 57 places.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "matchups[11]"
+    },
+    {
+      "id": "advantage.away.0",
+      "claim": "a published measured advantage",
+      "value": "Temple 62.6 (#12 of 137) vs South Florida 45.0 (#95 of 137) — 83 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[0]"
+    },
+    {
+      "id": "advantage.away.1",
+      "claim": "a published measured advantage",
+      "value": "Temple 58.1 (#59 of 137) vs South Florida 54.6 (#116 of 137) — 57 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[1]"
+    },
+    {
+      "id": "advantage.away.2",
+      "claim": "a published measured advantage",
+      "value": "Temple 58.3 (#21 of 137) vs South Florida 48.9 (#75 of 137) — 54 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[2]"
+    },
+    {
+      "id": "advantage.away.3",
+      "claim": "a published measured advantage",
+      "value": "Temple 41.4 (#84 of 137) vs South Florida 28.4 (#133 of 137) — 49 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[3]"
+    },
+    {
+      "id": "advantage.away.4",
+      "claim": "a published measured advantage",
+      "value": "Temple 55.3 (#101 of 137) vs South Florida 53.4 (#136 of 137) — 35 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.away[4]"
+    },
+    {
+      "id": "advantage.home.0",
+      "claim": "a published measured advantage",
+      "value": "South Florida 58.7 (#16 of 137) vs Temple 49.0 (#117 of 137) — 101 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[0]"
+    },
+    {
+      "id": "advantage.home.1",
+      "claim": "a published measured advantage",
+      "value": "South Florida 57.5 (#17 of 137) vs Temple 49.7 (#115 of 137) — 98 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[1]"
+    },
+    {
+      "id": "advantage.home.2",
+      "claim": "a published measured advantage",
+      "value": "South Florida 56.3 (#37 of 137) vs Temple 47.8 (#120 of 137) — 83 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[2]"
+    },
+    {
+      "id": "advantage.home.3",
+      "claim": "a published measured advantage",
+      "value": "South Florida 54.1 (#32 of 137) vs Temple 53.6 (#78 of 137) — 46 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[3]"
+    },
+    {
+      "id": "advantage.home.4",
+      "claim": "a published measured advantage",
+      "value": "South Florida 57.6 (#14 of 137) vs Temple 52.9 (#53 of 137) — 39 places on the national board.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "advantages.home[4]"
+    },
+    {
+      "id": "uncertainty.0",
+      "claim": "a published reason the number could move",
+      "value": "The market disagrees by 8.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[0]"
+    },
+    {
+      "id": "uncertainty.1",
+      "claim": "a published reason the number could move",
+      "value": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[1]"
+    },
+    {
+      "id": "uncertainty.2",
+      "claim": "a published reason the number could move",
+      "value": "odds is 93h old",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[2]"
+    },
+    {
+      "id": "uncertainty.3",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[3]"
+    },
+    {
+      "id": "uncertainty.4",
+      "claim": "a published reason the number could move",
+      "value": "72% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[4]"
+    },
+    {
+      "id": "uncertainty.5",
+      "claim": "a published reason the number could move",
+      "value": "188 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[5]"
+    },
+    {
+      "id": "uncertainty.6",
+      "claim": "a published reason the number could move",
+      "value": "241 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[6]"
+    },
+    {
+      "id": "uncertainty.7",
+      "claim": "a published reason the number could move",
+      "value": "100% of projected starter value has no availability record.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[7]"
+    },
+    {
+      "id": "uncertainty.8",
+      "claim": "a published reason the number could move",
+      "value": "82% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[8]"
+    },
+    {
+      "id": "uncertainty.9",
+      "claim": "a published reason the number could move",
+      "value": "96 offensive plays observed. Too few offensive snaps to score the offensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[9]"
+    },
+    {
+      "id": "uncertainty.10",
+      "claim": "a published reason the number could move",
+      "value": "245 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[10]"
+    },
+    {
+      "id": "uncertainty.11",
+      "claim": "a published reason the number could move",
+      "value": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 1%.",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[11]"
+    },
+    {
+      "id": "uncertainty.12",
+      "claim": "a published reason the number could move",
+      "value": "weather not supplied",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[12]"
+    },
+    {
+      "id": "uncertainty.13",
+      "claim": "a published reason the number could move",
+      "value": "home injury report not supplied",
+      "tier": "EDGEDESK_MODEL",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.items[13]"
+    },
+    {
+      "id": "unmeasured.0",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home starting quarterback — starting QB not supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[0]"
+    },
+    {
+      "id": "unmeasured.1",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away starting quarterback — starting QB not supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[1]"
+    },
+    {
+      "id": "unmeasured.2",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Home availability / injuries — no injury report supplied for home",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[2]"
+    },
+    {
+      "id": "unmeasured.3",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Away availability / injuries — no injury report supplied for away",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[3]"
+    },
+    {
+      "id": "unmeasured.4",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Weather at kickoff — no weather supplied",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[4]"
+    },
+    {
+      "id": "unmeasured.5",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Off-field, culture and NIL situation — no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[5]"
+    },
+    {
+      "id": "unmeasured.6",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Coaching and coordinator continuity — no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[6]"
+    },
+    {
+      "id": "unmeasured.7",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Motivation, lookahead and locker-room state — not measurable from any public source; treated as variance, never as a point adjustment",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[7]"
+    },
+    {
+      "id": "unmeasured.8",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Temple — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[8]"
+    },
+    {
+      "id": "unmeasured.9",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "Temple — availability and injuries — no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[9]"
+    },
+    {
+      "id": "unmeasured.10",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "South Florida — recruiting ratings — no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[10]"
+    },
+    {
+      "id": "unmeasured.11",
+      "claim": "something EdgeDesk states it cannot measure",
+      "value": "South Florida — availability and injuries — no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "uncertainty.unmeasured[11]"
+    },
+    {
+      "id": "missing.0",
+      "claim": "an input missing from this build",
+      "value": "South Florida — pass offense: no rating was published for this category.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[0]"
+    },
+    {
+      "id": "missing.1",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached Ajani Sheppard — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[1]"
+    },
+    {
+      "id": "missing.2",
+      "claim": "an input missing from this build",
+      "value": "No availability report reached Luke Kromenhoek — unknown is carried as unknown, never as healthy.",
+      "tier": "UNKNOWN",
+      "source": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "path": "missing[2]"
+    }
+  ],
+  "coverage": {
+    "wanted": 11,
+    "present": 11,
+    "present_ids": [
+      "model.fair_spread",
+      "model.total",
+      "model.score",
+      "model.win_prob",
+      "model.range",
+      "model.confidence",
+      "market.spread",
+      "market.total",
+      "driver.0",
+      "matchup.0",
+      "uncertainty.0"
+    ],
+    "absent": [],
+    "priced": true,
+    "market_available": true,
+    "model_confidence_pct": 82,
+    "model_inputs_reached_pct": 73,
+    "model_status": "DATA FAULT"
+  },
+  "sources": [
+    "cfbfastR schedules (public, keyless)",
+    "EdgeDesk rankings build 2026 Week 5",
+    "a committed sportsbook-quote snapshot"
+  ],
+  "research": {
+    "kind": "CFB_GAME",
+    "game": {
+      "away": "Temple",
+      "home": "South Florida",
+      "title": "Temple at South Florida",
+      "when": "2026-10-03 23:30 UTC",
+      "kickoff": "2026-10-03T23:30:00.000Z",
+      "venue": "Raymond James Stadium",
+      "neutral": false,
+      "week": "Week 5",
+      "season": "2026",
+      "game_id": "401862792",
+      "week_no": 5,
+      "season_no": 2026,
+      "conference_line": "American Athletic conference game",
+      "away_conference": "American Athletic",
+      "home_conference": "American Athletic"
+    },
+    "lede": [
+      "Temple carries the stronger underlying team rating — -0.8 against -1.1, a 0.3-point separation on a neutral field before home advantage, travel or rest.",
+      "EdgeDesk makes it South Florida -14.9 before any sportsbook number is consulted, with South Florida winning 84% of simulations.",
+      "The position-group comparison shows where the separation comes from: the widest measured gap is defensive line, where South Florida leads Temple by 101 places nationally.",
+      "Data confidence on this matchup is 82% — high by this board’s standards, so the margin is the strongest part of the read."
+    ],
+    "projection": {
+      "priced": true,
+      "fair_spread": 14.909959582036702,
+      "fair_spread_text": "South Florida -14.9",
+      "fair_spread_raw_text": "South Florida -14.9",
+      "near_pickem": false,
+      "raw_margin_text": null,
+      "favourite": "South Florida",
+      "underdog": "Temple",
+      "margin": "14.9",
+      "total": "55.1",
+      "score": {
+        "away": {
+          "team": "Temple",
+          "points": "20"
+        },
+        "home": {
+          "team": "South Florida",
+          "points": "35"
+        },
+        "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+      },
+      "score_absent_reason": null,
+      "win_prob": {
+        "home": "South Florida",
+        "away": "Temple",
+        "home_pct": 84,
+        "away_pct": 16,
+        "home_text": "84%",
+        "away_text": "16%",
+        "bounded": false,
+        "bounded_note": null,
+        "favourite": "South Florida",
+        "favourite_pct": 84,
+        "favourite_text": "84%"
+      },
+      "outcome_range": {
+        "basis_team": "South Florida",
+        "p10": "-7.1",
+        "median": "+13.9",
+        "p90": "+34.9",
+        "sigma": "14.8",
+        "volatility": "20.02",
+        "volatility_discriminates": false,
+        "note": "Quoted from South Florida’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
+      },
+      "confidence_pct": 82,
+      "inputs_reached_pct": 73,
+      "input_contract": {
+        "fields": 26,
+        "applicable": 26,
+        "known": 19,
+        "priced": 11,
+        "priced_coverage_pct": 42,
+        "by_state": {
+          "USABLE": 11,
+          "RESEARCH_ONLY": 8,
+          "STALE": 0,
+          "CONFLICTING": 0,
+          "NOT_APPLICABLE": 0,
+          "NOT_REQUIRED": 0,
+          "NOT_DUE_YET": 4,
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
+        },
+        "absent": [
+          {
+            "field": "weather",
+            "side": null,
+            "state": "UNAVAILABLE",
+            "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "off_field",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          },
+          {
+            "field": "off_field",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "no source is registered for this programme, so nothing has been read and an empty result would be a false clean bill of health rather than a finding. The engine scores this input and it is missing on every game, so it is published here rather than left invisible. A signal must be all four of public, sourced, dated and severity-graded before it may move even the confidence score — a general news search supplies neither a severity nor a reliability a model may use, and a wire that supplies all four may not be redistributed as a committed artifact. The availability layer answers a different question (who can play) and is never substituted for this one"
+          }
+        ],
+        "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
+      },
+      "status": "DATA FAULT",
+      "status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
+      "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
+    },
+    "starters": {
+      "away": {
+        "team": "Temple",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Ajani Sheppard",
+        "player_id": "5078166",
+        "label": "Ajani Sheppard — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 3,
+          "dropbacks": 62,
+          "seasons_observed": 1,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5078166",
+              "player_name": "Ajani Sheppard",
+              "dropbacks": 44,
+              "share": 0.978
+            },
+            {
+              "player_id": "5077787",
+              "player_name": "Jaxon Smolik",
+              "dropbacks": 1,
+              "share": 0.022
+            }
+          ]
+        },
+        "conflicts": 0,
+        "history": [
+          {
+            "week": 3,
+            "game_id": "401862774",
+            "opponent": "Toledo",
+            "dropbacks": 25,
+            "starter": {
+              "player_id": "5078166",
+              "player_name": "Ajani Sheppard",
+              "share": 0.96
+            },
+            "settled": true,
+            "why": "the opening dropback was a 1-throw appearance by Jaxon Smolik; Ajani Sheppard took 96% of them"
+          },
+          {
+            "week": 4,
+            "game_id": "401862779",
+            "opponent": "Army",
+            "dropbacks": 20,
+            "starter": {
+              "player_id": "5078166",
+              "player_name": "Ajani Sheppard",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-25T20:00:00.000Z",
+        "retrieved_at": "2026-10-03T17:26:01.967Z"
+      },
+      "home": {
+        "team": "South Florida",
+        "status": "PREVIOUS_GAME",
+        "confirmed": false,
+        "player": "Luke Kromenhoek",
+        "player_id": "5079542",
+        "label": "Luke Kromenhoek — started the last game; no announcement for this one.",
+        "priced": false,
+        "priced_why": "the starter layer is research-only until it has an out-of-sample record of its own; football/matchup/inputs.js PRICED_STARTER_STATUSES is the single switch",
+        "availability": {
+          "state": "UNKNOWN",
+          "evidence": "NONE",
+          "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy",
+          "source_url": null
+        },
+        "experience": {
+          "starts": 1,
+          "dropbacks": 14,
+          "seasons_observed": 2,
+          "seasons_read": [
+            2025,
+            2026
+          ],
+          "basis": "games this player opened, counted from the play feed across the seasons this build read — a measured start count over a stated window, not a career total",
+          "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv"
+        },
+        "competition": {
+          "contested": false,
+          "games": 2,
+          "players": [
+            {
+              "player_id": "5079542",
+              "player_name": "Luke Kromenhoek",
+              "dropbacks": 3,
+              "share": 0.75
+            },
+            {
+              "player_id": "5079620",
+              "player_name": "Michael Van Buren Jr.",
+              "dropbacks": 1,
+              "share": 0.25
+            }
+          ]
+        },
+        "conflicts": 1,
+        "history": [
+          {
+            "week": 2,
+            "game_id": "401862702",
+            "opponent": "Army",
+            "dropbacks": 1,
+            "starter": {
+              "player_id": "5079620",
+              "player_name": "Michael Van Buren Jr.",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          },
+          {
+            "week": 3,
+            "game_id": "401862777",
+            "opponent": "Delaware State",
+            "dropbacks": 3,
+            "starter": {
+              "player_id": "5079542",
+              "player_name": "Luke Kromenhoek",
+              "share": 1
+            },
+            "settled": true,
+            "why": "took the first dropback of the game"
+          }
+        ],
+        "source": "cfbfastR-data player_stats — play attribution",
+        "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
+        "published_at": "2026-09-19T23:00:00.000Z",
+        "retrieved_at": "2026-10-03T17:26:01.967Z"
+      },
+      "generated_at": "2026-10-03T17:26:01.107Z",
+      "source": "football/starters/cfb_2026.json",
+      "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
+    },
+    "drivers": {
+      "rows": [
+        {
+          "points": "+8.2",
+          "points_n": 8.23207289643603,
+          "text": "South Florida is the better football team by 8.2 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team",
+          "favours": "South Florida"
+        },
+        {
+          "points": "+4.1",
+          "points_n": 4.082,
+          "text": "Playing at South Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality",
+          "favours": "South Florida"
+        },
+        {
+          "points": "+2.6",
+          "points_n": 2.5957586997977398,
+          "text": "Stylistically the matchup favours South Florida by 2.6 points: ball control vs front disruption",
+          "favours": "South Florida"
+        }
+      ],
+      "basis": "Points are the engine’s own contributions to the projected spread, from South Florida’s perspective, and they sum toward it.",
+      "excluded": "Player quality, position-group ratings and scheme fit are NOT in this number. Neither has cleared walk-forward validation, so neither is allowed to move a priced figure — they appear below as research context and nowhere else.",
+      "empty": null
+    },
+    "compare": {
+      "cols": [
+        "Temple",
+        "South Florida"
+      ],
+      "groups": [
+        {
+          "title": "Team rating",
+          "rows": [
+            {
+              "cat": "overall",
+              "k": "ETSR (overall)",
+              "note": "points vs an average FBS team, neutral field",
+              "a": {
+                "v": "-0.8",
+                "n": -0.8,
+                "rank": "#76 of 137",
+                "rank_n": 76,
+                "note": null
+              },
+              "h": {
+                "v": "-1.1",
+                "n": -1.07,
+                "rank": "#82 of 137",
+                "rank_n": 82,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 0.3,
+                "rank_gap": 6
+              }
+            },
+            {
+              "cat": "talent",
+              "k": "Talent",
+              "note": null,
+              "a": {
+                "v": "48.6",
+                "n": 48.6,
+                "rank": "#79 of 137",
+                "rank_n": 79,
+                "note": null
+              },
+              "h": {
+                "v": "42.9",
+                "n": 42.9,
+                "rank": "#104 of 137",
+                "rank_n": 104,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 5.7,
+                "rank_gap": 25
+              }
+            },
+            {
+              "cat": "performance",
+              "k": "Performance",
+              "note": null,
+              "a": {
+                "v": "52.1",
+                "n": 52.1,
+                "rank": "#61 of 137",
+                "rank_n": 61,
+                "note": null
+              },
+              "h": {
+                "v": "44.7",
+                "n": 44.7,
+                "rank": "#93 of 137",
+                "rank_n": 93,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 7.4,
+                "rank_gap": 32
+              }
+            },
+            {
+              "cat": "scheme_fit",
+              "k": "Scheme fit",
+              "note": "personnel against this team’s own tendencies",
+              "a": {
+                "v": "50.5",
+                "n": 50.5,
+                "rank": "#64 of 137",
+                "rank_n": 64,
+                "note": null
+              },
+              "h": {
+                "v": "51.8",
+                "n": 51.8,
+                "rank": "#30 of 137",
+                "rank_n": 30,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 1.3,
+                "rank_gap": 34
+              }
+            }
+          ]
+        },
+        {
+          "title": "Units",
+          "rows": [
+            {
+              "cat": "offense",
+              "k": "Offense",
+              "note": null,
+              "a": {
+                "v": "58.3",
+                "n": 58.3,
+                "rank": "#21 of 137",
+                "rank_n": 21,
+                "note": null
+              },
+              "h": {
+                "v": "48.9",
+                "n": 48.9,
+                "rank": "#75 of 137",
+                "rank_n": 75,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 9.4,
+                "rank_gap": 54
+              }
+            },
+            {
+              "cat": "defense",
+              "k": "Defense",
+              "note": null,
+              "a": {
+                "v": "43.9",
+                "n": 43.9,
+                "rank": "#106 of 137",
+                "rank_n": 106,
+                "note": null
+              },
+              "h": {
+                "v": "44.4",
+                "n": 44.4,
+                "rank": "#102 of 137",
+                "rank_n": 102,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.5,
+                "rank_gap": 4
+              }
+            },
+            {
+              "cat": "special_teams",
+              "k": "Special teams",
+              "note": null,
+              "a": {
+                "v": "50.4",
+                "n": 50.4,
+                "rank": "#56 of 130",
+                "rank_n": 56,
+                "note": null
+              },
+              "h": {
+                "v": "50.8",
+                "n": 50.8,
+                "rank": "#41 of 130",
+                "rank_n": 41,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.4,
+                "rank_gap": 15
+              }
+            },
+            {
+              "cat": "run_offense",
+              "k": "Run offense",
+              "note": null,
+              "a": {
+                "v": "62.6",
+                "n": 62.6,
+                "rank": "#12 of 137",
+                "rank_n": 12,
+                "note": null
+              },
+              "h": {
+                "v": "45.0",
+                "n": 45,
+                "rank": "#95 of 137",
+                "rank_n": 95,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 17.6,
+                "rank_gap": 83
+              }
+            },
+            {
+              "cat": "pass_offense",
+              "k": "Pass offense",
+              "note": null,
+              "a": {
+                "v": "54.9",
+                "n": 54.9,
+                "rank": "#41 of 136",
+                "rank_n": 41,
+                "note": null
+              },
+              "h": {
+                "v": null,
+                "n": null,
+                "rank": null,
+                "rank_n": null,
+                "note": null
+              },
+              "edge": null
+            },
+            {
+              "cat": "run_defense",
+              "k": "Run defense",
+              "note": null,
+              "a": {
+                "v": "44.1",
+                "n": 44.1,
+                "rank": "#94 of 137",
+                "rank_n": 94,
+                "note": null
+              },
+              "h": {
+                "v": "52.4",
+                "n": 52.4,
+                "rank": "#60 of 137",
+                "rank_n": 60,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 8.3,
+                "rank_gap": 34
+              }
+            },
+            {
+              "cat": "pass_defense",
+              "k": "Pass defense",
+              "note": null,
+              "a": {
+                "v": "46.3",
+                "n": 46.3,
+                "rank": "#86 of 137",
+                "rank_n": 86,
+                "note": null
+              },
+              "h": {
+                "v": "43.7",
+                "n": 43.7,
+                "rank": "#104 of 137",
+                "rank_n": 104,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 2.6,
+                "rank_gap": 18
+              }
+            }
+          ]
+        },
+        {
+          "title": "Position groups",
+          "rows": [
+            {
+              "cat": "qb",
+              "k": "QB room",
+              "note": null,
+              "a": {
+                "v": "58.1",
+                "n": 58.1,
+                "rank": "#59 of 137",
+                "rank_n": 59,
+                "note": null
+              },
+              "h": {
+                "v": "54.6",
+                "n": 54.6,
+                "rank": "#116 of 137",
+                "rank_n": 116,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 3.5,
+                "rank_gap": 57
+              }
+            },
+            {
+              "cat": "ol",
+              "k": "Offensive line",
+              "note": null,
+              "a": {
+                "v": "52.9",
+                "n": 52.9,
+                "rank": "#53 of 137",
+                "rank_n": 53,
+                "note": null
+              },
+              "h": {
+                "v": "57.6",
+                "n": 57.6,
+                "rank": "#14 of 137",
+                "rank_n": 14,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 4.7,
+                "rank_gap": 39
+              }
+            },
+            {
+              "cat": "wr",
+              "k": "Receivers",
+              "note": null,
+              "a": {
+                "v": "54.6",
+                "n": 54.6,
+                "rank": "#97 of 137",
+                "rank_n": 97,
+                "note": null
+              },
+              "h": {
+                "v": "55.2",
+                "n": 55.2,
+                "rank": "#63 of 137",
+                "rank_n": 63,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.6,
+                "rank_gap": 34
+              }
+            },
+            {
+              "cat": "te",
+              "k": "Tight ends",
+              "note": "rated by the player layer; the board publishes no national TE rank",
+              "a": {
+                "v": "55.2",
+                "n": 55.2,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "h": {
+                "v": "55.3",
+                "n": 55.3,
+                "rank": null,
+                "rank_n": null,
+                "note": "rated, held out of the national rank by the confidence gate"
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.1,
+                "rank_gap": null
+              }
+            },
+            {
+              "cat": "rb",
+              "k": "Running backs",
+              "note": null,
+              "a": {
+                "v": "55.3",
+                "n": 55.3,
+                "rank": "#101 of 137",
+                "rank_n": 101,
+                "note": null
+              },
+              "h": {
+                "v": "53.4",
+                "n": 53.4,
+                "rank": "#136 of 137",
+                "rank_n": 136,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 1.9,
+                "rank_gap": 35
+              }
+            },
+            {
+              "cat": "dl",
+              "k": "Defensive line",
+              "note": null,
+              "a": {
+                "v": "49.0",
+                "n": 49,
+                "rank": "#117 of 137",
+                "rank_n": 117,
+                "note": null
+              },
+              "h": {
+                "v": "58.7",
+                "n": 58.7,
+                "rank": "#16 of 137",
+                "rank_n": 16,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 9.7,
+                "rank_gap": 101
+              }
+            },
+            {
+              "cat": "lb",
+              "k": "Linebackers",
+              "note": null,
+              "a": {
+                "v": "49.7",
+                "n": 49.7,
+                "rank": "#115 of 137",
+                "rank_n": 115,
+                "note": null
+              },
+              "h": {
+                "v": "57.5",
+                "n": 57.5,
+                "rank": "#17 of 137",
+                "rank_n": 17,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 7.8,
+                "rank_gap": 98
+              }
+            },
+            {
+              "cat": "secondary",
+              "k": "Secondary",
+              "note": null,
+              "a": {
+                "v": "47.8",
+                "n": 47.8,
+                "rank": "#120 of 137",
+                "rank_n": 120,
+                "note": null
+              },
+              "h": {
+                "v": "56.3",
+                "n": 56.3,
+                "rank": "#37 of 137",
+                "rank_n": 37,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 8.5,
+                "rank_gap": 83
+              }
+            },
+            {
+              "cat": "k_room",
+              "k": "Kicking",
+              "note": null,
+              "a": {
+                "v": "55.9",
+                "n": 55.9,
+                "rank": "#79 of 137",
+                "rank_n": 79,
+                "note": null
+              },
+              "h": {
+                "v": "55.9",
+                "n": 55.9,
+                "rank": "#78 of 137",
+                "rank_n": 78,
+                "note": null
+              },
+              "edge": {
+                "side": "even",
+                "gap": 0,
+                "rank_gap": 1
+              }
+            }
+          ]
+        },
+        {
+          "title": "Roster shape",
+          "rows": [
+            {
+              "cat": "depth",
+              "k": "Depth",
+              "note": "quality behind the projected starters",
+              "a": {
+                "v": "53.6",
+                "n": 53.6,
+                "rank": "#78 of 137",
+                "rank_n": 78,
+                "note": null
+              },
+              "h": {
+                "v": "54.1",
+                "n": 54.1,
+                "rank": "#32 of 137",
+                "rank_n": 32,
+                "note": null
+              },
+              "edge": {
+                "side": "h",
+                "gap": 0.5,
+                "rank_gap": 46
+              }
+            },
+            {
+              "cat": "continuity",
+              "k": "Continuity",
+              "note": "how much of last season is still here",
+              "a": {
+                "v": "41.4",
+                "n": 41.4,
+                "rank": "#84 of 137",
+                "rank_n": 84,
+                "note": null
+              },
+              "h": {
+                "v": "28.4",
+                "n": 28.4,
+                "rank": "#133 of 137",
+                "rank_n": 133,
+                "note": null
+              },
+              "edge": {
+                "side": "a",
+                "gap": 13,
+                "rank_gap": 49
+              }
+            }
+          ]
+        }
+      ],
+      "one_sided_team": null,
+      "one_sided_note": null
+    },
+    "advantages": {
+      "away": [
+        {
+          "k": "Run offense",
+          "rank_gap": 83,
+          "gap": 17.6,
+          "lead": "Temple",
+          "trail": "South Florida",
+          "lead_cell": "62.6 · #12 of 137",
+          "trail_cell": "45.0 · #95 of 137",
+          "text": "Temple 62.6 (#12 of 137) vs South Florida 45.0 (#95 of 137) — 83 places on the national board."
+        },
+        {
+          "k": "QB room",
+          "rank_gap": 57,
+          "gap": 3.5,
+          "lead": "Temple",
+          "trail": "South Florida",
+          "lead_cell": "58.1 · #59 of 137",
+          "trail_cell": "54.6 · #116 of 137",
+          "text": "Temple 58.1 (#59 of 137) vs South Florida 54.6 (#116 of 137) — 57 places on the national board."
+        },
+        {
+          "k": "Offense",
+          "rank_gap": 54,
+          "gap": 9.4,
+          "lead": "Temple",
+          "trail": "South Florida",
+          "lead_cell": "58.3 · #21 of 137",
+          "trail_cell": "48.9 · #75 of 137",
+          "text": "Temple 58.3 (#21 of 137) vs South Florida 48.9 (#75 of 137) — 54 places on the national board."
+        },
+        {
+          "k": "Continuity",
+          "rank_gap": 49,
+          "gap": 13,
+          "lead": "Temple",
+          "trail": "South Florida",
+          "lead_cell": "41.4 · #84 of 137",
+          "trail_cell": "28.4 · #133 of 137",
+          "text": "Temple 41.4 (#84 of 137) vs South Florida 28.4 (#133 of 137) — 49 places on the national board."
+        },
+        {
+          "k": "Running backs",
+          "rank_gap": 35,
+          "gap": 1.9,
+          "lead": "Temple",
+          "trail": "South Florida",
+          "lead_cell": "55.3 · #101 of 137",
+          "trail_cell": "53.4 · #136 of 137",
+          "text": "Temple 55.3 (#101 of 137) vs South Florida 53.4 (#136 of 137) — 35 places on the national board."
+        }
+      ],
+      "home": [
+        {
+          "k": "Defensive line",
+          "rank_gap": 101,
+          "gap": 9.7,
+          "lead": "South Florida",
+          "trail": "Temple",
+          "lead_cell": "58.7 · #16 of 137",
+          "trail_cell": "49.0 · #117 of 137",
+          "text": "South Florida 58.7 (#16 of 137) vs Temple 49.0 (#117 of 137) — 101 places on the national board."
+        },
+        {
+          "k": "Linebackers",
+          "rank_gap": 98,
+          "gap": 7.8,
+          "lead": "South Florida",
+          "trail": "Temple",
+          "lead_cell": "57.5 · #17 of 137",
+          "trail_cell": "49.7 · #115 of 137",
+          "text": "South Florida 57.5 (#17 of 137) vs Temple 49.7 (#115 of 137) — 98 places on the national board."
+        },
+        {
+          "k": "Secondary",
+          "rank_gap": 83,
+          "gap": 8.5,
+          "lead": "South Florida",
+          "trail": "Temple",
+          "lead_cell": "56.3 · #37 of 137",
+          "trail_cell": "47.8 · #120 of 137",
+          "text": "South Florida 56.3 (#37 of 137) vs Temple 47.8 (#120 of 137) — 83 places on the national board."
+        },
+        {
+          "k": "Depth",
+          "rank_gap": 46,
+          "gap": 0.5,
+          "lead": "South Florida",
+          "trail": "Temple",
+          "lead_cell": "54.1 · #32 of 137",
+          "trail_cell": "53.6 · #78 of 137",
+          "text": "South Florida 54.1 (#32 of 137) vs Temple 53.6 (#78 of 137) — 46 places on the national board."
+        },
+        {
+          "k": "Offensive line",
+          "rank_gap": 39,
+          "gap": 4.7,
+          "lead": "South Florida",
+          "trail": "Temple",
+          "lead_cell": "57.6 · #14 of 137",
+          "trail_cell": "52.9 · #53 of 137",
+          "text": "South Florida 57.6 (#14 of 137) vs Temple 52.9 (#53 of 137) — 39 places on the national board."
+        }
+      ],
+      "measured": [],
+      "measured_note": null,
+      "unproven": [],
+      "note": "An advantage is only claimed where BOTH teams carry a national rank in that category — the national rank is the one scale on which a QB room and a run defence are comparable. A category where one side is unrated appears here as a measurement and as uncertainty, never as an edge."
+    },
+    "matchups": [
+      {
+        "title": "Temple pass offense vs South Florida pass defense",
+        "att": {
+          "team": "Temple",
+          "label": "pass offense",
+          "v": "54.9",
+          "rank": "#41 of 136",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "pass defense",
+          "v": "43.7",
+          "rank": "#104 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s pass offense rates 54.9 (#41 of 136) against South Florida’s pass defense at 43.7 (#104 of 137). Temple’s unit stands higher among its own position group, by 63 places."
+      },
+      {
+        "title": "Temple run offense vs South Florida run defense",
+        "att": {
+          "team": "Temple",
+          "label": "run offense",
+          "v": "62.6",
+          "rank": "#12 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "run defense",
+          "v": "52.4",
+          "rank": "#60 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s run offense rates 62.6 (#12 of 137) against South Florida’s run defense at 52.4 (#60 of 137). Temple’s unit stands higher among its own position group, by 48 places."
+      },
+      {
+        "title": "South Florida pass offense vs Temple pass defense",
+        "att": {
+          "team": "South Florida",
+          "label": "pass offense",
+          "v": null,
+          "rank": null,
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "pass defense",
+          "v": "46.3",
+          "rank": "#86 of 137",
+          "note": null
+        },
+        "complete": false,
+        "read": "Temple’s pass defense is measurable at 46.3 (#86 of 137). South Florida’s pass offense is not, so the pairing cannot be scored."
+      },
+      {
+        "title": "South Florida run offense vs Temple run defense",
+        "att": {
+          "team": "South Florida",
+          "label": "run offense",
+          "v": "45.0",
+          "rank": "#95 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "run defense",
+          "v": "44.1",
+          "rank": "#94 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "South Florida’s run offense rates 45.0 (#95 of 137) against Temple’s run defense at 44.1 (#94 of 137). Temple’s unit stands higher among its own position group, by 1 place."
+      },
+      {
+        "title": "Temple QB room vs South Florida secondary",
+        "att": {
+          "team": "Temple",
+          "label": "QB room",
+          "v": "58.1",
+          "rank": "#59 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "secondary",
+          "v": "56.3",
+          "rank": "#37 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s QB room rates 58.1 (#59 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 22 places."
+      },
+      {
+        "title": "South Florida QB room vs Temple secondary",
+        "att": {
+          "team": "South Florida",
+          "label": "QB room",
+          "v": "54.6",
+          "rank": "#116 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "secondary",
+          "v": "47.8",
+          "rank": "#120 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "South Florida’s QB room rates 54.6 (#116 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 4 places."
+      },
+      {
+        "title": "Temple offensive line vs South Florida defensive line",
+        "att": {
+          "team": "Temple",
+          "label": "offensive line",
+          "v": "52.9",
+          "rank": "#53 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "defensive line",
+          "v": "58.7",
+          "rank": "#16 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s offensive line rates 52.9 (#53 of 137) against South Florida’s defensive line at 58.7 (#16 of 137). South Florida’s unit stands higher among its own position group, by 37 places."
+      },
+      {
+        "title": "South Florida offensive line vs Temple defensive line",
+        "att": {
+          "team": "South Florida",
+          "label": "offensive line",
+          "v": "57.6",
+          "rank": "#14 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "defensive line",
+          "v": "49.0",
+          "rank": "#117 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "South Florida’s offensive line rates 57.6 (#14 of 137) against Temple’s defensive line at 49.0 (#117 of 137). South Florida’s unit stands higher among its own position group, by 103 places."
+      },
+      {
+        "title": "Temple running backs vs South Florida linebackers",
+        "att": {
+          "team": "Temple",
+          "label": "running backs",
+          "v": "55.3",
+          "rank": "#101 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "linebackers",
+          "v": "57.5",
+          "rank": "#17 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s running backs rates 55.3 (#101 of 137) against South Florida’s linebackers at 57.5 (#17 of 137). South Florida’s unit stands higher among its own position group, by 84 places."
+      },
+      {
+        "title": "South Florida running backs vs Temple linebackers",
+        "att": {
+          "team": "South Florida",
+          "label": "running backs",
+          "v": "53.4",
+          "rank": "#136 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "linebackers",
+          "v": "49.7",
+          "rank": "#115 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "South Florida’s running backs rates 53.4 (#136 of 137) against Temple’s linebackers at 49.7 (#115 of 137). Temple’s unit stands higher among its own position group, by 21 places."
+      },
+      {
+        "title": "Temple receivers vs South Florida secondary",
+        "att": {
+          "team": "Temple",
+          "label": "receivers",
+          "v": "54.6",
+          "rank": "#97 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "South Florida",
+          "label": "secondary",
+          "v": "56.3",
+          "rank": "#37 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "Temple’s receivers rates 54.6 (#97 of 137) against South Florida’s secondary at 56.3 (#37 of 137). South Florida’s unit stands higher among its own position group, by 60 places."
+      },
+      {
+        "title": "South Florida receivers vs Temple secondary",
+        "att": {
+          "team": "South Florida",
+          "label": "receivers",
+          "v": "55.2",
+          "rank": "#63 of 137",
+          "note": null
+        },
+        "def": {
+          "team": "Temple",
+          "label": "secondary",
+          "v": "47.8",
+          "rank": "#120 of 137",
+          "note": null
+        },
+        "complete": true,
+        "read": "South Florida’s receivers rates 55.2 (#63 of 137) against Temple’s secondary at 47.8 (#120 of 137). South Florida’s unit stands higher among its own position group, by 57 places."
+      }
+    ],
+    "roster": {
+      "cols": [
+        "Temple",
+        "South Florida"
+      ],
+      "rows": [
+        {
+          "k": "Returning production value",
+          "note": "share of last season’s production value still on the roster",
+          "a": "28%",
+          "h": "18%",
+          "edge": {
+            "side": "a",
+            "gap": 0.10000000000000003
+          }
+        },
+        {
+          "k": "Returning headcount",
+          "note": "share of the roster that was here last season",
+          "a": "43%",
+          "h": "32%",
+          "edge": {
+            "side": "a",
+            "gap": 0.11599999999999999
+          }
+        },
+        {
+          "k": "QB-room continuity",
+          "note": "is the projected starter last season’s player",
+          "a": "17%",
+          "h": "0%",
+          "edge": {
+            "side": "a",
+            "gap": 0.167
+          }
+        },
+        {
+          "k": "Offensive-line continuity",
+          "note": null,
+          "a": "53%",
+          "h": "50%",
+          "edge": {
+            "side": "a",
+            "gap": 0.026000000000000023
+          }
+        },
+        {
+          "k": "Returning starters",
+          "note": null,
+          "a": "65%",
+          "h": "25%",
+          "edge": {
+            "side": "a",
+            "gap": 0.396
+          }
+        },
+        {
+          "k": "Transfers in / out",
+          "note": "portal movement counted from the roster feed",
+          "a": "21 in / 8 out",
+          "h": "42 in / 25 out",
+          "edge": null
+        },
+        {
+          "k": "Transfer starters in / out",
+          "note": null,
+          "a": "1 in / 1 out",
+          "h": "8 in / 3 out",
+          "edge": null
+        },
+        {
+          "k": "Starter quality",
+          "note": "projected starters, weighted by position value",
+          "a": "56.2",
+          "h": "54.9",
+          "edge": {
+            "side": "a",
+            "gap": 1.3000000000000043
+          }
+        },
+        {
+          "k": "Rotation quality",
+          "note": null,
+          "a": "53.4",
+          "h": "56.1",
+          "edge": {
+            "side": "h",
+            "gap": 2.700000000000003
+          }
+        },
+        {
+          "k": "Depth quality",
+          "note": "behind the projected starters",
+          "a": "53.6",
+          "h": "54.1",
+          "edge": {
+            "side": "h",
+            "gap": 0.5
+          }
+        },
+        {
+          "k": "Availability records",
+          "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
+          "a": "none on file — 100% unknown",
+          "h": "none on file — 100% unknown",
+          "edge": null
+        },
+        {
+          "k": "Data confidence",
+          "note": "how much EdgeDesk knows about this roster, not how good it is",
+          "a": "31%",
+          "h": "31%",
+          "edge": {
+            "side": "a",
+            "gap": 0.0010000000000000009
+          }
+        }
+      ],
+      "highlights": [
+        {
+          "k": "Rotation quality",
+          "lead": "South Florida",
+          "text": "South Florida leads on rotation quality — Temple 53.4, South Florida 56.1."
+        },
+        {
+          "k": "Starter quality",
+          "lead": "Temple",
+          "text": "Temple leads on starter quality — Temple 56.2, South Florida 54.9."
+        },
+        {
+          "k": "Depth quality",
+          "lead": "South Florida",
+          "text": "South Florida leads on depth quality — Temple 53.6, South Florida 54.1."
+        },
+        {
+          "k": "Returning starters",
+          "lead": "Temple",
+          "text": "Temple leads on returning starters — Temple 65%, South Florida 25%."
+        },
+        {
+          "k": "QB-room continuity",
+          "lead": "Temple",
+          "text": "Temple leads on qb-room continuity — Temple 17%, South Florida 0%."
+        }
+      ],
+      "note": "Roster construction from the committed rankings build. No recruiting star and no NIL figure appears here: no public feed this repo reads carries either, and a number nobody published is not estimated in its place."
+    },
+    "cases": {
+      "favourite": {
+        "team": "South Florida",
+        "heading": "Why South Florida can pull away",
+        "bullets": [
+          "South Florida is the better football team by 8.2 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team (+8.2 pts).",
+          "Playing at South Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
+          "Stylistically the matchup favours South Florida by 2.6 points: ball control vs front disruption (+2.6 pts).",
+          "Defensive line: South Florida 58.7 (#16 of 137) vs Temple 49.0 (#117 of 137) — 101 places on the national board.",
+          "Linebackers: South Florida 57.5 (#17 of 137) vs Temple 49.7 (#115 of 137) — 98 places on the national board."
+        ]
+      },
+      "underdog": {
+        "team": "Temple",
+        "heading": "Why Temple can keep it close",
+        "bullets": [
+          "Run offense: Temple 62.6 (#12 of 137) vs South Florida 45.0 (#95 of 137) — 83 places on the national board.",
+          "QB room: Temple 58.1 (#59 of 137) vs South Florida 54.6 (#116 of 137) — 57 places on the national board.",
+          "Offense: Temple 58.3 (#21 of 137) vs South Florida 48.9 (#75 of 137) — 54 places on the national board.",
+          "The outcome range is 14.8 points wide at one sigma — p10 -7.1 to p90 +34.9 for South Florida, so a projection of +14.9 still produces results a long way either side of it.",
+          "It is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 1%."
+        ]
+      },
+      "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
+    },
+    "uncertainty": {
+      "items": [
+        {
+          "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 8.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "sample",
+          "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 93h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Temple — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Temple — extreme transfer turnover",
+          "text": "72% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Temple — thin offensive data",
+          "text": "188 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "Temple — thin defensive data",
+          "text": "241 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "South Florida — injury uncertainty",
+          "text": "100% of projected starter value has no availability record.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "South Florida — extreme transfer turnover",
+          "text": "82% of last season’s production value is gone. Most of last season’s production value has left, so the prior term is standing on much less than usual",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "South Florida — thin offensive data",
+          "text": "96 offensive plays observed. Too few offensive snaps to score the offensive contract",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "South Florida — thin defensive data",
+          "text": "245 defensive plays faced. Too few defensive snaps faced to score the defensive contract",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "early season",
+          "text": "The projection could be wrong because it is early enough that both ratings still lean on preseason belief — it widens the outcome range by about 1%.",
+          "widening": "1%"
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "weather not supplied",
+          "widening": null
+        },
+        {
+          "sev": "LOW",
+          "label": "missing",
+          "text": "home injury report not supplied",
+          "widening": null
+        }
+      ],
+      "unmeasured": [
+        {
+          "item": "Home starting quarterback",
+          "why": "starting QB not supplied for home"
+        },
+        {
+          "item": "Away starting quarterback",
+          "why": "starting QB not supplied for away"
+        },
+        {
+          "item": "Home availability / injuries",
+          "why": "no injury report supplied for home"
+        },
+        {
+          "item": "Away availability / injuries",
+          "why": "no injury report supplied for away"
+        },
+        {
+          "item": "Weather at kickoff",
+          "why": "no weather supplied"
+        },
+        {
+          "item": "Off-field, culture and NIL situation",
+          "why": "no public feed for NIL figures, locker-room reporting or discipline exists that this engine reads; nothing is inferred and the gap is carried as uncertainty"
+        },
+        {
+          "item": "Coaching and coordinator continuity",
+          "why": "no public coaching-tenure feed is wired; a new coordinator changes a team’s identity in ways the ratings only learn after the fact"
+        },
+        {
+          "item": "Motivation, lookahead and locker-room state",
+          "why": "not measurable from any public source; treated as variance, never as a point adjustment"
+        },
+        {
+          "item": "Temple — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "Temple — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+        },
+        {
+          "item": "South Florida — recruiting ratings",
+          "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
+        },
+        {
+          "item": "South Florida — availability and injuries",
+          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
+        }
+      ],
+      "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
+    },
+    "market": {
+      "available": true,
+      "model": "South Florida -14.9",
+      "model_raw": "South Florida -14.9",
+      "market": "South Florida -6.5",
+      "difference": "8.4 points",
+      "difference_n": 8.409959582036702,
+      "total_model": "55.1",
+      "total_market": "49.0",
+      "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
+      "captured": "2026-09-29T22:00:02.478+00:00",
+      "capture_age": "93 hours old",
+      "stale": false,
+      "classification": "DATA FAULT",
+      "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
+    },
+    "research_view": {
+      "contract": "cfb_research_brief/1",
+      "view": "cfb_research_view/1",
+      "game_id": "401862792",
+      "home": "South Florida",
+      "away": "Temple",
+      "projected": true,
+      "engine_status": "PREDICTED",
+      "label": {
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
+      },
+      "disagreement": {
+        "status": "MARKET_FAULT",
+        "verified": false,
+        "raw_market_gap": 8.41,
+        "verified_market_gap": null,
+        "calibrated_gap": 6.52,
+        "root_cause": "STALE_MARKET",
+        "failed": [
+          "MARKET.quote_fresh",
+          "MARKET.book_count",
+          "MODEL.calibration"
+        ],
+        "incomplete": [],
+        "favorite_flip": false,
+        "manual_review": false
+      },
+      "fair": {
+        "line_text": "South Florida -14.9",
+        "favorite_team": "South Florida",
+        "underdog_team": "Temple",
+        "display_fair_spread": 14.9,
+        "raw_home_margin": 14.91,
+        "raw_line_text": "South Florida -14.91",
+        "is_near_pickem": false
+      },
+      "market_gap": {
+        "available": true,
+        "points": 8.41,
+        "toward_team": "South Florida",
+        "text": "8.4 pts toward South Florida",
+        "market_line_text": "South Florida -6.5",
+        "market_home_margin": 6.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
+        "as_of": "2026-09-29T22:00:02.478+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
+      },
+      "confidence": {
+        "score": 82,
+        "tier": "HIGH",
+        "label": "High"
+      },
+      "reliability": {
+        "pct": 83,
+        "tier": "STRONG",
+        "text": "83 · STRONG",
+        "sub": "main deduction: Temple’s availability report is not due yet",
+        "score": 83,
+        "grade": "STRONG",
+        "grade_label": "STRONG",
+        "gate_label": null,
+        "components": [
+          {
+            "key": "team_data",
+            "label": "Team data",
+            "score": 18.7,
+            "max": 20
+          },
+          {
+            "key": "roster_availability",
+            "label": "Roster/status",
+            "score": 12,
+            "max": 20
+          },
+          {
+            "key": "projection_stability",
+            "label": "Stability",
+            "score": 18,
+            "max": 20
+          },
+          {
+            "key": "freshness",
+            "label": "Freshness",
+            "score": 12.3,
+            "max": 15
+          },
+          {
+            "key": "source_integrity",
+            "label": "Source integrity",
+            "score": 13.3,
+            "max": 15
+          },
+          {
+            "key": "environment",
+            "label": "Environment",
+            "score": 8.5,
+            "max": 10
+          }
+        ],
+        "main_deduction": "Temple’s availability report is not due yet; the impact of Temple’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Temple)",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Re-read availability inside the filing window (South Florida)",
+            "potential_gain": 3,
+            "text": "up to +3"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
+        "stability": {
+          "tier": "STABLE",
+          "sd": 2.07,
+          "favorite_flip_rate": 0
+        },
+        "scale": "0-100 reliability score, not a probability"
+      },
+      "drivers": {
+        "team": "South Florida",
+        "none": false,
+        "text": null,
+        "reasons": [
+          {
+            "kind": "component",
+            "key": "rating",
+            "points": 8.23,
+            "text": "+8.2 pts team-strength edge (opponent-adjusted results)"
+          },
+          {
+            "kind": "component",
+            "key": "hfa",
+            "points": 4.08,
+            "text": "+4.1 pts home-field advantage"
+          },
+          {
+            "kind": "component",
+            "key": "matchup",
+            "points": 2.6,
+            "text": "+2.6 pts stylistic matchup"
+          }
+        ]
+      },
+      "best_available_line": {
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+      },
+      "projection_status": {
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
+      },
+      "stability": {
+        "tier": "LOW",
+        "label": "Low",
+        "text": "the stored numbers span 3.3 pts across 3 readings"
+      },
+      "published": [
+        {
+          "at": "2026-09-23T14:27:27.019Z",
+          "source": "first published",
+          "home_margin": 18.25,
+          "text": "South Florida -18.3"
+        },
+        {
+          "at": "2026-09-30T17:15:56.240Z",
+          "source": "latest published",
+          "home_margin": 14.91,
+          "text": "South Florida -14.9"
+        }
+      ],
+      "revisions": 6,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Temple",
+        "since_at": "2026-09-30T17:15:56.240Z",
+        "text": "unchanged since the latest published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk moved 3.3 points toward Temple since the first published number.",
+        "attribution_text": "Projection changed 3.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
+        "market": "Market moved 0.5 pts toward South Florida (espn · Draft Kings)",
+        "model_version": null
+      },
+      "parity": {
+        "ok": true,
+        "gaps": []
+      },
+      "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
+    },
+    "headline": "EdgeDesk projects South Florida 35, Temple 20.",
+    "state": {
+      "label": "DATA FAULT",
+      "note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
+    },
+    "score": {
+      "away": {
+        "team": "Temple",
+        "points": "20"
+      },
+      "home": {
+        "team": "South Florida",
+        "points": "35"
+      },
+      "note": "Split from EdgeDesk’s own projected margin and total, rounded to whole points. It is the centre of a distribution, not a prediction of the exact score."
+    },
+    "table": {
+      "cols": [
+        "Temple",
+        "South Florida"
+      ],
+      "rows": [
+        {
+          "k": "ETSR (overall)",
+          "a": "-0.8  #76",
+          "h": "-1.1  #82",
+          "note": "points vs an average FBS team, neutral field"
+        },
+        {
+          "k": "Talent",
+          "a": "48.6  #79",
+          "h": "42.9  #104",
+          "note": null
+        },
+        {
+          "k": "Performance",
+          "a": "52.1  #61",
+          "h": "44.7  #93",
+          "note": null
+        },
+        {
+          "k": "Offense",
+          "a": "58.3  #21",
+          "h": "48.9  #75",
+          "note": null
+        },
+        {
+          "k": "Defense",
+          "a": "43.9  #106",
+          "h": "44.4  #102",
+          "note": null
+        },
+        {
+          "k": "Special teams",
+          "a": "50.4  #56",
+          "h": "50.8  #41",
+          "note": null
+        },
+        {
+          "k": "Run offense",
+          "a": "62.6  #12",
+          "h": "45.0  #95",
+          "note": null
+        },
+        {
+          "k": "Pass offense",
+          "a": "54.9  #41",
+          "h": null,
+          "note": null
+        },
+        {
+          "k": "Run defense",
+          "a": "44.1  #94",
+          "h": "52.4  #60",
+          "note": null
+        },
+        {
+          "k": "Pass defense",
+          "a": "46.3  #86",
+          "h": "43.7  #104",
+          "note": null
+        },
+        {
+          "k": "QB room",
+          "a": "58.1  #59",
+          "h": "54.6  #116",
+          "note": null
+        },
+        {
+          "k": "Offensive line",
+          "a": "52.9  #53",
+          "h": "57.6  #14",
+          "note": null
+        },
+        {
+          "k": "Receivers",
+          "a": "54.6  #97",
+          "h": "55.2  #63",
+          "note": null
+        },
+        {
+          "k": "Running backs",
+          "a": "55.3  #101",
+          "h": "53.4  #136",
+          "note": null
+        },
+        {
+          "k": "Defensive line",
+          "a": "49.0  #117",
+          "h": "58.7  #16",
+          "note": null
+        },
+        {
+          "k": "Linebackers",
+          "a": "49.7  #115",
+          "h": "57.5  #17",
+          "note": null
+        },
+        {
+          "k": "Secondary",
+          "a": "47.8  #120",
+          "h": "56.3  #37",
+          "note": null
+        },
+        {
+          "k": "Depth",
+          "a": "53.6  #78",
+          "h": "54.1  #32",
+          "note": null
+        },
+        {
+          "k": "Continuity",
+          "a": "41.4  #84",
+          "h": "28.4  #133",
+          "note": null
+        },
+        {
+          "k": "Confidence",
+          "a": "31%",
+          "h": "31%",
+          "note": "how much EdgeDesk knows, not how good the team is"
+        },
+        {
+          "k": "Δ national rank, this week",
+          "a": "up 2",
+          "h": "no change",
+          "note": "differenced from last week’s committed snapshot"
+        }
+      ]
+    },
+    "notes": [
+      "EdgeDesk’s line is South Florida -14.9 on a neutral read of the two teams, before any book is consulted. Projected total 55.1.",
+      "South Florida wins 84% of the time in EdgeDesk’s simulation, Temple 16%.",
+      "Eight games in ten land between -7.1 and +34.9 for South Florida. A single result inside that band tells you nothing new about either team.",
+      "The market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet, 8.4 points from EdgeDesk’s number.",
+      "Temple quarterback: Ajani Sheppard — started the last game; no announcement for this one.",
+      "South Florida quarterback: Luke Kromenhoek — started the last game; no announcement for this one."
+    ],
+    "missing": [
+      "South Florida — pass offense: no rating was published for this category.",
+      "No availability report reached Ajani Sheppard — unknown is carried as unknown, never as healthy.",
+      "No availability report reached Luke Kromenhoek — unknown is carried as unknown, never as healthy."
+    ],
+    "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
+    "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
+    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-03. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+  }
+}
