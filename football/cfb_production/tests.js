@@ -102,6 +102,17 @@ const hasPython = cp.spawnSync('python3', ['-c', 'import pandas'], { stdio: 'ign
   let k = 0; err = null;
   try { await DB.withRetry(async () => { k++; throw Object.assign(new Error('dup'), { cfb_code: 'DATABASE_CONSTRAINT' }); }, { sleep: async () => {} }); } catch (e) { err = e; }
   chk('retry: a constraint refusal is never retried', k === 1 && err.cfb_code === 'DATABASE_CONSTRAINT');
+  {
+    /* 2026-10-03: PostgREST answered 503 PGRST002 for longer than the default budget and the hourly mirror failed */
+    const pgrst002 = async () => ({ ok: false, status: 503, text: async () => JSON.stringify({ code: 'PGRST002' }), headers: { get: () => null } });
+    const quiet = { log: async () => {}, critical: () => {}, warn: () => {}, event: () => {} };
+    let mc = 0, gc = 0; const mWaits = [];
+    const me = await DB.postRows('http://x', 'k', 't', 'id', [{ id: 1 }], { fetch: async () => { mc++; return pgrst002(); }, sleep: async (ms) => mWaits.push(ms), rng: () => 0, log: quiet }).catch((e) => e);
+    await DB.rpc('http://x', 'k', 'fn', {}, { fetch: async () => { gc++; return pgrst002(); }, sleep: async () => {}, log: quiet }).catch(() => {});
+    const total = mWaits.reduce((a, b) => a + b, 0);
+    chk('retry: a mirror chunk waits ~1.5-3 min for an unavailable database (8 attempts) before its stage fails', mc === 8 && me.cfb_code === 'DATABASE_UNAVAILABLE' && total >= 90000 && total <= 182000, { mc, total });
+    chk('retry: other calls (the gate\'s lock and heartbeat) keep the short default budget', gc === T.attempts('DATABASE_UNAVAILABLE') && gc === 4, gc);
+  }
   k = 0; err = null;
   try { await DB.withRetry(async () => { k++; throw Object.assign(new Error('401'), { cfb_code: 'AUTH' }); }, { sleep: async () => {} }); } catch (e) { err = e; }
   chk('retry: an auth failure is never retried', k === 1 && err.cfb_code === 'AUTH');
