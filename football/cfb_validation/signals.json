@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-03T20:38:08.936Z",
+ "generated_at": "2026-10-03T23:25:21.044Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,19 +20,19 @@
  },
  "investigate": {
   "summary": {
-   "n": 11,
-   "settled": 3,
+   "n": 12,
+   "settled": 6,
    "label": "small sample",
-   "average_gap": 10.7,
-   "market_moved_toward_pct": 50,
-   "positive_clv_pct": 33.3,
-   "average_clv": 0.83,
-   "edgedesk_closer_than_opener_pct": 0,
-   "edgedesk_closer_than_close_pct": 0,
-   "edgedesk_mae": 10.08,
+   "average_gap": 10.45,
+   "market_moved_toward_pct": 25,
+   "positive_clv_pct": 16.7,
+   "average_clv": 0.08,
+   "edgedesk_closer_than_opener_pct": 33.3,
+   "edgedesk_closer_than_close_pct": 33.3,
+   "edgedesk_mae": 9.37,
    "ats_hypothetical": {
-    "wins": 3,
-    "losses": 0,
+    "wins": 5,
+    "losses": 1,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
@@ -101,8 +101,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": -5.5,
+    "final_margin": 3,
+    "market_move_toward": 0,
+    "moved_toward": null,
+    "edgedesk_error": 0.83,
+    "snapshot_market_error": 8.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 8.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401869962",
@@ -194,8 +202,16 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 10.5,
+    "final_margin": -4,
+    "market_move_toward": -1,
+    "moved_toward": false,
+    "edgedesk_error": 23.14,
+    "snapshot_market_error": 15.5,
+    "edgedesk_closer_than_snapshot_market": false,
+    "close_error": 14.5,
+    "edgedesk_closer_than_close": false,
+    "ats_hypothetical": "LOSS"
    },
    {
     "game_id": "401862790",
@@ -211,6 +227,23 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
+    "game_id": "401869842",
+    "game": "Army @ Louisiana Tech",
+    "week": 5,
+    "at": "2026-10-03T23:24:52.000Z",
+    "checkpoint": "FINAL",
+    "edgedesk_fair": -6.17,
+    "market_at_snapshot": 1.5,
+    "gap": 7.67,
+    "toward": "Army",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": true,
     "closing_market": null,
     "final_margin": null
    },
@@ -245,13 +278,21 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 31.5,
+    "final_margin": 19,
+    "market_move_toward": -1,
+    "moved_toward": false,
+    "edgedesk_error": 2.01,
+    "snapshot_market_error": 11.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 12.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    }
   ],
   "outcomes": {
    "MARKET_MOVED": 1,
-   "BAD_INFORMATION": 10
+   "BAD_INFORMATION": 11
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -278,23 +319,23 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 11,
-   "settled": 3,
+   "n": 12,
+   "settled": 6,
    "label": "small sample",
-   "average_gap": 10.7,
-   "market_moved_toward_pct": 50,
-   "positive_clv_pct": 33.3,
-   "average_clv": 0.83,
-   "edgedesk_closer_than_opener_pct": 0,
-   "edgedesk_closer_than_close_pct": 0,
-   "edgedesk_mae": 10.08,
+   "average_gap": 10.45,
+   "market_moved_toward_pct": 25,
+   "positive_clv_pct": 16.7,
+   "average_clv": 0.08,
+   "edgedesk_closer_than_opener_pct": 33.3,
+   "edgedesk_closer_than_close_pct": 33.3,
+   "edgedesk_mae": 9.37,
    "ats_hypothetical": {
-    "wins": 3,
-    "losses": 0,
+    "wins": 5,
+    "losses": 1,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
   },
-  "reading": "Building: 0 settled verified and 3 settled investigate snapshots; 30 of each are needed before comparing.",
+  "reading": "Building: 0 settled verified and 6 settled investigate snapshots; 30 of each are needed before comparing.",
   "historical_reference": {
    "source": "football/validation/disagreement/forensics_cfb.json gate_backtest.holdout_football_only (2022–2025, gate parameters fitted on 2015–2021)",
    "verified": {
@@ -315,18 +356,18 @@
  },
  "favorite_flips": {
   "summary": {
-   "n": 5,
-   "settled": 3,
+   "n": 6,
+   "settled": 5,
    "label": "small sample",
-   "average_gap": 8.79,
-   "market_moved_toward_pct": 100,
-   "positive_clv_pct": 33.3,
-   "average_clv": 1.5,
-   "edgedesk_closer_than_opener_pct": 33.3,
-   "edgedesk_closer_than_close_pct": 33.3,
-   "edgedesk_mae": 13.76,
+   "average_gap": 8.6,
+   "market_moved_toward_pct": 66.7,
+   "positive_clv_pct": 40,
+   "average_clv": 1.3,
+   "edgedesk_closer_than_opener_pct": 60,
+   "edgedesk_closer_than_close_pct": 60,
+   "edgedesk_mae": 13.97,
    "ats_hypothetical": {
-    "wins": 3,
+    "wins": 5,
     "losses": 0,
     "label": "hypothetical: EdgeDesk’s side at the snapshot market, not a wager"
    }
@@ -396,8 +437,16 @@
     "verdict": "WORTH_RESEARCHING",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": -5.5,
+    "final_margin": 3,
+    "market_move_toward": -2,
+    "moved_toward": false,
+    "edgedesk_error": 0.83,
+    "snapshot_market_error": 6.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 8.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401869956",
@@ -413,8 +462,16 @@
     "verdict": "NOT_RUN",
     "root_cause": null,
     "favorite_flip": true,
-    "closing_market": null,
-    "final_margin": null
+    "closing_market": 2.5,
+    "final_margin": 32,
+    "market_move_toward": 4,
+    "moved_toward": true,
+    "edgedesk_error": 27.73,
+    "snapshot_market_error": 33.5,
+    "edgedesk_closer_than_snapshot_market": true,
+    "close_error": 29.5,
+    "edgedesk_closer_than_close": true,
+    "ats_hypothetical": "WIN"
    },
    {
     "game_id": "401858252",
@@ -440,6 +497,23 @@
     "close_error": 5.5,
     "edgedesk_closer_than_close": false,
     "ats_hypothetical": "WIN"
+   },
+   {
+    "game_id": "401869842",
+    "game": "Army @ Louisiana Tech",
+    "week": 5,
+    "at": "2026-10-03T23:24:52.000Z",
+    "checkpoint": "FINAL",
+    "edgedesk_fair": -6.17,
+    "market_at_snapshot": 1.5,
+    "gap": 7.67,
+    "toward": "Army",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "note": "EdgeDesk and the market favoured different teams at the snapshot",
