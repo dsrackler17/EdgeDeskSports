@@ -2,7 +2,7 @@
  "schema": "edgedesk_player_props_performance_v1",
  "league": "cfb",
  "season": 2026,
- "generated_at": "2026-10-03T19:27:43.376Z",
+ "generated_at": "2026-10-03T19:39:20.219Z",
  "note": "Bets are the first BET of each selection at its price, 1 row per selection, units as recommended. LEAN rows are graded at a flat 1U for information and never counted as bets.",
  "summary": {
   "n": 0,
@@ -24,22 +24,22 @@
   }
  },
  "lean": {
-  "n": 0,
-  "wins": 0,
-  "losses": 0,
+  "n": 129,
+  "wins": 56,
+  "losses": 73,
   "pushes": 0,
-  "units": 0,
-  "risked": 0,
-  "roi": null,
-  "win_rate": null,
-  "avg_ev": null,
-  "avg_prob_clv_pp": null,
-  "avg_line_clv": null,
-  "beat_close_rate": null,
-  "clv_n": 0,
+  "units": -22.33,
+  "risked": 129,
+  "roi": -0.1731,
+  "win_rate": 0.4341,
+  "avg_ev": 0.1402,
+  "avg_prob_clv_pp": -2.77,
+  "avg_line_clv": 1.44,
+  "beat_close_rate": 0.5635,
+  "clv_n": 129,
   "sample": {
-   "key": "DESCRIPTIVE",
-   "label": "too early (n < 50)"
+   "key": "EARLY",
+   "label": "early signal"
   }
  },
  "breakdown": {
@@ -48,79 +48,100 @@
   "position": [],
   "ev_bucket": [],
   "confidence_bucket": [],
-  "decision": []
+  "decision": [
+   {
+    "n": 129,
+    "wins": 56,
+    "losses": 73,
+    "pushes": 0,
+    "units": -22.33,
+    "risked": 129,
+    "roi": -0.1731,
+    "win_rate": 0.4341,
+    "avg_ev": 0.1402,
+    "avg_prob_clv_pp": -2.77,
+    "avg_line_clv": 1.44,
+    "beat_close_rate": 0.5635,
+    "clv_n": 129,
+    "sample": {
+     "key": "EARLY",
+     "label": "early signal"
+    },
+    "key": "LEAN"
+   }
+  ]
  },
  "calibration": {
-  "n": 0,
-  "brier": null,
-  "ece": null,
+  "n": 172,
+  "brier": 0.23493,
+  "ece": 0.11829,
   "table": [
    {
     "bucket": "50–55%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 25,
+    "expected": 0.5226,
+    "observed": 0.36,
+    "gap_pp": -16.26
    },
    {
     "bucket": "55–60%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 25,
+    "expected": 0.5739,
+    "observed": 0.64,
+    "gap_pp": 6.61
    },
    {
     "bucket": "60–65%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 25,
+    "expected": 0.6281,
+    "observed": 0.48,
+    "gap_pp": -14.81
    },
    {
     "bucket": "65–70%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 15,
+    "expected": 0.6751,
+    "observed": 0.5333,
+    "gap_pp": -14.18
    },
    {
     "bucket": "70%+",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 82,
+    "expected": 0.8146,
+    "observed": 0.7073,
+    "gap_pp": -10.73
    }
   ],
   "sample": {
-   "key": "DESCRIPTIVE",
-   "label": "too early (n < 50)"
+   "key": "EARLY",
+   "label": "early signal"
   }
  },
  "market_calibration": {
-  "n": 0,
-  "brier": null,
-  "ece": null,
+  "n": 86,
+  "brier": 0.24394,
+  "ece": 0.13058,
   "table": [
    {
     "bucket": "50–55%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 76,
+    "expected": 0.5118,
+    "observed": 0.6447,
+    "gap_pp": 13.29
    },
    {
     "bucket": "55–60%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 8,
+    "expected": 0.5727,
+    "observed": 0.625,
+    "gap_pp": 5.23
    },
    {
     "bucket": "60–65%",
-    "n": 0,
-    "expected": null,
-    "observed": null,
-    "gap_pp": null
+    "n": 2,
+    "expected": 0.6443,
+    "observed": 1,
+    "gap_pp": 35.58
    },
    {
     "bucket": "65–70%",
@@ -138,24 +159,79 @@
    }
   ],
   "sample": {
-   "key": "DESCRIPTIVE",
-   "label": "too early (n < 50)"
+   "key": "EARLY",
+   "label": "early signal"
   }
  },
- "markets": {},
+ "markets": {
+  "anytime_td": {
+   "n": 86,
+   "ece": 0.09127,
+   "brier": null,
+   "market_brier": null,
+   "n_with_market": 0,
+   "clv_pp": null,
+   "clv_n": 0
+  },
+  "pass_tds": {
+   "n": 7,
+   "ece": 0.23541,
+   "brier": 0.24594,
+   "market_brier": 0.2172,
+   "n_with_market": 7,
+   "clv_pp": -0.37,
+   "clv_n": 4
+  },
+  "pass_yds": {
+   "n": 7,
+   "ece": 0.43999,
+   "brier": 0.31574,
+   "market_brier": 0.24967,
+   "n_with_market": 7,
+   "clv_pp": -2.96,
+   "clv_n": 2
+  },
+  "rec_yds": {
+   "n": 30,
+   "ece": 0.28449,
+   "brier": 0.27454,
+   "market_brier": 0.24962,
+   "n_with_market": 36,
+   "clv_pp": -2.63,
+   "clv_n": 13
+  },
+  "receptions": {
+   "n": 24,
+   "ece": 0.2532,
+   "brier": 0.28974,
+   "market_brier": 0.24236,
+   "n_with_market": 29,
+   "clv_pp": -3.1,
+   "clv_n": 12
+  },
+  "rush_yds": {
+   "n": 18,
+   "ece": 0.2343,
+   "brier": 0.24447,
+   "market_brier": 0.24477,
+   "n_with_market": 18,
+   "clv_pp": -2.21,
+   "clv_n": 7
+  }
+ },
  "calibration_state": {
   "state": "UNVALIDATED",
-  "n": 0,
-  "ece": null,
+  "n": 172,
+  "ece": 0.11829,
   "rule": "≥ 500 settled and ECE ≤ 0.03 → PARTIAL; ≥ 1000, ECE ≤ 0.02 and positive CLV → CALIBRATED"
  },
  "counts": {
-  "evaluations": 2133,
-  "results": 0,
+  "evaluations": 2583,
+  "results": 357,
   "bets": 0,
-  "leans": 0,
-  "finals": 0,
-  "void": 0,
+  "leans": 141,
+  "finals": 216,
+  "void": 56,
   "corrections": 0
  }
 }
