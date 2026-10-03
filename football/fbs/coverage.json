@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-02T23:53:17.270Z",
+ "generated_at": "2026-10-03T05:27:20.986Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,23 +119,23 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 115,
+  "total": 113,
   "by_group": {
-   "p4": 59,
-   "other": 60,
+   "p4": 58,
+   "other": 59,
    "independent": 4
   },
   "by_matchup": {
-   "conference": 102,
+   "conference": 100,
    "non_conference": 10,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "acc": 16,
-   "cusa": 6,
    "bigten": 16,
    "sec": 14,
    "big12": 13,
+   "cusa": 5,
+   "acc": 15,
    "independents": 4,
    "mwc": 10,
    "american": 14,
@@ -206,11 +206,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 115
+  "PREDICTED": 113
  },
  "weather": {
-  "requested": 110,
-  "answered": 110,
+  "requested": 108,
+  "answered": 108,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -218,10 +218,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "110 of 110 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "108 of 108 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 115
+  "NO_MARKET": 113
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -290,12 +290,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 56,
-    "total": 115,
+    "non_power_games": 55,
+    "total": 113,
     "example": [
-     "Liberty @ Delaware",
      "Navy @ Air Force",
-     "Western Michigan @ Buffalo"
+     "Western Michigan @ Buffalo",
+     "Toledo @ Ball State"
     ]
    }
   },
@@ -310,7 +310,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 102,
+    "conference_games": 100,
     "wrong": 0
    }
   },
@@ -342,8 +342,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 115,
-    "audit_total": 115
+    "slate": 113,
+    "audit_total": 113
    }
   },
   {
