@@ -15,6 +15,9 @@ on:
       - 'lib/edgedesk_pnl.css'
       - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
+      - 'tools/record/price_lock.js'
+      - 'tools/record/verified_pnl*'
+      - 'tools/record/football_record*'
       - 'tools/record/signal_pnl*'
       - 'supabase/model_pnl*.sql'
       - 'supabase/signal_pnl*.sql'
@@ -32,6 +35,8 @@ on:
       - 'lib/edgedesk_pnl*.js'
       - 'lib/edgedesk_edge_pnl*'
       - 'tools/record/pnl*'
+      - 'tools/record/price_lock.js'
+      - 'tools/record/verified_pnl*'
       - 'tools/record/signal_pnl*'
       - 'supabase/model_pnl*.sql'
       - 'supabase/signal_pnl*.sql'
@@ -57,7 +62,9 @@ jobs:
         run: node tools/record/pnl.test.js
       - name: The ledger (every source, idempotent rebuilds, corrected scores and stats, frozen recommendations, nothing deleted)
         run: node tools/record/pnl_ledger.test.js
-      - name: The database (idempotent upsert, derived P&L, corrections, RLS, SQL/kernel parity, a reader's own dollars)
+      - name: Verified P&L (no price = no verified P&L; the price lock at or before the decision, frozen; an idempotent backfill; graded = priced + record only)
+        run: node tools/record/verified_pnl.test.js
+      - name: The database (idempotent upsert, derived P&L, the price lock, verification and its reasons, verified_pnl_* parity and integrity, RLS, a reader's own dollars)
         env:
           PNL_SQL_REQUIRED: '1'
         run: node tools/record/pnl_sql.test.js

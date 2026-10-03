@@ -46,6 +46,44 @@
 .pnl-status-s{font-size:12.5px;color:var(--p-dim);margin-top:2px;line-height:1.45}
 .pnl-status-s b{color:var(--p-tx)}
 
+/* ---- 2. VERIFIED P&L: up or down, by how much, over how many priced decisions */
+.pnl-ver{border:1px solid var(--p-bd);border-radius:16px;background:var(--p-s1);padding:16px 16px 14px;margin:0 0 12px}
+.pnl-ver.profit{background:linear-gradient(180deg,rgba(118,189,62,.10),var(--p-s1) 70%);border-color:rgba(118,189,62,.45)}
+.pnl-ver.loss{background:linear-gradient(180deg,rgba(226,96,68,.10),var(--p-s1) 70%);border-color:rgba(226,96,68,.45)}
+.pnl-ver.none{border-style:dashed}
+.pnl-ver-ey{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-ver-tag{margin-left:auto;font:800 11px 'Inter',sans-serif;letter-spacing:.14em;border-radius:20px;padding:3px 10px;border:1px solid var(--p-bd);color:var(--p-tx)}
+.pnl-ver-tag.profit{color:var(--p-pos);border-color:rgba(118,189,62,.55)}.pnl-ver-tag.loss{color:var(--p-neg);border-color:rgba(226,96,68,.55)}
+.pnl-ver-net{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.04em;line-height:1.02;margin:10px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-ver-roi{font-weight:800;font-size:clamp(20px,5.6vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-ver-n{font-size:15px;color:var(--p-dim);margin-top:6px;line-height:1.45}
+.pnl-ver-n b,.pnl-ver-inc b{color:var(--p-tx);font-weight:700}
+.pnl-ver-none{font-size:clamp(20px,5.6vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:10px 0 2px}
+.pnl-ver.pnl-skel .pnl-ver-none{color:var(--p-dim);font-weight:600}
+.pnl-ver-inc{font-size:13px;color:var(--p-dim);margin-top:8px;line-height:1.55;font-variant-numeric:tabular-nums}
+.pnl-ver-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--p-bd)}
+@media(min-width:620px){.pnl-ver-dl{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.pnl-vd{min-width:0}
+.pnl-vd-k{font-size:11px;color:var(--p-dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.pnl-vd-v{font-size:18px;font-weight:700;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-ver-mk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+@media(min-width:620px){.pnl-ver-mk{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pnl-vm{border:1px solid var(--p-bd);border-radius:10px;background:var(--p-bg);padding:10px 12px;min-width:0}
+.pnl-vm-k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-dim);font-weight:700}
+.pnl-vm-v{font-size:clamp(18px,5vw,22px);font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums}
+.pnl-vm-r{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.pnl-vm-n{font-size:12px;color:var(--p-dim);margin-top:2px;font-variant-numeric:tabular-nums}
+.pnl-vm-o{font-size:11.5px;color:var(--p-dim);margin-top:1px}
+.pnl-vm-s{color:var(--p-warn)}
+@media(max-width:619px){.pnl-ver-dl .pnl-vd[data-k="record_only"]{grid-column:1/-1}}
+.pnl-ver-per{font-size:12.5px;color:var(--p-dim);margin-top:12px;line-height:1.45}
+/* a row's price and units in the graded history: "−108 · 1.00u risked · +0.93u" */
+.pnl-pc{white-space:normal !important}
+.pnl-pc-o{font-weight:700;color:var(--p-tx);font-variant-numeric:tabular-nums}
+.pnl-pc b{font-variant-numeric:tabular-nums}
+.pnl-ro{color:var(--p-tx);font-weight:600}
+.pnl-dflt{font:600 9.5px 'JetBrains Mono',monospace;border-radius:4px;padding:1px 4px;border:1px solid var(--p-bd);color:var(--p-dim);vertical-align:middle}
+
 /* ---- the four views, each with its own net ------------------------------- */
 .pnl-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:12px;padding:4px}
 .pnl-tabs button{border:0;background:transparent;color:var(--p-dim);border-radius:9px;min-height:54px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
@@ -240,6 +278,8 @@
   .pnl-lt td[data-l="Odds"]{grid-area:odds}
   .pnl-lt td[data-l="Result"]{grid-area:res;text-align:right}
   .pnl-lt td[data-l="Status"]{grid-area:units;text-align:right;font-size:12.5px}
+  .pnl-ht tr.pnl-lr{grid-template-areas:"bet bet bet bet" "date sport res res" "units units units units"}
+  .pnl-ht td[data-l="Status"]{text-align:left;font-size:12.5px}
   .pnl-lt tr.pnl-audit{display:block;padding:10px 12px}
   .pnl-lt tr.pnl-audit td{padding:0;background:transparent}
   .pnl-lt tr.pnl-audit td::before{display:none}

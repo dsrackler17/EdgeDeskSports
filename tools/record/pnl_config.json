@@ -1,0 +1,21 @@
+{
+  "schema": "edgedesk_pnl_config_v1",
+  "what": "Verified P&L settings. Read by tools/record/price_lock.js (the price a model decision was made at) and tools/record/pnl_core.js (the stake it risks). docs/pnl/DESIGN.md",
+  "default_stake_units": 1,
+  "default_stake_note": "Units RISKED by a graded pick whose source recorded no stake (the model's published number), once a real price is locked to it. Frozen on the row with the price: changing this affects only prices locked afterwards.",
+  "price_snapshots": {
+    "sources": [
+      {
+        "key": "cfb_lab_quotes",
+        "league": "CFB",
+        "dir": "football/cfb_lab/ledger/{season}/quotes",
+        "what": "ESPN sportsbook quotes the CFB Model Lab captures hourly before kickoff; append-only, written when a value changes and on a heartbeat (football/cfb_lab/lab_core.js dedupeDecision)."
+      }
+    ],
+    "max_age_hours": 6,
+    "max_age_note": "The lab writes a quote when it changes and at least every 6 hours (HEARTBEAT_H), so a book's latest quote at or before the decision is its price then for 6 hours; past that the game went unobserved and the price is not vouched for.",
+    "close_zone_hours": 3,
+    "close_zone_max_age_minutes": 90,
+    "close_zone_note": "Inside 3 hours of kickoff the lab writes at least every 50 minutes; a decision there takes a quote no older than the decision engine's own 90-minute limit (lib/edgedesk_decision.js freshness.max_quote_age_minutes)."
+  }
+}

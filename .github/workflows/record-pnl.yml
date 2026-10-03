@@ -59,6 +59,7 @@ jobs:
         run: |
           node tools/record/pnl.test.js
           node tools/record/pnl_ledger.test.js
+          node tools/record/verified_pnl.test.js
 
       - name: Rebuild the P&L ledger and the Record's summary from the settled ledgers
         run: node tools/record/pnl_ledger.js --write
@@ -73,4 +74,4 @@ jobs:
         env:
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
-        run: node tools/record/pnl_sync.js || echo "::warning::P&L sync skipped (apply supabase/model_pnl.sql, model_pnl_states.sql and model_pnl_analytics.sql)"
+        run: node tools/record/pnl_sync.js || echo "::warning::P&L sync skipped (apply supabase/model_pnl.sql, model_pnl_states.sql, model_pnl_analytics.sql, model_pnl_verified.sql and model_pnl_verified_views.sql)"

@@ -135,8 +135,8 @@ returns numeric language sql immutable as $f$
     when p_american is null or abs(p_american) < 100 or abs(p_american) > 100000 then null
     when p_stake is null or p_stake < 0 then null
     when lower(coalesce(p_result, '')) in ('push', 'void') then 0
-    when lower(coalesce(p_result, '')) = 'loss' then trim_scale(round(-p_stake, 4))
-    when lower(coalesce(p_result, '')) = 'win' then trim_scale(round(case when p_american > 0 then p_stake * p_american / 100 else p_stake * 100 / abs(p_american) end, 4))
+    when lower(coalesce(p_result, '')) = 'loss' then trim_scale(round(-p_stake, 6))
+    when lower(coalesce(p_result, '')) = 'win' then trim_scale(round(case when p_american > 0 then p_stake * p_american / 100 else p_stake * 100 / abs(p_american) end, 6))
     else null end
 $f$;
 
@@ -278,8 +278,8 @@ select piece, state from (
   union all select 'model_pnl_corrections (append-only)', case when exists (select 1 from pg_trigger where tgname = 'model_pnl_corrections_frozen_trg') then 'ok' else 'CHECK THIS' end
   union all select 'P&L derived by trigger; recommendation half frozen', case when exists (select 1 from pg_trigger where tgname = 'model_pnl_derive_trg') then 'ok' else 'CHECK THIS' end
   union all select 'no delete, no truncate', case when (select count(*) from pg_trigger where tgname in ('model_pnl_no_delete_trg', 'model_pnl_no_truncate_trg')) = 2 then 'ok' else 'CHECK THIS' end
-  union all select 'profit arithmetic (-110 → 0.9091, +150 → 1.5, -150 → 0.6667, 0 → null, push → 0)',
-    case when public.edp_pnl_profit(-110, 1, 'win') = 0.9091 and public.edp_pnl_profit(150, 1, 'win') = 1.5 and public.edp_pnl_profit(-150, 1, 'win') = 0.6667
+  union all select 'profit arithmetic (-110 → 0.909091, +150 → 1.5, -150 → 0.666667, 0 → null, push → 0)',
+    case when public.edp_pnl_profit(-110, 1, 'win') = 0.909091 and public.edp_pnl_profit(150, 1, 'win') = 1.5 and public.edp_pnl_profit(-150, 1, 'win') = 0.666667
       and public.edp_pnl_profit(0, 1, 'win') is null and public.edp_pnl_profit(-110, 1, 'push') = 0 and public.edp_pnl_profit(-110, 0.5, 'loss') = -0.5 then 'ok' else 'CHECK THIS' end
   union all select 'no captured price, no P&L (constraint)', case when exists (select 1 from pg_constraint where conname = 'model_pnl_no_invented_pnl') then 'ok' else 'CHECK THIS' end
   union all select 'RLS on, no client can read the table', case when (select relrowsecurity from pg_class where oid = 'public.model_pnl'::regclass) and not has_table_privilege('anon', 'public.model_pnl', 'select') then 'ok' else 'CHECK THIS' end

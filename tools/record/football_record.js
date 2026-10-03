@@ -35,6 +35,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const C = require('./football_record_core.js');
+const PL = require('./price_lock.js');
 const S = require('./football_record_sources.js');
 const { writeIfChanged } = require(path.join(__dirname, '..', 'football', 'write_if_changed.js'));
 
@@ -305,6 +306,23 @@ async function run(opts) {
     await nflSources(ledgers.nfl, now, log);
     await cfbSources(ledgers.cfb, now, log);
   } else log.push('offline: no market, close or final was read');
+
+  /* THE PRICE LOCK — and its backfill: each pick's market as the quotes
+     EdgeDesk stored saw it when the number was published (no network: the
+     quote ledgers are committed). Only leagues with a stored-quote source. */
+  for (const sp of ['nfl', 'cfb']) {
+    const lg = sp.toUpperCase();
+    if (!(PL.CONFIG.price_snapshots.sources || []).some((x) => x.league === lg)) { log.push(sp + ' price lock: no stored-quote source for ' + lg + ' — its picks stay record-only'); continue; }
+    const quotes = PL.readQuotes(ROOT, season, lg);
+    let locked = 0, touched = 0;
+    Object.keys(ledgers[sp].games).forEach((id) => {
+      const e = ledgers[sp].games[id];
+      if (C.lockPrice(e, quotes[id] || [], now)) touched++;
+      const L = e.pick && e.pick.price_lock;
+      if (L) locked += ['spread', 'total', 'moneyline'].filter((m) => L[m] && L[m].status === 'locked').length;
+    });
+    log.push(sp + ' price lock: ' + Object.keys(quotes).length + ' game(s) with stored quotes · ' + locked + ' market(s) locked · ' + touched + ' pick(s) updated this run');
+  }
 
   const sums = {};
   const written = {};

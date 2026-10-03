@@ -209,7 +209,8 @@ chk('data quality: not P&L eligible = missing + simulated', dq.not_pnl_eligible 
 /* ── the one state of every row ────────────────────────────────────── */
 {
   const base = { event_id: 'g1', game_date: '2026-10-04T17:00:00.000Z', recommended_at: '2026-10-03T12:00:00.000Z', side: 'home', selection: 'BUF -3', rec_class: 'BET', stake_units: 1 };
-  const S = (o) => P.settle(Object.assign({}, base, o));
+  let sid = 0;
+  const S = (o) => P.settle(Object.assign({ recommendation_id: 'st' + (++sid) }, base, o));
   chk('state: no result yet → PENDING', S({ entry_odds: -110, result: 'pending' }).record_state === 'PENDING');
   chk('state: settled at a captured price → VERIFIED', S({ entry_odds: -110, result: 'win' }).record_state === 'VERIFIED');
   const ro = S({ entry_odds: null, result: 'loss' });

@@ -32,9 +32,11 @@ const PNL = require(path.join(PG.ROOT, 'lib', 'edgedesk_pnl.js'));
 const T = PG.kit('model_pnl SQL');
 const chk = T.chk;
 const CORE = path.join(PG.ROOT, 'supabase', 'model_pnl.sql'), ANA = path.join(PG.ROOT, 'supabase', 'model_pnl_analytics.sql'), STA = path.join(PG.ROOT, 'supabase', 'model_pnl_states.sql');
-[['model_pnl.sql', fs.readFileSync(CORE, 'utf8')], ['model_pnl_states.sql', fs.readFileSync(STA, 'utf8')], ['model_pnl_analytics.sql', fs.readFileSync(ANA, 'utf8')]].forEach(([n, s]) => {
+const VER = path.join(PG.ROOT, 'supabase', 'model_pnl_verified.sql'), VIEWS = path.join(PG.ROOT, 'supabase', 'model_pnl_verified_views.sql');
+[['model_pnl.sql', fs.readFileSync(CORE, 'utf8')], ['model_pnl_states.sql', fs.readFileSync(STA, 'utf8')], ['model_pnl_analytics.sql', fs.readFileSync(ANA, 'utf8')],
+  ['model_pnl_verified.sql', fs.readFileSync(VER, 'utf8')], ['model_pnl_verified_views.sql', fs.readFileSync(VIEWS, 'utf8')]].forEach(([n, s]) => {
   chk(n + ': no psql meta-commands', !/^\\/m.test(s));
-  chk(n + ': idempotent create statements', /create or replace (function|view)/.test(s) && (/create table if not exists/.test(s) || /create materialized view if not exists/.test(s) || /add column if not exists/.test(s)));
+  chk(n + ': idempotent create statements', /create or replace (function|view)/.test(s) && (/create table if not exists/.test(s) || /create materialized view if not exists/.test(s) || /add column if not exists/.test(s) || /create index if not exists/.test(s)));
   chk(n + ': additive — nothing is dropped', !/\bdrop table\b/i.test(s) && !/\bdrop column\b/i.test(s) && !/\bdrop view\b/i.test(s));
   chk(n + ': it ends in a report', /CHECK THIS/.test(s) && /order by 1;\s*$/.test(s));
   chk(n + ': PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(s));
@@ -88,6 +90,18 @@ try {
   out = db.applyFileAtomic(ANA);
   chk('model_pnl_analytics.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
   chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(ANA)));
+  const noDepV = db.mustFail(() => db.applyFileAtomic(VIEWS));
+  chk('the verified views without model_pnl_verified.sql stop and name the file', /model_pnl_verified\.sql/.test(noDepV || ''), noDepV && noDepV.slice(0, 200));
+  out = db.applyFileAtomic(VER);
+  chk('model_pnl_verified.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-900));
+  chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(VER)));
+  out = db.applyFileAtomic(VIEWS);
+  chk('model_pnl_verified_views.sql applies; every report row says ok', !/CHECK THIS/.test(out), out.slice(-600));
+  chk('and applies a second time', !/CHECK THIS/.test(db.applyFileAtomic(VIEWS)));
+  /* re-applying model_pnl.sql brings back its own derive and upsert: the verified file's report says so, and re-applying it restores them */
+  db.applyFileAtomic(CORE);
+  chk('after model_pnl.sql is re-applied, the verified report would flag the superseded trigger', db.sql("select case when (select prosrc from pg_proc where oid = 'public.model_pnl_derive()'::regprocedure) like '%price lock%' then 'ok' else 'CHECK THIS' end;") === 'CHECK THIS');
+  chk('and re-applying model_pnl_verified.sql restores it, all ok', !/CHECK THIS/.test(db.applyFileAtomic(VER)) && !/CHECK THIS/.test(db.applyFileAtomic(VIEWS)));
   db.sql(`insert into auth.users (id, email) values ('${A}','a@example.com'), ('${B}','b@example.com');`);
 
   /* ── the one writer, idempotent ─────────────────────────────────────── */
@@ -104,16 +118,16 @@ try {
     .split('\n').forEach((l) => { const p = l.split('|'); got[p[0]] = { st: p[1], flat: p[2] === 'null' ? null : +p[2], staked: p[3] === 'null' ? null : +p[3], ip: p[4] === 'null' ? null : +p[4] }; });
   chk('every row\'s status, flat and staked P&L equal lib/edgedesk_pnl.js', ROWS.every((x) => got[x.recommendation_id].st === x.pnl_status && got[x.recommendation_id].flat === x.flat_profit_units && got[x.recommendation_id].staked === x.profit_units),
     ROWS.map((x) => [x.recommendation_id, x.pnl_status, x.flat_profit_units, x.profit_units, got[x.recommendation_id]]).filter((a) => a[1] !== a[4].st || a[2] !== a[4].flat || a[3] !== a[4].staked));
-  chk('-110 winner at 0.50u: +0.9091 flat, +0.4545 staked', got['pp:t1'].flat === 0.9091 && got['pp:t1'].staked === 0.4545);
+  chk('-110 winner at 0.50u: +0.909091 flat, +0.454545 staked (6 places)', got['pp:t1'].flat === 0.909091 && got['pp:t1'].staked === 0.454545, got['pp:t1']);
   chk('+150 loser at 0.25u: -1 / -0.25', got['pp:t2'].flat === -1 && got['pp:t2'].staked === -0.25);
-  chk('-150 winner at 1u: +0.6667', got['bd:t3'].flat === 0.6667 && got['bd:t3'].staked === 0.6667);
+  chk('-150 winner at 1u: +0.666667', got['bd:t3'].flat === 0.666667 && got['bd:t3'].staked === 0.666667);
   chk('push 0, void 0 (VOID), pending null', got['pp:t4'].flat === 0 && got['pp:t9'].st === 'VOID' && got['pp:t9'].flat === 0 && got['pp:t8'].flat === null);
   chk('the model record row: NO_ENTRY_PRICE, no P&L', got['mr:nfl:g10:spread'].st === 'NO_ENTRY_PRICE' && got['mr:nfl:g10:spread'].flat === null);
   chk('implied probability of -110 is stamped', got['pp:t1'].ip === 0.5238);
 
   /* ── no client can store an invented figure ─────────────────────────── */
   db.service("update public.model_pnl set flat_profit_units = 50, profit_units = 50 where recommendation_id = 'pp:t1';");
-  chk('a written profit is re-derived from the price (the trigger ignores it)', db.sql("select flat_profit_units from public.model_pnl where recommendation_id = 'pp:t1';") === '0.9091');
+  chk('a written profit is re-derived from the price (the trigger ignores it)', db.sql("select flat_profit_units from public.model_pnl where recommendation_id = 'pp:t1';") === '0.909091');
   db.service("update public.model_pnl set flat_profit_units = 1 where recommendation_id = 'mr:nfl:g10:spread';");
   chk('a row with no price keeps no P&L, whatever is written', db.sql("select coalesce(flat_profit_units::text, 'null') from public.model_pnl where recommendation_id = 'mr:nfl:g10:spread';") === 'null');
   let r3 = up([row(11, { entry_odds: 0 }), row(12, { entry_odds: 50 }), row(13, { entry_odds: 'abc' }), row(14, { entry_odds: -110, price_assumed: true })]);
@@ -133,7 +147,7 @@ try {
   const scoreFix = fixed.map((x) => (x.recommendation_id === 'mr:nfl:g10:spread' ? Object.assign({}, x, { result: 'win', final_score: '20–24' }) : x));
   chk('a corrected final score on a record-only row is logged too', up(scoreFix).updated === 1 && db.sql("select corrected || ':' || coalesce(flat_profit_units::text, 'null') from public.model_pnl where recommendation_id = 'mr:nfl:g10:spread';") === 'true:null');
   const settleNew = scoreFix.map((x) => (x.recommendation_id === 'pp:t8' ? Object.assign({}, x, { result: 'win', settled_at: '2026-09-26T09:00:00Z', result_value: 290 }) : x));
-  chk('a pending row settling is not a correction', up(settleNew).updated === 1 && db.sql("select corrected || ':' || flat_profit_units from public.model_pnl where recommendation_id = 'pp:t8';") === 'false:0.9091');
+  chk('a pending row settling is not a correction', up(settleNew).updated === 1 && db.sql("select corrected || ':' || flat_profit_units from public.model_pnl where recommendation_id = 'pp:t8';") === 'false:0.909091');
   const bad = settleNew.map((x) => (x.recommendation_id === 'pp:t2' ? Object.assign({}, x, { entry_odds: 200, result: 'win' }) : x));
   const r5 = up(bad);
   chk('a batch that would rewrite a recorded price is refused for that row, named', r5.refused.length === 1 && r5.refused[0].recommendation_id === 'pp:t2' && /frozen/.test(r5.refused[0].error), r5);
@@ -194,10 +208,84 @@ try {
     db.sql('alter table public.model_pnl enable trigger model_pnl_state_trg;');
     /* the canonical record */
     chk('anon reads the canonical record: one row per recommendation, the public rows', +db.anon('select count(*) from public.model_record_canonical;') === +db.anon('select count(*) from public.model_pnl_public;'));
-    chk('the canonical record carries the normalized names', db.anon("select id || '|' || recommendation_grade || '|' || settlement_result || '|' || pnl_units || '|' || record_state from public.model_record_canonical where id = 'bd:t3';") === 'bd:t3|BET|win|0.6667|VERIFIED');
+    chk('the canonical record carries the normalized names', db.anon("select id || '|' || recommendation_grade || '|' || settlement_result || '|' || pnl_units || '|' || record_state from public.model_record_canonical where id = 'bd:t3';") === 'bd:t3|BET|win|0.666667|VERIFIED');
     chk('the canonical record carries no internal fields', db.mustFail(() => db.anon('select entry_odds_raw from public.model_record_canonical;')) !== null);
     chk('the state counts add up to every public row', +db.anon('select sum(n) from public.model_record_states;') === +db.anon('select count(*) from public.model_record_canonical;'));
   }
+
+
+  /* ── VERIFIED P&L: the price lock, the verification rule, the reasons ── */
+  {
+    const mr = (o) => PNL.settle(Object.assign({
+      recommendation_id: 'mr:cfb:g30:spread', source: 'model_record', source_ref: { file: 'record/football/cfb_2026.json', id: 'g30' }, sport: 'football', league: 'CFB', season: 2026, week: 2,
+      event_id: 'g30', event_label: 'ARK @ UTAH', game_date: '2026-09-13T02:15:00.000Z', model_version: 'edgedesk_cfb_p4_v1.0.0', market_group: 'game', market_type: 'spread',
+      side: 'home', selection: 'UTAH -13.5', model_line: -15.7, entry_line: -12.5, entry_odds: null, entry_book: 'DraftKings', price_assumed: false, rec_class: 'MODEL', stake_units: 0,
+      recommended_at: '2026-09-12T22:24:40.000Z', odds_captured_at: null, evaluation_mode: 'LIVE_RECONSTRUCTED', result: 'win', result_value: 33, final_score: '10–43',
+      closing_line: -13.5, settled_at: '2026-09-14T00:00:00.000Z', corrections: [], corrected: false,
+      price_lookup: { status: 'historical_price_unavailable', why: 'no_snapshot', detail: 'EdgeDesk stored no priced spread quote for this game' }
+    }, o));
+    const lockFields = { entry_odds: -108, entry_book: 'draftkings', odds_captured_at: '2026-09-12T21:07:00.000Z', stake_units: 1, stake_source: 'default', price_source: 'snapshot',
+      price_ref: { source: 'cfb_lab_quotes', quote_id: 'cfbq_000000000000000000000030', event_id: 'g30', market: 'spread', side: 'home', line: -13.5, book: 'draftkings', observed_at: '2026-09-12T21:07:00.000Z', decided_at: '2026-09-12T22:24:40.000Z' },
+      price_lookup: null, price_locked_at: '2026-10-03T12:00:00.000Z' };
+    const st = (id) => db.sql("select record_state || '|' || pnl_verified || '|' || coalesce(pnl_exclusion_reason, 'null') || '|' || coalesce(flat_profit_units::text, 'null') || '|' || coalesce(profit_units::text, 'null') || '|' || coalesce(stake_source, 'null') || '|' || coalesce(price_source, 'null') from public.model_pnl where recommendation_id = '" + id + "';");
+    let u = up([mr()]);
+    chk('a model number with no stored price lands record-only, with its reason', u.inserted === 1 && st('mr:cfb:g30:spread') === 'RECORD_ONLY|false|historical_price_unavailable|null|null|null|null', [u, st('mr:cfb:g30:spread')]);
+    u = up([mr(lockFields)]);
+    chk('THE PRICE LOCK: the stored pre-decision quote attaches ONCE — verified, at the default 1u', u.updated === 1 && u.price_locked === 1 && st('mr:cfb:g30:spread') === 'VERIFIED|true|null|0.925926|0.925926|default|snapshot', [u, st('mr:cfb:g30:spread')]);
+    chk('the lock is stamped', db.sql("select (price_locked_at is not null)::text from public.model_pnl where recommendation_id = 'mr:cfb:g30:spread';") === 'true');
+    chk('sent again, nothing changes', up([mr(lockFields)]).unchanged === 1);
+    const moved = up([mr(Object.assign({}, lockFields, { entry_odds: -110, odds_captured_at: '2026-09-12T22:07:00.000Z' }))]);
+    chk('a later price (the market moved) never overwrites the locked one', moved.updated === 0 && moved.price_locked === 0
+      && db.sql("select entry_odds::text from public.model_pnl where recommendation_id = 'mr:cfb:g30:spread';") === '-108', moved);
+    const movedAndSettled = up([mr(Object.assign({}, lockFields, { entry_odds: -110, result: 'loss' }))]);
+    chk('and arriving with a settlement change, the row is refused, named — the price stands', movedAndSettled.refused.length === 1 && /locked price and is frozen/.test(movedAndSettled.refused[0].error)
+      && db.sql("select entry_odds || ':' || result from public.model_pnl where recommendation_id = 'mr:cfb:g30:spread';") === '-108:win', movedAndSettled);
+    chk('a direct update of the locked price is refused', db.mustFail(() => db.service("update public.model_pnl set entry_odds = -110 where recommendation_id = 'mr:cfb:g30:spread';")) !== null);
+    chk('nor can the stake be changed after the lock', db.mustFail(() => db.service("update public.model_pnl set stake_units = 0.5 where recommendation_id = 'mr:cfb:g30:spread';")) !== null);
+    const late = up([row(40, { recommendation_id: 'bd:t40', source: 'bettor_decision', market_group: 'game', market_type: 'spread', side: 'home', selection: 'Utah -6.5', prop_market: null, player_id: null,
+      game_date: '2026-09-20T17:00:00.000Z', recommended_at: '2026-09-10T12:00:00.000Z', odds_captured_at: '2026-09-10T13:00:00.000Z' })]);
+    chk('a price captured after the decision is PRICE_AFTER_DECISION: record only, no units', late.inserted === 1 && st('bd:t40') === 'RECORD_ONLY|false|price_after_decision|null|null|explicit|decision', st('bd:t40'));
+    const elsewhere = up([mr(Object.assign({}, lockFields, { recommendation_id: 'mr:cfb:g31:spread', event_id: 'g31' }))]);
+    chk('a stored-quote price recorded for another game is refused (constraint)', elsewhere.refused.length === 1 && /model_pnl_verified_rules/.test(elsewhere.refused[0].error), elsewhere);
+    chk('a default stake on a WATCH is refused (constraint)', db.mustFail(() => db.service("insert into public.model_pnl (recommendation_id, source, league, event_id, market_group, market_type, selection, rec_class, stake_units, stake_source, entry_odds) values ('w1','bettor_decision','CFB','g','game','spread','X -3','WATCH',1,'default',-110);")) !== null);
+    chk('every pending row is excluded as not settled', db.sql("select count(*) from public.model_pnl where record_state = 'PENDING' and pnl_exclusion_reason is distinct from 'missing_settlement';") === '0');
+    chk('a void is excluded as void, an assumed price as simulated, a malformed one as invalid odds',
+      db.sql("select string_agg(recommendation_id || ':' || pnl_exclusion_reason, ',' order by recommendation_id) from public.model_pnl where recommendation_id in ('pp:t9','pp:t14','pp:t12');") === 'pp:t12:invalid_odds,pp:t14:simulated_price,pp:t9:void');
+  }
+
+  /* ── verified_pnl_*: the summary, breakdowns and series equal the kernel ── */
+  const kernelRows = () => JSON.parse(db.sql("select coalesce(json_agg(t), '[]') from (select recommendation_id, rec_class, record_state, pnl_status, result, entry_odds, stake_units, flat_profit_units, profit_units, game_date, recommended_at, market_type, market_group, league, week, price_source, stake_source from public.model_pnl where evaluation_mode in ('LIVE', 'LIVE_RECONSTRUCTED')) t;"));
+  const parity = (tag) => {
+    const K = kernelRows();
+    ['staked', 'flat'].forEach((mode) => {
+      const c = PNL.verifiedCard(K, mode);
+      const s = db.anon(`select graded_decisions || '|' || total_verified_bets || '|' || record_only_decisions || '|' || wins || '|' || losses || '|' || pushes || '|' || coalesce(net_units::text, 'null') || '|' || coalesce(units_risked::text, 'null') || '|' || coalesce(roi_percent::text, 'null') from public.verified_pnl_summary('${mode}');`).split('|');
+      const num = (v) => (v === 'null' ? null : +v);
+      chk(tag + mode + ': verified_pnl_summary = the kernel card (graded, priced, record only, W-L-P, net, risked, ROI)',
+        +s[0] === c.graded && +s[1] === c.n && +s[2] === c.record_only && +s[3] === c.wins && +s[4] === c.losses && +s[5] === c.pushes && num(s[6]) === c.net_units && num(s[7]) === c.risked_units && num(s[8]) === c.roi_pct,
+        [s, c.graded, c.n, c.record_only, c.record, c.net_units, c.risked_units, c.roi_pct]);
+      chk(tag + mode + ': graded = verified priced + record only', +s[0] === c.priced + +s[2]);
+      const bm = db.anon(`select coalesce(string_agg(group_key || ':' || total_verified_bets || ':' || coalesce((net_units::float8)::text, 'null'), ',' order by group_key), '') from public.verified_pnl_breakdown('market_type', '${mode}') where total_verified_bets > 0;`);
+      const km = c.markets.filter((m) => m.n).map((m) => m.type + ':' + m.n + ':' + m.net_units).sort().join(',');
+      chk(tag + mode + ': by market_type = the kernel card\'s markets', bm === km, [bm, km]);
+      const ser = db.anon(`select count(*) || '|' || coalesce(round((array_agg(cumulative_units order by n desc))[1], 2)::text, 'null') from public.verified_pnl_series('${mode}');`).split('|');
+      chk(tag + mode + ': the series has one point per priced decision and ends at the net', +ser[0] === c.n && num(ser[1]) === c.net_units, [ser, c.n, c.net_units]);
+    });
+    const lg = db.anon("select string_agg(group_key || ':' || graded_decisions, ',' order by group_key) from public.verified_pnl_breakdown('league');");
+    chk(tag + 'by league: every graded decision once', lg.split(',').reduce((a, x) => a + +x.split(':')[1], 0) === PNL.verifiedCard(kernelRows(), 'staked').graded, lg);
+    chk(tag + 'filters: CFB spread only', +db.anon("select graded_decisions from public.verified_pnl_summary('staked', 'CFB', 'spread');") === PNL.verifiedCard(kernelRows().filter((x) => x.league === 'CFB' && x.market_type === 'spread'), 'staked').graded);
+    const I = db.anon("select string_agg(check_key || ':' || failures, ',' order by check_key) from public.verified_pnl_integrity() where severity = 'error';");
+    chk(tag + 'every integrity check reads 0', I.split(',').every((x) => x.split(':')[1] === '0'), I);
+  };
+  parity('fixture · ');
+  /* a corrupted row is caught: units that do not match the price */
+  db.sql("alter table public.model_pnl disable trigger user; update public.model_pnl set flat_profit_units = 5 where recommendation_id = 'mr:cfb:g30:spread'; alter table public.model_pnl enable trigger user;");
+  chk('integrity: units that do not match stake × odds × result are caught', db.sql("select failures from public.verified_pnl_integrity() where check_key = 'profit_mismatch';") === '1');
+  db.sql("alter table public.model_pnl disable trigger user; update public.model_pnl set flat_profit_units = 0.925926 where recommendation_id = 'mr:cfb:g30:spread'; update public.model_pnl set price_ref = jsonb_set(price_ref, '{line}', '-14.5') where recommendation_id = 'mr:cfb:g30:spread'; alter table public.model_pnl enable trigger user;");
+  chk('integrity: a stored-quote price for another number is caught', db.sql("select failures from public.verified_pnl_integrity() where check_key = 'line_mismatch';") === '1');
+  db.sql("alter table public.model_pnl disable trigger user; update public.model_pnl set price_ref = jsonb_set(price_ref, '{line}', '-13.5') where recommendation_id = 'mr:cfb:g30:spread'; alter table public.model_pnl enable trigger user;");
+  chk('anon reads the decisions view: price, stake, verification and reason', db.anon("select american_odds || '|' || stake_units || '|' || stake_source || '|' || pnl_verified || '|' || line from public.verified_pnl_decisions where decision_id = 'mr:cfb:g30:spread';") === '-108|1|default|true|-13.5');
+  chk('anon cannot read the verified rows function\'s source table', db.mustFail(() => db.anon('select price_ref from public.model_pnl;')) !== null);
 
   /* ── the cached daily series ────────────────────────────────────────── */
   db.service('select public.model_pnl_refresh();');
@@ -235,6 +323,8 @@ try {
         for (let i = 0; i < why.length; i += 500) db.service(`select public.model_pnl_reasons(${J(why.slice(i, i + 500))});`);
         const ids = lit('{' + L0.rows.map((x) => '"' + x.recommendation_id + '"').join(',') + '}') + '::text[]';
         chk('the database derives the same one state for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + ids + ") and m.record_state is distinct from (" + J(Object.fromEntries(L0.rows.map((x) => [x.recommendation_id, x.record_state]))) + " ->> m.recommendation_id);") === '0');
+        parity('real ledger + fixture · ');
+        chk('the real ledger\'s stored-quote prices all reference their own game and number', db.sql("select count(*) from public.model_pnl where price_source = 'snapshot' and (price_ref ->> 'event_id' <> event_id or (market_type <> 'moneyline' and (price_ref ->> 'line')::numeric <> closing_line));") === '0');
         chk('and holds the same pending reason for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + ids + ") and m.pending_reason is distinct from (" + J(Object.fromEntries(L0.rows.map((x) => [x.recommendation_id, x.pending_reason || null]))) + " ->> m.recommendation_id);") === '0');
       }
     }

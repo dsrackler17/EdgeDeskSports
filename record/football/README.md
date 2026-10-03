@@ -37,7 +37,16 @@ either slate is rebuilt). Nobody edits these by hand.
 ## A record, not P&L — and the closing prices it keeps
 
 No entry price was ever captured with the model's number, so this record is
-**wins and losses**. The Records page shows it that way, by market, under
+**wins and losses** — except where EdgeDesk's own quote capture stored one
+first. **The price lock** (`pick.price_lock`, `tools/record/price_lock.js`):
+every run freezes on each pick the market as the quotes EdgeDesk stored saw it
+at the moment the number was published (college football: the CFB Model Lab's
+hourly ESPN quotes). A quote observed after the number, and the close, are
+never used. A locked market is never rewritten. The Records page prices a graded
+side from it only when the stored quote was for the exact number it was graded
+at, at the default stake (`tools/record/pnl_config.json`). Everything else stays
+**record only**, with the reason. The NFL has no stored-quote source, so its
+picks stay record only. The Records page shows it that way, by market, under
 *Historical model results*, labelled *record only*. The Records page's P&L is
 only ever EdgeDesk's BET recommendations at the entry price it recorded
 (`record/pnl/`); this record is never turned into units there. Its rows are

@@ -6,7 +6,7 @@
 <title>EdgeDesk Record: our closing line value, unedited</title>
 <meta name="description" content="EdgeDesk's live closing line value, published outside the paywall with no login. Split by anchor and corroboration. It updates whether we like the direction or not.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261001u">
+<link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003v">
 <link rel="stylesheet" href="/lib/edgedesk_edge_pnl.css?v=20261001a">
 <!-- NO LOGIN GATE. That is the entire point of this file.
      app.html redirects logged-out visitors to index.html. Its own gate comment
@@ -255,7 +255,7 @@ footer a:hover{color:var(--text)}
   <div class="wrap">
     <span class="ey">Profit &amp; loss · the model’s own recommendations</span>
     <h2>Is the EdgeDesk model up or down?</h2>
-    <p class="sub">Settled BET recommendations at the price EdgeDesk recorded. Tap <b>How P&amp;L works</b> for the method.</p>
+    <p class="sub">Model performance is how often the model was right. Verified P&amp;L counts only the decisions that settled at a price EdgeDesk captured at or before the call; the rest stay record only. Tap <b>How P&amp;L works</b> for the method.</p>
     <div id="pnlPub"><div class="edrec-empty">Loading the profit &amp; loss record…</div></div>
   </div>
 </section>
@@ -4967,8 +4967,8 @@ load();
 })();
 </script>
 <!-- PROFIT & LOSS (#pnl): public, units only, no login — the committed record/pnl/ rendered by lib/edgedesk_pnl_ui.js -->
-<script src="/lib/edgedesk_pnl.js?v=20261001u"></script>
-<script src="/lib/edgedesk_pnl_ui.js?v=20261001u"></script>
+<script src="/lib/edgedesk_pnl.js?v=20261003v"></script>
+<script src="/lib/edgedesk_pnl_ui.js?v=20261003v"></script>
 <script>
 (function () {
   var host = document.getElementById('pnlPub');

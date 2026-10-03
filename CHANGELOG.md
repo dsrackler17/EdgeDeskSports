@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-10-03 — Verified P&L: no price, no verified P&L
+
+The Records page's Verified P&L said there were no priced bets. In fact two things were true. The P&L counted only `BET` rows. And the 738 graded model decisions (CFB 385-253-2, NFL) had no price at all: the model record never captured one, and its only stored prices were closing prices.
+
+- **The rule.** A decision is in Verified P&L only when it settled (W / L / P) at a valid American price EdgeDesk captured **at or before** the decision, with a stake. Everything else stays in the record as **record only**, with one `pnl_exclusion_reason`.
+  - Verified P&L now covers the graded record's own decisions: the model's published numbers and the BETs. So graded = verified + record only, always.
+  - A price captured after its decision is `PRICE_AFTER_DECISION`: never units.
+- **The price lock** (`tools/record/price_lock.js`). Every *Football model record* run freezes on each pick the market as EdgeDesk's **stored** quotes saw it when the number was published. Today that is the CFB Model Lab's hourly ESPN / DraftKings quotes.
+  - It never uses a later quote, the close, today's odds, a provider average or −110.
+  - A graded side is priced only when the stored quote was for the exact number it was graded at.
+  - A lock is never rewritten. The ledger merge and the `model_pnl` trigger allow exactly one transition, from no price to a price.
+- **The backfill** is the same lookup over picks already recorded. It is idempotent; run twice, it locks nothing new.
+  - It locked **7 of the 640 graded CFB model decisions**.
+  - 625 had no stored quote, because the lab's quotes start 2026-09-27.
+  - 8 had a stored quote for another number than the one graded.
+  - The 98 NFL decisions stay record only: the nflverse line is a reference, not a price.
+- **Stakes.** The decision's own stake is used when it recorded one (`stake_source: explicit`). A model number priced by its lock risks the configurable default 1.00u (`stake_source: default`, `tools/record/pnl_config.json`).
+- **Precision.** Profit is now stored to 6 places (a −110 win is +0.909091u), in the kernel and in `edp_pnl_profit`.
+- **Database.** `supabase/model_pnl_verified.sql` adds the verification columns, constraints and the one-time lock. `supabase/model_pnl_verified_views.sql` adds:
+  - `verified_pnl_decisions`;
+  - `verified_pnl_summary`, `verified_pnl_breakdown` (sport / league / market / date / week / month) and `verified_pnl_series`;
+  - `verified_pnl_integrity`.
+
+  `supabase/verified_pnl_report.sql` is the read-only verification.
+- **The page** (`lib/edgedesk_pnl_ui.js`):
+  - **Model performance** leads.
+  - A **Verified P&L** card sits under it: net units, ROI, priced decisions, *N of M graded decisions included · K record-only excluded*, units risked, Spreads / Totals / Moneylines / Player Props, and a chart of verified decisions only.
+  - Each history row shows `price · stake risked · units`, or *Record only · Price unavailable*.
+  - A market filter is added.
+  - The card draws from the precomputed summary before the rows file loads.
+- **Today:** 762 graded = 31 verified + 731 record only. Verified P&L is +0.42u on 13.00u risked (ROI +3.21%), with 0 integrity errors.
+- **Tests:**
+  - `tools/record/verified_pnl.test.js` (67 checks: the spec's 10 cases, its 3-bet example, the lock, the backfill, the audit);
+  - `pnl_sql.test.js` (172, against a real PostgreSQL);
+  - `pnl_ui.test.js` (456, Chromium at 375–1440 px).
+
 ## 2026-10-02 — a partial NFL replay no longer regrades the staking modes
 
 The follow-up from the entry below. `tools/intelligence/validate_staking.js` grades the NFL markets on the same engine replay (`validate_pricing.js` `replayNfl`). On the nightly run that could not fetch 2016, it wrote `staking_nfl.json` from 2,642 engine rows instead of 2,658, with 2016 missing from `seasons_loaded`. The staking kernel reads the MODE that file writes, and refuses to stake a SHADOW market.

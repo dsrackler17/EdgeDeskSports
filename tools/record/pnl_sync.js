@@ -43,12 +43,12 @@ function reasonRows(L) {
 async function sync(o) {
   const L = o.ledger || JSON.parse(fs.readFileSync(path.join(ROOT, 'record', 'pnl', 'ledger_' + o.season + '.json'), 'utf8'));
   const rows = tableRows(L);
-  const out = { rows: rows.length, inserted: 0, updated: 0, unchanged: 0, refused: [] };
+  const out = { rows: rows.length, inserted: 0, updated: 0, price_locked: 0, unchanged: 0, refused: [] };
   const size = o.chunk || 200;
   for (let i = 0; i < rows.length; i += size) {
     const res = await o.db.rpc('public', 'model_pnl_upsert', { p_rows: rows.slice(i, i + size) });
     if (res && typeof res === 'object') {
-      out.inserted += res.inserted || 0; out.updated += res.updated || 0; out.unchanged += res.unchanged || 0;
+      out.inserted += res.inserted || 0; out.updated += res.updated || 0; out.unchanged += res.unchanged || 0; out.price_locked += res.price_locked || 0;
       (res.refused || []).forEach((x) => out.refused.push(x));
     }
   }
@@ -81,13 +81,15 @@ async function main() {
   if (!cfg) { console.log('[pnl sync] SB_URL / SB_SERVICE_ROLE are not set: nothing written (the page reads record/pnl/)'); return 0; }
   try {
     const r = await sync({ season, chunk: Number(arg('chunk', 200)), db: PGR.client(cfg) });
-    console.log('[pnl sync] ' + season + ': ' + r.rows + ' rows · inserted ' + r.inserted + ' · updated ' + r.updated + ' · unchanged ' + r.unchanged + ' · refused ' + r.refused.length
+    console.log('[pnl sync] ' + season + ': ' + r.rows + ' rows · inserted ' + r.inserted + ' · updated ' + r.updated + ' · prices locked ' + r.price_locked + ' · unchanged ' + r.unchanged + ' · refused ' + r.refused.length
       + (r.reasons ? ' · pending reasons moved on ' + r.reasons_updated : ' · pending reasons not sent (' + (r.reasons_error || '') + ' — apply supabase/model_pnl_states.sql)')
       + (r.refreshed ? ' · daily series refreshed' : ' · daily series not refreshed (' + (r.refresh_error || '') + ')'));
     r.refused.slice(0, 20).forEach((x) => console.log('  ✗ ' + x.recommendation_id + ': ' + x.error));
+    /* a database still on the pre-Verified-P&L trigger refuses every price lock and every default stake */
+    if (r.refused.some((x) => /stake_valid|is part of the recommendation and is frozen|stake_source|price_source/.test(x.error))) console.log('[pnl sync] the database refuses price locks — apply supabase/model_pnl_verified.sql and model_pnl_verified_views.sql (after model_pnl.sql)');
     return 0;
   } catch (e) {
-    console.log('[pnl sync] ' + String(e.message || e).slice(0, 300) + ' — apply supabase/model_pnl.sql, model_pnl_states.sql and model_pnl_analytics.sql');
+    console.log('[pnl sync] ' + String(e.message || e).slice(0, 300) + ' — apply supabase/model_pnl.sql, model_pnl_states.sql, model_pnl_analytics.sql, model_pnl_verified.sql and model_pnl_verified_views.sql');
     return 0;
   }
 }

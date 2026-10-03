@@ -80,6 +80,26 @@ The analytics file adds:
 
 Run the core file first; the analytics file's guard says so. Report rows should all read `ok`. Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pnl/DESIGN.md`.
 
+### `model_pnl_verified.sql` + `model_pnl_verified_views.sql` — Verified P&L
+
+Run after the three files above, in this order. **NO PRICE = NO VERIFIED P&L.**
+
+- **`pnl_verified`** is true only for a graded decision settled W / L / P at a valid American price that existed **at or before** the decision. Every other row carries exactly one **`pnl_exclusion_reason`** (`missing_settlement`, `missing_price`, `historical_price_unavailable`, `price_after_decision`, `invalid_odds`, `simulated_price`, `missing_stake`, `missing_selection`, `recommended_after_start`, `void`). Both are derived by trigger; a constraint keeps them consistent.
+- **A price captured after its decision** is `PRICE_AFTER_DECISION`: record only, never units.
+- **`stake_source`**: `explicit` (the decision's own stake) or `default` (a model number that recorded none, priced at the default stake from `tools/record/pnl_config.json`).
+- **The price lock.** A row with no price may receive one **once** (`price_source = 'snapshot'`, `price_ref` = the stored quote, `price_locked_at`). After that it is frozen like the rest of the recommendation. A later price is refused and the stake cannot move.
+- The file **supersedes** `model_pnl_derive()` and `model_pnl_upsert()` from `model_pnl.sql`. Re-apply it after re-applying that file; its report's first row says when that is needed.
+- **The read side** (`model_pnl_verified_views.sql`):
+  - `verified_pnl_decisions`: the decisions in the spec's vocabulary (`decision_id`, `american_odds`, `price_timestamp`, `decision_timestamp`, `stake_units`, `stake_source`, `pnl_verified`, `pnl_exclusion_reason`, `prop_type`, `prop_line`, `over_under`, …).
+  - `verified_pnl_summary()`: graded, verified, record only, W-L-P, net units, units risked, ROI.
+  - `verified_pnl_breakdown(group)`: by `sport | league | market_type | date | week | month`.
+  - `verified_pnl_series()`: the cumulative path.
+  - `verified_pnl_integrity()`: every check must read 0.
+  - All of them take the Records page's filters: stake mode, league, market, date range, leans.
+- **`verified_pnl_report.sql`** is read only. It prints the verification: graded / verified / record-only decisions, net, risked, ROI, by market, a sample with prices, and the integrity checks.
+
+Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pnl/DESIGN.md` § Verified P&L.
+
 ### `signal_pnl.sql` + `signal_pnl_summary.sql` + `signal_pnl_sync.sql` — profit and loss of every flagged edge
 
 `pnl_grades` holds one row per flag in `signals` that has closed or settled. It is keyed by `sig_key` (primary key and foreign key, `on delete restrict`), so a flag can never grade twice.
