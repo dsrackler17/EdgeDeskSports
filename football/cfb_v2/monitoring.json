@@ -16,15 +16,21 @@
  "bet_enabled": false,
  "by_week": [
   {
-   "ats_at_close": 0.5,
-   "ats_at_freeze_line": 0.5,
-   "bias": -13.869,
-   "brier": 0.211,
-   "clv_mean": 0.0,
+   "ats_at_close": 0.4,
+   "ats_at_freeze_line": 0.4,
+   "bias": -7.799,
+   "brier": 0.2388,
+   "clv_mean": 0.3,
    "disagreement_c_d_mean": 1.738,
-   "final": 2,
+   "final": 5,
    "frozen_games": 56,
    "largest_misses": [
+    {
+     "abs_error": 24.8,
+     "final": 21.0,
+     "game": "Penn State @ Northwestern",
+     "v2": -3.8
+    },
     {
      "abs_error": 22.7,
      "final": 21.0,
@@ -32,40 +38,40 @@
      "v2": -1.7
     },
     {
-     "abs_error": 5.0,
-     "final": -1.0,
-     "game": "North Texas @ Tulsa",
-     "v2": -6.0
+     "abs_error": 9.9,
+     "final": -16.0,
+     "game": "Liberty @ Delaware",
+     "v2": -6.1
     }
    ],
-   "mae": 13.869,
-   "mae_candidate_001_same_games": 13.721,
-   "mae_close": 10.375,
-   "mae_line_at_freeze": 10.375,
-   "mae_v1_same_games": 15.175,
-   "mae_v2_same_close_games": 13.869,
-   "mae_v2_same_line_at_freeze_games": 13.869,
-   "mae_v2_vs_candidate_001_games": 13.869,
-   "mae_v2_vs_v1_games": 13.869,
-   "rmse": 16.447,
+   "mae": 13.229,
+   "mae_candidate_001_same_games": 13.216,
+   "mae_close": 11.65,
+   "mae_line_at_freeze": 11.75,
+   "mae_v1_same_games": 13.158,
+   "mae_v2_same_close_games": 13.229,
+   "mae_v2_same_line_at_freeze_games": 13.229,
+   "mae_v2_vs_candidate_001_games": 13.229,
+   "mae_v2_vs_v1_games": 13.229,
+   "rmse": 15.932,
    "week": 5
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.079,
-  "ens_pred_noise_q99": 0.186,
-  "ens_sd": 0.125,
-  "ens_sd_noise_q99": 0.186,
-  "pred_total": 0.065,
-  "pred_total_noise_q99": 0.186,
+  "ens_pred": 0.071,
+  "ens_pred_noise_q99": 0.185,
+  "ens_sd": 0.145,
+  "ens_sd_noise_q99": 0.185,
+  "pred_total": 0.055,
+  "pred_total_noise_q99": 0.185,
   "reference_weeks": "week5",
-  "sigma": 0.135,
-  "sigma_noise_q99": 0.186
+  "sigma": 0.131,
+  "sigma_noise_q99": 0.185
  },
- "generated_at": "2026-10-02T16:25:42Z",
+ "generated_at": "2026-10-03T14:59:54Z",
  "learning": {
-  "bias": -13.869,
+  "bias": -7.798599999999999,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -78,24 +84,26 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -13.869,
+    "bias": -7.798599999999999,
     "fcs_not_priced_games": 0,
-    "games_scored": 2,
-    "mae": 13.869,
-    "major_miss_share": 0.0,
+    "games_scored": 5,
+    "mae": 13.229,
+    "major_miss_share": 0.2,
     "sources": {
-     "FROZEN": 2
+     "FROZEN": 5
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 2,
-  "mae": 13.869,
-  "major_miss_share": 0.0,
-  "miss_classes": {},
+  "games_scored": 5,
+  "mae": 13.229,
+  "major_miss_share": 0.2,
+  "miss_classes": {
+   "explosive_variance": 1
+  },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 2
+   "FROZEN": 5
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1777,8 +1785,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 2,
+  "final": 5,
   "frozen_games": 56,
-  "mae": 13.869
+  "mae": 13.229
  }
 }
