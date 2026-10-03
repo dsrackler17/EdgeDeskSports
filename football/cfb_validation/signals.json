@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-03T18:07:41.681Z",
+ "generated_at": "2026-10-03T19:07:42.935Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 10,
+   "n": 11,
    "settled": 1,
    "label": "small sample",
-   "average_gap": 11,
+   "average_gap": 10.7,
    "market_moved_toward_pct": 100,
    "positive_clv_pct": 100,
    "average_clv": 4.5,
@@ -76,6 +76,23 @@
     "verdict": "MARKET_FAULT",
     "root_cause": "THIN_MARKET",
     "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
+    "game_id": "401858248",
+    "game": "Louisville @ NC State",
+    "week": 5,
+    "at": "2026-10-03T19:07:32.000Z",
+    "checkpoint": "FINAL",
+    "edgedesk_fair": 2.17,
+    "market_at_snapshot": -5.5,
+    "gap": 7.67,
+    "toward": "NC State",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": true,
     "closing_market": null,
     "final_margin": null
    },
@@ -218,7 +235,7 @@
   ],
   "outcomes": {
    "MARKET_MOVED": 1,
-   "BAD_INFORMATION": 9
+   "BAD_INFORMATION": 10
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -245,10 +262,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 10,
+   "n": 11,
    "settled": 1,
    "label": "small sample",
-   "average_gap": 11,
+   "average_gap": 10.7,
    "market_moved_toward_pct": 100,
    "positive_clv_pct": 100,
    "average_clv": 4.5,
