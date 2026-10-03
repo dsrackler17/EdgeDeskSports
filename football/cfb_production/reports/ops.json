@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-10-03T20:23:53.312Z",
+ "generated_at": "2026-10-03T20:38:09.861Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -183,7 +183,7 @@
    "started_at": "2026-10-03T14:57:24.689Z",
    "completed_at": "2026-10-03T14:59:55.317Z",
    "last_published_at": "2026-10-03T14:59:55.317Z",
-   "age_minutes": 324,
+   "age_minutes": 338,
    "stage_groups": {
     "score_ingestion_status": "OK",
     "pbp_status": "OK",
@@ -279,8 +279,8 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-03T20:20:07.000Z",
-     "age_minutes": 4,
+     "last_success": "2026-10-03T20:37:47.000Z",
+     "age_minutes": 0,
      "error_rate": 0,
      "incident": null
     },
@@ -288,8 +288,8 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-03T20:20:07.000Z",
-     "age_minutes": 4,
+     "last_success": "2026-10-03T20:37:47.000Z",
+     "age_minutes": 0,
      "error_rate": 0,
      "incident": null
     }
@@ -298,8 +298,8 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-10-03T20:20:07.000Z",
-   "age_minutes": 4,
+   "newest_quote_at": "2026-10-03T20:37:47.000Z",
+   "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 21,
    "games_marked_stale": 53,
@@ -310,7 +310,7 @@
    "status": "OK",
    "pbp_status": "HEALTHY",
    "last_success": "2026-10-03T14:57:24.689Z",
-   "age_minutes": 326,
+   "age_minutes": 341,
    "coverage": 1,
    "error_rate": 0,
    "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0357",
@@ -322,12 +322,12 @@
     {
      "job": "cfb_lab_hourly",
      "step": "supabase_pull",
-     "at": "2026-10-03T20:20:07.000Z",
-     "error": "CfbError: HTTP 503 upstream connect error or disconnect/reset before headers. retried and the latest reset reason: remote connection failure, transport failure reason: delayed connect error: 111 |     at Object.request (/home/runner/work/EdgeDeskSports/EdgeDeskSports/football/cfb_production/db.js:10"
+     "at": "2026-10-03T20:37:47.000Z",
+     "error": "CfbError: HTTP 503 {\"code\":\"PGRST002\",\"details\":null,\"hint\":null,\"message\":\"Could not query the database for the schema cache. Retrying.\"} |     at Object.request (/home/runner/work/EdgeDeskSports/EdgeDeskSports/football/cfb_production/db.js:106:13) |     at process.processTicksAndRejections (node:i"
     }
    ],
-   "lab_last_run_at": "2026-10-03T20:20:07.000Z",
-   "lab_last_run_age_minutes": 4,
+   "lab_last_run_at": "2026-10-03T20:37:47.000Z",
+   "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
   "degraded_games": {
@@ -1672,7 +1672,7 @@
     "YELLOW": 60,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-10-03T20:23:49.432Z",
+   "canonical_projections_as_of": "2026-10-03T20:38:06.177Z",
    "canonical_by_level": {
     "1": 7,
     "2": 70,
@@ -1682,7 +1682,7 @@
   "predictions": {
    "status": "OK",
    "v21_current_generated_at": "2026-10-03T14:57:24Z",
-   "v21_current_age_minutes": 326,
+   "v21_current_age_minutes": 341,
    "v21_rows": 112,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 1,
@@ -1691,8 +1691,8 @@
      "model_version": "edgedesk_cfb_p4_v1.0.0",
      "label": "V1",
      "role": "champion",
-     "snapshots": 484,
-     "latest_snapshot_at": "2026-10-03T20:20:07.000Z",
+     "snapshots": 486,
+     "latest_snapshot_at": "2026-10-03T20:37:47.000Z",
      "upcoming_games": 79,
      "avg_confidence_upcoming": 77.4
     },
@@ -1700,8 +1700,8 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "label": "V2 · candidate 001",
      "role": "candidate",
-     "snapshots": 683,
-     "latest_snapshot_at": "2026-10-03T20:20:07.000Z",
+     "snapshots": 685,
+     "latest_snapshot_at": "2026-10-03T20:37:47.000Z",
      "upcoming_games": 77,
      "avg_confidence_upcoming": 74.8
     },
@@ -1709,8 +1709,8 @@
      "model_version": "edgedesk_cfb_v2.1.0",
      "label": "V2.1 · hardened",
      "role": "challenger",
-     "snapshots": 683,
-     "latest_snapshot_at": "2026-10-03T20:20:07.000Z",
+     "snapshots": 685,
+     "latest_snapshot_at": "2026-10-03T20:37:47.000Z",
      "upcoming_games": 77,
      "avg_confidence_upcoming": 74.9
     }
