@@ -13,7 +13,7 @@ On the Record page the NFL tab, the Player Props tab and All all read −7.17u. 
 - **Tests:**
   - `pnl.test.js` 177 (the partition and by sport);
   - `pnl_ledger.test.js` 99 (NFL + CFB + props = All, in both strategies);
-  - `pnl_sql.test.js` (SQL scopes equal the kernel);
+  - `pnl_sql.test.js` 206 (SQL scopes equal the kernel). It also loads the stored quotes that the committed ledger's locked prices cite, as the sync does. Since the 2026-10-03 rebuild priced 7 CFB picks from stored quotes, the suite had failed 3 checks on `main` (`snapshot_quote_missing: 7`). The quotes were all there; the test never loaded them;
   - `pnl_ui.test.js` 466: no tab's ledger lists the other's rows, and the college prop leans are checked on Player Props now instead of CFB.
 
 ## 2026-10-03 — two checks that went red on the live slates

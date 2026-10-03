@@ -372,6 +372,11 @@ try {
       chk('and synced again, it is unchanged', up(real).unchanged === real.length);
       chk('the database derives the same P&L status for every real row', db.sql("select count(*) from public.model_pnl m where m.recommendation_id = any(" + lit('{' + real.map((x) => '"' + x.recommendation_id + '"').join(',') + '}') + "::text[]) and m.pnl_status is distinct from (" + J(Object.fromEntries(real.map((x) => [x.recommendation_id, x.pnl_status]))) + " ->> m.recommendation_id);") === '0');
       const L0 = JSON.parse(fs.readFileSync(path.join(PG.ROOT, 'record', 'pnl', lf), 'utf8'));
+      /* the evidence, as the sync sends it: every stored quote a locked price cites */
+      const ev = SY.citedQuotes(L0, PG.ROOT, +lf.match(/\d{4}/)[0]);
+      chk('every quote the committed ledger\'s locked prices cite is in the committed quote ledgers', !ev.missing.length, ev.missing.slice(0, 3));
+      const qp = ev.rows.length ? JSON.parse(db.service(`select public.model_pnl_quotes_put(${J(ev.rows)});`)) : { refused: [] };
+      chk('… and the database accepts every one', !qp.refused.length, qp.refused.slice(0, 3));
       if (L0.rows.length && L0.rows[0].record_state) {
         const why = SY.reasonRows(L0);
         for (let i = 0; i < why.length; i += 500) db.service(`select public.model_pnl_reasons(${J(why.slice(i, i + 500))});`);
