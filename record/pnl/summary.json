@@ -1,21 +1,1060 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
- "engine": "edgedesk_pnl_v1",
- "generated_at": "2026-10-03T13:45:32.146Z",
+ "engine": "edgedesk_pnl_v2",
+ "generated_at": "2026-10-03T13:53:24.838Z",
  "season": 2026,
- "strategy": "Every recommendation EdgeDesk classified BET, at the American price recorded when it was made. Flat: 1.00u each. EdgeDesk staking: the units recommended at the time. Never mixed.",
+ "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
-  "Historical P&L uses the recommendation and the price that existed at the time; nothing is re-predicted or re-priced.",
-  "No captured entry price, no P&L: the result counts in the win/loss record and is marked \"P&L unavailable — entry price not captured\". EdgeDesk never assumes −110.",
+  "NO PRICE = NO VERIFIED P&L. A decision is in Verified P&L only when it settled (win, loss or push) at a valid American price that existed at or before the decision. Everything else is in the record only, with its reason.",
+  "Historical P&L uses the decision and the price that existed at the time; nothing is re-predicted or re-priced, a closing price is never used as an entry price, and EdgeDesk never assumes −110.",
+  "A model-record decision is priced only from a quote EdgeDesk stored at or before the number was published, for the exact number it was graded at; that price and the default stake are then frozen.",
   "A price the source assumed rather than captured is simulated and never counted as verified P&L.",
   "ROI = net profit ÷ total risked × 100. A push or a void returns the stake: it adds nothing to risked or to P&L.",
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 3341,
+  "rows": 3342,
   "bets": 184,
   "verified_bets": 24,
+  "priced_decisions": 24,
+  "graded_decisions": 762,
+  "record_only_decisions": 738,
   "corrected": 122
+ },
+ "verified": {
+  "what": "Verified P&L includes only settled decisions with a historical market price captured by EdgeDesk. Record-only decisions without a verified price are excluded.",
+  "default_stake_units": 1,
+  "views": {
+   "all": {
+    "staked": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 762,
+     "priced": 24,
+     "record_only": 738,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "flat": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 762,
+     "priced": 24,
+     "record_only": 738,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    }
+   },
+   "nfl": {
+    "staked": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 122,
+     "priced": 24,
+     "record_only": 98,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 98
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 32,
+       "record_only": 32,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "flat": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 122,
+     "priced": 24,
+     "record_only": 98,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 98
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 32,
+       "record_only": 32,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    }
+   },
+   "cfb": {
+    "staked": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 640,
+     "priced": 0,
+     "record_only": 640,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 640
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 168,
+       "record_only": 168,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "flat": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 640,
+     "priced": 0,
+     "record_only": 640,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 640
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 168,
+       "record_only": 168,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    }
+   },
+   "props": {
+    "staked": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 24,
+     "priced": 24,
+     "record_only": 0,
+     "pending_priced": 160,
+     "excluded": [],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "flat": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 24,
+     "priced": 24,
+     "record_only": 0,
+     "pending_priced": 160,
+     "excluded": [],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    }
+   },
+   "game": {
+    "staked": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 738,
+     "priced": 0,
+     "record_only": 738,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "flat": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 738,
+     "priced": 0,
+     "record_only": 738,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    }
+   }
+  },
+  "reconcile": {
+   "graded": 762,
+   "priced": 24,
+   "record_only": 738,
+   "ok": true
+  },
+  "audit": {
+   "errors": 0,
+   "by_check": {},
+   "first": []
+  },
+  "price_lookup": {
+   "before_capture": 738
+  },
+  "price_sources": {
+   "every_game_from": {
+    "CFB": null,
+    "NFL": null
+   },
+   "what": "every_game_from: per league, the first quote of the ledger that stores every game the model prices — the earliest point from which every model decision of that league can be verified. Player props and BET decisions carry the price captured with the decision itself.",
+   "sources": [
+    {
+     "key": "cfb_lab_quotes",
+     "league": "CFB",
+     "covers": "lab_games",
+     "first_capture": "2026-09-27T15:07:15.000Z"
+    },
+    {
+     "key": "record_quotes",
+     "league": "CFB",
+     "covers": "every_model_game",
+     "first_capture": null
+    },
+    {
+     "key": "record_quotes",
+     "league": "NFL",
+     "covers": "every_model_game",
+     "first_capture": null
+    }
+   ]
+  }
  },
  "model_versions": [
   "edgedesk_cfb_p4_v1.0.0",
@@ -35,20 +1074,20 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 3341,
-  "PENDING": 2441,
+  "total": 3342,
+  "PENDING": 2442,
   "VERIFIED": 162,
   "RECORD_ONLY": 738,
   "VOID": 0,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 2441,
+  "total": 2442,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 2300
+    "n": 2301
    },
    {
     "key": "MISSING_FINAL",
@@ -522,7 +1561,7 @@
       "n": 738,
       "text": "n=738 · More meaningful sample"
      },
-     "key": "Model number (no price)"
+     "key": "Model number"
     }
    ]
   }
@@ -532,83 +1571,83 @@
   "checks": {
    "all|flat": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "all|staked": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "all|flat+leans": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "nfl|flat": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "nfl|staked": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "nfl|flat+leans": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "cfb|flat": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "cfb|staked": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "cfb|flat+leans": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "props|flat": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "props|staked": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "props|flat+leans": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "game|flat": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "game|staked": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    },
    "game|flat+leans": {
     "ok": true,
-    "n": 10,
+    "n": 12,
     "failed": []
    }
   }
  },
  "settlement": {
-  "as_of": "2026-10-03T13:45:32.146Z",
+  "as_of": "2026-10-03T13:53:24.838Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -636,23 +1675,23 @@
      "losses": 15,
      "pushes": 0,
      "record": "9-15",
-     "net_units": -7.16,
+     "net_units": -7.17,
      "risked_units": 24,
      "roi_pct": -29.85,
      "win_rate_pct": 37.5,
      "avg_decimal": 1.8817,
      "avg_odds": -113,
      "break_even_pct": 53.14,
-     "gross_win_units": 7.84,
+     "gross_win_units": 7.83,
      "gross_loss_units": 15,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -7.7193,
-     "current_drawdown_units": -7.7193,
+     "max_drawdown_units": -7.7194,
+     "current_drawdown_units": -7.7194,
      "peak_profit_units": 0.55,
      "drawdown": {
-      "max": -7.7193,
-      "current": -7.7193,
+      "max": -7.7194,
+      "current": -7.7194,
       "peak": 0.5543,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -675,6 +1714,105 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 762,
+     "priced": 24,
+     "record_only": 738,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -792,63 +1930,63 @@
      [
       "2026-10-02",
       0.8696,
-      -3.0545,
+      -3.0546,
       0.5543,
       "pp:ppe_2a55d67b"
      ],
      [
       "2026-10-02",
       -1,
-      -4.0545,
+      -4.0546,
       0.5543,
       "pp:ppe_6f66f734"
      ],
      [
       "2026-10-02",
       -1,
-      -5.0545,
+      -5.0546,
       0.5543,
       "pp:ppe_ba619425"
      ],
      [
       "2026-10-02",
       -1,
-      -6.0545,
+      -6.0546,
       0.5543,
       "pp:ppe_98c2e8b2"
      ],
      [
       "2026-10-02",
       -1,
-      -7.0545,
+      -7.0546,
       0.5543,
       "pp:ppe_58906fa9"
      ],
      [
       "2026-10-02",
       0.9804,
-      -6.0741,
+      -6.0742,
       0.5543,
       "pp:ppe_83442526"
      ],
      [
       "2026-10-02",
       0.9091,
-      -5.165,
+      -5.1651,
       0.5543,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -1,
-      -6.165,
+      -6.1651,
       0.5543,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -1,
-      -7.165,
+      -7.1651,
       0.5543,
       "pp:ppe_8fd961dc"
      ]
@@ -939,23 +2077,23 @@
       "losses": 15,
       "pushes": 0,
       "record": "9-15",
-      "net_units": -7.16,
+      "net_units": -7.17,
       "risked_units": 24,
       "roi_pct": -29.85,
       "win_rate_pct": 37.5,
       "avg_decimal": 1.8817,
       "avg_odds": -113,
       "break_even_pct": 53.14,
-      "gross_win_units": 7.84,
+      "gross_win_units": 7.83,
       "gross_loss_units": 15,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -7.7193,
-      "current_drawdown_units": -7.7193,
+      "max_drawdown_units": -7.7194,
+      "current_drawdown_units": -7.7194,
       "peak_profit_units": 0.55,
       "drawdown": {
-       "max": -7.7193,
-       "current": -7.7193,
+       "max": -7.7194,
+       "current": -7.7194,
        "peak": 0.5543,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -992,13 +2130,13 @@
       {
        "key": "NFL",
        "n": 24,
-       "rows": 184,
+       "rows": 282,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -1006,7 +2144,179 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
+       "record_only": {
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
+       },
+       "sample": {
+        "key": "SMALL",
+        "label": "Small sample",
+        "warn": true,
+        "n": 24,
+        "text": "n=24 · Small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "College Football",
+       "n": 0,
+       "rows": 640,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 640,
+        "wins": 385,
+        "losses": 253,
+        "pushes": 2,
+        "record": "385-253-2",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      }
+     ],
+     "market": [
+      {
+       "key": "Spread",
+       "n": 0,
+       "rows": 269,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 269,
+        "wins": 126,
+        "losses": 139,
+        "pushes": 4,
+        "record": "126-139-4",
+        "win_rate_pct": 47.55
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Total",
+       "n": 0,
+       "rows": 200,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 200,
+        "wins": 102,
+        "losses": 98,
+        "pushes": 0,
+        "record": "102-98",
+        "win_rate_pct": 51
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Moneyline",
+       "n": 0,
+       "rows": 269,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 269,
+        "wins": 215,
+        "losses": 54,
+        "pushes": 0,
+        "record": "215-54",
+        "win_rate_pct": 79.93
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Player Props",
+       "n": 24,
+       "rows": 184,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "win_rate_pct": 37.5,
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "avg_clv_points": 0,
+       "avg_clv_prob_pp": -1.67,
+       "clv_hit_rate_pct": 45.8,
+       "avg_odds": -113,
+       "avg_edge_pct": 7.98,
+       "max_drawdown_units": -7.7194,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -1024,17 +2334,51 @@
        }
       }
      ],
-     "market": [
+     "month": [
       {
-       "key": "Player Props",
+       "key": "2026-09",
+       "n": 0,
+       "rows": 720,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 720,
+        "wins": 432,
+        "losses": 284,
+        "pushes": 4,
+        "record": "432-284-4",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "2026-10",
        "n": 24,
-       "rows": 184,
+       "rows": 202,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -1042,14 +2386,50 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
+        "n": 18,
+        "wins": 11,
+        "losses": 7,
         "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "record": "11-7",
+        "win_rate_pct": 61.11
+       },
+       "sample": {
+        "key": "SMALL",
+        "label": "Small sample",
+        "warn": true,
+        "n": 24,
+        "text": "n=24 · Small sample — results may be unstable"
+       }
+      }
+     ],
+     "price_source": [
+      {
+       "key": "Captured with the decision",
+       "n": 24,
+       "rows": 922,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "win_rate_pct": 37.5,
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "avg_clv_points": 0,
+       "avg_clv_prob_pp": -1.67,
+       "clv_hit_rate_pct": 45.8,
+       "avg_odds": -113,
+       "avg_edge_pct": 7.98,
+       "max_drawdown_units": -7.7194,
+       "record_only": {
+        "n": 738,
+        "wins": 443,
+        "losses": 291,
+        "pushes": 4,
+        "record": "443-291-4",
+        "win_rate_pct": 60.35
        },
        "sample": {
         "key": "SMALL",
@@ -1318,7 +2698,7 @@
        "clv_hit_rate_pct": 57.1,
        "avg_odds": -116,
        "avg_edge_pct": 6.93,
-       "max_drawdown_units": -3.2491,
+       "max_drawdown_units": -3.2492,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -1456,7 +2836,7 @@
        "clv_hit_rate_pct": 50,
        "avg_odds": -113,
        "avg_edge_pct": 8.25,
-       "max_drawdown_units": -5.9636,
+       "max_drawdown_units": -5.9637,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -1471,6 +2851,142 @@
         "warn": true,
         "n": 20,
         "text": "n=20 · Small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Over (totals)",
+       "n": 0,
+       "rows": 144,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 144,
+        "wins": 73,
+        "losses": 71,
+        "pushes": 0,
+        "record": "73-71",
+        "win_rate_pct": 50.69
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Under (totals)",
+       "n": 0,
+       "rows": 56,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 56,
+        "wins": 29,
+        "losses": 27,
+        "pushes": 0,
+        "record": "29-27",
+        "win_rate_pct": 51.79
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Home",
+       "n": 0,
+       "rows": 346,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 346,
+        "wins": 240,
+        "losses": 103,
+        "pushes": 3,
+        "record": "240-103-3",
+        "win_rate_pct": 69.97
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Away",
+       "n": 0,
+       "rows": 192,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 192,
+        "wins": 101,
+        "losses": 90,
+        "pushes": 1,
+        "record": "101-90-1",
+        "win_rate_pct": 52.88
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
        }
       }
      ],
@@ -1578,9 +3094,43 @@
        }
       },
       {
+       "key": "Draft Kings",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 6,
+        "wins": 3,
+        "losses": 3,
+        "pushes": 0,
+        "record": "3-3",
+        "win_rate_pct": 50
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
        "key": "DraftKings",
        "n": 5,
-       "rows": 62,
+       "rows": 271,
        "wins": 1,
        "losses": 4,
        "pushes": 0,
@@ -1596,12 +3146,12 @@
        "avg_edge_pct": 8.33,
        "max_drawdown_units": -3.0291,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
-        "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "n": 209,
+        "wins": 114,
+        "losses": 94,
+        "pushes": 1,
+        "record": "114-94-1",
+        "win_rate_pct": 54.81
        },
        "sample": {
         "key": "VERY_SMALL",
@@ -1780,6 +3330,40 @@
         "n": 1,
         "text": "n=1 · Very small sample — results may be unstable"
        }
+      },
+      {
+       "key": "consensus",
+       "n": 0,
+       "rows": 98,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
       }
      ],
      "edge": [
@@ -1834,7 +3418,7 @@
        "clv_hit_rate_pct": 50,
        "avg_odds": -123,
        "avg_edge_pct": 5.44,
-       "max_drawdown_units": -1.1304,
+       "max_drawdown_units": -1.1305,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -1904,7 +3488,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -2008,7 +3592,7 @@
        "clv_hit_rate_pct": 46.2,
        "avg_odds": -111,
        "avg_edge_pct": 8.87,
-       "max_drawdown_units": -4.4113,
+       "max_drawdown_units": -4.4114,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -2036,7 +3620,7 @@
        "win_rate_pct": 100,
        "net_units": 1.95,
        "risked_units": 2,
-       "roi_pct": 97.57,
+       "roi_pct": 97.56,
        "avg_clv_points": 0,
        "avg_clv_prob_pp": 3.41,
        "clv_hit_rate_pct": 50,
@@ -2130,15 +3714,219 @@
      ],
      "week": [
       {
+       "key": "CFB · Week 02",
+       "n": 0,
+       "rows": 219,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 219,
+        "wins": 132,
+        "losses": 87,
+        "pushes": 0,
+        "record": "132-87",
+        "win_rate_pct": 60.27
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 03",
+       "n": 0,
+       "rows": 206,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 206,
+        "wins": 136,
+        "losses": 69,
+        "pushes": 1,
+        "record": "136-69-1",
+        "win_rate_pct": 66.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 04",
+       "n": 0,
+       "rows": 200,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 200,
+        "wins": 108,
+        "losses": 91,
+        "pushes": 1,
+        "record": "108-91-1",
+        "win_rate_pct": 54.27
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 05",
+       "n": 0,
+       "rows": 15,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 15,
+        "wins": 9,
+        "losses": 6,
+        "pushes": 0,
+        "record": "9-6",
+        "win_rate_pct": 60
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "NFL · Week 02",
+       "n": 0,
+       "rows": 47,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 47,
+        "wins": 25,
+        "losses": 22,
+        "pushes": 0,
+        "record": "25-22",
+        "win_rate_pct": 53.19
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "NFL · Week 03",
+       "n": 0,
+       "rows": 48,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 48,
+        "wins": 31,
+        "losses": 15,
+        "pushes": 2,
+        "record": "31-15-2",
+        "win_rate_pct": 67.39
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
        "key": "NFL · Week 04",
        "n": 24,
-       "rows": 184,
+       "rows": 187,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -2146,14 +3934,14 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
+        "n": 3,
+        "wins": 2,
+        "losses": 1,
         "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "record": "2-1",
+        "win_rate_pct": 66.67
        },
        "sample": {
         "key": "SMALL",
@@ -2166,6 +3954,74 @@
      ],
      "model_version": [
       {
+       "key": "edgedesk_cfb_p4_v1.0.0",
+       "n": 0,
+       "rows": 640,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 640,
+        "wins": 385,
+        "losses": 253,
+        "pushes": 2,
+        "record": "385-253-2",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "edgedesk_football_v1.0.0",
+       "n": 0,
+       "rows": 98,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
        "key": "edgedesk_props_model_v1",
        "n": 24,
        "rows": 184,
@@ -2174,7 +4030,7 @@
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -2182,7 +4038,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -2210,7 +4066,7 @@
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -2218,7 +4074,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -2238,7 +4094,7 @@
       {
        "key": "Lean",
        "n": 129,
-       "rows": 2350,
+       "rows": 2351,
        "wins": 57,
        "losses": 72,
        "pushes": 0,
@@ -2252,7 +4108,7 @@
        "clv_hit_rate_pct": 36.4,
        "avg_odds": 121,
        "avg_edge_pct": 6.6,
-       "max_drawdown_units": -25.3288,
+       "max_drawdown_units": -25.3287,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -2314,7 +4170,7 @@
        "win_rate_pct": 60,
        "net_units": 0.53,
        "risked_units": 5,
-       "roi_pct": 10.57,
+       "roi_pct": 10.56,
        "avg_clv_points": 1.4,
        "avg_clv_prob_pp": 3.34,
        "clv_hit_rate_pct": 100,
@@ -2335,6 +4191,40 @@
         "warn": true,
         "n": 5,
         "text": "n=5 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Model number",
+       "n": 0,
+       "rows": 738,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 738,
+        "wins": 443,
+        "losses": 291,
+        "pushes": 4,
+        "record": "443-291-4",
+        "win_rate_pct": 60.35
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
        }
       }
      ],
@@ -2610,7 +4500,7 @@
         "n": 2,
         "record": "1-1",
         "net_units": -0.09,
-        "roi_pct": -4.54,
+        "roi_pct": -4.55,
         "win_rate_pct": 50,
         "sample": {
          "key": "VERY_SMALL",
@@ -2688,12 +4578,12 @@
      "gross_loss_units": 3.75,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -1.9298,
-     "current_drawdown_units": -1.9298,
+     "max_drawdown_units": -1.9299,
+     "current_drawdown_units": -1.9299,
      "peak_profit_units": 0.14,
      "drawdown": {
-      "max": -1.9298,
-      "current": -1.9298,
+      "max": -1.9299,
+      "current": -1.9299,
       "peak": 0.1386,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -2716,6 +4606,105 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 762,
+     "priced": 24,
+     "record_only": 738,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -2756,21 +4745,21 @@
      [
       "2026-10-02",
       0.1852,
-      0.0738,
+      0.0737,
       0.1386,
       "pp:ppe_abf866a2"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.1762,
+      -0.1763,
       0.1386,
       "pp:ppe_ac56c121"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.4262,
+      -0.4263,
       0.1386,
       "pp:ppe_ba19b16d"
      ],
@@ -2805,14 +4794,14 @@
      [
       "2026-10-02",
       0.2273,
-      -0.7062,
+      -0.7063,
       0.1386,
       "pp:ppe_4fbd6470"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.9562,
+      -0.9563,
       0.1386,
       "pp:ppe_a4f45139"
      ],
@@ -2875,21 +4864,21 @@
      [
       "2026-10-02",
       0.2273,
-      -1.2912,
+      -1.2913,
       0.1386,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.5412,
+      -1.5413,
       0.1386,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.7912,
+      -1.7913,
       0.1386,
       "pp:ppe_8fd961dc"
      ]
@@ -2991,12 +4980,12 @@
       "gross_loss_units": 3.75,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -1.9298,
-      "current_drawdown_units": -1.9298,
+      "max_drawdown_units": -1.9299,
+      "current_drawdown_units": -1.9299,
       "peak_profit_units": 0.14,
       "drawdown": {
-       "max": -1.9298,
-       "current": -1.9298,
+       "max": -1.9299,
+       "current": -1.9299,
        "peak": 0.1386,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -3033,7 +5022,7 @@
       {
        "key": "NFL",
        "n": 24,
-       "rows": 184,
+       "rows": 282,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -3047,14 +5036,14 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
-        "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
        },
        "sample": {
         "key": "SMALL",
@@ -3063,9 +5052,145 @@
         "n": 24,
         "text": "n=24 · Small sample — results may be unstable"
        }
+      },
+      {
+       "key": "College Football",
+       "n": 0,
+       "rows": 640,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 640,
+        "wins": 385,
+        "losses": 253,
+        "pushes": 2,
+        "record": "385-253-2",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
       }
      ],
      "market": [
+      {
+       "key": "Spread",
+       "n": 0,
+       "rows": 269,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 269,
+        "wins": 126,
+        "losses": 139,
+        "pushes": 4,
+        "record": "126-139-4",
+        "win_rate_pct": 47.55
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Total",
+       "n": 0,
+       "rows": 200,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 200,
+        "wins": 102,
+        "losses": 98,
+        "pushes": 0,
+        "record": "102-98",
+        "win_rate_pct": 51
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Moneyline",
+       "n": 0,
+       "rows": 269,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 269,
+        "wins": 215,
+        "losses": 54,
+        "pushes": 0,
+        "record": "215-54",
+        "win_rate_pct": 79.93
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
       {
        "key": "Player Props",
        "n": 24,
@@ -3083,7 +5208,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -3091,6 +5216,112 @@
         "pushes": 0,
         "record": "0-0",
         "win_rate_pct": null
+       },
+       "sample": {
+        "key": "SMALL",
+        "label": "Small sample",
+        "warn": true,
+        "n": 24,
+        "text": "n=24 · Small sample — results may be unstable"
+       }
+      }
+     ],
+     "month": [
+      {
+       "key": "2026-09",
+       "n": 0,
+       "rows": 720,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 720,
+        "wins": 432,
+        "losses": 284,
+        "pushes": 4,
+        "record": "432-284-4",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "2026-10",
+       "n": 24,
+       "rows": 202,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "win_rate_pct": 37.5,
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "avg_clv_points": 0,
+       "avg_clv_prob_pp": -1.67,
+       "clv_hit_rate_pct": 45.8,
+       "avg_odds": -113,
+       "avg_edge_pct": 7.98,
+       "max_drawdown_units": -1.9299,
+       "record_only": {
+        "n": 18,
+        "wins": 11,
+        "losses": 7,
+        "pushes": 0,
+        "record": "11-7",
+        "win_rate_pct": 61.11
+       },
+       "sample": {
+        "key": "SMALL",
+        "label": "Small sample",
+        "warn": true,
+        "n": 24,
+        "text": "n=24 · Small sample — results may be unstable"
+       }
+      }
+     ],
+     "price_source": [
+      {
+       "key": "Captured with the decision",
+       "n": 24,
+       "rows": 922,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "win_rate_pct": 37.5,
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "avg_clv_points": 0,
+       "avg_clv_prob_pp": -1.67,
+       "clv_hit_rate_pct": 45.8,
+       "avg_odds": -113,
+       "avg_edge_pct": 7.98,
+       "max_drawdown_units": -1.9299,
+       "record_only": {
+        "n": 738,
+        "wins": 443,
+        "losses": 291,
+        "pushes": 4,
+        "record": "443-291-4",
+        "win_rate_pct": 60.35
        },
        "sample": {
         "key": "SMALL",
@@ -3283,7 +5514,7 @@
        "win_rate_pct": 100,
        "net_units": 0.68,
        "risked_units": 0.75,
-       "roi_pct": 90.92,
+       "roi_pct": 90.91,
        "avg_clv_points": 1.33,
        "avg_clv_prob_pp": null,
        "clv_hit_rate_pct": 66.7,
@@ -3393,7 +5624,7 @@
        "clv_hit_rate_pct": 42.9,
        "avg_odds": -106,
        "avg_edge_pct": 11.22,
-       "max_drawdown_units": -0.7727,
+       "max_drawdown_units": -0.7728,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -3513,6 +5744,142 @@
         "n": 20,
         "text": "n=20 · Small sample — results may be unstable"
        }
+      },
+      {
+       "key": "Over (totals)",
+       "n": 0,
+       "rows": 144,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 144,
+        "wins": 73,
+        "losses": 71,
+        "pushes": 0,
+        "record": "73-71",
+        "win_rate_pct": 50.69
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Under (totals)",
+       "n": 0,
+       "rows": 56,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 56,
+        "wins": 29,
+        "losses": 27,
+        "pushes": 0,
+        "record": "29-27",
+        "win_rate_pct": 51.79
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Home",
+       "n": 0,
+       "rows": 346,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 346,
+        "wins": 240,
+        "losses": 103,
+        "pushes": 3,
+        "record": "240-103-3",
+        "win_rate_pct": 69.97
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Away",
+       "n": 0,
+       "rows": 192,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 192,
+        "wins": 101,
+        "losses": 90,
+        "pushes": 1,
+        "record": "101-90-1",
+        "win_rate_pct": 52.88
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
       }
      ],
      "book": [
@@ -3619,9 +5986,43 @@
        }
       },
       {
+       "key": "Draft Kings",
+       "n": 0,
+       "rows": 6,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 6,
+        "wins": 3,
+        "losses": 3,
+        "pushes": 0,
+        "record": "3-3",
+        "win_rate_pct": 50
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
        "key": "DraftKings",
        "n": 5,
-       "rows": 62,
+       "rows": 271,
        "wins": 1,
        "losses": 4,
        "pushes": 0,
@@ -3637,12 +6038,12 @@
        "avg_edge_pct": 8.33,
        "max_drawdown_units": -0.7573,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
-        "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "n": 209,
+        "wins": 114,
+        "losses": 94,
+        "pushes": 1,
+        "record": "114-94-1",
+        "win_rate_pct": 54.81
        },
        "sample": {
         "key": "VERY_SMALL",
@@ -3821,6 +6222,40 @@
         "n": 1,
         "text": "n=1 · Very small sample — results may be unstable"
        }
+      },
+      {
+       "key": "consensus",
+       "n": 0,
+       "rows": 98,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
       }
      ],
      "edge": [
@@ -3945,7 +6380,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4049,7 +6484,7 @@
        "clv_hit_rate_pct": 46.2,
        "avg_odds": -111,
        "avg_edge_pct": 8.87,
-       "max_drawdown_units": -1.1028,
+       "max_drawdown_units": -1.1029,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4171,9 +6606,213 @@
      ],
      "week": [
       {
+       "key": "CFB · Week 02",
+       "n": 0,
+       "rows": 219,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 219,
+        "wins": 132,
+        "losses": 87,
+        "pushes": 0,
+        "record": "132-87",
+        "win_rate_pct": 60.27
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 03",
+       "n": 0,
+       "rows": 206,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 206,
+        "wins": 136,
+        "losses": 69,
+        "pushes": 1,
+        "record": "136-69-1",
+        "win_rate_pct": 66.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 04",
+       "n": 0,
+       "rows": 200,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 200,
+        "wins": 108,
+        "losses": 91,
+        "pushes": 1,
+        "record": "108-91-1",
+        "win_rate_pct": 54.27
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "CFB · Week 05",
+       "n": 0,
+       "rows": 15,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 15,
+        "wins": 9,
+        "losses": 6,
+        "pushes": 0,
+        "record": "9-6",
+        "win_rate_pct": 60
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "NFL · Week 02",
+       "n": 0,
+       "rows": 47,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 47,
+        "wins": 25,
+        "losses": 22,
+        "pushes": 0,
+        "record": "25-22",
+        "win_rate_pct": 53.19
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "NFL · Week 03",
+       "n": 0,
+       "rows": 48,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 48,
+        "wins": 31,
+        "losses": 15,
+        "pushes": 2,
+        "record": "31-15-2",
+        "win_rate_pct": 67.39
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
        "key": "NFL · Week 04",
        "n": 24,
-       "rows": 184,
+       "rows": 187,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -4187,14 +6826,14 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
-        "n": 0,
-        "wins": 0,
-        "losses": 0,
+        "n": 3,
+        "wins": 2,
+        "losses": 1,
         "pushes": 0,
-        "record": "0-0",
-        "win_rate_pct": null
+        "record": "2-1",
+        "win_rate_pct": 66.67
        },
        "sample": {
         "key": "SMALL",
@@ -4206,6 +6845,74 @@
       }
      ],
      "model_version": [
+      {
+       "key": "edgedesk_cfb_p4_v1.0.0",
+       "n": 0,
+       "rows": 640,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 640,
+        "wins": 385,
+        "losses": 253,
+        "pushes": 2,
+        "record": "385-253-2",
+        "win_rate_pct": 60.34
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "edgedesk_football_v1.0.0",
+       "n": 0,
+       "rows": 98,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 98,
+        "wins": 58,
+        "losses": 38,
+        "pushes": 2,
+        "record": "58-38-2",
+        "win_rate_pct": 60.42
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
+       }
+      },
       {
        "key": "edgedesk_props_model_v1",
        "n": 24,
@@ -4223,7 +6930,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -1.9298,
+       "max_drawdown_units": -1.9299,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4251,7 +6958,7 @@
        "pushes": 0,
        "record": "9-15",
        "win_rate_pct": 37.5,
-       "net_units": -7.16,
+       "net_units": -7.17,
        "risked_units": 24,
        "roi_pct": -29.85,
        "avg_clv_points": 0,
@@ -4259,7 +6966,7 @@
        "clv_hit_rate_pct": 45.8,
        "avg_odds": -113,
        "avg_edge_pct": 7.98,
-       "max_drawdown_units": -7.7193,
+       "max_drawdown_units": -7.7194,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4279,7 +6986,7 @@
       {
        "key": "Lean",
        "n": 129,
-       "rows": 2350,
+       "rows": 2351,
        "wins": 57,
        "losses": 72,
        "pushes": 0,
@@ -4293,7 +7000,7 @@
        "clv_hit_rate_pct": 36.4,
        "avg_odds": 121,
        "avg_edge_pct": 6.6,
-       "max_drawdown_units": -25.3288,
+       "max_drawdown_units": -25.3287,
        "record_only": {
         "n": 0,
         "wins": 0,
@@ -4355,7 +7062,7 @@
        "win_rate_pct": 60,
        "net_units": 0.53,
        "risked_units": 5,
-       "roi_pct": 10.57,
+       "roi_pct": 10.56,
        "avg_clv_points": 1.4,
        "avg_clv_prob_pp": 3.34,
        "clv_hit_rate_pct": 100,
@@ -4376,6 +7083,40 @@
         "warn": true,
         "n": 5,
         "text": "n=5 · Very small sample — results may be unstable"
+       }
+      },
+      {
+       "key": "Model number",
+       "n": 0,
+       "rows": 738,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "win_rate_pct": null,
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "avg_clv_points": null,
+       "avg_clv_prob_pp": null,
+       "clv_hit_rate_pct": null,
+       "avg_odds": null,
+       "avg_edge_pct": null,
+       "max_drawdown_units": null,
+       "record_only": {
+        "n": 738,
+        "wins": 443,
+        "losses": 291,
+        "pushes": 4,
+        "record": "443-291-4",
+        "win_rate_pct": 60.35
+       },
+       "sample": {
+        "key": "VERY_SMALL",
+        "label": "Very small sample",
+        "warn": true,
+        "n": 0,
+        "text": "n=0 · Very small sample — results may be unstable"
        }
       }
      ],
@@ -4651,7 +7392,7 @@
         "n": 2,
         "record": "1-1",
         "net_units": -0.02,
-        "roi_pct": -4.54,
+        "roi_pct": -4.55,
         "win_rate_pct": 50,
         "sample": {
          "key": "VERY_SMALL",
@@ -4696,7 +7437,7 @@
         "n": 5,
         "record": "4-1",
         "net_units": 0.65,
-        "roi_pct": 51.78,
+        "roi_pct": 51.77,
         "win_rate_pct": 80,
         "sample": {
          "key": "VERY_SMALL",
@@ -4711,16 +7452,19 @@
     }
    },
    "data_quality": {
-    "total": 3341,
+    "total": 3342,
     "verified": 162,
-    "pending": 2441,
+    "pending": 2442,
     "voids": 0,
     "missing_entry_odds": 738,
     "simulated_price": 0,
     "invalid_price": 0,
     "invalid_stake": 0,
+    "price_after_decision": 0,
     "not_pnl_eligible": 738,
-    "corrected": 122
+    "corrected": 122,
+    "snapshot_priced": 0,
+    "default_stake": 0
    }
   },
   "nfl": {
@@ -4733,23 +7477,23 @@
      "losses": 15,
      "pushes": 0,
      "record": "9-15",
-     "net_units": -7.16,
+     "net_units": -7.17,
      "risked_units": 24,
      "roi_pct": -29.85,
      "win_rate_pct": 37.5,
      "avg_decimal": 1.8817,
      "avg_odds": -113,
      "break_even_pct": 53.14,
-     "gross_win_units": 7.84,
+     "gross_win_units": 7.83,
      "gross_loss_units": 15,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -7.7193,
-     "current_drawdown_units": -7.7193,
+     "max_drawdown_units": -7.7194,
+     "current_drawdown_units": -7.7194,
      "peak_profit_units": 0.55,
      "drawdown": {
-      "max": -7.7193,
-      "current": -7.7193,
+      "max": -7.7194,
+      "current": -7.7194,
       "peak": 0.5543,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -4772,6 +7516,105 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 122,
+     "priced": 24,
+     "record_only": 98,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 98
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 32,
+       "record_only": 32,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -4889,63 +7732,63 @@
      [
       "2026-10-02",
       0.8696,
-      -3.0545,
+      -3.0546,
       0.5543,
       "pp:ppe_2a55d67b"
      ],
      [
       "2026-10-02",
       -1,
-      -4.0545,
+      -4.0546,
       0.5543,
       "pp:ppe_6f66f734"
      ],
      [
       "2026-10-02",
       -1,
-      -5.0545,
+      -5.0546,
       0.5543,
       "pp:ppe_ba619425"
      ],
      [
       "2026-10-02",
       -1,
-      -6.0545,
+      -6.0546,
       0.5543,
       "pp:ppe_98c2e8b2"
      ],
      [
       "2026-10-02",
       -1,
-      -7.0545,
+      -7.0546,
       0.5543,
       "pp:ppe_58906fa9"
      ],
      [
       "2026-10-02",
       0.9804,
-      -6.0741,
+      -6.0742,
       0.5543,
       "pp:ppe_83442526"
      ],
      [
       "2026-10-02",
       0.9091,
-      -5.165,
+      -5.1651,
       0.5543,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -1,
-      -6.165,
+      -6.1651,
       0.5543,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -1,
-      -7.165,
+      -7.1651,
       0.5543,
       "pp:ppe_8fd961dc"
      ]
@@ -5036,23 +7879,23 @@
       "losses": 15,
       "pushes": 0,
       "record": "9-15",
-      "net_units": -7.16,
+      "net_units": -7.17,
       "risked_units": 24,
       "roi_pct": -29.85,
       "win_rate_pct": 37.5,
       "avg_decimal": 1.8817,
       "avg_odds": -113,
       "break_even_pct": 53.14,
-      "gross_win_units": 7.84,
+      "gross_win_units": 7.83,
       "gross_loss_units": 15,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -7.7193,
-      "current_drawdown_units": -7.7193,
+      "max_drawdown_units": -7.7194,
+      "current_drawdown_units": -7.7194,
       "peak_profit_units": 0.55,
       "drawdown": {
-       "max": -7.7193,
-       "current": -7.7193,
+       "max": -7.7194,
+       "current": -7.7194,
        "peak": 0.5543,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -5104,12 +7947,12 @@
      "gross_loss_units": 3.75,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -1.9298,
-     "current_drawdown_units": -1.9298,
+     "max_drawdown_units": -1.9299,
+     "current_drawdown_units": -1.9299,
      "peak_profit_units": 0.14,
      "drawdown": {
-      "max": -1.9298,
-      "current": -1.9298,
+      "max": -1.9299,
+      "current": -1.9299,
       "peak": 0.1386,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -5132,6 +7975,105 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 122,
+     "priced": 24,
+     "record_only": 98,
+     "pending_priced": 160,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 98
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 32,
+       "record_only": 32,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 33,
+       "record_only": 33,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -5172,21 +8114,21 @@
      [
       "2026-10-02",
       0.1852,
-      0.0738,
+      0.0737,
       0.1386,
       "pp:ppe_abf866a2"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.1762,
+      -0.1763,
       0.1386,
       "pp:ppe_ac56c121"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.4262,
+      -0.4263,
       0.1386,
       "pp:ppe_ba19b16d"
      ],
@@ -5221,14 +8163,14 @@
      [
       "2026-10-02",
       0.2273,
-      -0.7062,
+      -0.7063,
       0.1386,
       "pp:ppe_4fbd6470"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.9562,
+      -0.9563,
       0.1386,
       "pp:ppe_a4f45139"
      ],
@@ -5291,21 +8233,21 @@
      [
       "2026-10-02",
       0.2273,
-      -1.2912,
+      -1.2913,
       0.1386,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.5412,
+      -1.5413,
       0.1386,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.7912,
+      -1.7913,
       0.1386,
       "pp:ppe_8fd961dc"
      ]
@@ -5407,12 +8349,12 @@
       "gross_loss_units": 3.75,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -1.9298,
-      "current_drawdown_units": -1.9298,
+      "max_drawdown_units": -1.9299,
+      "current_drawdown_units": -1.9299,
       "peak_profit_units": 0.14,
       "drawdown": {
-       "max": -1.9298,
-       "current": -1.9298,
+       "max": -1.9299,
+       "current": -1.9299,
        "peak": 0.1386,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -5454,8 +8396,11 @@
     "simulated_price": 0,
     "invalid_price": 0,
     "invalid_stake": 0,
+    "price_after_decision": 0,
     "not_pnl_eligible": 98,
-    "corrected": 122
+    "corrected": 122,
+    "snapshot_priced": 0,
+    "default_stake": 0
    }
   },
   "cfb": {
@@ -5505,6 +8450,105 @@
       "text": "n=0 · Very small sample — results may be unstable"
      }
     },
+    "card": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 640,
+     "priced": 0,
+     "record_only": 640,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 640
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 168,
+       "record_only": 168,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
     "series": [],
     "record_only": {
      "n": 640,
@@ -5676,6 +8720,105 @@
       "text": "n=0 · Very small sample — results may be unstable"
      }
     },
+    "card": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 640,
+     "priced": 0,
+     "record_only": 640,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 640
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 168,
+       "record_only": 168,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 236,
+       "record_only": 236,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
     "series": [],
     "record_only": {
      "n": 640,
@@ -5803,16 +8946,19 @@
     }
    },
    "data_quality": {
-    "total": 1773,
+    "total": 1774,
     "verified": 9,
-    "pending": 1124,
+    "pending": 1125,
     "voids": 0,
     "missing_entry_odds": 640,
     "simulated_price": 0,
     "invalid_price": 0,
     "invalid_stake": 0,
+    "price_after_decision": 0,
     "not_pnl_eligible": 640,
-    "corrected": 0
+    "corrected": 0,
+    "snapshot_priced": 0,
+    "default_stake": 0
    }
   },
   "props": {
@@ -5825,23 +8971,23 @@
      "losses": 15,
      "pushes": 0,
      "record": "9-15",
-     "net_units": -7.16,
+     "net_units": -7.17,
      "risked_units": 24,
      "roi_pct": -29.85,
      "win_rate_pct": 37.5,
      "avg_decimal": 1.8817,
      "avg_odds": -113,
      "break_even_pct": 53.14,
-     "gross_win_units": 7.84,
+     "gross_win_units": 7.83,
      "gross_loss_units": 15,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -7.7193,
-     "current_drawdown_units": -7.7193,
+     "max_drawdown_units": -7.7194,
+     "current_drawdown_units": -7.7194,
      "peak_profit_units": 0.55,
      "drawdown": {
-      "max": -7.7193,
-      "current": -7.7193,
+      "max": -7.7194,
+      "current": -7.7194,
       "peak": 0.5543,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -5864,6 +9010,99 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "flat",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -7.17,
+     "risked_units": 24,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 24,
+     "priced": 24,
+     "record_only": 0,
+     "pending_priced": 160,
+     "excluded": [],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -7.17,
+       "risked_units": 24,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -5981,63 +9220,63 @@
      [
       "2026-10-02",
       0.8696,
-      -3.0545,
+      -3.0546,
       0.5543,
       "pp:ppe_2a55d67b"
      ],
      [
       "2026-10-02",
       -1,
-      -4.0545,
+      -4.0546,
       0.5543,
       "pp:ppe_6f66f734"
      ],
      [
       "2026-10-02",
       -1,
-      -5.0545,
+      -5.0546,
       0.5543,
       "pp:ppe_ba619425"
      ],
      [
       "2026-10-02",
       -1,
-      -6.0545,
+      -6.0546,
       0.5543,
       "pp:ppe_98c2e8b2"
      ],
      [
       "2026-10-02",
       -1,
-      -7.0545,
+      -7.0546,
       0.5543,
       "pp:ppe_58906fa9"
      ],
      [
       "2026-10-02",
       0.9804,
-      -6.0741,
+      -6.0742,
       0.5543,
       "pp:ppe_83442526"
      ],
      [
       "2026-10-02",
       0.9091,
-      -5.165,
+      -5.1651,
       0.5543,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -1,
-      -6.165,
+      -6.1651,
       0.5543,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -1,
-      -7.165,
+      -7.1651,
       0.5543,
       "pp:ppe_8fd961dc"
      ]
@@ -6103,23 +9342,23 @@
       "losses": 15,
       "pushes": 0,
       "record": "9-15",
-      "net_units": -7.16,
+      "net_units": -7.17,
       "risked_units": 24,
       "roi_pct": -29.85,
       "win_rate_pct": 37.5,
       "avg_decimal": 1.8817,
       "avg_odds": -113,
       "break_even_pct": 53.14,
-      "gross_win_units": 7.84,
+      "gross_win_units": 7.83,
       "gross_loss_units": 15,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -7.7193,
-      "current_drawdown_units": -7.7193,
+      "max_drawdown_units": -7.7194,
+      "current_drawdown_units": -7.7194,
       "peak_profit_units": 0.55,
       "drawdown": {
-       "max": -7.7193,
-       "current": -7.7193,
+       "max": -7.7194,
+       "current": -7.7194,
        "peak": 0.5543,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -6171,12 +9410,12 @@
      "gross_loss_units": 3.75,
      "profit_factor": 0.52,
      "profit_factor_note": null,
-     "max_drawdown_units": -1.9298,
-     "current_drawdown_units": -1.9298,
+     "max_drawdown_units": -1.9299,
+     "current_drawdown_units": -1.9299,
      "peak_profit_units": 0.14,
      "drawdown": {
-      "max": -1.9298,
-      "current": -1.9298,
+      "max": -1.9299,
+      "current": -1.9299,
       "peak": 0.1386,
       "max_began": "2026-10-02",
       "max_trough": "2026-10-02",
@@ -6199,6 +9438,99 @@
      "clv_hit_rate_pct": 45.8,
      "clv_hit_n": 24,
      "avg_edge_pct": 7.98,
+     "sample": {
+      "key": "SMALL",
+      "label": "Small sample",
+      "warn": true,
+      "n": 24,
+      "text": "n=24 · Small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "staked",
+     "n": 24,
+     "wins": 9,
+     "losses": 15,
+     "pushes": 0,
+     "record": "9-15",
+     "net_units": -1.79,
+     "risked_units": 6,
+     "roi_pct": -29.85,
+     "win_rate_pct": 37.5,
+     "graded": 24,
+     "priced": 24,
+     "record_only": 0,
+     "pending_priced": 160,
+     "excluded": [],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 24,
+       "wins": 9,
+       "losses": 15,
+       "pushes": 0,
+       "record": "9-15",
+       "net_units": -1.79,
+       "risked_units": 6,
+       "roi_pct": -29.85,
+       "win_rate_pct": 37.5,
+       "graded": 24,
+       "record_only": 0,
+       "pending_priced": 160,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": "2026-10-02",
      "sample": {
       "key": "SMALL",
       "label": "Small sample",
@@ -6239,21 +9571,21 @@
      [
       "2026-10-02",
       0.1852,
-      0.0738,
+      0.0737,
       0.1386,
       "pp:ppe_abf866a2"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.1762,
+      -0.1763,
       0.1386,
       "pp:ppe_ac56c121"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.4262,
+      -0.4263,
       0.1386,
       "pp:ppe_ba19b16d"
      ],
@@ -6288,14 +9620,14 @@
      [
       "2026-10-02",
       0.2273,
-      -0.7062,
+      -0.7063,
       0.1386,
       "pp:ppe_4fbd6470"
      ],
      [
       "2026-10-02",
       -0.25,
-      -0.9562,
+      -0.9563,
       0.1386,
       "pp:ppe_a4f45139"
      ],
@@ -6358,21 +9690,21 @@
      [
       "2026-10-02",
       0.2273,
-      -1.2912,
+      -1.2913,
       0.1386,
       "pp:ppe_494972c9"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.5412,
+      -1.5413,
       0.1386,
       "pp:ppe_1e17797e"
      ],
      [
       "2026-10-02",
       -0.25,
-      -1.7912,
+      -1.7913,
       0.1386,
       "pp:ppe_8fd961dc"
      ]
@@ -6449,12 +9781,12 @@
       "gross_loss_units": 3.75,
       "profit_factor": 0.52,
       "profit_factor_note": null,
-      "max_drawdown_units": -1.9298,
-      "current_drawdown_units": -1.9298,
+      "max_drawdown_units": -1.9299,
+      "current_drawdown_units": -1.9299,
       "peak_profit_units": 0.14,
       "drawdown": {
-       "max": -1.9298,
-       "current": -1.9298,
+       "max": -1.9299,
+       "current": -1.9299,
        "peak": 0.1386,
        "max_began": "2026-10-02",
        "max_trough": "2026-10-02",
@@ -6488,16 +9820,19 @@
     }
    },
    "data_quality": {
-    "total": 2534,
+    "total": 2535,
     "verified": 153,
-    "pending": 2381,
+    "pending": 2382,
     "voids": 0,
     "missing_entry_odds": 0,
     "simulated_price": 0,
     "invalid_price": 0,
     "invalid_stake": 0,
+    "price_after_decision": 0,
     "not_pnl_eligible": 0,
-    "corrected": 122
+    "corrected": 122,
+    "snapshot_priced": 0,
+    "default_stake": 0
    }
   },
   "game": {
@@ -6539,6 +9874,105 @@
      "clv_hit_rate_pct": null,
      "clv_hit_n": 0,
      "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "flat",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 738,
+     "priced": 0,
+     "record_only": 738,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
      "sample": {
       "key": "VERY_SMALL",
       "label": "Very small sample",
@@ -6710,6 +10144,105 @@
      "clv_hit_rate_pct": null,
      "clv_hit_n": 0,
      "avg_edge_pct": null,
+     "sample": {
+      "key": "VERY_SMALL",
+      "label": "Very small sample",
+      "warn": true,
+      "n": 0,
+      "text": "n=0 · Very small sample — results may be unstable"
+     }
+    },
+    "card": {
+     "mode": "staked",
+     "n": 0,
+     "wins": 0,
+     "losses": 0,
+     "pushes": 0,
+     "record": "0-0",
+     "net_units": null,
+     "risked_units": null,
+     "roi_pct": null,
+     "win_rate_pct": null,
+     "graded": 738,
+     "priced": 0,
+     "record_only": 738,
+     "pending_priced": 0,
+     "excluded": [
+      {
+       "key": "historical_price_unavailable",
+       "label": "No stored odds snapshot for this exact selection at or before the decision",
+       "n": 738
+      }
+     ],
+     "snapshot_priced": 0,
+     "default_stake": 0,
+     "markets": [
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "spread",
+       "label": "Spreads"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 200,
+       "record_only": 200,
+       "pending_priced": 0,
+       "type": "total",
+       "label": "Totals"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 269,
+       "record_only": 269,
+       "pending_priced": 0,
+       "type": "moneyline",
+       "label": "Moneylines"
+      },
+      {
+       "n": 0,
+       "wins": 0,
+       "losses": 0,
+       "pushes": 0,
+       "record": "0-0",
+       "net_units": null,
+       "risked_units": null,
+       "roi_pct": null,
+       "win_rate_pct": null,
+       "graded": 0,
+       "record_only": 0,
+       "pending_priced": 0,
+       "type": "player_prop",
+       "label": "Player Props"
+      }
+     ],
+     "first": null,
      "sample": {
       "key": "VERY_SMALL",
       "label": "Very small sample",
@@ -6853,8 +10386,11 @@
     "simulated_price": 0,
     "invalid_price": 0,
     "invalid_stake": 0,
+    "price_after_decision": 0,
     "not_pnl_eligible": 738,
-    "corrected": 0
+    "corrected": 0,
+    "snapshot_priced": 0,
+    "default_stake": 0
    }
   }
  },
@@ -6889,7 +10425,8 @@
   "staked": "EdgeDesk staking: every qualifying recommendation risks the units EdgeDesk recommended at the time (0.25u to 1.00u). The two strategies are never mixed.",
   "break_even": "The win rate the actual prices needed to break even. At −110 on every bet it is 52.38%.",
   "profit_factor": "Gross units won divided by gross units lost. Above 1.00 the winners paid for the losers.",
-  "missing": "P&L unavailable — entry price not captured. The result still counts in the win/loss record, but a profit figure needs the real price, and EdgeDesk never assumes −110."
+  "missing": "P&L unavailable — entry price not captured. The result still counts in the win/loss record, but a profit figure needs the real price, and EdgeDesk never assumes −110.",
+  "verified": "Verified P&L includes only settled decisions with a historical market price captured by EdgeDesk. Record-only decisions without a verified price are excluded."
  },
  "sources": [
   {
@@ -6904,7 +10441,7 @@
    "source": "player_props",
    "league": "CFB",
    "file": "football/props/cfb/2026/evaluations.jsonl",
-   "rows": 1064,
+   "rows": 1065,
    "results_file": "football/props/cfb/2026/results.jsonl",
    "results": 0
   },
@@ -6920,14 +10457,14 @@
    "league": "NFL",
    "file": "record/football/nfl_2026.json",
    "rows": 98,
-   "note": "no price captured: record-only rows"
+   "note": "priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only"
   },
   {
    "source": "model_record",
    "league": "CFB",
    "file": "record/football/cfb_2026.json",
    "rows": 640,
-   "note": "no price captured: record-only rows"
+   "note": "priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only"
   }
  ],
  "ledger_file": "record/pnl/ledger_2026.json",
