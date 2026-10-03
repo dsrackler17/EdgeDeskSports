@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-03T17:26:51.942Z",
+ "generated_at": "2026-10-03T19:59:31.673Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,34 +119,34 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 112,
+  "total": 106,
   "by_group": {
-   "p4": 57,
-   "other": 59,
-   "independent": 4
+   "p4": 53,
+   "independent": 3,
+   "other": 56
   },
   "by_matchup": {
-   "conference": 99,
-   "non_conference": 10,
+   "conference": 96,
+   "non_conference": 7,
    "fbs_fcs": 3
   },
   "by_conference": {
    "sec": 14,
-   "big12": 13,
-   "cusa": 5,
-   "acc": 15,
-   "independents": 4,
-   "bigten": 15,
-   "mwc": 10,
-   "american": 14,
+   "big12": 12,
+   "acc": 13,
+   "independents": 3,
+   "bigten": 14,
    "mac": 13,
+   "mwc": 9,
+   "american": 12,
    "sunbelt": 12,
-   "pac12": 7
+   "pac12": 7,
+   "cusa": 4
   }
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 331,
+ "absorbed_games": 342,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025,
@@ -168,7 +168,7 @@
    "artifact_team_game_rows": 1139,
    "games_absorbed_with_stats": 321,
    "team_rows_absorbed": 531,
-   "final_games_without_play_stats": 10,
+   "final_games_without_play_stats": 21,
    "missing_game_ids": [
     "401866408",
     "401866409",
@@ -179,7 +179,17 @@
     "401860885",
     "401860887",
     "401860886",
-    "401860888"
+    "401860888",
+    "401871049",
+    "401862786",
+    "401858245",
+    "401871050",
+    "401858476",
+    "401862787",
+    "401856807",
+    "401858250",
+    "401858251",
+    "401858474"
    ],
    "measured_features": [
     "success_rate",
@@ -206,11 +216,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 112
+  "PREDICTED": 106
  },
  "weather": {
-  "requested": 107,
-  "answered": 107,
+  "requested": 101,
+  "answered": 101,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -218,18 +228,18 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "107 of 107 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "101 of 101 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 112
+  "NO_MARKET": 106
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
   "games_in_artifact": 576,
-  "completed_games_replayed": 331,
+  "completed_games_replayed": 342,
   "completed_games_with_both_team_efficiency": 210,
-  "missing_count": 121,
+  "missing_count": 132,
   "problem": null
  },
  "checks": [
@@ -290,12 +300,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 55,
-    "total": 112,
+    "non_power_games": 53,
+    "total": 106,
     "example": [
-     "Navy @ Air Force",
      "Western Michigan @ Buffalo",
-     "Toledo @ Ball State"
+     "Toledo @ Ball State",
+     "Samford @ UAB"
     ]
    }
   },
@@ -310,7 +320,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 99,
+    "conference_games": 96,
     "wrong": 0
    }
   },
@@ -342,8 +352,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 112,
-    "audit_total": 112
+    "slate": 106,
+    "audit_total": 106
    }
   },
   {
@@ -373,13 +383,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
@@ -423,7 +433,7 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 121,
+   "count": 132,
    "detail": [
     {
      "game_id": "401866408",
@@ -438,14 +448,14 @@
      "away": false
     },
     {
-     "game_id": "401864424",
-     "game": "Merrimack @ Delaware",
+     "game_id": "401864425",
+     "game": "West Georgia @ Kennesaw State",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401864425",
-     "game": "West Georgia @ Kennesaw State",
+     "game_id": "401864424",
+     "game": "Merrimack @ Delaware",
      "home": true,
      "away": false
     },
@@ -505,13 +515,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
