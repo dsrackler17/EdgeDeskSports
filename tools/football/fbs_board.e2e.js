@@ -220,7 +220,11 @@ function serve(handler) {
       /* what the feed offered, and every reason a row is not on the board */
       feedRows: ((window.FB.p4.sched || {}).rows || []).length,
       dropped: window.FB.p4.slateDrop,
-      visibleRows: document.querySelectorAll('[id^="p4gate-"]').length };
+      visibleRows: document.querySelectorAll('[id^="p4gate-"]').length,
+      /* a game that has kicked off stays on the slate (the desk and the
+         briefs resolve it) but leaves the board (fbKickedOff) */
+      kickedOff: rows.filter(u => u.t <= Date.now()).length,
+      kickedNote: !!document.querySelector('#fbBody .fb-kicked') };
   });
   /* THE BOARD IS THE WHOLE SLATE, AND EVERY ABSENCE IS ACCOUNTED FOR.
 
@@ -252,8 +256,9 @@ function serve(handler) {
     { slate: state.slate, feedRows: state.feedRows, dropped: state.dropped });
   chk('and the whole FBS universe', state.fbsTeams > 120, state.fbsTeams);
   chk('every conference in the feed is on the board', state.conferences.length >= 10, state.labels);
-  chk('the board renders one row per game', state.visibleRows === state.slate,
-    { rows: state.visibleRows, slate: state.slate });
+  chk('the board renders one row per game that has not kicked off', state.visibleRows === state.slate - state.kickedOff,
+    { rows: state.visibleRows, slate: state.slate, kickedOff: state.kickedOff });
+  chk('and says so when games have kicked off', state.kickedNote === state.kickedOff > 0, state);
   chk('the slate carries Other FBS games', (state.groups.other || 0) > 0, state.groups);
   chk('the slate carries independents', (state.groups.independent || 0) > 0, state.groups);
   chk('the slate carries conference, non-conference and FBS-vs-FCS games',
@@ -303,7 +308,7 @@ function serve(handler) {
   const composed = await page.evaluate(() => ({
     rows: document.querySelectorAll('[id^="p4gate-"]').length,
     search: location.search,
-    allConference: (window.FB.p4.up || [])
+    allConference: (window.FB.p4.up || []).filter(u => u.t > Date.now())
       .filter(u => window.EDFbs.matches(u.meta, { group: 'other', matchup: 'conference' })).length
   }));
   chk('the two filters compose rather than replacing each other',
@@ -371,7 +376,7 @@ function serve(handler) {
   const afterReset = await page.evaluate(() => ({ search: location.search,
     rows: document.querySelectorAll('[id^="p4gate-"]').length }));
   chk('reset clears the query string', afterReset.search.indexOf('fbs_') < 0, afterReset.search);
-  chk('and puts every game back', afterReset.rows === state.slate, afterReset);
+  chk('and puts every game back', afterReset.rows === state.slate - state.kickedOff, afterReset);
 
   const shareConf = state.conferences.indexOf('mac') >= 0 ? 'mac' : state.conferences[state.conferences.length - 1];
   await D.ctx.close();
@@ -444,7 +449,7 @@ function serve(handler) {
     };
   });
   chk('the page does not scroll sideways on a phone', mob.pageScrollsSideways === false, mob);
-  chk('the board still renders every row on a phone', mob.rows === state.slate, { rows: mob.rows, slate: state.slate });
+  chk('the board still renders every row on a phone', mob.rows === state.slate - state.kickedOff, { rows: mob.rows, slate: state.slate, kickedOff: state.kickedOff });
   chk('the filter block stays inside the column', mob.filterWidth <= mob.viewport + 1, mob);
   chk('the filters do not eat the screen', mob.filterHeight != null && mob.filterHeight < 260, mob.filterHeight);
   chk('each filter row is a single scrolling line rather than a wrapped pile',
@@ -466,7 +471,7 @@ function serve(handler) {
   await M.page.waitForTimeout(200);
   const mobAfter = await M.page.evaluate(() => ({
     rows: document.querySelectorAll('[id^="p4gate-"]').length,
-    expected: (window.FB.p4.up || []).filter(u => u.meta.matchup_type === 'fbs_fcs').length,
+    expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === 'fbs_fcs').length,
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
   }));
   chk('and it filters the board', mobAfter.rows === mobAfter.expected && mobAfter.rows > 0, mobAfter);

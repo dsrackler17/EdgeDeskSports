@@ -59,7 +59,12 @@ const REGIONS = [
   ['function fbP4StatusFor(p,mkt,u){', 'window.fbP4Gate=function(gid){'],
   /* the quote-EV state the board loads (the loaders return early without fetch) */
   ['/* QUOTE-LEVEL EV: the state and the static artifacts', 'function fbP4Ensure(){'],
-  ['function fbP4StatusStrip(){', 'function fbP4Render(host){']
+  ['function fbP4StatusStrip(){', 'function fbP4Render(host){'],
+  /* the pregame rule every board reads (a game that has kicked off leaves it) */
+  ['function fbKickedOff(u,now){', 'var FB_URL_GAMES='],
+  /* a failed price read, recorded per sport and said above the board */
+  ['var FB_SIG_ERR={};', 'function fbSignals('],
+  ['/* the banner a board carries while its last quote read failed */', 'function fbSignalsReadRaw(']
 ];
 function slice(start, end) {
   const a = APP.indexOf(start);
@@ -152,8 +157,17 @@ function esc(s) {
 function makeCtx(opts) {
   opts = opts || {};
   const store = { search: opts.search || '', hash: opts.hash || '#research/football' };
+  /* the board's clock is the suite's clock: the slate was built at NOW, and a
+     game that has kicked off by the board's clock leaves the board
+     (fbKickedOff), so the real clock would empty a fixture slate the day its
+     games were played */
+  const at = opts.now == null ? NOW : opts.now;
+  class PinnedDate extends Date {
+    constructor(...a) { if (a.length) super(...a); else super(at); }
+    static now() { return at; }
+  }
   const ctx = {
-    console, Promise, Date, Math, JSON, String, Number, Object, Array, RegExp,
+    console, Promise, Date: PinnedDate, Math, JSON, String, Number, Object, Array, RegExp,
     isFinite, isNaN, parseInt, parseFloat, setTimeout, clearTimeout, encodeURIComponent, decodeURIComponent,
     location: { get search() { return store.search; }, get hash() { return store.hash; }, pathname: '/app.html' },
     history: { replaceState(_a, _b, url) { const m = String(url).match(/\?[^#]*/); store.search = m ? m[0] : ''; } },
@@ -939,6 +953,55 @@ has(BOARD, '<span>STATUS</span>', 'and keeps its STATUS column');
   has(h, '<b>0</b> <span class="rv-lab accent">WORTH RESEARCHING</span>', 'and the research desk counts zero, rather than hiding the answer');
   has(h, 'CFB RESEARCH DESK', 'the research desk sits above the rows');
   chk('the desk comes before the first row', h.indexOf('CFB RESEARCH DESK') < h.indexOf('fbP4Gate('));
+}
+
+/* ======================================================================== */
+/* 13. A GAME THAT HAS KICKED OFF LEAVES THE BOARD (audit 2026-10-03)        */
+/* At 3:39 PM CT on Saturday 2026-10-03 the schedule feed still carried     */
+/* every game that kicked off at 11 AM as not completed, the board kept     */
+/* them for six hours, and the quote read asks only for games that have not */
+/* started — so 27 started games stood at the top of the board, each one    */
+/* reading NO MARKET · EV unavailable · no priced quote, above the 21 games */
+/* that were priced. And a failed price read was the same {} as no market.  */
+/* ======================================================================== */
+{
+  /* the board's clock four hours past the first kickoffs of the slate */
+  const first = SLATE.items[0].t, later = first + 4 * 3600e3;
+  const started = SLATE.items.filter(u => u.t <= later), pregame = SLATE.items.filter(u => u.t > later);
+  chk('the fixture has games on both sides of the clock', started.length > 0 && pregame.length > 0, { started: started.length, pregame: pregame.length });
+  const c = rvCtx({ now: later });
+  const rows = c.fbP4Rows();
+  eq('every started game leaves the board’s rows', rows.length, pregame.length);
+  chk('and no row is a game that has kicked off', rows.every(r => r.u.t > later));
+  const h = c.fbP4BoardHTML();
+  chk('no started game renders a row', started.every(u => h.indexOf('fbP4Gate(\'' + esc(String(u.g.game_id)) + '\')') < 0));
+  has(h, started.length + ' game' + (started.length === 1 ? ' has' : 's have') + ' kicked off</b> and left this board',
+    'the board says how many games kicked off');
+  has(h, esc(started[0].g.away_team + ' @ ' + started[0].g.home_team), 'and names the first of them');
+  has(h, 'EDBRIEF.openAll()', 'and points at their pregame research');
+  chk('the header counts the pregame slate', new RegExp('\\b' + pregame.length + ' OF ' + pregame.length + ' GAMES').test(h));
+  eq('an export carries the rows on screen, never a started game', c.fbP4ExportItems().items.length, pregame.length);
+  /* the slate itself keeps them: the AI desk and the briefs resolve a game in progress */
+  eq('the slate still holds every game for lookups', c.FB.p4.up.length, SLATE.items.length);
+  /* before the first kickoff nothing is noted */
+  lacks(rvCtx().fbP4BoardHTML(), 'kicked off</b>', 'before any kickoff there is no kicked-off note');
+  /* the whole slate kicked off: an empty board says why */
+  const allGone = rvCtx({ now: SLATE.items[SLATE.items.length - 1].t + 60e3 });
+  has(allGone.fbP4BoardHTML(), 'Every game on this slate has kicked off', 'a slate that has all kicked off says so');
+}
+{
+  /* a failed price read: nothing held */
+  const c = rvCtx();
+  c.FB_SIG_ERR.americanfootball_ncaaf = { at: NOW, status: 503, why: 'the price database did not answer (HTTP 503)' };
+  const h = c.fbP4BoardHTML();
+  has(h, 'Live prices could not be loaded', 'a failed price read is said above the board');
+  has(h, 'not that no book has a line', 'and says what NO MARKET means while it lasts');
+  has(h, 'unpriced (price read failed)', 'the count does not call an unread slate “no market”');
+  has(h, 'Price unavailable — the price read failed', 'each row says its price was not read');
+  lacks(h, 'no priced quote', 'and no row claims there was no priced quote');
+  /* the read recovers: the banner goes */
+  delete c.FB_SIG_ERR.americanfootball_ncaaf;
+  lacks(c.fbP4BoardHTML(), 'Live prices could not be loaded', 'a read that recovers clears the banner');
 }
 
 /* ---------------------------------------------------------------- report */

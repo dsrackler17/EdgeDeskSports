@@ -41,7 +41,7 @@ function chk(name, ok, detail) {
 function section(t) { console.log('  · ' + t); }
 
 const BOOT = M.boot({ probe: ['fbMarketFromEvent', 'fbBooksBehind', 'fbWMedian', 'fbNflMarketFor', 'fbNflMarketSelfCheck', 'fbNflSelfCheckHTML', 'fbNflResearchState', 'FB_CODE_NAMES',
-  'fbLatestCapture', 'fbPriceRefresh', 'FB_PRICE_REFRESH_MS'] });
+  'fbLatestCapture', 'fbPriceRefresh', 'FB_PRICE_REFRESH_MS', 'fbPricesDown', 'fbPricesDownHTML', 'FB_SIG_ERR'] });
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 ['function _escHtml(', 'function edEsc('].forEach((sig) => {
@@ -292,10 +292,26 @@ section('9. an open tab re-reads the prices on its own (audit 2026-10-01)');
   reads = 0;
   chk('not due yet: no read', (await T.fbPriceRefresh()) === false && reads === 0);
 
-  stage(); answer = () => Promise.reject(new Error('db 503'));
+  stage(); answer = () => Promise.reject(Object.assign(new Error('db 503'), { status: 503 }));
   const bad = await T.fbPriceRefresh();
-  chk('a failed read keeps the quotes the tab holds (they age into STALE on their own stamps)', bad === false && S.sig.ev8.rows === morning && F._pred.cached === true);
+  chk('a failed read keeps the quotes the tab holds (they age into STALE on their own stamps)', S.sig.ev8.rows === morning && F._pred.cached === true);
   chk('…and the next tick tries again', F._priceP === null && Date.now() - S.pricesAt > 3600e3);
+  /* A FAILED READ IS NOT AN EMPTY MARKET (audit 2026-10-03): a 503 used to
+     leave the board reading NO MARKET on every game with nothing saying the
+     read had failed */
+  chk('…the failure is recorded for that sport, with the reader\'s sentence', !!T.fbPricesDown('americanfootball_nfl')
+    && /did not answer \(HTTP 503\)/.test(T.fbPricesDown('americanfootball_nfl').why), T.fbPricesDown('americanfootball_nfl'));
+  chk('…the board repaints once to say so', bad === true);
+  chk('…and says so above the rows, naming the quotes it still holds', /Live prices could not be loaded/.test(T.fbPricesDownHTML('americanfootball_nfl', S.sig, S.pricesAt))
+    && /last ones read/.test(T.fbPricesDownHTML('americanfootball_nfl', S.sig, S.pricesAt)));
+  chk('…holding nothing, it says NO MARKET means unread, not unpriced', /could not read its price, not that no book has a line/.test(T.fbPricesDownHTML('americanfootball_nfl', {}, null)));
+  stage(); reads = 0;
+  chk('a read still failing does not repaint again', (await T.fbPriceRefresh()) === false && reads >= 1);
+  stage(); reads = 0; S.pricesAt = Date.now() - 61e3;
+  chk('while failing, the retry is the next one-minute tick, not five minutes', (await T.fbPriceRefresh()) === false && reads >= 1);
+  stage(); answer = () => Promise.resolve(now);
+  chk('a read that succeeds clears the failure, and the banner with it', (await T.fbPriceRefresh()) === true && !T.fbPricesDown('americanfootball_nfl')
+    && T.fbPricesDownHTML('americanfootball_nfl', S.sig, S.pricesAt) === '');
 
   stage(); answer = () => Promise.resolve(now); reads = 0;
   F.loading = Promise.resolve();

@@ -240,7 +240,7 @@ function siteHandler(req, res) {
   chk('games without one say why, and never print 0.0% for it', board.unavailable >= 0 && board.zeroFor === 0, board.naSample);
   chk('a pricing line names book, cover, break-even, edge and EV', board.sample.length > 0 && board.sample.every((t) => /Best price .+ · .+ · \d+m/.test(t) && /Cover \d/.test(t) && /BE \d/.test(t) && /Edge [+−]/.test(t) && /EV [+−]\d/.test(t)), board.sample);
   chk('CFB shows the calibrated EV beside the raw EV', board.sample.length > 0 && board.sample.every((t) => /Raw EV/.test(t) && /Calibrated [+−]\d/.test(t)), board.sample);
-  chk('the decision is shown apart from the EV', board.sample.every((t) => /Decision/.test(t)), board.sample);
+  chk('the decision is shown apart from the EV', board.sample.every((t) => /Decision/i.test(t)), board.sample);
   chk('the board offers Highest EV, Lowest EV and Freshest quote sorts', ['Highest EV', 'Lowest EV', 'Freshest quote'].every((s) => board.sorts.indexOf(s) >= 0), board.sorts);
   /* ONE CFB DISTRIBUTION, in the page: the loader fetched the versioned
      quote-EV module, and the board priced McNeese @ LSU (its captured LSU

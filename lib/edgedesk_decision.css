@@ -204,6 +204,8 @@ details>.edd-sech{cursor:pointer}.edd-sech small{color:var(--edd-faint);margin-l
 .edd-layer b{font-family:var(--edd-mono);font-size:10.5px;letter-spacing:.06em;color:var(--edd-text)}
 .edd-layer small{color:var(--edd-faint);font-size:10.5px}
 .edd-lk{font-family:var(--edd-mono);font-size:9px;letter-spacing:.12em;color:var(--edd-faint);font-weight:700}
+/* the key and the state never break mid-word on a phone ("MARKE / T"); the reason beside them wraps instead */
+.edd-layer .edd-lk,.edd-layer b{white-space:nowrap;flex:none}.edd-layer small{min-width:0}
 .edd-ms::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--edd-faint);align-self:center}
 .edd-ms-live::before{background:var(--edd-bet)}.edd-ms-thin::before{background:var(--edd-lean)}.edd-ms-stale::before{background:var(--edd-wait)}
 .edd-ms-fault{border-color:rgba(217,154,43,.55)}.edd-ms-fault::before{background:var(--edd-wait)}.edd-ms-none::before{background:transparent;border:1px solid var(--edd-faint)}

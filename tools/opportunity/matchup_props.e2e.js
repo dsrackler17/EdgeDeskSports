@@ -218,7 +218,8 @@ function nflGamesCsv() {
     await page.waitForFunction(() => { const b = document.getElementById('fbBody'); return b && /FBS FOOTBALL OPERATIONS/.test(b.innerHTML); }, null, { timeout: 90000 });
     await page.waitForTimeout(800);
     await page.click('text=Skip for now', { timeout: 1500 }).catch(() => {});
-    const up = await page.evaluate(() => (FB.p4.up || []).map((u) => String(u.g.game_id)));
+    /* the cards on the board: a game that has kicked off has left it (fbKickedOff) */
+    const up = await page.evaluate(() => (FB.p4.up || []).filter((u) => u.t > Date.now()).map((u) => String(u.g.game_id)));
     const pick = {};
     up.forEach((g) => { const k = stateOf(CFB, g); if (!pick[k]) pick[k] = g; });
     console.log('     states among the board\'s games: ' + STATES.map((k) => k + '=' + (pick[k] || '—')).join(' '));
