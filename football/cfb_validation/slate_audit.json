@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-03T17:07:34.438Z",
- "board_generated_at": "2026-10-03T17:07:32.414Z",
+ "generated_at": "2026-10-03T17:35:45.297Z",
+ "board_generated_at": "2026-10-03T17:35:44.072Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -85,7 +85,7 @@
     {
      "requirement": "fresh multi-book consensus",
      "result": "PASS",
-     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 2 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 1.75"
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 2.5 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 1.75"
     },
     {
      "requirement": "current team states",
@@ -237,7 +237,7 @@
     {
      "requirement": "fresh multi-book consensus",
      "result": "PASS",
-     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 2 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.75"
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 2.5 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.75"
     },
     {
      "requirement": "current team states",
@@ -284,8 +284,8 @@
    "gap": 7.68,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
    "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "STALE_MARKET",
@@ -337,7 +337,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401858249",
