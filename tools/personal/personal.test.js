@@ -289,6 +289,30 @@ function adapter(fake) {
     chk('JOB: a pass with no number is left alone', j3.close_source == null && j3.graded_at == null, j3);
   }
 
+  /* a database blip (2026-10-03: one 504 on the first read failed the job) is retried; a refusal is not */
+  const httpErr = (status, code) => Object.assign(new Error('db ' + status), { status, code });
+  const T = JOB.isTransientDbError;
+  chk('DB: a gateway 504, a 503 and PostgREST\'s schema-cache PGRST002 are transient',
+    T(httpErr(504)) && T(httpErr(503, 'PGRST002')) && T(httpErr(502)) && T(httpErr(500, '08006')) && T(httpErr(500, '40P01')));
+  chk('DB: a network failure and our own timeout are transient',
+    T(Object.assign(new TypeError('fetch failed'))) && T(Object.assign(new Error('aborted'), { name: 'AbortError' })));
+  chk('DB: an auth, schema, constraint or plain 500 refusal is not',
+    !T(httpErr(401)) && !T(httpErr(404, 'PGRST205')) && !T(httpErr(409, '23505')) && !T(httpErr(500, 'P0001')) && !T(httpErr(400)) && !T(new SyntaxError('bad json')));
+  {
+    let clock = 0, calls = 0;
+    const opts = { now: () => clock, sleep: async (ms) => { clock += ms; }, windowMs: 12 * 60000 };
+    const origWarn = console.warn; console.warn = () => {};
+    const got = await JOB.retrying('t', async () => { calls++; if (calls < 4) throw httpErr(503, 'PGRST002'); return 'ok'; }, opts);
+    chk('DB: a transient failure is retried until the database answers', got === 'ok' && calls === 4, { got, calls });
+    calls = 0; clock = 0;
+    const refused = await JOB.retrying('t', async () => { calls++; throw httpErr(409, '23505'); }, opts).catch((e) => e);
+    chk('DB: a permanent refusal is raised at once, never retried', calls === 1 && refused.status === 409, { calls });
+    calls = 0; clock = 0;
+    const down = await JOB.retrying('t', async () => { calls++; clock += 60000; throw httpErr(504); }, opts).catch((e) => e);
+    chk('DB: an outage longer than the window still fails the run, inside the window', down.status === 504 && calls > 3 && clock <= 13 * 60000, { calls, clock });
+    console.warn = origWarn;
+  }
+
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'personal research — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);

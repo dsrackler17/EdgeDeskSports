@@ -84,30 +84,94 @@ const HAVE_DB = !!(SB_URL && SB_KEY);
 function hdr(extra) {
   return Object.assign({ apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, extra || {});
 }
-async function dbGet(q, profile) {
+function httpError(label, status, text, n) {
+  const e = new Error(label + ' ' + status + ' ' + String(text).slice(0, n));
+  e.status = status;
+  try { const j = JSON.parse(text); if (j && j.code) e.code = String(j.code); } catch (_) { /* not JSON */ }
+  return e;
+}
+
+/* A DATABASE BLIP IS NOT A FAILED RUN. While Postgres is unreachable the
+   gateway answers 504 and PostgREST 503 PGRST002; one such answer on the
+   first read failed the whole job on 2026-10-03 (07:09 and 20:17 UTC — the
+   database was back by 20:25). Every call the job makes is idempotent (keyed
+   upserts, ignore-duplicates inserts, PATCHes that set the grade columns, a
+   replaying RPC), so a transient answer is retried with backoff for up to
+   RETRY_WINDOW_MS, each attempt under a hard REQUEST_TIMEOUT_MS. Anything
+   else — a 4xx, a constraint, a schema miss — is raised at once. The board's
+   read-only reader is NOT retried: the board handles a failed read itself,
+   and a retrying read would stall the boot. */
+const REQUEST_TIMEOUT_MS = 60000;
+const RETRY_WINDOW_MS = 12 * 60000;
+function isTransientDbError(e) {
+  if (!e) return false;
+  if (e.status == null) return e.name === 'AbortError' || e.name === 'TimeoutError' || (e.name === 'TypeError' && /fetch/i.test(String(e.message)));
+  if ([408, 429, 502, 503, 504].indexOf(e.status) >= 0) return true;
+  /* PostgREST names the SQLSTATE: connection (08), resources (53), shutdown /
+     start-up (57P0x), lock or statement timeout, deadlock, its own pool codes */
+  return /^(08|53|57P0|57014|55P03|40P01|40001|PGRST00[0-3])/.test(String(e.code || ''));
+}
+async function retrying(label, fn, opts) {
+  opts = opts || {};
+  const now = opts.now || Date.now;
+  const wait = opts.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const windowMs = opts.windowMs != null ? opts.windowMs : RETRY_WINDOW_MS;
+  const t0 = now();
+  for (let attempt = 1; ; attempt++) {
+    try { return await fn(); } catch (e) {
+      const ms = Math.min(60000, 5000 * Math.pow(2, attempt - 1));
+      if (!isTransientDbError(e) || now() - t0 + ms > windowMs) throw e;
+      console.warn('  db: ' + label + ' — ' + String((e && e.message) || e).slice(0, 160) + '; retry ' + attempt + ' in ' + Math.round(ms / 1000) + ' s');
+      await wait(ms);
+    }
+  }
+}
+async function send(url, init) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, Object.assign({}, init, { signal: ac.signal }));
+    return { status: r.status, ok: r.ok, text: await r.text() };
+  } finally { clearTimeout(timer); }
+}
+
+async function dbGetOnce(q, profile) {
   const r = await fetch(SB_URL + '/rest/v1/' + q, { headers: hdr(profile ? { 'accept-profile': profile } : null) });
   if (!r.ok) { const e = new Error('db ' + r.status + ' ' + (await r.text()).slice(0, 200)); e.status = r.status; throw e; }
   return r.json();
 }
+async function dbGet(q, profile) {
+  return retrying('read ' + q.split('?')[0], async () => {
+    const r = await send(SB_URL + '/rest/v1/' + q, { headers: hdr(profile ? { 'accept-profile': profile } : null) });
+    if (!r.ok) throw httpError('db', r.status, r.text, 200);
+    return JSON.parse(r.text);
+  });
+}
 async function dbPost(table, rows, prefer, onConflict) {
   if (DRY) return true;
-  const r = await fetch(SB_URL + '/rest/v1/' + table + (onConflict ? '?on_conflict=' + onConflict : ''), {
-    method: 'POST', headers: hdr({ prefer: prefer || 'return=minimal' }), body: JSON.stringify(rows) });
-  if (!r.ok) { const e = new Error('write ' + table + ' ' + r.status + ' ' + (await r.text()).slice(0, 300)); e.status = r.status; throw e; }
-  return true;
+  return retrying('write ' + table, async () => {
+    const r = await send(SB_URL + '/rest/v1/' + table + (onConflict ? '?on_conflict=' + onConflict : ''), {
+      method: 'POST', headers: hdr({ prefer: prefer || 'return=minimal' }), body: JSON.stringify(rows) });
+    if (!r.ok) throw httpError('write ' + table, r.status, r.text, 300);
+    return true;
+  });
 }
 async function dbPatch(table, query, row) {
   if (DRY) return true;
-  const r = await fetch(SB_URL + '/rest/v1/' + table + '?' + query, { method: 'PATCH', headers: hdr({ prefer: 'return=minimal' }), body: JSON.stringify(row) });
-  if (!r.ok) throw new Error('patch ' + table + ' ' + r.status + ' ' + (await r.text()).slice(0, 300));
-  return true;
+  return retrying('patch ' + table, async () => {
+    const r = await send(SB_URL + '/rest/v1/' + table + '?' + query, { method: 'PATCH', headers: hdr({ prefer: 'return=minimal' }), body: JSON.stringify(row) });
+    if (!r.ok) throw httpError('patch ' + table, r.status, r.text, 300);
+    return true;
+  });
 }
 async function dbRpc(fn, args) {
   if (DRY) return null;
-  const r = await fetch(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: hdr(), body: JSON.stringify(args || {}) });
-  if (r.status === 404) return { missing: true };
-  if (!r.ok) throw new Error('rpc ' + fn + ' ' + r.status + ' ' + (await r.text()).slice(0, 200));
-  return r.json();
+  return retrying('rpc ' + fn, async () => {
+    const r = await send(SB_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: hdr(), body: JSON.stringify(args || {}) });
+    if (r.status === 404) return { missing: true };
+    if (!r.ok) throw httpError('rpc ' + fn, r.status, r.text, 200);
+    return r.text ? JSON.parse(r.text) : null;
+  });
 }
 const HTTP_DB = { get: dbGet, post: dbPost, patch: dbPatch, rpc: dbRpc };
 let DB = HTTP_DB;
@@ -129,7 +193,7 @@ function makeReader(notes) {
       return Promise.reject(Object.assign(new Error('db 403'), { status: 403 }));
     }
     notes.reads++;
-    return HTTP_DB.get(q, profile || null);
+    return dbGetOnce(q, profile || null);
   }
   return { sbFetch: sbFetch, sbGet: (q) => sbFetch(q, null) };
 }
@@ -371,4 +435,4 @@ async function runWith(opts) {
   DB = HTTP_DB;
   return out;
 }
-module.exports = { makeReader, READ_ALLOW, runWith, recordGame, gradeBet };
+module.exports = { makeReader, READ_ALLOW, runWith, recordGame, gradeBet, isTransientDbError, retrying };

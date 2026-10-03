@@ -58,7 +58,9 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # room for research_state.js to ride out a database outage of up to 12 min
+    # (it retries a transient 5xx / timeout rather than failing the run)
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
         with:
