@@ -261,6 +261,25 @@ chk('data quality: not P&L eligible = missing + simulated', dq.not_pnl_eligible 
   chk('record by sport: NFL games, college games and player props apart — the tabs', RB3.league.map((x) => x.key + ' ' + x.record).join() === 'NFL 0-1-1,College Football 1-0,Player Props 1-1', RB3.league.map((x) => x.key + ' ' + x.record));
   chk('P&L by sport: the priced props are not inside NFL', P.breakdowns(rows3, 'flat').league.map((x) => x.key + ' ' + x.n).join() === 'NFL 0,College Football 0,Player Props 2', P.breakdowns(rows3, 'flat').league.map((x) => x.key + ' ' + x.n));
 
+  /* P&L at the graded price: a model game pick at its closing price, a prop at its captured price */
+  const g4 = [
+    S({ rec_class: 'MODEL', market_group: 'game', market_type: 'spread', league: 'NFL', entry_odds: null, closing_odds: -115, result: 'win', stake_units: 0 }),
+    S({ rec_class: 'MODEL', market_group: 'game', market_type: 'moneyline', league: 'NFL', entry_odds: null, closing_odds: 150, result: 'loss', stake_units: 0 }),
+    S({ rec_class: 'MODEL', market_group: 'game', market_type: 'total', league: 'NFL', entry_odds: null, closing_odds: -110, result: 'push', stake_units: 0 }),
+    S({ rec_class: 'MODEL', market_group: 'game', market_type: 'moneyline', league: 'NFL', entry_odds: null, closing_odds: null, result: 'win', stake_units: 0 }),
+    S({ rec_class: 'MODEL', market_group: 'game', market_type: 'spread', league: 'NFL', entry_odds: null, closing_odds: -110, result: 'pending', stake_units: 0 }),
+    S({ rec_class: 'BET', market_group: 'prop', market_type: 'player_prop', league: 'NFL', entry_odds: 120, closing_odds: -130, result: 'win', stake_units: 0.5 })
+  ];
+  const G4 = P.gradedPnl(g4, 'flat');
+  chk('graded price: a model pick at its closing price (−115 win = +0.8696), a prop at its captured price (+120, never its close)', G4.priced === 4 && G4.at_close === 3 && G4.at_entry === 1
+    && G4.summary.net_units === Math.round((100 / 115 - 1 + 0 + 1.2) * 100) / 100, G4);
+  chk('graded price: a graded pick with no closing price is unpriced — never assumed; a pending one is not graded', G4.graded === 5 && G4.unpriced === 1, G4);
+  chk('graded price: W-L-P over the priced picks, each market apart', G4.summary.record === '2-1-1' && G4.markets.filter((m) => m.n).map((m) => m.type + ' ' + m.n).join() === 'spread 1,total 1,moneyline 1,player_prop 1', [G4.summary.record, G4.markets]);
+  chk('graded price: recorded stakes — the model pick at the default 1u, the prop at its own 0.5u', P.gradedPnl(g4, 'staked').summary.net_units === Math.round((100 / 115 - 1 + 0.6) * 100) / 100, P.gradedPnl(g4, 'staked').summary);
+  chk('graded price: never Verified P&L — the card and the rows are unchanged', P.verifiedCard(g4, 'flat').n === 1 && g4.filter((x) => x.rec_class === 'MODEL').every((x) => x.record_state !== 'VERIFIED' && x.flat_profit_units == null));
+  chk('graded price: a model pick already locked to a stored quote is still priced at the close (the line it is graded at)',
+    P.atGradedPrice(S({ rec_class: 'MODEL', market_group: 'game', market_type: 'spread', league: 'CFB', entry_odds: -105, price_source: 'snapshot', closing_odds: -120, result: 'win', stake_units: 1 })).entry_odds === -120);
+
   const pr = P.pendingReasons([Object.assign({}, rows2[4], { pending_reason: 'UPCOMING' }), Object.assign({}, rows2[4], { pending_reason: 'MISSING_PLAYER_STAT' }), rows2[4], rows2[0]]);
   chk('pending reasons: counted per reason, a row without one is UNKNOWN, settled rows ignored', pr.total === 3 && pr.reasons.map((x) => x.key + ' ' + x.n).join() === 'UPCOMING 1,MISSING_PLAYER_STAT 1,UNKNOWN 1', pr);
   chk('pending reasons: with the reader\'s clock, a reasonless row before its kickoff is UPCOMING — after it, still UNKNOWN (never guessed)',

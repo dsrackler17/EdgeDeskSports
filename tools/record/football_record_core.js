@@ -66,9 +66,10 @@ const BREAK_EVEN_PCT = 52.38;
    (nflverse consensus for the NFL, the ESPN book for college). A game's
    grade.pnl prices a side at that captured closing price and nothing else:
    no price, no units — never an assumed -110. These are closing-price
-   units, kept as auditable data; they are NOT the Record's P&L, which is
-   only ever EdgeDesk's BET recommendations at the entry price it recorded
-   (record/pnl/). The record itself is shown as wins and losses. */
+   units: the Record shows them as P&L AT THE GRADED PRICE beside the record
+   (the P&L ledger copies each side's price into closing_odds), and NEVER as
+   Verified P&L, which is only a price EdgeDesk captured at or before the
+   decision (record/pnl/). */
 const PRICE_KEYS = ['home', 'away', 'over', 'under', 'home_ml', 'away_ml'];
 
 const MODEL = {

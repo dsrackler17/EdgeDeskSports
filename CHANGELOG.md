@@ -1,5 +1,58 @@
 # Changelog
 
+## 2026-10-03 — share the Record: an image and a post for X or anywhere
+
+- **A Share button on the Record**, on the public page and the app. It shares the view on screen: the tab (All, CFB, NFL, Player Props), the period, the market and the stake basis.
+- **The card** (`lib/edgedesk_record_card.js`) comes in three sizes: X post 1600×900, square 1080×1080 and story 1080×1920. It shows:
+  - the units at the graded price, the ROI and the record;
+  - each market's units;
+  - the sample size.
+  - It also says how the units were priced ("at the closing price · not Verified P&L"), prints Verified P&L beside them, and carries "21+".
+  - It computes nothing: every number is one the page already printed, from the same kernel.
+- **The actions:**
+  - **Share…** opens the phone's share sheet with the image attached (X, Messages, Instagram).
+  - **Download image** saves the PNG.
+  - **Post on X** opens a post with the text and link.
+  - **Copy text** and **Copy link** copy each one.
+  - The post stays under 280 characters, counting the link as 23 the way X does.
+- **The link opens the same view:** `record.html?view=nfl#pnl`.
+- **Tests:**
+  - `tools/record/record_card.test.js` (72, now in *Record P&L tests* and `npm run record:pnl:test`): what the card says, the post's length, and that every size keeps every word in the frame, with the boxes above the notes and the notes above the footer.
+  - `pnl_ui.test.js`: the dialog and its focus, every size drawn, Download, Escape and an outside tap, and the `?view=` link.
+
+## 2026-10-03 — NFL and CFB tabs show P&L, not just the record
+
+After the props were split out, the NFL tab showed only its record (58-38-2): none of its 98 game picks had a verified price. EdgeDesk stored no NFL game quote before 2026-10-03.
+
+- **P&L at the graded price.** Every graded pick is priced at the line it was graded at, so the units and the record describe the same picks (`lib/edgedesk_pnl.js` `gradedPnl`).
+  - The model's game picks are graded against the closing line, so they are priced at that line's closing price: nflverse consensus for the NFL, the ESPN book (DraftKings) for college.
+  - Player props keep the price captured with the pick.
+  - A pick with no closing price (40 CFB moneylines) is left out and counted, never assumed.
+- **The ledger now carries that closing price** (`tools/record/pnl_core.js`). Each model pick's `closing_odds` is the side's price that the model record already keeps with the closing line (`grade.pnl`, `pricePick`).
+  - Filling a price that was empty is not logged as a correction, in the build or the database.
+  - It never makes a pick verified.
+- **The page:**
+  - Each tab shows its units with its record under them.
+  - A new *P&L at the graded price* card sits above Verified P&L, labeled as not Verified P&L.
+  - NFL and CFB history rows read e.g. "+124 close · +1.24u not verified".
+  - *How P&L works* explains the difference.
+- **On the 2026 ledger** (flat 1u):
+
+  | Tab | P&L | Picks | Record |
+  |---|---|---|---|
+  | NFL | +7.87u (+8.2% ROI) | 98 | 58-38-2 |
+  | CFB | −38.49u (−6.4%) | 600 of 640 | |
+  | Player Props | −7.17u | 24 | |
+  | All | −37.79u | | |
+
+  - NFL by market: spread +7.04u, totals −1.49u, moneyline +2.32u.
+- **Verified P&L is unchanged.** It is still only a price EdgeDesk captured at or before the decision: 31 priced, −4.96u flat.
+- `record/pnl/` picks up the closing prices on the next *Record P&L* run.
+- **Tests:**
+  - `pnl.test.js` 183;
+  - `pnl_ledger.test.js` 104: every model pick's closing price equals the record's `grade.pnl`; NFL and CFB units equal the record's own closing-price units; no correction logged;
+  - `pnl_ui.test.js` 497 on the rebuilt ledger, 493 on the committed one. They cover the tab units and record, the new card, the history rows and the real NFL tab.
+
 ## 2026-10-03 — the Record's NFL tab no longer counts the player props
 
 On the Record page the NFL tab, the Player Props tab and All all read −7.17u. The 24 settled priced bets were all NFL player props, and each prop was counted twice: once under NFL, because that tab took every row with `league = 'NFL'`, and again under Player Props. The CFB tab had the same flaw for college props (all leans so far, so it hid behind the leans toggle).

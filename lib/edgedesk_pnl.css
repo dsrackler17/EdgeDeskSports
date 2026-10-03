@@ -77,6 +77,16 @@
 .pnl-vm-s{color:var(--p-warn)}
 @media(max-width:619px){.pnl-ver-dl .pnl-vd[data-k="record_only"]{grid-column:1/-1}}
 .pnl-ver-per{font-size:12.5px;color:var(--p-dim);margin-top:12px;line-height:1.45}
+/* P&L at the graded price: the record's picks in units (game picks at the close) — the Verified card's shape, its own name */
+.pnl-grd{border:1px solid var(--p-bd);border-radius:16px;background:var(--p-s1);padding:16px 16px 14px;margin:0 0 12px}
+.pnl-grd.profit{background:linear-gradient(180deg,rgba(118,189,62,.10),var(--p-s1) 70%);border-color:rgba(118,189,62,.45)}
+.pnl-grd.loss{background:linear-gradient(180deg,rgba(226,96,68,.10),var(--p-s1) 70%);border-color:rgba(226,96,68,.45)}
+.pnl-grd-ey{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-grd-net{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.04em;line-height:1.02;margin:10px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-grd-roi{font-weight:800;font-size:clamp(20px,5.6vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-grd-n{font-size:15px;color:var(--p-dim);margin-top:6px;line-height:1.45}
+.pnl-grd-inc{font-size:13px;color:var(--p-dim);margin-top:8px;line-height:1.55;font-variant-numeric:tabular-nums}
+.pnl-grd-n b,.pnl-grd-inc b{color:var(--p-tx);font-weight:700}
 /* a row's price and units in the graded history: "−108 · 1.00u risked · +0.93u" */
 .pnl-pc{white-space:normal !important}
 .pnl-pc-o{font-weight:700;color:var(--p-tx);font-variant-numeric:tabular-nums}
@@ -90,6 +100,7 @@
 .pnl-tabs button.on{background:var(--p-s2);color:var(--p-tx);box-shadow:inset 0 0 0 1px var(--p-bd)}
 .pnl-tab-k{font:700 13px 'Inter',sans-serif;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
 .pnl-tab-v{font:600 13px 'JetBrains Mono',monospace;white-space:nowrap}
+.pnl-tab-r{font:500 11px 'JetBrains Mono',monospace;white-space:nowrap;color:var(--p-dim);max-width:100%;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:479px){.pnl-long{display:none}}
 .pnl-short{display:none}
 @media(max-width:479px){.pnl-short{display:inline}}
@@ -299,3 +310,20 @@
 .pnl-btn[disabled]{opacity:.45;cursor:default}
 .pnl-lcount{font-size:13px;color:var(--p-dim);margin:6px 0 8px;line-height:1.5}
 .pnl-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;font-size:12.5px;color:var(--p-dim)}
+
+/* SHARE: the Record as an image (lib/edgedesk_record_card.js) — the button, and the dialog with its preview */
+.pnl-share-btn{border-color:var(--p-acc);color:var(--p-acc);display:inline-flex;align-items:center;gap:6px}
+.pnl-share-btn::before{content:"";width:14px;height:14px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E") center/contain no-repeat}
+.pnl-shm{position:fixed;inset:0;z-index:1000;background:rgba(6,5,3,.72);display:flex;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pnl-shm[hidden]{display:none}
+.pnl-shm-box{width:100%;max-width:720px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:16px;padding:16px;margin:auto 0;box-shadow:0 20px 60px rgba(0,0,0,.55);color:var(--p-tx)}
+.pnl-shm-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pnl-shm-h h4{margin:0;font:800 18px 'Inter',sans-serif;letter-spacing:-.01em}
+.pnl-shm-x{border:1px solid var(--p-bd);background:var(--p-s2);color:var(--p-tx);border-radius:50%;width:40px;height:40px;font-size:22px;line-height:1;cursor:pointer}
+.pnl-shm-cv{margin:12px 0;border:1px solid var(--p-bd);border-radius:12px;overflow:hidden;background:var(--p-bg);display:flex;justify-content:center}
+.pnl-shm-cv canvas{display:block;width:100%;height:auto;max-height:62vh;object-fit:contain}
+.pnl-shm-acts{display:flex;flex-wrap:wrap;gap:8px}
+.pnl-shm-acts .pnl-btn{flex:1 1 140px}
+.pnl-shm-main{background:var(--p-acc);border-color:var(--p-acc);color:#0b0a07}
+.pnl-shm-st{min-height:20px;font-size:13px;color:var(--p-acc);margin:8px 0 2px}
+.pnl-shm-txt{white-space:pre-wrap;word-break:break-word;font:500 13px/1.5 'JetBrains Mono',monospace;color:var(--p-dim);background:var(--p-bg);border:1px solid var(--p-bd);border-radius:10px;padding:10px 12px;margin:6px 0 8px}
