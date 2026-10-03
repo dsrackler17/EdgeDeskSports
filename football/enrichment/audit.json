@@ -1,31 +1,31 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-03T19:59:31.673Z",
+ "generated_at": "2026-10-03T21:29:39.080Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-03T19:59:31.673Z",
-  "reliability_generated_at": "2026-10-03T19:59:31.673Z",
-  "enrichment_generated_at": "2026-10-03T19:59:22.119Z",
+  "at": "2026-10-03T21:29:39.080Z",
+  "reliability_generated_at": "2026-10-03T21:29:39.080Z",
+  "enrichment_generated_at": "2026-10-03T21:29:16.825Z",
   "counts": {
    "games": 106,
-   "mean": 85.9,
-   "median": 87,
+   "mean": 86,
+   "median": 87.5,
    "by_band": {
     "VERY_STRONG": 21,
     "LOW": 3,
-    "STRONG": 69,
-    "ADEQUATE": 9,
+    "STRONG": 73,
+    "ADEQUATE": 5,
     "CAUTION": 4
    },
    "missing_qb_status": 155,
    "qb_conflicts_open": 4,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 21,
+   "games_lacking_injury_information": 22,
    "unrated_meaningful_absences": 469,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 106,
-   "stale_evidence_records": 32,
-   "provider_failures": 4,
+   "stale_evidence_records": 30,
+   "provider_failures": 6,
    "provider_failures_attributable_to_run": 0
   },
   "providers": [
@@ -39,11 +39,11 @@
    },
    {
     "provider": "capture_signals",
-    "state": "HEALTHY"
+    "state": "DOWN"
    },
    {
     "provider": "cfb_lines",
-    "state": "HEALTHY"
+    "state": "DOWN"
    },
    {
     "provider": "cfbfastr_schedules",
@@ -388,11 +388,11 @@
    },
    "401856718": {
     "game": "Ole Miss @ Vanderbilt",
-    "score": 83,
+    "score": 84,
     "grade": "STRONG",
     "fam": {
      "stability": 4.2,
-     "favorite_flips": 3.7,
+     "favorite_flips": 3.4,
      "availability": 4.6,
      "qb_status": 2,
      "rating_sample": 1.4,
@@ -416,8 +416,8 @@
      "stability": 3.3,
      "availability": 5,
      "qb_status": 3,
+     "qb_conflict": 1,
      "rating_sample": 1.7,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -439,8 +439,7 @@
      "qb_identity": 2.1,
      "attribution": 1.8,
      "rating_sample": 1.7,
-     "qb_conflict": 0.9,
-     "starters": 0.6,
+     "qb_conflict": 1.8,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -459,8 +458,8 @@
     "fam": {
      "stability": 2.4,
      "rating_sample": 1.7,
+     "qb_conflict": 0.9,
      "attribution": 1.1,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3,
      "player_identity": 0.2
@@ -629,9 +628,9 @@
     "fam": {
      "stability": 2.8,
      "availability": 4.6,
+     "qb_conflict": 1,
      "qb_status": 2,
      "rating_sample": 1.7,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -652,14 +651,13 @@
      "stability": 2.3,
      "availability": 4.6,
      "qb_status": 2,
+     "qb_identity": 1.2,
      "rating_sample": 1.4,
-     "starters": 0.6,
-     "qb_identity": 0.9,
      "transfer_turnover": 0.3
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "UNCERTAIN"
+     "away": "EXPECTED"
     },
     "avail": {
      "home": "NOT_DUE_YET",
@@ -757,9 +755,9 @@
      "availability": 5.5,
      "qb_status": 3.5,
      "stability": 1.4,
+     "qb_conflict": 1,
      "rating_sample": 1.7,
      "qb_identity": 1.1,
-     "starters": 0.7,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -843,13 +841,12 @@
      "qb_status": 2,
      "stability": 0.8,
      "rating_sample": 1,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "UNCERTAIN"
+     "away": "EXPECTED"
     },
     "avail": {
      "home": "NOT_DUE_YET",
@@ -858,13 +855,13 @@
    },
    "401858257": {
     "game": "Stanford @ Notre Dame",
-    "score": 87,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "availability": 5.5,
      "stability": 2.5,
      "qb_status": 3.5,
-     "qb_identity": 0.8,
+     "qb_identity": 1.3,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
     },
@@ -884,10 +881,10 @@
     "fam": {
      "availability": 4.6,
      "stability": 1.6,
+     "qb_conflict": 1,
      "qb_status": 2,
      "rating_sample": 1.7,
      "qb_identity": 1.4,
-     "starters": 0.6,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -922,10 +919,9 @@
    },
    "401858260": {
     "game": "Wake Forest @ NC State",
-    "score": 86,
+    "score": 89,
     "grade": "STRONG",
     "fam": {
-     "favorite_flips": 3.4,
      "availability": 4.6,
      "stability": 1.8,
      "qb_status": 2,
@@ -1115,7 +1111,7 @@
      "stability": 3.5,
      "availability": 4.8,
      "qb_conflict": 1.9,
-     "qb_identity": 2.2,
+     "qb_identity": 2.4,
      "qb_status": 2.5,
      "rating_sample": 1.4,
      "transfer_turnover": 0.6
@@ -1173,12 +1169,12 @@
    },
    "401858485": {
     "game": "USC @ Penn State",
-    "score": 88,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
      "stability": 2.7,
+     "favorite_flips": 2.6,
      "availability": 4.6,
-     "favorite_flips": 1.5,
      "qb_status": 2,
      "qb_identity": 0.8,
      "rating_sample": 0.6,
@@ -1201,7 +1197,7 @@
      "availability": 4.6,
      "stability": 1,
      "qb_status": 2,
-     "qb_identity": 1.4,
+     "qb_identity": 1.1,
      "rating_sample": 1
     },
     "qb": {
@@ -1215,8 +1211,8 @@
    },
    "401858487": {
     "game": "Iowa @ Washington",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 82,
+    "grade": "STRONG",
     "fam": {
      "favorite_flips": 6,
      "stability": 3.5,
@@ -1242,7 +1238,7 @@
     "fam": {
      "stability": 2.1,
      "qb_status": 4,
-     "availability": 3.4,
+     "availability": 3.2,
      "qb_identity": 1.7,
      "qb_conflict": 0.8,
      "rating_sample": 1.4,
@@ -1303,10 +1299,9 @@
    },
    "401860901": {
     "game": "Boise State @ Fresno State",
-    "score": 87,
+    "score": 89,
     "grade": "STRONG",
     "fam": {
-     "favorite_flips": 3.4,
      "availability": 4.6,
      "stability": 1.5,
      "qb_status": 2,
@@ -1345,10 +1340,10 @@
    },
    "401860921": {
     "game": "Fresno State @ Washington State",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 83,
+    "grade": "STRONG",
     "fam": {
-     "favorite_flips": 6,
+     "favorite_flips": 5.6,
      "stability": 2.4,
      "qb_status": 4,
      "attribution": 1.8,
@@ -1368,10 +1363,10 @@
    },
    "401860922": {
     "game": "Washington State @ Utah State",
-    "score": 82,
+    "score": 81,
     "grade": "STRONG",
     "fam": {
-     "favorite_flips": 4.1,
+     "favorite_flips": 4.9,
      "stability": 3.1,
      "availability": 4.6,
      "qb_identity": 1.7,
@@ -1391,10 +1386,10 @@
    },
    "401861964": {
     "game": "UConn @ Temple",
-    "score": 83,
+    "score": 82,
     "grade": "STRONG",
     "fam": {
-     "favorite_flips": 4.5,
+     "favorite_flips": 5.2,
      "availability": 5.5,
      "qb_status": 3.5,
      "stability": 1.2,
@@ -1413,12 +1408,12 @@
    },
    "401862788": {
     "game": "UTSA @ Rice",
-    "score": 89,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
      "stability": 2,
-     "qb_status": 2,
+     "qb_status": 4,
      "rating_sample": 1.4,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
@@ -1428,8 +1423,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401862790": {
@@ -1458,16 +1453,15 @@
    },
    "401862792": {
     "game": "Temple @ South Florida",
-    "score": 87,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "availability": 4.6,
      "stability": 2,
+     "qb_conflict": 1.9,
+     "qb_identity": 1.5,
      "qb_status": 2,
-     "qb_identity": 1.4,
-     "qb_conflict": 0.9,
      "rating_sample": 1.4,
-     "starters": 0.6,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -1513,11 +1507,10 @@
      "favorite_flips": 6,
      "stability": 2.8,
      "availability": 4.6,
+     "qb_conflict": 1.9,
+     "qb_identity": 1.4,
      "qb_status": 2,
-     "qb_identity": 1.3,
-     "qb_conflict": 0.9,
      "rating_sample": 1.4,
-     "starters": 0.6,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1552,21 +1545,20 @@
    },
    "401862796": {
     "game": "Charlotte @ North Texas",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 89,
+    "grade": "STRONG",
     "fam": {
-     "qb_identity": 4.5,
      "availability": 4.6,
-     "qb_conflict": 1.7,
-     "contract_conflicts": 1.4,
      "stability": 1.4,
      "qb_status": 2,
+     "qb_conflict": 0.9,
+     "qb_identity": 1.1,
      "rating_sample": 0.6,
      "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "CONFLICTED"
+     "away": "EXPECTED"
     },
     "avail": {
      "home": "NOT_DUE_YET",
@@ -1601,10 +1593,9 @@
     "fam": {
      "availability": 4.6,
      "qb_status": 2,
+     "qb_identity": 1.1,
      "rating_sample": 1,
-     "starters": 0.6,
      "stability": 0.5,
-     "qb_identity": 0.8,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -1618,19 +1609,21 @@
    },
    "401862799": {
     "game": "Tulsa @ Navy",
-    "score": 87,
-    "grade": "STRONG",
+    "score": 79,
+    "grade": "ADEQUATE",
     "fam": {
+     "qb_identity": 4.2,
      "availability": 4.6,
-     "qb_identity": 1.9,
+     "qb_conflict": 2.7,
+     "contract_conflicts": 1.4,
+     "starters": 1.2,
      "stability": 1.1,
      "qb_status": 2,
-     "qb_conflict": 1.8,
      "rating_sample": 1,
      "transfer_turnover": 0.3
     },
     "qb": {
-     "home": "EXPECTED",
+     "home": "CONFLICTED",
      "away": "EXPECTED"
     },
     "avail": {
@@ -1653,7 +1646,7 @@
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "UNCERTAIN"
+     "away": "EXPECTED"
     },
     "avail": {
      "home": "PROVIDER_FAILED",
@@ -1690,7 +1683,7 @@
      "availability": 6,
      "qb_status": 4,
      "prior_missing": 1.7,
-     "starters": 0.8,
+     "qb_conflict": 1,
      "rating_sample": 0.7,
      "stability": 0.6,
      "qb_identity": 0.8,
@@ -1713,8 +1706,8 @@
      "availability": 4.6,
      "stability": 1.2,
      "qb_status": 2,
-     "qb_identity": 1.1,
      "rating_sample": 1.4,
+     "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1755,9 +1748,9 @@
      "availability": 4.6,
      "stability": 1.7,
      "prior_missing": 1.7,
+     "qb_conflict": 1,
      "qb_status": 2,
      "rating_sample": 0.7,
-     "starters": 0.6,
      "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
@@ -1772,11 +1765,10 @@
    },
    "401864519": {
     "game": "Wyoming @ San José State",
-    "score": 88,
+    "score": 89,
     "grade": "STRONG",
     "fam": {
      "availability": 4.6,
-     "favorite_flips": 1.1,
      "qb_conflict": 1,
      "qb_status": 2,
      "stability": 0.7,
@@ -1785,7 +1777,7 @@
      "transfer_turnover": 0.6
     },
     "qb": {
-     "home": "UNCERTAIN",
+     "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
@@ -1839,12 +1831,13 @@
    },
    "401866432": {
     "game": "Western Michigan @ Buffalo",
-    "score": 93,
+    "score": 92,
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 2.4,
+     "fcs_dominated": 1.7,
      "attribution": 2.3,
-     "rating_sample": 1.4,
+     "rating_sample": 0.7,
      "qb_identity": 0.9,
      "transfer_turnover": 0.3
     },
@@ -1907,8 +1900,8 @@
      "stability": 1.2,
      "qb_status": 2,
      "qb_identity": 1.3,
+     "favorite_flips": 0.7,
      "rating_sample": 1,
-     "favorite_flips": 0.4,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -1944,13 +1937,14 @@
    },
    "401866437": {
     "game": "Buffalo @ Toledo",
-    "score": 89,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
      "availability": 4.6,
      "stability": 1.8,
+     "fcs_dominated": 1.7,
      "qb_status": 2,
-     "rating_sample": 1.4,
+     "rating_sample": 0.7,
      "qb_identity": 0.9,
      "transfer_turnover": 0.6
     },
@@ -2054,19 +2048,18 @@
    },
    "401869842": {
     "game": "Army @ Louisiana Tech",
-    "score": 84,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
      "stability": 3.1,
      "availability": 5,
      "qb_status": 3,
+     "qb_conflict": 1,
      "rating_sample": 2,
-     "qb_identity": 1.3,
-     "qb_conflict": 0.9,
-     "starters": 0.6
+     "qb_identity": 1.3
     },
     "qb": {
-     "home": "EXPECTED",
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -2079,7 +2072,7 @@
     "score": 79,
     "grade": "ADEQUATE",
     "fam": {
-     "favorite_flips": 4.5,
+     "favorite_flips": 4.1,
      "stability": 3,
      "availability": 6,
      "qb_status": 4,
@@ -2186,14 +2179,14 @@
    },
    "401869949": {
     "game": "James Madison @ Georgia Southern",
-    "score": 84,
+    "score": 85,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
      "stability": 2.4,
      "qb_status": 4,
-     "qb_identity": 1.8,
      "rating_sample": 1.4,
+     "qb_identity": 0.9,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -2235,9 +2228,9 @@
      "availability": 6,
      "stability": 2.2,
      "qb_status": 4,
-     "qb_identity": 1.8,
      "qb_conflict": 0.9,
      "rating_sample": 1.4,
+     "qb_identity": 0.9,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -2257,13 +2250,12 @@
      "availability": 6,
      "qb_status": 4,
      "stability": 1.6,
+     "qb_conflict": 1,
      "rating_sample": 1.7,
-     "qb_identity": 1.3,
-     "qb_conflict": 0.9,
-     "starters": 0.8
+     "qb_identity": 1.3
     },
     "qb": {
-     "home": "EXPECTED",
+     "home": "UNCERTAIN",
      "away": "EXPECTED"
     },
     "avail": {
@@ -2279,8 +2271,8 @@
      "availability": 6,
      "qb_status": 4,
      "qb_conflict": 0.9,
+     "qb_identity": 1.1,
      "rating_sample": 1,
-     "qb_identity": 0.8,
      "transfer_turnover": 0.3
     },
     "qb": {
@@ -2315,15 +2307,14 @@
    },
    "401871052": {
     "game": "Missouri State @ Western Kentucky",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 81,
+    "grade": "STRONG",
     "fam": {
-     "favorite_flips": 3,
+     "favorite_flips": 3.7,
      "availability": 6,
-     "qb_identity": 4.1,
+     "qb_identity": 2.5,
      "qb_status": 4,
      "stability": 1.8,
-     "qb_conflict": 1,
      "rating_sample": 1,
      "transfer_turnover": 0.6
     },
@@ -2342,7 +2333,7 @@
     "grade": "STRONG",
     "fam": {
      "availability": 6,
-     "qb_identity": 4,
+     "qb_identity": 3.4,
      "qb_status": 4,
      "venue": 1.4,
      "rating_sample": 1,
@@ -2381,14 +2372,13 @@
    },
    "401871090": {
     "game": "Southern Miss @ Troy",
-    "score": 79,
-    "grade": "ADEQUATE",
+    "score": 85,
+    "grade": "STRONG",
     "fam": {
      "availability": 6,
      "qb_status": 4,
      "stability": 1.7,
-     "qb_identity": 2.1,
-     "qb_conflict": 1,
+     "qb_identity": 1.3,
      "rating_sample": 1.4,
      "transfer_turnover": 0.6
     },
@@ -2404,75 +2394,53 @@
   }
  },
  "previous": {
-  "at": "2026-10-03T16:30:25.262Z",
+  "at": "2026-10-03T19:59:31.673Z",
   "counts": {
-   "games": 112,
-   "mean": 85.8,
+   "games": 106,
+   "mean": 85.9,
    "median": 87,
    "by_band": {
-    "VERY_STRONG": 20,
+    "VERY_STRONG": 21,
     "LOW": 3,
-    "STRONG": 74,
-    "ADEQUATE": 12,
-    "CAUTION": 3
+    "STRONG": 69,
+    "ADEQUATE": 9,
+    "CAUTION": 4
    },
-   "missing_qb_status": 173,
-   "qb_conflicts_open": 5,
+   "missing_qb_status": 155,
+   "qb_conflicts_open": 4,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 22,
-   "unrated_meaningful_absences": 406,
+   "games_lacking_injury_information": 21,
+   "unrated_meaningful_absences": 469,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 112,
-   "stale_evidence_records": 46,
+   "games_under_two_market_sources": 106,
+   "stale_evidence_records": 32,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "+0.1 mean reliability (85.8 → 85.9)",
-  "-18 QB statuses missing (173 → 155)",
-  "-1 open QB conflicts (5 → 4)",
-  "-1 games lacking injury information (22 → 21)",
-  "-6 games under two market sources (112 → 106)",
-  "-14 stale evidence records (46 → 32)",
-  "2 games moved STRONG → VERY STRONG"
+  "+0.1 mean reliability (85.9 → 86)",
+  "+0.5 median reliability (87 → 87.5)",
+  "-2 stale evidence records (32 → 30)",
+  "5 games moved ADEQUATE → STRONG"
  ],
  "what_degraded": [
-  "+63 unrated meaningful absences (406 → 469)",
-  "1 game moved STRONG → CAUTION"
+  "+1 games lacking injury information (21 → 22)",
+  "+2 provider failures (4 → 6)",
+  "1 game moved STRONG → ADEQUATE",
+  "provider capture_signals: HEALTHY → DOWN",
+  "provider cfb_lines: HEALTHY → DOWN"
  ],
  "why": [
-  "the slate itself changed: 0 games entered the window, 6 left it (kicked off or rolled out)",
-  "Eastern Michigan @ Massachusetts: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Ohio @ Kent State: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Bowling Green @ Miami (OH): STRONG → CAUTION (89 → 69); largest change: availability +4.6 pts; home QB EXPECTED → UNKNOWN, home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
+  "Iowa @ Washington: ADEQUATE → STRONG (79 → 82); largest change: favorite_flips 0 pts",
+  "Fresno State @ Washington State: ADEQUATE → STRONG (79 → 83); largest change: favorite_flips +0.4 pts",
+  "Charlotte @ North Texas: ADEQUATE → STRONG (79 → 89); largest change: qb_identity +3.4 pts; away QB CONFLICTED → EXPECTED",
+  "Tulsa @ Navy: STRONG → ADEQUATE (87 → 79); largest change: qb_identity -2.3 pts; home QB EXPECTED → CONFLICTED",
+  "Missouri State @ Western Kentucky: ADEQUATE → STRONG (79 → 81); largest change: qb_identity +1.6 pts",
+  "Southern Miss @ Troy: ADEQUATE → STRONG (79 → 85); largest change: qb_conflict +1 pts"
  ],
  "history": [
-  {
-   "at": "2026-09-27T17:07:13.246Z",
-   "counts": {
-    "games": 60,
-    "mean": 84.3,
-    "median": 87.5,
-    "by_band": {
-     "STRONG": 47,
-     "LOW": 3,
-     "ADEQUATE": 9,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 119,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 10,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 60,
-    "stale_evidence_records": 75,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-27T18:41:52.918Z",
    "counts": {
@@ -3904,6 +3872,31 @@
     "games_under_two_market_sources": 106,
     "stale_evidence_records": 32,
     "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-03T21:29:39.080Z",
+   "counts": {
+    "games": 106,
+    "mean": 86,
+    "median": 87.5,
+    "by_band": {
+     "VERY_STRONG": 21,
+     "LOW": 3,
+     "STRONG": 73,
+     "ADEQUATE": 5,
+     "CAUTION": 4
+    },
+    "missing_qb_status": 155,
+    "qb_conflicts_open": 4,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 469,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 106,
+    "stale_evidence_records": 30,
+    "provider_failures": 6,
     "provider_failures_attributable_to_run": 0
    }
   }

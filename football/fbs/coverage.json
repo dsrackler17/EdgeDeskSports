@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-03T19:59:31.673Z",
+ "generated_at": "2026-10-03T21:29:39.080Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -164,33 +164,12 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 576,
-   "artifact_team_game_rows": 1139,
-   "games_absorbed_with_stats": 321,
-   "team_rows_absorbed": 531,
-   "final_games_without_play_stats": 21,
-   "missing_game_ids": [
-    "401866408",
-    "401866409",
-    "401860889",
-    "401860890",
-    "401858471",
-    "401861963",
-    "401860885",
-    "401860887",
-    "401860886",
-    "401860888",
-    "401871049",
-    "401862786",
-    "401858245",
-    "401871050",
-    "401858476",
-    "401862787",
-    "401856807",
-    "401858250",
-    "401858251",
-    "401858474"
-   ],
+   "artifact_games_with_stats": 602,
+   "artifact_team_game_rows": 1191,
+   "games_absorbed_with_stats": 342,
+   "team_rows_absorbed": 568,
+   "final_games_without_play_stats": 0,
+   "missing_game_ids": [],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -236,10 +215,10 @@
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 576,
+  "games_in_artifact": 602,
   "completed_games_replayed": 342,
-  "completed_games_with_both_team_efficiency": 210,
-  "missing_count": 132,
+  "completed_games_with_both_team_efficiency": 226,
+  "missing_count": 116,
   "problem": null
  },
  "checks": [
@@ -433,18 +412,12 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 132,
+   "count": 116,
    "detail": [
-    {
-     "game_id": "401866408",
-     "game": "Sacramento State @ Eastern Michigan",
-     "home": false,
-     "away": false
-    },
     {
      "game_id": "401866409",
      "game": "UAlbany @ Buffalo",
-     "home": false,
+     "home": true,
      "away": false
     },
     {
@@ -492,6 +465,12 @@
     {
      "game_id": "401858435",
      "game": "Indiana State @ Purdue",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401856769",
+     "game": "Long Island University @ Kansas",
      "home": true,
      "away": false
     }
