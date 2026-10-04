@@ -47,6 +47,13 @@ section('sample states are product labels with fixed boundaries');
   chk('50 → early signal', st(50) === 'EARLY_SIGNAL' && st(199) === 'EARLY_SIGNAL');
   chk('200 → moderate evidence ("Developing evidence")', st(200) === 'MODERATE_EVIDENCE' && V.sampleState(200).label === 'Developing evidence' && st(499) === 'MODERATE_EVIDENCE');
   chk('500 → stronger evidence ("Meaningful sample")', st(500) === 'STRONGER_EVIDENCE' && V.sampleState(500).label === 'Meaningful sample');
+  /* rows of one game and market share one outcome (audit 2026-10-03) */
+  const same = Array.from({ length: 30 }, (_, i) => V.row({ id: 'r' + i, mode: 'LIVE', game_id: 'G' + (i % 3), market_type: 'spread', decision: 'PASS', odds: -110, predicted: 0.55, result: i % 2 ? 'win' : 'loss' }));
+  chk('rows of the same game and market count once', V.independentN(same) === 3 && V.summarize(same).independent_n === 3 && V.summarize(same).sample.n === 3, V.summarize(same).sample);
+  chk('…the text says how many games are behind the rows', /\(n=30\) over 3 games/.test(V.summarize(same).text), V.summarize(same).text);
+  chk('…a different market of the same game is its own outcome', V.independentN(same.concat([V.row({ mode: 'LIVE', game_id: 'G0', market_type: 'total', result: 'win' })])) === 4);
+  chk('…and a row with no game id counts as its own', V.independentN([V.row({ mode: 'LIVE', result: 'win' }), V.row({ mode: 'LIVE', result: 'loss' })]) === 2);
+  chk('…so repeated checkpoints never license a recalibration', V.calibration(Array.from({ length: 600 }, (_, i) => V.row({ id: 'c' + i, mode: 'LIVE', game_id: 'G' + (i % 19), market_type: 'spread', predicted: 0.55, result: i % 2 ? 'win' : 'loss' }))).recalibration === 'NOT_ALLOWED');
   chk('no recalibration below 200; at most a proposal above', V.sampleState(199).recalibration === 'NOT_ALLOWED' && V.sampleState(200).recalibration === 'PROPOSAL_ONLY' && V.sampleState(5000).recalibration === 'PROPOSAL_ONLY');
   chk('a percentage is never printed without n', V.withN(0.571, 42) === '57.1% (n=42)' && V.withN(null, 0) === '— (n=0)');
   chk('a state says it is not a verdict', /not a scientific verdict/.test(V.sampleState(10).note));
@@ -201,10 +208,18 @@ section('the committed ledgers read end to end');
   chk('its decision time is the checkpoint’s, so the live rows are pregame', rep.modes.LIVE_RECONSTRUCTED.leakage.ok && (!rep.modes.LIVE || rep.modes.LIVE.leakage.ok),
     rep.modes.LIVE_RECONSTRUCTED.leakage.violations.concat(rep.modes.LIVE ? rep.modes.LIVE.leakage.violations : []).slice(0, 3));
   /* No sample state licenses an automatic recalibration: past 200 settled the
-     most it allows is a PROPOSAL (the Lab's live sample passed 500 on 2026-10-03,
-     where this check had assumed it would still read NOT_ALLOWED). */
+     most it allows is a PROPOSAL, and the state must match the sample's size. */
   chk('the Lab’s live sample never licenses an automatic recalibration, and its state matches its size', !rep.modes.LIVE || (['NOT_ALLOWED', 'PROPOSAL_ONLY'].indexOf(rep.modes.LIVE.all.sample.recalibration) >= 0
     && rep.modes.LIVE.all.sample.recalibration === V.sampleState(rep.modes.LIVE.all.sample.n).recalibration), rep.modes.LIVE && rep.modes.LIVE.all.sample);
+  /* …and its size is GAMES (audit 2026-10-03): the Lab's first 600 live rows
+     were 19 games (3 model versions × ~10 checkpoints each) and read
+     "n=550 · Meaningful sample", a proposal license on 19 results */
+  const liveGames = new Set(L.filter((x) => x.mode === 'LIVE' && (x.result === 'win' || x.result === 'loss')).map((x) => x.game_id)).size;
+  chk('the Lab’s live sample state counts games, never model × checkpoint rows', !rep.modes.LIVE
+    || (rep.modes.LIVE.all.independent_n === liveGames && rep.modes.LIVE.all.sample.n === liveGames && rep.modes.LIVE.all.decided >= liveGames),
+    rep.modes.LIVE && { independent_n: rep.modes.LIVE.all.independent_n, games: liveGames, decided: rep.modes.LIVE.all.decided });
+  chk('and its calibration license reads the same games', !rep.modes.LIVE || rep.modes.LIVE.calibration.sample.n <= liveGames,
+    rep.modes.LIVE && rep.modes.LIVE.calibration.sample);
   chk('the Lab’s side-stated line is kept (AWAY 8.5 stays +8.5)', L.some((x) => x.side === 'away' && x.line === 8.5));
   chk('every Lab figure is labelled too early (n < 50 settled)', rep.modes.LIVE_RECONSTRUCTED.all.sample.key === 'DESCRIPTIVE_ONLY');
 }

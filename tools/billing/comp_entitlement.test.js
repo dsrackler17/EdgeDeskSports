@@ -399,30 +399,61 @@ function appCtx(opts) {
   /* ====================================================================== */
   /* 5. THE LANDING PAGE — the only page that sends anyone to Stripe        */
   /* ====================================================================== */
-  function landCtx(row, ok) {
+  /* The landing page no longer decides access itself: edSubState() asks
+     lib/edgedesk_access.js, which asks public.my_billing_access(). Driven here
+     two ways — the database answering (mode 'rpc'), and the deploy window
+     before billing_hardening.sql, when the RPC is a 404 and the library reads
+     the row and applies the same rule itself (mode 'legacy'). */
+  const ACCESS_LIB = require(path.join(ROOT, 'lib', 'edgedesk_access.js'));
+  const ACCESS_SRC = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_access.js'), 'utf8');
+  function landCtx(row, ok, mode, withLib) {
     const c = {
-      console, JSON, String, Array, Promise, Error,
+      console, JSON, String, Array, Promise, Error, Date, isFinite,
       SB_URL: 'https://x.supabase.co', SB_KEY: 'anon',
       edSession: () => ({ access_token: 't' }),
       ASKED: [],
-      fetch: async (u) => { c.ASKED.push(String(u));
-        return { ok: ok !== false, json: async () => (row ? [row] : []) }; },
+      fetch: async (u) => {
+        u = String(u); c.ASKED.push(u);
+        if (ok === false) return { ok: false, status: 503, json: async () => ({}) };
+        if (/\/rpc\/my_billing_access$/.test(u)) {
+          if (mode !== 'rpc') return { ok: false, status: 404, json: async () => ({ code: 'PGRST202' }) };
+          const has = ACCESS_LIB.grants(row);
+          return { ok: true, status: 200, json: async () => ({ signed_in: true, has_access: has, subscription: row,
+            offer: ACCESS_LIB.offerFor(row), reason: row ? row.status : 'no_subscription' }) };
+        }
+        return { ok: true, status: 200, json: async () => (row ? [row] : []) };
+      },
     };
     c.window = c;
     vm.createContext(c);
+    /* loaded the way the page loads it, so its fetch is the page's */
+    if (withLib !== false) vm.runInContext(ACCESS_SRC, c, { filename: 'lib/edgedesk_access.js' });
     vm.runInContext(LAND_BLOCK, c, { filename: 'index.html:comp' });
     return c;
   }
-  {
-    const c = landCtx(COMP);
-    eq('the landing page reads a comp as paid', await c.edSubState(), 'yes');
-    chk('because it asks for price_id, not status alone',
-      /select=status,price_id/.test(c.ASKED[0]), c.ASKED[0]);
+  for (const mode of ['rpc', 'legacy']) {
+    const c = landCtx(COMP, true, mode);
+    eq('[' + mode + '] the landing page reads a comp as paid', await c.edSubState(), 'yes');
+    if (mode === 'legacy') {
+      chk('[legacy] because the fallback read asks for price_id, not status alone',
+        c.ASKED.some((u) => /subscriptions\?select=status,price_id/.test(u)), c.ASKED);
+    } else {
+      chk('[rpc] and it asks the database decision, not the row', /\/rpc\/my_billing_access$/.test(c.ASKED[0]), c.ASKED);
+    }
+    eq('[' + mode + '] an ordinary subscriber is still paid', await landCtx(PAID, true, mode).edSubState(), 'yes');
+    eq('[' + mode + '] a cancelled account still is not', await landCtx(CANCELED, true, mode).edSubState(), 'no');
+    eq('[' + mode + '] no row is not', await landCtx(null, true, mode).edSubState(), 'no');
+    eq('[' + mode + '] a failed read is unknown, never "no"', await landCtx(COMP, false, mode).edSubState(), 'unknown');
+    /* THE PURCHASE LOOP. This page used to read ANY trialing row as paid, so an
+       expired comp_trial was told "you already have access" here and locked
+       out by the paywall — and could never buy. */
+    const EXPIRED_COMP_TRIAL = { status: 'trialing', price_id: 'comp_trial', cancel_at_period_end: true,
+      current_period_end: '2020-01-01T00:00:00Z', stripe_customer_id: null };
+    eq('[' + mode + '] an EXPIRED comp_trial is not paid, so it can buy', await landCtx(EXPIRED_COMP_TRIAL, true, mode).edSubState(), 'no');
+    eq('[' + mode + '] and a lapsed Stripe row is not paid either', await landCtx(LAPSED, true, mode).edSubState(), 'no');
   }
-  eq('an ordinary subscriber is still paid', await landCtx(PAID).edSubState(), 'yes');
-  eq('a cancelled account still is not', await landCtx(CANCELED).edSubState(), 'no');
-  eq('no row is not', await landCtx(null).edSubState(), 'no');
-  eq('a failed read is unknown, never "no"', await landCtx(COMP, false).edSubState(), 'unknown');
+  eq('without the access library the page never claims paid OR unpaid — the server decides at checkout',
+    await landCtx(PAID, true, 'rpc', false).edSubState(), 'unknown');
 
   /* The two gates in front of Stripe, asserted on the shipped source: driving
      them needs the whole landing DOM, but their ORDER is the whole point. */
@@ -448,11 +479,14 @@ function appCtx(opts) {
   /* ====================================================================== */
   /* 6. THE WEBHOOK MUST NOT WRITE OVER A COMP                              */
   /* ====================================================================== */
-  const iRead = HOOK.indexOf("subscriptions?select=last_event_at");
+  const iRead = HOOK.indexOf("subscriptions?select=*&user_id=eq.");
   const iComp = HOOK.indexOf('COMP_PRICE_IDS.indexOf(String(existing.price_id');
-  const iWrite = HOOK.indexOf("D.upsert('subscriptions'");
-  chk('the webhook reads price_id off the existing row',
-    iRead > 0 && /select=last_event_at,status,price_id/.test(HOOK), HOOK.slice(iRead, iRead + 90));
+  /* the first thing processEvent could write with: the live reconciliation,
+     or (when Stripe cannot be asked) the event body through the same writer */
+  const iWrite = Math.min.apply(null, [HOOK.indexOf('result = await reconcileUser('),
+    HOOK.indexOf("D.rpc('billing_apply_subscription_state'")].filter((i) => i > 0));
+  chk('the webhook reads price_id off the existing row (the whole row)',
+    iRead > 0 && iRead < iComp, HOOK.slice(iRead, iRead + 90));
   chk('it refuses to apply an event to a comped row', iComp > 0);
   chk('and it refuses BEFORE the write, not after it',
     iComp > 0 && iWrite > 0 && iComp < iWrite, 'guard=' + iComp + ' write=' + iWrite);
@@ -471,6 +505,12 @@ function appCtx(opts) {
      sale that does not exist. */
   chk('and the referral attribution is behind the comp guard, so a comp is never credited to a code',
     iComp > 0 && HOOK.indexOf('let referral = null;') > iComp);
+  /* and the one SQL writer refuses it too, whoever calls it (the reconciler,
+     the success page, the schedule) — tools/billing/billing_flow.test.js
+     drives that against the real function */
+  const HARD = fs.readFileSync(path.join(ROOT, 'supabase', 'billing_hardening.sql'), 'utf8');
+  chk('billing_apply_subscription_state refuses to write over an owner_comp row',
+    /if e\.status = 'active' and coalesce\(e\.price_id, ''\) = 'owner_comp' then\s*return jsonb_build_object\('applied', false, 'reason', 'comp'/.test(HARD));
 
   /* ====================================================================== */
   /* 7. THE COLUMN HAS TO EXIST                                             */

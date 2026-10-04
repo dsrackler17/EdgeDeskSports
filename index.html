@@ -1154,12 +1154,13 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   </div>
 </footer>
 
-<!-- Shown only when a visitor returns from Stripe. The payment link's success
-     URL is https://edgedesksports.com/?checkout=success. -->
+<!-- Shown only when a visitor returns from Stripe. The success URL is
+     https://edgedesksports.com/?checkout=success&session_id={CHECKOUT_SESSION_ID}
+     (create_checkout_session), or ?checkout=success from a Payment Link. -->
 <div class="retn" id="retnBox" role="dialog" aria-modal="true" aria-live="polite">
   <div class="retn-in">
-    <h3 id="retnH">Trial started. Opening your terminal&hellip;</h3>
-    <p id="retnP">Stripe has confirmed your card and <b>charged nothing</b>. We are waiting for it to open your account &mdash; this usually takes a few seconds.</p>
+    <h3 id="retnH">Payment received. Finalizing your EdgeDesk access&hellip;</h3>
+    <p id="retnP">We are confirming your checkout with Stripe and opening your account &mdash; this usually takes a few seconds.</p>
     <div class="pbar2"><i id="retnBar"></i></div>
     <p class="mono" style="font-size:11px;color:var(--faint)" id="retnFoot">Do not close this tab.</p>
     <div class="cta" id="retnCta" style="justify-content:center;margin-top:18px;display:none"></div>
@@ -1228,6 +1229,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
      EdgeDesk Games cannot drift apart on any of the three. -->
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
+<!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
+     functions that change it: create_checkout_session, sync_subscription. -->
+<script src="/lib/edgedesk_access.js?v=20261004a"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
      board's view model (supabase/home_board.sql + football/home/board.json) -->
@@ -1729,6 +1733,8 @@ async function confirmArl(){
   var cb=document.getElementById('arlAgree');
   var msg=document.getElementById('arlMsg');
   if(!cb.checked){msg.className='auth-msg err';msg.textContent='Please confirm the automatic renewal terms to continue.';return;}
+  /* the server checks this token, so an expired one is renewed first */
+  if(!sessionValid()) await edRefresh();
   var u=edUserFromSession(), s=edSession();
   if(!u||!u.id||!s){msg.className='auth-msg err';msg.textContent='Session expired. Please log in again.';return;}
 
@@ -1742,7 +1748,8 @@ async function confirmArl(){
 
      Only a definite 'yes' stops it. 'unknown' is a read that failed, and
      refusing to sell to somebody because the database blinked is worse than
-     the risk it would avoid. */
+     the risk it would avoid. (create_checkout_session asks Stripe again
+     before it sells anything, so 'unknown' cannot become a double charge.) */
   var already=await edSubState();
   if(already==='yes'){
     msg.className='auth-msg ok';
@@ -1753,19 +1760,73 @@ async function confirmArl(){
 
   /* NO CHECKOUT, NO CONSENT RECORD. A consent is a legal statement that this
      person agreed to be billed on these terms, and one must never be written
-     for a checkout this page cannot open: the pricing file missing, or its
-     link empty, mistyped or one of the retired $79.99 links. */
-  if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS){
+     for a checkout this page cannot open: the pricing file missing, or no way
+     to check out at all (no server checkout AND no valid payment link). */
+  var PRICE_CENTS=EDP?EDP.PRICE_CENTS:0;
+  var stopped=function(){
     msg.className='auth-msg err';
     msg.innerHTML='<b>Checkout is being updated</b>, so we stopped before recording anything or taking any payment. <b>Nothing has been charged.</b> '+
       'Email <a href="mailto:support@edgedesksports.com?subject='+encodeURIComponent('Start my trial')+'" style="color:var(--obs);font-weight:700">support@edgedesksports.com</a> and we will get you started.';
-    try{console.error('Checkout is not configured: lib/edgedesk_pricing.js CHECKOUT_LINK is empty, retired or not a https://buy.stripe.com/... payment link.');}catch(_){}
+  };
+  if(!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS||!PRICE_CENTS||(!window.EDAccess&&!STRIPE_LINK)){
+    stopped();
+    try{console.error('Checkout is not configured: lib/edgedesk_pricing.js or lib/edgedesk_access.js did not load, and CHECKOUT_LINK is empty, retired or not a https://buy.stripe.com/... payment link.');}catch(_){}
     return;
   }
 
   var btn=document.getElementById('arlSubmit'); btn.disabled=true; var old=btn.textContent; btn.textContent='…';
+  msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
+  var promo=(ED_OFFER&&ED_OFFER.checkout_code&&/^[A-Z0-9_.-]{1,64}$/.test(ED_OFFER.checkout_code))?ED_OFFER.checkout_code:null;
+
+  /* THE SERVER CREATES THE CHECKOUT. create_checkout_session takes the account
+     from the signed-in token — nothing this page sends can name another — puts
+     it on the Stripe session, the subscription AND the customer, refuses an
+     account Stripe already has a live subscription for, and refuses a Stripe
+     price that is not the figure on this screen. Apple Pay, Google Pay, Link
+     and cards all go through that same session.
+
+     The Payment Link below is ONLY the fallback for the deploy window, when the
+     function is not there yet: nothing was created, so nothing is duplicated. */
+  var url='';
+  if(window.EDAccess){
+    var co=await EDAccess.startCheckout({url:SB_URL,key:SB_KEY,token:function(){var x=edSession();return x&&x.access_token;}},
+      {kind:'trial',price_cents:PRICE_CENTS,trial_days:TRIAL_DAYS,consent_version:CONSENT_VERSION,promo_code:promo||undefined});
+    if(co.ok){ url=co.url; }
+    else if(co.reason==='already_entitled'){
+      msg.className='auth-msg ok';
+      msg.innerHTML='<b>This account already has full access</b> — there is nothing to pay for. Opening the terminal…';
+      setTimeout(function(){window.location.href=APP_URL;},700);
+      return;
+    }
+    else if(!co.fallbackOk){
+      msg.className='auth-msg err';
+      msg.innerHTML=esc(co.message||'Checkout could not be started.')+' <b>Nothing has been charged.</b>'+
+        (co.ref?' <span class="mono" style="font-size:11px">Ref '+esc(co.ref)+'</span>':'');
+      btn.disabled=false; btn.textContent=old; return;
+    }
+  }
+  if(!url){
+    /* Payment links get rotated and deactivated, so a stale or mistyped one is a
+       routine failure rather than an exotic one. Refuse anything that is not a
+       Stripe checkout link instead of navigating a paying customer into it. */
+    if(!STRIPE_LINK||!/^https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+$/.test(STRIPE_LINK)){
+      stopped();
+      try{console.error('Server checkout unavailable and STRIPE_LINK is not a valid https://buy.stripe.com/... payment link. Got: '+STRIPE_LINK);}catch(_){}
+      btn.disabled=false; btn.textContent=old; return;
+    }
+    /* UUID is safe for client_reference_id. Email is prefilled separately (and the
+       customer may edit it at checkout, which is exactly why it is never the key). */
+    url=STRIPE_LINK+'?client_reference_id='+encodeURIComponent(u.id);
+    if(u.email)url+='&prefilled_email='+encodeURIComponent(u.email);
+    /* a creator campaign's code travels to checkout; Stripe decides whether
+       and how much it discounts (affiliate_offer only names a code Stripe has) */
+    if(promo)url+='&prefilled_promo_code='+encodeURIComponent(promo);
+  }
+
   /* Record the consent BEFORE sending them to Stripe, storing the exact terms
-     displayed on screen. ARL requires the record; retain it for 3 years. */
+     displayed on screen. ARL requires the record; retain it for 3 years. A
+     checkout session was created above but nothing is charged until the
+     customer completes it, and an unused one simply expires. */
   try{ window.EDPricing&&EDPricing.apply(document.getElementById('arlModal')); }catch(_){}
   var offer=document.getElementById('arlTerms').innerText||document.getElementById('arlTerms').textContent||'';
   try{
@@ -1792,7 +1853,7 @@ async function confirmArl(){
       var t=''; try{ t=await r.text(); }catch(_){}
       try{ console.error('billing_consents write failed', r.status, String(t).slice(0,300)); }catch(_){}
       msg.className='auth-msg err';
-      msg.innerHTML='<b>Your account is created and you are signed in</b> \u2014 but we could not record your renewal consent, '+
+      msg.innerHTML='<b>Your account is created and you are signed in</b> — but we could not record your renewal consent, '+
         'so we stopped before taking any payment. <b>Nothing has been charged.</b> '+
         'Email <a href="mailto:'+'support@edgedesksports.com?subject='+encodeURIComponent('Trial blocked at consent step')+'" style="color:var(--obs);font-weight:700">support@edgedesksports.com</a> '+
         'and we will finish it by hand, or '+
@@ -1803,7 +1864,7 @@ async function confirmArl(){
     try{ console.error('billing_consents write threw', e); }catch(_){}
     msg.className='auth-msg err';
     msg.innerHTML='<b>Your account is created and you are signed in.</b> We could not reach EdgeDesk to record your renewal consent, '+
-      'so we stopped before taking any payment \u2014 <b>nothing has been charged.</b> Check your connection and try again.';
+      'so we stopped before taking any payment — <b>nothing has been charged.</b> Check your connection and try again.';
     btn.disabled=false; btn.textContent=old; return;
   }
 
@@ -1812,27 +1873,9 @@ async function confirmArl(){
      moment before money changes hands. */
   attrRecord(u,s.access_token);
 
-  /* Payment links get rotated and deactivated, so a stale or mistyped one is a
-     routine failure rather than an exotic one. Refuse anything that is not a
-     Stripe checkout link instead of navigating a paying customer into it. */
-  if(!/^https:\/\/buy\.stripe\.com\/[A-Za-z0-9]+$/.test(STRIPE_LINK)){
-    msg.className='auth-msg err';
-    msg.textContent='Checkout is misconfigured and payment was stopped before anything was charged. Please email support@edgedesksports.com.';
-    try{console.error('STRIPE_LINK is not a valid https://buy.stripe.com/... payment link. Got: '+STRIPE_LINK);}catch(_){}
-    btn.disabled=false; btn.textContent=old; return;
-  }
-
-  /* UUID is safe for client_reference_id. Email is prefilled separately (and the
-     customer may edit it at checkout, which is exactly why it is never the key). */
-  var url=STRIPE_LINK+'?client_reference_id='+encodeURIComponent(u.id);
-  if(u.email)url+='&prefilled_email='+encodeURIComponent(u.email);
-  /* a creator campaign's code travels to checkout; Stripe decides whether
-     and how much it discounts (affiliate_offer only names a code Stripe has) */
-  if(ED_OFFER&&ED_OFFER.checkout_code&&/^[A-Z0-9_.-]{1,64}$/.test(ED_OFFER.checkout_code))url+='&prefilled_promo_code='+encodeURIComponent(ED_OFFER.checkout_code);
-  msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
   /* the funnel's checkout step, sent with keepalive so the navigation below
      cannot cancel it; it carries the plan, never anything personal */
-  edFunnel('checkout_started',{plan:(EDP&&EDP.PLAN_NAME)||'',price:PRICE_DISPLAY,promo:!!(ED_OFFER&&ED_OFFER.checkout_code)},{now:true,keepalive:true});
+  edFunnel('checkout_started',{plan:(EDP&&EDP.PLAN_NAME)||'',price:PRICE_DISPLAY,promo:!!promo},{now:true,keepalive:true});
   window.location.href=url;
 }
 
@@ -1971,7 +2014,11 @@ async function submitAuth(){
       if(authMode==='signup'){
         msg('Account created — next, start your '+TRIAL_DAYS+' free days.','ok');
         setTimeout(function(){closeAuth();openArl();},400);return;}
-      msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL;},700);
+      /* Somebody who came back from Stripe signed out (another browser, an
+         in-app browser, a cleared session) is finishing a payment: the app
+         confirms it with Stripe rather than showing them a paywall. */
+      var fin=false;try{fin=localStorage.getItem('edgedesk_finalize')==='1';localStorage.removeItem('edgedesk_finalize');}catch(_){}
+      msg('Signed in, opening your scanner…','ok');setTimeout(function(){window.location.href=APP_URL+(fin?(APP_URL.indexOf('?')>=0?'&':'?')+'checkout=success':'');},700);
     }else{
       /* No token means email confirmation is on for this project. Two very
          different things arrive here and used to be reported identically. */
@@ -1984,7 +2031,16 @@ async function submitAuth(){
         showExisting(email);
         btn.disabled=false;btn.textContent=old;return;
       }
-      if(authMode==='signup')setPendingSub(true);
+      if(authMode==='signup'){
+        setPendingSub(true);
+        /* A SESSION FROM ANOTHER ACCOUNT MUST NOT SURVIVE THIS. Signup with
+           confirmation on returns no token, so whatever account was signed in on
+           this device before stayed signed in — and the next "Start free trial"
+           sent THAT account to checkout, so the payment landed on it and the
+           account just created had no subscription at all. The new account
+           signs in through the confirmation link; until then nobody is. */
+        try{localStorage.removeItem('edgedesk_session');}catch(_){}
+      }
       msg(authMode==='signup'
         ? 'Account created. Confirm your email ('+email+') — the link signs you in and picks checkout up where you left off. Check spam if it is not there in a minute.'
         : 'Check your email to confirm, then log in.','ok');
@@ -2017,21 +2073,31 @@ async function attrRecord(u,token){
 
 /* ==========================================================================
    CHECKOUT RETURN
-   Stripe redirects here after payment. Without this, a paying customer lands on
-   a marketing page whose buttons still say "Sign up" while the webhook is in
-   flight — which reads as "I paid and got nothing", and at a hundred customers
-   that single gap is most of the support inbox. Poll the subscription until it
-   activates, then forward. Never claims failure just because polling ran out:
-   the webhook can land after we stop looking, and telling a paying customer
-   their payment did not work is worse than telling them to wait.
+   Stripe redirects here after payment. THE REDIRECT PROVES NOTHING — it can be
+   revisited, refreshed, opened in another browser, or never happen at all (a
+   closed tab, an in-app browser that hands Apple Pay to Safari). So it grants
+   nothing. It asks the server, which asks Stripe:
+
+     1. "Payment received. Finalizing your EdgeDesk access…"
+     2. read the access decision; ask sync_subscription to reconcile with Stripe
+        (with the session id from the success URL when there is one)
+     3. retry with growing gaps for about half a minute — bounded, never a loop
+     4. access confirmed -> open EdgeDesk
+     5. still not confirmed -> say the payment is safe, give a reference the
+        support inbox can look up in one step, and say plainly NOT to make
+        another account or pay again. The webhook and the scheduled sweep keep
+        working after this page gives up, so this is never the last chance.
    ========================================================================== */
-var RETN_TRIES=20, RETN_EVERY=2000;
 function retnEl(id){return document.getElementById(id);}
+function checkoutQuery(){ try{ return new URLSearchParams(location.search); }catch(e){ return null; } }
 function isCheckoutReturn(){
-  try{
-    var q=new URLSearchParams(location.search);
-    return q.get('checkout')==='success'||q.get('success')==='true'||!!q.get('session_id');
-  }catch(e){ return false; }
+  var q=checkoutQuery(); if(!q) return false;
+  return q.get('checkout')==='success'||q.get('success')==='true'||!!q.get('session_id');
+}
+function isCheckoutCancel(){ var q=checkoutQuery(); return !!(q&&q.get('checkout')==='cancel'); }
+function checkoutSessionId(){
+  var q=checkoutQuery(), v=q?String(q.get('session_id')||''):'';
+  return /^cs_(live|test)_[A-Za-z0-9]+$/.test(v)?v:null;
 }
 function scrubCheckoutParams(){
   try{
@@ -2040,47 +2106,78 @@ function scrubCheckoutParams(){
     history.replaceState({},'',u.pathname+(u.search||'')+(u.hash||''));
   }catch(e){}
 }
+function retnSignedOut(ref){
+  /* Paid, but this browser is not signed in (another browser, an in-app
+     browser, a cleared session). The payment attaches to the ACCOUNT, not to
+     this tab: sign in and the app finishes it. */
+  try{localStorage.setItem('edgedesk_finalize','1');}catch(_){}
+  retnPanel('Payment received. Sign in to finish.',
+    'Your checkout went through. Log in with the <b>same account</b> you started it from and EdgeDesk opens on its own. <b>Do not create a new account or pay again</b> &mdash; nothing is lost.',
+    ref?('Reference <span class="mono">'+esc(ref)+'</span>'):'',
+    '<button class="btn primary" onclick="retnEl(\'retnBox\').classList.remove(\'on\');openAuth(\'login\')">Log in</button>');
+}
+function retnPending(ref,sid){
+  var subj=encodeURIComponent('Paid but EdgeDesk not active — '+(ref||''));
+  retnPanel('Your payment is safe. Access is still being confirmed.',
+    'Stripe has your checkout, but we have not been able to confirm your EdgeDesk access yet. This is almost always a short delay, and it keeps being checked after you leave. <b>Do not create a new account or start another checkout</b> &mdash; you will not be charged twice for this one.',
+    'Reference <b class="mono">'+esc(ref||'')+'</b> &mdash; if this persists, email <a class="lnk" href="mailto:support@edgedesksports.com?subject='+subj+'">support@edgedesksports.com</a> with it and it is fixed in one step.',
+    '<button class="btn primary" onclick="edFinalizeCheckout('+(sid?'\''+esc(sid)+'\'':'null')+','+(ref?'\''+esc(ref)+'\'':'null')+')">Check again</button>'+
+    '<button class="btn ghost" onclick="window.location.href=APP_URL">Open EdgeDesk</button>');
+}
+var RETN_RUNNING=false;
+async function edFinalizeCheckout(sid,ref){
+  if(RETN_RUNNING) return;
+  RETN_RUNNING=true;
+  try{
+    retnPanel('Payment received. Finalizing your EdgeDesk access…',
+      'We are confirming your checkout with Stripe and opening your account &mdash; this usually takes a few seconds.',
+      'Please keep this tab open.','');
+    if(!sessionValid()) await edRefresh();
+    if(!sessionValid()){ retnSignedOut(ref); return; }
+    if(!window.EDAccess){ retnPending(ref,sid); return; }
+    var res=await EDAccess.finalize({url:SB_URL,key:SB_KEY,token:function(){var x=edSession();return x&&x.access_token;}},
+      {sessionId:sid,ref:ref||undefined,onProgress:function(i,n){var bar=retnEl('retnBar'); if(bar) bar.style.width=Math.round(i/n*100)+'%';}});
+    if(res.state==='active'){
+      var trial=res.access&&(res.access.reason==='trialing'||(res.access.subscription&&res.access.subscription.status==='trialing'));
+      retnPanel('You’re in. Opening EdgeDesk…',
+        trial?('Your trial is active and nothing has been charged. Your card is billed when the trial ends unless you cancel, and we email you before that happens.')
+             :'Your subscription is active.','','');
+      var bar=retnEl('retnBar'); if(bar) bar.style.width='100%';
+      setTimeout(function(){ window.location.href=APP_URL; },700);
+      return;
+    }
+    if(res.state==='signed_out'){ retnSignedOut(res.ref); return; }
+    retnPending(res.ref,sid);
+  }finally{ RETN_RUNNING=false; }
+}
 async function handleCheckoutReturn(){
+  if(isCheckoutCancel()){
+    scrubCheckoutParams();
+    retnPanel('Checkout cancelled','Nothing was charged. You can start again whenever you like.','',
+      '<button class="btn ghost" onclick="retnEl(\'retnBox\').classList.remove(\'on\')">Close</button>');
+    return true;
+  }
   if(!isCheckoutReturn()) return false;
+  var sid=checkoutSessionId();          /* read before the URL is cleaned */
   scrubCheckoutParams();
   setPendingSub(false);
-  var box=retnEl('retnBox'); if(box) box.classList.add('on');
-
-  /* An expired token here is routine — checkout can take a while. */
-  if(!sessionValid()) await edRefresh();
-
-  for(var i=0;i<RETN_TRIES;i++){
-    var bar=retnEl('retnBar'); if(bar) bar.style.width=Math.round(((i+1)/RETN_TRIES)*100)+'%';
-    var st=await edSubState();
-    if(st==='yes'){
-      var h=retnEl('retnH'), pp=retnEl('retnP');
-      if(h) h.textContent='You’re in. Opening the terminal…';
-      if(pp) pp.textContent='Trial active — nothing charged. Your card is billed '+(TRIAL_DAYS?'in '+TRIAL_DAYS+' days':'when the trial ends')+' unless you cancel, and we will email you before that happens.';
-      setTimeout(function(){ window.location.href=APP_URL; },700);
-      return true;
-    }
-    await new Promise(function(r){ setTimeout(r,RETN_EVERY); });
-  }
-  /* Timed out waiting. Say what is true and give them somewhere to go. */
-  var h2=retnEl('retnH'), p2=retnEl('retnP'), f2=retnEl('retnFoot'), c2=retnEl('retnCta');
-  if(h2) h2.textContent='Trial confirmed. Activation is still catching up.';
-  if(p2) p2.innerHTML='Stripe accepted your card and <b>charged nothing</b> &mdash; nothing is lost. Activation normally lands within a minute. Try the terminal now, or re-check in a moment.';
-  if(f2) f2.innerHTML='Still locked out after five minutes? Email <a class="lnk" href="mailto:support@edgedesksports.com?subject=Trial%20started%20but%20not%20activated">support@edgedesksports.com</a> with the email you signed up under and it gets fixed by hand.';
-  if(c2){
-    c2.style.display='';
-    c2.innerHTML='<button class="btn primary" onclick="window.location.href=APP_URL">Open the terminal</button>'+
-                 '<button class="btn ghost" onclick="location.reload()">Re-check</button>';
-  }
+  await edFinalizeCheckout(sid, window.EDAccess?EDAccess.makeRef():null);
   return true;
 }
 
 /* Self-serve billing re-check for the support block, so "I paid and it says
-   activate" resolves itself instead of arriving in the inbox. */
+   activate" resolves itself instead of arriving in the inbox. It asks the
+   server to reconcile with Stripe, not just to re-read the row. */
 async function edRecheckSub(btn){
   var old=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='checking…';}
+  if(btn){btn.disabled=true;btn.textContent='checking with Stripe…';}
   if(!sessionValid()) await edRefresh();
   var st=await edSubState();
+  if(st!=='yes'&&window.EDAccess&&sessionValid()){
+    var r=await EDAccess.sync({url:SB_URL,key:SB_KEY,token:function(){var x=edSession();return x&&x.access_token;}},{source:'self'});
+    if(r.body&&r.body.has_access) st='yes';
+    else if(r.ok) st='no';
+  }
   if(btn){
     btn.disabled=false;
     if(st==='yes'){ btn.textContent='Active — opening the terminal…'; setTimeout(function(){window.location.href=APP_URL;},600); }
@@ -2112,20 +2209,26 @@ function subIsComp(sub){
    'yes' | 'no' | 'unknown'. Unknown means the read failed — treated as neither,
    so a database hiccup never tells a paying subscriber they are locked out. The
    real gate is RLS plus the paywall in app.html; this only decides what the
-   buttons say. */
+   buttons say.
+
+   THE DECISION IS NOT MADE HERE. It is public.my_billing_access(), through
+   lib/edgedesk_access.js — the same answer app.html's paywall gets. This page
+   used to decide for itself, and read ANY trialing row as paid: an expired
+   comp_trial was told "you already have access" here and locked out there, and
+   could not buy at all. Without the access library this answers 'unknown',
+   which never blocks a purchase — create_checkout_session refuses a second
+   subscription itself, by asking Stripe. */
 async function edSubState(){
   var s=edSession(); if(!s||!s.access_token)return 'no';
+  if(!window.EDAccess)return 'unknown';
   try{
-    /* price_id, not status alone: without it a comp is indistinguishable
-       from an ordinary active subscription and subIsComp() can never fire. */
-    var r=await fetch(SB_URL+'/rest/v1/subscriptions?select=status,price_id&limit=1',
-      {headers:{apikey:SB_KEY,authorization:'Bearer '+s.access_token}});
-    if(!r.ok)return 'unknown';
-    var rows=await r.json();
-    var sub=(rows&&rows[0])||null;
-    if(subIsComp(sub))return 'yes';
-    var st=(sub&&sub.status)||'';
-    return (st==='active'||st==='trialing')?'yes':'no';
+    var a=await EDAccess.read({url:SB_URL,key:SB_KEY,token:s.access_token});
+    if(!a.ok)return 'unknown';
+    window.ED_ACCESS=a.access;
+    /* subIsComp() still names a comp for the buttons below; the database's
+       has_access already counts one as paid. */
+    if(subIsComp(a.access.subscription))return 'yes';
+    return a.access.has_access?'yes':'no';
   }catch(e){ return 'unknown'; }
 }
 

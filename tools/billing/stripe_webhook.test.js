@@ -46,7 +46,8 @@ const pure = SRC.slice(0, cut);
 const api = {};
 new Function('module', 'exports', 'crypto', 'TextEncoder',
   pure + '\n;module.exports={parseSigHeader,timingSafeEqual,hmacHex,verifySignature,' +
-  'periodEnd,readEvent,shouldApply,idOf,HANDLED,normCode,readDiscount,hasDiscount,BUILD};'
+  'periodEnd,readEvent,idOf,HANDLED,ALERT_ONLY,normCode,readDiscount,hasDiscount,BUILD,' +
+  'metadataUserId,priceIdOf,CORE_VERSION};'
 )(api, api, crypto.webcrypto, TextEncoder);
 const W = api.exports || api;
 
@@ -163,13 +164,20 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
   /* ====================================================================== */
   /* 3. OUT-OF-ORDER DELIVERY CANNOT RESURRECT A CANCELLED SUBSCRIPTION     */
   /* ====================================================================== */
-  const older = '2026-09-01T00:00:00.000Z', newer = '2026-09-02T00:00:00.000Z';
-  chk('a first event for a row applies', W.shouldApply(null, newer) === true);
-  chk('a newer event applies over an older one', W.shouldApply(older, newer) === true);
-  chk('an OLDER event does not overwrite a newer one', W.shouldApply(newer, older) === false);
-  chk('a redelivery of the same instant still applies, so a retry is not lost',
-    W.shouldApply(newer, newer) === true);
-  chk('an event with no timestamp is never applied', W.shouldApply(older, null) === false);
+  /* The ordering guard used to be a read in this function followed by a write
+     — two deliveries racing could interleave between them. It now lives in
+     ONE place, public.billing_apply_subscription_state, under a row lock, and
+     tools/billing/billing_flow.test.js drives it with real out-of-order
+     deliveries against the real SQL. What is asserted here is that this
+     function has no other way to write the row. */
+  chk('the function never writes subscriptions directly — only through the one SQL writer',
+    !/D\.upsert\('subscriptions'/.test(SRC) && !/D\.(?:insert|post)\('subscriptions'/.test(SRC));
+  chk('the payload path is stamped with Stripe\'s own event time and marked not-live',
+    /p_as_of: stripeCreated, p_source: 'webhook_payload', p_live: false, p_authoritative: false/.test(SRC));
+  chk('the live path goes through reconcileUser, stamped with the event it answers',
+    /reconcileUser\(\{ db: D, stripe, svc: 'stripe_webhook' \}/.test(SRC) && /eventId: event\.id, eventAt: stripeCreated/.test(SRC));
+  chk('and the core stamps a live write with the moment it asked Stripe, as authoritative',
+    /p_as_of: asOf, p_source: o\.source \|\| 'sync', p_live: true, p_authoritative: true/.test(SRC));
 
   /* ====================================================================== */
   /* 4. THE HANDLED SET IS DELIBERATE                                       */
@@ -180,6 +188,37 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
     chk('the webhook handles ' + t, W.HANDLED.indexOf(t) >= 0));
   chk('and does not act on refunds or disputes it has no logic for',
     W.HANDLED.indexOf('charge.refunded') < 0 && W.HANDLED.indexOf('charge.dispute.created') < 0);
+  chk('a dispute is only ever raised for a human, never acted on',
+    W.ALERT_ONLY.indexOf('charge.dispute.created') >= 0 && W.ALERT_ONLY.every((t) => W.HANDLED.indexOf(t) < 0));
+  ['invoice.paid', 'checkout.session.expired', 'checkout.session.async_payment_succeeded',
+   'customer.subscription.paused', 'customer.subscription.resumed'].forEach((t) =>
+    chk('the optional extra ' + t + ' is understood when the endpoint sends it', W.HANDLED.indexOf(t) >= 0 && W.readEvent({ type: t, data: { object: { id: 'x', customer: 'cus_1' } } }) !== null));
+
+  /* WHO AN EVENT BELONGS TO, every way there is */
+  const md = W.readEvent({ type: 'customer.subscription.created', data: { object: {
+    id: 'sub_9', customer: 'cus_9', status: 'trialing', metadata: { supabase_user_id: '0000AAAA-0000-4000-8000-000000000001' } } } });
+  eq('a subscription created by our own checkout names the account by metadata', md.metadata_user_id, '0000aaaa-0000-4000-8000-000000000001');
+  eq('a metadata value that is not a uuid names nobody',
+    W.readEvent({ type: 'customer.subscription.created', data: { object: { id: 's', metadata: { supabase_user_id: 'x; drop' } } } }).metadata_user_id, null);
+  const inv = W.readEvent({ type: 'invoice.payment_succeeded', data: { object: { id: 'in_1', customer: 'cus_1',
+    parent: { subscription_details: { subscription: 'sub_new_api', metadata: { supabase_user_id: '00000000-0000-4000-8000-000000000002' } } } } } });
+  eq('an invoice in the newer API shape still names its subscription', inv.subscription_id, 'sub_new_api');
+  eq('and its account', inv.metadata_user_id, '00000000-0000-4000-8000-000000000002');
+  eq('a checkout carries its session id, for our own session record', W.readEvent({ type: 'checkout.session.completed',
+    data: { object: { id: 'cs_live_1', mode: 'subscription' } } }).session_id, 'cs_live_1');
+  eq('a subscription event carries its single price', W.readEvent({ type: 'customer.subscription.updated',
+    data: { object: { id: 's', items: { data: [{ price: { id: 'price_4999' } }] } } } }).price_id, 'price_4999');
+  chk('resolution is one database call that tries every source in order',
+    /D\.rpc\('billing_resolve_user', \{\s*p_metadata_user: read\.metadata_user_id, p_client_reference: read\.client_reference_id,/.test(SRC));
+  chk('and, still unresolved, asks Stripe who the customer is before giving up',
+    /stripe\.get\('\/customers\/' \+ encodeURIComponent\(read\.customer_id\)\)/.test(SRC));
+  chk('an unresolved delivery is raised as an alert, never silently parked',
+    /p_kind: 'unresolved_event'/.test(SRC));
+
+  /* MODE VALIDATION */
+  chk('a delivery\'s livemode must match the secret that signed it',
+    /if \(\(signedMode === 'test'\) === livemode\)/.test(SRC) && /json\(\{ error: 'mode mismatch' \}, 400\)/.test(SRC));
+  chk('a one-off payment checkout grants nothing', /read\.mode && read\.mode !== 'subscription'/.test(SRC));
 
   /* ====================================================================== */
   /* 5. A PAYING CUSTOMER IS NEVER WRITTEN IN WITH NO STATUS                */
@@ -193,31 +232,36 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
     W.readEvent({ type: 'checkout.session.completed',
       data: { object: { client_reference_id: 'u1', subscription: 'sub_1' } } }).status === null);
   chk('but the handler reads the real one back from Stripe rather than leaving null',
-    /read\.kind === 'checkout'[\s\S]{0,240}fetchSubscription\(read\.subscription_id/.test(SRC));
-  chk('using the subscriptions endpoint', /api\.stripe\.com\/v1\/subscriptions\//.test(SRC));
+    /result = await reconcileUser\(/.test(SRC) && /extraSubscriptionIds: read\.subscription_id \? \[read\.subscription_id\] : \[\]/.test(SRC));
+  chk('using the subscriptions endpoint, every subscription the customer has',
+    /var STRIPE_API = 'https:\/\/api\.stripe\.com\/v1';/.test(SRC) && /stripe\.get\('\/subscriptions', \{ customer: customerId, status: 'all'/.test(SRC));
   chk('authenticated as ourselves, with the key from the environment',
-    /authorization: 'Bearer ' \+ secretKey/.test(SRC) &&
-    /fetchSubscription\(read\.subscription_id, stripeKeyFor\(livemode\)\)/.test(SRC) &&
+    /var h = \{ authorization: 'Bearer ' \+ secretKey \};/.test(SRC) &&
+    /makeStripe\(stripeKeyFor\(livemode\), fetch,/.test(SRC) &&
     /Deno\.env\.get\('STRIPE_SECRET_KEY'\)/.test(SRC));
   /* A TEST-MODE ID LOOKED UP WITH A LIVE KEY IS A 404, which reads exactly
      like an object that does not exist — so a dry run would report a clean
      "no promotion code" and prove nothing. */
   chk('and a test-mode event is looked up with a test-mode key, never the live one',
     /function stripeKeyFor\(livemode\)[\s\S]{0,200}STRIPE_SECRET_KEY_TEST/.test(SRC) &&
-    !/fetchSubscription\([^)]*Deno\.env\.get\('STRIPE_SECRET_KEY'\)\)/.test(SRC));
+    !/makeStripe\(Deno\.env\.get\('STRIPE_SECRET_KEY'\)/.test(SRC));
   /* The dry-run secret lengthens nothing on the live path and changes nothing
      when it is unset — it is only ever tried after the live secret has already
      refused the delivery. */
   chk('the test-mode webhook secret is tried only AFTER the live one fails',
-    /let v = await verifySignature\(raw[\s\S]{0,700}if \(!v\.ok && SECRET_TEST\)/.test(SRC));
+    /let v = await verifySignature\(raw[\s\S]{0,800}if \(!v\.ok && SECRET_TEST\)/.test(SRC));
   chk('and a test delivery says so, in the log and in the response, rather than passing as a sale',
     /TEST MODE delivery/.test(SRC) && /how: who\.how, livemode/.test(SRC));
-  chk('and the period end from that lookup goes through the same reader',
-    /const pe = periodEnd\(live\)/.test(SRC));
+  chk('and the period end from a live read goes through the same reader',
+    /current_period_end: periodEnd\(sub\)/.test(SRC));
   chk('without the key it warns that the customer stays locked out, rather than guessing a status',
     /locked out'\)/.test(SRC) && !/row\.status = 'active'/.test(SRC));
-  chk('the lookup never throws into the delivery — a Stripe outage must not lose the event',
-    /catch \(e\) \{[\s\S]{0,140}subscription lookup failed[\s\S]{0,60}return null/.test(SRC));
+  chk('the lookup never throws into the delivery — a Stripe outage falls back to the event body',
+    /var unreachable = function \(e\) \{ return !e \|\| !e\.status \|\| e\.status >= 500 \|\| e\.status === 429; \};/.test(SRC) &&
+    /if \(unreachable\(e\)\) stripeErr = e;/.test(SRC) && /if \(stripeErr\) return finish\('stripe_error', false/.test(SRC) &&
+    /if \(!result\) \{\s*\/\/ Stripe could not be asked/.test(SRC));
+  chk('and a checkout that cannot be read with a key configured is a 500, so Stripe redelivers it',
+    /json\(\{ error: 'subscription state unavailable, retry' \}, 500\)/.test(SRC));
 
   /* ====================================================================== */
   /* 6. THE DEPLOYED FILE KEEPS ITS DEPLOYMENT CONTRACT                     */
@@ -232,11 +276,17 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
   chk('an unresolved customer is answered 200, so Stripe does not retry it away',
     /json\(\{ ok: true, unresolved: true \}, 200\)/.test(SRC));
   chk('but a failed subscription write is a 500, so Stripe DOES retry it',
-    /json\(\{ error: 'subscription write failed' \}, 500\)/.test(SRC));
+    /json\(\{ error: 'processing failed' \}, 500\)/.test(SRC) && /catch \(e\) \{\s*\/\/ 500 so Stripe retries/.test(SRC));
+  chk('and a delivery failing repeatedly is raised for a human', /p_kind: 'webhook_failing'/.test(SRC) && /ledger\.attempts >= 3/.test(SRC));
+  chk('the ledger write happens first, and falls back to the plain upsert before the migration',
+    SRC.indexOf("D.rpc('billing_record_event'") > 0 && SRC.indexOf("D.rpc('billing_record_event'") < SRC.indexOf("D.rpc('billing_resolve_user'") &&
+    /await D\.upsert\('stripe_events'/.test(SRC));
   chk('and a missing service role is a 500 rather than a silent 200',
     /json\(\{ error: 'not configured' \}, 500\)/.test(SRC));
   chk('the rejection body never tells a forger why they failed',
-    /error: 'invalid signature'/.test(SRC) && !/reason: v\.reason/.test(SRC));
+    /return json\(\{ error: 'invalid signature' \}, 400\)/.test(SRC) && !/json\(\{[^}]*reason: v\.reason/.test(SRC));
+  chk('and every log line goes through the redacting logger, which drops anything credential-shaped',
+    /var LOG_DROP = \/token\|secret\|authorization\|password\|card\|payment_method/.test(SRC) && /if \(\/email\/i\.test\(k\)\) v = maskEmail\(v\)/.test(SRC));
 
   /* ====================================================================== */
   /* 7. WHICH CODE THE SALE CAME IN UNDER                                   */
@@ -340,12 +390,13 @@ const goodSig = (t, body) => 't=' + t + ',v1=' + sign(body || BODY, SECRET, t);
     /&referral_code=is\.null/.test(SRC));
   chk('and an already-credited row costs no lookup at all',
     /existing && existing\.referral_code/.test(SRC) &&
-    /select=last_event_at,status,price_id,referral_code/.test(SRC));
+    /subscriptions\?select=\*&user_id=eq\./.test(SRC));
 
   /* An out-of-order delivery must not overwrite a newer STATUS. It can still
      tell us a code the row has never been told. */
-  chk('the attribution runs whether or not the event was fresh',
-    SRC.indexOf("let referral = null;") > SRC.indexOf('const fresh = shouldApply('));
+  chk('the attribution runs whether or not the event was fresh (after the state write, not gated by it)',
+    SRC.indexOf("let referral = null;") > SRC.indexOf("p_source: 'webhook_payload'") &&
+    SRC.indexOf("let referral = null;") > SRC.indexOf('result = await reconcileUser('));
 
   /* Order INSIDE resolveReferral, not order of definition in the file: which
      lookup runs first is what keeps attribution working on a day the Stripe
