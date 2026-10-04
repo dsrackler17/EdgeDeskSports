@@ -265,15 +265,38 @@ chk('a tied dominant passer resolves to nobody rather than to a coin flip',
   const st = STARTERS.teams || {};
   const buckets = { p4_involved: null, other_fbs: null, fbs_fcs: null, unresolved: null, no_history: null };
 
-  SLATE.games.forEach(g => {
-    const t = g.matchup_type;
+  /* FBS-vs-FCS games cluster in September: from October the ten-day window
+     routinely holds none (2026-10-04: 0 of 60), and requiring one failed the
+     starter-context and weekly builds on every run after the card was
+     rebuilt, with nothing wrong. So when the slate has none, the same packet
+     rules run on a stand-in: a real FCS side from the artifact against the
+     FBS opponent it actually played, re-posed a day from now under an id no
+     log can hold. */
+  const isFcsGame = g => g.home_division !== 'fbs' || g.away_division !== 'fbs';
+  const fcsStandIn = () => {
+    const teams = Object.values(ART.teams || {});
+    const fbsOpp = r => ART.teams[r.opponent_key] && ART.teams[r.opponent_key].division === 'fbs';
+    const t = teams.find(x => x.division !== 'fbs' && (x.offence_log || []).some(fbsOpp));
+    if (!t) return null;
+    const r = t.offence_log.find(fbsOpp);
+    return { game_id: 'standin-fbs-fcs-' + r.game_id, matchup_type: 'fbs_fcs',
+      home_team_id: r.opponent_key, home_division: 'fbs', home_fbs_group: null,
+      away_team_id: t.key, away_division: t.division, away_fbs_group: null,
+      kickoff: new Date(Date.now() + 864e5).toISOString() };
+  };
+  const fcsGames = SLATE.games.filter(isFcsGame);
+  if (!fcsGames.length) { const s = fcsStandIn(); if (s) fcsGames.push(s); }
+
+  const onSlate = g => SLATE.games.indexOf(g) >= 0;
+  SLATE.games.concat(fcsGames.filter(g => !onSlate(g))).forEach(g => {
     const side = 'home';
     const rec = st[g.home_team_id] || null;
     const p = EPA.quarterback({ artifact: ART, starter: rec, team_key: g.home_team_id,
       opponent_key: g.away_team_id, kickoff: g.kickoff, side });
     const tier = (g.home_fbs_group === 'p4' || g.away_fbs_group === 'p4') ? 'p4_involved'
-      : (g.home_division !== 'fbs' || g.away_division !== 'fbs') ? 'fbs_fcs' : 'other_fbs';
+      : isFcsGame(g) ? 'fbs_fcs' : 'other_fbs';
     if (!buckets[tier]) buckets[tier] = { g, p };
+    if (!onSlate(g)) return;
     if (!buckets.unresolved && p.state === 'UNRESOLVED_IDENTITY') buckets.unresolved = { g, p };
     if (!buckets.no_history && p.state === 'NO_OBSERVATIONS') buckets.no_history = { g, p };
   });
@@ -294,7 +317,7 @@ chk('a tied dominant passer resolves to nobody rather than to a coin flip',
 
   /* An FBS-FCS game: the FCS side's own history is limited to its games
      against FBS, and the packet must not pretend otherwise. */
-  const fcs = SLATE.games.filter(g => g.home_division !== 'fbs' || g.away_division !== 'fbs')[0];
+  const fcs = fcsGames[0];
   if (fcs) {
     const fcsSide = fcs.home_division !== 'fbs' ? 'home' : 'away';
     const key = fcs[fcsSide + '_team_id'];
