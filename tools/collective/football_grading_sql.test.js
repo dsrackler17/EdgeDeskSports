@@ -78,6 +78,38 @@ chk('static: no close lookup ORs across a join (a whole-store scan per game)', !
 chk('static: capture ticks are read per signal through (sig_key, created_at), never by scanning signal_ticks whole',
   /join lateral \(\s*select \* from public\.signal_ticks k\s*where k\.sig_key = g\.sig_key/.test(SQL) &&
   !/from public\.signal_ticks k\s*join public\.signals/.test(SQL));
+/* Supabase loads pg-safeupdate for the sessions PostgREST opens: an UPDATE
+   or DELETE with no WHERE is refused there (21000 "UPDATE requires a WHERE
+   clause") however it is reached -- inside a function, on a temp table, in a
+   CTE. psql and a stock postgres never load it, so the LIVE layer below
+   cannot see this; one bare UPDATE in fg2_compute_close failed every
+   grade_game and fg2_refresh the settle job made through the API. */
+function bareWrites(sql) {
+  const src = sql.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/--[^\n]*/g, m => ' '.repeat(m.length));
+  const found = [];
+  const re = /\bupdate\s+(?:only\s+)?[\w.%$"]+(?:\s+(?:as\s+)?\w+)?\s+set\b|\bdelete\s+from\b/gi;
+  let m;
+  while ((m = re.exec(src))) {
+    if (/\bdo\s*$/i.test(src.slice(Math.max(0, m.index - 12), m.index))) continue;   // on conflict ... do update set
+    let depth = 0, where = false;
+    for (let i = re.lastIndex; i < src.length; i++) {
+      const c = src[i];
+      if (c === "'") { i = src.indexOf("'", i + 1); if (i < 0) break; continue; }
+      if (c === '$' && /^\$\w*\$/.test(src.slice(i, i + 16))) break;             // end of a dollar-quoted dynamic statement
+      if (c === '(') depth++;
+      else if (c === ')') { if (depth === 0) break; depth--; }                    // end of a CTE
+      else if (c === ';' && depth === 0) break;
+      else if (depth === 0 && /^where\b/i.test(src.slice(i, i + 6)) && /\W/.test(src[i - 1])) { where = true; break; }
+    }
+    if (!where) found.push(`line ${sql.slice(0, m.index).split('\n').length}: ${src.slice(m.index, m.index + 60).replace(/\s+/g, ' ')}`);
+  }
+  return found;
+}
+chk('static: every UPDATE and DELETE carries a WHERE (PostgREST sessions run pg-safeupdate)',
+  bareWrites(SQL).length === 0, bareWrites(SQL));
+chk('static: the bare-write check finds a bare UPDATE and DELETE, and passes a qualified one',
+  bareWrites('update t set x = 1;\nwith w as (delete from t returning *) select 1;').length === 2 &&
+  bareWrites("update t set x = case when y = 'a' then 1 end where x is null;\nupdate %1$s r set a = 1 from b where r.id = b.id").length === 0);
 
 /* ═══ LIVE ════════════════════════════════════════════════════════════════ */
 function findPgBin() {
@@ -455,7 +487,7 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
   const s2 = snap();
   chk('refresh: a finished game with no official close is back in scope and gets the same close', JSON.stringify(s1) === JSON.stringify(s2), { s1, s2 });
   chk('refresh: it commits, says its scope, and audits nothing when nothing changed',
-    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 2, r && { scope: r.scope, a: r.audit_rows_this_run });
+    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 3, r && { scope: r.scope, a: r.audit_rows_this_run });
   let bad = null;
   try { q(`select collective.fg2_refresh('NFL', 2026, 0);`); } catch (e) { bad = String(e.message); }
   chk('refresh: a zero-day refresh is refused', /at least 1/.test(bad || ''), bad);
@@ -463,7 +495,7 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
     q(`select has_function_privilege('service_role', 'collective.fg2_refresh(text, integer, integer)', 'execute')
         and not has_function_privilege('anon', 'collective.fg2_refresh(text, integer, integer)', 'execute');`) === 't');
 })();
-chk('revision: the installed revision is 2', q(`select collective.fg2_install_revision();`) === 2);
+chk('revision: the installed revision is 3', q(`select collective.fg2_install_revision();`) === 3);
 chk('lookups: per-game reads have indexes on the id casts the views use',
   q(`select count(*) from pg_indexes where schemaname = 'collective' and indexname in ('fg2_games_id_text_idx', 'fg2_projections_game_text_idx', 'fg2_grades_projection_text_idx');`) === 3);
 chk('lookups: one signature per importer (no ambiguous overloads)',
@@ -523,6 +555,42 @@ chk('lookups: one signature per importer (no ambiguous overloads)',
   chk('keys: a second official close for one game and market is refused', closeDup);
 })();
 
+/* ---- the settle job's calls, the way PostgREST makes them ------------------------------------
+   One pooled backend session, as service_role, one transaction per request:
+   grade_game (security definer: runs as its owner) and then fg2_refresh (runs
+   as service_role). A scratch table one of them left in the session must not
+   be refused to the other. Under pg-safeupdate too where this machine has it
+   (Supabase loads it for these sessions; a stock postgres does not -- the
+   static bare-write check above holds the line everywhere). */
+(() => {
+  let su = true;
+  try { q(`load 'safeupdate'; select 1;`); } catch (_) { su = false; }
+  if (su) {
+    let bare = null;
+    try { q(`load 'safeupdate'; create temp table fx_su (x int); update fx_su set x = 1;`); } catch (e) { bare = String(e.message); }
+    chk('safeupdate: loaded, it refuses a bare UPDATE', /UPDATE requires a WHERE clause/.test(bare || ''), bare);
+  } else {
+    console.log('NOTE | pg-safeupdate is not installed here: the API-path session runs without it.');
+  }
+  // what Supabase grants service_role (the fixture grants it schema usage only)
+  q(`grant usage on schema collective, odds, public to service_role;
+     grant select, insert, update, delete on all tables in schema collective, odds, public to service_role;
+     grant usage on all sequences in schema collective, odds, public to service_role; select 1;`);
+  const c1 = q(`select to_json(game_id) from public.fx_games where tag = 'C1';`);
+  // C2 loses its official close, so the refresh has a close to compute
+  q(`delete from collective.fg2_official_closes c using public.fx_games f where f.game_id::text = c.canonical_game_id and f.tag = 'C2';`);
+  const sess = sql => { try { return q(`${su ? "load 'safeupdate';\n" : ''}set role service_role;\n${sql}`); }
+                        catch (e) { return { error: String(e.message).slice(0, 500) }; } };
+  const r = sess(`select collective.grade_game('${c1}'::uuid)::text as gg \\gset
+    select json_build_object('gg', :'gg'::jsonb, 'rf', collective.fg2_refresh('CFB', 2026, 4));`);
+  chk('api path: grade_game settles a football game as service_role' + (su ? ', under pg-safeupdate' : ''),
+    r && r.gg && r.gg.grading_version === 'football-v2', r);
+  chk('api path: fg2_refresh after grade_game in the same session computes closes and commits' + (su ? ', under pg-safeupdate' : ''),
+    r && r.rf && r.rf.committed === true && r.rf['4_closes_computed'] >= 1, r);
+  const pv = sess(`select collective.fg2_rebuild_preview('NFL', 2026);`);
+  chk('api path: the preview runs as service_role' + (su ? ', under pg-safeupdate' : ''), pv && pv.dry_run === true, pv);
+})();
+
 /* ---- the regrade tool, end to end, under a database-wide time limit ------------------------------
    Supabase's pooled connection cancels any statement after 2 minutes; a season
    of capture history takes longer. The tool raises the limit for its own
@@ -552,9 +620,9 @@ chk('lookups: one signature per importer (no ambiguous overloads)',
   const old = tool([]);
   chk('tool: a database on an older revision is refused with the way out',
     old.status === 1 && /revision 1/.test(old.stderr) && /apply_migration: true/.test(old.stderr), (old.stderr || '').slice(-300));
-  q(`update collective.fg2_config set value = '2' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
+  q(`update collective.fg2_config set value = '3' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
   chk('tool: the revision the tool needs is the revision the migration installs',
-    RB.REQUIRED_REVISION === 2 && /\('install_revision', '2'::jsonb/.test(SQL));
+    RB.REQUIRED_REVISION === 3 && /\('install_revision', '3'::jsonb/.test(SQL));
   try { fs.rmSync(out, { recursive: true, force: true }); } catch (_) {}
 })();
 
