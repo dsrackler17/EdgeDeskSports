@@ -1,9 +1,9 @@
 {
  "kind": "season",
  "season": 2026,
- "generated_at": "2026-10-04T05:07:30.000Z",
+ "generated_at": "2026-10-04T10:12:51.000Z",
  "comparison": {
-  "n_common": 52,
+  "n_common": 56,
   "label": "provisional",
   "models": [
    "edgedesk_cfb_p4_v1.0.0",
@@ -14,65 +14,65 @@
    {
     "name": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
-    "n": 52,
-    "mae": 12.922,
-    "rmse": 16.787,
-    "median_ae": 8.495,
-    "bias": 1.102,
-    "p90_ae": 28.544,
-    "p95_ae": 34.634,
-    "brier": 0.16427,
+    "n": 56,
+    "mae": 13.412,
+    "rmse": 17.39,
+    "median_ae": 9.03,
+    "bias": 0.532,
+    "p90_ae": 30.85,
+    "p95_ae": 35.263,
+    "brier": 0.17738,
     "coverage_80": null
    },
    {
     "name": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
-    "n": 52,
-    "mae": 13.331,
-    "rmse": 17.27,
+    "n": 56,
+    "mae": 13.652,
+    "rmse": 17.748,
     "median_ae": 10.795,
-    "bias": 1.959,
-    "p90_ae": 30.154,
-    "p95_ae": 33.924,
-    "brier": 0.15191,
+    "bias": 1.366,
+    "p90_ae": 31.125,
+    "p95_ae": 35.478,
+    "brier": 0.16308,
     "coverage_80": 0.75
    },
    {
     "name": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
-    "n": 52,
-    "mae": 13.384,
-    "rmse": 17.267,
+    "n": 56,
+    "mae": 13.69,
+    "rmse": 17.726,
     "median_ae": 10.645,
-    "bias": 1.966,
-    "p90_ae": 30.31,
-    "p95_ae": 34.034,
-    "brier": 0.15131,
+    "bias": 1.38,
+    "p90_ae": 30.975,
+    "p95_ae": 35.787,
+    "brier": 0.16225,
     "coverage_80": 0.75
    },
    {
     "name": "opening market",
     "label": "opener",
-    "n": 52,
-    "mae": 13.221,
-    "rmse": 17.164,
+    "n": 56,
+    "mae": 13.58,
+    "rmse": 17.595,
     "median_ae": 10.5,
-    "bias": 3.048,
-    "p90_ae": 32.2,
-    "p95_ae": 33.725,
+    "bias": 2.42,
+    "p90_ae": 32.75,
+    "p95_ae": 34,
     "brier": null,
     "coverage_80": null
    },
    {
     "name": "closing market",
     "label": "close",
-    "n": 52,
-    "mae": 12.625,
-    "rmse": 16.596,
+    "n": 54,
+    "mae": 12.657,
+    "rmse": 16.539,
     "median_ae": 9.5,
-    "bias": 2.971,
-    "p90_ae": 30.4,
-    "p95_ae": 32.95,
+    "bias": 3.102,
+    "p90_ae": 30.2,
+    "p95_ae": 32.85,
     "brier": null,
     "coverage_80": null
    }
@@ -87,14 +87,14 @@
     "role": "challenger",
     "champion": "edgedesk_cfb_p4_v1.0.0",
     "rule": "cfb_lab_promotion_v1",
-    "n": 52,
+    "n": 56,
     "min_n": 150,
     "ready": false,
     "decision": "INSUFFICIENT_SAMPLE",
-    "mae_diff": 0.462,
+    "mae_diff": 0.278,
     "mae_diff_ci": [
-     -0.64,
-     1.526
+     -0.807,
+     1.346
     ],
     "weekly_win_share": 0,
     "weeks": 1,
@@ -108,18 +108,18 @@
     },
     "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
     "champion_stats": {
-     "mae": 12.922,
-     "rmse": 16.787,
-     "brier": 0.16427,
-     "ece": 0.1127,
-     "p95_ae": 34.634
+     "mae": 13.412,
+     "rmse": 17.39,
+     "brier": 0.17738,
+     "ece": 0.1224,
+     "p95_ae": 35.263
     },
     "challenger_stats": {
-     "mae": 13.384,
-     "rmse": 17.267,
-     "brier": 0.15131,
-     "ece": 0.1464,
-     "p95_ae": 34.034,
+     "mae": 13.69,
+     "rmse": 17.726,
+     "brier": 0.16225,
+     "ece": 0.1729,
+     "p95_ae": 35.787,
      "coverage_80": 0.75
     }
    },
@@ -128,80 +128,70 @@
     "role": "candidate",
     "champion": "edgedesk_cfb_p4_v1.0.0",
     "rule": "cfb_lab_promotion_v1",
-    "n": 52,
+    "n": 56,
     "min_n": 150,
     "ready": false,
     "decision": "INSUFFICIENT_SAMPLE",
-    "mae_diff": 0.41,
+    "mae_diff": 0.24,
     "mae_diff_ci": [
-     -0.672,
-     1.483
+     -0.827,
+     1.293
     ],
     "weekly_win_share": 0,
     "weeks": 1,
     "gates": {
      "G1_mae_ci_below_zero": false,
      "G2_brier_not_worse": true,
-     "G3_ece_within_001": true,
+     "G3_ece_within_001": false,
      "G4_coverage80_in_band": true,
      "G5_tail_not_worse": true,
      "G6_weekly_stability": false
     },
     "note": "Eligibility never changes the champion; only governance.js promote does, with an audit entry.",
     "champion_stats": {
-     "mae": 12.922,
-     "rmse": 16.787,
-     "brier": 0.16427,
-     "ece": 0.1127,
-     "p95_ae": 34.634
+     "mae": 13.412,
+     "rmse": 17.39,
+     "brier": 0.17738,
+     "ece": 0.1224,
+     "p95_ae": 35.263
     },
     "challenger_stats": {
-     "mae": 13.331,
-     "rmse": 17.27,
-     "brier": 0.15191,
-     "ece": 0.107,
-     "p95_ae": 33.924,
+     "mae": 13.652,
+     "rmse": 17.748,
+     "brier": 0.16308,
+     "ece": 0.1365,
+     "p95_ae": 35.478,
      "coverage_80": 0.75
     }
    }
   ]
  },
- "alerts": [
-  {
-   "kind": "favorite_heavy",
-   "level": "warn",
-   "message": "favourite bias 4.748 (> 2 SE): favourites under-rated",
-   "detail": {
-    "n": 55
-   },
-   "model_version": "edgedesk_cfb_p4_v1.0.0"
-  }
- ],
+ "alerts": [],
  "models": {
   "edgedesk_cfb_p4_v1.0.0": {
    "errors": {
-    "n": 55,
+    "n": 59,
     "label": "provisional",
-    "mae": 12.961,
-    "rmse": 16.893,
-    "median_ae": 8.24,
-    "bias": 1.713,
-    "p90_ae": 30.252,
-    "p95_ae": 34.479,
-    "mae_se": 1.474,
-    "favorite_bias": 4.748,
-    "favorite_bias_se": 2.206,
-    "total_mae": 13.213,
-    "winner_accuracy": 0.8182,
-    "brier": 0.15547,
-    "log_loss": 0.47865,
+    "mae": 13.423,
+    "rmse": 17.456,
+    "median_ae": 8.75,
+    "bias": 1.13,
+    "p90_ae": 31.666,
+    "p95_ae": 35.225,
+    "mae_se": 1.465,
+    "favorite_bias": 3.716,
+    "favorite_bias_se": 2.24,
+    "total_mae": 13.18,
+    "winner_accuracy": 0.7797,
+    "brier": 0.16851,
+    "log_loss": 0.50693,
     "coverage_50": null,
     "coverage_80": null,
     "coverage_95": null,
     "n_intervals": 0
    },
-   "brier": 0.15547,
-   "win_ece": 0.1042,
+   "brier": 0.16851,
+   "win_ece": 0.114,
    "calibration": [
     {
      "bucket": "50-55",
@@ -221,27 +211,27 @@
     },
     {
      "bucket": "60-65",
-     "n": 6,
-     "predicted": 0.6158,
-     "observed": 0.8333,
+     "n": 7,
+     "predicted": 0.6188,
+     "observed": 0.7143,
      "label": "small sample",
-     "difference": 0.2175
+     "difference": 0.0955
     },
     {
      "bucket": "65-70",
-     "n": 6,
-     "predicted": 0.6781,
-     "observed": 0.6667,
+     "n": 8,
+     "predicted": 0.6766,
+     "observed": 0.5,
      "label": "small sample",
-     "difference": -0.0114
+     "difference": -0.1766
     },
     {
      "bucket": "70-75",
-     "n": 8,
-     "predicted": 0.7245,
-     "observed": 0.875,
+     "n": 9,
+     "predicted": 0.7233,
+     "observed": 0.8889,
      "label": "small sample",
-     "difference": 0.1505
+     "difference": 0.1656
     },
     {
      "bucket": "75-80",
@@ -296,46 +286,46 @@
     }
    },
    "research_positions": {
-    "record": "21-15-1",
-    "ats_pct": 0.5833,
-    "roi": 0.1007,
-    "clv_mean": -0.27,
-    "positive_clv_pct": 0.3243,
+    "record": "22-17-1",
+    "ats_pct": 0.5641,
+    "roi": 0.0663,
+    "clv_mean": -0.263,
+    "positive_clv_pct": 0.3421,
     "max_drawdown": 4.091
    }
   },
   "edgedesk_cfb_v2.0.0": {
    "errors": {
-    "n": 52,
+    "n": 56,
     "label": "provisional",
-    "mae": 13.331,
-    "rmse": 17.27,
+    "mae": 13.652,
+    "rmse": 17.748,
     "median_ae": 10.795,
-    "bias": 1.959,
-    "p90_ae": 30.154,
-    "p95_ae": 33.924,
-    "mae_se": 1.537,
-    "favorite_bias": 2.651,
-    "favorite_bias_se": 2.39,
-    "total_mae": 13.067,
-    "winner_accuracy": 0.8077,
-    "brier": 0.15191,
-    "log_loss": 0.47354,
-    "coverage_50": 0.4808,
+    "bias": 1.366,
+    "p90_ae": 31.125,
+    "p95_ae": 35.478,
+    "mae_se": 1.529,
+    "favorite_bias": 1.675,
+    "favorite_bias_se": 2.382,
+    "total_mae": 13.07,
+    "winner_accuracy": 0.7679,
+    "brier": 0.16308,
+    "log_loss": 0.49732,
+    "coverage_50": 0.4821,
     "coverage_80": 0.75,
-    "coverage_95": 0.9038,
-    "n_intervals": 52
+    "coverage_95": 0.8929,
+    "n_intervals": 56
    },
-   "brier": 0.15191,
-   "win_ece": 0.107,
+   "brier": 0.16308,
+   "win_ece": 0.1365,
    "calibration": [
     {
      "bucket": "50-55",
-     "n": 4,
-     "predicted": 0.5286,
-     "observed": 0.5,
+     "n": 5,
+     "predicted": 0.5311,
+     "observed": 0.4,
      "label": "small sample",
-     "difference": -0.0286
+     "difference": -0.1311
     },
     {
      "bucket": "55-60",
@@ -355,11 +345,11 @@
     },
     {
      "bucket": "65-70",
-     "n": 1,
-     "predicted": 0.6783,
+     "n": 3,
+     "predicted": 0.6735,
      "observed": 0,
      "label": "small sample",
-     "difference": -0.6783
+     "difference": -0.6735
     },
     {
      "bucket": "70-75",
@@ -379,46 +369,46 @@
     },
     {
      "bucket": "80+",
-     "n": 16,
-     "predicted": 0.8689,
-     "observed": 0.9375,
+     "n": 17,
+     "predicted": 0.8649,
+     "observed": 0.9412,
      "label": "small sample",
-     "difference": 0.0686
+     "difference": 0.0763
     }
    ],
    "intervals": {
     "p50": {
      "nominal": 0.5,
-     "n": 52,
-     "coverage": 0.4808,
+     "n": 56,
+     "coverage": 0.4821,
      "band": [
-      0.3641,
-      0.6359
+      0.369,
+      0.631
      ],
      "label": "provisional",
      "verdict": "within band"
     },
     "p80": {
      "nominal": 0.8,
-     "n": 52,
+     "n": 56,
      "coverage": 0.75,
      "band": [
-      0.6913,
-      0.9087
+      0.6952,
+      0.9048
      ],
      "label": "provisional",
      "verdict": "within band"
     },
     "p95": {
      "nominal": 0.95,
-     "n": 52,
-     "coverage": 0.9038,
+     "n": 56,
+     "coverage": 0.8929,
      "band": [
-      0.8908,
-      1.0092
+      0.8929,
+      1.0071
      ],
      "label": "provisional",
-     "verdict": "within band"
+     "verdict": "OVERCONFIDENT"
     }
    },
    "research_positions": {
@@ -432,36 +422,36 @@
   },
   "edgedesk_cfb_v2.1.0": {
    "errors": {
-    "n": 52,
+    "n": 56,
     "label": "provisional",
-    "mae": 13.384,
-    "rmse": 17.267,
+    "mae": 13.69,
+    "rmse": 17.726,
     "median_ae": 10.645,
-    "bias": 1.966,
-    "p90_ae": 30.31,
-    "p95_ae": 34.034,
-    "mae_se": 1.528,
-    "favorite_bias": 2.51,
-    "favorite_bias_se": 2.392,
-    "total_mae": 13.067,
-    "winner_accuracy": 0.7885,
-    "brier": 0.15131,
-    "log_loss": 0.4724,
-    "coverage_50": 0.4615,
+    "bias": 1.38,
+    "p90_ae": 30.975,
+    "p95_ae": 35.787,
+    "mae_se": 1.518,
+    "favorite_bias": 1.548,
+    "favorite_bias_se": 2.381,
+    "total_mae": 13.07,
+    "winner_accuracy": 0.75,
+    "brier": 0.16225,
+    "log_loss": 0.49563,
+    "coverage_50": 0.4643,
     "coverage_80": 0.75,
-    "coverage_95": 0.9038,
-    "n_intervals": 52
+    "coverage_95": 0.8929,
+    "n_intervals": 56
    },
-   "brier": 0.15131,
-   "win_ece": 0.1464,
+   "brier": 0.16225,
+   "win_ece": 0.1729,
    "calibration": [
     {
      "bucket": "50-55",
-     "n": 4,
-     "predicted": 0.5314,
-     "observed": 0.25,
+     "n": 5,
+     "predicted": 0.5325,
+     "observed": 0.2,
      "label": "small sample",
-     "difference": -0.2814
+     "difference": -0.3325
     },
     {
      "bucket": "55-60",
@@ -481,11 +471,11 @@
     },
     {
      "bucket": "65-70",
-     "n": 3,
-     "predicted": 0.6745,
-     "observed": 0.6667,
+     "n": 5,
+     "predicted": 0.6717,
+     "observed": 0.4,
      "label": "small sample",
-     "difference": -0.0078
+     "difference": -0.2717
     },
     {
      "bucket": "70-75",
@@ -505,54 +495,54 @@
     },
     {
      "bucket": "80+",
-     "n": 16,
-     "predicted": 0.8707,
-     "observed": 0.9375,
+     "n": 17,
+     "predicted": 0.8668,
+     "observed": 0.9412,
      "label": "small sample",
-     "difference": 0.0668
+     "difference": 0.0744
     }
    ],
    "intervals": {
     "p50": {
      "nominal": 0.5,
-     "n": 52,
-     "coverage": 0.4615,
+     "n": 56,
+     "coverage": 0.4643,
      "band": [
-      0.3641,
-      0.6359
+      0.369,
+      0.631
      ],
      "label": "provisional",
      "verdict": "within band"
     },
     "p80": {
      "nominal": 0.8,
-     "n": 52,
+     "n": 56,
      "coverage": 0.75,
      "band": [
-      0.6913,
-      0.9087
+      0.6952,
+      0.9048
      ],
      "label": "provisional",
      "verdict": "within band"
     },
     "p95": {
      "nominal": 0.95,
-     "n": 52,
-     "coverage": 0.9038,
+     "n": 56,
+     "coverage": 0.8929,
      "band": [
-      0.8908,
-      1.0092
+      0.8929,
+      1.0071
      ],
      "label": "provisional",
-     "verdict": "within band"
+     "verdict": "OVERCONFIDENT"
     }
    },
    "research_positions": {
-    "record": "6-5-0",
-    "ats_pct": 0.5455,
-    "roi": 0.0662,
-    "clv_mean": -0.182,
-    "positive_clv_pct": 0.3636,
+    "record": "7-5-0",
+    "ats_pct": 0.5833,
+    "roi": 0.1401,
+    "clv_mean": -0.167,
+    "positive_clv_pct": 0.3333,
     "max_drawdown": 3
    }
   }

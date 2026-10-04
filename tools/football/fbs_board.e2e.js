@@ -220,6 +220,22 @@ function serve(handler) {
       /* what the feed offered, and every reason a row is not on the board */
       feedRows: ((window.FB.p4.sched || {}).rows || []).length,
       dropped: window.FB.p4.slateDrop,
+      /* the matchup types the feed itself offers inside the board's window,
+         read from the raw rows (an hour in from each edge, so the clock
+         moving between the build and this read cannot matter) and counted
+         once per game */
+      offered: (function () {
+        const S = window.FB.p4, now = Date.now(), seen = {}, o = {};
+        const look = typeof window.FBP4_LOOKAHEAD_D === 'number' ? window.FBP4_LOOKAHEAD_D : 10;
+        ((S.sched || {}).rows || []).forEach(r => {
+          const t = Date.parse(r.start_date);
+          if (r.completed || !(t > now + 36e5 && t < now + look * 864e5 - 36e5)) return;
+          const m = window.EDFbs.classifyGame(r, S.uni);
+          if (!m.eligible || seen[m.id]) return;
+          seen[m.id] = true; o[m.matchup_type] = (o[m.matchup_type] || 0) + 1;
+        });
+        return o;
+      })(),
       visibleRows: document.querySelectorAll('[id^="p4gate-"]').length,
       /* a game that has kicked off stays on the slate (the desk and the
          briefs resolve it) but leaves the board (fbKickedOff) */
@@ -261,8 +277,16 @@ function serve(handler) {
   chk('and says so when games have kicked off', state.kickedNote === state.kickedOff > 0, state);
   chk('the slate carries Other FBS games', (state.groups.other || 0) > 0, state.groups);
   chk('the slate carries independents', (state.groups.independent || 0) > 0, state.groups);
-  chk('the slate carries conference, non-conference and FBS-vs-FCS games',
-    state.types.conference > 0 && state.types.non_conference > 0 && state.types.fbs_fcs > 0, state.types);
+  /* Every matchup type the feed offers is on the board, game for game.
+     This asserted all three types outright, which held on a September
+     Saturday and failed on the Sunday of 2026-10-04, when the ten days
+     ahead held no FBS-vs-FCS game at all: the season, not the board. Held
+     to what the feed offers, a board that dropped FCS or non-conference
+     games still fails, and an empty week for one type does not. */
+  chk('the slate carries every matchup type the feed offers, game for game',
+    Object.keys(state.offered).length > 0
+      && ['conference', 'non_conference', 'fbs_fcs'].every(k => (state.types[k] || 0) >= (state.offered[k] || 0)),
+    { board: state.types, feed: state.offered });
   chk('games with no Power 4 participant are on the board',
     Object.keys(state.conf).some(c => state.p4.indexOf(c) < 0 && state.conf[c] > 0),
     { p4: state.p4, conf: state.conf });

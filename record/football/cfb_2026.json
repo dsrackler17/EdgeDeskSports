@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk CFB Power 4 Model · all FBS",
  "projection_source": "football/fbs/slate.json",
- "updated_at": "2026-10-04T01:59:36.059Z",
+ "updated_at": "2026-10-04T08:34:06.305Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -4717,24 +4717,83 @@
     "book": "DraftKings",
     "at": "2026-09-30T20:38:35.647Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -53.5,
+    "total": 62.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -115,
+     "away": -105,
+     "over": -115,
+     "under": -105
+    }
+   },
+   "final": {
+    "home_score": 63,
+    "away_score": 14,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 12.08,
+     "result": "win"
+    },
     "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -53.5,
+      "close": -53.5,
+      "gap": 12.08,
+      "pts": 0
+     },
+     "total": null
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -53.5,
+      "close": -53.5,
+      "gap": 12.08,
+      "pts": 0
+     },
+     "total": null
+    },
+    "error": {
+     "margin": 49,
+     "model_margin_err": 7.58,
+     "close_margin_err": 4.5,
+     "model_total_err": null,
+     "close_total_err": 14.5
+    },
+    "brier": 0,
     "beyond_guard": false,
     "reliability": {
      "score": 59,
      "bucket": "50-59",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "total": null,
+     "ml": null,
+     "units": 0.9524,
+     "bets": 1
+    }
    },
    "last_quote": {
     "home_line": -53.5,
@@ -5830,25 +5889,114 @@
     "book": "Draft Kings",
     "at": "2026-09-30T17:16:45.326Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -13.5,
+    "total": 51.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -112,
+     "away": -108,
+     "over": -102,
+     "under": -118,
+     "home_ml": -600,
+     "away_ml": 440
+    }
+   },
+   "final": {
+    "home_score": 34,
+    "away_score": 7,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 1.39,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 3.5,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -14.5,
+      "close": -13.5,
+      "gap": 3.13,
+      "pts": 1
+     },
+     "total": {
+      "side": "over",
+      "market": 51.5,
+      "close": 51.5,
+      "gap": 3.6,
+      "pts": 0
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -14,
+      "close": -13.5,
+      "gap": 1.89,
+      "pts": 0.5
+     },
+     "total": {
+      "side": "over",
+      "market": 50.5,
+      "close": 51.5,
+      "gap": 4.5,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": 27,
+     "model_margin_err": 14.89,
+     "close_margin_err": 13.5,
+     "model_total_err": 14,
+     "close_total_err": 10.5
+    },
+    "brier": 0.043,
     "beyond_guard": false,
     "reliability": {
      "score": 93,
      "bucket": "90-100",
      "at": "2026-10-03T16:30:25.262Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -102,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -600,
+      "basis": "close",
+      "result": "win",
+      "units": 0.1667
+     },
+     "units": -1.8333,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -14,
@@ -5927,77 +6075,79 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -1.95,
-    "total": 57,
-    "home_win_prob": 0.5522,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -5.07,
+    "total": 57.6,
+    "home_win_prob": 0.6355,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 85,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19.3,
       "roster_availability": 12,
-      "projection_stability": 14.1,
+      "projection_stability": 18.7,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.22,
-     "favorite_flip_rate": 0.141,
-     "stability_tier": "MODERATE"
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 1.86,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_51085f87f9194c1c6a91beb6",
+      "source": "record_quotes",
+      "quote_id": "edq_55688fe94fffff81b39f5b4c",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
-      "home_line": 3,
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": 2.5,
       "total": null,
       "prices": {
-       "home": -110,
-       "away": -110
+       "home": -115,
+       "away": -105
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_75ccedb67d3bfc4d5fa917b6",
+      "source": "record_quotes",
+      "quote_id": "edq_6bc96e8d7c89b3c0c1a33eeb",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
-      "total": 54.5,
+      "total": 56.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_f0d20120f0bec8b21d8af970",
+      "source": "record_quotes",
+      "quote_id": "edq_ad2a6a06f32a4456e0957211",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
-       "home_ml": 130,
-       "away_ml": -155
+       "home_ml": 105,
+       "away_ml": -125
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-09-30T05:47:24.470Z",
     "home_line": -1.95,
@@ -6015,7 +6165,7 @@
     "total": 56.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -115,
      "away": -105,
@@ -6038,9 +6188,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 85,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6106,31 +6256,33 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 10.44,
-    "total": 58.5,
-    "home_win_prob": 0.241,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 10.74,
+    "total": 56.9,
+    "home_win_prob": 0.2347,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12,
-      "projection_stability": 17.8,
+      "projection_stability": 18.2,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.14,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 2.02,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -6148,7 +6300,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6218,20 +6370,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -12.5,
-    "total": 57,
-    "home_win_prob": 0.8002,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -7.54,
+    "total": 56.7,
+    "home_win_prob": 0.6942,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.5,
-      "projection_stability": 18.2,
+      "projection_stability": 18.3,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -6245,52 +6397,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_45e78c03e828462132b3c792",
+      "source": "record_quotes",
+      "quote_id": "edq_ba6a94f755752f92fcd36eb4",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": -14.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_641b0d27f088ac604d7eb616",
+      "source": "record_quotes",
+      "quote_id": "edq_e28ed514234df710340614af",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": 57.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_ca7dcd075fb0c58e1b5edcaa",
+      "source": "record_quotes",
+      "quote_id": "edq_529c471b4c1c2786c26ebf9e",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -675,
        "away_ml": 490
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": {
     "model_at": "2026-09-30T17:15:56.240Z",
     "home_line": -12.51,
@@ -6304,18 +6456,18 @@
     }
    },
    "market_pick": {
-    "home_line": -14.5,
-    "total": 57.5,
+    "home_line": -14,
+    "total": 58.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -110,
      "away": -110,
      "over": -110,
      "under": -110,
-     "home_ml": -675,
-     "away_ml": 490
+     "home_ml": -575,
+     "away_ml": 425
     }
    },
    "close": null,
@@ -6333,7 +6485,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6399,13 +6551,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-30T17:15:56.240Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 5.91,
-    "total": 51.6,
+    "total": 51.2,
     "home_win_prob": 0.3453,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -6424,25 +6576,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-09-30T17:15:56.240Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored spread price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T17:15:56.240Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_dae99b552a1cc9ebf942ca93",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": 10,
+      "total": null,
+      "prices": {
+       "home": -110,
+       "away": -110
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored total price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T17:15:56.240Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_a87869aaeac6bb791704e926",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": null,
+      "total": 50.5,
+      "prices": {
+       "over": -110,
+       "under": -110
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T17:15:56.240Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_0cc14e0b0a50509978637dd1",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": null,
+      "total": null,
+      "prices": {
+       "home_ml": 280,
+       "away_ml": -355
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-09-30T17:15:56.240Z",
     "home_line": 5.91,
@@ -6456,11 +6635,19 @@
     }
    },
    "market_pick": {
-    "home_line": 10.5,
-    "total": 49.5,
+    "home_line": 9.5,
+    "total": 53.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-09-30T23:58:20.139Z"
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": 295,
+     "away_ml": -375
+    }
    },
    "close": null,
    "final": null,
@@ -6477,7 +6664,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6543,77 +6730,77 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -6.19,
-    "total": 51.6,
-    "home_win_prob": 0.6618,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -10.72,
+    "total": 51.8,
+    "home_win_prob": 0.765,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 88,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.5,
-      "projection_stability": 16.7,
+      "projection_stability": 17.4,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 2.45,
+     "stability_sd": 2.25,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_a5c35d11039ecadfe939ed7b",
+      "source": "record_quotes",
+      "quote_id": "edq_d9eff8f0490027203a36a5d8",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": -1.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_a5c1c1b5dfeaf3731af70a2f",
+      "source": "record_quotes",
+      "quote_id": "edq_4fbb6ba205fee78686a44765",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": 50.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_6b49cc611fbdcc8608a70814",
+      "source": "record_quotes",
+      "quote_id": "edq_d061bd46ac5f3003e22174e6",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -118,
        "away_ml": -102
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-09-30T05:47:24.470Z",
     "home_line": -6.21,
@@ -6627,18 +6814,18 @@
     }
    },
    "market_pick": {
-    "home_line": -1.5,
+    "home_line": -3,
     "total": 50.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
-     "home": -110,
-     "away": -110,
+     "home": -105,
+     "away": -115,
      "over": -110,
      "under": -110,
-     "home_ml": -118,
-     "away_ml": -102
+     "home_ml": -142,
+     "away_ml": 120
     }
    },
    "close": null,
@@ -6654,9 +6841,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 88,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6722,13 +6909,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-30T20:37:43.779Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 9.75,
-    "total": 46.1,
-    "home_win_prob": 0.2556,
+    "total": 45.7,
+    "home_win_prob": 0.2557,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -6747,25 +6934,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-09-30T20:37:43.779Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored spread price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T20:37:43.779Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_157328ea119479ed05dbe6e8",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": 9.5,
+      "total": null,
+      "prices": {
+       "home": -105,
+       "away": -115
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored total price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T20:37:43.779Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_681560fa24dab52c1b5fd791",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": null,
+      "total": 41.5,
+      "prices": {
+       "over": -110,
+       "under": -110
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-01T04:07:31.000Z) came after the decision (2026-09-30T20:37:43.779Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_910dc44d0e73599ac655ab53",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.629Z",
+      "home_line": null,
+      "total": null,
+      "prices": {
+       "home_ml": 300,
+       "away_ml": -380
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 0,
+   "revisions": 1,
    "entry": {
     "model_at": "2026-09-30T20:37:43.779Z",
     "home_line": 9.75,
@@ -6779,11 +6993,19 @@
     }
    },
    "market_pick": {
-    "home_line": 6,
-    "total": 48.5,
+    "home_line": 9.5,
+    "total": 41.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-09-30T20:38:35.647Z"
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -115,
+     "away": -105,
+     "over": -110,
+     "under": -110,
+     "home_ml": 260,
+     "away_ml": -325
+    }
    },
    "close": null,
    "final": null,
@@ -6800,7 +7022,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -6870,33 +7092,87 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -2.12,
-    "total": 58.5,
-    "home_win_prob": 0.5569,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -0.81,
+    "total": 57.9,
+    "home_win_prob": 0.5218,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 84,
-     "grade": "STRONG",
+     "score": 79,
+     "grade": "ADEQUATE",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.4,
-      "projection_stability": 12.4,
+      "projection_stability": 10.1,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.67,
-     "favorite_flip_rate": 0.141,
-     "stability_tier": "MODERATE"
+     "capped_by": [
+      "UNSTABLE"
+     ],
+     "stability_sd": 2.6,
+     "favorite_flip_rate": 0.266,
+     "stability_tier": "UNSTABLE"
+    },
+    "price_lock": {
+     "schema": "edgedesk_price_lock_v1",
+     "decided_at": "2026-10-04T02:45:39.866Z",
+     "spread": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored spread price for this game (2026-10-04T05:07:30.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "total": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored total price for this game (2026-10-04T05:07:30.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "moneyline": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-04T05:07:30.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     }
     }
    },
-   "revisions": 2,
-   "entry": null,
-   "market_pick": null,
+   "revisions": 3,
+   "entry": {
+    "model_at": "2026-10-04T02:45:39.866Z",
+    "home_line": -0.81,
+    "total": 57.9,
+    "market": {
+     "home_line": 10.5,
+     "total": 57.5,
+     "source": "espn",
+     "book": "DraftKings",
+     "at": "2026-10-04T08:34:06.305Z",
+     "prices": {
+      "home": -110,
+      "away": -110,
+      "over": -110,
+      "under": -110,
+      "home_ml": 320,
+      "away_ml": -410
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": 10.5,
+    "total": 57.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": 320,
+     "away_ml": -410
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -6910,9 +7186,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 84,
-     "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "score": 79,
+     "bucket": "70-79",
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -10222,13 +10498,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-30T05:47:24.470Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -19.2,
-    "total": 52.6,
-    "home_win_prob": 0.8989,
+    "total": 52.2,
+    "home_win_prob": 0.899,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 85,
      "grade": "STRONG",
@@ -10246,7 +10522,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 0,
+   "revisions": 1,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -10264,7 +10540,7 @@
     "reliability": {
      "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -11467,25 +11743,114 @@
      "away_ml": 145
     }
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -3.5,
+    "total": 49.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -105,
+     "away": -115,
+     "over": -110,
+     "under": -110,
+     "home_ml": -166,
+     "away_ml": 140
+    }
+   },
+   "final": {
+    "home_score": 19,
+    "away_score": 55,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "PREGAME",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 2.39,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 5.4,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -4,
+      "close": -3.5,
+      "gap": 1.93,
+      "pts": -0.5
+     },
+     "total": {
+      "side": "over",
+      "market": 51.5,
+      "close": 49.5,
+      "gap": 3.3,
+      "pts": -2
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -3.5,
+      "close": -3.5,
+      "gap": 2.39,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 49.5,
+      "gap": 6.4,
+      "pts": 1
+     }
+    },
+    "error": {
+     "margin": -36,
+     "model_margin_err": 41.89,
+     "close_margin_err": 39.5,
+     "model_total_err": 19.1,
+     "close_total_err": 24.5
+    },
+    "brier": 0.4255,
     "beyond_guard": false,
     "reliability": {
      "score": 79,
      "bucket": "70-79",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -105,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -110,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9091
+     },
+     "ml": {
+      "side": "home",
+      "odds": -166,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.0909,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -3.5,
@@ -11619,25 +11984,114 @@
     "book": "DraftKings",
     "at": "2026-09-28T17:52:03.468Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 5.5,
+    "total": 48.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -112,
+     "away": -108,
+     "over": -115,
+     "under": -105,
+     "home_ml": 185,
+     "away_ml": -225
+    }
+   },
+   "final": {
+    "home_score": 10,
+    "away_score": 17,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 0.72,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 3.1,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 5.5,
+      "close": 5.5,
+      "gap": 3.97,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 52.5,
+      "close": 48.5,
+      "gap": 1.7,
+      "pts": -4
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 6.5,
+      "close": 5.5,
+      "gap": 1.72,
+      "pts": 1
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 48.5,
+      "gap": 3.1,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": -7,
+     "model_margin_err": 2.22,
+     "close_margin_err": 1.5,
+     "model_total_err": 24.6,
+     "close_total_err": 21.5
+    },
+    "brier": 0.1409,
     "beyond_guard": false,
     "reliability": {
      "score": 93,
      "bucket": "90-100",
      "at": "2026-10-03T16:30:25.262Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -112,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -225,
+      "basis": "close",
+      "result": "win",
+      "units": 0.4444
+     },
+     "units": -1.5556,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 6,
@@ -11922,19 +12376,19 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -8.51,
-    "total": 54.7,
+    "total": 54.3,
     "home_win_prob": 0.7167,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 95,
+     "score": 94,
      "grade": "VERY_STRONG",
      "components": {
       "team_data": 18.7,
-      "roster_availability": 18,
+      "roster_availability": 17.5,
       "projection_stability": 17.8,
       "freshness": 15,
       "source_integrity": 15,
@@ -11947,43 +12401,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
-      "status": "historical_price_unavailable",
-      "why": "stale",
-      "detail": "the latest stored spread price before the decision was 423 minutes old — past the 360-minute limit"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_abf1c6e46aac5fbfb5165774",
+      "book": "draftkings",
+      "observed_at": "2026-10-04T01:59:36.868Z",
+      "home_line": -7,
+      "total": null,
+      "prices": {
+       "home": -108,
+       "away": -112
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_042df4b06326e7ef3f6b3a65",
+      "source": "record_quotes",
+      "quote_id": "edq_8abbe13f1fe0ea767898d82b",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-04T01:59:36.868Z",
       "home_line": null,
       "total": 55.5,
       "prices": {
        "over": -112,
        "under": -108
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_5484c439582240b33b332763",
+      "source": "record_quotes",
+      "quote_id": "edq_db22cadb071e8b4f0f36c870",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-04T01:59:36.868Z",
       "home_line": null,
       "total": null,
       "prices": {
-       "home_ml": -250,
-       "away_ml": 205
+       "home_ml": -265,
+       "away_ml": 215
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 6,
+   "revisions": 7,
    "entry": {
     "model_at": "2026-09-26T23:44:12.791Z",
     "home_line": -9.53,
@@ -11996,12 +12459,12 @@
      "at": "2026-09-27T07:23:14.227Z"
     }
    },
-   "market_pick": {
+   "market_pick": null,
+   "close": {
     "home_line": -7,
     "total": 56.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
     "prices": {
      "home": -105,
      "away": -115,
@@ -12011,25 +12474,88 @@
      "away_ml": 215
     }
    },
-   "close": null,
-   "final": null,
+   "final": {
+    "home_score": 34,
+    "away_score": 7,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "PREGAME",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 1.51,
+     "result": "win"
+    },
+    "total": {
+     "side": "under",
+     "gap": 2.2,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -8.5,
+      "close": -7,
+      "gap": 1.03,
+      "pts": -1.5
+     },
+     "total": {
+      "side": "under",
+      "market": 54.5,
+      "close": 56.5,
+      "gap": 0.2,
+      "pts": -2
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": 27,
+     "model_margin_err": 18.49,
+     "close_margin_err": 20,
+     "model_total_err": 13.3,
+     "close_total_err": 15.5
+    },
+    "brier": 0.0803,
     "beyond_guard": false,
     "reliability": {
-     "score": 95,
+     "score": 94,
      "bucket": "90-100",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "total": {
+      "side": "under",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "ml": {
+      "side": "home",
+      "odds": -265,
+      "basis": "close",
+      "result": "win",
+      "units": 0.3774
+     },
+     "units": 2.2227,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -7,
@@ -12130,25 +12656,102 @@
     }
    },
    "market_pick": null,
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 13.5,
+    "total": 50.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -105,
+     "away": -115,
+     "over": -115,
+     "under": -105,
+     "home_ml": 440,
+     "away_ml": -600
+    }
+   },
+   "final": {
+    "home_score": 7,
+    "away_score": 29,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 2.68,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 1.2,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": 14.5,
+      "close": 13.5,
+      "gap": 1.75,
+      "pts": -1
+     },
+     "total": {
+      "side": "over",
+      "market": 50.5,
+      "close": 50.5,
+      "gap": 1.1,
+      "pts": 0
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": -22,
+     "model_margin_err": 5.82,
+     "close_margin_err": 8.5,
+     "model_total_err": 15.7,
+     "close_total_err": 14.5
+    },
+    "brier": 0.019,
     "beyond_guard": false,
     "reliability": {
      "score": 90,
      "bucket": "90-100",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -115,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8696
+     },
+     "total": {
+      "side": "over",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -600,
+      "basis": "close",
+      "result": "win",
+      "units": 0.1667
+     },
+     "units": 0.0363,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 13.5,
@@ -12468,31 +13071,33 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 5.07,
-    "total": 55,
-    "home_win_prob": 0.3663,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 4,
+    "total": 56.4,
+    "home_win_prob": 0.3937,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.5,
-      "projection_stability": 17.8,
+      "projection_stability": 18.1,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.13,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 2.03,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -12510,7 +13115,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -12580,20 +13185,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -2.58,
-    "total": 51.6,
-    "home_win_prob": 0.569,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -3.3,
+    "total": 50.7,
+    "home_win_prob": 0.5879,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 11.8,
-      "projection_stability": 19.5,
+      "projection_stability": 19.9,
       "freshness": 15,
       "source_integrity": 14.1,
       "environment": 10
@@ -12601,12 +13206,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 1.65,
+     "stability_sd": 1.53,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -12624,7 +13229,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -12694,20 +13299,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -2.9,
-    "total": 57.1,
-    "home_win_prob": 0.5774,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -2.18,
+    "total": 55.9,
+    "home_win_prob": 0.5583,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.8,
-      "projection_stability": 18,
+      "projection_stability": 17.9,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -12715,12 +13320,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 2.09,
-     "favorite_flip_rate": 0,
+     "stability_sd": 1.9,
+     "favorite_flip_rate": 0.031,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -12738,7 +13343,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -12804,77 +13409,77 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -14.72,
-    "total": 51,
-    "home_win_prob": 0.836,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -15.88,
+    "total": 52.8,
+    "home_win_prob": 0.8542,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 87,
+     "score": 88,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.3,
+      "team_data": 18.7,
       "roster_availability": 12.5,
-      "projection_stability": 17.2,
+      "projection_stability": 17.6,
       "freshness": 15,
       "source_integrity": 14,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 2.31,
+     "stability_sd": 2.17,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_757fcda38204e31f837ce2ac",
+      "source": "record_quotes",
+      "quote_id": "edq_3dfba2894c939281e8ec6af9",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": -14.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_77303cc55a72c74ae371edf1",
+      "source": "record_quotes",
+      "quote_id": "edq_5b459ba93e8a6d258ab9d5d1",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": null,
       "total": 50.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_58ccf6727925b8f575342a9b",
+      "source": "record_quotes",
+      "quote_id": "edq_5be28ef8ff4f6a8f334991c9",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -625,
        "away_ml": 455
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": {
     "model_at": "2026-09-30T17:15:56.240Z",
     "home_line": -14.73,
@@ -12888,18 +13493,18 @@
     }
    },
    "market_pick": {
-    "home_line": -14.5,
-    "total": 50.5,
+    "home_line": -11.5,
+    "total": 49.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
-     "home": -110,
-     "away": -110,
+     "home": -105,
+     "away": -115,
      "over": -110,
      "under": -110,
-     "home_ml": -625,
-     "away_ml": 455
+     "home_ml": -425,
+     "away_ml": 330
     }
    },
    "close": null,
@@ -12915,9 +13520,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 87,
+     "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -12983,13 +13588,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -18.9,
-    "total": 55.2,
+    "total": 54.8,
     "home_win_prob": 0.8985,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 88,
      "grade": "STRONG",
@@ -13007,7 +13612,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -13025,7 +13630,7 @@
     "reliability": {
      "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -18269,25 +18874,102 @@
     }
    },
    "market_pick": null,
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 14,
+    "total": 49.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -108,
+     "away": -112,
+     "over": -105,
+     "under": -115,
+     "home_ml": 500,
+     "away_ml": -700
+    }
+   },
+   "final": {
+    "home_score": 13,
+    "away_score": 41,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 0.81,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 0.8,
+     "result": "win"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 17.5,
+      "close": 14,
+      "gap": 1.99,
+      "pts": 3.5
+     },
+     "total": {
+      "side": "over",
+      "market": 50.5,
+      "close": 49.5,
+      "gap": 2.2,
+      "pts": -1
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": -28,
+     "model_margin_err": 13.19,
+     "close_margin_err": 14,
+     "model_total_err": 3.7,
+     "close_total_err": 4.5
+    },
+    "brier": 0.0253,
     "beyond_guard": false,
     "reliability": {
      "score": 93,
      "bucket": "90-100",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "total": {
+      "side": "over",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "ml": {
+      "side": "away",
+      "odds": -700,
+      "basis": "close",
+      "result": "win",
+      "units": 0.1429
+     },
+     "units": 1.9882,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 15.5,
@@ -19329,33 +20011,87 @@
     }
    },
    "pick": {
-    "at": "2026-09-29T23:53:08.440Z",
-    "home_line": -8.6,
-    "total": 56.3,
-    "home_win_prob": 0.7189,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -2.6,
+    "total": 55.4,
+    "home_win_prob": 0.5704,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 88,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19.3,
       "roster_availability": 12.3,
-      "projection_stability": 17.3,
+      "projection_stability": 18.2,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.26,
-     "favorite_flip_rate": 0,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 1.9,
+     "favorite_flip_rate": 0.016,
      "stability_tier": "STABLE"
+    },
+    "price_lock": {
+     "schema": "edgedesk_price_lock_v1",
+     "decided_at": "2026-10-04T02:45:39.866Z",
+     "spread": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored spread price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "total": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored total price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "moneyline": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     }
     }
    },
-   "revisions": 0,
-   "entry": null,
-   "market_pick": null,
+   "revisions": 1,
+   "entry": {
+    "model_at": "2026-10-04T02:45:39.866Z",
+    "home_line": -2.6,
+    "total": 55.4,
+    "market": {
+     "home_line": -6.5,
+     "total": 58.5,
+     "source": "espn",
+     "book": "DraftKings",
+     "at": "2026-10-04T08:34:06.305Z",
+     "prices": {
+      "home": -110,
+      "away": -110,
+      "over": -110,
+      "under": -110,
+      "home_ml": -238,
+      "away_ml": 195
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": -6.5,
+    "total": 58.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": -238,
+     "away_ml": 195
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -19369,9 +20105,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 88,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19437,13 +20173,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 6.24,
-    "total": 56.4,
+    "total": 56,
     "home_win_prob": 0.337,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -19461,7 +20197,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -19479,7 +20215,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19545,13 +20281,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -11.99,
-    "total": 50.7,
+    "total": 50.3,
     "home_win_prob": 0.7903,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -19571,7 +20307,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -19589,7 +20325,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19655,13 +20391,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -38.48,
-    "total": 54.2,
+    "total": 53.8,
     "home_win_prob": 0.9957,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 86,
      "grade": "STRONG",
@@ -19677,11 +20413,59 @@
      "stability_sd": 2.2,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
+    },
+    "price_lock": {
+     "schema": "edgedesk_price_lock_v1",
+     "decided_at": "2026-10-04T02:45:39.866Z",
+     "spread": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored spread price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "total": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored total price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "moneyline": {
+      "status": "historical_price_unavailable",
+      "why": "no_snapshot",
+      "detail": "EdgeDesk stored no priced moneyline quote for this game"
+     }
     }
    },
-   "revisions": 1,
-   "entry": null,
-   "market_pick": null,
+   "revisions": 2,
+   "entry": {
+    "model_at": "2026-10-04T02:45:39.866Z",
+    "home_line": -38.48,
+    "total": 53.8,
+    "market": {
+     "home_line": -35.5,
+     "total": 55.5,
+     "source": "espn",
+     "book": "DraftKings",
+     "at": "2026-10-04T08:34:06.305Z",
+     "prices": {
+      "home": -110,
+      "away": -110,
+      "over": -110,
+      "under": -110
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": -35.5,
+    "total": 55.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -19697,7 +20481,7 @@
     "reliability": {
      "score": 86,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19763,31 +20547,31 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -19.67,
-    "total": 51.5,
-    "home_win_prob": 0.9043,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -13.5,
+    "total": 52.5,
+    "home_win_prob": 0.8184,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 88,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.3,
+      "team_data": 19,
       "roster_availability": 11.9,
-      "projection_stability": 18.4,
+      "projection_stability": 18.9,
       "freshness": 15,
       "source_integrity": 14,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 1.95,
+     "stability_sd": 1.82,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -19803,9 +20587,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 88,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19875,13 +20659,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 6.66,
-    "total": 53.3,
+    "total": 52.8,
     "home_win_prob": 0.3269,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -19901,7 +20685,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -19919,7 +20703,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -19985,20 +20769,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 2.88,
-    "total": 58.3,
-    "home_win_prob": 0.4232,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 2.39,
+    "total": 57.9,
+    "home_win_prob": 0.4352,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 19,
+      "team_data": 19.3,
       "roster_availability": 12.5,
-      "projection_stability": 18.2,
+      "projection_stability": 18.1,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -20006,12 +20790,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 2.02,
-     "favorite_flip_rate": 0,
+     "stability_sd": 1.93,
+     "favorite_flip_rate": 0.016,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -20029,7 +20813,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -25723,24 +26507,113 @@
      "away_ml": -2400
     }
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 24.5,
+    "total": 56.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -112,
+     "away": -108,
+     "over": -105,
+     "under": -115,
+     "home_ml": 1200,
+     "away_ml": -2400
+    }
+   },
+   "final": {
+    "home_score": 15,
+    "away_score": 47,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 5.17,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.1,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 23.5,
+      "close": 24.5,
+      "gap": 4.16,
+      "pts": -1
+     },
+     "total": {
+      "side": "over",
+      "market": 54.5,
+      "close": 56.5,
+      "gap": 2,
+      "pts": 2
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 24.5,
+      "close": 24.5,
+      "gap": 5.17,
+      "pts": 0
+     },
+     "total": {
+      "side": "under",
+      "market": 56.5,
+      "close": 56.5,
+      "gap": 0.1,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": -32,
+     "model_margin_err": 12.67,
+     "close_margin_err": 7.5,
+     "model_total_err": 5.6,
+     "close_total_err": 5.5
+    },
+    "brier": 0.0093,
     "beyond_guard": false,
     "reliability": {
      "score": 90,
      "bucket": "90-100",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -112,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -2400,
+      "basis": "close",
+      "result": "win",
+      "units": 0.0417
+     },
+     "units": -1.9583,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 24.5,
@@ -25841,25 +26714,102 @@
     }
    },
    "market_pick": null,
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -7.5,
+    "total": 58.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": 100,
+     "away": -120,
+     "over": -102,
+     "under": -118,
+     "home_ml": -305,
+     "away_ml": 245
+    }
+   },
+   "final": {
+    "home_score": 25,
+    "away_score": 21,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 0.83,
+     "result": "win"
+    },
+    "total": {
+     "side": "under",
+     "gap": 2.9,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -10,
+      "close": -7.5,
+      "gap": 5.07,
+      "pts": 2.5
+     },
+     "total": {
+      "side": "under",
+      "market": 57.5,
+      "close": 58.5,
+      "gap": 1.1,
+      "pts": -1
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": 4,
+     "model_margin_err": 2.67,
+     "close_margin_err": 3.5,
+     "model_total_err": 9.6,
+     "close_total_err": 12.5
+    },
+    "brier": 0.1067,
     "beyond_guard": false,
     "reliability": {
      "score": 92,
      "bucket": "90-100",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -120,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8333
+     },
+     "total": {
+      "side": "under",
+      "odds": -118,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8475
+     },
+     "ml": {
+      "side": "home",
+      "odds": -305,
+      "basis": "close",
+      "result": "win",
+      "units": 0.3279
+     },
+     "units": 2.0087,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -7.5,
@@ -26179,31 +27129,31 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -0.63,
-    "total": 51.6,
-    "home_win_prob": 0.517,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 2.77,
+    "total": 50.2,
+    "home_win_prob": 0.4259,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 83,
+     "score": 88,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.3,
-      "projection_stability": 11.9,
+      "projection_stability": 16.6,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 2.2,
-     "favorite_flip_rate": 0.234,
-     "stability_tier": "MODERATE"
+     "stability_sd": 2.16,
+     "favorite_flip_rate": 0.047,
+     "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -26219,9 +27169,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 83,
+     "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -26287,13 +27237,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 9.08,
-    "total": 52.1,
+    "total": 51.7,
     "home_win_prob": 0.2703,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -26312,52 +27262,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_288a9a58f42d80e0d8a8163c",
+      "source": "record_quotes",
+      "quote_id": "edq_4f4bf16dd68f834861b08d96",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": 8.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_e5a21a85d7669e89b65a577f",
+      "source": "record_quotes",
+      "quote_id": "edq_820426bd0c1ad5782dc35d06",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": 50.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_9c66782f6faf0fa5b601b56c",
+      "source": "record_quotes",
+      "quote_id": "edq_6bbdc91e3bc2f65f5571d064",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": 285,
        "away_ml": -360
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-09-30T05:47:24.470Z",
     "home_line": 9.09,
@@ -26372,17 +27322,17 @@
    },
    "market_pick": {
     "home_line": 8.5,
-    "total": 50.5,
+    "total": 51.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -110,
      "away": -110,
      "over": -110,
      "under": -110,
-     "home_ml": 285,
-     "away_ml": -360
+     "home_ml": 260,
+     "away_ml": -325
     }
    },
    "close": null,
@@ -26400,7 +27350,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -26470,20 +27420,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -38.54,
-    "total": 49.3,
-    "home_win_prob": 0.9953,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -38.22,
+    "total": 49.5,
+    "home_win_prob": 0.995,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 79,
      "grade": "ADEQUATE",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 9.8,
-      "projection_stability": 16.5,
+      "projection_stability": 16.9,
       "freshness": 15,
       "source_integrity": 13.1,
       "environment": 10
@@ -26491,12 +27441,12 @@
      "capped_by": [
       "QB_CONTESTED"
      ],
-     "stability_sd": 2.49,
+     "stability_sd": 2.39,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -26514,7 +27464,7 @@
     "reliability": {
      "score": 79,
      "bucket": "70-79",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -26580,33 +27530,83 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -31.97,
-    "total": 52.1,
-    "home_win_prob": 0.9844,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -33.99,
+    "total": 51.4,
+    "home_win_prob": 0.989,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.8,
-      "projection_stability": 17.4,
+      "projection_stability": 18.1,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.23,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 2.04,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
+    },
+    "price_lock": {
+     "schema": "edgedesk_price_lock_v1",
+     "decided_at": "2026-10-04T02:45:39.866Z",
+     "spread": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored spread price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "total": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored total price for this game (2026-10-04T04:08:47.000Z) came after the decision (2026-10-04T02:45:39.866Z)"
+     },
+     "moneyline": {
+      "status": "historical_price_unavailable",
+      "why": "no_snapshot",
+      "detail": "EdgeDesk stored no priced moneyline quote for this game"
+     }
     }
    },
-   "revisions": 1,
-   "entry": null,
-   "market_pick": null,
+   "revisions": 2,
+   "entry": {
+    "model_at": "2026-10-04T02:45:39.866Z",
+    "home_line": -33.99,
+    "total": 51.4,
+    "market": {
+     "home_line": -35.5,
+     "total": 55.5,
+     "source": "espn",
+     "book": "DraftKings",
+     "at": "2026-10-04T08:34:06.305Z",
+     "prices": {
+      "home": -110,
+      "away": -110,
+      "over": -110,
+      "under": -110
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": -35.5,
+    "total": 55.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
@@ -26622,7 +27622,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -26692,13 +27692,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -7.38,
-    "total": 59.1,
-    "home_win_prob": 0.6905,
+    "total": 58.7,
+    "home_win_prob": 0.6906,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 69,
      "grade": "CAUTION",
@@ -26719,52 +27719,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_a58fe13076d4c63ccd8d900b",
+      "source": "record_quotes",
+      "quote_id": "edq_72774b71f3a36096f3c4745f",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": -12.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_46a6e350a49bf8bf1f9492d8",
+      "source": "record_quotes",
+      "quote_id": "edq_a7b47aceffaed91a082c453b",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": 60.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_17b692bbdd4aa697ba18cb82",
+      "source": "record_quotes",
+      "quote_id": "edq_1da7890ac987f2de52c3421f",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
-       "home_ml": -455,
-       "away_ml": 350
+       "home_ml": -485,
+       "away_ml": 370
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": {
     "model_at": "2026-09-30T17:15:56.240Z",
     "home_line": -7.36,
@@ -26782,12 +27782,12 @@
     "total": 60.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -110,
      "away": -110,
-     "over": -110,
-     "under": -110,
+     "over": -115,
+     "under": -105,
      "home_ml": -485,
      "away_ml": 370
     }
@@ -26807,7 +27807,7 @@
     "reliability": {
      "score": 69,
      "bucket": "60-69",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -26873,13 +27873,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -2.16,
-    "total": 55.9,
+    "total": 55.5,
     "home_win_prob": 0.5588,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -26898,52 +27898,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_de6a58ee8b22cae63d2419df",
+      "source": "record_quotes",
+      "quote_id": "edq_3642a414a1167ca2bf019ef4",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": -1.5,
       "total": null,
       "prices": {
        "home": -108,
        "away": -112
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_677dcb140aa0060a48c38558",
+      "source": "record_quotes",
+      "quote_id": "edq_f314075fe6c2459a9733b5d3",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": 58.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_46ba413c9d271ea5339de15f",
+      "source": "record_quotes",
+      "quote_id": "edq_471375a882f2a145213fa716",
       "book": "draftkings",
-      "observed_at": "2026-10-03T18:07:31.000Z",
+      "observed_at": "2026-10-03T23:55:31.629Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -115,
        "away_ml": -105
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": {
     "model_at": "2026-09-30T05:47:24.470Z",
     "home_line": -7.66,
@@ -26957,18 +27957,18 @@
     }
    },
    "market_pick": {
-    "home_line": -1.5,
-    "total": 58.5,
+    "home_line": 2.5,
+    "total": 56.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
-     "home": -108,
-     "away": -112,
+     "home": -115,
+     "away": -105,
      "over": -110,
      "under": -110,
-     "home_ml": -115,
-     "away_ml": -105
+     "home_ml": 105,
+     "away_ml": -125
     }
    },
    "close": null,
@@ -26986,7 +27986,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -27056,13 +28056,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 7.72,
-    "total": 53.6,
+    "total": 53.2,
     "home_win_prob": 0.3015,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -27082,7 +28082,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -27100,7 +28100,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -27170,77 +28170,77 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 0.9,
-    "total": 46.5,
-    "home_win_prob": 0.4758,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -1.12,
+    "total": 46,
+    "home_win_prob": 0.53,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 82,
+     "score": 84,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.5,
-      "projection_stability": 10.5,
+      "projection_stability": 12,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 2.5,
-     "favorite_flip_rate": 0.25,
+     "stability_sd": 2.49,
+     "favorite_flip_rate": 0.188,
      "stability_tier": "MODERATE"
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_ef11b80809cffc90a4006072",
+      "source": "record_quotes",
+      "quote_id": "edq_d5a4677a0c5731ded30ea681",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": -1.5,
       "total": null,
       "prices": {
        "home": -105,
        "away": -115
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_c702dc838f51a71626b5d9bb",
+      "source": "record_quotes",
+      "quote_id": "edq_32b77e511b0a46c35c2bbe7a",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": null,
       "total": 41.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_12137a94e9241fdbfa580e27",
+      "source": "record_quotes",
+      "quote_id": "edq_1c4b2638f6437169b7e7bcba",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.529Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -112,
        "away_ml": -108
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-09-30T02:47:34.357Z",
     "home_line": -0.01,
@@ -27254,18 +28254,18 @@
     }
    },
    "market_pick": {
-    "home_line": -1.5,
+    "home_line": -2.5,
     "total": 41.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -105,
      "away": -115,
      "over": -110,
      "under": -110,
-     "home_ml": -112,
-     "away_ml": -108
+     "home_ml": -125,
+     "away_ml": 105
     }
    },
    "close": null,
@@ -27281,9 +28281,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 82,
+     "score": 84,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -29893,24 +30893,101 @@
     }
    },
    "market_pick": null,
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -19.5,
+    "total": 50.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -118,
+     "under": -102,
+     "home_ml": -1350,
+     "away_ml": 800
+    }
+   },
+   "final": {
+    "home_score": 37,
+    "away_score": 18,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 2.44,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 1.1,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -21,
+      "close": -19.5,
+      "gap": 3.96,
+      "pts": 1.5
+     },
+     "total": {
+      "side": "over",
+      "market": 49.5,
+      "close": 50.5,
+      "gap": 2,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": 19,
+     "model_margin_err": 1.94,
+     "close_margin_err": 0.5,
+     "model_total_err": 3.4,
+     "close_total_err": 4.5
+    },
+    "brier": 0.0157,
     "beyond_guard": false,
     "reliability": {
      "score": 87,
      "bucket": "80-89",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -110,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9091
+     },
+     "total": {
+      "side": "over",
+      "odds": -118,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8475
+     },
+     "ml": {
+      "side": "home",
+      "odds": -1350,
+      "basis": "close",
+      "result": "win",
+      "units": 0.0741
+     },
+     "units": 1.8307,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -19.5,
@@ -30300,24 +31377,113 @@
      "away_ml": -375
     }
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 10,
+    "total": 57.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -115,
+     "away": -105,
+     "over": -112,
+     "under": -108,
+     "home_ml": 280,
+     "away_ml": -355
+    }
+   },
+   "final": {
+    "home_score": 31,
+    "away_score": 29,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "PREGAME",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 4.57,
+     "result": "win"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.1,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": 4.5,
+      "close": 10,
+      "gap": 0.64,
+      "pts": 5.5
+     },
+     "total": {
+      "side": "under",
+      "market": 60.5,
+      "close": 57.5,
+      "gap": 3.1,
+      "pts": 3
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 9.5,
+      "close": 10,
+      "gap": 4.07,
+      "pts": -0.5
+     },
+     "total": {
+      "side": "under",
+      "market": 57.5,
+      "close": 57.5,
+      "gap": 0.1,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": 2,
+     "model_margin_err": 7.43,
+     "close_margin_err": 12,
+     "model_total_err": 2.6,
+     "close_total_err": 2.5
+    },
+    "brier": 0.4131,
     "beyond_guard": false,
     "reliability": {
      "score": 87,
      "bucket": "80-89",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -115,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8696
+     },
+     "total": {
+      "side": "under",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -355,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.1304,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 9.5,
@@ -30396,13 +31562,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 2.46,
-    "total": 49.8,
+    "total": 49.4,
     "home_win_prob": 0.4341,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -30422,7 +31588,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -30440,7 +31606,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -30506,13 +31672,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -7.69,
-    "total": 49.4,
+    "total": 49,
     "home_win_prob": 0.6977,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 88,
      "grade": "STRONG",
@@ -30530,7 +31696,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -30548,7 +31714,7 @@
     "reliability": {
      "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -30650,24 +31816,113 @@
      "away_ml": 110
     }
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -2.5,
+    "total": 44.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -105,
+     "away": -115,
+     "over": -115,
+     "under": -105,
+     "home_ml": -130,
+     "away_ml": 110
+    }
+   },
+   "final": {
+    "home_score": 6,
+    "away_score": 26,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 1.73,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 2.1,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -1.5,
+      "close": -2.5,
+      "gap": 1.06,
+      "pts": 1
+     },
+     "total": {
+      "side": "over",
+      "market": 45.5,
+      "close": 44.5,
+      "gap": 0.9,
+      "pts": -1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -2.5,
+      "close": -2.5,
+      "gap": 1.73,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 44.5,
+      "close": 44.5,
+      "gap": 2.1,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": -20,
+     "model_margin_err": 20.77,
+     "close_margin_err": 22.5,
+     "model_total_err": 14.6,
+     "close_total_err": 12.5
+    },
+    "brier": 0.271,
     "beyond_guard": false,
     "reliability": {
      "score": 83,
      "bucket": "80-89",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -115,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8696
+     },
+     "total": {
+      "side": "over",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -130,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.1304,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -2.5,
@@ -30750,13 +32005,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -0.96,
-    "total": 48.4,
+    "total": 48,
     "home_win_prob": 0.5258,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 81,
      "grade": "STRONG",
@@ -30774,7 +32029,7 @@
      "stability_tier": "MODERATE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -30792,7 +32047,7 @@
     "reliability": {
      "score": 81,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -30975,31 +32230,31 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -0.41,
-    "total": 57.5,
-    "home_win_prob": 0.511,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -2,
+    "total": 58.5,
+    "home_win_prob": 0.5535,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 82,
+     "score": 88,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 9.6,
-      "projection_stability": 13.6,
+      "projection_stability": 19.2,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 1.84,
-     "favorite_flip_rate": 0.219,
-     "stability_tier": "MODERATE"
+     "stability_sd": 1.72,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -31015,9 +32270,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 82,
+     "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -34748,25 +36003,114 @@
     "book": "DraftKings",
     "at": "2026-09-28T17:52:03.468Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 11.5,
+    "total": 56.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -105,
+     "away": -115,
+     "over": -105,
+     "under": -115,
+     "home_ml": 380,
+     "away_ml": -500
+    }
+   },
+   "final": {
+    "home_score": 14,
+    "away_score": 16,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 3.39,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 1.8,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 11.5,
+      "close": 11.5,
+      "gap": 2.84,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 54.5,
+      "close": 56.5,
+      "gap": 3.8,
+      "pts": 2
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 11.5,
+      "close": 11.5,
+      "gap": 3.39,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 54.5,
+      "close": 56.5,
+      "gap": 3.8,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": -2,
+     "model_margin_err": 6.11,
+     "close_margin_err": 9.5,
+     "model_total_err": 28.3,
+     "close_total_err": 26.5
+    },
+    "brier": 0.0855,
     "beyond_guard": false,
     "reliability": {
      "score": 89,
      "bucket": "80-89",
      "at": "2026-10-03T16:30:25.262Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "total": {
+      "side": "over",
+      "odds": -105,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -500,
+      "basis": "close",
+      "result": "win",
+      "units": 0.2
+     },
+     "units": 0.1524,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 12.5,
@@ -35323,25 +36667,114 @@
     "book": "Draft Kings",
     "at": "2026-09-30T17:16:45.326Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -5.5,
+    "total": 50.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -108,
+     "away": -112,
+     "over": -112,
+     "under": -108,
+     "home_ml": -218,
+     "away_ml": 180
+    }
+   },
+   "final": {
+    "home_score": 13,
+    "away_score": 17,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 9.41,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 4.6,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -6,
+      "close": -5.5,
+      "gap": 9.64,
+      "pts": -0.5
+     },
+     "total": {
+      "side": "over",
+      "market": 51.5,
+      "close": 50.5,
+      "gap": 3.6,
+      "pts": -1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -6.5,
+      "close": -5.5,
+      "gap": 8.41,
+      "pts": -1
+     },
+     "total": {
+      "side": "over",
+      "market": 48.5,
+      "close": 50.5,
+      "gap": 6.6,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": -4,
+     "model_margin_err": 18.91,
+     "close_margin_err": 9.5,
+     "model_total_err": 25.1,
+     "close_total_err": 20.5
+    },
+    "brier": 0.7096,
     "beyond_guard": false,
     "reliability": {
      "score": 91,
      "bucket": "90-100",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -112,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -218,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -3,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -5.5,
@@ -35617,13 +37050,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-30T17:15:56.240Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -0.71,
-    "total": 59.4,
+    "total": 59,
     "home_win_prob": 0.519,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 81,
      "grade": "STRONG",
@@ -35641,7 +37074,7 @@
      "stability_tier": "MODERATE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -35659,7 +37092,7 @@
     "reliability": {
      "score": 81,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -35725,13 +37158,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -11.85,
-    "total": 47.7,
+    "total": 47.3,
     "home_win_prob": 0.7845,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 88,
      "grade": "STRONG",
@@ -35749,7 +37182,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -35767,7 +37200,7 @@
     "reliability": {
      "score": 88,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -35837,13 +37270,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -32.21,
-    "total": 63.7,
+    "total": 63.3,
     "home_win_prob": 0.9861,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -35861,7 +37294,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -35879,7 +37312,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -35945,13 +37378,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -14.67,
-    "total": 52.2,
+    "total": 51.8,
     "home_win_prob": 0.8385,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -35969,7 +37402,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -35987,7 +37420,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -36053,20 +37486,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -15.84,
-    "total": 57.4,
-    "home_win_prob": 0.8571,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -15.95,
+    "total": 56.5,
+    "home_win_prob": 0.8622,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 19,
+      "team_data": 19.3,
       "roster_availability": 11.9,
-      "projection_stability": 19.5,
+      "projection_stability": 20,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -36074,12 +37507,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 1.66,
+     "stability_sd": 1.47,
      "favorite_flip_rate": 0,
-     "stability_tier": "STABLE"
+     "stability_tier": "VERY_STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -36097,7 +37530,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -36163,13 +37596,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -10,
-    "total": 52.4,
+    "total": 52,
     "home_win_prob": 0.7498,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 79,
      "grade": "ADEQUATE",
@@ -36190,7 +37623,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -36208,7 +37641,7 @@
     "reliability": {
      "score": 79,
      "bucket": "70-79",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -37992,13 +39425,13 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0"
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -7.32,
-    "total": 51.4,
+    "total": 51,
     "home_win_prob": 0.6891,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 85,
      "grade": "STRONG",
@@ -38017,52 +39450,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_346380e0a1fcdfdd9866077d",
+      "source": "record_quotes",
+      "quote_id": "edq_34f4cf07550e6f0a00233834",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-04T01:59:36.868Z",
       "home_line": -2.5,
       "total": null,
       "prices": {
        "home": -120,
        "away": 100
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_ffc4ffbe0ad55e10ae895bcf",
+      "source": "record_quotes",
+      "quote_id": "edq_61902079fc1fb3890e6eb039",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-04T01:59:36.868Z",
       "home_line": null,
       "total": 50.5,
       "prices": {
        "over": -112,
        "under": -108
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_06f34b662f8ee145c3428e45",
+      "source": "record_quotes",
+      "quote_id": "edq_7263c9e5011289775946ee9f",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-04T01:59:36.868Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -148,
        "away_ml": 124
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 6,
+   "revisions": 7,
    "entry": {
     "model_at": "2026-09-27T13:08:34.542Z",
     "home_line": -7.27,
@@ -38075,39 +39508,102 @@
      "at": "2026-09-27T18:12:56.945Z"
     }
    },
-   "market_pick": {
+   "market_pick": null,
+   "close": {
     "home_line": -2.5,
-    "total": 50.5,
+    "total": 51.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
     "prices": {
-     "home": -120,
-     "away": 100,
-     "over": -112,
-     "under": -108,
-     "home_ml": -148,
-     "away_ml": 124
+     "home": -115,
+     "away": -105,
+     "over": -108,
+     "under": -112,
+     "home_ml": -135,
+     "away_ml": 114
     }
    },
-   "close": null,
-   "final": null,
+   "final": {
+    "home_score": 16,
+    "away_score": 20,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "grade": {
-    "status": "PREGAME",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 4.82,
+     "result": "loss"
+    },
+    "total": {
+     "side": "under",
+     "gap": 0.5,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -4.5,
+      "close": -2.5,
+      "gap": 2.77,
+      "pts": -2
+     },
+     "total": {
+      "side": "under",
+      "market": 52.5,
+      "close": 51.5,
+      "gap": 1.1,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": -4,
+     "model_margin_err": 11.32,
+     "close_margin_err": 6.5,
+     "model_total_err": 15,
+     "close_total_err": 15.5
+    },
+    "brier": 0.4749,
     "beyond_guard": false,
     "reliability": {
      "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "under",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "ml": {
+      "side": "home",
+      "odds": -135,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.1071,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -2.5,
@@ -38667,13 +40163,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 11.57,
-    "total": 49.4,
+    "total": 49,
     "home_win_prob": 0.2178,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
@@ -38693,7 +40189,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -38711,7 +40207,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -38781,20 +40277,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 3.84,
-    "total": 52.3,
-    "home_win_prob": 0.398,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 5.32,
+    "total": 52.7,
+    "home_win_prob": 0.36,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.1,
-      "projection_stability": 19.1,
+      "projection_stability": 19.5,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -38802,12 +40298,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 1.76,
+     "stability_sd": 1.65,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -38825,7 +40321,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -38891,31 +40387,31 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -4.06,
-    "total": 51.7,
-    "home_win_prob": 0.6079,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -1.91,
+    "total": 49.8,
+    "home_win_prob": 0.5512,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 88,
+     "score": 87,
      "grade": "STRONG",
      "components": {
-      "team_data": 17.7,
+      "team_data": 18,
       "roster_availability": 12.5,
-      "projection_stability": 18.3,
+      "projection_stability": 17.8,
       "freshness": 15,
       "source_integrity": 14,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 1.97,
-     "favorite_flip_rate": 0,
+     "stability_sd": 1.81,
+     "favorite_flip_rate": 0.047,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -38931,9 +40427,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 88,
+     "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -38999,20 +40495,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -2.07,
-    "total": 45.6,
-    "home_win_prob": 0.5555,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -4.22,
+    "total": 44.4,
+    "home_win_prob": 0.612,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 12.3,
-      "projection_stability": 19.3,
+      "projection_stability": 19.8,
       "freshness": 15,
       "source_integrity": 14,
       "environment": 10
@@ -39020,12 +40516,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 1.7,
+     "stability_sd": 1.54,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -39043,7 +40539,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -43764,31 +45260,33 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -2.12,
-    "total": 50,
-    "home_win_prob": 0.5568,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 5.62,
+    "total": 50.1,
+    "home_win_prob": 0.3504,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 19,
+      "team_data": 19.7,
       "roster_availability": 11.9,
-      "projection_stability": 18.1,
+      "projection_stability": 19.8,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 1.85,
-     "favorite_flip_rate": 0.031,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 1.56,
+     "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -43806,7 +45304,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -43876,20 +45374,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -4.9,
-    "total": 47.3,
-    "home_win_prob": 0.6292,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -7.84,
+    "total": 46.7,
+    "home_win_prob": 0.704,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18,
+      "team_data": 18.3,
       "roster_availability": 12.5,
-      "projection_stability": 19.4,
+      "projection_stability": 20,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -43897,12 +45395,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 1.68,
+     "stability_sd": 1.48,
      "favorite_flip_rate": 0,
-     "stability_tier": "STABLE"
+     "stability_tier": "VERY_STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -43920,7 +45418,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -43986,31 +45484,33 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -24.52,
-    "total": 54.1,
-    "home_win_prob": 0.9508,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -23.2,
+    "total": 53.1,
+    "home_win_prob": 0.9436,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 88,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 17.7,
+      "team_data": 18.3,
       "roster_availability": 12.1,
-      "projection_stability": 18.2,
+      "projection_stability": 19,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 2.02,
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 1.78,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -44026,9 +45526,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 88,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -44098,20 +45598,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -11.57,
-    "total": 48.2,
-    "home_win_prob": 0.7822,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -8.71,
+    "total": 46.8,
+    "home_win_prob": 0.7242,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 69,
      "grade": "CAUTION",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19.3,
       "roster_availability": 9.9,
-      "projection_stability": 18.3,
+      "projection_stability": 19.3,
       "freshness": 15,
       "source_integrity": 10.9,
       "environment": 10
@@ -44119,12 +45619,12 @@
      "capped_by": [
       "ROSTER_CONFLICT"
      ],
-     "stability_sd": 2,
+     "stability_sd": 1.69,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -44142,7 +45642,7 @@
     "reliability": {
      "score": 69,
      "bucket": "60-69",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -44212,20 +45712,20 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -16.2,
-    "total": 49.2,
-    "home_win_prob": 0.8625,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -15.09,
+    "total": 46.3,
+    "home_win_prob": 0.8488,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19.3,
       "roster_availability": 12.8,
-      "projection_stability": 17.7,
+      "projection_stability": 18.7,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
@@ -44233,12 +45733,12 @@
      "capped_by": [
       "QB_STATUS_UNCONFIRMED"
      ],
-     "stability_sd": 2.15,
+     "stability_sd": 1.88,
      "favorite_flip_rate": 0,
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -44256,7 +45756,7 @@
     "reliability": {
      "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -44322,31 +45822,33 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": 1.75,
-    "total": 50.4,
-    "home_win_prob": 0.4531,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": 4.07,
+    "total": 49.6,
+    "home_win_prob": 0.3906,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 85,
+     "score": 89,
      "grade": "STRONG",
      "components": {
-      "team_data": 17.7,
+      "team_data": 18.3,
       "roster_availability": 11.9,
-      "projection_stability": 15.5,
+      "projection_stability": 19.8,
       "freshness": 15,
       "source_integrity": 15,
       "environment": 10
      },
-     "capped_by": [],
-     "stability_sd": 1.92,
-     "favorite_flip_rate": 0.125,
-     "stability_tier": "MODERATE"
+     "capped_by": [
+      "QB_STATUS_UNCONFIRMED"
+     ],
+     "stability_sd": 1.56,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -44362,9 +45864,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 85,
+     "score": 89,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -45887,25 +47389,102 @@
     }
    },
    "market_pick": null,
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -1.5,
+    "total": 46.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": 100,
+     "away": -120,
+     "over": -112,
+     "under": -108,
+     "home_ml": -110,
+     "away_ml": -110
+    }
+   },
+   "final": {
+    "home_score": 31,
+    "away_score": 29,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 7.67,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 4.4,
+     "result": "win"
+    },
+    "su": {
+     "side": "away",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": 3.5,
+      "close": -1.5,
+      "gap": 2.62,
+      "pts": -5
+     },
+     "total": {
+      "side": "over",
+      "market": 44.5,
+      "close": 46.5,
+      "gap": 6.3,
+      "pts": 2
+     }
+    },
+    "clv_pick": {
+     "spread": null,
+     "total": null
+    },
+    "error": {
+     "margin": 2,
+     "model_margin_err": 8.17,
+     "close_margin_err": 0.5,
+     "model_total_err": 9.1,
+     "close_total_err": 13.5
+    },
+    "brier": 0.4344,
     "beyond_guard": false,
     "reliability": {
      "score": 85,
      "bucket": "80-89",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -120,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "ml": {
+      "side": "away",
+      "odds": -110,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.1071,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 1.5,
@@ -45984,31 +47563,31 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
-    "home_line": -1.76,
-    "total": 53.8,
-    "home_win_prob": 0.5471,
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -5.84,
+    "total": 53.5,
+    "home_win_prob": 0.6531,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 79,
-     "grade": "ADEQUATE",
+     "score": 84,
+     "grade": "STRONG",
      "components": {
-      "team_data": 18.7,
+      "team_data": 19,
       "roster_availability": 8.2,
-      "projection_stability": 12.9,
+      "projection_stability": 17.6,
       "freshness": 15,
       "source_integrity": 14.1,
       "environment": 10
      },
      "capped_by": [],
-     "stability_sd": 2.35,
-     "favorite_flip_rate": 0.172,
-     "stability_tier": "MODERATE"
+     "stability_sd": 2.19,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -46024,9 +47603,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 79,
-     "bucket": "70-79",
-     "at": "2026-10-03T23:10:16.887Z"
+     "score": 84,
+     "bucket": "80-89",
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -46334,25 +47913,114 @@
     "book": "DraftKings",
     "at": "2026-09-28T17:52:03.468Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -4.5,
+    "total": 49.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -115,
+     "away": -105,
+     "over": -110,
+     "under": -110,
+     "home_ml": -205,
+     "away_ml": 170
+    }
+   },
+   "final": {
+    "home_score": 23,
+    "away_score": 20,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 2.22,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 2.5,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -4.5,
+      "close": -4.5,
+      "gap": 2.52,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 49.5,
+      "close": 49.5,
+      "gap": 2.4,
+      "pts": 0
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -6.5,
+      "close": -4.5,
+      "gap": 0.22,
+      "pts": -2
+     },
+     "total": {
+      "side": "over",
+      "market": 47.5,
+      "close": 49.5,
+      "gap": 4.5,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": 3,
+     "model_margin_err": 3.72,
+     "close_margin_err": 1.5,
+     "model_total_err": 9,
+     "close_total_err": 6.5
+    },
+    "brier": 0.1058,
     "beyond_guard": false,
     "reliability": {
      "score": 87,
      "bucket": "80-89",
      "at": "2026-10-03T23:10:16.887Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -115,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -110,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -205,
+      "basis": "close",
+      "result": "win",
+      "units": 0.4878
+     },
+     "units": -1.5122,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -4.5,
@@ -46431,13 +48099,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-28T23:51:45.169Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -6.63,
-    "total": 55.5,
-    "home_win_prob": 0.6724,
+    "total": 55.1,
+    "home_win_prob": 0.6725,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 85,
      "grade": "STRONG",
@@ -46455,7 +48123,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 0,
+   "revisions": 1,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -46473,7 +48141,7 @@
     "reliability": {
      "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -46876,25 +48544,114 @@
     "book": "Draft Kings",
     "at": "2026-09-30T17:16:45.326Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 2.5,
+    "total": 53.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -102,
+     "away": -118,
+     "over": -105,
+     "under": -115,
+     "home_ml": 120,
+     "away_ml": -142
+    }
+   },
+   "final": {
+    "home_score": 24,
+    "away_score": 31,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 1.58,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 0.2,
+     "result": "win"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 1.5,
+      "close": 2.5,
+      "gap": 1.11,
+      "pts": -1
+     },
+     "total": {
+      "side": "over",
+      "market": 52.5,
+      "close": 53.5,
+      "gap": 1.2,
+      "pts": 1
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 2.5,
+      "close": 2.5,
+      "gap": 1.58,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 53.5,
+      "close": 53.5,
+      "gap": 0.2,
+      "pts": 0
+     }
+    },
+    "error": {
+     "margin": -7,
+     "model_margin_err": 6.08,
+     "close_margin_err": 4.5,
+     "model_total_err": 1.3,
+     "close_total_err": 1.5
+    },
+    "brier": 0.2258,
     "beyond_guard": false,
     "reliability": {
      "score": 82,
      "bucket": "80-89",
      "at": "2026-10-03T16:30:25.262Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -102,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -105,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9524
+     },
+     "ml": {
+      "side": "away",
+      "odds": -142,
+      "basis": "close",
+      "result": "win",
+      "units": 0.7042
+     },
+     "units": 0.6566,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": 1.5,
@@ -46973,21 +48730,21 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -5.78,
-    "total": 55.2,
+    "total": 54.8,
     "home_win_prob": 0.6515,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
-     "score": 86,
+     "score": 85,
      "grade": "STRONG",
      "components": {
       "team_data": 18.7,
       "roster_availability": 9,
       "projection_stability": 18.9,
-      "freshness": 15,
+      "freshness": 14.3,
       "source_integrity": 14.1,
       "environment": 10
      },
@@ -46997,7 +48754,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -47013,9 +48770,9 @@
     "brier": null,
     "beyond_guard": false,
     "reliability": {
-     "score": 86,
+     "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -47198,13 +48955,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 13.05,
-    "total": 55.9,
+    "total": 55.5,
     "home_win_prob": 0.1897,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 85,
      "grade": "STRONG",
@@ -47222,7 +48979,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -47240,7 +48997,7 @@
     "reliability": {
      "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -48092,13 +49849,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -3.14,
-    "total": 53.8,
+    "total": 53.4,
     "home_win_prob": 0.5827,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 84,
      "grade": "STRONG",
@@ -48116,7 +49873,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -48134,7 +49891,7 @@
     "reliability": {
      "score": 84,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -48458,13 +50215,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -18.81,
-    "total": 52.5,
+    "total": 52.1,
     "home_win_prob": 0.8974,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -48482,7 +50239,7 @@
      "stability_tier": "STABLE"
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -48500,7 +50257,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -49578,13 +51335,13 @@
     }
    },
    "pick": {
-    "at": "2026-09-28T00:53:47.573Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 1.95,
-    "total": 50.3,
+    "total": 49.9,
     "home_win_prob": 0.4477,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 87,
      "grade": "STRONG",
@@ -49603,25 +51360,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-09-28T00:53:47.573Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored spread price for this game (2026-10-01T00:07:35.000Z) came after the decision (2026-09-28T00:53:47.573Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_eede6ab3f2577f194fbf7ff0",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.294Z",
+      "home_line": 2.5,
+      "total": null,
+      "prices": {
+       "home": -105,
+       "away": -115
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored total price for this game (2026-10-01T00:07:35.000Z) came after the decision (2026-09-28T00:53:47.573Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_c6e4b4c462cf71433bd88e8f",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.294Z",
+      "home_line": null,
+      "total": 48.5,
+      "prices": {
+       "over": -115,
+       "under": -105
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
-      "status": "price_after_decision",
-      "why": "after_decision",
-      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-01T00:07:35.000Z) came after the decision (2026-09-28T00:53:47.573Z)"
+      "status": "locked",
+      "source": "record_quotes",
+      "quote_id": "edq_3e7ca8f736dd4fb5b0370519",
+      "book": "draftkings",
+      "observed_at": "2026-10-03T23:55:31.294Z",
+      "home_line": null,
+      "total": null,
+      "prices": {
+       "home_ml": 120,
+       "away_ml": -142
+      },
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 0,
+   "revisions": 1,
    "entry": {
     "model_at": "2026-09-28T00:53:47.573Z",
     "home_line": 1.95,
@@ -49635,11 +51419,17 @@
     }
    },
    "market_pick": {
-    "home_line": 2.5,
-    "total": 48.5,
+    "home_line": 3.5,
+    "total": null,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-09-30T23:58:20.139Z"
+    "at": "2026-10-04T08:34:06.305Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "home_ml": 150,
+     "away_ml": -180
+    }
    },
    "close": null,
    "final": null,
@@ -49656,7 +51446,7 @@
     "reliability": {
      "score": 87,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -49726,13 +51516,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -1.62,
-    "total": 55.2,
+    "total": 54.8,
     "home_win_prob": 0.5435,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 81,
      "grade": "STRONG",
@@ -49750,7 +51540,7 @@
      "stability_tier": "MODERATE"
     }
    },
-   "revisions": 2,
+   "revisions": 3,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -49768,7 +51558,115 @@
     "reliability": {
      "score": 81,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
+    },
+    "pnl": null
+   }
+  },
+  "401871053": {
+   "game_id": "401871053",
+   "season": 2026,
+   "week": 7,
+   "kickoff": "2026-10-14T00:00:00.000Z",
+   "home": "Jacksonville State",
+   "away": "Florida International",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "home_line": -8.07,
+   "total": 49.5,
+   "home_win_prob": 0.7066,
+   "home_conference": "Conference USA",
+   "away_conference": "Conference USA",
+   "home_division": "fbs",
+   "away_division": "fbs",
+   "matchup_type": "conference",
+   "group": "other_fbs",
+   "neutral_site": false,
+   "reliability": {
+    "version": "cfb_reliability/2",
+    "score": 86,
+    "grade": "STRONG",
+    "components": {
+     "team_data": 19,
+     "roster_availability": 7.4,
+     "projection_stability": 19.4,
+     "freshness": 15,
+     "source_integrity": 15,
+     "environment": 10
+    },
+    "capped_by": [],
+    "stability_sd": 1.67,
+    "favorite_flip_rate": 0,
+    "stability_tier": "STABLE"
+   },
+   "first": {
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -8.07,
+    "total": 49.5,
+    "home_win_prob": 0.7066,
+    "model_version": "edgedesk_cfb_p4_v1.0.0",
+    "reliability": {
+     "at": "2026-10-04T02:45:39.866Z",
+     "version": "cfb_reliability/2",
+     "score": 86,
+     "grade": "STRONG",
+     "components": {
+      "team_data": 19,
+      "roster_availability": 7.4,
+      "projection_stability": 19.4,
+      "freshness": 15,
+      "source_integrity": 15,
+      "environment": 10
+     },
+     "capped_by": [],
+     "stability_sd": 1.67,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
+    }
+   },
+   "pick": {
+    "at": "2026-10-04T02:45:39.866Z",
+    "home_line": -8.07,
+    "total": 49.5,
+    "home_win_prob": 0.7066,
+    "model_version": "edgedesk_cfb_p4_v1.0.0",
+    "reliability": {
+     "at": "2026-10-04T02:45:39.866Z",
+     "version": "cfb_reliability/2",
+     "score": 86,
+     "grade": "STRONG",
+     "components": {
+      "team_data": 19,
+      "roster_availability": 7.4,
+      "projection_stability": 19.4,
+      "freshness": 15,
+      "source_integrity": 15,
+      "environment": 10
+     },
+     "capped_by": [],
+     "stability_sd": 1.67,
+     "favorite_flip_rate": 0,
+     "stability_tier": "STABLE"
+    }
+   },
+   "revisions": 0,
+   "entry": null,
+   "market_pick": null,
+   "close": null,
+   "final": null,
+   "grade": {
+    "status": "PREGAME",
+    "spread": null,
+    "total": null,
+    "su": null,
+    "clv_entry": null,
+    "clv_pick": null,
+    "error": null,
+    "brier": null,
+    "beyond_guard": false,
+    "reliability": {
+     "score": 86,
+     "bucket": "80-89",
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -49834,13 +51732,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -5.83,
-    "total": 51.2,
+    "total": 50.7,
     "home_win_prob": 0.6529,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 83,
      "grade": "STRONG",
@@ -49859,52 +51757,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_886298988fe91d65722c5014",
+      "source": "record_quotes",
+      "quote_id": "edq_a4d84af5681658377c1952e4",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:37:47.000Z",
+      "observed_at": "2026-10-03T23:55:31.294Z",
       "home_line": -3.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_53b6bd0baaa498d4548ec1c5",
+      "source": "record_quotes",
+      "quote_id": "edq_e2bca8cbf3b810e1858b5e81",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:37:47.000Z",
+      "observed_at": "2026-10-03T23:55:31.294Z",
       "home_line": null,
       "total": 47.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_76844bfa38f186bad6cca06d",
+      "source": "record_quotes",
+      "quote_id": "edq_5e88e0ec7be4be9d122e9b35",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:37:47.000Z",
+      "observed_at": "2026-10-03T23:55:31.294Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -162,
        "away_ml": 136
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 1,
+   "revisions": 2,
    "entry": {
     "model_at": "2026-10-03T23:10:16.887Z",
     "home_line": -5.83,
@@ -49930,7 +51828,7 @@
     "total": 47.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -110,
      "away": -110,
@@ -49955,7 +51853,7 @@
     "reliability": {
      "score": 83,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -50021,13 +51919,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": 0.75,
-    "total": 51.9,
+    "total": 51.5,
     "home_win_prob": 0.4796,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 78,
      "grade": "ADEQUATE",
@@ -50045,7 +51943,7 @@
      "stability_tier": "MODERATE"
     }
    },
-   "revisions": 0,
+   "revisions": 1,
    "entry": null,
    "market_pick": null,
    "close": null,
@@ -50063,7 +51961,7 @@
     "reliability": {
      "score": 78,
      "bucket": "70-79",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }
@@ -50184,25 +52082,114 @@
     "book": "DraftKings",
     "at": "2026-09-28T17:52:03.468Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -12.5,
+    "total": 57.5,
+    "source": "espn",
+    "book": "DraftKings",
+    "prices": {
+     "home": -112,
+     "away": -108,
+     "over": -108,
+     "under": -108,
+     "home_ml": -550,
+     "away_ml": 410
+    }
+   },
+   "final": {
+    "home_score": 52,
+    "away_score": 35,
+    "source": "espn",
+    "at": "2026-10-04T08:34:06.305Z"
+   },
    "provenance": "git 6c6737e729",
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 4.76,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 0.1,
+     "result": "win"
+    },
+    "su": {
+     "side": "home",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": -14.5,
+      "close": -12.5,
+      "gap": 2.4,
+      "pts": -2
+     },
+     "total": {
+      "side": "over",
+      "market": 55.5,
+      "close": 57.5,
+      "gap": 2.1,
+      "pts": 2
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": -14,
+      "close": -12.5,
+      "gap": 3.26,
+      "pts": -1.5
+     },
+     "total": {
+      "side": "over",
+      "market": 55.5,
+      "close": 57.5,
+      "gap": 2.1,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": 17,
+     "model_margin_err": 0.26,
+     "close_margin_err": 4.5,
+     "model_total_err": 29.4,
+     "close_total_err": 29.5
+    },
+    "brier": 0.015,
     "beyond_guard": false,
     "reliability": {
      "score": 85,
      "bucket": "80-89",
      "at": "2026-10-03T16:30:25.262Z"
     },
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "total": {
+      "side": "over",
+      "odds": -108,
+      "basis": "close",
+      "result": "win",
+      "units": 0.9259
+     },
+     "ml": {
+      "side": "home",
+      "odds": -550,
+      "basis": "close",
+      "result": "win",
+      "units": 0.1818
+     },
+     "units": 2.0006,
+     "bets": 3
+    }
    },
    "last_quote": {
     "home_line": -14,
@@ -50284,13 +52271,13 @@
     }
    },
    "pick": {
-    "at": "2026-10-03T23:10:16.887Z",
+    "at": "2026-10-04T02:45:39.866Z",
     "home_line": -9.72,
-    "total": 50.3,
+    "total": 49.9,
     "home_win_prob": 0.7438,
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "reliability": {
-     "at": "2026-10-03T23:10:16.887Z",
+     "at": "2026-10-04T02:45:39.866Z",
      "version": "cfb_reliability/2",
      "score": 85,
      "grade": "STRONG",
@@ -50309,52 +52296,52 @@
     },
     "price_lock": {
      "schema": "edgedesk_price_lock_v1",
-     "decided_at": "2026-10-03T23:10:16.887Z",
+     "decided_at": "2026-10-04T02:45:39.866Z",
      "spread": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_6a631f846fa5566990aed20a",
+      "source": "record_quotes",
+      "quote_id": "edq_8d012de88d3a12f8855a395d",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.156Z",
       "home_line": -9.5,
       "total": null,
       "prices": {
        "home": -110,
        "away": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "total": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_cfeb4305d046ae7398400ea4",
+      "source": "record_quotes",
+      "quote_id": "edq_efae521fac717254c7286e9a",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.156Z",
       "home_line": null,
       "total": 48.5,
       "prices": {
        "over": -110,
        "under": -110
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      },
      "moneyline": {
       "status": "locked",
-      "source": "cfb_lab_quotes",
-      "quote_id": "cfbq_5b38179c145a16cbde19a8fc",
+      "source": "record_quotes",
+      "quote_id": "edq_90654d6b7575aaab2029b2e8",
       "book": "draftkings",
-      "observed_at": "2026-10-03T20:20:07.000Z",
+      "observed_at": "2026-10-03T23:55:31.156Z",
       "home_line": null,
       "total": null,
       "prices": {
        "home_ml": -355,
        "away_ml": 280
       },
-      "locked_at": "2026-10-03T23:55:29.184Z"
+      "locked_at": "2026-10-04T08:34:06.305Z"
      }
     }
    },
-   "revisions": 5,
+   "revisions": 6,
    "entry": {
     "model_at": "2026-09-30T17:15:56.240Z",
     "home_line": -9.14,
@@ -50372,7 +52359,7 @@
     "total": 48.5,
     "source": "espn",
     "book": "DraftKings",
-    "at": "2026-10-03T23:55:29.184Z",
+    "at": "2026-10-04T08:34:06.305Z",
     "prices": {
      "home": -110,
      "away": -110,
@@ -50397,7 +52384,7 @@
     "reliability": {
      "score": 85,
      "bucket": "80-89",
-     "at": "2026-10-03T23:10:16.887Z"
+     "at": "2026-10-04T02:45:39.866Z"
     },
     "pnl": null
    }

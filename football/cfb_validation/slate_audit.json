@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-04T05:07:40.403Z",
- "board_generated_at": "2026-10-04T05:07:39.172Z",
+ "generated_at": "2026-10-04T10:17:05.215Z",
+ "board_generated_at": "2026-10-04T10:17:04.008Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,46 +15,6 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
-  {
-   "game_id": "401856714",
-   "game": "South Carolina @ Florida",
-   "kickoff": "2026-10-10T04:00:00.000Z",
-   "named": false,
-   "edgedesk": "Florida -7.5",
-   "market": "Florida -14.0",
-   "books": 1,
-   "gap": 6.46,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
-   "game_id": "401856715",
-   "game": "LSU @ Kentucky",
-   "kickoff": "2026-10-10T23:00:00.000Z",
-   "named": false,
-   "edgedesk": "LSU -5.9",
-   "market": "LSU -9.5",
-   "books": 1,
-   "gap": 3.59,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
   {
    "game_id": "401858485",
    "game": "USC @ Penn State",
@@ -76,70 +36,24 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401856718",
-   "game": "Ole Miss @ Vanderbilt",
-   "kickoff": "2026-10-10T19:30:00.000Z",
+   "game_id": "401856826",
+   "game": "Iowa State @ BYU",
+   "kickoff": "2026-10-10T02:15:00.000Z",
    "named": false,
-   "edgedesk": "Vanderbilt -0.8",
-   "market": "Ole Miss -10.5",
+   "edgedesk": "BYU -15.9",
+   "market": "BYU -11.5",
    "books": 1,
-   "gap": 11.31,
-   "gap_class": "MAJOR",
-   "favorite_flip": true,
+   "gap": 4.38,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T19:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (FirstBank Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 0.4 rating pts (limit 10)"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Vanderbilt: Jared Curtis (previous game) · PASS: Ole Miss: Trinidad Chambliss (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Vanderbilt: availability sources checked, nothing filed · PASS: Ole Miss: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.9"
-    }
-   ],
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401856716",
@@ -147,85 +61,131 @@
    "kickoff": "2026-10-10T04:00:00.000Z",
    "named": false,
    "edgedesk": "Missouri -10.7",
-   "market": "Missouri -3.0",
-   "books": 1,
-   "gap": 7.72,
+   "market": "Missouri -2.3",
+   "books": 0,
+   "gap": 8.47,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
    "requirements": [
     {
      "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T04:00:00.000Z"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Memorial Stadium), declared by the schedule feed"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 9.8 rating pts"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Missouri: Austin Simmons (previous game) · PASS: Texas A&M: Marcel Reed (previous game)"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Missouri: availability sources checked, nothing filed · PASS: Texas A&M: availability sources checked, nothing filed"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 1.3 pts on the market’s side"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail; football-only calibration preserves the major gap fail."
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
-   "game_id": "401858257",
-   "game": "Stanford @ Notre Dame",
+   "game_id": "401856718",
+   "game": "Ole Miss @ Vanderbilt",
    "kickoff": "2026-10-10T19:30:00.000Z",
    "named": false,
-   "edgedesk": "Notre Dame -38.5",
-   "market": "Notre Dame -35.5",
-   "books": 1,
-   "gap": 2.98,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
+   "edgedesk": "Vanderbilt -0.8",
+   "market": "Ole Miss -10.5",
+   "books": 0,
+   "gap": 11.31,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
    "decision_status": "NO_DECISION",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "gate_status": "NOT RUN",
    "root_cause": null,
-   "requirements": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
    "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
    "game_id": "401856712",
