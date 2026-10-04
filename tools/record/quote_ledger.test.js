@@ -103,6 +103,10 @@ const realFetch = S.fetchText;
     const cfbMiss = Object.values(A.ledgers.cfb.games).find((e) => e.pick && e.pick.price_lock && Date.parse(e.pick.at) === fbsPub && e.pick.price_lock.spread && e.pick.price_lock.spread.why === 'stale');
     chk('run A: a college number published a day later finds only a stale quote — no price yet, and it says why', !!cfbMiss || fbsPub - Date.parse(tA) <= 6 * 3600e3);
 
+    /* what run A did with each college number, before run B reads again */
+    const cfbLockOf = (e) => (e && e.pick && e.pick.price_lock && e.pick.price_lock.spread) || null;
+    const cfbA = {};
+    Object.values(A.ledgers.cfb.games).forEach((e) => { const l = cfbLockOf(e); if (l) cfbA[e.game_id] = JSON.parse(JSON.stringify(e.pick.price_lock)); });
     /* RUN B: 20 minutes before the FBS slate; the NFL market has moved */
     S.fetchText = mockFetch((g) => (Number(g.model_home_line) <= 0 ? -4.5 : 4.5));
     const tB = new Date(fbsPub - 20 * 60e3).toISOString();
@@ -113,7 +117,21 @@ const realFetch = S.fetchText;
     const g2 = B.ledgers.nfl.games[nflGame.game_id];
     chk('run B: a moved market never rewrites a lock', JSON.stringify(g2.pick.price_lock) === JSON.stringify(nflGame.pick.price_lock), [g2.pick.price_lock.spread, nflGame.pick.price_lock.spread]);
     const lockedCfb = Object.values(B.ledgers.cfb.games).filter((e) => e.pick && e.pick.price_lock && e.pick.price_lock.spread && e.pick.price_lock.spread.status === 'locked' && e.pick.price_lock.spread.source === 'record_quotes');
-    chk('run B: college numbers published 20 minutes later are locked at the record\'s own quotes (a miss is looked up again)', lockedCfb.length > 0 && lockedCfb.every((e) => e.pick.price_lock.spread.observed_at === tB), lockedCfb.length);
+    /* WHICH READING LOCKS A COLLEGE NUMBER depends on how long after run A the
+       FBS slate was published, and that is the committed slates' own gap: a day
+       when this was written, 2.55 hours on 2026-10-03 (17:26 vs 19:59 UTC),
+       when run A's reading was still inside the lock's freshness limit and the
+       college numbers locked in run A. Both are right, so each number is held
+       to what run A did with it: a lock run A made is never rewritten, and a
+       number run A missed is looked up again and locks at run B's reading. */
+    const wasLocked = (gid) => !!(cfbA[gid] && cfbA[gid].spread && cfbA[gid].spread.status === 'locked');
+    const keptA = lockedCfb.filter((e) => wasLocked(e.game_id)), newB = lockedCfb.filter((e) => !wasLocked(e.game_id));
+    chk('run B: college numbers published 20 minutes later are locked at the record\'s own quotes (a miss is looked up again)', lockedCfb.length > 0
+      && newB.every((e) => e.pick.price_lock.spread.observed_at === tB)
+      && keptA.every((e) => JSON.stringify(e.pick.price_lock) === JSON.stringify(cfbA[e.game_id]) && e.pick.price_lock.spread.observed_at === tA),
+      { locked: lockedCfb.length, kept_from_A: keptA.length, new_in_B: newB.length });
+    const missedA = Object.values(A.ledgers.cfb.games).filter((e) => e.pick && Date.parse(e.pick.at) === fbsPub && cfbLockOf(e) && cfbLockOf(e).why === 'stale');
+    chk('run B: every college number run A found stale locks at run B\'s reading', missedA.every((e) => { const l = cfbLockOf(B.ledgers.cfb.games[e.game_id]); return l && l.status === 'locked' && l.observed_at === tB; }), missedA.length);
     /* RUN C: the same hour again — idempotent */
     const C = await R.run({ write: true, out: tmp, now: tB });
     chk('run C: the same readings in the same hour add no row', Q.read(nflFile).length === nflRows2.length && Q.read(cfbFile).length === cfbRows2.length, C.written);

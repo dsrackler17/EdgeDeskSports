@@ -265,7 +265,17 @@ if (require.main === module) {
       const settled = Object.keys(S.lab.performance || {}).reduce((a, m) => a + ((S.lab.performance[m].official || {}).errors || {}).n, 0);
       chk(S.name + ': the empty-performance state is honest', settled > 0 || /No official LIVE predictions have settled yet\./.test(perf));
       chk(S.name + ': null metrics render as an em dash, right-aligned', settled > 0 || /<td class="num">—<\/td>/.test(perf));
-      chk(S.name + ': sample-size labels print beside the metrics', /<span class="ss">small sample<\/span>/.test(perf) && /<span class="ss">small sample<\/span>/.test(sectionOf(h, 'comparison')));
+      /* the label each model's sample earns, by the lab's own rule
+         (lab_core sampleLabel: under 30 small sample, under 100 provisional).
+         This asserted "small sample" outright, which expired when Saturday
+         2026-10-03 took every model past 50 settled games: they correctly
+         read "provisional" now. */
+      const ssOf = (sec) => (sec.match(/<span class="ss">([^<]*)<\/span>/g) || []).map((x) => x.replace(/<[^>]+>/g, ''));
+      const want = Array.from(new Set(Object.keys(S.lab.performance || {}).map((m) => L.util.sampleLabel(((S.lab.performance[m].official || {}).errors || {}).n || 0)).filter(Boolean)));
+      const okWords = (ls) => ls.every((l) => l === 'small sample' || l === 'provisional');
+      chk(S.name + ': sample-size labels print beside the metrics, as each sample earns them', want.every((l) => ssOf(perf).indexOf(l) >= 0) && okWords(ssOf(perf))
+        && (!want.length || ssOf(sectionOf(h, 'comparison')).length > 0) && okWords(ssOf(sectionOf(h, 'comparison'))),
+        { want, performance: ssOf(perf), comparison: ssOf(sectionOf(h, 'comparison')) });
       chk(S.name + ': the six promotion gates render with their decision', ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'].every((g) => sectionOf(h, 'comparison').indexOf('<b>' + g + '</b>') >= 0) && /INSUFFICIENT SAMPLE/.test(h) && /Eligibility never changes the champion/.test(h));
       chk(S.name + ': drift alerts are said never to act', /never retrain, re-weight, re-calibrate or promote anything/.test(sectionOf(h, 'health')));
       const rc = sectionOf(h, 'reconstructed');
