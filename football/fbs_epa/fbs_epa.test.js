@@ -278,7 +278,15 @@ chk('a tied dominant passer resolves to nobody rather than to a coin flip',
     if (!buckets.no_history && p.state === 'NO_OBSERVATIONS') buckets.no_history = { g, p };
   });
 
+  /* FBS-FCS only when the slate holds one, as the FCS-side block below
+     already does. The published slate is the next ten days, and FBS-vs-FCS
+     games cluster in September and mid-November: 2026-10-04 to 10-14 held
+     none, and requiring one failed the Starter context job for the date. */
   ['p4_involved', 'other_fbs', 'fbs_fcs'].forEach(tier => {
+    if (tier === 'fbs_fcs' && !buckets[tier]) {
+      console.log('  note: the published slate holds no FBS-FCS game without a P4 side this window — that tier is not exercised');
+      return;
+    }
     chk('a ' + tier + ' game produces a packet', !!buckets[tier]);
     if (!buckets[tier]) return;
     const p = buckets[tier].p;
