@@ -226,7 +226,14 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
   /* ═══ 6. hallucination traps ═══════════════════════════════════════════ */
   {
     const F = 'hallucination traps';
-    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 213.4 plays per game at a 61.3% success rate, 394.6 rushing yards a game and 157.8 passing yards, and their edge rusher Devon Pryor has 13 sacks.') });
+    /* THE INVENTED NUMBERS MUST STAY INVENTED. The packet is built from committed
+       data that the scheduled jobs rewrite, and realistic values collide with it:
+       on 2026-10-04 the NFL injury sync put 394.6 into the evidence, two invented
+       numbers were left, and the critic (rightly) only warned. These are outside
+       every range the packet carries — Elo/ratings 1000-2000, rates under 100,
+       per-game yards under 700 — and the check below proves all three are unsourced. */
+    let r = await ask('Analyze North Texas versus Texas State.', { dry: false, answer: GOOD('North Texas ran 913.4 plays per game at a 61.3% success rate, 8394.6 rushing yards a game and 7157.8 passing yards, and their edge rusher Devon Pryor has 13 sacks.') });
+    chk(F, 'the three invented numbers really are absent from the packet', ['913.4', '8394.6', '7157.8'].every((n) => r.j.critic.findings.some((f) => f.code === 'NUMBER_NOT_IN_EVIDENCE' && f.detail.indexOf(n) >= 0)), r.j.critic);
     chk(F, 'numbers the packet does not carry are caught', r.j.critic.findings.some((f) => f.code === 'NUMBER_NOT_IN_EVIDENCE'), r.j.critic);
     chk(F, 'a player the packet does not carry is caught', r.j.critic.findings.some((f) => f.code === 'NAME_NOT_IN_EVIDENCE' && /Devon Pryor/.test(f.detail)));
     chk(F, 'three invented numbers fail the answer outright', r.j.critic.verdict === 'FAIL');
