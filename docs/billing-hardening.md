@@ -5,10 +5,12 @@ they have a valid trial or subscription, EdgeDesk grants access **eventually and
 automatically** — whatever the browser, the redirect, the wallet or the webhook
 did. If Stripe says they do not, EdgeDesk stops granting it.
 
-**Status of this change:** code, migrations and tests are in this branch. **Nothing
-has been deployed.** I had no access to the production database or the Stripe
-account, so every statement about production below is either derived from the
-repository or comes with a query that checks it.
+**Status:** merged to `main` (PR #485). The **frontend is live** (GitHub Pages
+serves `main`) and runs in its deploy-window mode — it falls back to the old row
+read and the Payment Link until the backend answers. The **backend is deployed
+stage by stage with `.github/workflows/deploy-billing.yml`** (§9a), which checks
+production before and after every stage. Every statement about production below
+is either derived from the repository or comes with a check that proves it.
 
 ---
 
@@ -25,7 +27,7 @@ repository or comes with a query that checks it.
 | The access rule | ~6 copies; `index.html` read any `trialing` row as paid | **One** SQL function, `billing_row_grants_access()`; both pages ask `my_billing_access()` |
 | Support visibility | SQL editor + Stripe dashboard + function logs | `/admin/billing/`: one search shows DB, Stripe live, the mismatch, events, syncs, alerts; one-click repair |
 
-Tests: **653 assertions across 8 billing suites**, including 126 end-to-end
+Tests: **788 assertions across 12 billing suites**, including 126 end-to-end
 scenario assertions that run the three shipped functions against the real SQL
 (see §8).
 
@@ -273,7 +275,10 @@ row) is never downgraded by a Stripe state — the disagreement becomes a
 | `lib/edgedesk_access.js` | **new** — the browser's one door to the decision |
 | `index.html` | `edSubState` → the decision; `confirmArl` → server checkout (Payment Link fallback); success page rewritten; stale-session fix; login-after-paying |
 | `app.html` | `pgCheck` → the decision + one reconciliation before a paywall; finalize on return; *I already paid* → reconcile; Settings *Refresh access*; paywall offer from the decision |
-| `admin/billing/index.html` | **new** operator console |
+| `admin/billing/index.html` | **new** operator console; every account in one of five verdicts |
+| `supabase/billing_preflight.sql`, `billing_snapshot.sql`, `billing_postflight.sql` | **new** — the deployment's read-only preflight, its private before-state (`billing_ops`), and checks A–I |
+| `tools/billing/sql/*.psql`, `tools/billing/deploy_stage.sh`, `tools/billing/prod_probe.js` | **new** — the role probe, the one-transaction apply, the stages, the production probes |
+| `.github/workflows/deploy-billing.yml` | **new** — the staged, manual deployment (§9a) |
 | `tools/billing/*.test.js`, `_harness.js`, `_pgrest.js`, `_fake_stripe.js` | tests (§8) |
 | `tools/personal/personal_wiring.test.js` | consent-ordering assertion updated to the stricter rule |
 | `package.json`, `.github/workflows/personal-tests.yml` | new suites; path filters now include the billing functions (they did not include `stripe_webhook/` before) |
@@ -365,6 +370,10 @@ one file each, core inlined, no secrets in code, `SB_*` or `SUPABASE_*` env name
 | `tools/billing/access_client.test.js` | — | 60 | the browser library; app.html paywall; index.html success page |
 | `tools/billing/billing_core.test.js` | — | 50 | no drift between the three copies; best-pick; Stripe client; logs |
 | `tools/personal/personal_wiring.test.js` | — | 74 | offer/consent wiring |
+| `tools/billing/billing_deploy_sql.test.js` | PostgreSQL | 59 | the deployment's SQL: preflight read-only and masked, duplicates FAIL it, the one-transaction apply commits only behind its gate and rolls back a migration that rewrites a row, opens a writer or lets a reader see another row |
+| `tools/billing/prod_probe.test.js` | PostgreSQL | 28 | every production probe passes on the shipped system and FAILS on a broken one; prints no token, id or email |
+| `tools/billing/deploy_stage.test.js` | PostgreSQL | 25 | `deploy_stage.sh` rehearsed end to end (real bash, psql, probes) against a stand-in gateway, Management API and CLI, including the stages that must refuse |
+| `tools/billing/admin_console.test.js` | — | 23 | `/admin/billing/` puts every account in exactly one of five verdicts; never "agree" unless Stripe was asked |
 
 ```bash
 npm run billing:test     # offline suites (+ lifecycle, which starts its own Postgres)
@@ -379,7 +388,9 @@ base commit): `tools/articles/community.test.js` (a hardcoded "future" date of
 ## 9. Deployment order
 
 Each step is safe on its own; the frontend tolerates any backend step being
-missing.
+missing. **Use §9a (the workflow) rather than the manual steps below** — it runs
+the same steps with a check of production before and after each one. The manual
+steps remain the fallback, and step 5 has already happened (the merge).
 
 0. **Before anything:** run the §2 queries (keep the output); take a backup
    (Supabase → Database → Backups, or `pg_dump -t public.subscriptions -t public.stripe_events`).
@@ -408,7 +419,111 @@ missing.
    alerts and unresolved deliveries.
 9. Smoke tests (§12).
 
+## 9a. Controlled deployment — `.github/workflows/deploy-billing.yml`
+
+Actions → **Deploy billing** → *Run workflow* on `main`, one stage at a time, in
+this order. A stage that changes production asks for its own name in `confirm`.
+Every stage first runs all billing suites and a rehearsal of every stage
+(`deploy_stage.test.js`) against a throwaway PostgreSQL, then records what
+production is running (Edge Function versions, `verify_jwt`, secret **names**),
+then re-checks what the stage before it promised. It stops at the first thing
+that does not hold.
+
+| # | Stage | Changes | Proves before it says done | STOP / undo |
+|---|---|---|---|---|
+| 1 | `preflight` | nothing (READ ONLY transaction; role probe rolled back) | Phase 2 items 1–18, the security checks, Phase 3 duplicates and integrity, the fingerprint (`supabase/billing_preflight.sql`, `tools/billing/sql/rls_probe.psql`) | any FAIL row — each says what to fix |
+| 2 | `apply_sql_dry_run` | nothing (rolled back) | the whole of stage 3 against production data | — |
+| 3 | `apply_sql` | `billing_ops` snapshot + `billing_hardening.sql`, **one transaction** | postflight A–I (`supabase/billing_postflight.sql`) and the role probe **inside** the transaction; it commits only if both pass | a FAIL rolls everything back; nothing is kept |
+| 4 | `deploy_sync_subscription` | the function | build served, `verify_jwt` off, Phase 6 probes 1–9 (`prod_probe.js sync`) | `remove_sync_subscription` |
+| 5 | `deploy_stripe_webhook` | the function | build served, signed-only (unsigned and forged → 400, not on the ledger), then traces the first real delivery event → ledger → account → writer → row → rule (waits 10 min; resend one from Stripe to speed it up) | `rollback_stripe_webhook` |
+| 6 | `deploy_create_checkout_session` | the function, and `STRIPE_PRICE_ID` if `stripe_price_id` is given | Phase 8 probes (`prod_probe.js checkout`), with the kill switch reported if no price is set | `checkout_kill_switch` |
+| 7 | — | Stripe dashboard (below), then the real smoke test (below) | `verify` with `subject_user_id` | |
+| 8 | `apply_cron` | the pg_cron job | a manual sync is on record; shows what the first sweep will look at; watches the first sweeps (25 min) and reports scanned / unchanged / repaired / revoked / errors / alerts | **any revocation, any error, or more repairs than max(3, 10% of paying rows) unschedules it again** and fails |
+| — | `verify` | only its own check rows | postflight A–I, role probe, webhook, the live frontend, the latest delivery traced, alerts and unresolved counts, the schedule; with `subject_user_id`, Phase 13's convergence checklist | |
+
+**What the probes act as.** Two probe accounts the workflow creates and reuses
+(`billing-probe-a|b@edgedesksports.com`, confirmed without email,
+`user_metadata.billing_probe = true`), never a customer. Probe B gets a
+`comp_trial` row for the comp tests, removed again in a `finally`. After stage 6,
+probe A has a Stripe customer and ONE open, unpaid Checkout Session that expires
+on its own within 24 hours. Nothing is charged and no Stripe object is invented.
+"An existing subscriber's sync" is not something CI can do without that
+subscriber's password — do it from `/admin/billing/` (search a paying customer:
+expect **ACCESS GRANTED — systems agree**; *Repair from Stripe* → outcome
+`unchanged`), and from your own account (Settings → *Refresh access*).
+
+**Public logs.** The repository is public, so are its Actions logs. Everything
+printed is masked (`j***@example.com`, `1a2b3c4d…`, `cus_ABCD…WXYZ`); the full
+before-state is in `billing_ops.snapshots`, and the unmasked preflight runs in
+the SQL editor: `set billing.unmasked = 'on';` above `supabase/billing_preflight.sql`.
+
+**The reported customer's comp_trial.** No stage writes it: the migration does not
+touch `subscriptions` (postflight B and C prove it row by row — his row is in C's
+list of comp rows, masked), and the probes never act on a real account.
+After deploy, his row is a *protected entitlement*: no Stripe state can revoke it.
+If Stripe holds a **real** live subscription for him (found by his account's own
+customer, checkout session or confirmed email), the first reconciliation replaces
+the `comp_trial` sentinel with that subscription — real ids, real status, real
+period end. That is convergence, not fake state. If Stripe has nothing live, the
+row stays exactly as it is until its period end, after which the page offers him
+the trial (no loop). `/admin/billing/` shows him as **COMP ACCESS — not
+Stripe-managed**, and says so if Stripe also has a live subscription.
+
+**Found during the preflight design, not changed here.** `community_is_entitled(uuid)`
+(community_posts.sql) is executable by any signed-in reader for any account id,
+so someone who knows another account's id can learn one boolean: whether it has
+access. Pre-existing; the migration keeps its grants as they were. Preflight row
+308 reports it as WARN. Follow-up: answer only for `auth.uid()` unless the caller
+is the service role.
+
+### Stripe dashboard checklist (Phase 12 — cannot be verified from code)
+
+| Where (live mode) | Check |
+|---|---|
+| Developers → Webhooks | One **live** endpoint `https://iattxbkbufslbauoumga.supabase.co/functions/v1/stripe_webhook`, *Enabled*. After stage 5, resend a recent event → **200** (proves the signing secret matches `STRIPE_WEBHOOK_SECRET`; the values never need comparing). |
+| … → the endpoint → Events | Required: `checkout.session.completed`, `customer.subscription.created`, `…updated`, `…deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`. Recommended: `invoice.paid`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `…async_payment_failed`, `customer.subscription.paused`, `…resumed`, `charge.dispute.created`. |
+| Product catalog → EdgeDesk Full Access | The **live** price is $49.99 USD, monthly, recurring, active; its `price_…` is the `stripe_price_id` input; the Payment Link sells the same price (stage 6's probe refuses any other figure with `offer_mismatch`). The price itself carries **no** trial — the 7 days come from the session. |
+| Payment Links → the link | 7-day trial on; *Collect payment method* required; After payment → `https://edgedesksports.com/?checkout=success&session_id={CHECKOUT_SESSION_ID}` (the fallback path then reconciles too). |
+| Settings → Payment methods | Cards on; **Apple Pay** on; **Google Pay** on; **Link** as you decide. Hosted Checkout needs no Apple Pay domain verification (it is on checkout.stripe.com). |
+| Success / cancel URLs | Set per session by `create_checkout_session` (`/?checkout=success&session_id={CHECKOUT_SESSION_ID}`, `/?checkout=cancel`) from `SITE_URL` (default `https://edgedesksports.com`). Nothing to set in the dashboard. |
+| Settings → Billing → Customer portal | Cancellation **at period end**; customers can update their payment method. |
+| Settings → Customer emails / Subscriptions and emails | Successful-payment receipts on; trial-ending reminder on; failed-payment emails and Smart Retries on (past_due → 21-day grace here). |
+| Developers → API keys | If `STRIPE_SECRET_KEY` is a restricted key: **write** Customers, Checkout Sessions; **read** Prices, Promotion Codes, Subscriptions, Customers (incl. search). |
+
+### The real smoke test (Phase 13) — after stage 6, before stage 8
+
+Not Connor; a new account you control.
+
+1. iPhone, Safari: sign up at edgedesksports.com with a new address you control; confirm the email.
+2. *Start free trial* → consent → the browser goes to **checkout.stripe.com** (not buy.stripe.com).
+3. Pay with **Apple Pay**. The moment Stripe shows success, **close Safari** — do not wait for the redirect.
+4. On another device / browser, log in with the same account. Expect the app to open (the paywall reconciles once).
+5. `/admin/billing/` → search the address → **ACCESS GRANTED — systems agree**; copy the account id.
+6. Run `verify` with `subject_user_id` = that id and `stripe_price_id` = the live price → every line PASS: Auth user, Stripe customer linked, Stripe subscription on the row, `trialing`, the price, a future period end, access granted, no open alerts.
+7. Repeat once on desktop without closing anything: the success page must say *"Payment received. Finalizing your EdgeDesk access…"* and open the app.
+
+### Failure tests (Phase 14) — on the smoke-test account only
+
+| Test | How | Expect |
+|---|---|---|
+| Checkout page refreshed | reload the Stripe page mid-checkout | the same session; `/admin/billing/` lists one session |
+| Checkout opened twice | two tabs → *Start free trial* | the same session URL (also proved by stage 6's probe) |
+| Duplicate webhook delivery | Stripe → the event → *Resend* | 200; `verify` traces it with `attempts` 2; nothing else changes |
+| Delayed reconciliation | the closed-browser path of step 3 above | converges on the next login or within one sweep |
+| Cancellation at period end | Customer portal → cancel | Settings: *Access ends <date>*; `cancel_at_period_end` true; access until then |
+| Comp account | stage 4's and 6's probes; Connor's row | untouched; checkout refused with `already_entitled` |
+| Missing local row repaired | `delete from public.subscriptions where user_id = '<smoke-test id>';` → Settings → *Refresh access* | the row is back from Stripe, outcome `repaired` |
+| Second device | log in elsewhere | same access, no prompt to pay |
+
+Never test a double charge on a real card. Refund the smoke-test subscription in
+Stripe when done (a refund does not end access; cancel it to end access).
+
 ## 10. Rollback
+
+Each line has a workflow stage (§9a) that does it and verifies it: `checkout_kill_switch`,
+`rollback_stripe_webhook` (redeploys build `stripe_webhook-2026-09-12-referral-1`
+from commit `2c12f48`), `remove_sync_subscription`, `disable_cron`. The full
+pre-apply state of every `subscriptions` row is in `billing_ops.snapshots`.
 
 | What | How | Effect |
 |---|---|---|

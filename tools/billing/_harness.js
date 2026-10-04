@@ -42,7 +42,10 @@ function world(label, opts) {
   const o = opts || {};
   const db = PG.start(label || 'billw');
   if (db.skip) return { skip: db.skip };
-  const files = ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'subscription_price.sql', 'billing_hardening.sql'];
+  // o.preMigration: production as it is BEFORE billing_hardening.sql (the
+  // deploy-stage test applies it itself, through the deployment's own gate)
+  const files = ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'subscription_price.sql']
+    .concat(o.extraFiles || [], o.preMigration ? [] : ['billing_hardening.sql']);
   for (const f of files) db.applyFile(path.join(ROOT, 'supabase', f));
 
   const tokens = {};
@@ -105,7 +108,7 @@ function world(label, opts) {
   /* the same function under different secrets (no Stripe key, test mode…) */
   function load(name, envOverrides) { return loadFunction(name, Object.assign({}, env, envOverrides || {}), route, logs); }
 
-  return { db, rest, stripe, fns, logs, env, load, user, call, deliver, q, row, access, myAccess, SECRET,
+  return { db, rest, stripe, fns, logs, env, load, user, call, deliver, q, row, access, myAccess, SECRET, route,
            stop: () => db.stop() };
 }
 

@@ -38,6 +38,10 @@ on:
       - 'supabase/referral_codes.sql'
       - 'supabase/billing_hardening.sql'
       - 'supabase/billing_reconcile_cron.sql'
+      - 'supabase/billing_preflight.sql'
+      - 'supabase/billing_snapshot.sql'
+      - 'supabase/billing_postflight.sql'
+      - '.github/workflows/deploy-billing.yml'
       - 'supabase/subscription_price.sql'
       - 'supabase/community_posts.sql'
       - 'supabase/funnel.sql'
@@ -105,6 +109,8 @@ jobs:
         run: node tools/billing/billing_core.test.js
       - name: The browser asks the database for access, never decides it, and gives up boundedly
         run: node tools/billing/access_client.test.js
+      - name: The billing console puts every account in exactly one of five verdicts
+        run: node tools/billing/admin_console.test.js
       - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
         run: node tools/personal/growth.test.js
       - name: The AI desk answers the reader's research from their own rows
@@ -136,6 +142,15 @@ jobs:
       # through the three shipped Edge Functions against the real SQL.
       - name: Every checkout converges between Stripe and EdgeDesk
         run: node tools/billing/billing_flow.test.js
+      # The deployment's own safety checks: the read-only preflight, the snapshot,
+      # the one-transaction apply that commits only behind its gate (and refuses
+      # a migration that rewrites a row or opens a writer), the role probe, the
+      # production probes, and a rehearsal of every deploy-billing.yml stage.
+      - name: The billing deployment's checks refuse what they must, and the stages rehearse green
+        run: |
+          node tools/billing/billing_deploy_sql.test.js
+          node tools/billing/prod_probe.test.js
+          node tools/billing/deploy_stage.test.js
       - name: Personal rows are private, the journal and the reader's number are write-once
         run: node tools/personal/personal_sql.test.js
       - name: The partner program and its campaigns track what happened and never rewrite money or credit

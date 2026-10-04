@@ -1,0 +1,40 @@
+-- Phase 5, in ONE transaction:
+--   snapshot (billing_ops) → supabase/billing_hardening.sql → postflight (A–I)
+--   → behavioural role probe → COMMIT only if nothing failed.
+-- With -v commit=0 it is a dry run against production data: everything above
+-- runs, every check is printed, and it is all rolled back.
+--   psql "$SB_DB_URL" -X -A -t -F ' | ' -v ON_ERROR_STOP=1 -v commit=0 -v deployed='{}' -f tools/billing/sql/apply.psql
+\set ON_ERROR_STOP on
+begin;
+-- never queue behind a long webhook transaction for long, and never hold the
+-- subscriptions lock for long: either gives up and rolls back, changing nothing
+set local lock_timeout = '8s';
+set local statement_timeout = '120s';
+select set_config('billing.snapshot_label', 'pre-apply', true) as label;
+select set_config('billing.deployed_functions', :'deployed', true) is not null as deployed_recorded;
+\echo '── snapshot (billing_ops.snapshots)'
+\i supabase/billing_snapshot.sql
+\echo '── supabase/billing_hardening.sql'
+\i supabase/billing_hardening.sql
+\echo '── postflight (A–I)'
+\i supabase/billing_postflight.sql
+\echo '── behavioural access checks'
+\i tools/billing/sql/rls_probe.psql
+-- the gate: any postflight FAIL aborts the transaction, so nothing above is kept
+do $gate$
+declare v text;
+begin
+  select string_agg(n || ' ' || item, '; ' order by n) into v from billing_ops.check_runs
+   where kind = 'postflight' and verdict = 'FAIL'
+     and run_id = (select max(run_id) from billing_ops.check_runs where kind = 'postflight');
+  if v is not null then raise exception 'postflight FAILED: %', v; end if;
+  raise notice 'GATE  postflight and access checks passed';
+end
+$gate$;
+\if :commit
+commit;
+\echo 'COMMITTED — supabase/billing_hardening.sql is applied'
+\else
+rollback;
+\echo 'DRY RUN — every check above ran against production data; all of it was rolled back'
+\endif
