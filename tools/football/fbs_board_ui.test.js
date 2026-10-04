@@ -198,7 +198,7 @@ function makeCtx(opts) {
   ctx.FB = {
     health: { ok: true },
     p4: {
-      state: STATE, up: SLATE.items.slice(), uni: UNIVERSE, slateDrop: SLATE.dropped,
+      state: STATE, up: SLATE.items.concat(opts.extraUp || []), uni: UNIVERSE, slateDrop: SLATE.dropped,
       notes: [], gate: null, season: SEASON, absorbed: 99,
       roster: {}, rosterSeason: null, rosterAsOf: null, rosterNote: null,
       lines: {}, sig: opts.sig || {}, weather: {},
@@ -269,11 +269,30 @@ chk('the slate carries Other-FBS-only conference games', () => {
   return ROWS.some(r => r.meta.matchup_type === 'conference'
     && !r.meta.conference_ids.some(c => p4.indexOf(c) >= 0));
 });
-chk('the slate carries FBS-vs-FCS games', ROWS.some(r => r.meta.matchup_type === 'fbs_fcs'));
+/* FBS-vs-FCS games cluster in September: from October the ten-day window
+   routinely holds none (2026-10-04: 0 of 60), and requiring one on the slate
+   failed the weekly build and starter context on every run once the live
+   feed was cached, with nothing wrong. What has to hold is that the feed's
+   FBS-vs-FCS games are recognised as such, and that none in the window is
+   ever DROPPED from the board. */
+const FCS_IN_WINDOW = (() => {
+  const ids = {};
+  RAW.forEach(r => {
+    const t = Date.parse(r.start_date);
+    if (r.completed || !isFinite(t) || t < SLATE.window.from || t > SLATE.window.to) return;
+    const m = FBS.classifyGame(r, UNIVERSE);
+    if (m.matchup_type === 'fbs_fcs') ids[m.id] = 1;
+  });
+  return Object.keys(ids).length;
+})();
+chk('the feed’s FBS-vs-FCS games are classified as FBS vs FCS',
+  RAW.some(r => FBS.classifyGame(r, UNIVERSE).matchup_type === 'fbs_fcs'));
+eq('every FBS-vs-FCS game in the window is on the slate',
+  ROWS.filter(r => r.meta.matchup_type === 'fbs_fcs').length, FCS_IN_WINDOW);
 chk('the slate carries an independent', ROWS.some(r => r.meta.groups.indexOf('independent') >= 0));
-chk('the slate carries every matchup type', () => {
+chk('the slate carries conference and non-conference games', () => {
   const t = {}; ROWS.forEach(r => { t[r.meta.matchup_type] = 1; });
-  return t.conference && t.non_conference && t.fbs_fcs;
+  return t.conference && t.non_conference;
 });
 chk('no game appears twice on the slate', () => {
   const seen = {};
@@ -539,10 +558,24 @@ chk('each row carries a conference badge', () => {
   const html = A.fbP4BoardHTML();
   return (html.match(/class="fbs-badge/g) || []).length >= VIS.length;
 });
+/* The FBS-vs-FCS rendering is checked on the slate's own game when it has
+   one, and otherwise on a stand-in: a real FBS-vs-FCS game from earlier in
+   this same feed, re-posed a day after NOW and put through the same
+   buildSlate, so the checks below never pass by finding nothing. */
+const FCS_STANDIN = (() => {
+  if (ROWS.some(r => r.meta.matchup_type === 'fbs_fcs')) return null;
+  const src = RAW.find(r => FBS.classifyGame(r, UNIVERSE).matchup_type === 'fbs_fcs');
+  if (!src) return null;
+  const row = Object.assign({}, src, { game_id: 'standin-' + src.game_id, completed: false,
+    home_points: null, away_points: null, start_date: new Date(NOW + 864e5).toISOString() });
+  return FBS.buildSlate({ rows: [row], universe: UNIVERSE, now: NOW, lookaheadDays: 10 }).items[0] || null;
+})();
+const FCS_OPTS = FCS_STANDIN ? { extraUp: [FCS_STANDIN] } : {};
+const FCS_ROW = (FCS_STANDIN ? makeCtx(FCS_OPTS).fbP4Rows() : ROWS).find(r => r.meta.matchup_type === 'fbs_fcs');
+chk('an FBS-vs-FCS row is on the board to render (the slate’s own, or a stand-in from the feed)', !!FCS_ROW,
+  { standin: !!FCS_STANDIN });
 chk('an FBS-vs-FCS row is marked FCS', () => {
-  const fcs = ROWS.find(r => r.meta.matchup_type === 'fbs_fcs');
-  if (!fcs) return true;
-  const c = makeCtx();
+  const c = makeCtx(FCS_OPTS);
   c.FB.p4.filters.matchup = 'fbs_fcs'; c.FB.p4._filtersRead = true;
   return /fbs-badge fcs">FCS</.test(c.fbP4BoardHTML());
 });
@@ -572,9 +605,8 @@ chk('the card explains a missing market rather than showing a number', () => {
   return /NO MARKET/.test(h) && /never read as a zero line/.test(h);
 });
 chk('an FBS-vs-FCS card says why it cannot be graded', () => {
-  const r = ROWS.find(x => x.meta.matchup_type === 'fbs_fcs');
-  if (!r) return true;
-  const h = A.fbP4MatchupHTML(r.u, r.p);
+  const r = FCS_ROW;
+  const h = makeCtx(FCS_OPTS).fbP4MatchupHTML(r.u, r.p);
   return /not an FBS program/.test(h) && /THIN DATA/.test(h);
 });
 chk('the card says research, not picks', () => {
