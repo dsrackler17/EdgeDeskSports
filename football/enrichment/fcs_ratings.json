@@ -2,7 +2,7 @@
  "schema": "edgedesk_fcs_ratings_v1",
  "season": 2026,
  "base_season": 2025,
- "generated_at": "2026-10-03T21:29:16.165Z",
+ "generated_at": "2026-10-04T15:59:11.200Z",
  "scale": "EdgeDesk engine rating points, neutral field: an FCS rating of -20 against an FBS rating of 5 is a 25-point FBS favourite before home field",
  "status": "SHADOW — research and reliability only; the engine still prices every FCS side from the shared floor (-28)",
  "promotion": {
@@ -32,163 +32,163 @@
    }
   },
   "this_season": {
-   "cross_division_games": 116,
+   "cross_division_games": 119,
    "fcs_vs_fcs_games": 0,
    "fcs_vs_fcs_source": "NONE — the schedule feed carries only FBS-involved games in-season and the ESPN FCS scoreboard was not reachable; the in-season FCS field is ordered only through its cross-division games",
    "residual_rms": {
-    "bridge": 9.03,
+    "bridge": 8.98,
     "fcs": null
    }
   },
   "fcs_level": {
-   "mean": -27.47,
+   "mean": -27.34,
    "sd": 1.63,
-   "floor_minus_level": -0.53
+   "floor_minus_level": -0.66
   },
   "conferences": [
    {
     "conference": "Big Sky",
-    "mean": -20.5,
+    "mean": -20.45,
     "sd": 2.99,
     "teams": 14
    },
    {
     "conference": "Coastal Athletic",
-    "mean": -30.2,
+    "mean": -30.14,
     "sd": 3.01,
     "teams": 13
    },
    {
     "conference": "FCS Independents",
-    "mean": -30.29,
+    "mean": -30.18,
     "sd": 5.82,
     "teams": 1
    },
    {
     "conference": "Ivy",
-    "mean": -24.85,
+    "mean": -24.73,
     "sd": 5.09,
     "teams": 8
    },
    {
     "conference": "MEAC",
-    "mean": -26.73,
+    "mean": -26.66,
     "sd": 3.84,
     "teams": 6
    },
    {
     "conference": "MVFC",
-    "mean": -19.76,
+    "mean": -19.7,
     "sd": 3.34,
     "teams": 10
    },
    {
     "conference": "NEC",
-    "mean": -33.14,
+    "mean": -33.08,
     "sd": 3.23,
     "teams": 9
    },
    {
     "conference": "OVC",
-    "mean": -28.34,
+    "mean": -28.28,
     "sd": 3.37,
     "teams": 8
    },
    {
     "conference": "Patriot",
-    "mean": -27.99,
-    "sd": 3.44,
+    "mean": -27.93,
+    "sd": 3.43,
     "teams": 10
    },
    {
     "conference": "Pioneer",
-    "mean": -35.41,
+    "mean": -35.28,
     "sd": 4.91,
     "teams": 11
    },
    {
     "conference": "SWAC",
-    "mean": -32.32,
-    "sd": 3.34,
+    "mean": -32.37,
+    "sd": 3.28,
     "teams": 12
    },
    {
     "conference": "Southern",
-    "mean": -29.15,
-    "sd": 3.63,
+    "mean": -28.42,
+    "sd": 3.52,
     "teams": 10
    },
    {
     "conference": "Southland",
-    "mean": -28.56,
-    "sd": 3.34,
+    "mean": -28.06,
+    "sd": 3.25,
     "teams": 10
    },
    {
     "conference": "UAC",
-    "mean": -21.19,
+    "mean": -21.12,
     "sd": 3.63,
     "teams": 7
    }
   ]
  },
  "validation": {
-  "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.17, n = 116).",
-  "n": 116,
+  "verdict": "NOT DEMONSTRATED: the walk-forward does not show the bridge beating the floor with t >= 2 on 30+ games (t = 0.11, n = 119).",
+  "n": 119,
   "capped": {
    "floor": {
-    "n": 116,
-    "mae": 9.66,
-    "rmse": 12.26,
-    "bias": 0.07
+    "n": 119,
+    "mae": 9.57,
+    "rmse": 12.16,
+    "bias": 0.05
    },
    "bridge": {
-    "n": 116,
-    "mae": 9.54,
-    "rmse": 11.95,
-    "bias": -0.91
+    "n": 119,
+    "mae": 9.5,
+    "rmse": 11.88,
+    "bias": -0.74
    },
    "prior_only": {
-    "n": 116,
-    "mae": 9.42,
-    "rmse": 11.93,
-    "bias": -1.64
+    "n": 119,
+    "mae": 9.36,
+    "rmse": 11.84,
+    "bias": -1.52
    }
   },
   "uncapped": {
    "floor": {
-    "n": 116,
-    "mae": 17.33,
-    "rmse": 20.99,
-    "bias": -9.01
+    "n": 119,
+    "mae": 17.23,
+    "rmse": 20.94,
+    "bias": -9.11
    },
    "bridge": {
-    "n": 116,
-    "mae": 16.23,
-    "rmse": 19.46,
-    "bias": -10
+    "n": 119,
+    "mae": 16.16,
+    "rmse": 19.37,
+    "bias": -9.89
    },
    "prior_only": {
-    "n": 116,
-    "mae": 16.37,
-    "rmse": 19.72,
-    "bias": -10.72
+    "n": 119,
+    "mae": 16.35,
+    "rmse": 19.67,
+    "bias": -10.67
    }
   },
   "paired_abs_error_reduction": {
-   "mean": 0.11,
-   "se": 0.66,
-   "t": 0.17,
-   "bridge_closer": 57,
-   "of": 116
+   "mean": 0.07,
+   "se": 0.65,
+   "t": 0.11,
+   "bridge_closer": 58,
+   "of": 119
   },
   "detail": "football/validation/fcs_bridge_cfb.json"
  },
  "counts": {
   "teams": 129,
   "by_confidence": {
-   "WEAK": 109,
-   "MODERATE": 20
+   "WEAK": 108,
+   "MODERATE": 21
   }
  },
  "provider_health": {
@@ -206,8 +206,8 @@
    "egress_blocked_checks": 0,
    "failed_share": 0,
    "certainty": 1,
-   "last_success_at": "2026-10-03T21:29:16.289Z",
-   "checked_at": "2026-10-03T21:29:16.165Z",
+   "last_success_at": "2026-10-04T15:59:11.373Z",
+   "checked_at": "2026-10-04T15:59:11.200Z",
    "observed_via": "live",
    "artifact_at": null,
    "sample_errors": [],
@@ -233,7 +233,7 @@
    "failed_share": 1,
    "certainty": 0,
    "last_success_at": null,
-   "checked_at": "2026-10-03T21:29:16.165Z",
+   "checked_at": "2026-10-04T15:59:11.200Z",
    "observed_via": "live",
    "artifact_at": null,
    "sample_errors": [
@@ -256,7 +256,7 @@
   "abilenechristian": {
    "name": "Abilene Christian",
    "conference": "UAC",
-   "fcs_team_rating": -13.92,
+   "fcs_team_rating": -13.87,
    "rating_sd": 6.59,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -264,15 +264,15 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -14.08,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -14.13,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "alabamaam": {
    "name": "Alabama A&M",
    "conference": "SWAC",
-   "fcs_team_rating": -37.92,
-   "rating_sd": 7.5,
+   "fcs_team_rating": -37.97,
+   "rating_sd": 7.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 11,
@@ -280,58 +280,58 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 9.92,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 9.97,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "alabamastate": {
    "name": "Alabama State",
    "conference": "SWAC",
-   "fcs_team_rating": -20.99,
-   "rating_sd": 6.5,
+   "fcs_team_rating": -21.03,
+   "rating_sd": 6.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 11,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -7.01,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -6.97,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "alcornstate": {
    "name": "Alcorn State",
    "conference": "SWAC",
-   "fcs_team_rating": -34.6,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -34.63,
+   "rating_sd": 6.46,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 6.6,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 6.63,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "arkansaspinebluff": {
    "name": "Arkansas-Pine Bluff",
    "conference": "SWAC",
-   "fcs_team_rating": -35.39,
-   "rating_sd": 6.5,
+   "fcs_team_rating": -35.43,
+   "rating_sd": 6.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 11,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 7.39,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 7.43,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "austinpeay": {
    "name": "Austin Peay",
    "conference": "UAC",
-   "fcs_team_rating": -14.46,
+   "fcs_team_rating": -14.41,
    "rating_sd": 6.61,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -339,29 +339,29 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -13.54,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -13.59,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "bethunecookman": {
    "name": "Bethune-Cookman",
    "conference": "SWAC",
-   "fcs_team_rating": -32.46,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -32.5,
+   "rating_sd": 6.46,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 4.46,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 4.5,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "brown": {
    "name": "Brown",
    "conference": "Ivy",
-   "fcs_team_rating": -26.3,
+   "fcs_team_rating": -26.18,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -370,13 +370,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -1.7,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -1.82,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "bryant": {
    "name": "Bryant",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -34.75,
+   "fcs_team_rating": -34.7,
    "rating_sd": 6.38,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -384,14 +384,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 6.75,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 6.7,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "bucknell": {
    "name": "Bucknell",
    "conference": "Patriot",
-   "fcs_team_rating": -33.25,
+   "fcs_team_rating": -33.2,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -399,14 +399,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 5.25,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 5.2,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "butler": {
    "name": "Butler",
    "conference": "Pioneer",
-   "fcs_team_rating": -35.81,
+   "fcs_team_rating": -35.69,
    "rating_sd": 8.37,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -415,13 +415,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 7.81,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 7.69,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "calpoly": {
    "name": "Cal Poly",
    "conference": "Big Sky",
-   "fcs_team_rating": -19.87,
+   "fcs_team_rating": -19.83,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -429,14 +429,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -8.13,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -8.17,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "campbell": {
    "name": "Campbell",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -31.72,
+   "fcs_team_rating": -31.68,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -444,14 +444,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 3.72,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 3.68,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "centralarkansas": {
    "name": "Central Arkansas",
    "conference": "UAC",
-   "fcs_team_rating": -24.55,
+   "fcs_team_rating": -24.5,
    "rating_sd": 6.61,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -459,14 +459,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.45,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.5,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "centralconnecticut": {
    "name": "Central Connecticut",
    "conference": "NEC",
-   "fcs_team_rating": -28.88,
+   "fcs_team_rating": -28.83,
    "rating_sd": 6.46,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -474,14 +474,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 0.88,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 0.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "charlestonsouthern": {
    "name": "Charleston Southern",
    "conference": "OVC",
-   "fcs_team_rating": -29.44,
+   "fcs_team_rating": -29.39,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -489,15 +489,15 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 1.44,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 1.39,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "chattanooga": {
    "name": "Chattanooga",
    "conference": "Southern",
-   "fcs_team_rating": -31.54,
-   "rating_sd": 7.63,
+   "fcs_team_rating": -30.81,
+   "rating_sd": 7.58,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
@@ -505,13 +505,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 3.54,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 2.81,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "colgate": {
    "name": "Colgate",
    "conference": "Patriot",
-   "fcs_team_rating": -24.58,
+   "fcs_team_rating": -24.53,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -519,14 +519,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.42,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.47,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "columbia": {
    "name": "Columbia",
    "conference": "Ivy",
-   "fcs_team_rating": -30.83,
+   "fcs_team_rating": -30.71,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -535,13 +535,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 2.83,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 2.71,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "cornell": {
    "name": "Cornell",
    "conference": "Ivy",
-   "fcs_team_rating": -28.96,
+   "fcs_team_rating": -28.84,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -550,13 +550,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 0.96,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 0.84,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "dartmouth": {
    "name": "Dartmouth",
    "conference": "Ivy",
-   "fcs_team_rating": -22.96,
+   "fcs_team_rating": -22.84,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -565,13 +565,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -5.04,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -5.16,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "davidson": {
    "name": "Davidson",
    "conference": "Pioneer",
-   "fcs_team_rating": -47.3,
+   "fcs_team_rating": -47.17,
    "rating_sd": 8.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -580,14 +580,14 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 19.3,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 19.17,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "dayton": {
    "name": "Dayton",
    "conference": "Pioneer",
-   "fcs_team_rating": -32.27,
-   "rating_sd": 8.37,
+   "fcs_team_rating": -32.14,
+   "rating_sd": 8.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 10,
@@ -595,13 +595,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 4.27,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 4.14,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "delawarestate": {
    "name": "Delaware State",
    "conference": "MEAC",
-   "fcs_team_rating": -25.29,
+   "fcs_team_rating": -25.24,
    "rating_sd": 6.74,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -609,14 +609,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -2.71,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -2.76,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "drake": {
    "name": "Drake",
    "conference": "Pioneer",
-   "fcs_team_rating": -29.63,
+   "fcs_team_rating": -29.51,
    "rating_sd": 8.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -625,13 +625,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 1.63,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 1.51,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "duquesne": {
    "name": "Duquesne",
    "conference": "NEC",
-   "fcs_team_rating": -30.96,
+   "fcs_team_rating": -30.92,
    "rating_sd": 5.77,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -639,14 +639,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 2.96,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 2.92,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "easternillinois": {
    "name": "Eastern Illinois",
    "conference": "OVC",
-   "fcs_team_rating": -31.53,
+   "fcs_team_rating": -31.49,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -654,14 +654,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 3.53,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 3.49,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "easternkentucky": {
    "name": "Eastern Kentucky",
    "conference": "UAC",
-   "fcs_team_rating": -26.96,
+   "fcs_team_rating": -26.9,
    "rating_sd": 6.61,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -669,59 +669,59 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -1.04,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -1.1,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "easternwashington": {
    "name": "Eastern Washington",
    "conference": "Big Sky",
-   "fcs_team_rating": -22.51,
-   "rating_sd": 6.35,
+   "fcs_team_rating": -22.47,
+   "rating_sd": 6.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -5.49,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -5.53,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "easttennesseestate": {
    "name": "East Tennessee State",
    "conference": "Southern",
-   "fcs_team_rating": -26.37,
-   "rating_sd": 6.57,
+   "fcs_team_rating": -25.8,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -1.63,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -2.2,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "easttexasam": {
    "name": "East Texas A&M",
    "conference": "Southland",
-   "fcs_team_rating": -33.58,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -33.2,
+   "rating_sd": 6.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 5.58,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 5.2,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "elon": {
    "name": "Elon",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -26.63,
+   "fcs_team_rating": -26.58,
    "rating_sd": 7.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -730,28 +730,28 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -1.37,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -1.42,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "floridaam": {
    "name": "Florida A&M",
    "conference": "SWAC",
-   "fcs_team_rating": -32.66,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -32.69,
+   "rating_sd": 6.46,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 4.66,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 4.69,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "fordham": {
    "name": "Fordham",
    "conference": "Patriot",
-   "fcs_team_rating": -37.87,
+   "fcs_team_rating": -37.83,
    "rating_sd": 5.8,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -759,29 +759,29 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 9.87,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 9.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "furman": {
    "name": "Furman",
    "conference": "Southern",
-   "fcs_team_rating": -30.51,
-   "rating_sd": 6.57,
+   "fcs_team_rating": -29.94,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 2.51,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 1.94,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "gardnerwebb": {
    "name": "Gardner-Webb",
    "conference": "OVC",
-   "fcs_team_rating": -17.4,
+   "fcs_team_rating": -17.36,
    "rating_sd": 5.8,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -789,14 +789,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -10.6,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -10.64,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "georgetown": {
    "name": "Georgetown",
    "conference": "Patriot",
-   "fcs_team_rating": -33.8,
+   "fcs_team_rating": -33.74,
    "rating_sd": 7.56,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -805,28 +805,28 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 5.8,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 5.74,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "grambling": {
    "name": "Grambling",
    "conference": "SWAC",
-   "fcs_team_rating": -31.73,
-   "rating_sd": 6.5,
+   "fcs_team_rating": -31.77,
+   "rating_sd": 6.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 11,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 3.73,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 3.77,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "hampton": {
    "name": "Hampton",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -41.17,
+   "fcs_team_rating": -41.12,
    "rating_sd": 6.38,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -834,14 +834,14 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 13.17,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 13.12,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "harvard": {
    "name": "Harvard",
    "conference": "Ivy",
-   "fcs_team_rating": -17.14,
+   "fcs_team_rating": -17.01,
    "rating_sd": 8.49,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -850,13 +850,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -10.86,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -10.99,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "holycross": {
    "name": "Holy Cross",
    "conference": "Patriot",
-   "fcs_team_rating": -30.87,
+   "fcs_team_rating": -30.82,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -864,29 +864,29 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 2.87,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 2.82,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "houstonchristian": {
    "name": "Houston Christian",
    "conference": "Southland",
-   "fcs_team_rating": -36.33,
-   "rating_sd": 5.79,
+   "fcs_team_rating": -36.02,
+   "rating_sd": 5.77,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 8.33,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 8.02,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "howard": {
    "name": "Howard",
    "conference": "MEAC",
-   "fcs_team_rating": -28.34,
+   "fcs_team_rating": -28.3,
    "rating_sd": 5.95,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -894,14 +894,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 0.34,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 0.3,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "idaho": {
    "name": "Idaho",
    "conference": "Big Sky",
-   "fcs_team_rating": -20.41,
+   "fcs_team_rating": -20.36,
    "rating_sd": 6.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -909,14 +909,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -7.59,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -7.64,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "idahostate": {
    "name": "Idaho State",
    "conference": "Big Sky",
-   "fcs_team_rating": -10.77,
+   "fcs_team_rating": -10.73,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -924,14 +924,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -17.23,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -17.27,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "illinoisstate": {
    "name": "Illinois State",
    "conference": "MVFC",
-   "fcs_team_rating": -13.08,
+   "fcs_team_rating": -13.03,
    "rating_sd": 6.42,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -939,29 +939,29 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -14.92,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -14.97,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "incarnateword": {
    "name": "Incarnate Word",
    "conference": "Southland",
-   "fcs_team_rating": -27.07,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -26.68,
+   "rating_sd": 6.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.93,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -1.32,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "indianastate": {
    "name": "Indiana State",
    "conference": "MVFC",
-   "fcs_team_rating": -27.2,
+   "fcs_team_rating": -27.16,
    "rating_sd": 6.49,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -969,15 +969,15 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.8,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.84,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "jacksonstate": {
    "name": "Jackson State",
    "conference": "SWAC",
-   "fcs_team_rating": -24.56,
-   "rating_sd": 7.5,
+   "fcs_team_rating": -24.61,
+   "rating_sd": 7.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 11,
@@ -985,13 +985,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -3.44,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -3.39,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "lafayette": {
    "name": "Lafayette",
    "conference": "Patriot",
-   "fcs_team_rating": -27.63,
+   "fcs_team_rating": -27.58,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -999,29 +999,29 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.37,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.42,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "lamar": {
    "name": "Lamar",
    "conference": "Southland",
-   "fcs_team_rating": -27.43,
-   "rating_sd": 6.47,
+   "fcs_team_rating": -27.04,
+   "rating_sd": 6.44,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 14,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.57,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.96,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "lehigh": {
    "name": "Lehigh",
    "conference": "Patriot",
-   "fcs_team_rating": -17.27,
+   "fcs_team_rating": -17.2,
    "rating_sd": 7.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1030,13 +1030,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -10.73,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -10.8,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "lindenwood": {
    "name": "Lindenwood",
    "conference": "OVC",
-   "fcs_team_rating": -31.56,
+   "fcs_team_rating": -31.52,
    "rating_sd": 5.8,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1044,14 +1044,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 3.56,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 3.52,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "longislanduniversity": {
    "name": "Long Island University",
    "conference": "NEC",
-   "fcs_team_rating": -29.08,
+   "fcs_team_rating": -29.04,
    "rating_sd": 5.76,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1059,14 +1059,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 1.08,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 1.04,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "maine": {
    "name": "Maine",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -27.49,
+   "fcs_team_rating": -27.45,
    "rating_sd": 5.69,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1074,14 +1074,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -0.51,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -0.55,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "marist": {
    "name": "Marist",
    "conference": "Pioneer",
-   "fcs_team_rating": -35.65,
+   "fcs_team_rating": -35.52,
    "rating_sd": 8.32,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1090,43 +1090,43 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 7.65,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 7.52,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "mcneese": {
    "name": "McNeese",
    "conference": "Southland",
-   "fcs_team_rating": -30.39,
-   "rating_sd": 7.53,
+   "fcs_team_rating": -28.01,
+   "rating_sd": 6.47,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
-   "fcs_games_sample": 11,
-   "fcs_fbs_bridge_sample": 2,
-   "games_this_season": 0,
-   "bridge_games_this_season": 0,
-   "data_completeness": 0.5,
-   "floor_gap": 2.39,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "fcs_games_sample": 12,
+   "fcs_fbs_bridge_sample": 3,
+   "games_this_season": 1,
+   "bridge_games_this_season": 1,
+   "data_completeness": 0.63,
+   "floor_gap": 0.01,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "mercer": {
    "name": "Mercer",
    "conference": "Southern",
-   "fcs_team_rating": -24.28,
-   "rating_sd": 6.57,
+   "fcs_team_rating": -23.71,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.72,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -4.29,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "mercyhurst": {
    "name": "Mercyhurst",
    "conference": "NEC",
-   "fcs_team_rating": -35.37,
+   "fcs_team_rating": -35.34,
    "rating_sd": 5.25,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1134,14 +1134,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 3,
    "bridge_games_this_season": 3,
-   "data_completeness": 1,
-   "floor_gap": 7.37,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.88,
+   "floor_gap": 7.34,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "merrimack": {
    "name": "Merrimack",
    "conference": "FCS Independents",
-   "fcs_team_rating": -34.62,
+   "fcs_team_rating": -34.54,
    "rating_sd": 7.72,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1149,29 +1149,29 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 6.62,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 6.54,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "mississippivalleystate": {
    "name": "Mississippi Valley State",
    "conference": "SWAC",
-   "fcs_team_rating": -42.82,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -42.86,
+   "rating_sd": 6.46,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 14.82,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 14.86,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "monmouth": {
    "name": "Monmouth",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -24.28,
+   "fcs_team_rating": -24.23,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1179,14 +1179,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.72,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.77,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "montana": {
    "name": "Montana",
    "conference": "Big Sky",
-   "fcs_team_rating": -17.37,
+   "fcs_team_rating": -17.32,
    "rating_sd": 6.32,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1194,14 +1194,14 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -10.63,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -10.68,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "montanastate": {
    "name": "Montana State",
    "conference": "Big Sky",
-   "fcs_team_rating": -3.04,
+   "fcs_team_rating": -3,
    "rating_sd": 6.29,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1209,15 +1209,15 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -24.96,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -25,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "moreheadstate": {
    "name": "Morehead State",
    "conference": "Pioneer",
-   "fcs_team_rating": -40.82,
-   "rating_sd": 8.37,
+   "fcs_team_rating": -40.7,
+   "rating_sd": 8.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 10,
@@ -1225,13 +1225,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 12.82,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 12.7,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "morganstate": {
    "name": "Morgan State",
    "conference": "MEAC",
-   "fcs_team_rating": -29.21,
+   "fcs_team_rating": -29.16,
    "rating_sd": 6.76,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1239,14 +1239,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.62,
-   "floor_gap": 1.21,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.57,
+   "floor_gap": 1.16,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "murraystate": {
    "name": "Murray State",
    "conference": "MVFC",
-   "fcs_team_rating": -32.9,
+   "fcs_team_rating": -32.86,
    "rating_sd": 5.78,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1254,14 +1254,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 4.9,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 4.86,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "newhampshire": {
    "name": "New Hampshire",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -28.69,
+   "fcs_team_rating": -28.64,
    "rating_sd": 6.35,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1269,14 +1269,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 0.69,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 0.64,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "newhaven": {
    "name": "New Haven",
    "conference": "NEC",
-   "fcs_team_rating": -39.05,
+   "fcs_team_rating": -38.99,
    "rating_sd": 7.7,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1285,28 +1285,28 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.35,
-   "floor_gap": 11.05,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 10.99,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "nicholls": {
    "name": "Nicholls",
    "conference": "Southland",
-   "fcs_team_rating": -32.48,
-   "rating_sd": 5.78,
+   "fcs_team_rating": -32.16,
+   "rating_sd": 5.76,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
    "fcs_games_sample": 14,
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 4.48,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 4.16,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "norfolkstate": {
    "name": "Norfolk State",
    "conference": "MEAC",
-   "fcs_team_rating": -29.13,
+   "fcs_team_rating": -29.09,
    "rating_sd": 5.95,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1314,14 +1314,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 1.13,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 1.09,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northalabama": {
    "name": "North Alabama",
    "conference": "UAC",
-   "fcs_team_rating": -24.76,
+   "fcs_team_rating": -24.71,
    "rating_sd": 6.63,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1329,14 +1329,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.24,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.29,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northcarolinaat": {
    "name": "North Carolina A&T",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -40.95,
+   "fcs_team_rating": -40.91,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1344,14 +1344,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 12.95,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 12.91,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northcarolinacentral": {
    "name": "North Carolina Central",
    "conference": "MEAC",
-   "fcs_team_rating": -24.78,
+   "fcs_team_rating": -24.72,
    "rating_sd": 6.72,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1359,14 +1359,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.22,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.28,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northdakota": {
    "name": "North Dakota",
    "conference": "MVFC",
-   "fcs_team_rating": -13.49,
+   "fcs_team_rating": -13.44,
    "rating_sd": 6.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1374,14 +1374,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -14.51,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -14.56,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northdakotastate": {
    "name": "North Dakota State",
    "conference": "MVFC",
-   "fcs_team_rating": -5.48,
+   "fcs_team_rating": -5.42,
    "rating_sd": 7.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1390,13 +1390,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -22.52,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -22.58,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northernarizona": {
    "name": "Northern Arizona",
    "conference": "Big Sky",
-   "fcs_team_rating": -19.27,
+   "fcs_team_rating": -19.23,
    "rating_sd": 6.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1404,14 +1404,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -8.73,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -8.77,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northerncolorado": {
    "name": "Northern Colorado",
    "conference": "Big Sky",
-   "fcs_team_rating": -23.4,
+   "fcs_team_rating": -23.36,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1419,14 +1419,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -4.6,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -4.64,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northerniowa": {
    "name": "Northern Iowa",
    "conference": "MVFC",
-   "fcs_team_rating": -24.82,
+   "fcs_team_rating": -24.77,
    "rating_sd": 6.48,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1434,29 +1434,29 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -3.18,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -3.23,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "northwesternstate": {
    "name": "Northwestern State",
    "conference": "Southland",
-   "fcs_team_rating": -39.21,
-   "rating_sd": 6.48,
+   "fcs_team_rating": -38.83,
+   "rating_sd": 6.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 11.21,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 10.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "pennsylvania": {
    "name": "Pennsylvania",
    "conference": "Ivy",
-   "fcs_team_rating": -24.76,
+   "fcs_team_rating": -24.63,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1465,13 +1465,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -3.24,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -3.37,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "portlandstate": {
    "name": "Portland State",
    "conference": "Big Sky",
-   "fcs_team_rating": -28.93,
+   "fcs_team_rating": -28.89,
    "rating_sd": 5.68,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1479,29 +1479,29 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 0.93,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 0.89,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "prairieviewam": {
    "name": "Prairie View A&M",
    "conference": "SWAC",
-   "fcs_team_rating": -27.2,
-   "rating_sd": 6.45,
+   "fcs_team_rating": -27.23,
+   "rating_sd": 6.43,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 14,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.8,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.77,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "presbyterian": {
    "name": "Presbyterian",
    "conference": "Pioneer",
-   "fcs_team_rating": -29.14,
+   "fcs_team_rating": -29.02,
    "rating_sd": 8.37,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1510,13 +1510,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 1.14,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 1.02,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "princeton": {
    "name": "Princeton",
    "conference": "Ivy",
-   "fcs_team_rating": -26.39,
+   "fcs_team_rating": -26.26,
    "rating_sd": 8.52,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1525,13 +1525,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -1.61,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -1.74,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "rhodeisland": {
    "name": "Rhode Island",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -23.3,
+   "fcs_team_rating": -23.26,
    "rating_sd": 6.33,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1539,14 +1539,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -4.7,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -4.74,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "richmond": {
    "name": "Richmond",
    "conference": "Patriot",
-   "fcs_team_rating": -29.76,
+   "fcs_team_rating": -29.71,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1554,14 +1554,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 1.76,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 1.71,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "robertmorris": {
    "name": "Robert Morris",
    "conference": "NEC",
-   "fcs_team_rating": -33.53,
+   "fcs_team_rating": -33.49,
    "rating_sd": 5.77,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1569,14 +1569,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 5.53,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 5.49,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "sacramentostate": {
    "name": "Sacramento State",
    "conference": "Big Sky",
-   "fcs_team_rating": -16.23,
+   "fcs_team_rating": -16.17,
    "rating_sd": 7.31,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1585,13 +1585,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -11.77,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -11.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "sacredheart": {
    "name": "Sacred Heart",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -32.99,
+   "fcs_team_rating": -32.95,
    "rating_sd": 6.41,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1599,29 +1599,29 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 4.99,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 4.95,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "samford": {
    "name": "Samford",
    "conference": "Southern",
-   "fcs_team_rating": -38.61,
-   "rating_sd": 7.64,
+   "fcs_team_rating": -35.45,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
-   "fcs_games_sample": 12,
-   "fcs_fbs_bridge_sample": 2,
-   "games_this_season": 0,
-   "bridge_games_this_season": 0,
-   "data_completeness": 0.5,
-   "floor_gap": 10.61,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "fcs_games_sample": 13,
+   "fcs_fbs_bridge_sample": 3,
+   "games_this_season": 1,
+   "bridge_games_this_season": 1,
+   "data_completeness": 0.63,
+   "floor_gap": 7.45,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "sandiego": {
    "name": "San Diego",
    "conference": "Pioneer",
-   "fcs_team_rating": -30,
+   "fcs_team_rating": -29.88,
    "rating_sd": 8.32,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1630,28 +1630,28 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 2,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 1.88,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "selouisiana": {
    "name": "SE Louisiana",
    "conference": "Southland",
-   "fcs_team_rating": -20.69,
-   "rating_sd": 5.77,
+   "fcs_team_rating": -20.38,
+   "rating_sd": 5.75,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
    "fcs_games_sample": 15,
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -7.31,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -7.62,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southcarolinastate": {
    "name": "South Carolina State",
    "conference": "MEAC",
-   "fcs_team_rating": -21.36,
+   "fcs_team_rating": -21.29,
    "rating_sd": 7.85,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1660,13 +1660,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -6.64,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -6.71,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southdakota": {
    "name": "South Dakota",
    "conference": "MVFC",
-   "fcs_team_rating": -15.91,
+   "fcs_team_rating": -15.86,
    "rating_sd": 6.44,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1674,14 +1674,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -12.09,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -12.14,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southdakotastate": {
    "name": "South Dakota State",
    "conference": "MVFC",
-   "fcs_team_rating": -14.66,
+   "fcs_team_rating": -14.61,
    "rating_sd": 6.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1689,14 +1689,14 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -13.34,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -13.39,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southeastmissouristate": {
    "name": "Southeast Missouri State",
    "conference": "OVC",
-   "fcs_team_rating": -27.22,
+   "fcs_team_rating": -27.17,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1704,29 +1704,29 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.78,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southern": {
    "name": "Southern",
    "conference": "SWAC",
-   "fcs_team_rating": -38.57,
-   "rating_sd": 6.46,
+   "fcs_team_rating": -38.6,
+   "rating_sd": 6.44,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 10.57,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 10.6,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southernillinois": {
    "name": "Southern Illinois",
    "conference": "MVFC",
-   "fcs_team_rating": -18.72,
+   "fcs_team_rating": -18.67,
    "rating_sd": 6.5,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1734,14 +1734,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -9.28,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -9.33,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "southernutah": {
    "name": "Southern Utah",
    "conference": "Big Sky",
-   "fcs_team_rating": -22.94,
+   "fcs_team_rating": -22.9,
    "rating_sd": 6.37,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1749,15 +1749,15 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -5.06,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -5.1,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stephenfaustin": {
    "name": "Stephen F. Austin",
    "conference": "Southland",
-   "fcs_team_rating": -18.1,
-   "rating_sd": 7.49,
+   "fcs_team_rating": -17.6,
+   "rating_sd": 7.45,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
@@ -1765,13 +1765,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -9.9,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -10.4,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stetson": {
    "name": "Stetson",
    "conference": "Pioneer",
-   "fcs_team_rating": -48.64,
+   "fcs_team_rating": -48.52,
    "rating_sd": 8.37,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1780,13 +1780,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 20.64,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 20.52,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stfrancispa": {
    "name": "St. Francis (PA)",
    "conference": "NEC",
-   "fcs_team_rating": -41.48,
+   "fcs_team_rating": -41.43,
    "rating_sd": 7.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1795,13 +1795,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 13.48,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 13.43,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stonehill": {
    "name": "Stonehill",
    "conference": "NEC",
-   "fcs_team_rating": -34.5,
+   "fcs_team_rating": -34.46,
    "rating_sd": 5.76,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1809,14 +1809,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 6.5,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 6.46,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stonybrook": {
    "name": "Stony Brook",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -28.58,
+   "fcs_team_rating": -28.54,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1824,14 +1824,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 0.58,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 0.54,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "stthomasmn": {
    "name": "St. Thomas (MN)",
    "conference": "Pioneer",
-   "fcs_team_rating": -27.21,
+   "fcs_team_rating": -27.08,
    "rating_sd": 8.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1840,13 +1840,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -0.79,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -0.92,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "tarletonstate": {
    "name": "Tarleton State",
    "conference": "UAC",
-   "fcs_team_rating": -7.35,
+   "fcs_team_rating": -7.3,
    "rating_sd": 6.59,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1854,14 +1854,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -20.65,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -20.7,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "tennesseestate": {
    "name": "Tennessee State",
    "conference": "OVC",
-   "fcs_team_rating": -32.31,
+   "fcs_team_rating": -32.26,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1869,15 +1869,15 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 4.31,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 4.26,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "tennesseetech": {
    "name": "Tennessee Tech",
    "conference": "Southern",
-   "fcs_team_rating": -21.99,
-   "rating_sd": 7.73,
+   "fcs_team_rating": -21.26,
+   "rating_sd": 7.67,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
@@ -1885,43 +1885,43 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -6.01,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -6.74,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "texassouthern": {
    "name": "Texas Southern",
    "conference": "SWAC",
-   "fcs_team_rating": -36.19,
-   "rating_sd": 6.5,
+   "fcs_team_rating": -36.7,
+   "rating_sd": 5.78,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
-   "fcs_rating_confidence": "WEAK",
-   "fcs_games_sample": 11,
-   "fcs_fbs_bridge_sample": 2,
-   "games_this_season": 1,
-   "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 8.19,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "fcs_rating_confidence": "MODERATE",
+   "fcs_games_sample": 12,
+   "fcs_fbs_bridge_sample": 3,
+   "games_this_season": 2,
+   "bridge_games_this_season": 2,
+   "data_completeness": 0.75,
+   "floor_gap": 8.7,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "thecitadel": {
    "name": "The Citadel",
    "conference": "Southern",
-   "fcs_team_rating": -25.91,
-   "rating_sd": 6.59,
+   "fcs_team_rating": -25.34,
+   "rating_sd": 6.55,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -2.09,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -2.66,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "towson": {
    "name": "Towson",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -26.88,
+   "fcs_team_rating": -26.85,
    "rating_sd": 5.69,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1929,14 +1929,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -1.12,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -1.15,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "ualbany": {
    "name": "UAlbany",
    "conference": "Coastal Athletic",
-   "fcs_team_rating": -30.1,
+   "fcs_team_rating": -30.06,
    "rating_sd": 6.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1944,14 +1944,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 2.1,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 2.06,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "ucdavis": {
    "name": "UC Davis",
    "conference": "Big Sky",
-   "fcs_team_rating": -17.06,
+   "fcs_team_rating": -17.02,
    "rating_sd": 6.32,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1959,14 +1959,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -10.94,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -10.98,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "utahtech": {
    "name": "Utah Tech",
    "conference": "Big Sky",
-   "fcs_team_rating": -27.59,
+   "fcs_team_rating": -27.55,
    "rating_sd": 6.37,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -1974,14 +1974,14 @@
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.41,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -0.45,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "utmartin": {
    "name": "UT Martin",
    "conference": "OVC",
-   "fcs_team_rating": -27.5,
+   "fcs_team_rating": -27.46,
    "rating_sd": 5.8,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -1989,30 +1989,30 @@
    "fcs_fbs_bridge_sample": 5,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -0.5,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -0.54,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "utriograndevalley": {
    "name": "UT Rio Grande Valley",
    "conference": "Southland",
-   "fcs_team_rating": -23.44,
-   "rating_sd": 6.54,
+   "fcs_team_rating": -23.06,
+   "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 10,
    "fcs_fbs_bridge_sample": 1,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.62,
-   "floor_gap": -4.56,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.57,
+   "floor_gap": -4.94,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "valparaiso": {
    "name": "Valparaiso",
    "conference": "Pioneer",
-   "fcs_team_rating": -45.73,
-   "rating_sd": 8.37,
+   "fcs_team_rating": -45.61,
+   "rating_sd": 8.36,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 10,
@@ -2020,43 +2020,43 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": 17.73,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": 17.61,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "villanova": {
    "name": "Villanova",
    "conference": "Patriot",
-   "fcs_team_rating": -20.54,
-   "rating_sd": 6.5,
+   "fcs_team_rating": -20.49,
+   "rating_sd": 6.49,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 16,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -7.46,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -7.51,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "vmi": {
    "name": "VMI",
    "conference": "Southern",
-   "fcs_team_rating": -40.52,
-   "rating_sd": 6.59,
+   "fcs_team_rating": -39.95,
+   "rating_sd": 6.55,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 12,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 12.52,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 11.95,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "wagner": {
    "name": "Wagner",
    "conference": "NEC",
-   "fcs_team_rating": -34.29,
+   "fcs_team_rating": -34.25,
    "rating_sd": 5.76,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -2064,14 +2064,14 @@
    "fcs_fbs_bridge_sample": 4,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": 6.29,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": 6.25,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "weberstate": {
    "name": "Weber State",
    "conference": "Big Sky",
-   "fcs_team_rating": -26.65,
+   "fcs_team_rating": -26.61,
    "rating_sd": 6.34,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -2079,29 +2079,29 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -1.35,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -1.39,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "westerncarolina": {
    "name": "Western Carolina",
    "conference": "Southern",
-   "fcs_team_rating": -27.55,
-   "rating_sd": 6.57,
+   "fcs_team_rating": -26.98,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.45,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -1.02,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "westernillinois": {
    "name": "Western Illinois",
    "conference": "OVC",
-   "fcs_team_rating": -29.99,
+   "fcs_team_rating": -29.94,
    "rating_sd": 6.51,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -2109,14 +2109,14 @@
    "fcs_fbs_bridge_sample": 3,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": 1.99,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": 1.94,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "westgeorgia": {
    "name": "West Georgia",
    "conference": "UAC",
-   "fcs_team_rating": -26.47,
+   "fcs_team_rating": -26.43,
    "rating_sd": 5.89,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "MODERATE",
@@ -2124,14 +2124,14 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 2,
    "bridge_games_this_season": 2,
-   "data_completeness": 0.83,
-   "floor_gap": -1.53,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.75,
+   "floor_gap": -1.57,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "williammary": {
    "name": "William & Mary",
    "conference": "Patriot",
-   "fcs_team_rating": -25.88,
+   "fcs_team_rating": -25.83,
    "rating_sd": 6.54,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -2139,29 +2139,29 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -2.12,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -2.17,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "wofford": {
    "name": "Wofford",
    "conference": "Southern",
-   "fcs_team_rating": -27.29,
-   "rating_sd": 6.57,
+   "fcs_team_rating": -26.72,
+   "rating_sd": 6.53,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
    "fcs_games_sample": 13,
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -0.71,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -1.28,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "yale": {
    "name": "Yale",
    "conference": "Ivy",
-   "fcs_team_rating": -17.3,
+   "fcs_team_rating": -17.17,
    "rating_sd": 8.47,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -2170,13 +2170,13 @@
    "games_this_season": 0,
    "bridge_games_this_season": 0,
    "data_completeness": 0.5,
-   "floor_gap": -10.7,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "floor_gap": -10.83,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   },
   "youngstownstate": {
    "name": "Youngstown State",
    "conference": "MVFC",
-   "fcs_team_rating": -20.39,
+   "fcs_team_rating": -20.34,
    "rating_sd": 6.47,
    "fcs_rating_source": "EdgeDesk FCS bridge (2025 all-division fit carried at 0.75, updated with 2026 results)",
    "fcs_rating_confidence": "WEAK",
@@ -2184,9 +2184,9 @@
    "fcs_fbs_bridge_sample": 2,
    "games_this_season": 1,
    "bridge_games_this_season": 1,
-   "data_completeness": 0.67,
-   "floor_gap": -7.61,
-   "last_updated": "2026-10-03T21:29:16.165Z"
+   "data_completeness": 0.63,
+   "floor_gap": -7.66,
+   "last_updated": "2026-10-04T15:59:11.200Z"
   }
  }
 }
