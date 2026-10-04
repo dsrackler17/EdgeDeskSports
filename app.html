@@ -3866,6 +3866,9 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_personal.js?v=20260929e"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
+<!-- the one access decision (public.my_billing_access) and the server
+     reconciliation the paywall asks for before it locks anybody out -->
+<script src="/lib/edgedesk_access.js?v=20261004a"></script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track); configured below with the session token -->
 <script src="/lib/edgedesk_track.js?v=20260930a"></script>
 <!-- The CFB research view: what a reader sees first on the college board
@@ -19152,6 +19155,31 @@ function subStatusLabel(s){
   return ({active:'Active',trialing:'Trial',past_due:'Payment failed',canceled:'Cancelled',
            incomplete:'Incomplete',unpaid:'Unpaid'})[s]||s||'\u2014';
 }
+/* "Refresh access": the reader's own way to make EdgeDesk ask Stripe again,
+   through sync_subscription — the repair that used to need an email to
+   support and a row typed in by hand. Rate-limited on the server; the answer
+   carries a reference support can look up in one step. */
+function setRefreshAccessCard(){
+  return setCard('Access','Paid, but EdgeDesk does not show it? This asks Stripe directly and fixes the account.',
+    '<div class="set-act"><button class="btn ghost sm" onclick="__refreshAccess()">Refresh access</button>'+
+    '<span class="set-msg" id="setAccessMsg"></span></div>');
+}
+window.__refreshAccess=async function(){
+  var m=$('setAccessMsg'); if(m){m.className='set-msg';m.textContent='Checking with Stripe\u2026';}
+  if(!window.EDAccess){ if(m){m.className='set-msg neg';m.textContent='Could not load the access checker. Reload and try again.';} return; }
+  var r=await window.EDAccess.sync({url:SB_URL,key:SB_KEY,token:function(){return edToken();}},{source:'self'});
+  var b=r.body||{};
+  if(m){
+    m.className='set-msg '+(b.has_access?'pos':'neg');
+    m.textContent=b.has_access?'Access confirmed.'
+      :(r.status===429?'Checked a moment ago \u2014 try again in a minute.'
+        :(b.message||'Could not confirm access.'))+(b.ref&&!b.has_access?' Reference '+b.ref+'.':'');
+  }
+  if(b.has_access){
+    try{ if(typeof pgHide==='function'){ pgHide(); } if(typeof pgOnUnlock==='function'){ pgOnUnlock(); } }catch(_){}
+  }
+  try{ if(typeof loadSubStatus==='function') await loadSubStatus(); }catch(_){}
+};
 /* The monthly figure this reader is actually on: Stripe's own record when
    there is one (a whole-month USD price), otherwise the standard price. */
 function subPriceDisplay(){
@@ -19176,6 +19204,7 @@ function renderSetSub(){
         'Then '+SUB_PRICE_DISPLAY+'/month. Cancel anytime.')+
       '<div class="set-act"><a class="btn sm" href="./index.html#subscribe" style="text-decoration:none">Start '+(trialDays?trialDays+' days':'your trial')+' free</a></div>'+
       '<div class="set-note">Subscribing takes you through the automatic renewal terms before any payment is collected.</div>');
+    out+=setRefreshAccessCard();
     return out;
   }
   /* A COMP. Every row below this point describes a Stripe subscription -- a
@@ -19236,6 +19265,7 @@ function renderSetSub(){
         '<div class="set-note">Opens the secure billing portal where you can cancel or update your payment method.</div>'
       : '<div class="set-note" style="border:none;padding-top:0"><b style="color:var(--warn)">Self-serve cancellation is not wired yet.</b> The Stripe customer portal link has not been configured, so this button would go nowhere. Until it is, cancellation requests are handled by email. California law requires that a subscription bought online can be cancelled online \u2014 this must be connected before charging customers.</div>'
   );
+  out+=setRefreshAccessCard();
   return out;
 }
 
@@ -21386,7 +21416,41 @@ function pgIsOwner(){var u=(typeof edUser==='function')?edUser():null;return !!(
    anyone why they were in. The row is read first now and the hardcoded id is
    what it always should have been: a backstop for the day the row is missing,
    not the thing that grants access. The comp row grants it. */
+/* THE DECISION IS THE DATABASE'S: public.my_billing_access() through
+   lib/edgedesk_access.js, the same answer the landing page and every RLS gate
+   get. And a NO from the row is not yet a no: when the row may simply be
+   behind Stripe (missing, no status, a period that ended with no renewal
+   recorded, a payment problem — and some sign this account went to checkout),
+   the server is asked ONCE per page load to reconcile with Stripe before a
+   paywall is shown. That is the repair that used to be a row typed in by hand.
+   pgEntitled() above is the fallback for a page without the library. */
+var PG_SYNCED=false;
+function pgAccessCfg(){ return {url:SB_URL,key:SB_KEY,token:function(){return (typeof edToken==='function')?edToken():null;}}; }
+async function pgReadAccess(){
+  var a=await window.EDAccess.read(pgAccessCfg());
+  if(a.ok){ window.ED_ACCESS=a.access; window.SUB=a.access.subscription||null; }
+  return a;
+}
 async function pgCheck(){
+  if(window.EDAccess){
+    var a=await pgReadAccess();
+    if(a.ok){
+      if(a.access.has_access)return 'ok';
+      if(a.access.should_sync&&!PG_SYNCED){
+        PG_SYNCED=true;
+        var r=await window.EDAccess.sync(pgAccessCfg(),{source:'self'});
+        if(r.body&&r.body.ref)window.ED_SYNC_REF=r.body.ref;
+        if(r.body&&r.body.has_access){
+          var b=await pgReadAccess();
+          if(!b.ok||b.access.has_access)return 'ok';
+        }
+      }
+      return pgIsOwner()?'ok':'locked';
+    }
+    /* signed out or unreachable: never a lockout on its own */
+    window.SUB=undefined;
+    return pgIsOwner()?'ok':'unknown';
+  }
   try{
     var rows=await sbGet('subscriptions?select='+PG_SUB_COLS+'&limit=1');
     window.SUB=(rows&&rows[0])||null;
@@ -21431,7 +21495,12 @@ function pgLockedHTML(note){
   var s=window.SUB;
   var failed=!!(s&&(s.status==='past_due'||s.status==='unpaid'));
   var canceled=!!(s&&s.status==='canceled');
-  var X=window.EDPricing, fresh=!s;
+  /* Who is offered the trial is the database's call (billing_access_for's
+     `offer`): an account that never had a Stripe subscription — including one
+     whose hand-granted comp_trial has run out — goes through the trial flow,
+     rather than being told to email us. */
+  var acc=window.ED_ACCESS;
+  var X=window.EDPricing, fresh=acc&&acc.offer?acc.offer==='trial':!s;
   var price=SUB_PRICE_DISPLAY;
   var head=failed?'Your payment didn\u2019t go through'
           :canceled?'Your subscription has ended'
@@ -21473,22 +21542,34 @@ function pgLockedHTML(note){
       'Research tool only, not betting advice. 21+.</div>';
 }
 
-function pgPendingHTML(n){
-  return '<h1 class="pg-h"><span class="pg-spin"></span>Confirming your payment</h1>'+
-    '<p class="pg-p">Stripe has your payment. We\u2019re waiting for it to reach your account, which usually takes a few seconds.</p>'+
-    '<div class="pg-status">Checked '+n+' of '+PG_POLL_MAX+' times. Leave this page open.</div>'+
+function pgPendingHTML(n,max){
+  return '<h1 class="pg-h"><span class="pg-spin"></span>Payment received. Finalizing your EdgeDesk access\u2026</h1>'+
+    '<p class="pg-p">We\u2019re confirming your checkout with Stripe and opening your account. This usually takes a few seconds.</p>'+
+    '<div class="pg-status">Checked '+n+' of '+(max||PG_POLL_MAX)+' times. Leave this page open.</div>'+
     '<div class="pg-msg mut" id="pgMsg"></div>';
 }
 
+/* "I already paid — check again": ask the SERVER to reconcile with Stripe, not
+   just re-read the row — the row being behind Stripe is the whole problem. */
 async function pgRecheck(){
-  var m=$('pgMsg'); if(m){m.className='pg-msg mut';m.innerHTML='<span class="pg-spin"></span>Checking\u2026';}
+  var m=$('pgMsg'); if(m){m.className='pg-msg mut';m.innerHTML='<span class="pg-spin"></span>Checking with Stripe\u2026';}
+  var ref=null, limited=false;
+  if(window.EDAccess){
+    var r=await window.EDAccess.sync(pgAccessCfg(),{source:'self'});
+    ref=r.body&&r.body.ref; limited=r.status===429;
+    PG_SYNCED=true;
+  }
   var st=await pgCheck();
   if(st==='ok'){pgHide();pgWarnBar(window.SUB);pgOnUnlock();return;}
   if(m){
     m.className='pg-msg err';
-    m.textContent=st==='unknown'
+    m.innerHTML=st==='unknown'
       ? 'Could not reach the database to verify. Check your connection and try again.'
-      : 'Still no active subscription on this account. If you just paid, give it a minute \u2014 or email '+PG_SUPPORT+' and we\u2019ll sort it out.';
+      : (limited?'Checked a moment ago \u2014 try again in a minute. '
+                :'Stripe has no active subscription or trial for this account yet. If you just paid, give it a minute. ')+
+        '<b>Please do not pay again or create another account.</b> Email <a href="mailto:'+PG_SUPPORT+
+        (ref?'?subject='+encodeURIComponent('Access not active \u2014 '+ref):'')+'">'+PG_SUPPORT+'</a>'+
+        (ref?' with reference <b>'+stEsc(ref)+'</b>':'')+' and it is fixed in one step.';
   }
 }
 
@@ -21507,8 +21588,27 @@ function pgOnUnlock(){
   }catch(_){}
 }
 
-/* poll after returning from Stripe: the webhook writes the row, not the browser */
+/* poll after returning from Stripe: the webhook writes the row, not the browser.
+   With the access library this is the same bounded finalize the landing page
+   runs (read, ask the server to reconcile with Stripe, growing gaps, stop). */
 async function pgPollForSub(){
+  if(window.EDAccess){
+    var q=null; try{q=new URLSearchParams(location.search);}catch(_){}
+    var sid=q&&/^cs_(live|test)_[A-Za-z0-9]+$/.test(String(q.get('session_id')||''))?String(q.get('session_id')):undefined;
+    pgShow(pgPendingHTML(0,window.EDAccess.FINALIZE_DELAYS.length));
+    var res=await window.EDAccess.finalize(pgAccessCfg(),{sessionId:sid,
+      onProgress:function(i,n){pgShow(pgPendingHTML(i,n));}});
+    if(res.state==='active'){
+      window.ED_ACCESS=res.access; window.SUB=(res.access&&res.access.subscription)||window.SUB;
+      try{localStorage.removeItem('edgedesk_pending_sub');}catch(_){}
+      pgWarnBar(window.SUB);
+      pgHide(); pgOnUnlock(); return true;
+    }
+    pgShow(pgLockedHTML('Your payment is safe \u2014 we just have not been able to confirm it with Stripe yet, and it keeps being checked. '+
+      '<b>Do not pay again or create another account.</b> If this persists, email <a href="mailto:'+PG_SUPPORT+
+      '?subject='+encodeURIComponent('Paid but EdgeDesk not active \u2014 '+res.ref)+'">'+PG_SUPPORT+'</a> with reference <b>'+stEsc(res.ref)+'</b>.'));
+    return false;
+  }
   for(var i=1;i<=PG_POLL_MAX;i++){
     pgShow(pgPendingHTML(i));
     var st=await pgCheck();

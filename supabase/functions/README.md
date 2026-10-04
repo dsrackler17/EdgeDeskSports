@@ -49,6 +49,16 @@ Evidence from the shipped front end, not from the naming.
 | `props_cron` | the Props page's **Refresh prices** (`{action: 'refresh'}` then `{action: 'status'}`, under the reader's session); also the Player Props primary scheduler, poked by pg_cron (`supabase/player_props_cron.sql`) — it dispatches `player-props.yml`, it never captures a price itself. JWT verification OFF (`--no-verify-jwt`): pg_cron sends no JWT, and Refresh / status check the reader's session themselves. |
 | `team_brief` | team briefs |
 
+**Billing** (`docs/billing-hardening.md`) — three single-file functions sharing
+one core (`tools/billing/billing_core.js`, copied in by
+`tools/billing/inline_core.js`; `tools/billing/billing_core.test.js` fails on drift):
+
+| function | called by | what for |
+|---|---|---|
+| `stripe_webhook` | Stripe | every delivery verified, recorded, resolved to an account, and answered with Stripe's live state through `billing_apply_subscription_state`. JWT verification OFF (Stripe signs with its own secret). |
+| `create_checkout_session` | `index.html` (`lib/edgedesk_access.js`) | the server-created Stripe Checkout: account from the verified token, on the session, the subscription and the customer; refuses an account Stripe already has live, and a price that is not the consented figure. JWT verification OFF; the token is verified inside. |
+| `sync_subscription` | `index.html`, `app.html`, `admin/billing/`, pg_cron (`supabase/billing_reconcile_cron.sql`) | reconcile an account with Stripe: the reader's own (rate-limited), after checkout, the operator's repair/link/inspect, and the debounced 10-minute sweep. JWT verification OFF; every reader action verifies the token inside, the sweep takes no identity and answers counts only. |
+
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**
 
 | function | what for |
@@ -105,7 +115,7 @@ file header:
 | `news` | `capture_news` |
 | `rankings_current` | `cfbd_rankings`, `rankings_standings` |
 | `model_props` | `model_props`, `grade_props` |
-| `subscriptions` | `stripe_webhook` — billing |
+| `subscriptions` | `stripe_webhook`, `sync_subscription`, `create_checkout_session` — billing, all through `billing_apply_subscription_state` |
 
 **`park_bearings_sync` is referenced nowhere in `app.html`** — the only one of
 the 68 with no footprint in the shipped front end. That is a lead, not a

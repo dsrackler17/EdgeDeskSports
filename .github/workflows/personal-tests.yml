@@ -36,6 +36,16 @@ on:
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
       - 'supabase/referral_codes.sql'
+      - 'supabase/billing_hardening.sql'
+      - 'supabase/billing_reconcile_cron.sql'
+      - 'supabase/subscription_price.sql'
+      - 'supabase/community_posts.sql'
+      - 'supabase/funnel.sql'
+      - 'supabase/functions/stripe_webhook/**'
+      - 'supabase/functions/create_checkout_session/**'
+      - 'supabase/functions/sync_subscription/**'
+      - 'lib/edgedesk_access.js'
+      - 'admin/billing/**'
       - 'supabase/functions/edgedesk_ai/_mine.js'
       - 'tools/personal/**'
       - 'supabase/functions/research_cron/**'
@@ -88,6 +98,13 @@ jobs:
         run: node tools/billing/stripe_webhook.test.js
       - name: A subscriber's life through the real webhook and paywall, on either price
         run: node tools/billing/subscriber_lifecycle.test.js
+      # The billing core is copied into three single-file Edge Functions; every
+      # copy must be byte-identical, and its pieces (which subscription a row
+      # describes, Stripe retries and deadlines, what a log line may carry) hold.
+      - name: One billing core in three functions, and what it decides
+        run: node tools/billing/billing_core.test.js
+      - name: The browser asks the database for access, never decides it, and gives up boundedly
+        run: node tools/billing/access_client.test.js
       - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
         run: node tools/personal/growth.test.js
       - name: The AI desk answers the reader's research from their own rows
@@ -109,6 +126,16 @@ jobs:
           node-version: '22'
       # The runner image ships PostgreSQL; each suite starts its own throwaway
       # cluster, applies its migrations twice, and tears it down.
+      # Billing hardening: the one access rule, the one writer, and the
+      # migration applied over production-shaped data (hand-made rows, comps,
+      # duplicates, deliveries that never resolved) without changing a row.
+      - name: Billing hardening installs over production's shape; one rule, one writer
+        run: node tools/billing/billing_hardening_sql.test.js
+      # Every way a checkout can go — wallets, closed tabs, late, duplicate and
+      # out-of-order webhooks, Stripe and database failures, duplicates, comps —
+      # through the three shipped Edge Functions against the real SQL.
+      - name: Every checkout converges between Stripe and EdgeDesk
+        run: node tools/billing/billing_flow.test.js
       - name: Personal rows are private, the journal and the reader's number are write-once
         run: node tools/personal/personal_sql.test.js
       - name: The partner program and its campaigns track what happened and never rewrite money or credit

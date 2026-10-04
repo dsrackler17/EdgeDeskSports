@@ -55,9 +55,21 @@ chk('app.html sends a lapsed reader only to the pricing file\'s resubscribe link
 /* NO CHECKOUT, NO CONSENT: an unconfigured or retired link stops the flow
    before a renewal consent is written, not after */
 const ARL_SRC = IDX.slice(IDX.indexOf('async function confirmArl(){'), IDX.indexOf('/* #arlSubmit ships disabled'));
+const iConsentWrite = ARL_SRC.indexOf("fetch(SB_URL+'/rest/v1/billing_consents'");
 chk('confirmArl refuses an unconfigured checkout BEFORE it records a consent',
-  ARL_SRC.indexOf('if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS)') > 0
-  && ARL_SRC.indexOf('if(!STRIPE_LINK||!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS)') < ARL_SRC.indexOf("fetch(SB_URL+'/rest/v1/billing_consents'"));
+  ARL_SRC.indexOf('if(!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS||!PRICE_CENTS||(!window.EDAccess&&!STRIPE_LINK))') > 0
+  && ARL_SRC.indexOf('if(!PRICE_DISPLAY||!BILLING_PERIOD||!TRIAL_DAYS||!PRICE_CENTS||(!window.EDAccess&&!STRIPE_LINK))') < iConsentWrite);
+/* and stronger than before: a consent is only written once a checkout EXISTS —
+   the server-created session, or a valid Payment Link when the server
+   function is not deployed — never for a checkout that could not be opened */
+chk('confirmArl creates the checkout (server first, Payment Link fallback) BEFORE it records a consent',
+  ARL_SRC.indexOf('EDAccess.startCheckout(') > 0 && ARL_SRC.indexOf('EDAccess.startCheckout(') < iConsentWrite
+  && ARL_SRC.indexOf("if(!STRIPE_LINK||!/^https:\\/\\/buy\\.stripe\\.com\\/") > 0
+  && ARL_SRC.indexOf("if(!STRIPE_LINK||!/^https:\\/\\/buy\\.stripe\\.com\\/") < iConsentWrite);
+chk('the server is told the exact offer the consent shows, so it can refuse a different Stripe price',
+  /\{kind:'trial',price_cents:PRICE_CENTS,trial_days:TRIAL_DAYS,consent_version:CONSENT_VERSION/.test(ARL_SRC));
+chk('only a not-deployed / not-configured server checkout falls back to the Payment Link',
+  /else if\(!co\.fallbackOk\)\{/.test(ARL_SRC));
 chk('the consent version moved with the terms', /var CONSENT_VERSION="arl-2026-09-v7-trial7";/.test(IDX));
 chk('the retired $79.99 links are refused by name', X.RETIRED_LINKS.length === 2 && X.RETIRED_LINKS.every((u) => X.validLink(u) === ''));
 chk('a configured link, if any, is a Stripe checkout link and not a retired one',
