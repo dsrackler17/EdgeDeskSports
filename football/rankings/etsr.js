@@ -709,20 +709,43 @@
 
     /* IS THIS A LIKE-FOR-LIKE COMPARISON? Two boards mixed differently — the
        preseason against week one, most obviously — re-rank because the model
-       said they would, not because anything broke. */
-    var wShifts = [];
+       said they would, not because anything broke.
+
+       MEASURED OVER THE TEAMS THAT WERE RE-MIXED, not over the whole board.
+       A team whose game has not landed yet carries a weight shift of exactly
+       zero, and averaging those zeros in made a board look MORE like-for-like
+       the fewer of its games had arrived. Week 5 of 2026 is the case: at
+       21:27 on Saturday 36 of 138 teams had a new game, each re-mixed by
+       0.067, and the board-wide mean read 0.017; by Sunday morning most of the
+       slate was in, the rank shift had climbed past the bound while the mean
+       was still under 0.05, and the build REFUSED TO PUBLISH; once the last
+       games landed the mean reached 0.058 and the same comparison was excused
+       again. Same two weeks, three verdicts, decided by the hour the cron
+       fired. The rank shift does not dilute the same way — a re-mixed team
+       passes teams that did not play, so a partly-landed week already moves
+       most of the board (6.79 of the finished week's 8.03 places with under
+       two-thirds of its weight shift in) — and so the question "were these boards mixed
+       differently" is asked of the teams whose mix actually changed. The
+       board-wide mean is still published beside it. */
+    var wShifts = [], wRemixed = [];
     for (k in nowTeams) {
       if (!Object.prototype.hasOwnProperty.call(nowTeams, k)) continue;
       var an = num(get(nowTeams[k], 'weights.performance'));
       var bn = prevTeams[k] ? num(get(prevTeams[k], 'weights.performance')) : null;
-      if (isNum(an) && isNum(bn)) wShifts.push(Math.abs(an - bn));
+      if (isNum(an) && isNum(bn)) {
+        var dw = Math.abs(an - bn);
+        wShifts.push(dw);
+        if (dw > 0) wRemixed.push(dw);
+      }
     }
     var meanW = wShifts.length ? mean(wShifts) : null;
+    var meanWRemixed = wRemixed.length ? mean(wRemixed) : null;
     var reconstructed = !!(opts && opts.previous_reconstructed);
     var notComparable = [];
-    if (isNum(meanW) && meanW > S.comparable_weight_shift) {
-      notComparable.push('the mean weight on this season moved ' + r3(meanW)
-        + ' between the two boards, past the ' + S.comparable_weight_shift
+    if (isNum(meanWRemixed) && meanWRemixed > S.comparable_weight_shift) {
+      notComparable.push('the weight on this season moved ' + r3(meanWRemixed)
+        + ' on average for the ' + wRemixed.length + ' teams with new games between the two boards, past the '
+        + S.comparable_weight_shift
         + ' bound — they were mixed differently, so this is not a week-to-week comparison');
     }
     /* AND THE POOL. Re-ranking the common set removes the arithmetic of a
@@ -743,6 +766,10 @@
     return { available: true, mean_rank_shift: r2(meanShift), share_moving_15: r3(shareBig),
       max_rating_shift: r2(maxRating), teams_compared: n,
       mean_prior_weight_shift: r3(meanW),
+      /* the number the comparability bound is tested on: the same shift over
+         the teams whose weight actually moved between the two boards */
+      prior_weight_shift_remixed: { mean: r3(meanWRemixed), teams: wRemixed.length,
+        basis: S.remixed_basis },
       ranked_pool: { now: nowPool, previous: prevPool, compared: n,
         change_share: isNum(poolChange) ? r3(poolChange) : null },
       /* the same two numbers on the raw rank integers, unadjusted for the

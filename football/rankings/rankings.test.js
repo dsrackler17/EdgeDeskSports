@@ -717,6 +717,48 @@ function ctxFor(talentRating, opts) {
   eq('stability: an unchanged pool leaves the two measures identical',
     calm.whole_board.mean_rank_shift, calm.mean_rank_shift);
 
+  /* A HALF-LANDED SATURDAY IS THE SAME COMPARISON AS THE FINISHED ONE. This
+     is 2026 week 5: the board at 21:27 and the board on Sunday morning compare
+     the same two weeks, and the comparability verdict may not depend on how
+     many of the week's games the feeds had published when the cron fired. A
+     team whose game has not landed shows a weight shift of zero; averaging
+     those zeros in let a partly-landed week through to the bound (and to a
+     REFUSING TO PUBLISH) that the finished week is excused from. */
+  function weekBoards(nTeams, nPlayed, wPrev, wNow) {
+    const p = {}, c = {};
+    for (let i = 0; i < nTeams; i++) {
+      p['t' + i] = { etsr: 40 - i, rank: i + 1, talent: { rating: 50 }, weights: { performance: wPrev } };
+      /* the board churns — every team moves at least ten places */
+      c['t' + i] = { etsr: 40 - i, rank: ((i + 10) % nTeams) + 1, talent: { rating: 50 }, confidence: { value: 0.6 },
+        weights: { performance: i < nPlayed ? wNow : wPrev } };
+    }
+    return { prev: p, now: c };
+  }
+  const partWeek = weekBoards(40, 10, 0.571, 0.625);       /* a quarter of the slate in */
+  const fullWeek = weekBoards(40, 40, 0.571, 0.625);       /* the whole slate in */
+  const partStab = ETSR.stability(partWeek.now, partWeek.prev);
+  const fullStab = ETSR.stability(fullWeek.now, fullWeek.prev);
+  ok('stability: the board-wide weight shift is still published, diluted by the games not yet landed',
+    partStab.mean_prior_weight_shift < CFG.STABILITY.comparable_weight_shift);
+  eq('stability: the comparability bound is tested on the teams that were re-mixed',
+    partStab.prior_weight_shift_remixed.teams, 10);
+  close('stability: and on their own shift, not the diluted one', partStab.prior_weight_shift_remixed.mean, 0.054, 1e-9);
+  eq('stability: a partly-landed week gets the same verdict as the finished week',
+    partStab.comparable, fullStab.comparable);
+  ok('stability: and neither refuses to publish — both were mixed differently',
+    partStab.fails_build === false && fullStab.fails_build === false);
+  ok('stability: the breach is still reported', partStab.failures.length > 0);
+  /* AND THE HATCH IS NOT A BLANKET EXCUSE. A rebuild in which no team's weight
+     moved — a new player artifact over the same games — is a like-for-like
+     comparison, and a small per-team re-mix late in the season is too; both
+     still fail the build when the board turns over. */
+  const sameGames = weekBoards(40, 0, 0.571, 0.571);
+  const sameStab = ETSR.stability(sameGames.now, sameGames.prev);
+  eq('stability: with nothing re-mixed there is no re-mixed mean', sameStab.prior_weight_shift_remixed.mean, null);
+  ok('stability: and a churning board fails for real', sameStab.comparable === true && sameStab.fails_build === true);
+  const lateWeek = weekBoards(40, 10, 0.727, 0.75);
+  ok('stability: a small re-mix leaves the bound live', ETSR.stability(lateWeek.now, lateWeek.prev).fails_build === true);
+
   const jump = { a: { etsr: 20, talent: { rating: 50 }, confidence: { value: 0.6 } } };
   const before = { a: { etsr: 2, talent: { rating: 50 } } };
   const an = ETSR.anomalies(jump, before, {});
