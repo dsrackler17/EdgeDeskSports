@@ -1,0 +1,125 @@
+# EdgeDesk CFB Research Terminal — the rules, on the pull request.
+#
+# The hourly Model Lab job (cfb-lab.yml) rebuilds the research objects after it
+# appends its snapshots. A change that lets a stale market show an actionable
+# status, lets the market leak into the pure projection, lets an explanation
+# rewrite a status, or lets engagement data reach a model has to fail on the
+# PR that makes it — not an hour after the merge, in a job writing public
+# research pages.
+#
+# Offline: no network, no credentials. The analytics contract runs against a
+# real PostgreSQL service.
+name: CFB research terminal
+
+on:
+  pull_request:
+    paths:
+      - 'lib/cfb_terminal.js'
+      - 'lib/edgedesk_read.js'
+      - 'lib/edgedesk_ev.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/edgedesk_canon.js'
+      - 'lib/edgedesk_bankroll.js'
+      - 'tools/bettor/**'
+      - 'lib/research_core.js'
+      - 'tools/football/quote_ev.test.js'
+      - 'tools/football/quote_ev_ui.e2e.js'
+      - 'football/cfb_ev/**'
+      - 'football/cfb_terminal/**'
+      - 'research/cfb/**'
+      - 'supabase/cfb_terminal_analytics.sql'
+      - 'supabase/functions/edgedesk_ai/_cfb_explain.js'
+      - 'football/cfb_decision/decision.js'
+      - 'football/cfb_p4/**'
+      - 'football/cfb_v2/engine.js'
+      - 'football/cfb_v2/params.js'
+      - 'lib/cfb_disagreement.js'
+      - 'app.html'
+      - 'football/engine.js'
+      - 'football/params.js'
+      - 'football/validation/pricing_nfl.json'
+      - 'supabase/functions/edgedesk_ai/_pricing.js'
+      - 'supabase/bettor_decisions.sql'
+      - '.github/workflows/cfb-terminal.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/cfb_terminal.js'
+      - 'lib/edgedesk_read.js'
+      - 'lib/edgedesk_ev.js'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/edgedesk_canon.js'
+      - 'lib/edgedesk_bankroll.js'
+      - 'tools/bettor/**'
+      - 'football/cfb_ev/**'
+      - 'football/cfb_terminal/*.js'
+      - 'research/cfb/**'
+      - 'supabase/cfb_terminal_analytics.sql'
+      - '.github/workflows/cfb-terminal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-terminal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Build the research objects from the committed artifacts (check mode, writes nothing)
+        run: node football/cfb_terminal/build.js --check
+      - name: The terminal's rules (synthetic cases + the real slate + the page's boundaries)
+        run: node football/cfb_terminal/tests.js
+      - name: The EdgeDesk Read (odds math, signs, pushes, alternates, stale quotes, price gone, wait, investigate, the real slate, the page)
+        run: node football/cfb_terminal/read.test.js
+      - name: The EdgeDesk EV engine (formulas, settlement, calibration contract, fixtures, property tests, the tournament's governance, the real slate, the page)
+        run: node football/cfb_ev/ev.test.js
+      - name: Quote-level EV (exact-quote cover/push/loss, break-even, EV, best line/price/EV, alternate ladders, sanity guards, parity with the engines)
+        run: node tools/football/quote_ev.test.js
+      - name: The bettor decision layer (BET / LEAN / WATCH / PASS / NO DECISION, sizing, playable-to, transitions, bankroll, the real slate, the renderers)
+        run: node tools/bettor/decision.test.js
+      - name: The unified football decision engine, NFL and CFB (evaluability vs decision, orientation canon, alternates, anomalies, sizing caps, real NFL and CFB payloads)
+        run: node tools/bettor/football_decision.test.js
+      - name: One meaning per state (a live quote never reads NO MARKET, only a live verified price BETs, WATCH names its trigger, only BET is exposure, beginner mode, extreme alternates)
+        run: node tools/bettor/consistency.test.js
+      - name: Alternate-spread capture (parse, change-only ledger, browser feed, budget and credit controls; stubbed provider)
+        run: node football/cfb_terminal/alternates.test.js
+      - name: The EV calibration tournament reproduces from the committed dataset (DEV only, writes nothing)
+        run: node football/cfb_ev/tournament.js --check > /dev/null
+      - name: The internal user test (answerability audit, 20 games)
+        run: node football/cfb_terminal/user_test.js
+      - name: The explanation boundary still refuses what it must
+        run: node football/cfb_lab/explain_guard.test.js
+      - name: The game card keeps its structure and links to the research page
+        run: node tools/app/game_research.test.js
+      - name: psql
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends postgresql-client
+      - name: The analytics contract against a real PostgreSQL
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node football/cfb_terminal/analytics_sql.test.js

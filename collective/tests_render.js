@@ -1,0 +1,2835 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   EdgeDesk Model Collective — the record has to appear when the game ends.
+
+   This file exists because of a Saturday. A college slate finished, the
+   final scores were on screen, and the site showed a dash in every grade
+   column, "0 SETTLED" on the wall, and "Nobody has cleared the minimums yet
+   / 0 graded games" against every model on the rankings page. The unit
+   suite in tests.js could not have caught it: every function it covers was
+   correct. What was wrong was that nothing on the page ever asked.
+
+   So this suite drives the REAL render functions — renderWall, renderBoard,
+   renderRankings — against a stubbed API that reproduces exactly that
+   state: finished games, final scores present, no server grades, empty
+   ranking boards. Then it reads the HTML they produce and asserts the
+   record is actually there. It is the regression test for the bug itself,
+   not for the pieces underneath it.
+
+   Offline, no dependencies, same DOM-shim approach as tests.js but with a
+   shim rich enough to render into.
+
+   Run:  node collective/tests_render.js
+         node collective/tests.js          (the unit suite, run both)
+   =========================================================================== */
+'use strict';
+var fs=require('fs'),path=require('path'),vm=require('vm');
+var PAGE=path.join(__dirname,'index.html');
+var html=fs.readFileSync(PAGE,'utf8');
+var re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi,m,blocks=[];
+while((m=re.exec(html))!==null)if(m[1].trim())blocks.push(m[1]);
+var CODE=blocks.join('\n;\n');
+var APPSRC=CODE;   /* the page's own source, for the builders that live inside a render fn */
+
+var pass=0,fail=0,fails=[];
+/* a thunk is evaluated here, in a try: an assertion must FAIL, never crash */
+function chk(n,ok,d){
+  if(typeof ok==='function'){try{ok=ok();}catch(e){ok=false;d={threw:String((e&&e.message)||e)};}}
+  if(ok){pass++;return;}
+  fail++;fails.push({n:n,d:d});
+}
+
+function G(id,away,home,hs,as,close,models){
+  return {game_id:id,label:away+' @ '+home,home:home,away:away,week:1,season:2026,
+    kickoff_at:'2026-08-29T16:00:00Z',
+    result:(hs==null?null:{home_score:hs,away_score:as,closing_spread:close,closing_total:47.5}),
+    consensus:{n:models.length,spread_mean:-12.2,spread_median:-13.6,spread_stdev:4.8,
+               agreement:0.67,home_win_prob_mean:0.8,total_mean:49.4,pct_picks_home:0.75},
+    models:models};
+}
+function M(cs,ms,side,spread,line,hw){
+  return {creator_slug:cs,model_slug:ms,pick_side:side,projected_spread:spread,
+    line_at_submission:line,home_win_probability:hw,projected_total:50.5,
+    received_at:'2026-08-27T12:00:00Z',locked:false,late:false,grade:null};
+}
+var GAMES=[
+  /* TCU -7.5 close; TCU wins 48-14 -> margin 34, home covers */
+  G(1,'NORTHCAROL','TCU',48,14,-7.5,[
+    M('mustbemoose','edgedesk-cfb-p4','home',-12.5,-12.5,0.78),
+    M('blizzard-performance','cfb-model',null,-16.3,null,null),
+    M('edgedesksports','edgedesk-cfb','home',-14.6,-6.5,0.82),
+    M('blerm','blerm-s-model','away',-5.5,-8.5,null)]),
+  /* USC -38.5 close; USC wins 59-28 -> margin 31, away covers */
+  G(2,'SANJOSESTA','USC',59,28,-38.5,[
+    M('mustbemoose','edgedesk-cfb-p4','home',-32,-32,0.96),
+    M('blizzard-performance','cfb-model',null,-27.6,null,null),
+    M('edgedesksports','edgedesk-cfb','away',-34.6,-38.5,0.99),
+    M('blerm','blerm-s-model','away',-26.5,-38.5,null)]),
+  /* VIRGINIA -5.5 close; NCSTATE wins 24-21 -> margin -3, away covers */
+  G(3,'NCSTATE','VIRGINIA',21,24,-5.5,[
+    M('mustbemoose','edgedesk-cfb-p4','home',-2,-2,0.55),
+    M('blizzard-performance','cfb-model',null,-5.5,null,null),
+    M('edgedesksports','edgedesk-cfb','away',-5.4,-5.5,0.63),
+    M('blerm','blerm-s-model','away',0.5,-4,null)])
+];
+var WALL=[
+  {creator_slug:'mustbemoose',creator_name:'Must Be Moose',model_slug:'edgedesk-cfb-p4',
+   model_name:'MustBeMoose College Football',sport:'CFB',membership:'ACTIVE CONTRIBUTOR',
+   founding:true,record:null,coverage_pct:100,last_submission_at:'2026-08-27T12:00:00Z',monogram:'MM'},
+  {creator_slug:'blizzard-performance',creator_name:'Blizzard Performance',model_slug:'cfb-model',
+   model_name:'CFB MODEL',sport:'CFB',membership:'ACTIVE CONTRIBUTOR',
+   record:null,coverage_pct:100,last_submission_at:'2026-08-28T12:00:00Z',monogram:'BP'},
+  {creator_slug:'edgedesksports',creator_name:'EdgeDesk Sports',model_slug:'edgedesk-cfb',
+   model_name:'EdgeDesk Model',sport:'CFB',membership:'ACTIVE CONTRIBUTOR',
+   record:null,coverage_pct:100,last_submission_at:'2026-08-28T12:00:00Z',monogram:'ED'},
+  {creator_slug:'blerm',creator_name:'Blerm',model_slug:'blerm-s-model',
+   model_name:"Blerm's Model",sport:'CFB',membership:'ACTIVE CONTRIBUTOR',
+   record:null,coverage_pct:100,last_submission_at:'2026-08-29T02:00:00Z',monogram:'BL'}
+];
+/* An NFL slate of its own. Everything on this page is meant to be sport
+   agnostic — the league it fetches, the scoreboard it reads, the season it
+   sweeps all come from the sport switcher — but "meant to be" is not
+   evidence, and the NFL side had never been driven once. */
+var NFLGAMES=[
+  /* KC -6.5 close, KC wins by 10: home covered */
+  G(101,'BAL','KC',31,21,-6.5,[
+    M('jadedbettor-murse2-0','nfl-math-madness','home',-9,-6.5,0.72),
+    M('tiltdatalabs','nofunleague','away',-3,-6.5,0.55)]),
+  /* SF -3 close, SF wins by 2: road side covered */
+  G(102,'SEA','SF',24,22,-3,[
+    M('jadedbettor-murse2-0','nfl-math-madness','home',-7,-3,0.68),
+    M('tiltdatalabs','nofunleague','away',-1,-3,0.48)])
+];
+var NFLWALL=[
+  {creator_slug:'jadedbettor-murse2-0',creator_name:'Jaded Bettor',
+   model_slug:'nfl-math-madness',model_name:'NFL Math Madness',sport:'NFL',
+   membership:'ACTIVE CONTRIBUTOR',record:null,coverage_pct:100,
+   last_submission_at:'2026-09-12T12:00:00Z',monogram:'JB'},
+  {creator_slug:'tiltdatalabs',creator_name:'Tilt Data Labs',
+   model_slug:'nofunleague',model_name:'NoFunLeague',sport:'NFL',
+   membership:'ACTIVE CONTRIBUTOR',record:null,coverage_pct:100,
+   last_submission_at:'2026-09-12T12:00:00Z',monogram:'TD'}
+];
+/* What the SERVER says this model covered. Empty is the state of a model the
+   settlement run has not reached; a populated list is the ordinary state of
+   one it has, and the two took completely different paths through the model
+   page — so both have to be driven. */
+var MODEL_COVERAGE=[];
+var RANKINGS={thresholds:{min_graded_games:20,min_coverage_pct:60},
+  boards:{win_pct:[],margin_mae:[],brier:[]},
+  unranked:WALL.map(function(r){return {creator_slug:r.creator_slug,model_name:r.model_name,
+    reason:'0 graded games is below the 20 minimum'};})};
+
+function reply(body){return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(body);}});}
+var CALLS=[];
+function fakeFetch(url){
+  CALLS.push(url);
+  var u=String(url);
+  /* Both sports, because "it works for College Football" is not evidence
+     that it works for the NFL — every sport-scoped path has to be driven. */
+  if(u.indexOf('/v1/meta')>=0)return reply({sports:[
+      {code:'CFB',season:2026,in_season:true},
+      {code:'NFL',season:2026,in_season:true}],
+    counts:{live_projections:351,graded_games:0},pricing:{monthly_cents:2900,annual_cents:0},
+    billing_live:false});
+  if(u.indexOf('/v1/wall')>=0)return reply({rows:WALL});
+  if(u.indexOf('/v1/activity')>=0)return reply({rows:[]});
+  if(u.indexOf('/v1/rankings')>=0)return reply(RANKINGS);
+  if(u.indexOf('/v1/models/')>=0){
+    var parts=u.split('/v1/models/')[1].split('?')[0].split('/');
+    var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+    return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+      model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+      record:null,recent_graded:[],coverage:MODEL_COVERAGE,coverage_pct:100});
+  }
+  if(u.indexOf('/v1/games')>=0){
+    var wk=/[?&]week=(\d+)/.exec(u);
+    var isNFL=/[?&]sport=NFL/.test(u);
+    if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+    if(isNFL)return reply({games:NFLGAMES,week:1,entitled:true});
+    return reply({games:GAMES,week:1,entitled:true});
+  }
+  return reply({});
+}
+
+/* ---- a DOM shim good enough to render into --------------------------- */
+function node(){
+  var n={_html:'',value:'',textContent:'',disabled:false,style:{},children:[],
+    classList:{add:function(){},remove:function(){},contains:function(){return false;},toggle:function(){}},
+    getAttribute:function(k){return n['_attr_'+k]||null;},
+    setAttribute:function(k,v){n['_attr_'+k]=v;},
+    appendChild:function(){},removeChild:function(){},remove:function(){},
+    addEventListener:function(){},removeEventListener:function(){},
+    querySelector:function(){return node();},querySelectorAll:function(){return [];},
+    focus:function(){},click:function(){},scrollIntoView:function(){},
+    onclick:null,onchange:null,oninput:null};
+  Object.defineProperty(n,'innerHTML',{get:function(){return n._html;},set:function(v){n._html=String(v);}});
+  Object.defineProperty(n,'firstChild',{get:function(){return node();}});
+  return n;
+}
+var VIEW=node(),ELS={view:VIEW};
+var sandbox={
+  console:console,
+  setTimeout:function(f){return 0;},clearTimeout:function(){},
+  setInterval:function(){return 1;},clearInterval:function(){},
+  fetch:fakeFetch,
+  localStorage:{_d:{mc_sport:'CFB'},getItem:function(k){return this._d[k]===undefined?null:this._d[k];},
+    setItem:function(k,v){this._d[k]=v;},removeItem:function(k){delete this._d[k];}},
+  sessionStorage:{getItem:function(){return null;},setItem:function(){}},
+  location:{hash:'',href:'http://localhost/collective/',search:'',pathname:'/collective/',
+    origin:'http://localhost',replace:function(){},assign:function(){}},
+  history:{replaceState:function(){},pushState:function(){}},
+  navigator:{userAgent:'node',clipboard:{writeText:function(){}}},
+  document:{
+    getElementById:function(id){if(!ELS[id])ELS[id]=node();return ELS[id];},
+    querySelector:function(){return node();},
+    querySelectorAll:function(){return [];},
+    createElement:function(){return node();},
+    addEventListener:function(){},removeEventListener:function(){},
+    body:node(),head:node(),title:'',cookie:'',hidden:false},
+  atob:function(s){return Buffer.from(s,'base64').toString('binary');},
+  btoa:function(s){return Buffer.from(s,'binary').toString('base64');},
+  URL:URL,URLSearchParams:URLSearchParams,TextEncoder:TextEncoder,TextDecoder:TextDecoder,
+  AbortController:AbortController,Headers:typeof Headers!=='undefined'?Headers:function(){},
+  Promise:Promise,JSON:JSON,Math:Math,Date:Date,RegExp:RegExp,Intl:Intl,
+  performance:{now:function(){return 0;}},
+  crypto:{getRandomValues:function(a){return a;},randomUUID:function(){return 'x';}}
+};
+sandbox.window=sandbox;sandbox.globalThis=sandbox;
+sandbox.addEventListener=function(){};sandbox.removeEventListener=function(){};
+sandbox.dispatchEvent=function(){return true;};
+sandbox.matchMedia=function(){return {matches:false,addListener:function(){},addEventListener:function(){}};};
+sandbox.getComputedStyle=function(){return {getPropertyValue:function(){return '';}};};
+sandbox.scrollTo=function(){};sandbox.scrollY=0;
+sandbox.requestAnimationFrame=function(){return 0;};
+sandbox.alert=function(){};sandbox.confirm=function(){return false;};
+vm.createContext(sandbox);
+/* The page loads week.js by <script src> before its own inline block, and it
+   is where "which week is current" is decided. A sandbox that skipped it
+   would be driving the page's fallback path -- the pre-fix behaviour -- and
+   reporting green about it. So it is loaded here the way the browser loads
+   it, first, into the same context. */
+try{vm.runInContext(fs.readFileSync(path.join(__dirname,'week.js'),'utf8'),sandbox,{timeout:20000});}
+catch(e){console.log('[boot week.js] '+e.message);}
+/* ...and the canonical research libraries, which it also loads by src */
+['research_core.js','research_eval.js','football_grading.js'].forEach(function(f){
+  try{vm.runInContext(fs.readFileSync(path.join(__dirname,'..','lib',f),'utf8'),sandbox,{timeout:20000});}
+  catch(e){console.log('[boot '+f+'] '+e.message);}
+});
+try{vm.runInContext(CODE,sandbox,{timeout:20000});}
+catch(e){console.log('[boot] '+e.message);}
+
+var S=sandbox;
+(async function(){
+  /* A suite that skips itself reports green having tested nothing, so name
+     what has to exist before anything runs. */
+  chk('the page defines the functions this suite drives',
+    ['renderWall','renderBoard','renderRankings','renderPerformance','route',
+     'rowGrade','localGrade','atsResult','finalResult','modelRecord',
+     'modelCoverage','localGameLog','localRankings','seasonGames','liveTick',
+     'liveRoute','liveFingerprint','paint','fail','recATSHtml'
+    ].every(function(n){return typeof S[n]==='function';}),
+    {missing:['renderWall','renderBoard','renderRankings','renderPerformance','route',
+      'rowGrade','localGrade','atsResult','finalResult','modelRecord',
+      'modelCoverage','localGameLog','localRankings','seasonGames','liveTick',
+      'liveRoute','liveFingerprint','paint','fail','recATSHtml']
+      .filter(function(n){return typeof S[n]!=='function';})});
+
+  /* ---- THE WALL ---- */
+  var v=node();
+  await S.renderWall(v);
+  await new Promise(function(r){setTimeout(r,50);});   /* let the season sweep land */
+  var wall=v.innerHTML;
+  chk('the wall no longer reports zero settled games',
+    /<b>3<\/b> settled/.test(wall), {got:(/(<b>\d+<\/b> settled)/.exec(wall)||[])[1]});
+  chk('the wall colours a graded row green or red, not by membership',
+    wall.indexOf('var(--pos)')>=0 && wall.indexOf('var(--neg)')>=0);
+  /* Colour alone cannot say which grades are settled and which the page
+     worked out, and a reader should not have to hover every row to find
+     out. A page-graded dot is drawn hollow. */
+  chk('a page-graded dot is visibly different, not only in its title',
+    (wall.match(/class="gb-dot pg"/g)||[]).length>=6,
+    {hollow:(wall.match(/class="gb-dot pg"/g)||[]).length,
+     all:(wall.match(/class="gb-dot/g)||[]).length});
+  chk('a graded dot says what it graded, in its title',
+    /title="WIN &#8212; graded|title="WIN — graded|WIN/.test(wall));
+  chk('the model directory shows a record instead of "awaiting results"',
+    wall.indexOf('awaiting results')<0, {sample:wall.slice(wall.indexOf('walltbl'),wall.indexOf('walltbl')+900)});
+  chk('the directory marks the records this page graded',
+    (wall.match(/class="pgrade"/g)||[]).length>=4);
+
+  /* ---- THE BOARD ---- */
+  S.location.hash='#board';
+  var b=node();
+  await S.renderBoard(b);
+  var board=b.innerHTML;
+  chk('the board grades every finished game',
+    (board.match(/class="mono grade-(win|loss|push)"/g)||[]).length>=9,
+    {n:(board.match(/class="mono grade-/g)||[]).length});
+  chk('the board grades the consensus row too',
+    board.indexOf('consrow')>=0 && (board.match(/grade-(win|loss)/g)||[]).length>9);
+  chk('the board never prints a grade class the stylesheet has no rule for',
+    !/grade-(?!win|loss|push)/.test(board));
+  chk('a graded row still shows its margin error and brier',
+    /err \d/.test(board) && /brier \d/.test(board));
+  /* Not just "some grades appeared" — the RIGHT ones. TCU closed -7.5 and
+     won by 34, so the home side covered; USC closed -38.5 and won by 31, so
+     the road side did. Every model is graded on the side it named, against
+     the Collective's captured close and nothing else. */
+  chk('the side that covered wins and the side that did not loses',
+    function(){
+      var g=GAMES[0];
+      return S.rowGrade(g,g.models[0]).pick_result==='win'      /* picked TCU  */
+        && S.rowGrade(g,g.models[2]).pick_result==='win'        /* picked TCU  */
+        && S.rowGrade(g,g.models[3]).pick_result==='loss'       /* picked UNC  */
+        /* blizzard named no side, but posted TCU -16.3 into a -7.5 close:
+           its own number is on TCU, and TCU covered */
+        && S.rowGrade(g,g.models[1]).pick_result==='win'
+        && S.rowGrade(g,g.models[1]).implied===true;
+    });
+  chk('a favourite that wins by less than the number does NOT cover',
+    function(){
+      var g=GAMES[1];
+      return S.rowGrade(g,g.models[0]).pick_result==='loss'     /* picked USC -38.5 */
+        && S.rowGrade(g,g.models[2]).pick_result==='win'        /* picked SJSU      */
+        && S.rowGrade(g,g.models[3]).pick_result==='win';
+    }, 'USC won by 31 on a 38.5 line');
+  chk('an outright upset grades the road side a winner',
+    function(){
+      var g=GAMES[2];
+      return S.rowGrade(g,g.models[0]).pick_result==='loss'
+        && S.rowGrade(g,g.models[2]).pick_result==='win';
+    });
+  /* The whole point of one shared closing line: a model that posted at its
+     own better number is graded on the Collective's, not on the one it
+     picked at. Driven through the real grader, not through atsResult --
+     grading on line_at_submission is a one-word change inside localGrade
+     and the arithmetic below is identical either way, so only the grader
+     itself can tell the two apart. */
+  chk('the page grades against the CAPTURED close, not the line a model posted',
+    function(){
+      var g=G(99,'AWAY','HOME',27,20,-7.5,[
+        M('c','m','home',-9,-6.5,0.7)]);       /* posted at -6.5, close -7.5 */
+      var gr=S.rowGrade(g,g.models[0]);
+      return gr.pick_result==='loss'
+        && S.atsResult(7,-6.5,'home')==='win';  /* its own number would have covered */
+    },
+    'a 7-point win covers -6.5 and does not cover -7.5');
+
+  /* ---- THE RANKINGS ---- */
+  S.location.hash='#rankings';
+  var r=node();
+  await S.renderRankings(r);
+  var rank=r.innerHTML;
+  /* This is the whole complaint, end to end: three finished games and the
+     boards used to be empty because of a twenty-game bar. */
+  chk('the ranked boards fill from the first finished game',
+    function(){
+      var win=boardSlice(rank,'>Win %','>Margin MAE');
+      return (rank.match(/Nobody has cleared the minimums yet/g)||[]).length===0
+        && /Must Be Moose|EdgeDesk Sports|Blerm|Blizzard/.test(win)
+        /* the graded count now carries a colour and a "thin" marker under
+           ten games: the sample is stated beside the value, never hidden */
+        && /<td class="num" style="color:var\(--(dim|warn)\)"[^>]*>[1-9]/.test(win);
+    },
+    {board:boardSlice(rank,'>Win %','>Margin MAE').slice(0,400)});
+  /* The research panels are drawn from the canonical evaluator. They must
+     appear, carry intervals and per-metric samples, and never rank. */
+  chk('the rankings page draws the market diagnostics from the canonical evaluator',
+    function(){
+      var i=rank.indexOf('Market diagnostics');
+      if(i<0)return false;
+      var seg=rank.slice(i,i+20000);
+      return /descriptive research, not a ranking/.test(seg) && /Wilson/.test(seg)
+        && /Median CLV/.test(seg) && /Brier skill/.test(seg) && /n=\d/.test(seg);
+    },{found:rank.indexOf('Market diagnostics')});
+  chk('the independence panel never states an effective count it could not measure',
+    function(){
+      var i=rank.indexOf('Model independence');
+      if(i<0)return true;   /* fewer than two models with residuals: nothing drawn */
+      var seg=rank.slice(i,i+20000);
+      return /not measurable yet/.test(seg)||/Effective independent models<\/div><div class="v">[0-9]/.test(seg);
+    });
+  chk('every model is tracked in the live standings',
+    rank.indexOf('Live standings')>=0
+      && rank.indexOf('Must Be Moose')>=0 && rank.indexOf('Blerm')>=0
+      && rank.indexOf('EdgeDesk Model')>=0 && rank.indexOf('CFB MODEL')>=0);
+  chk('the standings carry a real record, not zeroes',
+    /<span class="mono">[1-9]-\d-\d<\/span>/.test(rank),
+    {rows:(rank.match(/<span class="mono">\d-\d-\d<\/span>/g)||[])});
+  /* blizzard-performance posts a spread on every game and never a pick
+     side. It used to have no win-loss record at all; its own number says
+     which side it is on, so now it has one. */
+  chk('a model that never types a pick side still gets a record',
+    /<span class="mono">[1-9]-\d-\d<\/span>/.test(rank)
+      && !/<span class="mono">0-0-0<\/span>/.test(rank),
+    {zeroes:(rank.match(/<span class="mono">0-0-0<\/span>/g)||[])});
+  /* every model here has finished games, so nobody is "not yet ranked" and
+     no threshold is recited at anybody */
+  chk('nobody is told they are below a minimum any more',
+    rank.indexOf('Not yet ranked')<0
+      && !/is below the \d+ minimum/.test(rank),
+    {reasons:(rank.match(/\d+ graded games? is below[^<]*/g)||[])});
+  chk('the Collective grades itself as one model too',
+    rank.indexOf('The Collective as one model')>=0);
+
+  /* ---- the server's unranked list must never reach the page -------------
+     What the reader actually saw: models sitting on the boards above, and
+     NFL models on the College Football page, all captioned "0 graded games
+     is below the 20 minimum" — a threshold this page no longer applies.
+     It leaked because every model in the fixture posted games, so the
+     page's own list was never empty and the server's was never reached. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
+  RANKINGS.unranked=[
+    {creator_slug:'jadedbettor-murse2-0',model_name:'NFL Math Madness',
+     reason:'0 graded games is below the 20 minimum'},
+    {creator_slug:'tiltdatalabs',model_name:'NoFunLeague',
+     reason:'0 graded games is below the 20 minimum'},
+    {creator_slug:'blerm',model_name:"Blerm's Model",
+     reason:'0 graded games is below the 20 minimum'}
+  ];
+  /* a College Football model on the wall that has posted nothing... */
+  WALL.push({creator_slug:'newcomer',creator_name:'Newcomer',model_slug:'debut',
+    model_name:'Debut Model',sport:'CFB',membership:'MEMBER',
+    record:null,coverage_pct:0,last_submission_at:null,monogram:'NC'});
+  /* ...and an NFL one, which must not appear on this page at all. Without
+     it here, dropping the sport filter changes nothing and the test that
+     guards it passes for free. */
+  WALL.push({creator_slug:'tiltdatalabs',creator_name:'Tilt Data Labs',
+    model_slug:'nofunleague',model_name:'NoFunLeague',sport:'NFL',
+    membership:'MEMBER',record:null,coverage_pct:0,last_submission_at:null,monogram:'TD'});
+  var rN=node();
+  await S.renderRankings(rN);
+  var un=rN.innerHTML;
+  WALL.pop();WALL.pop();RANKINGS.unranked=[];
+  chk('no model is told it is below a minimum that no longer exists',
+    !/is below the \d+ minimum/.test(un),
+    {found:(un.match(/[^<]*is below the \d+ minimum[^<]*/g)||[])});
+  chk('a model already on a board is never listed as not-yet-ranked',
+    function(){
+      var i=un.indexOf('Not yet ranked');
+      return i>=0 && un.slice(i).indexOf('Blerm')<0;
+    },
+    {tail:un.slice(un.indexOf('Not yet ranked'),un.indexOf('Not yet ranked')+300)});
+  chk('another sport’s models stay off this sport’s page',
+    function(){
+      return un.indexOf('NFL Math Madness')<0 && un.indexOf('NoFunLeague')<0;
+    },
+    'the server’s list carries no sport, so NFL models were listed under College Football');
+  chk('and a model of THIS sport that has played nothing is listed, honestly',
+    function(){
+      var i=un.indexOf('Not yet ranked');
+      if(i<0)return false;
+      var list=un.slice(i);
+      return list.indexOf('Debut Model')>=0 && /no finished games yet/.test(list);
+    },
+    {tail:un.slice(un.indexOf('Not yet ranked'),un.indexOf('Not yet ranked')+300)});
+  chk('the standings no longer claim the boards keep a minimum',
+    !/boards above keep their minimums/.test(un)
+      && !/has posted two games has not earned a rank/.test(un));
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
+  /* The whole standings table is the page's own grading. Printing a record
+     with no marker under a rules page that promises every one is marked is
+     the kind of quiet claim this site cannot afford. */
+  /* A stale server row for another sport passes inSport (it keeps a row
+     whose sport it cannot resolve, deliberately), and it used to stand in
+     for the whole board and suppress the one this page computed. */
+  chk('one unresolvable server row does not suppress the page\u2019s own board',
+    function(){
+      return rank.indexOf('Live standings')>=0
+        && /Must Be Moose|EdgeDesk Sports|Blerm|Blizzard/
+             .test(boardSlice(rank,'>Win %','>Margin MAE'));
+    });
+  /* nobody may be ranked and unranked on the same screen */
+  chk('no model is on a board and under "Not yet ranked" at once',
+    function(){
+      var un=rank.indexOf('Not yet ranked');
+      if(un<0)return true;
+      var boards=rank.slice(0,rank.indexOf('Live standings'));
+      var listed=(rank.slice(un).match(/<b>([^<]+)<\/b>/g)||[])
+        .map(function(x){return x.replace(/<\/?b>/g,'');});
+      return listed.length>0 && listed.every(function(n){
+        return boards.indexOf('>'+n+'<')<0;
+      });
+    },
+    {listed:(rank.slice(rank.indexOf('Not yet ranked')).match(/<b>([^<]+)<\/b>/g)||[])});
+  chk('the live standings say they are the page\u2019s own grading',
+    function(){
+      var i=rank.indexOf('Live standings');
+      if(i<0)return false;
+      var st=rank.slice(i);
+      var note=st.indexOf('The marked rows are'), tbl=st.indexOf('<table');
+      /* the note has to be above the table, where a reader meets it before
+         the numbers, not somewhere further down the page */
+      return note>=0 && tbl>=0 && note<tbl && st.slice(0,tbl).indexOf('published rule')>=0;
+    },
+    {head:rank.slice(rank.indexOf('Live standings'),rank.indexOf('Live standings')+260)});
+  chk('every page-graded record on the rankings carries a marker',
+    function(){
+      var st=rank.slice(rank.indexOf('Live standings'));
+      var recs=(st.match(/<span class="mono">\d+-\d+-\d+<\/span>/g)||[]).length;
+      var marks=(st.match(/class="pgrade"/g)||[]).length;
+      return recs>0 && marks>=recs;
+    },
+    {section:rank.slice(rank.indexOf('Live standings'),rank.indexOf('Live standings')+200)});
+
+  /* ---- the live refresh notices a score and redraws ---- */
+  S.location.hash='';
+  await S.liveTick();                       /* baseline */
+  var before=S.LIVE_FP;
+  chk('the first tick only takes a baseline', before!=null);
+  var quiet=CALLS.length;
+  await S.liveTick();
+  chk('an unchanged slate causes no redraw', S.LIVE_FP===before);
+  GAMES.push(G(4,'IOWA','IOWASTATE',31,28,-3.5,[M('blerm','blerm-s-model','home',-6,-3.5,0.6)]));
+  await S.liveTick();
+  chk('a game finishing changes the fingerprint and drops the caches',
+    S.LIVE_FP!==before && Object.keys(S.SEASON_GAMES).length===0);
+
+  /* ---- the normal path must not regress -------------------------------
+     Everything above is the page standing in for a settlement run that is
+     behind. When the run is NOT behind, its grades are the record and the
+     page must show them untouched and unmarked. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  GAMES.length=3;
+  GAMES[0].models[0].grade={pick_result:'loss',margin_error:9.9,brier:0.99};
+  S.location.hash='#board';
+  var b2=node();
+  await S.renderBoard(b2);
+  var board2=b2.innerHTML;
+  chk('a settled grade is shown exactly as the Collective published it',
+    board2.indexOf('err 9.9')>=0 && board2.indexOf('brier 0.990')>=0
+      && /grade-loss/.test(board2),
+    'the page recomputed win for this row and must not have used it');
+  chk('a settled grade carries no live marker',
+    function(){
+      var i=board2.indexOf('err 9.9');
+      return board2.slice(Math.max(0,i-400),i).indexOf('pgrade')<0;
+    });
+  chk('the rest of the slate is still graded by the page beside it',
+    board2.indexOf('pgrade')>=0);
+  GAMES[0].models[0].grade=null;
+
+  /* ---- a finished game the Collective captured no close for ------------ */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var noClose=G(9,'A','B',30,20,null,[M('blerm','blerm-s-model','home',-12.5,null,0.8)]);
+  chk('no captured close means no win, no loss, and no push',
+    function(){
+      var gr=S.rowGrade(noClose,noClose.models[0]);
+      return gr && gr.pick_result===null && gr.margin_error!=null && gr.brier!=null;
+    },
+    'grading it against the model own posted line would be self-reporting');
+  chk('and it is counted by nobody rather than counted as a loss',
+    function(){
+      var rec=S.modelRecord([noClose],'blerm','blerm-s-model');
+      return rec.graded===0 && rec.losses===0 && rec.margin_n===1 && rec.brier_n===1;
+    });
+
+  /* ---- the API being unreachable must not blank the page --------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var realFetch=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/games')>=0)
+      return Promise.resolve({ok:false,status:503,json:function(){return Promise.resolve({});}});
+    return realFetch(u);
+  };
+  S.location.hash='';
+  var v3=node();
+  await S.renderWall(v3);
+  chk('the wall still renders when the games endpoint is down',
+    v3.innerHTML.indexOf('LIVE MODEL WALL')>=0 && v3.innerHTML.indexOf('Must Be Moose')>=0);
+  S.location.hash='#rankings';
+  var r3=node();
+  await S.renderRankings(r3);
+  chk('the rankings still render when the games endpoint is down',
+    r3.innerHTML.indexOf('Rankings')>=0 && r3.innerHTML.indexOf('could not load')<0);
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/rankings')>=0)
+      return Promise.resolve({ok:false,status:503,json:function(){return Promise.resolve({});}});
+    return realFetch(u);
+  };
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var r4=node();
+  await S.renderRankings(r4);
+  chk('the rankings endpoint being down is no longer an error page',
+    r4.innerHTML.indexOf('Live standings')>=0 && r4.innerHTML.indexOf('Must Be Moose')>=0,
+    'the page can compute those boards itself now');
+  S.fetch=realFetch;
+
+  /* ---- the directory sorts the record it is SHOWING -------------------
+     Sorting on the server's record while displaying the page's meant "sort
+     by Win %" did nothing at all to a column full of numbers. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.location.hash='';
+  S.WALL_SORT='win_pct';
+  var v4=node();
+  await S.renderWall(v4);
+  await new Promise(function(r){setTimeout(r,50);});
+  chk('sorting the directory by win % actually reorders it',
+    function(){
+      var html=v4.innerHTML, body=html.slice(html.indexOf('<tbody>'));
+      var pcts=(body.match(/<td class="num">(\d+\.\d)%<\/td>/g)||[])
+        .map(function(x){return parseFloat(/([\d.]+)%/.exec(x)[1]);});
+      if(pcts.length<2)return false;
+      for(var i=1;i<pcts.length;i++)if(pcts[i]>pcts[i-1])return false;
+      return true;
+    },
+    'best win % first, computed from the same record the cells print');
+  S.WALL_SORT='canonical';
+
+  /* ---- the compare page must not draw a push that never happened ------
+     A finished game the Collective captured no closing line for has no
+     against-the-spread result for anybody. The old strip mapped anything
+     that was not a win or a loss to 'p' and drew a push nobody got. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var noClosePerf=G(77,'NOCLOSE','OPPO',31,10,null,[
+    M('blizzard-performance','cfb-model',null,-9,null,null)]);
+  GAMES.push(noClosePerf);
+  S.PERF.a='blizzard-performance/cfb-model';S.PERF.b='blerm/blerm-s-model';
+  S.location.hash='#performance';
+  var v5=node();
+  await S.renderPerformance(v5);
+  await new Promise(function(r){setTimeout(r,80);});
+  var perf=(S.document.getElementById('pfOut')||{innerHTML:''}).innerHTML||'';
+  /* each model gets its own panel, so the label and the marks have to be
+     counted inside ONE of them or the check compares two models' numbers */
+  function panels(html){
+    return html.split('<div class="panel">').slice(1);
+  }
+  /* Four graded games, two with an against-the-spread result: the Virginia
+     game had this model sitting exactly ON the close (no lean, no side to
+     imply) and the game added above has no captured close at all. Both are
+     graded on margin and neither is a push. */
+  chk('a game with no against-the-spread result draws no mark',
+    function(){
+      var log=S.localGameLog(GAMES,'blizzard-performance','cfb-model');
+      var real=log.filter(function(g){return g.pick_result!=null;}).length;
+      var p=panels(perf)[0]||'';
+      return log.length===4 && real===2
+        && (p.match(/<i class="[wlp]">/g)||[]).length===2
+        && p.indexOf('<i class="p">')<0;
+    },
+    {drew:(panels(perf)[0]||'').match(/<i class="[wlp]">/g)||[]});
+  chk('the "Last N graded" label counts exactly the marks beside it',
+    function(){
+      var ps=panels(perf);
+      if(!ps.length)return false;
+      return ps.every(function(p){
+        var lab=/Last (\d+) graded/.exec(p);
+        var marks=(p.match(/<i class="[wlp]">/g)||[]).length;
+        return lab?marks===+lab[1]:marks===0;
+      });
+    },
+    {panels:panels(perf).map(function(p){
+      return {label:(/Last (\d+) graded/.exec(p)||[])[1],
+        marks:(p.match(/<i class="[wlp]">/g)||[]).length};})});
+  GAMES.length=3;
+
+  /* ---- a failed repaint must never be permanent -----------------------
+     The tick used to record the new fingerprint BEFORE redrawing, so one
+     failed repaint was forever: it had already agreed it had drawn this
+     state and never looked again, and the reader sat in front of an error
+     box until they reloaded the page. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
+  S.location.hash='';
+  await S.liveTick();
+  chk('the tick has a baseline to lose', S.LIVE_FP!=null);
+  GAMES.push(G(11,'X','Y',24,21,-2.5,[M('blerm','blerm-s-model','home',-4,-2.5,0.6)]));
+  var realRoute=S.route;
+  var baseline=S.LIVE_FP, insideFp=null;
+  S.route=function(){insideFp=S.LIVE_FP;throw new Error('repaint failed');};
+  await S.liveTick();
+  S.route=realRoute;
+  chk('the new fingerprint is not recorded until the repaint has happened',
+    insideFp===baseline,
+    {baseline:String(baseline).slice(0,40),insideRepaint:String(insideFp).slice(0,40)});
+  chk('a redraw that throws leaves the tick looking again next minute',
+    S.LIVE_FP===null,
+    'recording the fingerprint before the repaint made one failure permanent');
+  await S.liveTick();
+  chk('and it recovers on its own once the repaint works', S.LIVE_FP!=null);
+
+  /* ---- the reader navigating mid-redraw wins --------------------------- */
+  S.LIVE_FP=null;S.LIVE_SPORT=null;
+  S.location.hash='';
+  await S.liveTick();
+  GAMES.push(G(12,'P','Q',31,17,-6.5,[M('blerm','blerm-s-model','home',-9,-6.5,0.7)]));
+  var routed=[];
+  S.route=function(){
+    routed.push(S.location.hash);
+    if(routed.length===1)S.location.hash='#board';   /* the reader moves mid-flight */
+    return Promise.resolve();
+  };
+  await S.liveTick();
+  S.route=realRoute;
+  chk('a redraw that finished for a page the reader has left draws again',
+    routed.length===2 && routed[1]==='#board',
+    {routed:routed});
+  S.location.hash='';S.LIVE_FP=null;S.LIVE_SPORT=null;
+  GAMES.length=3;
+
+  /* ---- the reader opening the uploader mid-tick ----------------------
+     liveRoute() was checked only on the way in. Two requests happen after
+     that, and in them a reader can open the dashboard — a view holding a
+     half-mapped slate nobody has saved. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;
+  S.location.hash='';
+  await S.liveTick();
+  GAMES.push(G(13,'R','S',28,14,-3.5,[M('blerm','blerm-s-model','home',-7,-3.5,0.66)]));
+  var drew=[];
+  S.route=function(){drew.push(S.location.hash);return Promise.resolve();};
+  var realFetch2=S.fetch;
+  S.fetch=function(u){
+    /* the reader opens the uploader while the tick is waiting on its data */
+    if(String(u).indexOf('/v1/games')>=0)S.location.hash='#dashboard';
+    return realFetch2(u);
+  };
+  await S.liveTick();
+  S.fetch=realFetch2;S.route=realRoute;
+  chk('a tick never redraws a view the reader opened while it was waiting',
+    drew.length===0, {drew:drew});
+  S.location.hash='';S.LIVE_FP=null;S.LIVE_SPORT=null;
+
+  /* ---- an unreachable API must not replace the page with an error box -- */
+  chk('a failed automatic refresh leaves the last good view alone',
+    function(){
+      var v=node();
+      v.innerHTML='<h1>the page the reader is looking at</h1>';
+      S.LIVE_QUIET=true;S.LIVE_FP='something';
+      S.fail(v,new Error('briefly unreachable'));
+      var kept=v.innerHTML.indexOf('the page the reader is looking at')>=0
+        && S.LIVE_FP===null;
+      S.LIVE_QUIET=false;
+      /* and a reader-initiated failure still says so */
+      S.fail(v,new Error('briefly unreachable'));
+      return kept && v.innerHTML.indexOf('could not load')>=0;
+    });
+
+  /* ---- the season caches cannot go stale forever ----------------------
+     The fingerprint watches the CURRENT week, because that is the week
+     whose games are finishing. A settlement run reaching back to grade an
+     earlier one would never be seen, so the season sweep is dropped on a
+     slower cycle. */
+  S.route=function(){return Promise.resolve();};
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;S.location.hash='';
+  await S.liveTick();
+  S.SEASON_GAMES={'CFB|2026':[1,2,3]};S.LOCALREC={'CFB|2026':{}};
+  S.LIVE_TICKS=0;
+  chk('the slower cycle is genuinely slower than the tick',
+    S.LIVE_SEASON_EVERY>=5,
+    'dropping the season sweep every minute turns a one-request poll into a per-week storm');
+  var kept=0;
+  for(var t=0;t<S.LIVE_SEASON_EVERY-1;t++){
+    await S.liveTick();
+    if(Object.keys(S.SEASON_GAMES).length)kept++;
+  }
+  chk('an unchanged slate leaves the season sweep in place',
+    kept===S.LIVE_SEASON_EVERY-1&&kept>=4, {kept:kept,of:S.LIVE_SEASON_EVERY-1});
+  await S.liveTick();
+  chk('and the sweep is dropped on the slower cycle, with no repaint',
+    Object.keys(S.SEASON_GAMES).length===0
+      && Object.keys(S.LOCALREC).length===0,
+    {season:Object.keys(S.SEASON_GAMES),local:Object.keys(S.LOCALREC)});
+  S.route=realRoute;S.LIVE_TICKS=0;
+  GAMES.length=3;
+
+  /* ---- one view on screen at a time -----------------------------------
+     Every render ends in one innerHTML= and has awaits before it, so a
+     render for the page a reader was on can finish after the page they are
+     on now and paint over it. The refresh turns that from a rare race into
+     a routine one. */
+  chk('a render overtaken by a newer route paints nothing',
+    function(){
+      var v=node();v.innerHTML='<h1>the page the reader is on</h1>';
+      var stale=S.ROUTE_TOKEN;
+      S.ROUTE_TOKEN++;
+      return S.paint(v,stale,'<h1>overtaken</h1>')===false
+        && v.innerHTML.indexOf('the page the reader is on')>=0;
+    });
+  chk('and the render that still holds the token paints',
+    function(){
+      var v=node();
+      return S.paint(v,S.ROUTE_TOKEN,'<h1>drawn</h1>')===true
+        && v.innerHTML.indexOf('drawn')>=0;
+    });
+  chk('every route stamps a new token',
+    function(){
+      var before=S.ROUTE_TOKEN;
+      S.location.hash='#models';S.route();
+      var mid=S.ROUTE_TOKEN;
+      S.location.hash='#rankings';S.route();
+      S.location.hash='';
+      return mid>before&&S.ROUTE_TOKEN>mid;
+    });
+  /* end to end: a board render caught mid-flight by a route change */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  S.location.hash='#board';
+  var vB=node();
+  var flight=S.renderBoard(vB);
+  S.ROUTE_TOKEN++;                       /* the reader navigated */
+  await flight;
+  chk('a board render overtaken mid-flight never reaches the page',
+    vB.innerHTML.indexOf('The Board')<0,
+    {left:vB.innerHTML.slice(0,120)});
+  S.location.hash='';
+
+  /* ---- the scroll restore must not yank a reader who moved ------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;S.LIVE_BUSY=false;S.LIVE_TICKS=0;
+  var scrolls=[];
+  S.scrollTo=function(x,y){scrolls.push(y);S.scrollY=y;};
+  await S.liveTick();
+  GAMES.push(G(14,'T','U',35,7,-10.5,[M('blerm','blerm-s-model','home',-14,-10.5,0.8)]));
+  S.scrollY=500;
+  S.route=function(){S.scrollY=200;return Promise.resolve();};   /* the reader scrolled */
+  await S.liveTick();
+  chk('a reader who scrolled during the repaint is left where they are',
+    scrolls.length===0, {scrolls:scrolls});
+  GAMES.push(G(15,'V','W',20,17,-1.5,[M('blerm','blerm-s-model','home',-3,-1.5,0.6)]));
+  S.scrollY=500;
+  S.route=function(){S.scrollY=0;return Promise.resolve();};     /* the repaint lost it */
+  await S.liveTick();
+  chk('but a repaint that lost the position puts it back',
+    scrolls.length===1&&scrolls[0]===500, {scrolls:scrolls});
+  S.route=realRoute;S.scrollY=0;GAMES.length=3;
+  S.LIVE_FP=null;S.LIVE_SPORT=null;
+
+  /* ---- a week that failed to load must not be cached as a season ------
+     One missing week is a hole in every record computed from the sweep, and
+     caching it makes the hole permanent for the whole session. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var realFetch3=S.fetch;
+  S.fetch=function(u){
+    if(/[?&]week=2/.test(String(u)))
+      return Promise.resolve({ok:false,status:500,json:function(){return Promise.resolve({});}});
+    if(String(u).indexOf('/v1/games')>=0&&!/[?&]week=/.test(String(u)))
+      return reply({games:GAMES,week:3,entitled:true});
+    return realFetch3(u);
+  };
+  var partial=await S.seasonGames('CFB',2026);
+  chk('a sweep with a failed week still returns what arrived',
+    partial.length>0);
+  chk('but it is not remembered, so the next look retries',
+    Object.keys(S.SEASON_GAMES).length===0,
+    'a short record all day, and the reader never finds out why');
+  S.fetch=realFetch3;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var full=await S.seasonGames('CFB',2026);
+  chk('and a complete sweep is remembered',
+    full.length>0 && Object.keys(S.SEASON_GAMES).length===1);
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+
+  /* ---- a stale server row must not stand in for a whole board ---------
+     inSport keeps a row whose sport it cannot resolve, deliberately: an
+     unlabelled model is the server's omission and hiding it is worse. But
+     one such row used to suppress the board this page computed for the
+     sport the reader is actually on. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  RANKINGS.thresholds={min_graded_games:2,min_coverage_pct:60};
+  RANKINGS.boards.win_pct=[{rank:1,creator_slug:'ghost',creator_name:'Ghost Analytics',
+    model_name:'Ghost NFL Model',value:0.62,graded:41}];
+  S.location.hash='#rankings';
+  var rG=node();
+  await S.renderRankings(rG);
+  var hijack=rG.innerHTML;
+  /* scoped to the Win % board itself: every model also appears in the live
+     standings further down, so an unscoped search passes either way */
+  function boardSlice(html,from,to){
+    var a=html.indexOf(from);if(a<0)return '';
+    var b=html.indexOf(to,a);return html.slice(a,b<0?html.length:b);
+  }
+  var winBoard=boardSlice(hijack,'>Win %','>Margin MAE');
+  chk('a board the page can fill is not surrendered to an unplaceable row',
+    winBoard.length>0 && winBoard.indexOf('Ghost Analytics')<0
+      && /EdgeDesk Model|Must Be Moose|CFB MODEL/.test(winBoard),
+    {board:winBoard.slice(0,400)});
+
+  /* ---- and nobody is ranked and unranked at once ---------------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  RANKINGS.thresholds={min_graded_games:20,min_coverage_pct:60};
+  /* a model name with no apostrophe: esc() would turn one into &#39; and
+     the search would pass whatever the code did */
+  RANKINGS.boards.win_pct=[{rank:1,creator_slug:'edgedesksports',creator_name:'EdgeDesk Sports',
+    model_name:'EdgeDesk Model',value:0.58,graded:34}];
+  /* a model whose only game has not kicked off yet: the one remaining way
+     to be unranked now that there is no minimum */
+  var future=G(88,'AAA','BBB',null,null,-3.5,[M('newbie','first-model','home',-6,-3.5,0.6)]);
+  future.kickoff_at='2099-01-01T17:00:00Z';
+  GAMES.push(future);
+  var rU=node();
+  await S.renderRankings(rU);
+  var both=rU.innerHTML;
+  GAMES.length=3;
+  chk('the server-ranked model is on the board',
+    boardSlice(both,'>Win %','>Margin MAE').indexOf('EdgeDesk Sports')>=0);
+  chk('a model whose games have not been played is told exactly that',
+    function(){
+      var un=both.indexOf('Not yet ranked');
+      if(un<0)return false;
+      var list=both.slice(un);
+      return list.indexOf('first-model')>=0
+        && /no finished games yet/.test(list)
+        && !/is below the \d+ minimum/.test(list);
+    },
+    {tail:both.slice(both.indexOf('Not yet ranked'),both.indexOf('Not yet ranked')+400)});
+  chk('and a model that IS on a board is not also listed there',
+    function(){
+      var un=both.indexOf('Not yet ranked');
+      if(un<0)return false;
+      return both.slice(un).indexOf('EdgeDesk Model')<0;
+    });
+  RANKINGS.boards.win_pct=[];
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.location.hash='';
+
+  /* ---- the sweep must not stop at one week -----------------------------
+     The week-less payload names the current week, and that is what bounds
+     the sweep. When it does not, the games it returned still do — reading
+     one week and calling it a season would quietly build every record on
+     this site out of a single slate. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  var realFetch4=S.fetch;
+  function wkGame(n){
+    var g=G(900+n,'A'+n,'B'+n,24,17,-3.5,[M('blerm','blerm-s-model','home',-6,-3.5,0.6)]);
+    g.week=n;return g;
+  }
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/v1/games')<0)return realFetch4(u);
+    var m=/[?&]week=(\d+)/.exec(q);
+    if(m)return reply({games:[wkGame(+m[1])],entitled:true});
+    /* deliberately no top-level week on the head payload */
+    return reply({games:[wkGame(3)],entitled:true});
+  };
+  var swept=await S.seasonGames('CFB',2026);
+  /* From week ZERO, not week one. College football plays a Week 0 and a sweep
+     that started at 1 dropped every game in it out of every record on this
+     site; an absent week 0 costs one empty response and nothing else. So the
+     head payload's own games still bound the sweep -- that is what this
+     guards -- and the floor is 0. */
+  chk('a payload that names no week is bounded by the games it returned',
+    swept.length===4
+      && [0,1,2,3].every(function(w){
+           return swept.some(function(g){return g.week===w;});
+         }),
+    {weeks:swept.map(function(g){return g.week;})});
+  S.fetch=realFetch4;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+
+  /* ---- THE REPORTED BUG, exactly as reported --------------------------
+     The wire returns result:null on games that finished the day before.
+     No FINAL chip on the board, 0 settled on the wall, every record zero —
+     and no grader could fix it, because a grader cannot invent a score. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  var BLANK=GAMES.map(function(g){
+    var c=JSON.parse(JSON.stringify(g));
+    c.result=null;                       /* what the API actually returns */
+    return c;
+  });
+  chk('with no result on the wire there is nothing to grade — the bug',
+    function(){
+      return BLANK.every(function(g){return S.finalResult(g)===null;})
+        && S.modelRecord(BLANK,'blerm','blerm-s-model').graded===0;
+    });
+  var realFetch5=S.fetch;
+  var asked=[];
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('site.api.espn.com')>=0){
+      asked.push(q);
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs',abbreviation:'TCU'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels',abbreviation:'UNC'}}]}]},
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'59',team:{displayName:'USC Trojans',abbreviation:'USC'}},
+            {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans',abbreviation:'SJSU'}}]}]},
+          {competitions:[{status:{type:{completed:false}},competitors:[
+            {homeAway:'home',score:'0',team:{displayName:'Virginia Cavaliers'}},
+            {homeAway:'away',score:'0',team:{displayName:'NC State Wolfpack'}}]}]}
+        ]});}});
+    }
+    return realFetch5(u);
+  };
+  var filled=await S.enrichFinals(BLANK,'CFB',null);
+  S.fetch=realFetch5;
+  chk('the page goes and reads the finals the wire never wrote',
+    filled===2 && asked.length>=1 && /dates=20260829/.test(asked[0]),
+    {filled:filled,asked:asked});
+  chk('and a game still in progress is NOT taken as a result',
+    function(){
+      var ncst=BLANK.filter(function(g){return g.game_id===3;})[0];
+      return S.finalResult(ncst)===null;
+    },
+    'a score at half time is not a final');
+  chk('the score is marked as the page’s own find, not the Collective’s',
+    function(){
+      var tcu=BLANK.filter(function(g){return g.game_id===1;})[0];
+      return S.finalResult(tcu).source==='espn'
+        && S.scoreSourceMark(tcu).indexOf('ESPN')>=0
+        && S.scoreSourceMark(GAMES[0])==='';
+    });
+  chk('with the scores in hand, the record fills',
+    function(){
+      var rec=S.modelRecord(BLANK,'blerm','blerm-s-model');
+      /* 0 settled becomes a real record: two graded games with a margin
+         error each. The win-loss half needs a closing line, asserted next. */
+      return S.hasRecord(rec) && rec.margin_n===2;
+    },
+    'this is the whole point: 0 settled becomes a real record');
+  /* ESPN gives a score and nothing else, so ATS needs the Collective's own
+     captured close — which comes off the odds feed, not from ESPN */
+  chk('without a captured close there is a record but no win-loss',
+    function(){
+      var tcu=BLANK.filter(function(g){return g.game_id===1;})[0];
+      return S.finalResult(tcu).closing_spread===null
+        && S.modelRecord(BLANK,'blerm','blerm-s-model').wins===0
+        && S.modelRecord(BLANK,'blerm','blerm-s-model').margin_n===2;
+    },
+    'a score alone grades margin and Brier; the spread needs the close');
+  /* awaited BEFORE chk: a thunk that returns a promise is truthy whatever
+     the promise resolves to, and would pass however wrong the code was */
+  var withClose=[JSON.parse(JSON.stringify(BLANK[0]))];
+  withClose[0].result=null;
+  S.ESPN_DAYS={};
+  S.fetch=function(u){
+    if(String(u).indexOf('site.api.espn.com')>=0)
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[{competitions:[{status:{type:{completed:true}},
+          competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels'}}]}]}]});}});
+    return realFetch5(u);
+  };
+  await S.enrichFinals(withClose,'CFB',
+    {find:function(g){return g&&g.game_id===1?{closing:{'spread:home':{line:-7.5}}}:null;}});
+  S.fetch=realFetch5;
+  chk('and with the stored close it grades against the spread too',
+    function(){
+      var r=S.finalResult(withClose[0]);
+      var gr=S.rowGrade(withClose[0],withClose[0].models[3]);   /* blerm, on UNC */
+      /* TCU won by 34 into a -7.5 close, so the road side lost */
+      return r.closing_spread===-7.5 && gr.pick_result==='loss';
+    },
+    {close:(S.finalResult(withClose[0])||{}).closing_spread});
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.CLOSING={};
+
+  /* ---- THE SECOND HALF OF THE SAME BUG --------------------------------
+     The board is a FORWARD window — odds.js says so itself: "a game that
+     finished days ago is not in it". So the close above, read off the
+     board, is only ever there for a game that has just finished. Every
+     game from last week had a score and no close, atsResult() returned
+     null on all of them, and the site reported "no ATS picks" and 0 graded
+     against models whose closing lines were sitting in the Collective's
+     own database the whole time.
+
+     The Collective serves that number by name. Ask for it. */
+  var lastWeek=[JSON.parse(JSON.stringify(BLANK[0]))];
+  lastWeek[0].result={home_score:48,away_score:14,closing_spread:null,
+                      closing_total:null,source:'espn'};
+  var closingAsked=[];
+  var realFetch6=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/closing/')>=0){
+      closingAsked.push(q);
+      return reply({available:true,closing_spread:-7.5,closing_total:52.5,books:8});
+    }
+    return realFetch6(u);
+  };
+  /* Through the real entry point every surface calls, with mkt null: the
+     board has nothing, exactly as it has nothing for any game that finished
+     before its window opened. Driving fillCapturedCloses directly would
+     prove the function works and not that anything ever calls it. */
+  await S.enrichFinals(lastWeek,'CFB',null);
+  S.fetch=realFetch6;
+  chk('a game the board no longer carries is asked for by name',
+    closingAsked.length===1
+      && /\/collective_odds\/v1\/ncaaf\/closing\/1(\?|$)/.test(closingAsked[0]),
+    {asked:closingAsked});
+  chk('the captured close lands on the game and the record finally grades',
+    function(){
+      var r=S.finalResult(lastWeek[0]);
+      var gr=S.rowGrade(lastWeek[0],lastWeek[0].models[3]);  /* blerm, on UNC */
+      var rec=S.modelRecord(lastWeek,'blerm','blerm-s-model');
+      return r.closing_spread===-7.5 && lastWeek[0].result.closing_total===52.5
+        && gr.pick_result==='loss' && rec.graded===1 && rec.losses===1;
+    },
+    'THE BUG: this is the number whose absence emptied every ATS record');
+  chk('and the sport names the league, never the tab the reader is on',
+    /\/ncaaf\//.test(closingAsked[0]||'') ,
+    'a College Football close asked of the NFL route comes back empty');
+
+  /* An unavailable close is not a loss and is never invented: the game
+     stays graded on its score alone, exactly as before. */
+  S.CLOSING={};
+  var noClose=[JSON.parse(JSON.stringify(BLANK[0]))];
+  noClose[0].result={home_score:48,away_score:14,closing_spread:null,
+                     closing_total:null,source:'espn'};
+  var realFetch7=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/closing/')>=0)
+      return reply({available:false,reason:'no_pregame_capture'});
+    return realFetch7(u);
+  };
+  var nNone=await S.fillCapturedCloses(noClose,'CFB',null);
+  S.fetch=realFetch7;
+  chk('a close the Collective never captured is left alone, not guessed',
+    function(){
+      var rec=S.modelRecord(noClose,'blerm','blerm-s-model');
+      return nNone===0 && S.finalResult(noClose[0]).closing_spread===null
+        && rec.graded===0 && rec.margin_n===1;
+    },
+    {filled:nNone});
+
+  /* The board is free and already in hand, so it is tried first and the
+     endpoint is never asked about a game the board can already answer. */
+  S.CLOSING={};
+  var onBoard=[JSON.parse(JSON.stringify(BLANK[0]))];
+  onBoard[0].result={home_score:48,away_score:14,closing_spread:null,
+                     closing_total:null,source:'espn'};
+  var askedAnyway=0;
+  var realFetch8=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/closing/')>=0){askedAnyway++;return reply({available:false});}
+    return realFetch8(u);
+  };
+  await S.fillCapturedCloses(onBoard,'CFB',
+    {find:function(g){return g&&g.game_id===1?{closing:{'spread:home':{line:-7.5}}}:null;}});
+  S.fetch=realFetch8;
+  chk('the board answers first and costs no extra request',
+    askedAnyway===0 && S.finalResult(onBoard[0]).closing_spread===-7.5,
+    {asked:askedAnyway});
+  S.ESPN_DAYS={};S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.CLOSING={};
+
+  /* ---- the market page -------------------------------------------------
+     It fetched whatever league the sport switcher said and then described it
+     as the NFL, so a College Football slate sat under NFL wording — and it
+     led with markets that closed eight days ago. Nothing drove this page at
+     all, which is why neither was caught.
+
+     odds.js is not loaded in this shim, so MCOdds is stubbed down to the
+     handful of calls renderMarket actually makes. */
+  var MKTGAMES=[
+    {event_id:'e-old',collective_game_id:1,home:'TCU',away:'NORTHCAROL',
+     commence_time:'2026-08-29T16:00:00Z',market_closed:true,
+     closing:{'spread:home':{line:-7.5}}},
+    {event_id:'e-recent',collective_game_id:2,home:'USC',away:'SANJOSESTA',
+     commence_time:'2026-08-29T19:00:00Z',market_closed:true,
+     closing:{'spread:home':{line:-38.5}}},
+    {event_id:'e-soon',collective_game_id:9,home:'OREGON',away:'UTAH',
+     commence_time:'2099-09-05T19:00:00Z',market_closed:false,closing:{}}
+  ];
+  S.MCOdds={
+    configure:function(){},injectCss:function(){},
+    leagueFor:function(c){return String(c).toLowerCase();},
+    board:function(){return Promise.resolve({state:'ok',count:MKTGAMES.length,
+      games:MKTGAMES,last_updated:'2026-08-30T12:00:00Z',
+      find:function(g){return g&&g.game_id===1?MKTGAMES[0]:null;}});},
+    ago:function(){return '76m';},ageOf:function(){return 0;},
+    freshChip:function(){return '<span class="chip">Updated 76m ago</span>';},
+    consensusSpread:function(g){
+      var c=g&&g.closing&&g.closing['spread:home'];return c?c.line:null;},
+    consensusTotal:function(){return 47.5;},
+    edgeHtml:function(){return '';},line:function(x){return String(x);},
+    marketCard:function(g){return '<div class="mco-card" data-ev="'+g.event_id+'">'+
+      g.away+' @ '+g.home+'</div>';}
+  };
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};
+  S.location.hash='#market';
+  var vM=node();
+  await S.renderMarket(vM);
+  var market=vM.innerHTML;
+  chk('the market page names the sport it is actually showing',
+    market.indexOf('College Football prices across sportsbooks')>=0
+      && market.indexOf('NFL prices across sportsbooks')<0,
+    {lede:(/<p class="lede">([^<]*)/.exec(market)||[])[1]});
+  chk('and carries the sport switcher so a reader can change it',
+    market.indexOf('data-sport="CFB"')>=0||market.indexOf('data-sport=')>=0
+      ||S.sportSwitcherHTML({sports:[{code:'CFB',season:2026}]})==='',
+    'one sport in the stub means the switcher is legitimately empty');
+  chk('the market leads with what has not been played',
+    function(){
+      var order=(market.match(/data-ev="([^"]+)"/g)||[])
+        .map(function(x){return /data-ev="([^"]+)"/.exec(x)[1];});
+      /* upcoming first, then the closed markets newest-first */
+      return order.join(',')==='e-soon,e-recent,e-old';
+    },
+    {order:(market.match(/data-ev="([^"]+)"/g)||[])});
+  chk('a closed market still says the close is what a game is graded on',
+    market.indexOf('graded against')>=0||market.indexOf('graded on')>=0);
+  /* A closed market was a price board with the prices frozen: same shape as
+     a live game, no score, nothing to say the thing had happened. */
+  chk('a finished game says what it did to its own closing line',
+    function(){
+      /* USC closed -38.5 and won 59-28, by 31: the road side covered */
+      return /FINAL SANJOSESTA 28 &ndash; USC 59/.test(market)
+        && /close USC -38\.5/.test(market)
+        && /<b>SANJOSESTA<\/b> covered/.test(market);
+    },
+    {strip:(/<div class="gb-hd"[^>]*>[\s\S]{0,240}/.exec(market)||[])[0]});
+  chk('and a game that has not been played says nothing of the kind',
+    function(){
+      var at=market.indexOf('data-ev="e-soon"');
+      if(at<0)return false;
+      var soon=market.slice(at);
+      /* from 1, not 0: the slice STARTS with the marker, so searching from
+         zero finds itself, the window is empty and this passes for free */
+      var next=soon.indexOf('data-ev="',1);
+      var card=next<0?soon:soon.slice(0,next);
+      return card.indexOf('FINAL')<0 && card.indexOf('covered')<0;
+    },
+    {card:(function(){
+      var at=market.indexOf('data-ev="e-soon"');
+      if(at<0)return '(no upcoming card)';
+      var soon=market.slice(at),n=soon.indexOf('data-ev="',1);
+      return (n<0?soon:soon.slice(0,n)).slice(0,200);
+    })()});
+  /* the market page is the one place a price change IS the content, so it
+     is the one place the refresh watches the feed's stamp */
+  chk('the market page refreshes itself when a new poll lands',
+    function(){
+      return S.LIVE_ROUTES['market']===1
+        && S.liveRoute.toString().indexOf('LIVE_ROUTES')>=0;
+    });
+  S.MCOdds=undefined;S.location.hash='';
+
+  /* ---- THE NFL SIDE, driven for the first time -------------------------
+     Every sport-scoped path is supposed to read the switcher: the league the
+     odds feed is asked for, the scoreboard league, the season sweep, the
+     rankings. None of it had ever been exercised for the NFL, so none of it
+     was evidence of anything. */
+  chk('the NFL maps to its own scoreboard league, not college football',
+    S.espnLeague('NFL')==='nfl' && S.espnLeague('CFB')==='college-football'
+      && S.espnLeague('NCAAF')==='college-football'   /* alias folds to CFB */
+      && S.espnLeague('QUIDDITCH')===null,
+    'an unknown sport asks nobody for a score rather than guessing a league');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.localStorage.setItem('mc_sport','NFL');
+  WALL.push(NFLWALL[0]);WALL.push(NFLWALL[1]);
+  S.location.hash='#rankings';
+  var rNFL=node();
+  await S.renderRankings(rNFL);
+  var nfl=rNFL.innerHTML;
+  chk('the NFL boards fill from NFL games',
+    function(){
+      var win=boardSlice(nfl,'>Win %','>Margin MAE');
+      return win.indexOf('NFL Math Madness')>=0 && win.indexOf('NoFunLeague')>=0
+        && win.indexOf('No finished games yet')<0;
+    },
+    {board:boardSlice(nfl,'>Win %','>Margin MAE').slice(0,300)});
+  chk('and no College Football model leaks onto the NFL page',
+    function(){
+      var upTo=nfl.slice(0,nfl.indexOf('Not yet ranked')<0?nfl.length:nfl.indexOf('Not yet ranked'));
+      return upTo.indexOf('CFB MODEL')<0 && upTo.indexOf('Blerm')<0
+        && upTo.indexOf('MustBeMoose College Football')<0;
+    });
+  chk('the NFL records are graded by the same rule, and are correct',
+    function(){
+      /* KC -6.5, won by 10: the home side covered.
+         SF -3, won by 2: the road side covered. */
+      var mm=S.modelRecord(NFLGAMES,'jadedbettor-murse2-0','nfl-math-madness');
+      var nf=S.modelRecord(NFLGAMES,'tiltdatalabs','nofunleague');
+      return mm.wins===1 && mm.losses===1 && nf.wins===1 && nf.losses===1;
+    },
+    {mm:S.modelRecord(NFLGAMES,'jadedbettor-murse2-0','nfl-math-madness')});
+  /* the scoreboard the NFL side would actually ask, when a result is missing */
+  S.ESPN_DAYS={};
+  var espnAsked=[];
+  var realFetch6=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('site.api.espn.com')>=0){
+      espnAsked.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[{competitions:[{status:{type:{completed:true}},
+          competitors:[
+            {homeAway:'home',score:'31',team:{displayName:'Kansas City Chiefs',abbreviation:'KC'}},
+            {homeAway:'away',score:'21',team:{displayName:'Baltimore Ravens',abbreviation:'BAL'}}]}]}]});}});
+    }
+    return realFetch6(u);
+  };
+  var blankNFL=[JSON.parse(JSON.stringify(NFLGAMES[0]))];
+  blankNFL[0].result=null;
+  var filledNFL=await S.enrichFinals(blankNFL,'NFL',null);
+  S.fetch=realFetch6;
+  chk('a missing NFL result is read from the NFL scoreboard',
+    filledNFL===1 && espnAsked.length===1
+      && espnAsked[0].indexOf('/football/nfl/scoreboard')>=0,
+    {asked:espnAsked});
+  chk('and the college-only group filter is not sent for the NFL',
+    espnAsked.length===1 && espnAsked[0].indexOf('groups=80')<0,
+    'groups=80 is the FBS group; it means nothing to an NFL scoreboard');
+  WALL.pop();WALL.pop();
+  S.localStorage.setItem('mc_sport','CFB');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.ESPN_DAYS={};
+  S.location.hash='';
+
+  /* ---- an empty board must not break its own card ---------------------
+     Rendered with NO games at all, so the empty message is actually on the
+     page — asserting it against a board that filled passes for free. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var realFetch7=S.fetch;
+  S.fetch=function(u){
+    if(String(u).indexOf('/v1/games')>=0)
+      return reply({games:[],week:1,entitled:true});
+    return realFetch7(u);
+  };
+  var rEmpty=node();
+  await S.renderRankings(rEmpty);
+  S.fetch=realFetch7;
+  var emptyHtml=rEmpty.innerHTML;
+  chk('an empty board says so',
+    (emptyHtml.match(/No finished games yet/g)||[]).length===3,
+    {found:(emptyHtml.match(/No finished games yet/g)||[]).length});
+  chk('and its message wraps instead of forcing a scrollbar',
+    /white-space:normal[^>]*>\s*No finished games yet/.test(emptyHtml),
+    {cell:(/<td[^>]*>\s*No finished games yet[^<]*/.exec(emptyHtml)||[])[0]});
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+
+  /* ---- THE REPORTED SCREENSHOT, reproduced and then refused ------------
+     College Football 2026: the Win % board reading "No finished games yet"
+     while the Margin MAE board beside it ranked four models off those very
+     games, the standings reading "no ATS picks" and "0 thin" graded beside
+     a margin error of 15.5, and nothing anywhere saying that what was
+     actually missing was the closing lines.
+
+     The state behind it is one field: finished games with a real score and
+     a NULL captured close. Every other number on the page comes out of the
+     same games, which is what makes the Win % board's sentence a
+     self-contradiction rather than merely a gap. */
+  (function(){})();
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
+  var NOCLOSE=JSON.parse(JSON.stringify(GAMES));
+  NOCLOSE.forEach(function(g){g.result.closing_spread=null;g.result.closing_total=null;});
+  var realFetch8=S.fetch;
+  var closingAsked8=[];
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(NOCLOSE)),week:1,entitled:true});
+    }
+    /* the Collective holds no close for any of them, on either route */
+    if(t.indexOf('/collective_odds/')>=0){
+      closingAsked8.push(t);
+      if(t.indexOf('/closing/')>=0)return reply({available:false,reason:'no_close_captured'});
+      return reply({games:[]});
+    }
+    if(t.indexOf('/v1/rankings')>=0)return reply({boards:{},thresholds:null});
+    return realFetch8(u);
+  };
+  var rNo=node();
+  await S.renderRankings(rNo);
+  S.fetch=realFetch8;
+  var noHtml=rNo.innerHTML;
+  chk('a page with finished games never claims none have finished',
+    noHtml.indexOf('No finished games yet')<0,
+    {sentence:(/No finished games yet[^<]*/.exec(noHtml)||[])[0]});
+  chk('the Win % board names the reason instead: finished, graded, no closing line',
+    /and none produced an against-the-spread result/.test(noHtml)&&
+    /captured no closing line/.test(noHtml),
+    {board:(/Win %[\s\S]{0,700}/.exec(noHtml)||[])[0]});
+  chk('the Margin MAE board is still full off the same games',
+    /Margin MAE/.test(noHtml)&&(noHtml.match(/n=3</g)||[]).length>0,
+    'a missing close costs the ATS record and nothing else');
+  chk('the standings carry a sample under every metric, not one Graded column',
+    (function(){
+      var tbl=(/<table id="standtbl"[\s\S]*?<\/table>/.exec(noHtml)||[''])[0];
+      return (tbl.match(/class="nsamp[^"]*"[^>]*>n=/g)||[]).length>=12
+        &&tbl.indexOf('>Graded</th>')<0
+        &&/an against-the-spread result/.test(tbl)&&/a projected margin/.test(tbl)
+        &&/a posted win probability/.test(tbl);
+    })(),
+    {samples:(noHtml.match(/class="nsamp[^"]*"[^>]*>n=\d+/g)||[]).slice(0,8)});
+  /* football-v2: not "+N ungraded" but each reason on its own line under the
+     record ("Missing close: 3"), because each is a different fix */
+  chk('and the ungraded games are counted and attributed on the page',
+    /no against-the-spread result/.test(noHtml)&&/Missing close: \d+/.test(noHtml),
+    {line:(/[0-9]+ of [0-9]+\s*<\/b>?[\s\S]{0,120}/.exec(noHtml)||[])[0]});
+  chk('the close was actually asked for before the page gave up on it',
+    closingAsked8.length>0,{asked:closingAsked8.slice(0,4)});
+
+  /* ---- and with the closes recovered, the same page ranks -------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  var realFetch9=S.fetch;
+  /* the board spells the teams out; the Collective's schedule has them cut
+     to ten characters, which is the whole bug */
+  var BOARD9={games:[
+    {event_id:'b1',home:'TCU',away:'North Carolina',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-7.5},total:{line:47.5}}},
+    {event_id:'b2',home:'USC',away:'San Jose State',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-38.5}}},
+    {event_id:'b3',home:'Virginia',away:'NC State',commence_time:'2026-08-29T16:00:00Z',
+     closing:{'spread:home':{line:-5.5}}}]};
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(NOCLOSE)),week:1,entitled:true});
+    }
+    if(t.indexOf('/closing/')>=0)return reply({available:false});
+    if(t.indexOf('/collective_odds/')>=0)return reply(BOARD9);
+    if(t.indexOf('/v1/rankings')>=0)return reply({boards:{},thresholds:null});
+    return realFetch9(u);
+  };
+  var rYes=node();
+  await S.renderRankings(rYes);
+  S.fetch=realFetch9;
+  var yesHtml=rYes.innerHTML;
+  chk('the truncated names find their closes and the Win % board fills',
+    yesHtml.indexOf('and none produced an against-the-spread result')<0&&
+    /Win %[\s\S]{0,900}?\d+%/.test(yesHtml),
+    {board:(/Win %[\s\S]{0,600}/.exec(yesHtml)||[])[0]});
+  chk('and the standings stop saying "no ATS picks" about all four models',
+    (yesHtml.match(/no ATS picks/g)||[]).length===0,
+    {left:(yesHtml.match(/no ATS picks/g)||[]).length});
+  chk('the ATS sample is the games that gained a close, not the whole slate by default',
+    /class="nsamp[^"]*"[^>]*>n=3</.test(yesHtml),
+    'three finished games, three closes recovered, three graded');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+
+  /* ---- THE MODEL'S OWN PAGE -------------------------------------------
+     Never driven by this suite, and it was broken in the way that matters
+     most: the page built its game log out of the weeks named in the
+     SERVER's coverage table, so a model the settlement run had not reached
+     had an empty coverage list, no weeks were fetched, and the profile
+     rendered with no record and no picks at all — about a model whose
+     games had all been played and which the rankings page was ranking off
+     those very games at that moment.
+
+     The stub returns exactly that state: record null, recent_graded [],
+     coverage []. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};
+  S.location.hash='#/model/blerm/blerm-s-model';
+  var vMod=node();
+  await S.renderModel(vMod,'blerm','blerm-s-model');
+  var mod=vMod.innerHTML;
+  chk('a profile the server has no coverage for still shows its games',
+    /Every graded game/.test(mod)&&mod.indexOf('No game of this model')<0,
+    {sample:mod.slice(0,300)});
+  chk('every game this model posted is on the page, with its own pick',
+    (mod.match(/data-res="(win|loss|push)"/g)||[]).length===3,
+    {rows:(mod.match(/data-res="[a-z]*"/g)||[])});
+  /* The picks themselves, not just "three rows appeared". blerm is on the
+     road side of all three: UNC lost into TCU -7.5, SJSU covered +38.5,
+     NC State covered +5.5. */
+  chk('and each one says whether it won or lost',
+    (mod.match(/>WIN</g)||[]).length===2&&(mod.match(/>LOSS</g)||[]).length===1,
+    {win:(mod.match(/>WIN</g)||[]).length,loss:(mod.match(/>LOSS</g)||[]).length});
+  chk('the log adds up to the record printed above it',
+    /Against the spread/.test(mod)&&/2-1/.test(mod),
+    {ats:(/Against the spread[\s\S]{0,160}/.exec(mod)||[])[0]});
+  chk('the closing line each pick was graded against is on the row',
+    /-7\.5/.test(mod)&&/-38\.5/.test(mod),
+    'a record nobody can check against a number is just a claim');
+  chk('the game log comes before the supporting charts, not after them',
+    mod.indexOf('Every graded game')<mod.indexOf('Methodology')
+      &&(mod.indexOf('Calibration')<0||mod.indexOf('Every graded game')<mod.indexOf('Calibration')),
+    {log:mod.indexOf('Every graded game'),cal:mod.indexOf('Calibration'),
+     method:mod.indexOf('Methodology')});
+  chk('a record the page graded itself still says so',
+    /class="pgrade"/.test(mod),
+    'a settled record and one computed here are different claims');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+
+  /* ---- THE RECORD LABELLED FOR WHAT IT IS ------------------------------
+     "Record (ATS) 5-3-0" over a model with 91 played games is a true
+     sentence that reads as a false one: the reader takes it for the season
+     and it is eight games of it. The other 83 are not losses, they are
+     games the Collective captured no closing line for, and that is a
+     statement about the data rather than about the model. One game with a
+     close and two without reproduces the shape. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  var PARTIAL=JSON.parse(JSON.stringify(GAMES));
+  PARTIAL[1].result.closing_spread=null;PARTIAL[2].result.closing_spread=null;
+  var realFetchP=S.fetch;
+  S.fetch=function(u){
+    var t=String(u);
+    if(t.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(t);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(t))return reply({games:[],week:1,entitled:true});
+      return reply({games:JSON.parse(JSON.stringify(PARTIAL)),week:1,entitled:true});
+    }
+    if(t.indexOf('/closing/')>=0)return reply({available:false});
+    if(t.indexOf('/collective_odds/')>=0)return reply({games:[]});
+    return realFetchP(u);
+  };
+  S.location.hash='#/model/blerm/blerm-s-model';
+  var vPart=node();
+  await S.renderModel(vPart,'blerm','blerm-s-model');
+  S.fetch=realFetchP;
+  var part=vPart.innerHTML;
+  /* blerm is on the road side of game 1 and UNC lost into TCU -7.5, so the
+     one game that kept a close is a loss: 0-1-0 over 1 graded, 2 ungraded. */
+  chk('the record states its own sample and the size of the gap, in words',
+    /0-1-0 ATS across 1 graded game; 2 games ungraded ATS<\/b> of 3 played/.test(part),
+    {line:(/[0-9]+-[0-9]+-[0-9]+ ATS across[\s\S]{0,200}/.exec(part)||[])[0]});
+  chk('and names the reason the other games are ungraded',
+    /2 games ungraded ATS<\/b> of 3 played &mdash; 2 with no captured closing line/.test(part),
+    {why:(/ungraded ATS<\/b>[\s\S]{0,160}/.exec(part)||[])[0]});
+  chk('the margin and Brier samples are printed separately and are NOT the ATS one',
+    /Margin graded[\s\S]{0,120}?>3</.test(part)&&/n=1</.test(part),
+    'three margin errors on one ATS result: three samples, three numbers');
+  chk('an ungraded row says which reason it is rather than a bare dash',
+    (function(){
+      var tbl=(/<table id="glTbl"[\s\S]*?<\/table>/.exec(part)||[''])[0];
+      return (tbl.match(/no captured close/g)||[]).length===2
+        &&(tbl.match(/data-res=""/g)||[]).length===2;
+    })(),
+    {marks:(part.match(/no captured close/g)||[]).length});
+  chk('and an ungraded game is never coloured as a loss',
+    (function(){
+      var tbl=(/<table id="glTbl"[\s\S]*?<\/table>/.exec(part)||[''])[0];
+      /* exactly one graded row on this log, and it is the one with a close */
+      return (tbl.match(/>LOSS</g)||[]).length===1&&(tbl.match(/>WIN</g)||[]).length===0
+        &&(tbl.match(/grade-(win|loss|push)/g)||[]).length===1;
+    })(),
+    'an ungraded game is not a loss and must never read as one');
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.WEEK_BOARDS={};
+  S.location.hash='';
+
+  /* ---- THE REPORTED BUG, second half ----------------------------------
+     The profile above was driven with an EMPTY server coverage list, which
+     is the state of a model the settlement run has not reached. The ordinary
+     state is the opposite: a POPULATED coverage table — "2026 W1, 35 of 59
+     submitted" — and that took a completely different path through this
+     page and was still broken.
+
+     The coverage weeks are fetched raw from /v1/games, which returns
+     result:null on a finished game. The season sweep fetches the same games
+     and runs them through enrichFinals, so its copies carry the final score
+     and the captured close. Merged coverage-first, the RAW copy won the
+     dedupe and the enriched one was thrown away — so a model that had
+     posted 35 games into a played slate rendered "No game of this model's
+     has finished yet" and "Building sample.".
+
+     Same page, same model, the only difference being what the server says
+     about coverage. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59},
+                  {season:2026,week:2,games_submitted:0,games_available:47}];
+  var realFetchC=S.fetch;
+  var coverageWeekAsked=[];
+  S.fetch=function(u){
+    var q=String(u);
+    /* the wire as it actually answers on a finished slate */
+    if(q.indexOf('/v1/games')>=0){
+      if(/[?&]week=/.test(q))coverageWeekAsked.push(q);
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      var blanked=GAMES.map(function(g){
+        var c=JSON.parse(JSON.stringify(g));c.result=null;return c;
+      });
+      return reply({games:blanked,week:1,entitled:true});
+    }
+    if(q.indexOf('site.api.espn.com')>=0)
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels'}}]}]},
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'59',team:{displayName:'USC Trojans'}},
+            {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans'}}]}]}
+        ]});}});
+    if(q.indexOf('/closing/')>=0){
+      /* the Collective's own captured close, by game id */
+      var id=q.split('/closing/')[1].split('?')[0];
+      var byId={'1':-7.5,'2':-38.5};
+      return byId[id]==null?reply({available:false,reason:'no_pregame_capture'})
+                           :reply({available:true,closing_spread:byId[id]});
+    }
+    return realFetchC(u);
+  };
+  var vCov=node();
+  S.location.hash='#/model/blerm/blerm-s-model';
+  await S.renderModel(vCov,'blerm','blerm-s-model');
+  S.fetch=realFetchC;
+  var cov=vCov.innerHTML;
+  chk('a populated coverage table does not hide the finished games',
+    cov.indexOf('No game of this model')<0 && cov.indexOf('Building sample')<0,
+    {sample:cov.slice(cov.indexOf('Every graded game'),cov.indexOf('Every graded game')+260)
+      ||cov.slice(0,260)});
+  chk('the enriched copy of a game wins the merge, not the raw one',
+    (cov.match(/data-res="(win|loss|push)"/g)||[]).length===2,
+    {rows:(cov.match(/data-res="[a-z]*"/g)||[])});
+  chk('and it is graded against the captured close, so it has a record',
+    /-7\.5/.test(cov)&&/-38\.5/.test(cov)&&/>WIN<|>LOSS</.test(cov),
+    {ats:(/Against the spread[\s\S]{0,200}/.exec(cov)||[])[0]});
+  /* Addressing a week by number is how a season is read at all: the sweep
+     fetches the weeks BEFORE the current one, and resolving which week is
+     current can look forward past a finished slate. What must never happen is
+     the page fetching a week it is already holding -- the coverage table names
+     2026 W1, W1 is the payload in hand, and asking for it again, once per
+     coverage row, behind a sweep that already returned it, is the re-fetch
+     this guards. Nor may any week be asked for twice. */
+  chk('the current season is not re-fetched week by week behind the sweep',
+    coverageWeekAsked.filter(function(u){return /[?&]week=1(&|$)/.test(u);}).length===0
+      && coverageWeekAsked.length===Object.keys(coverageWeekAsked.reduce(
+           function(a,u){a[u]=1;return a;},{})).length,
+    {asked:coverageWeekAsked});
+  MODEL_COVERAGE=[];
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
+
+  /* ---- and when the sweep is the thing that fails ----------------------
+     The season sweep is one fetch, and one fetch can fail. Then the coverage
+     weeks are the only source left — and they are raw, straight off
+     /v1/games, which answers result:null on a finished game. So the merged
+     set gets the same grading pass every other surface on this site gets,
+     rather than being the one path where a finished game is left ungraded
+     because of where it happened to be read from. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  MODEL_COVERAGE=[{season:2026,week:1,games_submitted:35,games_available:59}];
+  var realFetchS=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('/v1/games')>=0){
+      /* the sweep's own head call comes back with nothing */
+      if(!/[?&]week=/.test(q))return reply({games:[],entitled:true});
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      return reply({games:GAMES.map(function(g){
+        var c=JSON.parse(JSON.stringify(g));c.result=null;return c;
+      }),week:1,entitled:true});
+    }
+    if(q.indexOf('site.api.espn.com')>=0)
+      return Promise.resolve({ok:true,status:200,json:function(){
+        return Promise.resolve({events:[
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs'}},
+            {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels'}}]}]},
+          {competitions:[{status:{type:{completed:true}},competitors:[
+            {homeAway:'home',score:'59',team:{displayName:'USC Trojans'}},
+            {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans'}}]}]}
+        ]});}});
+    if(q.indexOf('/closing/')>=0){
+      var id=q.split('/closing/')[1].split('?')[0];
+      var byId={'1':-7.5,'2':-38.5};
+      return byId[id]==null?reply({available:false,reason:'no_pregame_capture'})
+                           :reply({available:true,closing_spread:byId[id]});
+    }
+    return realFetchS(u);
+  };
+  var vFall=node();
+  S.location.hash='#/model/blerm/blerm-s-model';
+  await S.renderModel(vFall,'blerm','blerm-s-model');
+  S.fetch=realFetchS;
+  var fall=vFall.innerHTML;
+  chk('with the sweep empty the coverage weeks still carry the games',
+    fall.indexOf('No game of this model')<0&&fall.indexOf('Building sample')<0,
+    {sample:fall.slice(0,240)});
+  chk('and games read only from coverage are graded like any others',
+    (fall.match(/data-res="(win|loss|push)"/g)||[]).length===2
+      &&/>WIN<|>LOSS</.test(fall)&&/-7\.5/.test(fall),
+    {rows:(fall.match(/data-res="[a-z]*"/g)||[])});
+  MODEL_COVERAGE=[];
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
+
+  /* ---- getting there ---------------------------------------------------
+     The rankings named every model and linked to none of them: a row went
+     to the CREATOR, who may run several models, so the one number a reader
+     had just clicked led to a page that did not show its picks. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var rLink=node();
+  await S.renderRankings(rLink);
+  var lnk=rLink.innerHTML;
+  chk('every standings row links to the model whose record it is',
+    /href="#\/model\/blerm\/blerm-s-model"/.test(lnk)
+      &&/href="#\/model\/mustbemoose\/edgedesk-cfb-p4"/.test(lnk),
+    {hrefs:(lnk.match(/href="#\/model\/[^"]*"/g)||[]).slice(0,6)});
+  chk('the ranked boards link to the model too, not just the creator',
+    (lnk.match(/href="#\/model\/[^"]*"/g)||[]).length>=6,
+    {n:(lnk.match(/href="#\/model\/[^"]*"/g)||[]).length});
+  chk('and the row carries the same destination as the name inside it',
+    (function(){
+      var rows=lnk.match(/<tr class="rowlink" data-href="([^"]*)"/g)||[];
+      return rows.length>0&&rows.every(function(r){return /#\//.test(r);});
+    })(),
+    {rows:(lnk.match(/data-href="[^"]*"/g)||[]).slice(0,4)});
+  chk('the standings offer the game log in as many words',
+    /picks &rarr;|picks →/.test(lnk),
+    'the link has to be findable without knowing the name is one');
+  /* Once the closing lines arrive, a model that never types a pick side
+     gets a full win-loss record decided entirely by the comparison between
+     its own line and the close. That is a real graded result and a
+     DIFFERENT claim from a stated pick, and a bare "3-0" beside its name
+     claims something the creator never said. The per-row marker on the
+     board was the only place this was ever admitted. */
+  function standingsRow(name){
+    var t=lnk.slice(lnk.indexOf('<table id="standtbl"'));
+    t=t.slice(0,t.indexOf('</table>'));
+    var rows=t.split('<tr').filter(function(r){return r.indexOf(name)>=0;});
+    return rows[0]||'';
+  }
+  chk('a record built from implied sides says so where the record is shown',
+    /implied/.test(standingsRow('CFB MODEL')),   /* posts no pick side at all */
+    {row:standingsRow('CFB MODEL').slice(0,420)||'not in the standings'});
+  chk('and a record of stated picks is not labelled implied',
+    (function(){
+      var r=standingsRow('Blerm&#39;s Model')||standingsRow("Blerm's Model");
+      return r.length>0&&!/implied/.test(r);
+    })(),
+    'labelling an honest stated record as implied is the opposite mistake');
+  /* ---- the wall says a model has posted this game more than once -------
+     The board shows, and the Collective grades, the LATEST submission
+     received before the lock. The +n beside the pick says how many earlier
+     numbers it replaced, so a creator who re-uploaded a corrected slate can
+     see on the wall that the new number is the one that counts. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  var mv=node();
+  await S.renderWall(mv);
+  chk('a model that posted once carries no revision marker',
+    mv.innerHTML.indexOf('class="rev"')<0,
+    'the marker must mean something, so it cannot be on every row');
+  /* the exact case from the report: a slate posted, then re-posted twice */
+  GAMES[0].models[0].movement_n=3;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv2=node();
+  await S.renderWall(mv2);
+  chk('a re-posted game shows how many further submissions arrived',
+    /class="rev"[^>]*>\+2<\/sup>/.test(mv2.innerHTML),
+    {row:(function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      return i<0?'no marker rendered':mv2.innerHTML.slice(Math.max(0,i-260),i+120);
+    })()});
+  chk('and says the board is showing the latest one received before the lock',
+    (function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      if(i<0)return false;
+      var seg=mv2.innerHTML.slice(i,i+700);
+      return /latest one received before the lock/.test(seg) && /stored as movement/.test(seg)
+        && /Nothing posted after the lock counts/.test(seg);
+    })(),
+    'a bare +2 with no explanation is a new question, not an answer');
+  chk('the marker rides with the pick, so it survives the mobile board',
+    (function(){
+      var i=mv2.innerHTML.indexOf('class="rev"');
+      var seg=mv2.innerHTML.slice(Math.max(0,i-300),i);
+      /* the age cell is display:none under the narrow grid; the pick is not */
+      return seg.lastIndexOf('class="num pk"')>seg.lastIndexOf('class="age"');
+    })());
+  /* a single submission is not a revision, and 0/absent must not print +-1 */
+  GAMES[0].models[0].movement_n=1;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv3=node();
+  await S.renderWall(mv3);
+  chk('one submission is not reported as a revision',
+    mv3.innerHTML.indexOf('class="rev"')<0);
+  delete GAMES[0].models[0].movement_n;
+
+  /* ---- the feed carries every submission: the wall shows the latest -----
+     The exact case from the reports. A model posted a game with its own
+     spread as the market line, then re-uploaded with the real market line
+     and cover %, then posted once more inside the lock window. The wall has
+     to show the re-upload, once, with the +2, and the game header has to
+     say when the numbers lock. */
+  function sub(at,line){
+    var o=M('mustbemoose','edgedesk-cfb-p4','home',-36.5,line,0.98);
+    o.received_at=at;return o;
+  }
+  var early=sub('2026-08-21T12:00:00Z',-36.5);
+  var later=sub('2026-08-28T12:00:00Z',-28.5);
+  var afterLock=sub('2098-12-31T23:45:00Z',-20.5);
+  var openGame=G(4,'UMASS','RUTGERS',null,null,null,[early,later,afterLock,
+    M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
+  openGame.kickoff_at='2099-01-01T00:00:00Z';
+  GAMES.push(openGame);
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var mv4=node();
+  await S.renderWall(mv4);
+  var blk=(function(){
+    /* the command centre above the wall names the same game first; the
+       row under test is the wall's own */
+    var h=mv4.innerHTML,w=h.indexOf('LIVE MODEL WALL'),i=h.indexOf('UMASS @ RUTGERS',w<0?0:w);
+    if(i<0)return '';
+    var j=h.indexOf('class="gb-hd"',i+1);
+    return h.slice(i,j<0?h.length:j);
+  })();
+  var rowsOf=(blk.match(/class="gb-row"[\s\S]*?gb-dot/g)||[]).filter(function(r){return r.indexOf('#/mustbemoose"')>=0;});
+  chk('the open game reached the wall',blk.length>0);
+  chk('a model with several submissions on a game appears on the wall once',
+    rowsOf.length===1,{rows:rowsOf.length});
+  chk('and the row is the latest submission received before the lock',
+    /-28\.5/.test(rowsOf[0]||'') && !/-20\.5/.test(rowsOf[0]||''),
+    {row:(rowsOf[0]||'').slice(0,400)});
+  chk('the row posted after the lock never wins the slot, even though it is newest',
+    !/-20\.5/.test(blk));
+  chk('and the +n counts every submission the feed carried',
+    /class="rev"[^>]*>\+2<\/sup>/.test(rowsOf[0]||''),{row:(rowsOf[0]||'').slice(0,400)});
+  chk('the game header says when the game locks',
+    /class="gflag lock"[^>]*>LOCKS IN \d+D</.test(blk),{hd:blk.slice(0,300)});
+  chk('a finished game carries no lock chip',
+    !/gflag lock/.test(mv4.innerHTML.slice(0,mv4.innerHTML.indexOf('UMASS @ RUTGERS'))));
+  GAMES.pop();
+
+  /* ---- the answer layer sits above the wall ---------------------------
+     A first-time reader gets the summary strip and the room before the
+     terminal table, and the strip counts only what is on the page. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+  var open2=G(5,'UMASS','RUTGERS',null,null,null,[
+    M('mustbemoose','edgedesk-cfb-p4','home',-36.5,-28.5,0.98),
+    M('blerm','blerm-s-model','away',-29.5,-28.5,null)]);
+  open2.kickoff_at='2099-01-01T00:00:00Z';
+  GAMES.push(open2);
+  var cc=node();
+  await S.renderWall(cc);
+  var ccH=cc.innerHTML;
+  chk('the wall leads with the summary strip and the room, then the terminal wall',
+    ccH.indexOf('What the room is saying')>=0 && ccH.indexOf('What the room is saying')<ccH.indexOf('LIVE MODEL WALL'),
+    {room:ccH.indexOf('What the room is saying'),wall:ccH.indexOf('LIVE MODEL WALL')});
+  chk('the strip counts the models and games on this page',
+    /Active models<\/div><div class="v">4<small>of 4/.test(ccH) && /Games covered<\/div><div class="v">4<small>of 4/.test(ccH),
+    {strip:ccH.slice(ccH.indexOf('cc-stats'),ccH.indexOf('cc-stats')+600)});
+  chk('the open game is described in the room with the universal vocabulary',
+    /class="ugc"/.test(ccH) && /Collective line/.test(ccH) && /Group Δ market/.test(ccH) && /Disagreement/.test(ccH));
+  chk('the room never calls a gap an edge',
+    function(){
+      var sec=ccH.slice(ccH.indexOf('What the room is saying'),ccH.indexOf('LIVE MODEL WALL'));
+      return /not an edge/.test(sec) && !/is an edge|has an edge|edge on /i.test(sec);
+    });
+  chk('the story strip is offered to a new reader and can be closed',
+    /id="mcIntro"/.test(ccH) && /id="mcIntroX"/.test(ccH));
+  GAMES.pop();
+
+  /* ---- the rules page leads with the standard and survives a dead API - */
+  var vr=node();
+  await S.renderRules(vr);
+  chk('the rules page leads with one rule for every model and the grading flow',
+    vr.innerHTML.indexOf('ONE RULE')>=0 && vr.innerHTML.indexOf('Permanent record')>=0
+      && vr.innerHTML.indexOf('ONE RULE')<vr.innerHTML.indexOf('Reading the board'));
+  chk('the flow is the published order',
+    /Submit[\s\S]*Timestamp[\s\S]*Lock[\s\S]*Game[\s\S]*Collective close[\s\S]*Grade[\s\S]*Permanent record/.test(vr.innerHTML));
+
+  /* ---- the about page has the sections a stranger needs ---------------- */
+  var va=node();
+  await S.renderAbout(va,false);
+  chk('about answers what, why, readers, creators, the record, free, paid, standard, ownership, EdgeDesk',
+    ['Why it exists','For readers','For creators','How the record works','What stays free',
+     'What a subscription unlocks','Participation standard','Who owns the models','Relationship to EdgeDesk']
+      .every(function(h){return va.innerHTML.indexOf(h)>=0;}));
+  chk('the proof stays outside the paywall, in words',
+    /never behind the paywall/.test(va.innerHTML));
+  chk('billing stays closed while config says so',
+    /Billing opens soon/.test(va.innerHTML) && !/id="subBtn"/.test(va.innerHTML));
+
+  /* ---- THE 0-0 PLACEHOLDER ----------------------------------------------
+     The admin results form posted an empty score box as 0, so one click on
+     Settle with nothing typed settled North Carolina @ TCU and San José
+     State @ USC 0-0. The server then graded every model on both: a margin
+     error measured from zero, no ATS result because no close was typed
+     either. The model page read "Record (ATS) 0-0-0", a log of two games
+     with FINAL 0-0, and "no ATS picks" over "Ungraded ATS 2" — while the
+     Outright (ML) line beside it, graded on this page from the real
+     finals, read 5-3. Every model's page showed the same two games, and
+     the wall printed 0-0-0 against every model.
+
+     The stub returns exactly that state: the two games settled 0-0 with a
+     server grade on every row, a server record of graded:2 / 0-0-0 for
+     every model, and a recent_graded log of two 0-0 rows. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  function placeholderGames(){
+    return GAMES.map(function(g){
+      var c=JSON.parse(JSON.stringify(g));
+      if(c.game_id===1||c.game_id===2){
+        c.result={home_score:0,away_score:0,closing_spread:null,closing_total:null};
+        c.models.forEach(function(mr){
+          mr.grade={pick_result:null,margin_error:Math.abs(mr.projected_spread),brier:null};
+        });
+      }
+      return c;
+    });
+  }
+  var PH_REC={graded:2,wins:0,losses:0,pushes:0,win_pct:null,margin_mae:22.25,margin_n:2,brier:null,brier_n:0};
+  var PH_LOG=[
+    {label:'SANJOSESTA @ USC',week:1,kickoff_at:'2026-08-29T20:00:00Z',pick_side:'home',closing_spread:null,final:'0-0',pick_result:null,margin_error:32,brier:null,movement_n:2},
+    {label:'NORTHCAROL @ TCU',week:1,kickoff_at:'2026-08-29T16:00:00Z',pick_side:'home',closing_spread:null,final:'0-0',pick_result:null,margin_error:12.5,brier:null,movement_n:2}];
+  var realFetchPH=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(q.indexOf('site.api.espn.com')>=0)
+      return reply({events:[
+        {competitions:[{status:{type:{completed:true}},competitors:[
+          {homeAway:'home',score:'48',team:{displayName:'TCU Horned Frogs',abbreviation:'TCU'}},
+          {homeAway:'away',score:'14',team:{displayName:'North Carolina Tar Heels',abbreviation:'UNC'}}]}]},
+        {competitions:[{status:{type:{completed:true}},competitors:[
+          {homeAway:'home',score:'59',team:{displayName:'USC Trojans',abbreviation:'USC'}},
+          {homeAway:'away',score:'28',team:{displayName:'San Jose State Spartans',abbreviation:'SJSU'}}]}]}]});
+    if(q.indexOf('/closing/')>=0){
+      var id=decodeURIComponent(q.split('/closing/')[1].split('?')[0]);
+      return reply({available:true,closing_spread:id==='1'?-7.5:-38.5,closing_total:52.5,books:8});
+    }
+    if(q.indexOf('/v1/wall')>=0)
+      return reply({rows:WALL.map(function(r){var c=JSON.parse(JSON.stringify(r));c.record=PH_REC;return c;})});
+    if(q.indexOf('/v1/models/')>=0){
+      var parts=q.split('/v1/models/')[1].split('?')[0].split('/');
+      var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+      return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+        model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+        record:PH_REC,recent_graded:PH_LOG,coverage:[],coverage_pct:71});
+    }
+    if(q.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(q))return reply({games:NFLGAMES,week:1,entitled:true});
+      return reply({games:placeholderGames(),week:1,entitled:true});
+    }
+    return realFetchPH(u);
+  };
+  S.location.hash='#/model/mustbemoose/edgedesk-cfb-p4';
+  var vPH=node();
+  await S.renderModel(vPH,'mustbemoose','edgedesk-cfb-p4');
+  var ph=vPH.innerHTML;
+  chk('the model page does not print the 0-0-0 record the server built on a placeholder',
+    !/0-0-0/.test(ph), {rec:(/Record \(ATS\)[\s\S]{0,200}/.exec(ph)||[])[0]});
+  chk('nor a log of games that finished 0-0',
+    !/>0-0</.test(ph) && !/Ungraded ATS<\/div><div class="v">2</.test(ph),
+    {finals:(ph.match(/<td class="num">[^<]*<\/td>/g)||[]).slice(0,12)});
+  chk('every game is on the log with its real final and a result',
+    (ph.match(/data-res="(win|loss|push)"/g)||[]).length===3 && /14 - 48/.test(ph) && /28 - 59/.test(ph),
+    {rows:(ph.match(/data-res="[a-z]*"/g)||[]),finals:(ph.match(/\d+ - \d+/g)||[])});
+  /* mustbemoose: TCU -12.5 into -7.5 (home, TCU by 34: WIN); USC -32 into
+     -38.5 (home, USC by 31: LOSS); Virginia -2 into -5.5 (home, lost by 3:
+     LOSS). The record is the page's own, and says so. */
+  chk('and the record above it is the page\'s own, graded on those finals and marked',
+    /Record \(ATS\)<\/div><div class="v"><span class="mono">1-2-0<\/span> <span class="pgrade"/.test(ph),
+    {rec:(/Record \(ATS\)[\s\S]{0,220}/.exec(ph)||[])[0]});
+  chk('the page says why the Collective\'s own numbers are not shown',
+    /placeholder<\/b> The Collective/.test(ph) && /2 of this model/.test(ph),
+    {note:(/placeholder<\/b>[\s\S]{0,160}/.exec(ph)||[])[0]});
+  chk('the margin error is measured from the real final, not from zero',
+    !/>32\.0</.test(ph) && !/>22\.3</.test(ph) && /Margin MAE<\/div><div class="v">9\.2</.test(ph),
+    {mae:(/Margin MAE[\s\S]{0,80}/.exec(ph)||[])[0]});
+  /* 0.78 on TCU (won), 0.96 on USC (won), 0.55 on Virginia (lost): 2-1 */
+  chk('the outright record beside it still stands on the real finals',
+    /Outright \(ML\)<\/div><div class="v">2-1/.test(ph),
+    {ml:(/Outright \(ML\)[\s\S]{0,80}/.exec(ph)||[])[0]});
+
+  /* the wall, which printed 0-0-0 against every model from the same records */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='';
+  var vWPH=node();
+  await S.renderWall(vWPH);
+  await new Promise(function(r){setTimeout(r,50);});   /* let the season sweep land */
+  var wallPH=vWPH.innerHTML;
+  chk('the wall does not print 0-0-0 against every model',
+    !/0-0-0/.test(wallPH), {sample:(wallPH.match(/[^>]{0,60}0-0-0[^<]{0,60}/g)||[]).slice(0,3)});
+  chk('the wall records are the page\'s own, marked, graded on the real finals',
+    (wallPH.match(/class="pgrade"/g)||[]).length>=4 && /<b>3<\/b> settled/.test(wallPH)
+      && /1-2-0/.test(wallPH),
+    {marks:(wallPH.match(/class="pgrade"/g)||[]).length,settled:(/(<b>\d+<\/b> settled)/.exec(wallPH)||[])[1]});
+  chk('a placeholder is not counted as a settled game on the wall',
+    !/<b>[45]<\/b> settled/.test(wallPH));
+
+  /* the rankings, whose server boards are built on the same settlement */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};
+  S.location.hash='#rankings';
+  var vRPH=node();
+  await S.renderRankings(vRPH);
+  var rankPH=vRPH.innerHTML;
+  chk('the rankings page grades the season itself while the placeholder stands',
+    !/0-0-0/.test(rankPH) && /1-2-0/.test(rankPH),
+    {zeroes:(rankPH.match(/0-0-0/g)||[]).length});
+
+  S.fetch=realFetchPH;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.location.hash='';
+
+  /* ---- A SETTLED WIN OR LOSS ON A GAME WITH NO CAPTURED CLOSE -----------
+     A Thursday night game finished, the score landed, and the Collective
+     had captured no closing line for it. The board said so — "no captured
+     close", which is the honest answer and the reason the wall counts them
+     — and the same game moved every model's record by a loss, because the
+     settlement run had published an against-the-spread result on it and
+     this page took the server's grade without asking what number it could
+     have been graded against.
+
+     There is none. The published rule is that a finished game with no
+     captured close has no against-the-spread result FOR ANYBODY and is
+     counted by nobody, which the page already applied to its own grading
+     and not to anyone else's. Here the wire carries exactly that state:
+     game 3 final, close null, a server grade of `loss` on every row, and a
+     server record that counts it. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.WEEK_BOARDS={};S.SETTLED_REC={};
+  function noCloseGraded(){
+    return GAMES.map(function(g){
+      var c=JSON.parse(JSON.stringify(g));
+      if(c.game_id===3){
+        c.result.closing_spread=null;c.result.closing_total=null;
+        c.models.forEach(function(mr){
+          mr.grade={pick_result:'loss',margin_error:1,brier:null};
+        });
+      }
+      return c;
+    });
+  }
+  /* what the settlement run says: three graded games, one of them the game
+     it had no close for */
+  var NC_REC={graded:3,wins:1,losses:2,pushes:0,win_pct:1/3,margin_mae:9.2,margin_n:3,brier:null,brier_n:0};
+  var NC_LOG=[
+    {label:'NCSTATE @ VIRGINIA',week:1,kickoff_at:'2026-08-29T23:00:00Z',pick_side:'VIRGINIA',
+     closing_spread:null,final:'24 - 21',pick_result:'loss',margin_error:1,brier:null,movement_n:1}];
+  var NC_SERVERLOG=false;
+  var realFetchNCG=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(/settled\/[A-Z]+_\d{4}\.json/.test(q))
+      return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    if(q.indexOf('site.api.espn.com')>=0)return reply({events:[]});
+    /* the route that would fill the missing close answers honestly: there
+       is no captured price on this game, which is the whole premise */
+    if(q.indexOf('/closing/')>=0)return reply({available:false,reason:'no_pregame_capture'});
+    if(q.indexOf('/v1/wall')>=0)
+      return reply({rows:WALL.map(function(r){var c=JSON.parse(JSON.stringify(r));c.record=NC_REC;return c;})});
+    if(q.indexOf('/v1/models/')>=0){
+      var parts=q.split('/v1/models/')[1].split('?')[0].split('/');
+      var wr=WALL.filter(function(x){return x.creator_slug===parts[0];})[0]||WALL[0];
+      return reply({creator:{slug:wr.creator_slug,display_name:wr.creator_name,founding:!!wr.founding},
+        model:{model_slug:wr.model_slug,model_name:wr.model_name,sport:'CFB',description:null},
+        record:NC_REC,recent_graded:NC_SERVERLOG?NC_LOG:[],coverage:[],coverage_pct:100});
+    }
+    if(q.indexOf('/v1/games')>=0){
+      var wk=/[?&]week=(\d+)/.exec(q);
+      if(wk&&wk[1]!=='1')return reply({games:[],week:+wk[1],entitled:true});
+      if(/[?&]sport=NFL/.test(q))return reply({games:NFLGAMES,week:1,entitled:true});
+      return reply({games:noCloseGraded(),week:1,entitled:true});
+    }
+    return realFetchNCG(u);
+  };
+  S.location.hash='#/model/mustbemoose/edgedesk-cfb-p4';
+  var vNC=node();
+  await S.renderModel(vNC,'mustbemoose','edgedesk-cfb-p4');
+  var nc=vNC.innerHTML;
+  /* TCU -7.5, home, TCU by 34: WIN. USC -38.5, home, USC by 31: LOSS.
+     Virginia: no close, so no result — and no loss. */
+  chk('the game with no captured close is not counted as a loss',
+    /Record \(ATS\)<\/div><div class="v"><span class="mono">1-1-0<\/span> <span class="pgrade"/.test(nc)
+      && !/1-2-0/.test(nc),
+    {rec:(/Record \(ATS\)[\s\S]{0,240}/.exec(nc)||[])[0]});
+  chk('its row says which of the four reasons it is, rather than a verdict',
+    (nc.match(/data-res="(win|loss|push)"/g)||[]).length===2
+      && (nc.match(/no captured close/g)||[]).length>=1,
+    {rows:(nc.match(/data-res="[a-z]*"/g)||[])});
+  chk('it is counted as ungraded ATS, on the same page, from the same games',
+    /Ungraded ATS<\/div><div class="v">1/.test(nc),
+    {ung:(/Ungraded ATS[\s\S]{0,140}/.exec(nc)||[])[0]});
+  chk('and the page says why the Collective\'s own record is not the one shown',
+    /no close<\/b> The Collective/.test(nc)&&/1 of this model/.test(nc),
+    {note:(/no close<\/b>[\s\S]{0,200}/.exec(nc)||[])[0]});
+  chk('the margin error the run published still stands: it needs no close',
+    /Margin MAE<\/div><div class="v">/.test(nc)&&/Margin graded<\/div><div class="v">3/.test(nc),
+    {mae:(/Margin graded[\s\S]{0,80}/.exec(nc)||[])[0]});
+
+  /* the same state arriving as the SERVER'S OWN LOG ROWS, which carry their
+     closing line beside the verdict: the contradiction is inside one row */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  NC_SERVERLOG=true;
+  var vNCL=node();
+  await S.renderModel(vNCL,'mustbemoose','edgedesk-cfb-p4');
+  var ncl=vNCL.innerHTML;
+  chk('a server log row with a verdict and no close is shown ungraded, not lost',
+    /24 - 21/.test(ncl)&&(ncl.match(/data-res="(win|loss|push)"/g)||[]).length===0
+      &&/no captured close/.test(ncl),
+    {rows:(ncl.match(/data-res="[a-z]*"/g)||[])});
+  chk('and the tally over those rows counts no loss either',
+    !/1-2-0/.test(ncl)&&/Ungraded ATS<\/div><div class="v">1/.test(ncl),
+    {ats:(/Against the spread[\s\S]{0,220}/.exec(ncl)||[])[0]});
+  NC_SERVERLOG=false;
+
+  /* the wall, whose rows carry the same server record */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.location.hash='';
+  var vWNC=node();
+  await S.renderWall(vWNC);
+  await new Promise(function(r){setTimeout(r,50);});   /* let the season sweep land */
+  var wallNC=vWNC.innerHTML;
+  chk('the wall does not print the server record that counts the ungradeable game',
+    !/1-2-0/.test(wallNC),
+    {sample:(wallNC.match(/[^>]{0,40}1-2-0[^<]{0,40}/g)||[]).slice(0,3)});
+  chk('and it still says, out loud, that the game carries no close',
+    /id="bdNoClose"/.test(wallNC)&&/<b>1<\/b> no close/.test(wallNC)&&/<b>3<\/b> settled/.test(wallNC),
+    {stats:(/bd-stats[\s\S]{0,700}/.exec(wallNC)||[])[0]});
+  /* the dot beside the row used to fall back to the member's status, so a
+     reader asking why a game they had just watched carried no grade got
+     "ACTIVE CONTRIBUTOR" under the cursor */
+  chk('the dot on the ungraded row says which of the four reasons it is',
+    /no against-the-spread result — the Collective captured no closing line for this game/.test(wallNC)
+      &&/it is not a loss/.test(wallNC),
+    {dots:(wallNC.match(/gb-dot[^>]{0,120}/g)||[]).slice(0,4)});
+
+  /* the board, the receipt layer, on the same slate */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  S.location.hash='#board';
+  var vBNC=node();
+  await S.renderBoard(vBNC);
+  var bnc=vBNC.innerHTML;
+  chk('the board prints no verdict on it either, and names the reason',
+    /no ATS/.test(bnc)
+      &&/no against-the-spread result — the Collective captured no closing line for this game/.test(bnc),
+    {cell:(/no ATS[\s\S]{0,80}/.exec(bnc)||[])[0]});
+  chk('and the games that DO carry a close are still graded on the board',
+    (bnc.match(/class="mono grade-(win|loss|push)"/g)||[]).length>=6,
+    {n:(bnc.match(/class="mono grade-/g)||[]).length});
+  S.fetch=realFetchNCG;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};S.location.hash='';
+
+  /* ---- THE COMMITTED SETTLEMENT RECORD -----------------------------------
+     The hourly settle job now writes collective/settled/<SPORT>_<season>.json
+     and commits it, and the page reads that file from its own origin
+     before it asks ESPN from the browser or trusts a server grade. With
+     the record in hand, a season whose wire carries no results at all is
+     fully graded without a single feed call, and a 0-0 placeholder the
+     server settled is replaced by the record's real final. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+  var RECORD={schema:'edgedesk_collective_settled_v1',sport:'CFB',season:2026,generated_at:'2026-09-05T02:00:00Z',
+    rule:'x',games:{
+      '1':{label:'NORTHCAROL @ TCU',home:'TCU',away:'NORTHCAROL',week:1,kickoff_at:'2026-08-29T16:00:00Z',
+           home_score:48,away_score:14,score_source:'espn+cfbfastR',closing_spread:-7.5,closing_total:52.5,
+           closing_home_ml_prob:0.73,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'},
+      '2':{label:'SANJOSESTA @ USC',home:'USC',away:'SANJOSESTA',week:1,kickoff_at:'2026-08-29T20:00:00Z',
+           home_score:59,away_score:28,score_source:'espn',closing_spread:-38.5,closing_total:null,
+           closing_home_ml_prob:null,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'},
+      '3':{label:'NCSTATE @ VIRGINIA',home:'VIRGINIA',away:'NCSTATE',week:1,kickoff_at:'2026-08-29T23:00:00Z',
+           home_score:21,away_score:24,score_source:'espn',closing_spread:-5.5,closing_total:null,
+           closing_home_ml_prob:null,close_source:'collective_odds',settled_at:'2026-08-30T00:00:00Z'}}};
+  var recordAsked=[],espnAskedR=[],closingAskedR=[];
+  var realFetchRec=S.fetch;
+  S.fetch=function(u){
+    var q=String(u);
+    if(/settled\/[A-Z]+_\d{4}\.json/.test(q)){recordAsked.push(q);return reply(/CFB_2026/.test(q)?RECORD:{});}
+    if(q.indexOf('site.api.espn.com')>=0){espnAskedR.push(q);return reply({events:[]});}
+    if(q.indexOf('/closing/')>=0){closingAskedR.push(q);return reply({available:false,reason:'no_pregame_capture'});}
+    return realFetchRec(u);
+  };
+  var BLANKR=GAMES.map(function(g){var c=JSON.parse(JSON.stringify(g));c.result=null;return c;});
+  var filledR=await S.enrichFinals(BLANKR,'CFB',null,2026);
+  chk('the page reads its sport and season\'s record from its own origin',
+    recordAsked.length===1&&/^settled\/CFB_2026\.json$/.test(recordAsked[0]),{asked:recordAsked});
+  chk('every finished game is scored from the record, and no feed is asked',
+    filledR===3&&espnAskedR.length===0&&BLANKR.every(function(g){var r=S.finalResult(g);return r&&r.source==='record';}),
+    {filled:filledR,espn:espnAskedR.length,sources:BLANKR.map(function(g){return (S.finalResult(g)||{}).source;})});
+  chk('the closing line comes with it, so nothing is asked for by name either',
+    closingAskedR.length===0&&S.finalResult(BLANKR[0]).closing_spread===-7.5&&S.finalResult(BLANKR[1]).closing_spread===-38.5,
+    {closing:closingAskedR.length,closes:BLANKR.map(function(g){return (S.finalResult(g)||{}).closing_spread;})});
+  chk('and the record is graded against by the published rule',
+    (function(){
+      var gr=S.rowGrade(BLANKR[0],BLANKR[0].models[3]);   /* blerm on UNC into TCU -7.5: TCU by 34 */
+      var gm2=S.rowGrade(BLANKR[1],BLANKR[1].models[0]);  /* mustbemoose on USC -32 into -38.5: USC by 31 */
+      return gr&&gr.pick_result==='loss'&&gm2&&gm2.pick_result==='loss'&&gm2.margin_error===1;
+    })());
+  chk('a record-sourced score is marked as the Collective\'s settlement, not as the page\'s find',
+    /settled<\/span>/.test(S.scoreSourceMark(BLANKR[0]))&&!/ESPN/.test(S.scoreSourceMark(BLANKR[0])));
+  /* the placeholder the server settled is replaced by the record's final */
+  var PHR=placeholderGames();
+  S.SETTLED_REC={};recordAsked.length=0;
+  var filledPH=await S.enrichFinals(PHR,'CFB',null,2026);
+  /* two of the three fixture games were settled 0-0; the third already
+     carried its real final and is left alone */
+  chk('a 0-0 the server settled is replaced by the record\'s real final and remembered as a placeholder',
+    filledPH===2&&PHR[0].settled_placeholder===true&&PHR[2].settled_placeholder!==true&&S.finalResult(PHR[0]).home===48&&S.placeholderSettled(PHR[0])
+      &&S.rowGrade(PHR[0],PHR[0].models[0]).source==='page'&&S.rowGrade(PHR[0],PHR[0].models[0]).margin_error===21.5,
+    {filled:filledPH,g0:PHR[0].result,grade:S.rowGrade(PHR[0],PHR[0].models[0])});
+  /* a season with no record falls through to ESPN exactly as before */
+  S.SETTLED_REC={};
+  var BLANK27=GAMES.map(function(g){var c=JSON.parse(JSON.stringify(g));c.result=null;c.kickoff_at='2027-08-28T16:00:00Z';return c;});
+  var realNow=Date.now;Date.now=function(){return Date.parse('2027-09-05T00:00:00Z');};
+  try{await S.enrichFinals(BLANK27,'CFB',null,2027);}finally{Date.now=realNow;}
+  chk('a season with no record still asks ESPN, so nothing regresses when the file is not there yet',
+    espnAskedR.length>=1&&/dates=20270828/.test(espnAskedR[0]),{espn:espnAskedR});
+  chk('a season is named for the year it starts in',
+    S.seasonOfKickoff('2026-08-29T16:00:00Z')===2026&&S.seasonOfKickoff('2027-01-10T00:00:00Z')===2026
+      &&S.seasonOfKickoff('2026-05-01T00:00:00Z')===2025&&S.seasonOfKickoff(null)===null&&S.seasonOfKickoff('x')===null);
+  S.fetch=realFetchRec;
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.CLOSING={};S.ESPN_DAYS={};S.SETTLED_REC={};
+
+  /* ---- the model page says who it is before what it did ---------------- */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;
+  var vm=node();
+  await S.renderModel(vm,'blerm','blerm-s-model');
+  chk('the model page opens with the profile facts, then the record, then behaviour',
+    function(){
+      var h=vm.innerHTML;
+      return h.indexOf('Creator</div>')>=0 && h.indexOf('How it has performed')>h.indexOf('Creator</div>')
+        && h.indexOf('How it behaves')>h.indexOf('Every graded game');
+    },{who:vm.innerHTML.indexOf('Creator</div>'),perf:vm.innerHTML.indexOf('How it has performed'),
+       beh:vm.innerHTML.indexOf('How it behaves')});
+  chk('behaviour states its sample and is labelled as computed on this page',
+    /n=3/.test(vm.innerHTML) && /Behaviour, not performance/.test(vm.innerHTML));
+
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.META=null;S.WALLC=null;S.location.hash='';
+
+  /* ---- the door: which room a signed-in account gets --------------------
+     The regression this covers is a lockout, not a wrong pixel. The slate
+     uploader lives on the creator dashboard and nowhere else on this site,
+     and the router used to hand out that room on the strength of the `role`
+     word alone. `role` is computed from an active creator row owned by the
+     signed-in auth user; the uploader is served by /v1/dashboard, which
+     looks the same row up itself. Any drift between them -- a row owned by
+     the email somebody else redeemed the invite on, a status a removal
+     moved off 'active', an older /v1/me -- came out as the member
+     dashboard: no uploader, no explanation, no way back. So: drive the real
+     router against a server whose label and whose rows disagree, and against
+     one that is simply broken, and assert on the room and on the way out. */
+  var realFetchDoor=S.fetch;
+  var doorAsked=[];
+  function refuse(status,message){
+    return Promise.resolve({ok:false,status:status,json:function(){
+      return Promise.resolve({error:{code:'x',message:message}});}});
+  }
+  function doorFetch(role,answer){
+    return function(url,opts){
+      var u=String(url);
+      doorAsked.push(u);
+      if(u.indexOf('/v1/me')>=0)
+        return reply({signed_in:true,role:role,email:'operator@example.com',admin:true,entitled:true});
+      if(u.indexOf('/v1/dashboard')>=0){
+        if(answer==='yes')return reply({creator:{slug:'edgedesksports',display_name:'EdgedeskSports'},models:[]});
+        if(answer==='down')return refuse(500,'briefly unreachable');
+        return refuse(404,'no creator on this account');
+      }
+      return realFetchDoor(url,opts);
+    };
+  }
+  /* a session whose token carries a real-looking auth user id, because the
+     admin remedy is filled in from it */
+  var DOOR_UID='11111111-2222-3333-4444-555555555555';
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+  S.localStorage.setItem('mc_welcomed','1');
+  chk('the page can read its own account id out of the session token',
+    S.sessionUserId()===DOOR_UID,{got:S.sessionUserId()});
+
+  var realCreator=S.renderCreatorDash,realMember=S.renderMemberDash,room=null,gotProbe=null;
+  S.renderCreatorDash=function(){room='creator';return Promise.resolve();};
+  S.renderMemberDash=function(v,me,probe){room='member';gotProbe=probe;return Promise.resolve();};
+
+  /* the label agrees: nothing changes, and the creator endpoint is not
+     asked twice for an answer the label already gave */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('creator','no');
+  await S.renderDashboard(node());
+  chk('a creator labelled a creator still goes straight to the creator dashboard',
+    room==='creator'&&!doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),
+    {room:room,asked:doorAsked});
+
+  /* the label says member, the rows say creator: the rows win */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('a creator the label calls a member still gets the uploader',
+    room==='creator',{room:room,asked:doorAsked});
+
+  /* really not a creator: the member dashboard, and the probe travels with
+     it so the page can say what was asked */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','no');
+  await S.renderDashboard(node());
+  chk('an account with no creator row gets the member dashboard, told why',
+    room==='member'&&gotProbe&&gotProbe.state==='no'&&gotProbe.status===404,{room:room,probe:gotProbe});
+  /* and the answer is remembered, so navigating back does not re-ask */
+  doorAsked.length=0;
+  await S.renderDashboard(node());
+  chk('a settled "no" is asked once per session, not on every visit',
+    !doorAsked.some(function(u){return u.indexOf('/v1/dashboard')>=0;}),{asked:doorAsked});
+
+  /* the API is having a bad minute. This is the case that must NOT read as
+     "not a creator" and must NOT be cached, or one 500 costs a creator
+     their uploader for the rest of the session. */
+  S.CREATOR_PROBE=null;room=null;gotProbe=null;doorAsked.length=0;S.fetch=doorFetch('member','down');
+  await S.renderDashboard(node());
+  chk('a broken creator endpoint is reported as unknown, never as "not a creator"',
+    room==='member'&&gotProbe&&gotProbe.state==='unknown'&&gotProbe.status===500,{room:room,probe:gotProbe});
+  chk('and an unknown is never cached, so the next visit asks again',
+    S.CREATOR_PROBE===null,{cached:S.CREATOR_PROBE});
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;S.fetch=doorFetch('member','yes');
+  await S.renderDashboard(node());
+  chk('so the creator whose API hiccuped gets their dashboard back on the next look',
+    room==='creator',{room:room});
+
+  /* a dead session is a dead session, not an answer about creators */
+  S.CREATOR_PROBE=null;room=null;doorAsked.length=0;
+  S.fetch=function(url){var u=String(url);
+    if(u.indexOf('/v1/me')>=0)return reply({signed_in:true,role:'member',email:'a@b.c'});
+    if(u.indexOf('/v1/dashboard')>=0)return refuse(401,'expired');
+    return realFetchDoor(url);};
+  await S.renderDashboard(node());
+  chk('a 401 from the creator endpoint signs out instead of being filed as "no creator"',
+    room===null&&S.CREATOR_PROBE===null&&!S.localStorage.getItem('collective_session'),
+    {room:room,cached:S.CREATOR_PROBE});
+
+  S.renderCreatorDash=realCreator;S.renderMemberDash=realMember;
+  /* the 401 case above signed this session out, and the admin remedy is
+     filled in from the token, so sign back in before reading the panel */
+  S.localStorage.setItem('collective_session',JSON.stringify({
+    access_token:'x.'+Buffer.from(JSON.stringify({sub:DOOR_UID})).toString('base64')+'.y',
+    refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+
+  /* ---- the way out, on the page itself ---------------------------------
+     The panel is the whole point: an account that cannot post has to be
+     told what was asked, what came back, and how to ask again. */
+  var gateNo=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:false},WALL);
+  chk('the member dashboard says where the uploader is and that it was actually asked for',
+    /creator dashboard/.test(gateNo)&&/v1\/dashboard/.test(gateNo)&&/404/.test(gateNo)
+      &&gateNo.indexOf('operator@example.com')>=0,{html:gateNo.slice(0,400)});
+  chk('and offers the ask again, so the page is not a dead end',
+    /id="ctRetry"/.test(gateNo));
+  var gateDown=S.creatorGateHTML({state:'unknown',status:500,message:'briefly unreachable'},{email:'operator@example.com'},WALL);
+  chk('a failure to ask reads as a failure to ask, not as a verdict',
+    /could not ask/i.test(gateDown)&&/500/.test(gateDown)&&!/no active creator row/.test(gateDown),
+    {html:gateDown.slice(0,400)});
+  chk('a non-admin is not handed database instructions for a database they do not run',
+    !/ctSql/.test(gateNo)&&!/ctSlug/.test(gateNo));
+  var gateAdmin=S.creatorGateHTML({state:'no',status:404},{email:'operator@example.com',admin:true},WALL);
+  chk('an admin gets their own account id and the models actually on this wall',
+    /id="ctSql"/.test(gateAdmin)&&gateAdmin.indexOf(DOOR_UID)>=0
+      &&gateAdmin.indexOf('value="edgedesksports"')>=0,{html:gateAdmin.slice(0,600)});
+  chk('an admin whose API is merely down is told to retry, not to edit the database',
+    !/ctSql/.test(S.creatorGateHTML({state:'unknown',status:500},{admin:true},WALL)));
+  /* A panel drawn with no probe behind it must not report a refusal nobody
+     asked for -- that is the same mistake as the silence it replaced. */
+  var gateNone=S.creatorGateHTML(null,{email:'operator@example.com',admin:true},WALL);
+  chk('with nothing asked, the panel says so and asks rather than inventing a verdict',
+    /has not checked/.test(gateNone)&&/id="ctRetry"/.test(gateNone)
+      &&!/came back with no creator row/.test(gateNone)&&!/ctSql/.test(gateNone),{html:gateNone.slice(0,400)});
+  /* a 200 carrying no creator is not a refusal, and must not be described as
+     one -- "refused (200)" is the kind of sentence that sends somebody
+     hunting for a permissions problem that is not there */
+  chk('a 200 with no creator row is reported as what it is',
+    /came back with no creator row \(HTTP 200\)/.test(
+      S.creatorGateHTML({state:'no',status:200},{email:'a@b.c'},WALL)));
+
+  /* ---- the statement that fixes it -------------------------------------
+     Written by the same rules as the rest of this page's SQL: find the
+     schema, be safe to run twice, and refuse rather than guess whose row
+     this is. A reassignment that guessed would move somebody else's whole
+     graded record onto this account. */
+  var sql=S.creatorLinkSQL('edgedesksports',DOOR_UID);
+  chk('the statement names the row and the account, and nothing else',
+    sql.indexOf('edgedesksports')>=0&&sql.indexOf(DOOR_UID)>=0&&/set user_id = \$2/.test(sql));
+  chk('it finds the schema instead of assuming public',
+    /information_schema\.tables/.test(sql)&&sql.indexOf('public.')<0);
+  chk('it stops when the slug misses and when somebody else owns the row',
+    /no creator row with slug/.test(sql)&&/is owned by auth user/.test(sql));
+  chk('it re-opens a row a removal closed, without touching the record',
+    /removed_at = null/.test(sql)&&/account_status/.test(sql)
+      &&sql.indexOf('delete')<0&&sql.indexOf('projections')<0);
+  /* In RAISE, % is the placeholder and %% is a literal percent -- format()'s
+     %I and %L do not exist here, and one extra argument makes the whole
+     statement fail at runtime with "too many parameters specified for
+     RAISE". Which is a thing to find out from a test rather than from the
+     one person who ever runs this, on the day they cannot post a slate. */
+  function raiseArity(text){
+      var bad=[];
+      (String(text).match(/raise (?:exception|notice) [^\n]*/g)||[]).forEach(function(line){
+        var i=line.indexOf("'"),msg='',j=i+1;
+        while(j<line.length){
+          var ch=line.charAt(j);
+          if(ch==="'"){if(line.charAt(j+1)==="'"){msg+="'";j+=2;continue;}j++;break;}
+          msg+=ch;j++;
+        }
+        /* the argument list ends at the statement's own semicolon, not at the
+           end of the source line -- `raise exception '...'; end if;` shares one */
+        var rest=line.slice(j),cut='',inq=false;
+        for(var z=0;z<rest.length;z++){
+          var rc=rest.charAt(z);
+          if(rc==="'"){inq=!inq;cut+=rc;continue;}
+          if(rc===';'&&!inq)break;
+          cut+=rc;
+        }
+        rest=cut.trim().replace(/^,/,'');
+        var args=0,q=false,depth=0,seen=false;
+        for(var k=0;k<rest.length;k++){
+          var c=rest.charAt(k);
+          if(c==="'"){q=!q;seen=true;continue;}
+          if(q)continue;
+          if(c==='(')depth++;else if(c===')')depth--;
+          else if(c===','&&depth===0){args++;continue;}
+          if(c.trim())seen=true;
+        }
+        if(seen)args++;
+        var holes=(msg.replace(/%%/g,'').match(/%/g)||[]).length;
+        if(holes!==args)bad.push({line:line,holes:holes,args:args});
+      });
+      return bad;
+  }
+  /* the checker has to be able to fail, or this is a green light for nothing */
+  chk('the RAISE check catches a %% written where a placeholder was meant',
+    raiseArity("raise exception 'no creator row matched slug %% or name %%', 'a', 'b';").length===1
+      &&raiseArity("raise exception 'plain, no args';").length===0
+      &&raiseArity("raise notice 'one % here', x;").length===0);
+  chk('every RAISE in it gets exactly one argument per placeholder',
+    raiseArity(sql).length===0,{bad:raiseArity(sql)});
+  chk('a slug or an id carrying a quote cannot close the string it sits in',
+    S.creatorLinkSQL("o'brien",DOOR_UID).indexOf("o''brien")>=0);
+
+  /* and on the real page, not only in the helper: the member dashboard is
+     the room this account is actually in, so drive it and read what it says */
+  S.WALLC=null;S.META=null;
+  var vmem=node();
+  S.fetch=doorFetch('member','no');
+  await S.renderMemberDash(vmem,{signed_in:true,role:'member',email:'operator@example.com',
+    admin:true,entitled:true},{state:'no',status:404});
+  chk('the member dashboard carries the way back to the uploader, not just an invite box',
+    /Creator tools/.test(vmem.innerHTML)&&/id="ctRetry"/.test(vmem.innerHTML)
+      &&/creator dashboard/.test(vmem.innerHTML),
+    {has:vmem.innerHTML.indexOf('Creator tools'),len:vmem.innerHTML.length});
+  chk('and still offers the invite path it always did',
+    /id="ivTok"/.test(vmem.innerHTML)&&/id="ivCheck"/.test(vmem.innerHTML));
+
+  S.fetch=realFetchDoor;S.CREATOR_PROBE=null;
+  S.WALLC=null;S.META=null;
+  S.localStorage.removeItem('collective_session');
+
+  /* ---- the front page can reach the week that has not happened yet -------
+     The server keeps a week "current" until 36 hours after its last game,
+     which is right while that game is still settling and wrong the moment the
+     next week's numbers are posted. The Board has always had a week strip;
+     the Wall, which is the front page, had none — so a creator who had just
+     uploaded 29 week-2 games saw a slate with one game left and no way to
+     reach their own work. These hold the strip on BOTH surfaces and hold the
+     one thing that makes it real: the request actually carries the week. */
+  var realFetchWk=S.fetch;
+  var wkAsked=[];
+  var W2GAME=G(99,'MISSOURI','KANSAS',null,null,null,[
+    M('edgedesksports','edgedesk-cfb','home',-4.6,-6.5,0.61)]);
+  W2GAME.week=2; W2GAME.kickoff_at='2026-09-12T00:00:00Z'; W2GAME.result=null;
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0){
+      wkAsked.push(u);
+      var w=/[?&]week=(\d+)/.exec(u);
+      if(w&&w[1]==='2')return reply({games:[W2GAME],week:2,entitled:true});
+      if(w)return reply({games:[],week:+w[1],entitled:true});
+      return reply({games:GAMES,week:1,entitled:true});
+    }
+    return realFetchWk(url);
+  };
+
+  chk('the week strip is written once and used by both surfaces',
+    typeof S.weekStripHTML==='function'&&typeof S.bindWeekStrip==='function');
+  {
+    var strip=S.weekStripHTML('CFB',null);
+    chk('with no week chosen, Current is the selected button',
+      /data-w=""[^>]*>Current/.test(strip)&&/class="on" data-w=""/.test(strip),{strip:strip.slice(0,160)});
+    var s2=S.weekStripHTML('CFB',2);
+    chk('choosing a week moves the highlight off Current onto it',
+      /class="on" data-w="2"/.test(s2)&&!/class="on" data-w=""/.test(s2),{strip:s2.slice(0,200)});
+    /* the sport switcher shares .wk styling; a handler bound to every .wk
+       button would reset the week to Current on every sport change */
+    chk('every button the week handler binds to carries data-w',
+      (s2.match(/<button/g)||[]).length===(s2.match(/data-w=/g)||[]).length);
+    chk('a college strip offers the college calendar, not the NFL one',
+      /Bowl|CFP|W15/.test(S.weekStripHTML('CFB',null))||
+      (S.weekStripHTML('CFB',null).match(/data-w="/g)||[]).length>
+      (S.weekStripHTML('NFL',null).match(/data-w="/g)||[]).length ||
+      S.weekStripHTML('CFB',null)!==S.weekStripHTML('NFL',null));
+  }
+
+  /* THE WALL. Default asks for no week at all — the front page follows the
+     server's current slate, and must not pin itself to a number. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;
+  S.location.hash='';
+  wkAsked.length=0;
+  var vw=node();
+  await S.renderWall(vw);
+  chk('the wall asks for the current slate, with no week pinned',
+    wkAsked.length>0&&!/[?&]week=/.test(wkAsked[0]),{asked:wkAsked.slice()});
+  chk('and it now carries the week strip the board has always had',
+    /class="wk"/.test(vw.innerHTML)&&/data-w="2"/.test(vw.innerHTML),
+    {has:vw.innerHTML.indexOf('class="wk"')});
+
+  /* Pick week 2: the request carries it, and the week 2 game is what draws. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=2;
+  wkAsked.length=0;
+  var vw2=node();
+  await S.renderWall(vw2);
+  chk('choosing a week sends it to the games feed',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);}),{asked:wkAsked.slice()});
+  chk('and the wall draws that week’s games, not the current one',
+    vw2.innerHTML.indexOf('KANSAS')>=0&&vw2.innerHTML.indexOf('FLORIDASTA')<0,
+    {kansas:vw2.innerHTML.indexOf('KANSAS'),fsu:vw2.innerHTML.indexOf('FLORIDASTA')});
+  chk('with the strip showing which week is being looked at',
+    /class="on" data-w="2"/.test(vw2.innerHTML));
+
+  /* THE BOARD still works through the same helper. */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.BOARD_WEEK=2;
+  wkAsked.length=0;
+  S.location.hash='#board';
+  var vb=node();
+  await S.renderBoard(vb);
+  chk('the board still sends its own week through the shared strip',
+    wkAsked.some(function(u){return /[?&]week=2/.test(u);})&&/class="on" data-w="2"/.test(vb.innerHTML),
+    {asked:wkAsked.slice()});
+  S.BOARD_WEEK=null;S.WALL_WEEK=null;S.location.hash='';
+  S.fetch=realFetchWk;S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;
+
+  /* ---- a record cannot be shorter than the slate without saying why ------
+     Every ATS grade here is measured against the Collective's own captured
+     closing line, and a missing close is null, never invented. So a finished
+     game with no close is ungradeable BY THE RULE and appears in nobody's
+     record. The wall read "57 settled" next to a model showing 2-0-0 and said
+     nothing about the gap, which is what "the record resets daily and isn't
+     cumulative" actually looks like from outside. */
+  var realFetchNC=S.fetch;
+  function noCloseGames(n){
+    var out=[];
+    for(var i=0;i<n;i++){
+      var g=G(500+i,'AWAY'+i,'HOME'+i,31,17,null,[M('blerm','blerm-s-model','home',-7,-7,0.6)]);
+      g.result.closing_spread=null;g.result.closing_total=null;
+      out.push(g);
+    }
+    return out;
+  }
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.WALL_WEEK=null;S.SETTLED_REC={};
+  var NC=noCloseGames(5);
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:NC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vnc=node();
+  await S.renderWall(vnc);
+  chk('a final game with no captured close is still counted as settled',
+    /<b>5<\/b> settled/.test(vnc.innerHTML),
+    {got:(/(<b>\d+<\/b> settled)/.exec(vnc.innerHTML)||[])[1]});
+  chk('and the wall says how many of them no model can be graded on',
+    /id="bdNoClose"/.test(vnc.innerHTML)&&/<b>5<\/b> no close/.test(vnc.innerHTML),
+    {got:vnc.innerHTML.indexOf('bdNoClose')});
+  chk('naming the rule rather than leaving it a mystery number',
+    /captured closing line/.test(vnc.innerHTML)&&/never invented/.test(vnc.innerHTML));
+  chk('and nobody is graded on them, so the count is not a cosmetic label',
+    S.rowGrade(NC[0],NC[0].models[0]).pick_result==null,
+    {grade:S.rowGrade(NC[0],NC[0].models[0])});
+
+  /* and it stays out of the way when there is nothing to report */
+  S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+  var WC=noCloseGames(3);WC.forEach(function(g){g.result.closing_spread=-7.5;});
+  S.fetch=function(url){
+    var u=String(url);
+    if(u.indexOf('/v1/games')>=0)return reply({games:WC,week:1,entitled:true});
+    if(u.indexOf('settled/')>=0)return Promise.resolve({ok:false,status:404,json:function(){return Promise.resolve({});}});
+    return realFetchNC(url);
+  };
+  var vwc=node();
+  await S.renderWall(vwc);
+  chk('a slate whose closes all landed shows no warning at all',
+    !/id="bdNoClose"/.test(vwc.innerHTML)&&/<b>3<\/b> settled/.test(vwc.innerHTML));
+  S.fetch=realFetchNC;S.SEASON_GAMES={};S.SLATE_CACHE={};S.LOCALREC={};S.WALLC=null;S.SETTLED_REC={};
+
+  /* ---- the market window has to reach BACKWARDS too ----------------------
+     `days` widened only the future; the lower bound was a fixed 24 hours on
+     the read function. A finished game therefore fell off the board one day
+     after kickoff, and the board is where this page recovers a closing line
+     for a finished game whose record carries none — "the board carries a
+     close on any game still inside its window", in fillCapturedCloses.
+
+     So every model's graded record silently shrank to whatever finished in
+     the last 24 hours, and refilled the next day with a different set. That
+     is what was reported as "the ATS results reset daily and aren't
+     cumulative": the record was following the odds window, not results. */
+  {
+    /* the direct builder: the path taken when odds.js is older than the page */
+    /* the direct builder — the path taken when odds.js is older than the page */
+    var seen=[];
+    var realFetchMk=S.fetch;
+    S.fetch=function(u){seen.push(String(u));
+      return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({games:[]});}});};
+    S.marketBoardDirect({league:'ncaaf',days:24,back:8,limit:200});
+    chk('the direct board builder sends the look-back',
+      seen.length===1&&/[?&]back=8(&|$)/.test(seen[0])&&/[?&]days=24(&|$)/.test(seen[0]),
+      {url:seen[0]});
+    chk('and still sends everything it sent before',
+      /[?&]limit=200/.test(seen[0])&&/[?&]books=0/.test(seen[0]),{url:seen[0]});
+    S.fetch=realFetchMk;
+  }
+  {
+    /* and what the page actually ASKS for, through the real defaults */
+    var asked=null;
+    S.MCOdds={configure:function(){},injectCss:function(){},
+      leagueFor:function(x){return x;},
+      board:function(o){asked=o;return Promise.resolve(null);}};
+    S.window.MCOdds=S.MCOdds;
+    S.marketBoard({league:'ncaaf'});
+    chk('the page asks for a look-back, not just a look-ahead',
+      asked&&asked.back===8&&asked.days===24,{asked:asked});
+    chk('long enough to cover a slate week, so a week keeps its closes',
+      asked&&asked.back>=7,{back:asked&&asked.back});
+    /* a two-directional window holds more games than a one-directional one,
+       and a row cap that did not grow would drop the upcoming half */
+    chk('and raises the row cap so the finished half cannot crowd out the rest',
+      asked&&asked.limit===200,{limit:asked&&asked.limit});
+    asked=null;
+    S.marketBoard({league:'nfl'});
+    chk('the NFL asks on the same rule with its own numbers',
+      asked&&asked.back===8&&asked.days===10&&asked.limit===60,{asked:asked});
+    /* an explicit range is never second-guessed: a caller that named from/to
+       meant it, and a look-back bolted onto it would silently widen it */
+    asked=null;
+    S.marketBoard({league:'nfl',from:'2026-09-01T00:00:00Z',to:'2026-09-08T00:00:00Z'});
+    chk('an explicit from/to is left exactly as asked',
+      asked&&asked.back===undefined&&asked.days===undefined,{asked:asked});
+    delete S.MCOdds;delete S.window.MCOdds;
+  }
+
+  /* ---- THE WHOLE PATH, DRIVEN --------------------------------------------
+     Reading the source proves the branch exists. This drives it: the real
+     ensureModelForSport and the real renderCreatorDash, against a stubbed
+     backend, so the trace the fix is about is executed rather than asserted.
+
+       contributor selects NFL -> the signed-in account is resolved from the
+       session token -> NFL is normalised -> the contributor's NFL model is
+       get-or-created -> it comes back and the dashboard shows it
+
+     Three backends are driven, because a deployment may be any of them: the
+     database routine installed, the routine absent with collective_join
+     carrying the route, and neither. */
+  {
+    var realF=S.fetch, seen=[];
+    /* A signed-in session, because the whole point is that the account comes
+       from the token and never from the request body. */
+    S.localStorage.setItem('collective_session',JSON.stringify({
+      access_token:'x.'+Buffer.from(JSON.stringify({sub:'aaaaaaaa-1111-2222-3333-444444444444'})).toString('base64')+'.y',
+      refresh_token:'r',expires_at:String(Math.floor(Date.now()/1000)+86400)}));
+    function stub(mode){
+      return function(url,opts){
+        var u=String(url),body=null;
+        try{body=opts&&opts.body?JSON.parse(opts.body):null;}catch(_){}
+        seen.push({url:u,method:(opts&&opts.method)||'GET',body:body,
+          auth:(opts&&opts.headers&&(opts.headers.authorization||opts.headers.Authorization))||null});
+        if(u.indexOf('/rest/v1/rpc/collective_model_ensure')>=0){
+          if(mode==='no-rpc'||mode==='none')return Promise.resolve({ok:false,status:404,
+            json:function(){return Promise.resolve({code:'PGRST202',
+              message:'Could not find the function public.collective_model_ensure'});}});
+          if(mode==='refused')return Promise.resolve({ok:true,status:200,
+            json:function(){return Promise.resolve({ok:false,code:'no_creator',
+              message:'This account has no active contributor profile, so there is nothing to add a model to.'});}});
+          return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({
+            ok:true,created:true,already:false,
+            model:{model_slug:'blizzard-performance-nfl',model_name:'Blizzard Performance NFL',sport:'NFL'}});}});
+        }
+        if(u.indexOf('/collective_join/v1/models')>=0){
+          if(mode==='none')return Promise.resolve({ok:false,status:404,
+            json:function(){return Promise.resolve({error:{code:'not_found',message:'No such route'}});}});
+          return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve({
+            already:false,model:{model_slug:'bp-nfl-via-fn',model_name:'BP NFL',sport:'NFL'}});}});
+        }
+        return realF(url,opts);
+      };
+    }
+
+    /* 1. THE DATABASE ROUTINE. The path a migrated project takes. */
+    S.fetch=stub('rpc');seen.length=0;
+    var made=await S.ensureModelForSport('NFL');
+    chk('selecting NFL creates an NFL model and hands it straight back',
+      made&&made.model_slug==='blizzard-performance-nfl'&&made.sport==='NFL'&&made.created===true,
+      made);
+    chk('it went to the database routine first',
+      seen.length===1&&/\/rest\/v1\/rpc\/collective_model_ensure$/.test(seen[0].url)
+      &&seen[0].method==='POST', seen.map(function(x){return x.url;}));
+    chk('it sent only the sport',
+      seen[0].body&&seen[0].body.p_sport==='NFL'&&Object.keys(seen[0].body).length===1,
+      seen[0].body);
+    chk('and NOTHING in the request names a creator, an account or a user',
+      !/creator|user_id|"sub"/i.test(JSON.stringify(seen[0].body)), seen[0].body);
+    chk('the signed-in account travels as the session token, which is what the database reads',
+      /^Bearer /.test(seen[0].auth||''), seen[0].auth);
+    S.fetch=stub('rpc');seen.length=0;
+    await S.ensureModelForSport('NFL','My NFL Model');
+    chk('a name the contributor typed is passed through when they gave one',
+      seen[0].body.p_model_name==='My NFL Model', seen[0].body);
+
+    /* Idempotent: asking again is not an error and does not read as one. */
+    S.fetch=function(url,opts){
+      var u=String(url);
+      if(u.indexOf('collective_model_ensure')>=0)return Promise.resolve({ok:true,status:200,
+        json:function(){return Promise.resolve({ok:true,created:false,already:true,
+          model:{model_slug:'blizzard-performance-nfl',model_name:'Blizzard Performance NFL',sport:'NFL'}});}});
+      return realF(url,opts);
+    };
+    var again=await S.ensureModelForSport('NFL');
+    chk('asking a second time returns the same model and says it already existed',
+      again.model_slug==='blizzard-performance-nfl'&&again.created===false, again);
+
+    /* 2. THE ROUTINE IS NOT INSTALLED. Falls through to the edge function
+       rather than stopping, because a contributor must not carry the cost of
+       which half of the backend is deployed. */
+    S.fetch=stub('no-rpc');seen.length=0;
+    var viaFn=await S.ensureModelForSport('NFL');
+    chk('with the database routine absent it falls through to the API and still succeeds',
+      viaFn.model_slug==='bp-nfl-via-fn'&&viaFn.via==='collective_join', viaFn);
+    chk('and it tried the database first, then the API — in that order',
+      seen.length===2&&/collective_model_ensure/.test(seen[0].url)
+      &&/collective_join\/v1\/models/.test(seen[1].url), seen.map(function(x){return x.url;}));
+
+    /* 3. NEITHER DOOR. The error must be the real one, and must never describe
+       itself as a normal step somebody else performs. */
+    S.fetch=stub('none');seen.length=0;
+    var threw=null;
+    try{await S.ensureModelForSport('NFL');}catch(e){threw=e;}
+    chk('with neither door open it throws rather than pretending', !!threw);
+    chk('and names both things it tried, and the file that installs one',
+      threw&&/collective_model_ensure is not installed/.test(threw.message)
+      &&/collective_join has no \/v1\/models route/.test(threw.message)
+      &&/collective_model_autocreate\.sql/.test(threw.message), threw&&threw.message);
+    chk('and does not tell the contributor to ask anybody',
+      threw&&!/operator|administrator|ask (your|the|somebody|someone)|contact/i.test(threw.message),
+      threw&&threw.message);
+
+    /* 4. A REAL REFUSAL IS NOT RETRIED. A removed contributor gets the
+       database's own answer, not a second attempt that hides it. */
+    S.fetch=stub('refused');seen.length=0;
+    var refused=null;
+    try{await S.ensureModelForSport('NFL');}catch(e){refused=e;}
+    chk('a refusal from the database is reported as itself',
+      refused&&refused.code==='no_creator'&&/no active contributor profile/.test(refused.message),
+      refused&&refused.message);
+    chk('and is NOT retried against the API, which would hide it',
+      seen.length===1, seen.map(function(x){return x.url;}));
+
+    S.fetch=realF;
+  }
+
+  /* ---- COVERING A SECOND SPORT IS THE CONTRIBUTOR'S OWN ACTION ----------
+     What used to be here: a `do $$ ... $$` statement generated for a creator
+     who wanted a second sport, and a panel that asked whether the reader was
+     the operator before deciding whether to show it to them or hand them a
+     sentence to send to somebody who could run it. Both are gone. A model is
+     created by the person who wants it, in one call, and these hold the two
+     things that must never come back: an operator in the path, and a page that
+     describes its own failure as a normal manual step. */
+  {
+    chk('the page no longer generates SQL for a creator who wants a sport',
+      APPSRC.indexOf('function addModelSQL')<0
+      && !/insert into %I\.models/.test(APPSRC), 'addModelSQL is retired');
+
+    /* THE SENTENCE THAT STARTED THIS. Nowhere on the contributor's dashboard
+       may the answer to "I want to post NFL" be somebody else. */
+    var dead=[
+      'Self-serve model creation is not deployed',
+      'needs a NFL model',
+      'is created by the Collective\u2019s operator',
+      'takes them one statement',
+      'it takes them one statement'
+    ];
+    dead.forEach(function(t){
+      chk('the dashboard no longer says: "'+t+'"', APPSRC.indexOf(t)<0, {found:t});
+    });
+    /* Asked of what a READER can see. The comments in the page describe the
+       behaviour this replaced, and they should: the point is that the words
+       are no longer on screen, not that the history is unmentionable. */
+    var SHOWN=APPSRC.replace(/\/\*[\s\S]*?\*\//g,' ').replace(/^[ \t]*\/\/[^\n]*/gm,' ');
+    chk('and nothing a contributor is SHOWN tells them to ask an operator for a model',
+      !/operator[^.]{0,80}model/i.test(SHOWN)&&!/model[^.]{0,60}the operator/i.test(SHOWN),
+      (SHOWN.match(/[^.]{0,90}operator[^.]{0,90}/gi)||[]).slice(0,4));
+
+    /* ONE FUNCTION, and every path goes through it. */
+    var fn=(function(){
+      var i=APPSRC.indexOf('async function ensureModelForSport(');
+      return i<0?null:APPSRC.slice(i,i+3400);
+    })();
+    chk('there is one get-or-create in the page', !!fn);
+    if(fn){
+      chk('it asks the DATABASE routine first, which is the source of truth',
+        /dbrpc\('collective_model_ensure'/.test(fn));
+      chk('and falls back to the API only when that routine is not installed',
+        /if\(!e\.notInstalled\)throw e/.test(fn)&&/fn:'collective_join'/.test(fn));
+      chk('a refusal from the database is never retried as if it were a 404',
+        fn.indexOf("out.ok===false")>=0&&fn.indexOf('e.code=out.code;throw e')>=0);
+      chk('with BOTH doors shut it names the two things it tried and the file that installs one',
+        /collective_model_ensure is not installed/.test(fn)
+        &&/collective_join has no \/v1\/models route/.test(fn)
+        &&/collective_model_autocreate\.sql/.test(fn));
+      chk('and even then it never suggests asking a person',
+        !/operator|administrator|ask (your|the|somebody|someone)/i.test(fn),
+        fn.slice(fn.indexOf('Both doors'), fn.indexOf('Both doors')+400));
+      chk('it sends the sport it was asked for, never a guess',
+        /var body=\{p_sport:sport\}/.test(fn));
+      chk('the signed-in account is carried by its token, and is never an argument',
+        !/creator|user_id|p_creator/.test(fn), fn.slice(0,300));
+    }
+
+    /* THE THREE ENTRY POINTS ON THIS PAGE, each reaching that one function. */
+    var dash=APPSRC.slice(APPSRC.indexOf('async function renderCreatorDash'));
+    chk('ticking a sport creates the model',
+      /data-plan[\s\S]{0,1200}coverSport\(code,null/.test(dash),
+      dash.slice(dash.indexOf("querySelectorAll('[data-plan]')"), dash.indexOf("querySelectorAll('[data-plan]')")+700));
+    chk('naming one yourself creates the same model the same way',
+      /addModelGo[\s\S]{0,400}coverSport\(code,\(\$\('addModelName'\)\.value/.test(dash));
+    chk('and posting a slate for a sport with no model creates it on the way past',
+      /if\(pick\.create\)\{[\s\S]{0,400}await ensureModelForSport\(pick\.create\)/.test(dash));
+    chk('all three go through the one function and none of them writes a model row itself',
+      (dash.match(/ensureModelForSport\(/g)||[]).length>=2
+      && dash.indexOf("api('/v1/models'")<0, 'no second creation path in the dashboard');
+
+    /* WHAT A FAILURE LOOKS LIKE. The brief: show the actual backend error
+       rather than pretending this is an expected manual process. */
+    chk('a creation failure renders the backend\u2019s own message',
+      /function modelErrHTML\(e\)\{[\s\S]{0,200}e&&e\.message/.test(dash));
+    chk('and a failed tick puts the box back rather than leaving a lie on screen',
+      /cb\.checked=false;cb\.disabled=false/.test(dash));
+    chk('a slate whose model could not be created posts nothing and says why',
+      /Nothing was posted\. Your[\s\S]{0,200}could not be created/.test(dash));
+
+    /* THE PICKER. The disabled option was the bug in one line of markup. */
+    var picker=(function(){
+      var i=APPSRC.indexOf('function sportPickerOptions(');
+      if(i<0)return null;
+      var j=APPSRC.indexOf("return out.join('');", i);
+      return j<0?null:APPSRC.slice(i,j);
+    })();
+    chk('the sport picker exists', !!picker);
+    if(picker){
+      chk('no sport is offered as a disabled row any more',
+        picker.indexOf('disabled')<0, picker.slice(0,400));
+      chk('a sport with no model says what will happen instead of "no model yet"',
+        /your model is created when you post/.test(picker)
+        && picker.indexOf('no model yet')<0);
+    }
+
+    /* ORDER MATTERS. The pre-flight is where a sport the backend does not carry
+       at all is caught. Creating a model for such a sport and THEN refusing to
+       post would leave a row behind for a slate that never went anywhere. */
+    var send=(function(){
+      var i=dash.indexOf('async function slateSend(');
+      return i<0?null:dash.slice(i,i+9000);
+    })();
+    chk('slateSend is found', !!send);
+    if(send){
+      chk('nothing is created until the backend has been asked about the schedule',
+        send.indexOf('await slatePreflight(')>0
+        && send.indexOf('await ensureModelForSport(') > send.indexOf('await slatePreflight('),
+        { preflight: send.indexOf('await slatePreflight('), create: send.indexOf('await ensureModelForSport(') });
+      chk('and the envelope is filed under the resolved model\u2019s OWN sport, so the two cannot disagree',
+        /if\(selModel&&selModel\.sport\)env\.sport=selModel\.sport/.test(send));
+    }
+
+    /* The picker row for a sport with no model carries no model slug, so the
+       sport has to come from the row itself or an unstamped file would be
+       posted as whatever model happens to be first on the account. */
+    chk('the picker\u2019s own sport is read when its row has no model yet',
+      /if\(opt&&!opt\.value&&opt\.getAttribute\('data-sport'\)\)return opt\.getAttribute\('data-sport'\)/
+        .test(APPSRC));
+
+    /* The pre-flight used to stop a slate for want of a model. */
+    chk('the pre-flight no longer refuses a slate for want of a model',
+      APPSRC.indexOf("level:'no-model'")<0 && APPSRC.indexOf("p.level==='no-model'")<0);
+    chk('but still stops for the things only the backend can fix',
+      APPSRC.indexOf("level:'no-sport'")>0 && APPSRC.indexOf("level:'no-games'")>0);
+
+    /* The browser-only "sports I plan to cover" note existed only because a
+       tick could not do anything. */
+    chk('the browser-only planned-sports note is gone with the reason for it',
+      APPSRC.indexOf('mc_sports_planned')<0 && APPSRC.indexOf('function declaredSports')<0
+      && APPSRC.indexOf('private note in this browser')<0);
+  }
+
+  fails.forEach(function(f){console.log('FAIL | '+f.n+(f.d?'  '+JSON.stringify(f.d).slice(0,400):''));});
+  console.log((fail===0?'ALL GREEN ':'FAILED ')+pass+' passed, '+fail+' failed');
+  process.exit(fail===0?0:1);
+})().catch(function(e){console.log('CRASHED: '+(e&&e.stack||e));process.exit(1);});

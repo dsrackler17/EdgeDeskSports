@@ -1,0 +1,124 @@
+# EdgeDesk CFB weekly engine — run its suites on the pull request.
+#
+# The engine itself runs on a schedule (cfb-v2-shadow.yml) against main. A
+# change that breaks run tracking, the release gate, exactly-once state, the
+# market-input guard, game validation or the Postgres contract has to fail on
+# the PR that makes it, not inside a scheduled run that is writing state.
+#
+# Offline: the fast suites are synthetic (no play-by-play download), and the
+# SQL suite builds a throwaway Postgres cluster. Nothing is written outside
+# temp dirs.
+name: CFB weekly engine tests
+
+on:
+  pull_request:
+    paths:
+      - 'football/cfb_v2/research/v2/**'
+      - 'football/cfb_v2/research/requirements.txt'
+      - 'football/cfb_production/contract/**'
+      - 'football/cfb_v2/artifacts/**'
+      - 'football/cfb_weekly/**'
+      - 'supabase/cfb_weekly.sql'
+      - 'supabase/cfb_personnel.sql'
+      - 'football/cfb_personnel/**'
+      - 'supabase/cfb_matchup.sql'
+      - 'football/cfb_matchup/**'
+      - '.github/workflows/cfb-weekly-tests.yml'
+      - '.github/workflows/cfb-v2-shadow.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'football/cfb_v2/research/v2/weekly/**'
+      - 'football/cfb_v2/research/v2/games.py'
+      - 'football/cfb_v2/research/v2/tests_finality.py'
+      - 'football/cfb_v2/research/v2/personnel/**'
+      - 'football/cfb_weekly/*.js'
+      - 'football/cfb_personnel/*.js'
+      - 'football/cfb_matchup/*.js'
+      - 'football/cfb_matchup/fixtures/**'
+      - 'football/cfb_v2/research/v2/matchup/**'
+      - 'supabase/cfb_matchup.sql'
+      - 'supabase/cfb_weekly.sql'
+      - 'supabase/cfb_personnel.sql'
+      - '.github/workflows/cfb-weekly-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-weekly-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Python deps (pinned; the same as the scheduled engine)
+        run: pip install --quiet -r football/cfb_v2/research/requirements.txt
+      - name: Orchestration, run tracking, gate, state store, projection records
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_WEEKLY_QUIET: '1'
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.weekly.tests_weekly --fast
+      - name: Model input contract, feature monitor and the matchup shadow stage (no build needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.weekly.tests_contract --fast
+      - name: Finality (in-progress, cancelled and postponed games are never results; audit F-01)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.tests_finality
+      - name: Game validation, play context, game performance
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+        run: python3 -m v2.weekly.tests_games --fast
+      - name: Personnel QB layer (starter detection, lineup, backtest contracts; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.personnel.tests_qb --fast
+      - name: Personnel unit values (shrinkage, replacement, lineups, deltas; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.personnel.tests_units --fast
+      - name: Scheme and matchup intelligence (style, interactions, residual model, hook; no data needed)
+        working-directory: football/cfb_v2/research
+        env:
+          CFB_V2_DATA: ${{ runner.temp }}/cfb_v2_data
+          CFB_V2_OUT: ${{ runner.temp }}/cfb_v2_out
+          OMP_NUM_THREADS: '1'
+        run: python3 -m v2.matchup.tests_matchup --fast
+      - name: The matchup Postgres contract (style, snapshots, similar matchups, events, versions, monitor)
+        env:
+          CFB_MATCHUP_SQL_REQUIRED: '1'
+        run: node football/cfb_matchup/sql.test.js
+      - name: The Postgres contract (tables, write-once triggers, exactly-once keys, the poke)
+        env:
+          CFB_WEEKLY_SQL_REQUIRED: '1'
+        run: node football/cfb_weekly/sql.test.js
+      - name: The personnel Postgres contract (registry, player state, units, events, snapshots, versions)
+        env:
+          CFB_PERSONNEL_SQL_REQUIRED: '1'
+        run: node football/cfb_personnel/sql.test.js

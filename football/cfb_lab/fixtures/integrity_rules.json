@@ -1,0 +1,350 @@
+{
+ "about": "Shared cases for cfb_market_quote_integrity_v1 (docs/cfb-production/MARKET_INTEGRITY.md). football/cfb_lab/integrity.js validateQuote, the capture function (supabase/functions/capture/index.ts cfbQuoteProblems) and Postgres (supabase/cfb_market_integrity.sql cfb_market_quote_problems) must each return exactly `expected` (as a set) for `quote` at `now`. The wrong-game rules need the game index and are tested in football/cfb_lab/integrity.test.js.",
+ "rule_version": "cfb_market_quote_integrity_v1",
+ "now": "2026-10-01T12:00:00.000Z",
+ "quote_cases": [
+  {
+   "why": "a clean spread: home -3.5 at -110 / -110",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a road favourite: home +7 at -105 / -115",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 7,
+    "price_home": -105,
+    "price_away": -115,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a pick'em spread (0) is a real number",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 0,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a numeric string is a number",
+   "quote": {
+    "market_type": "spread",
+    "home_line": "-3.5",
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "the largest legitimate spread (-58.5) passes",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -58.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "exactly 70 is allowed (the bound is inclusive)",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 70,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a +450 spread is impossible",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 450,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "SPREAD_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "70.5 is past the bound",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 70.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "SPREAD_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "a home_line that is not a number is a schema fault, not 0",
+   "quote": {
+    "market_type": "spread",
+    "home_line": "abc",
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "NON_NUMERIC_HOME_LINE"
+   ]
+  },
+  {
+   "why": "American odds of 0 are not a price",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": 0,
+    "price_away": -150,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_ZERO"
+   ]
+  },
+  {
+   "why": "-50 is not an American price",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -50,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_NOT_AMERICAN"
+   ]
+  },
+  {
+   "why": "a spread price of -1500 is out of bounds (and breaks the two-way band)",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -1500,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_OUT_OF_BOUNDS",
+    "TWO_WAY_HOLD_TOO_HIGH"
+   ]
+  },
+  {
+   "why": "a fractional American price is a feed fault",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110.5,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_NOT_INTEGER"
+   ]
+  },
+  {
+   "why": "identical moneyline prices with both sides favoured: impossible",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": -300,
+    "price_away": -300,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "IDENTICAL_SIDE_PRICES"
+   ]
+  },
+  {
+   "why": "identical moneyline prices at a pick'em are fine",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "both sides +300: the book pays above fair on both",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": 300,
+    "price_away": 300,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "TWO_WAY_BELOW_FAIR"
+   ]
+  },
+  {
+   "why": "a huge favourite moneyline is legitimate",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": -10000,
+    "price_away": 2500,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a moneyline beyond 100000 is out of bounds",
+   "quote": {
+    "market_type": "moneyline",
+    "price_home": -150000,
+    "price_away": 5000,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "a clean total",
+   "quote": {
+    "market_type": "total",
+    "total_points": 55.5,
+    "price_over": -110,
+    "price_under": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "a total of 15 is impossible",
+   "quote": {
+    "market_type": "total",
+    "total_points": 15,
+    "price_over": -110,
+    "price_under": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "TOTAL_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "a total of 101 is impossible",
+   "quote": {
+    "market_type": "total",
+    "total_points": 101,
+    "price_over": -110,
+    "price_under": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "TOTAL_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "a total of 0 (a missing field read as zero) is refused",
+   "quote": {
+    "market_type": "total",
+    "total_points": 0,
+    "price_over": -110,
+    "price_under": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "TOTAL_OUT_OF_BOUNDS"
+   ]
+  },
+  {
+   "why": "an over price of 0 is refused",
+   "quote": {
+    "market_type": "total",
+    "total_points": 55.5,
+    "price_over": 0,
+    "price_under": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z"
+   },
+   "expected": [
+    "PRICE_ZERO"
+   ]
+  },
+  {
+   "why": "observed one hour in the future",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T13:00:00.000Z"
+   },
+   "expected": [
+    "OBSERVED_IN_FUTURE"
+   ]
+  },
+  {
+   "why": "observed four minutes ahead is clock skew, allowed",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T12:04:00.000Z"
+   },
+   "expected": []
+  },
+  {
+   "why": "the provider says it updated after we observed it",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z",
+    "provider_updated_at": "2026-10-01T12:00:00.000Z"
+   },
+   "expected": [
+    "PROVIDER_TS_AFTER_OBSERVED"
+   ]
+  },
+  {
+   "why": "an unparseable provider timestamp",
+   "quote": {
+    "market_type": "spread",
+    "home_line": -3.5,
+    "price_home": -110,
+    "price_away": -110,
+    "observed_at": "2026-10-01T11:50:00.000Z",
+    "provider_updated_at": "yesterday-ish"
+   },
+   "expected": [
+    "PROVIDER_TS_UNPARSEABLE"
+   ]
+  },
+  {
+   "why": "several faults are all named",
+   "quote": {
+    "market_type": "spread",
+    "home_line": 450,
+    "price_home": 0,
+    "price_away": -110,
+    "observed_at": "2026-10-01T13:00:00.000Z"
+   },
+   "expected": [
+    "SPREAD_OUT_OF_BOUNDS",
+    "PRICE_ZERO",
+    "OBSERVED_IN_FUTURE"
+   ]
+  }
+ ]
+}

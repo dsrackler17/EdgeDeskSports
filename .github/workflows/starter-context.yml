@@ -1,0 +1,308 @@
+# EdgeDesk Football — starter context, team profiles and the published card.
+#
+# WHAT THIS JOB EXISTS TO STOP HAPPENING AGAIN. The board reported 77 games
+# with an unknown starting quarterback, and none of them were unknown: every
+# caller of the college engine passed `qb: null`, and the offline builder that
+# writes football/fbs/slate.json — the artifact the AI, the newsletter and the
+# exports all read — passed null for the roster, the injury report, the
+# schedule context and the weather as well. The data was in feeds this
+# repository already downloads. Nothing went and joined it.
+#
+# So this job runs the retrieval on a schedule, in this order, because each
+# step reads the one before it:
+#
+#   1  starter context     who took the dropbacks, who leads the depth chart,
+#                          who is on an availability report — typed into the
+#                          six states that are not the same statement
+#   2  quarterback EPA     what he has actually DONE — passing EPA per dropback
+#                          from the provider's advanced passing table, joined on
+#                          the same athlete ids, career and recent form with the
+#                          sample each came off
+#   3  team profiles       the season's scoring, pace, explosives, pressure,
+#                          turnovers, third down, red zone and field position,
+#                          with every collapsed attribution column gated out
+#   4  the published card  the slate rebuilt with all of it wired in, plus a
+#                          SHADOW projection that carries the starter and is
+#                          priced nowhere
+#
+# NOTHING NEW PRICES. football/matchup/inputs.js PRICED_STARTER_STATUSES is
+# empty, football/fbs_epa/epa_contract.js COMPATIBILITY.priced_input is false,
+# the shadow line is published under its own names, and the tests fail if any
+# of those stops being true.
+#
+# NO SECOND SCHEDULER. The quarterback EPA refresh belongs to this job because
+# it reads the same play week and feeds the same card: adding a cron of its own
+# would mean two schedules that can disagree about what week it is.
+#
+# A FAILED SOURCE NEVER FAILS THE RUN, and it is never silently absent either:
+# the recovery layer records the host, the status and whether the refusal was
+# systematic, and the committed artifacts carry that record.
+#
+# Cadence follows the football week (UTC; ET is four hours behind). The play
+# feed updates after games finish, so the heavy lifting is Sunday and Monday;
+# the depth chart and the injury report move through the week.
+name: Starter context and research profiles
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      history:
+        description: 'Prior seasons to read for the start count (default 1, 0 skips)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'football/nfl/build_team_week.js'
+      - 'tools/football/build_nfl_slate.js'
+      - 'tools/football/patch_nfl_live_paths.js'
+      - '.github/workflows/starter-context.yml'
+  schedule:
+    - cron: '20 7,19 * * 0,1'    # Sunday and Monday, after the weekend's games settle
+    - cron: '20 13 * * 2,3,4,5'  # Tuesday to Friday, once a day as reports land
+    - cron: '20 13,21 * * 6'     # Saturday, before the early and late windows
+
+permissions:
+  contents: write
+
+concurrency:
+  group: starter-context
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # THE PARQUET READER, INSTALLED RATHER THAN ASSUMED. Four builds in this
+      # job read the season in progress in the one format it is published in:
+      # the quarterback EPA refresh, the stadium table, the coach table and
+      # the play feed. football/data/tools/parquet_to_csv.py needs pyarrow and
+      # nothing else. The scheduled run of 2026-09-16 (run 35129376683) found
+      # the hosted runner without it: every parquet read printed "pyarrow is
+      # not installed", the EPA refresh went STALE, the stadium build exited 2
+      # and the coach build reported a table that IS published as "not
+      # published yet" and failed the job. The weekly build and the validation
+      # workflow already install it this way; this job now does the same,
+      # instead of depending on what the runner image happens to carry.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the parquet reader
+        run: pip install --quiet pyarrow
+
+      # THE RULES BEFORE THE DATA. An expected starter published as a confirmed
+      # one, a research-only input reaching the priced number, or a collapsed
+      # column scored as a zero are all failures these suites catch, and none
+      # of them should ever reach a commit.
+      - name: The rules must pass before anything is allowed to write
+        run: |
+          node football/starters/starters.test.js
+          node football/fbs_epa/fbs_epa.test.js
+          node football/fbs_epa/path.test.js
+          node football/matchup/research.test.js
+
+      # HOW WELL "he opened the last one" PREDICTS THIS ONE, re-measured over
+      # four seasons of play attribution. The engine reads the rates this
+      # writes; without them it declares every starter's reliability unmeasured
+      # rather than substituting a constant, so this runs BEFORE the context is
+      # resolved. --max-age-days keeps it off the wire on the firings in
+      # between: the rates move in the third decimal, the feed does not.
+      - name: Re-measure starter persistence if it has gone stale
+        run: node football/starters/calibrate_persistence.js --max-age-days 6 || true
+
+      - name: Resolve starter context (college and NFL)
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          if [ -n "${{ github.event.inputs.history }}" ]; then ARGS="$ARGS --history ${{ github.event.inputs.history }}"; fi
+          node football/starters/build_starters.js $ARGS
+
+      # WHAT THE QUARTERBACK HAS DONE, refreshed for the season in progress.
+      #
+      # ONE SEASON, NOT THIRTEEN. The prior seasons are frozen in the committed
+      # career spine (football/fbs_epa/career_through_<S-1>.json), so this
+      # fetches four parquet files for the current year and nothing else. The
+      # 2014-onwards corpus stays in the pipeline cache and is never cloned.
+      #
+      # A FAILED FETCH IS NOT A FAILED RUN AND IS NOT A SILENT ONE. The builder
+      # keeps the previous artifact, republishes it with its age measured, and
+      # marks it STALE; it refuses to write anything that fails its own
+      # validation. `|| true` is therefore about the JOB continuing, not about
+      # the failure being hidden — index.json carries it either way.
+      - name: Refresh the quarterback EPA layer
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          node football/fbs_epa/build_epa.js --refresh $ARGS || true
+
+      # THE ARTIFACT'S OWN RULES, WHICH IS ALL THAT CAN HOLD HERE.
+      #
+      # path.test.js used to run in this step too, and it made the job fail
+      # every time the refresh above did its job. Its first section is "ONE
+      # NUMBER, FOUR SURFACES": it recomputes the quarterback card from the
+      # EPA artifact and asserts the published slate carries the same number.
+      # At THIS point in the pipeline the artifact has just been rewritten
+      # with the season in progress and the card has not been rebuilt yet --
+      # build_coverage.js is nine steps below -- so the two disagree by
+      # construction whenever a single EPA moved, which on a game day is
+      # always. Run 35455336373 died here on 0.1433 vs 0.1436, and took the
+      # starters, the profiles, the card and the commit down with it: the job
+      # never reached the rebuild that would have made the two agree again.
+      #
+      # So the cross-surface test belongs after the card is rebuilt, and that
+      # is where it already runs ("Prove the published card still holds its
+      # rules"). Nothing is lost by taking it out of this step; it is also
+      # still run before anything writes, against the committed pair.
+      - name: Prove the refreshed EPA artifact still holds its rules
+        run: node football/fbs_epa/fbs_epa.test.js
+
+      - name: Build the team-game profiles
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          node football/matchup/build_profiles.js $ARGS
+
+      # The card is rebuilt with everything above wired in. The coverage gate
+      # inside it still has to pass: a realignment, a renamed league or a
+      # dropped game fails this step and nothing is committed.
+      # EVERY STADIUM THE SLATE NEEDS, AND WHO IS COACHING. Both are read
+      # from the same public mirror this job already reads for schedules and
+      # rosters, and both fill contract fields that were published as
+      # permanent gaps. The venue build is what lets the away side of an
+      # FBS-vs-FCS game have a travel distance at all; the coaching build
+      # answers the head-coach half of the staff question and refuses the
+      # coordinator half, which that feed does not carry.
+      - name: Stadium geography
+        run: node football/venues/build_venues.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # A FEED THAT CANNOT BE READ THIS RUN KEEPS THE PREVIOUS ARTIFACT, the
+      # same rule the stadium step above and the EPA refresh follow: the
+      # builder writes nothing when it cannot read the season's coach table,
+      # so continuity.json stays what the last successful run published and
+      # the card is rebuilt against it. The step still goes red in the run so
+      # the failure is visible; it just no longer stops the starters, the
+      # profiles and the card from being committed.
+      - name: Coaching continuity
+        run: node football/coaching/build_coaching.js
+        continue-on-error: true
+
+      # THE RESEARCH DESK'S TWO ARTIFACTS. The metrics file is the compact,
+      # per-team copy of what the builds above published (rankings detail,
+      # profiles, starters, coaching, the NFL injury report) that the edge
+      # function can fetch per request; the NFL slate is the browser's own
+      # projection, run through the same module in Node so the function has an
+      # NFL number to quote. Neither computes anything new.
+      - name: Matchup metrics for the research desk
+        run: node tools/football/build_matchup_metrics.js
+
+      # nflverse publishes the live NFL team-week and roster files as GitHub
+      # release assets. Browsers can fail on the release redirect because it is
+      # not a stable CORS data endpoint, so refresh both server-side and commit
+      # same-origin snapshots before rebuilding the NFL slate.
+      - name: Patch app NFL live-feed paths
+        run: node tools/football/patch_nfl_live_paths.js
+
+      - name: NFL team-week snapshot for the football module
+        run: node football/nfl/build_team_week.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: NFL QB roster snapshot for the football module
+        run: node football/nfl/build_qb_roster.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Prove the QB snapshot is one app.html can read
+        run: node football/nfl/qb_roster.test.js
+
+      # Build after both mirrors refresh so the artifact and browser use the
+      # same current-season inputs.
+      - name: NFL slate for the research desk
+        run: node tools/football/build_nfl_slate.js || echo "::warning::the NFL slate could not be rebuilt this run — the previous artifact stands"
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # THE IDENTITY PROFILES: one dated file per FBS team and NFL club from
+      # everything above (rankings detail, profiles, starters and the depth
+      # chart this job just cached, coaching, the NFL report), measured,
+      # sourced and inferred kept apart. Copies; computes nothing new.
+      - name: Team identity profiles for the research desk
+        run: node tools/football/fetch_nfl_feeds.js || true
+
+      - name: Closing-line archive and opener ledger
+        run: node tools/football/build_lines_archive.js || true
+
+      - name: Team identity profiles
+        run: node tools/football/build_team_identity.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      - name: Rebuild the published card with the inputs joined
+        run: |
+          ARGS=""
+          if [ -n "${{ github.event.inputs.season }}" ]; then ARGS="$ARGS --season ${{ github.event.inputs.season }}"; fi
+          node football/fbs/build_coverage.js $ARGS
+
+      # BEFORE AND AFTER, ON THE SAME SLATE, into the run log. This is how a
+      # person reading a run can see whether the retrieval actually retrieved
+      # anything without opening a JSON file.
+      - name: Report coverage
+        run: node tools/football/coverage_report.js || true
+
+      - name: Prove the published card still holds its rules
+        run: |
+          node football/fbs/fbs.test.js
+          node football/fbs_epa/fbs_epa.test.js
+          node football/fbs_epa/path.test.js
+          node football/matchup/research.test.js
+
+      - name: Commit the artifacts
+        env:
+          # app.html and the patch script are SOURCE this job edits, not
+          # artifacts: on a rejected push they are merged onto the new tip,
+          # never overwritten (tools/ci/push_generated.sh)
+          PUSH_MERGE_PATHS: app.html tools/football/patch_nfl_live_paths.js
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # -A over the directories, for the same reason availability-sync.yml
+          # does it: `git add a b c` stages NOTHING if any one path is missing,
+          # and a new artifact's first run is exactly when one is.
+          #
+          # football/coaching/ IS ON THIS LIST BECAUSE IT WAS NOT.
+          # This job runs build_coaching.js, which rewrites
+          # football/coaching/continuity.json with a fresh generated_at, and
+          # then build_matchup_metrics.js, which stamps that timestamp into
+          # every team's coaching.as_of. metrics.json was committed; its input
+          # was not. The repository was left holding a metrics.json that cited
+          # a coaching build nobody could see, so the `--check` gate in
+          # Intelligence CI rebuilt from the continuity.json that IS committed,
+          # got different timestamps, and reported "artifact differs from a
+          # fresh build" — on main, on every pull request, until a human
+          # rebuilt by hand. An output whose input is not committed beside it
+          # cannot be verified, which is the whole point of the gate.
+          #
+          # THE PUSH goes through the shared helper. The loop that was here ran
+          # `git pull --rebase` after a rejected push, which refuses to start
+          # while the build has left other files modified ("cannot pull with
+          # rebase: You have unstaged changes"), so every retry failed the same
+          # way (2026-09-27 18:12) whenever another job pushed first.
+          bash tools/ci/push_generated.sh "${{ github.ref_name }}" \
+            'starter context, quarterback EPA, team profiles and the published card' -- \
+            football/starters/ football/fbs_epa/ football/matchup/ football/fbs/ football/venues/ \
+            football/coaching/ football/nfl/ football/identity/ football/pricing/ football/validation/key_numbers.json \
+            app.html tools/football/patch_nfl_live_paths.js

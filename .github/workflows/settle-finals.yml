@@ -1,0 +1,185 @@
+# EdgeDesk Model Collective — settle finished games automatically.
+#
+# A game ends and the board should grade it. Settling used to mean a person
+# opening collective/admin.html and typing two scores into a row, which is
+# fine for one game and hopeless for a Saturday: nothing grades, no record
+# moves, and every creator's wall sits stale until somebody has time.
+#
+# This runs the same settle the admin screen runs
+# (tools/collective/settle_finals.js): it asks the Collective which of its own
+# past games have no result, looks the final up in the SAME public keyless
+# feeds the rest of this repo trusts, offers the Collective's own captured
+# closing line, writes the score, and grades every counting projection on the
+# game by the published rule.
+#
+# IT RUNS ITSELF. The write goes straight to the database over PostgREST with
+# the service role this repository already holds for its other jobs
+# (SB_SERVICE_ROLE / SB_URL, the same names games-settle.yml uses) — no edge
+# function in the path and no token lifted out of a browser session. The job
+# reads the table shapes off the database first and writes only the columns
+# that exist. Whatever it settles, and every game the Collective already holds
+# a real final for, is also written to collective/settled/<SPORT>_<season>.json
+# and COMMITTED: the site reads that file from its own origin, so every
+# finished game is graded on the site whether or not any function was ever
+# deployed or reachable.
+#
+# It never invents a score and never invents a closing line. A game the feed
+# does not carry as completed, with two real scores, is skipped and named in
+# the run log rather than settled on a guess. 0-0 is never a final.
+#
+# FOOTBALL-V2. With the service credential, every run then (1) hands any
+# close it recovered for a game the database graded without one to the
+# settlement -- it used to go into the committed JSON only, which is how all
+# of NFL week 2, 2026 kept closes on the site and none in the database -- and
+# (2) rebuilds the settlement (collective.fg2_rebuild: idempotent, audited,
+# a no-op when nothing moved). An ERROR-level diagnostic -- a model-game with
+# a prediction, a close, a side and a final but no grade -- fails the run, so
+# it is seen within the hour rather than on the rankings page.
+#
+# SECRETS (GitHub Actions repository secrets, not Supabase dashboard secrets):
+#   SB_SERVICE_ROLE  the project's service-role key   } the door this job
+#   SB_URL           the project URL                   } is written for
+#   COLLECTIVE_ADMIN_REFRESH_TOKEN  optional fallback: with no service
+#     credential the job settles through collective_admin instead, as before.
+#   With none of them the job still runs --verify, still builds the
+#   settlement record, and still commits it. The database is not written.
+name: Settle finished games
+
+on:
+  schedule:
+    # Every hour. Games end at all hours across NFL Sunday/Monday/Thursday and
+    # the college Saturday, and an hour is the difference between a board that
+    # grades itself and one that looks broken.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      sport:
+        description: 'Limit to one sport code (NFL, CFB). Blank = all.'
+        required: false
+        default: ''
+      season:
+        description: 'Override the season. Blank = whatever the Collective says is current.'
+        required: false
+        default: ''
+      commit:
+        description: 'Actually settle and publish the record. Unchecked is a dry run.'
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  # Two runs settling the same game race each other into the same write.
+  group: settle-finals
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Matching and grading logic must pass before it is allowed to write
+        run: |
+          node tools/collective/settle_finals.test.js
+          # football-v2: the one grader this job, the page and the database share
+          node tools/collective/football_grading.test.js
+
+      - name: Prove the sources are live before anything is written
+        run: node tools/collective/settle_finals.js --verify || true
+
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run.
+      - name: Report which credential is present
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present: settling and grading directly in the database." >&2
+            echo '- Credential: **service role** — the database is written directly; no edge function in the path.' >> "$GITHUB_STEP_SUMMARY"
+          elif [ -n "$COLLECTIVE_ADMIN_REFRESH_TOKEN" ]; then
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run; settling through the collective_admin edge function with the admin refresh token instead.' >&2
+            echo '- Credential: **admin refresh token** (fallback) — settled through `collective_admin`. Add `SB_SERVICE_ROLE` and `SB_URL` as GitHub Actions repository secrets to settle directly.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. The settlement record is still built and committed; the database is not written.' >&2
+            {
+              echo '- Credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run still builds and commits `collective/settled/`, which the site grades from. The database is not written.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Settle
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+        run: |
+          ARGS="--record collective/settled"
+          # A scheduled run commits. A manual run commits only when asked, so
+          # the dry run stays the way you inspect a matcher you cannot see.
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          node tools/collective/settle_finals.js $ARGS
+
+      # THE CLOSES THE RECORD WAS WRITTEN WITHOUT.
+      #
+      # A closing line is a separate fetch from a score and can arrive after
+      # one, and for a whole season of college football it arrived for none
+      # of them: the per-game route joins on the Collective's own stored team
+      # name, and that name is cut to ten characters, so "Mississippi" is
+      # MISSISSIPP and matches nothing. The result was a committed record with
+      # a captured close on 15 of 15 NFL games and 0 of 104 CFB games, and a
+      # site reporting "no ATS picks" against models whose games had all been
+      # played.
+      #
+      # This step goes back for them, from the odds board, joined on the pair
+      # and the kickoff day. It only ever fills a null: a close already on
+      # file is never asked about and never overwritten, no score or team or
+      # week is touched, and a game nothing can answer for is left exactly as
+      # it is. Idempotent, so once a season is filled this costs one request
+      # per week that still has a gap and writes nothing.
+      - name: Backfill the captured closing lines the record is missing
+        if: ${{ !cancelled() }}
+        run: |
+          ARGS="--backfill-closes --record collective/settled"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          fi
+          if [ -n "${{ inputs.sport }}" ];  then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          node tools/collective/settle_finals.js $ARGS | tee /tmp/backfill.log
+          {
+            echo '### Captured closing lines'
+            echo ''
+            grep -E '^(  backfill|[0-9]+ captured)' /tmp/backfill.log || echo 'nothing to repair'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The record is the thing the site reads, so it is published even when a
+      # database write above was refused — that failure stays red above, and
+      # the site still grades from the finals this run found.
+      - name: Publish the settlement record
+        if: ${{ !cancelled() && (github.event_name == 'schedule' || inputs.commit == true) }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          N=$(node -e "const fs=require('fs');let n=0;for(const f of fs.readdirSync('collective/settled'))if(f.endsWith('.json'))n+=Object.keys(require('./collective/settled/'+f).games).length;console.log(n)")
+          # a concurrent push to main loses the race politely, not the record:
+          # the shared helper rebuilds this commit on the remote tip (no
+          # rebase, no force-push) and retries with backoff
+          bash tools/ci/push_generated.sh main "collective: settlement record (${N} settled games)" -- collective/settled

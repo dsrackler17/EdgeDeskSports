@@ -1,0 +1,231 @@
+# EdgeDesk CFB Model Lab — the hourly job.
+#
+# Every hour it:
+#   1. captures the market (ESPN scoreboard, the CFBD ledger, and the
+#      per-sportsbook Odds API quotes that the Supabase `capture` function
+#      wrote to cfb_lab_market_quotes);
+#   2. takes each model's checkpoint snapshot for every game whose window is
+#      open (OPEN, T72, T48, T24, T12, T6, T2, FINAL);
+#   3. settles finished games, derives openers and closes, grades, and
+#      reviews misses;
+#   4. rebuilds the reports and the public record;
+#   5. appends all of it to the immutable ledger under football/cfb_lab/.
+#
+# A checkpoint window that is missed can never be re-taken; the lab does not
+# fabricate snapshots. So the job runs from two independent clocks:
+#   - pg_cron dispatches this workflow at :07 (cfb_lab_hourly, in
+#     supabase/cfb_lab_cron.sql);
+#   - GitHub's own schedule below, at :37, is the backup.
+# Two runs never overlap (concurrency), and a run that finds nothing new
+# changes only the reports.
+#
+# The ledger is APPEND-ONLY. `ledger.js verify --base HEAD` refuses to publish
+# if any committed row was changed or removed, if an id or hash does not
+# match, or if a checkpoint slot is taken twice. When that check fails,
+# nothing is pushed.
+#
+# The Supabase mirror is insert-only (write-once triggers). It is copied
+# AFTER the publish, so an outage there never costs a snapshot.
+name: CFB Model Lab
+
+on:
+  schedule:
+    - cron: '37 * * 8-12,1 *'     # hourly, August through January (backup clock)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'hourly (default; pg_cron sends this): the full job. report: rebuild reports only. verify: check the ledger only.'
+        required: false
+        default: 'hourly'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfb-lab
+  cancel-in-progress: false
+
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # one id across every step and every structured log line of this run
+      # (docs/cfb-production/JOBS.md §5)
+      CFB_CORRELATION_ID: cfb-lab-${{ github.run_id }}-${{ github.run_attempt }}
+      # set the repository variable to 1 once supabase/cfb_production.sql is
+      # applied: from then on a missing job lock fails closed
+      CFB_REQUIRE_JOB_LOCK: ${{ vars.CFB_REQUIRE_JOB_LOCK }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Lab tests (the rules the job is about to apply)
+        run: node football/cfb_lab/tests.js
+
+      # The production gate (football/cfb_production/gate.js): the pinned
+      # artifact / calibration / decision-policy tuple must hold (else the job
+      # FAILS here, before a snapshot is appended); the kill switch
+      # cfb_model_lab_enabled must be on; one run holds the job lock (another
+      # exits cleanly); heartbeat STARTED. Without the database it only checks
+      # compatibility and the concurrency group below keeps runs apart.
+      - name: Production gate (compatibility, kill switch, job lock, heartbeat)
+        id: gate
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_production/gate.js start --job cfb_lab_hourly --key auto
+
+      - name: Run
+        id: run
+        if: ${{ steps.gate.outputs.proceed == 'true' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          MODE: ${{ github.event.inputs.mode || 'hourly' }}
+        run: |
+          set +e
+          case "$MODE" in
+            hourly|run) node football/cfb_lab/run.js --base HEAD ;;
+            report) node football/cfb_lab/run.js --base HEAD --skip supabase_pull,market,freeze_import,checkpoints,audit,settle ;;
+            verify) node football/cfb_lab/ledger.js verify --base HEAD ;;
+            *)      echo "unknown mode: $MODE" >&2; exit 64 ;;
+          esac
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # a failed step (one feed down) still publishes what was captured;
+          # the integrity check below decides whether anything is pushed
+          exit 0
+
+      - name: Ledger integrity (nothing committed was changed or removed)
+        run: node football/cfb_lab/ledger.js verify --base HEAD
+
+      - name: Decision engine in shadow (current vs challenger on every captured quote)
+        if: ${{ steps.gate.outputs.proceed == 'true' && steps.gate.outputs.decisions == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        run: node football/cfb_decision/tests.js && node football/cfb_decision/shadow.js || echo "::warning::decision shadow did not run"
+
+      # Market intelligence (football/cfb_market): consensus snapshots, market
+      # events, provider conflicts and the market-informed challenger, appended
+      # to its own ledger from the Lab's quotes (read-only to it). Research: a
+      # failure warns and never costs the hourly publish.
+      - name: Market intelligence (append-only ledger)
+        if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        run: node football/cfb_market/run.js --write || echo "::warning::market intelligence did not run"
+
+      # The stored canonical projections every page reads
+      # (football/cfb_production/canonical.js, docs/cfb-production/CANONICAL.md):
+      # nothing on a page recomputes a number. Beside it, reports/traces.json,
+      # the per-game prediction trace the internal debug view reads. A failure
+      # warns; the previous files stay, carrying their own as_of_ts.
+      - name: Canonical projections (football/cfb_production/reports/projections.json, traces.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_production/projections.js --write || echo "::warning::the canonical projections could not be built"
+
+      # Alternate spreads (football/cfb_terminal/alternates.js), CFB and NFL:
+      # opt-in and budgeted. It runs only when the repository variable
+      # READ_ALT_CAPTURE is 'on', and needs the ODDS_API_KEY secret (the same
+      # key the Supabase capture function holds); an empty key is a loud,
+      # named state, never a silent no-op. Each league prices at most 12
+      # events inside 72 h of kickoff, at most every 3 h, one credit per event,
+      # and stops below 25 remaining credits. Quotes go to their own ledgers
+      # and to football/markets/alternates_<league>.json (the page's feed);
+      # they never enter a consensus, an opener, a close or a decision. It runs
+      # BEFORE the research terminal so the build prices what it captured.
+      - name: Alternate spreads (opt-in, budgeted; CFB and NFL)
+        if: ${{ steps.gate.outputs.proceed == 'true' && vars.READ_ALT_CAPTURE == 'on' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+        run: |
+          if [ -z "$ODDS_API_KEY" ]; then
+            echo "::warning::READ_ALT_CAPTURE is on but the ODDS_API_KEY secret is empty: no alternate spread was captured"
+            echo "Alternate spreads: NOT captured (the ODDS_API_KEY secret is missing)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          node football/cfb_terminal/alternates.js --network --league cfb || echo "::warning::CFB alternates not captured"
+          node football/cfb_terminal/alternates.js --network --league nfl || echo "::warning::NFL alternates not captured"
+
+      # The research terminal's cached research objects (football/cfb_terminal),
+      # rebuilt from what this run just appended: the page reads these and runs
+      # no model. The build refuses to write if a stale market would show an
+      # actionable status or a fair line would differ from the champion slate.
+      - name: Research terminal (football/cfb_terminal, research/cfb)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_terminal/build.js || echo "::warning::the research terminal could not be rebuilt; the last published objects stay up"
+
+      # Live validation (football/cfb_validation): the separated model / market /
+      # betting views, the since-upgrade view against the frozen champion, the
+      # 138-team rating-state divergence monitor, the verified / investigate
+      # scorecards, postmortems, research triggers and the weekly scorecard.
+      # It reads the ledger and the research objects just rebuilt; it changes
+      # no model. A pricing-code change is appended as a declared PATCH.
+      - name: Live validation (football/cfb_validation)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node football/cfb_validation/build.js || echo "::warning::the live validation build did not run; the last published files stay up"
+
+      # Model health (tools/validation/model_health.js): the cached validation
+      # report the Card page reads — live decisions graded by class, the Lab's
+      # modes apart, walk-forward, the model record, research alerts. Rebuilt
+      # from the decision ledger this run just wrote; it changes no threshold,
+      # calibration or model. A failure warns; the last report stays up.
+      - name: Model health (football/validation/model_health.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node tools/validation/model_health.js --write || echo "::warning::model health could not be rebuilt; the last report stays up"
+
+      - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_production/health.js || echo "::warning::the operations report could not be built"
+
+      # football/cfb_lab/reports includes reports/<season>/provider_health.json, the
+      # circuit-breaker state the next run reads back (run.js): it must be committed
+      # every run, or a breaker that opened would forget it next hour
+      # (football/cfb_production/tests.js checks this path stays in the list).
+      - name: Publish
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: |
+          git config user.name "edgedesk-bot"
+          git config user.email "edgedesk-bot@users.noreply.github.com"
+          tools/ci/push_generated.sh main "cfb lab: hourly snapshots, market, settlement, reports" -- \
+            football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
+            record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
+            football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
+            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets \
+            football/validation/model_health.json
+
+      - name: Insert-only copy to Supabase (when secrets are configured)
+        if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node football/cfb_lab/sync_supabase.js
+          node football/cfb_decision/sync_supabase.js
+          # fail soft only while supabase/cfb_market.sql is not applied (404 / PGRST205 warns)
+          node football/cfb_market/sync_supabase.js
+          # the bettor decision ledger (supabase/bettor_decisions.sql); fail soft until that file is applied
+          # a 23514 on bettor_decision_snapshots_decision_check is not a missing file: production
+          # runs a bettor_decisions.sql older than the v2 engine's WATCH / LEAN (re-apply it)
+          node football/cfb_terminal/decisions_sync.js || echo "::warning::bettor decision sync failed — read the error above. 23514 on bettor_decision_snapshots_decision_check: production runs a pre-WATCH supabase/bettor_decisions.sql; re-apply it (Deploy Record P&L schema, apply_bettor_decisions). 404 / PGRST205: apply supabase/bettor_decisions.sql"
+
+      - name: Fail the run if any lab step failed
+        if: ${{ steps.gate.outputs.proceed == 'true' && steps.run.outputs.status != '0' }}
+        run: |
+          echo "a Model Lab step failed; see football/cfb_lab/reports/*/last_run.json" >&2
+          cat football/cfb_lab/reports/*/last_run.json 2>/dev/null | head -80 || true
+          exit 1
+
+      # Always: release the lease, send the OK / FAILED heartbeat (deadline:
+      # cfb_job_registry.max_silence_minutes) and open an incident on failure.
+      # It never fails the job itself.
+      - name: Production gate finish (lock, heartbeat, incident)
+        if: ${{ always() }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node football/cfb_production/gate.js finish --job cfb_lab_hourly --status "${{ job.status }}" --proceeded "${{ steps.gate.outputs.proceed }}"

@@ -1,0 +1,4969 @@
+{
+ "schema": "edgedesk_ev_tournament_v1",
+ "version": "cfb_ev_calibration_v1",
+ "base_model_version": "edgedesk_cfb_p4_v1.0.0",
+ "built_at": "2026-09-28T03:48:07.389Z",
+ "dataset": {
+  "file": "football/cfb_ev/data/cfb_ev_calibration_rows_v1.csv.gz",
+  "sha256": "cc5360251b00a2824d6f47bb35984fe276cefb81ed79d3bc317b7ba9cd6e1e3c"
+ },
+ "seed": 20260928,
+ "bootstrap": 2000,
+ "prereg": "docs/edgedesk-ev/PREREG.md",
+ "tasks": [
+  {
+   "key": "cfb|spread|close",
+   "label": "CFB spread at the close",
+   "n_oos": 3058,
+   "n_oof": 2339,
+   "folds": [
+    {
+     "train": "2022-2022",
+     "evaluate": 2023
+    },
+    {
+     "train": "2022-2023",
+     "evaluate": 2024
+    },
+    {
+     "train": "2022-2024",
+     "evaluate": 2025
+    }
+   ],
+   "fits_by_fold": {
+    "2023": {
+     "identity": {
+      "method": "identity",
+      "n_train": 719
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 719,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 719,
+      "a": 0.00673,
+      "b": -0.14876
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 719,
+      "a": 0,
+      "b": 0,
+      "c": 0.17592
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 719,
+      "a": 0.00673,
+      "b": -0.14876,
+      "window": "2022"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 719,
+      "blocks": 4
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 719
+     }
+    },
+    "2024": {
+     "identity": {
+      "method": "identity",
+      "n_train": 1490
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 1490,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 1490,
+      "a": 0.01978,
+      "b": -0.2596
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 1490,
+      "a": 0,
+      "b": 0,
+      "c": 0.36366
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 1490,
+      "a": 0.03232,
+      "b": -0.35293,
+      "window": "2023"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 1490,
+      "blocks": 3
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 1490
+     }
+    },
+    "2025": {
+     "identity": {
+      "method": "identity",
+      "n_train": 2268
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 2268,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 2268,
+      "a": 0.02463,
+      "b": -0.21473
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 2268,
+      "a": 0,
+      "b": 0,
+      "c": -0.26983
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 2268,
+      "a": 0.0328,
+      "b": -0.11948,
+      "window": "2024"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 2268,
+      "blocks": 3
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 2268
+     }
+    }
+   },
+   "results": {
+    "identity": {
+     "method": "identity",
+     "params": 0,
+     "pooled": {
+      "n": 2339,
+      "brier": 0.268026,
+      "log_loss": 0.733399,
+      "slope": -0.1261,
+      "slope_ci95": [
+       -0.2875,
+       0.0352
+      ],
+      "citl": -0.1227,
+      "citl_ci95": [
+       -0.2061,
+       -0.0393
+      ],
+      "ece": 0.1036,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4859,
+      "mean_p": 0.5334,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.3187,
+        "observed": 0.5064,
+        "wilson95": [
+         0.4427,
+         0.57
+        ],
+        "p_lo": 0.1224,
+        "p_hi": 0.3875
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4131,
+        "observed": 0.5641,
+        "wilson95": [
+         0.5,
+         0.6261
+        ],
+        "p_lo": 0.3875,
+        "p_hi": 0.4313
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4535,
+        "observed": 0.4658,
+        "wilson95": [
+         0.403,
+         0.5298
+        ],
+        "p_lo": 0.4313,
+        "p_hi": 0.4731
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4898,
+        "observed": 0.4786,
+        "wilson95": [
+         0.4155,
+         0.5425
+        ],
+        "p_lo": 0.4731,
+        "p_hi": 0.5068
+       },
+       {
+        "n": 234,
+        "mean_p": 0.524,
+        "observed": 0.547,
+        "wilson95": [
+         0.483,
+         0.6095
+        ],
+        "p_lo": 0.5068,
+        "p_hi": 0.538
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5528,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.538,
+        "p_hi": 0.5656
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5837,
+        "observed": 0.5,
+        "wilson95": [
+         0.4365,
+         0.5635
+        ],
+        "p_lo": 0.5657,
+        "p_hi": 0.5994
+       },
+       {
+        "n": 234,
+        "mean_p": 0.6147,
+        "observed": 0.4915,
+        "wilson95": [
+         0.4281,
+         0.5551
+        ],
+        "p_lo": 0.5996,
+        "p_hi": 0.6305
+       },
+       {
+        "n": 234,
+        "mean_p": 0.6546,
+        "observed": 0.5085,
+        "wilson95": [
+         0.4449,
+         0.5719
+        ],
+        "p_lo": 0.6305,
+        "p_hi": 0.6782
+       },
+       {
+        "n": 234,
+        "mean_p": 0.7283,
+        "observed": 0.4615,
+        "wilson95": [
+         0.3988,
+         0.5255
+        ],
+        "p_lo": 0.6782,
+        "p_hi": 0.8841
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.01745,
+       "resolution": 0.00099,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.27806,
+       "log_loss": 0.75607
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.26697,
+       "log_loss": 0.73153
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25927,
+       "log_loss": 0.71311
+      }
+     ]
+    },
+    "temperature": {
+     "method": "temperature",
+     "params": 1,
+     "pooled": {
+      "n": 2339,
+      "brier": 0.25,
+      "log_loss": 0.693147,
+      "slope": -18.6597,
+      "slope_ci95": [
+       -161039.6766,
+       161002.3572
+      ],
+      "citl": 0.018,
+      "citl_ci95": [
+       -0.0631,
+       0.099
+      ],
+      "ece": 0.02501,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4859,
+      "mean_p": 0.5,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.5,
+        "observed": 0.5064,
+        "wilson95": [
+         0.4427,
+         0.57
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.5641,
+        "wilson95": [
+         0.5,
+         0.6261
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.4658,
+        "wilson95": [
+         0.403,
+         0.5298
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.4786,
+        "wilson95": [
+         0.4155,
+         0.5425
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.547,
+        "wilson95": [
+         0.483,
+         0.6095
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.5,
+        "wilson95": [
+         0.4365,
+         0.5635
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.4915,
+        "wilson95": [
+         0.4281,
+         0.5551
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.5085,
+        "wilson95": [
+         0.4449,
+         0.5719
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5,
+        "observed": 0.4615,
+        "wilson95": [
+         0.3988,
+         0.5255
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00101,
+       "resolution": 0.00099,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.040252,
+      "delta_log_loss_ci95": [
+       -0.056482,
+       -0.025452
+      ],
+      "delta_log_loss_sd": 0.007932,
+      "delta_brier": -0.018026,
+      "delta_brier_ci95": [
+       -0.024801,
+       -0.011512
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ],
+     "tie_with_best": {
+      "best": "rolling_platt",
+      "delta_log_loss": 0.000152,
+      "sd": 0.001122
+     }
+    },
+    "platt": {
+     "method": "platt",
+     "params": 2,
+     "pooled": {
+      "n": 2339,
+      "brier": 0.250079,
+      "log_loss": 0.693305,
+      "slope": 0.4679,
+      "slope_ci95": [
+       -0.2991,
+       1.2349
+      ],
+      "citl": 0.0297,
+      "citl_ci95": [
+       -0.0515,
+       0.1109
+      ],
+      "ece": 0.02055,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.5105,
+      "mean_p": 0.4971,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.4514,
+        "observed": 0.4549,
+        "wilson95": [
+         0.3922,
+         0.5191
+        ],
+        "p_lo": 0.3757,
+        "p_hi": 0.4657
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4716,
+        "observed": 0.5171,
+        "wilson95": [
+         0.4533,
+         0.5803
+        ],
+        "p_lo": 0.4658,
+        "p_hi": 0.4768
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4808,
+        "observed": 0.5128,
+        "wilson95": [
+         0.4491,
+         0.5761
+        ],
+        "p_lo": 0.4768,
+        "p_hi": 0.484
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4873,
+        "observed": 0.4872,
+        "wilson95": [
+         0.4239,
+         0.5509
+        ],
+        "p_lo": 0.484,
+        "p_hi": 0.4898
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4933,
+        "observed": 0.5299,
+        "wilson95": [
+         0.466,
+         0.5929
+        ],
+        "p_lo": 0.4899,
+        "p_hi": 0.496
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4993,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.496,
+        "p_hi": 0.5027
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5059,
+        "observed": 0.4915,
+        "wilson95": [
+         0.4281,
+         0.5551
+        ],
+        "p_lo": 0.5027,
+        "p_hi": 0.5092
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5134,
+        "observed": 0.5128,
+        "wilson95": [
+         0.4491,
+         0.5761
+        ],
+        "p_lo": 0.5092,
+        "p_hi": 0.5173
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5226,
+        "observed": 0.4957,
+        "wilson95": [
+         0.4323,
+         0.5593
+        ],
+        "p_lo": 0.5174,
+        "p_hi": 0.5282
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5451,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.5283,
+        "p_hi": 0.6198
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00064,
+       "resolution": 0.00045,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.24852,
+       "log_loss": 0.69018
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.25014,
+       "log_loss": 0.69342
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25154,
+       "log_loss": 0.69625
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.040094,
+      "delta_log_loss_ci95": [
+       -0.057466,
+       -0.024453
+      ],
+      "delta_log_loss_sd": 0.008684,
+      "delta_brier": -0.017947,
+      "delta_brier_ci95": [
+       -0.026063,
+       -0.010662
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "beta": {
+     "method": "beta",
+     "params": 3,
+     "pooled": {
+      "n": 2339,
+      "brier": 0.255469,
+      "log_loss": 0.70421,
+      "slope": -0.0929,
+      "slope_ci95": [
+       -0.397,
+       0.2112
+      ],
+      "citl": -0.0702,
+      "citl_ci95": [
+       -0.152,
+       0.0115
+      ],
+      "ece": 0.07035,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4949,
+      "mean_p": 0.5217,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.4329,
+        "observed": 0.5107,
+        "wilson95": [
+         0.4469,
+         0.5742
+        ],
+        "p_lo": 0.4329,
+        "p_hi": 0.4329
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4329,
+        "observed": 0.5427,
+        "wilson95": [
+         0.4787,
+         0.6054
+        ],
+        "p_lo": 0.4329,
+        "p_hi": 0.4329
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4329,
+        "observed": 0.4957,
+        "wilson95": [
+         0.4323,
+         0.5593
+        ],
+        "p_lo": 0.4329,
+        "p_hi": 0.4329
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5017,
+        "observed": 0.5171,
+        "wilson95": [
+         0.4533,
+         0.5803
+        ],
+        "p_lo": 0.4329,
+        "p_hi": 0.5439
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5439,
+        "observed": 0.4573,
+        "wilson95": [
+         0.3946,
+         0.5213
+        ],
+        "p_lo": 0.5439,
+        "p_hi": 0.5439
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5439,
+        "observed": 0.5256,
+        "wilson95": [
+         0.4618,
+         0.5887
+        ],
+        "p_lo": 0.5439,
+        "p_hi": 0.5439
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5588,
+        "observed": 0.453,
+        "wilson95": [
+         0.3905,
+         0.517
+        ],
+        "p_lo": 0.5439,
+        "p_hi": 0.5899
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5899,
+        "observed": 0.5085,
+        "wilson95": [
+         0.4449,
+         0.5719
+        ],
+        "p_lo": 0.5899,
+        "p_hi": 0.5899
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5899,
+        "observed": 0.5043,
+        "wilson95": [
+         0.4407,
+         0.5677
+        ],
+        "p_lo": 0.5899,
+        "p_hi": 0.5899
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5899,
+        "observed": 0.5299,
+        "wilson95": [
+         0.466,
+         0.5929
+        ],
+        "p_lo": 0.5899,
+        "p_hi": 0.5899
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00589,
+       "resolution": 0.00077,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.25244,
+       "log_loss": 0.69804
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.25739,
+       "log_loss": 0.70819
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25653,
+       "log_loss": 0.70632
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.029189,
+      "delta_log_loss_ci95": [
+       -0.048057,
+       -0.013295
+      ],
+      "delta_log_loss_sd": 0.008852,
+      "delta_brier": -0.012557,
+      "delta_brier_ci95": [
+       -0.020616,
+       -0.005405
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "rolling_platt": {
+     "method": "rolling_platt",
+     "params": 2,
+     "pooled": {
+      "n": 2339,
+      "brier": 0.249925,
+      "log_loss": 0.692995,
+      "slope": 0.5527,
+      "slope_ci95": [
+       -0.1465,
+       1.2518
+      ],
+      "citl": 0.0235,
+      "citl_ci95": [
+       -0.0577,
+       0.1047
+      ],
+      "ece": 0.02398,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.5094,
+      "mean_p": 0.4986,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.4441,
+        "observed": 0.4292,
+        "wilson95": [
+         0.3673,
+         0.4934
+        ],
+        "p_lo": 0.3352,
+        "p_hi": 0.4663
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4744,
+        "observed": 0.5641,
+        "wilson95": [
+         0.5,
+         0.6261
+        ],
+        "p_lo": 0.4663,
+        "p_hi": 0.4804
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4846,
+        "observed": 0.5043,
+        "wilson95": [
+         0.4407,
+         0.5677
+        ],
+        "p_lo": 0.4805,
+        "p_hi": 0.4876
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4913,
+        "observed": 0.4829,
+        "wilson95": [
+         0.4197,
+         0.5467
+        ],
+        "p_lo": 0.4876,
+        "p_hi": 0.4944
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4968,
+        "observed": 0.5171,
+        "wilson95": [
+         0.4533,
+         0.5803
+        ],
+        "p_lo": 0.4945,
+        "p_hi": 0.4995
+       },
+       {
+        "n": 234,
+        "mean_p": 0.502,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.4995,
+        "p_hi": 0.5049
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5077,
+        "observed": 0.4829,
+        "wilson95": [
+         0.4197,
+         0.5467
+        ],
+        "p_lo": 0.5049,
+        "p_hi": 0.5104
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5138,
+        "observed": 0.5085,
+        "wilson95": [
+         0.4449,
+         0.5719
+        ],
+        "p_lo": 0.5105,
+        "p_hi": 0.5172
+       },
+       {
+        "n": 234,
+        "mean_p": 0.522,
+        "observed": 0.5128,
+        "wilson95": [
+         0.4491,
+         0.5761
+        ],
+        "p_lo": 0.5173,
+        "p_hi": 0.5284
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5495,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.5284,
+        "p_hi": 0.6614
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.0011,
+       "resolution": 0.0011,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.24852,
+       "log_loss": 0.69018
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.25066,
+       "log_loss": 0.69447
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25057,
+       "log_loss": 0.6943
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.040404,
+      "delta_log_loss_ci95": [
+       -0.058048,
+       -0.024881
+      ],
+      "delta_log_loss_sd": 0.008473,
+      "delta_brier": -0.0181,
+      "delta_brier_ci95": [
+       -0.025969,
+       -0.010651
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "isotonic": {
+     "method": "isotonic",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2339,
+      "brier": 0.256532,
+      "log_loss": 0.708498,
+      "slope": -0.1771,
+      "slope_ci95": [
+       -0.4528,
+       0.0986
+      ],
+      "citl": -0.0964,
+      "citl_ci95": [
+       -0.1782,
+       -0.0146
+      ],
+      "ece": 0.0469,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4913,
+      "mean_p": 0.5281,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.4826,
+        "observed": 0.5365,
+        "wilson95": [
+         0.4724,
+         0.5994
+        ],
+        "p_lo": 0.4766,
+        "p_hi": 0.4885
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4908,
+        "observed": 0.5,
+        "wilson95": [
+         0.4365,
+         0.5635
+        ],
+        "p_lo": 0.4885,
+        "p_hi": 0.4925
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4933,
+        "observed": 0.4915,
+        "wilson95": [
+         0.4281,
+         0.5551
+        ],
+        "p_lo": 0.4925,
+        "p_hi": 0.494
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4948,
+        "observed": 0.5171,
+        "wilson95": [
+         0.4533,
+         0.5803
+        ],
+        "p_lo": 0.494,
+        "p_hi": 0.4954
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4962,
+        "observed": 0.4957,
+        "wilson95": [
+         0.4323,
+         0.5593
+        ],
+        "p_lo": 0.4954,
+        "p_hi": 0.4972
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4988,
+        "observed": 0.5299,
+        "wilson95": [
+         0.466,
+         0.5929
+        ],
+        "p_lo": 0.4972,
+        "p_hi": 0.5027
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5091,
+        "observed": 0.4786,
+        "wilson95": [
+         0.4155,
+         0.5425
+        ],
+        "p_lo": 0.5027,
+        "p_hi": 0.5181
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5308,
+        "observed": 0.5,
+        "wilson95": [
+         0.4365,
+         0.5635
+        ],
+        "p_lo": 0.5183,
+        "p_hi": 0.5531
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5862,
+        "observed": 0.5342,
+        "wilson95": [
+         0.4702,
+         0.597
+        ],
+        "p_lo": 0.5531,
+        "p_hi": 0.6272
+       },
+       {
+        "n": 234,
+        "mean_p": 0.6984,
+        "observed": 0.4615,
+        "wilson95": [
+         0.3988,
+         0.5255
+        ],
+        "p_lo": 0.6276,
+        "p_hi": 0.9395
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00652,
+       "resolution": 0.00055,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.25455,
+       "log_loss": 0.70345
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.26236,
+       "log_loss": 0.7226
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25272,
+       "log_loss": 0.69954
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.024901,
+      "delta_log_loss_ci95": [
+       -0.037792,
+       -0.014002
+      ],
+      "delta_log_loss_sd": 0.006066,
+      "delta_brier": -0.011494,
+      "delta_brier_ci95": [
+       -0.017092,
+       -0.006237
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "venn_abers": {
+     "method": "venn_abers",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2339,
+      "brier": 0.250962,
+      "log_loss": 0.69513,
+      "slope": -3.3946,
+      "slope_ci95": [
+       -5.7141,
+       -1.0751
+      ],
+      "citl": 0.0312,
+      "citl_ci95": [
+       -0.0499,
+       0.1123
+      ],
+      "ece": 0.02879,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.491,
+      "mean_p": 0.4967,
+      "base_rate": 0.5045,
+      "reliability_curve": [
+       {
+        "n": 233,
+        "mean_p": 0.4826,
+        "observed": 0.5579,
+        "wilson95": [
+         0.4937,
+         0.6203
+        ],
+        "p_lo": 0.325,
+        "p_hi": 0.4928
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4954,
+        "observed": 0.4701,
+        "wilson95": [
+         0.4071,
+         0.534
+        ],
+        "p_lo": 0.4928,
+        "p_hi": 0.4956
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4956,
+        "observed": 0.4915,
+        "wilson95": [
+         0.4281,
+         0.5551
+        ],
+        "p_lo": 0.4956,
+        "p_hi": 0.4956
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4956,
+        "observed": 0.5342,
+        "wilson95": [
+         0.4702,
+         0.597
+        ],
+        "p_lo": 0.4956,
+        "p_hi": 0.4956
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4971,
+        "observed": 0.4872,
+        "wilson95": [
+         0.4239,
+         0.5509
+        ],
+        "p_lo": 0.4956,
+        "p_hi": 0.4974
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4974,
+        "observed": 0.4573,
+        "wilson95": [
+         0.3946,
+         0.5213
+        ],
+        "p_lo": 0.4974,
+        "p_hi": 0.4974
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4977,
+        "observed": 0.5128,
+        "wilson95": [
+         0.4491,
+         0.5761
+        ],
+        "p_lo": 0.4974,
+        "p_hi": 0.4985
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4985,
+        "observed": 0.5299,
+        "wilson95": [
+         0.466,
+         0.5929
+        ],
+        "p_lo": 0.4985,
+        "p_hi": 0.4985
+       },
+       {
+        "n": 234,
+        "mean_p": 0.4985,
+        "observed": 0.5214,
+        "wilson95": [
+         0.4575,
+         0.5845
+        ],
+        "p_lo": 0.4985,
+        "p_hi": 0.4985
+       },
+       {
+        "n": 234,
+        "mean_p": 0.5083,
+        "observed": 0.4829,
+        "wilson95": [
+         0.4197,
+         0.5467
+        ],
+        "p_lo": 0.4985,
+        "p_hi": 0.6744
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00119,
+       "resolution": 0.00091,
+       "uncertainty": 0.24998,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 771,
+       "brier": 0.2525,
+       "log_loss": 0.6983
+      },
+      {
+       "season": 2024,
+       "n": 778,
+       "brier": 0.25036,
+       "log_loss": 0.69388
+      },
+      {
+       "season": 2025,
+       "n": 790,
+       "brier": 0.25006,
+       "log_loss": 0.69326
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.038269,
+      "delta_log_loss_ci95": [
+       -0.051757,
+       -0.025376
+      ],
+      "delta_log_loss_sd": 0.006876,
+      "delta_brier": -0.017063,
+      "delta_brier_ci95": [
+       -0.023282,
+       -0.010989
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    }
+   },
+   "eligible": [
+    "temperature",
+    "platt",
+    "beta",
+    "rolling_platt",
+    "isotonic",
+    "venn_abers"
+   ],
+   "chosen": "temperature",
+   "status": "PROMOTED",
+   "why": "temperature beat identity out of sample (log loss below identity; Brier below identity; Δ log loss 95% CI below 0; 3/3 seasons no worse); rolling_platt scored lower but temperature is simpler and within one bootstrap SD",
+   "final_map": {
+    "method": "temperature",
+    "T": 1000000,
+    "inv_T": -0.11661176910380847
+   },
+   "final_training_window": "2022-2025",
+   "domain": {
+    "p_min": 0.1224,
+    "p01": 0.2192,
+    "p05": 0.3387,
+    "p95": 0.7181,
+    "p99": 0.7847,
+    "p_max": 0.9287,
+    "n": 3058
+   },
+   "benchmark": {
+    "coin_flip": {
+     "brier": 0.25,
+     "log_loss": 0.693147,
+     "note": "the de-vigged close at symmetric juice is 0.5 for both sides: the market benchmark for a cover probability at the market line"
+    }
+   },
+   "in_sample_identity": {
+    "window": "2015-2021 (IN SAMPLE for the champion — diagnostic only)",
+    "n": 4668,
+    "brier": 0.266562,
+    "log_loss": 0.729487,
+    "slope": -0.0738,
+    "slope_ci95": [
+     -0.1914,
+     0.0439
+    ],
+    "citl": -0.1689,
+    "citl_ci95": [
+     -0.2279,
+     -0.11
+    ],
+    "ece": 0.10754,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.4906,
+    "mean_p": 0.531,
+    "base_rate": 0.491,
+    "decomposition": {
+     "reliability": 0.01595,
+     "resolution": 0.00022,
+     "uncertainty": 0.24992,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   }
+  },
+  {
+   "key": "cfb|spread|open",
+   "label": "CFB spread at the opener",
+   "n_oos": 3060,
+   "n_oof": 2352,
+   "folds": [
+    {
+     "train": "2022-2022",
+     "evaluate": 2023
+    },
+    {
+     "train": "2022-2023",
+     "evaluate": 2024
+    },
+    {
+     "train": "2022-2024",
+     "evaluate": 2025
+    }
+   ],
+   "fits_by_fold": {
+    "2023": {
+     "identity": {
+      "method": "identity",
+      "n_train": 708
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 708,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 708,
+      "a": 0.00427,
+      "b": -0.02869
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 708,
+      "a": 0,
+      "b": 0,
+      "c": 0.01186
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 708,
+      "a": 0.00427,
+      "b": -0.02869,
+      "window": "2022"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 708,
+      "blocks": 10
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 708
+     }
+    },
+    "2024": {
+     "identity": {
+      "method": "identity",
+      "n_train": 1484
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 1484,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 1484,
+      "a": -0.00421,
+      "b": -0.05935
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 1484,
+      "a": 0,
+      "b": 0,
+      "c": -0.08779
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 1484,
+      "a": -0.01262,
+      "b": -0.08083,
+      "window": "2023"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 1484,
+      "blocks": 6
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 1484
+     }
+    },
+    "2025": {
+     "identity": {
+      "method": "identity",
+      "n_train": 2263
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 2263,
+      "T": 1000000
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 2263,
+      "a": -0.00716,
+      "b": -0.04301
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 2263,
+      "a": 0,
+      "b": 0,
+      "c": -0.04002
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 2263,
+      "a": -0.01192,
+      "b": -0.00803,
+      "window": "2024"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 2263,
+      "blocks": 7
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 2263
+     }
+    }
+   },
+   "results": {
+    "identity": {
+     "method": "identity",
+     "params": 0,
+     "pooled": {
+      "n": 2352,
+      "brier": 0.263378,
+      "log_loss": 0.722746,
+      "slope": 0.041,
+      "slope_ci95": [
+       -0.1207,
+       0.2027
+      ],
+      "citl": -0.1292,
+      "citl_ci95": [
+       -0.2124,
+       -0.0461
+      ],
+      "ece": 0.09204,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.5052,
+      "mean_p": 0.5305,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.3165,
+        "observed": 0.4638,
+        "wilson95": [
+         0.4012,
+         0.5277
+        ],
+        "p_lo": 0.1404,
+        "p_hi": 0.3825
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4094,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.3828,
+        "p_hi": 0.4301
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4512,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.4301,
+        "p_hi": 0.4718
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4871,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.4723,
+        "p_hi": 0.5004
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5192,
+        "observed": 0.5339,
+        "wilson95": [
+         0.4702,
+         0.5965
+        ],
+        "p_lo": 0.5004,
+        "p_hi": 0.5373
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5513,
+        "observed": 0.5021,
+        "wilson95": [
+         0.4387,
+         0.5655
+        ],
+        "p_lo": 0.5373,
+        "p_hi": 0.565
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5811,
+        "observed": 0.4894,
+        "wilson95": [
+         0.4261,
+         0.5529
+        ],
+        "p_lo": 0.565,
+        "p_hi": 0.5986
+       },
+       {
+        "n": 235,
+        "mean_p": 0.6116,
+        "observed": 0.5234,
+        "wilson95": [
+         0.4597,
+         0.5864
+        ],
+        "p_lo": 0.5986,
+        "p_hi": 0.6286
+       },
+       {
+        "n": 235,
+        "mean_p": 0.6516,
+        "observed": 0.5064,
+        "wilson95": [
+         0.4429,
+         0.5697
+        ],
+        "p_lo": 0.6287,
+        "p_hi": 0.6756
+       },
+       {
+        "n": 236,
+        "mean_p": 0.7251,
+        "observed": 0.4873,
+        "wilson95": [
+         0.4242,
+         0.5508
+        ],
+        "p_lo": 0.6761,
+        "p_hi": 0.8984
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.01284,
+       "resolution": 0.00033,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.26993,
+       "log_loss": 0.7372
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.26322,
+       "log_loss": 0.72293
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25715,
+       "log_loss": 0.7085
+      }
+     ]
+    },
+    "temperature": {
+     "method": "temperature",
+     "params": 1,
+     "pooled": {
+      "n": 2352,
+      "brier": 0.25,
+      "log_loss": 0.693147,
+      "slope": 6.0284,
+      "slope_ci95": [
+       -161639.8664,
+       161651.9232
+      ],
+      "citl": 0,
+      "citl_ci95": [
+       -0.0808,
+       0.0808
+      ],
+      "ece": 0.01317,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.5052,
+      "mean_p": 0.5,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.4638,
+        "wilson95": [
+         0.4012,
+         0.5277
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.4979,
+        "wilson95": [
+         0.4345,
+         0.5613
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5,
+        "observed": 0.5339,
+        "wilson95": [
+         0.4702,
+         0.5965
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.5021,
+        "wilson95": [
+         0.4387,
+         0.5655
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.4894,
+        "wilson95": [
+         0.4261,
+         0.5529
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.5234,
+        "wilson95": [
+         0.4597,
+         0.5864
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5,
+        "observed": 0.5064,
+        "wilson95": [
+         0.4429,
+         0.5697
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5,
+        "observed": 0.4873,
+        "wilson95": [
+         0.4242,
+         0.5508
+        ],
+        "p_lo": 0.5,
+        "p_hi": 0.5
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00033,
+       "resolution": 0.00033,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25,
+       "log_loss": 0.69315
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.029599,
+      "delta_log_loss_ci95": [
+       -0.046161,
+       -0.01555
+      ],
+      "delta_log_loss_sd": 0.007802,
+      "delta_brier": -0.013378,
+      "delta_brier_ci95": [
+       -0.020217,
+       -0.006626
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "platt": {
+     "method": "platt",
+     "params": 2,
+     "pooled": {
+      "n": 2352,
+      "brier": 0.250119,
+      "log_loss": 0.693385,
+      "slope": -1.2786,
+      "slope_ci95": [
+       -4.8342,
+       2.277
+      ],
+      "citl": 0.0078,
+      "citl_ci95": [
+       -0.0731,
+       0.0886
+      ],
+      "ece": 0.025,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4893,
+      "mean_p": 0.4981,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.4876,
+        "observed": 0.4766,
+        "wilson95": [
+         0.4136,
+         0.5403
+        ],
+        "p_lo": 0.4737,
+        "p_hi": 0.4908
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4924,
+        "observed": 0.5702,
+        "wilson95": [
+         0.5063,
+         0.6319
+        ],
+        "p_lo": 0.4908,
+        "p_hi": 0.4937
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4946,
+        "observed": 0.4766,
+        "wilson95": [
+         0.4136,
+         0.5403
+        ],
+        "p_lo": 0.4937,
+        "p_hi": 0.4954
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4962,
+        "observed": 0.5149,
+        "wilson95": [
+         0.4513,
+         0.578
+        ],
+        "p_lo": 0.4954,
+        "p_hi": 0.4969
+       },
+       {
+        "n": 236,
+        "mean_p": 0.4976,
+        "observed": 0.5127,
+        "wilson95": [
+         0.4492,
+         0.5758
+        ],
+        "p_lo": 0.4969,
+        "p_hi": 0.4982
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4989,
+        "observed": 0.5191,
+        "wilson95": [
+         0.4555,
+         0.5822
+        ],
+        "p_lo": 0.4982,
+        "p_hi": 0.4995
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5002,
+        "observed": 0.4638,
+        "wilson95": [
+         0.4012,
+         0.5277
+        ],
+        "p_lo": 0.4995,
+        "p_hi": 0.5009
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5016,
+        "observed": 0.4851,
+        "wilson95": [
+         0.422,
+         0.5487
+        ],
+        "p_lo": 0.5009,
+        "p_hi": 0.5023
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5034,
+        "observed": 0.5064,
+        "wilson95": [
+         0.4429,
+         0.5697
+        ],
+        "p_lo": 0.5023,
+        "p_hi": 0.5047
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5079,
+        "observed": 0.4746,
+        "wilson95": [
+         0.4118,
+         0.5382
+        ],
+        "p_lo": 0.5047,
+        "p_hi": 0.5228
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00102,
+       "resolution": 0.0009,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.24993,
+       "log_loss": 0.69301
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.25003,
+       "log_loss": 0.6932
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25039,
+       "log_loss": 0.69393
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.029361,
+      "delta_log_loss_ci95": [
+       -0.044328,
+       -0.015123
+      ],
+      "delta_log_loss_sd": 0.007667,
+      "delta_brier": -0.013259,
+      "delta_brier_ci95": [
+       -0.020492,
+       -0.006785
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "beta": {
+     "method": "beta",
+     "params": 3,
+     "pooled": {
+      "n": 2352,
+      "brier": 0.250226,
+      "log_loss": 0.693599,
+      "slope": -0.145,
+      "slope_ci95": [
+       -2.1395,
+       1.8495
+      ],
+      "citl": 0.0387,
+      "citl_ci95": [
+       -0.0421,
+       0.1196
+      ],
+      "ece": 0.0265,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4986,
+      "mean_p": 0.4903,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.4781,
+        "observed": 0.4638,
+        "wilson95": [
+         0.4012,
+         0.5277
+        ],
+        "p_lo": 0.4781,
+        "p_hi": 0.4781
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4781,
+        "observed": 0.5106,
+        "wilson95": [
+         0.4471,
+         0.5739
+        ],
+        "p_lo": 0.4781,
+        "p_hi": 0.4781
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4781,
+        "observed": 0.5149,
+        "wilson95": [
+         0.4513,
+         0.578
+        ],
+        "p_lo": 0.4781,
+        "p_hi": 0.4781
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4862,
+        "observed": 0.5021,
+        "wilson95": [
+         0.4387,
+         0.5655
+        ],
+        "p_lo": 0.4781,
+        "p_hi": 0.49
+       },
+       {
+        "n": 236,
+        "mean_p": 0.49,
+        "observed": 0.5169,
+        "wilson95": [
+         0.4534,
+         0.5799
+        ],
+        "p_lo": 0.49,
+        "p_hi": 0.49
+       },
+       {
+        "n": 235,
+        "mean_p": 0.49,
+        "observed": 0.5319,
+        "wilson95": [
+         0.4681,
+         0.5947
+        ],
+        "p_lo": 0.49,
+        "p_hi": 0.49
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4939,
+        "observed": 0.4894,
+        "wilson95": [
+         0.4261,
+         0.5529
+        ],
+        "p_lo": 0.49,
+        "p_hi": 0.503
+       },
+       {
+        "n": 235,
+        "mean_p": 0.503,
+        "observed": 0.4894,
+        "wilson95": [
+         0.4261,
+         0.5529
+        ],
+        "p_lo": 0.503,
+        "p_hi": 0.503
+       },
+       {
+        "n": 235,
+        "mean_p": 0.503,
+        "observed": 0.4511,
+        "wilson95": [
+         0.3887,
+         0.515
+        ],
+        "p_lo": 0.503,
+        "p_hi": 0.503
+       },
+       {
+        "n": 236,
+        "mean_p": 0.503,
+        "observed": 0.5297,
+        "wilson95": [
+         0.466,
+         0.5924
+        ],
+        "p_lo": 0.503,
+        "p_hi": 0.503
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.0009,
+       "resolution": 0.00064,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.25005,
+       "log_loss": 0.69324
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.25034,
+       "log_loss": 0.69383
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25029,
+       "log_loss": 0.69372
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.029147,
+      "delta_log_loss_ci95": [
+       -0.045131,
+       -0.014457
+      ],
+      "delta_log_loss_sd": 0.0079,
+      "delta_brier": -0.013152,
+      "delta_brier_ci95": [
+       -0.019935,
+       -0.006602
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "rolling_platt": {
+     "method": "rolling_platt",
+     "params": 2,
+     "pooled": {
+      "n": 2352,
+      "brier": 0.250043,
+      "log_loss": 0.693234,
+      "slope": 0.0726,
+      "slope_ci95": [
+       -3.1021,
+       3.2474
+      ],
+      "citl": 0.0117,
+      "citl_ci95": [
+       -0.0691,
+       0.0925
+      ],
+      "ece": 0.02162,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4877,
+      "mean_p": 0.4971,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.4836,
+        "observed": 0.4851,
+        "wilson95": [
+         0.422,
+         0.5487
+        ],
+        "p_lo": 0.4624,
+        "p_hi": 0.4898
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4925,
+        "observed": 0.5447,
+        "wilson95": [
+         0.4808,
+         0.6071
+        ],
+        "p_lo": 0.4898,
+        "p_hi": 0.4948
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4955,
+        "observed": 0.5234,
+        "wilson95": [
+         0.4597,
+         0.5864
+        ],
+        "p_lo": 0.4948,
+        "p_hi": 0.496
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4963,
+        "observed": 0.4894,
+        "wilson95": [
+         0.4261,
+         0.5529
+        ],
+        "p_lo": 0.496,
+        "p_hi": 0.4966
+       },
+       {
+        "n": 236,
+        "mean_p": 0.4969,
+        "observed": 0.5381,
+        "wilson95": [
+         0.4744,
+         0.6006
+        ],
+        "p_lo": 0.4966,
+        "p_hi": 0.4972
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4975,
+        "observed": 0.4851,
+        "wilson95": [
+         0.422,
+         0.5487
+        ],
+        "p_lo": 0.4972,
+        "p_hi": 0.4978
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4983,
+        "observed": 0.4553,
+        "wilson95": [
+         0.3929,
+         0.5192
+        ],
+        "p_lo": 0.4978,
+        "p_hi": 0.499
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4999,
+        "observed": 0.4936,
+        "wilson95": [
+         0.4303,
+         0.5571
+        ],
+        "p_lo": 0.499,
+        "p_hi": 0.501
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5022,
+        "observed": 0.5021,
+        "wilson95": [
+         0.4387,
+         0.5655
+        ],
+        "p_lo": 0.501,
+        "p_hi": 0.5038
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5077,
+        "observed": 0.4831,
+        "wilson95": [
+         0.4201,
+         0.5466
+        ],
+        "p_lo": 0.5038,
+        "p_hi": 0.5293
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00079,
+       "resolution": 0.00069,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.24993,
+       "log_loss": 0.69301
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.25007,
+       "log_loss": 0.69328
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25013,
+       "log_loss": 0.6934
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.029513,
+      "delta_log_loss_ci95": [
+       -0.04511,
+       -0.015555
+      ],
+      "delta_log_loss_sd": 0.007549,
+      "delta_brier": -0.013334,
+      "delta_brier_ci95": [
+       -0.020498,
+       -0.006621
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "isotonic": {
+     "method": "isotonic",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2352,
+      "brier": 0.253699,
+      "log_loss": 0.701643,
+      "slope": 0.0469,
+      "slope_ci95": [
+       -0.2461,
+       0.3399
+      ],
+      "citl": -0.0541,
+      "citl_ci95": [
+       -0.1356,
+       0.0274
+      ],
+      "ece": 0.04475,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4997,
+      "mean_p": 0.5133,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.4429,
+        "observed": 0.5106,
+        "wilson95": [
+         0.4471,
+         0.5739
+        ],
+        "p_lo": 0.3333,
+        "p_hi": 0.4649
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4791,
+        "observed": 0.4723,
+        "wilson95": [
+         0.4095,
+         0.5361
+        ],
+        "p_lo": 0.4651,
+        "p_hi": 0.4856
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4882,
+        "observed": 0.4809,
+        "wilson95": [
+         0.4178,
+         0.5445
+        ],
+        "p_lo": 0.4856,
+        "p_hi": 0.4911
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4936,
+        "observed": 0.5149,
+        "wilson95": [
+         0.4513,
+         0.578
+        ],
+        "p_lo": 0.4911,
+        "p_hi": 0.4963
+       },
+       {
+        "n": 236,
+        "mean_p": 0.4988,
+        "observed": 0.5466,
+        "wilson95": [
+         0.4829,
+         0.6089
+        ],
+        "p_lo": 0.4963,
+        "p_hi": 0.5011
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5031,
+        "observed": 0.5234,
+        "wilson95": [
+         0.4597,
+         0.5864
+        ],
+        "p_lo": 0.5011,
+        "p_hi": 0.5056
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5084,
+        "observed": 0.5021,
+        "wilson95": [
+         0.4387,
+         0.5655
+        ],
+        "p_lo": 0.5056,
+        "p_hi": 0.5113
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5145,
+        "observed": 0.4213,
+        "wilson95": [
+         0.3599,
+         0.4852
+        ],
+        "p_lo": 0.5114,
+        "p_hi": 0.5179
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5342,
+        "observed": 0.5106,
+        "wilson95": [
+         0.4471,
+         0.5739
+        ],
+        "p_lo": 0.5179,
+        "p_hi": 0.5747
+       },
+       {
+        "n": 236,
+        "mean_p": 0.6696,
+        "observed": 0.5169,
+        "wilson95": [
+         0.4534,
+         0.5799
+        ],
+        "p_lo": 0.5748,
+        "p_hi": 0.9586
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00405,
+       "resolution": 0.00108,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.25622,
+       "log_loss": 0.70749
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.25343,
+       "log_loss": 0.70088
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.25151,
+       "log_loss": 0.69669
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.021103,
+      "delta_log_loss_ci95": [
+       -0.030706,
+       -0.012327
+      ],
+      "delta_log_loss_sd": 0.004644,
+      "delta_brier": -0.009678,
+      "delta_brier_ci95": [
+       -0.014255,
+       -0.005275
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    },
+    "venn_abers": {
+     "method": "venn_abers",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2352,
+      "brier": 0.251416,
+      "log_loss": 0.696145,
+      "slope": -0.6186,
+      "slope_ci95": [
+       -1.4131,
+       0.1759
+      ],
+      "citl": 0.0103,
+      "citl_ci95": [
+       -0.0706,
+       0.0913
+      ],
+      "ece": 0.03862,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.4845,
+      "mean_p": 0.4974,
+      "base_rate": 0.5,
+      "reliability_curve": [
+       {
+        "n": 235,
+        "mean_p": 0.447,
+        "observed": 0.5149,
+        "wilson95": [
+         0.4513,
+         0.578
+        ],
+        "p_lo": 0.3077,
+        "p_hi": 0.469
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4851,
+        "observed": 0.4766,
+        "wilson95": [
+         0.4136,
+         0.5403
+        ],
+        "p_lo": 0.469,
+        "p_hi": 0.4943
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4947,
+        "observed": 0.4851,
+        "wilson95": [
+         0.422,
+         0.5487
+        ],
+        "p_lo": 0.4943,
+        "p_hi": 0.4949
+       },
+       {
+        "n": 235,
+        "mean_p": 0.4949,
+        "observed": 0.5574,
+        "wilson95": [
+         0.4935,
+         0.6195
+        ],
+        "p_lo": 0.4949,
+        "p_hi": 0.4949
+       },
+       {
+        "n": 236,
+        "mean_p": 0.4987,
+        "observed": 0.5339,
+        "wilson95": [
+         0.4702,
+         0.5965
+        ],
+        "p_lo": 0.4949,
+        "p_hi": 0.5022
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5022,
+        "observed": 0.5362,
+        "wilson95": [
+         0.4723,
+         0.5988
+        ],
+        "p_lo": 0.5022,
+        "p_hi": 0.5022
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5022,
+        "observed": 0.4681,
+        "wilson95": [
+         0.4053,
+         0.5319
+        ],
+        "p_lo": 0.5022,
+        "p_hi": 0.5022
+       },
+       {
+        "n": 235,
+        "mean_p": 0.5084,
+        "observed": 0.5149,
+        "wilson95": [
+         0.4513,
+         0.578
+        ],
+        "p_lo": 0.5022,
+        "p_hi": 0.509
+       },
+       {
+        "n": 235,
+        "mean_p": 0.509,
+        "observed": 0.4596,
+        "wilson95": [
+         0.397,
+         0.5234
+        ],
+        "p_lo": 0.509,
+        "p_hi": 0.509
+       },
+       {
+        "n": 236,
+        "mean_p": 0.5317,
+        "observed": 0.4534,
+        "wilson95": [
+         0.3911,
+         0.5171
+        ],
+        "p_lo": 0.509,
+        "p_hi": 0.7778
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00209,
+       "resolution": 0.00118,
+       "uncertainty": 0.25,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 776,
+       "brier": 0.25405,
+       "log_loss": 0.70177
+      },
+      {
+       "season": 2024,
+       "n": 779,
+       "brier": 0.2505,
+       "log_loss": 0.69414
+      },
+      {
+       "season": 2025,
+       "n": 797,
+       "brier": 0.24975,
+       "log_loss": 0.69263
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.026601,
+      "delta_log_loss_ci95": [
+       -0.037626,
+       -0.015532
+      ],
+      "delta_log_loss_sd": 0.005703,
+      "delta_brier": -0.011962,
+      "delta_brier_ci95": [
+       -0.017137,
+       -0.006546
+      ],
+      "seasons_no_worse": "3/3",
+      "clusters": 46
+     },
+     "eligible": true,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI below 0",
+      "3/3 seasons no worse"
+     ]
+    }
+   },
+   "eligible": [
+    "temperature",
+    "platt",
+    "beta",
+    "rolling_platt",
+    "isotonic",
+    "venn_abers"
+   ],
+   "chosen": "temperature",
+   "status": "PROMOTED",
+   "why": "temperature beat identity out of sample (log loss below identity; Brier below identity; Δ log loss 95% CI below 0; 3/3 seasons no worse)",
+   "final_map": {
+    "method": "temperature",
+    "T": 40.88948934913706,
+    "inv_T": 0.024456162596246857
+   },
+   "final_training_window": "2022-2025",
+   "domain": {
+    "p_min": 0.1404,
+    "p01": 0.2355,
+    "p05": 0.3381,
+    "p95": 0.7133,
+    "p99": 0.7876,
+    "p_max": 0.8984,
+    "n": 3060
+   },
+   "benchmark": {
+    "coin_flip": {
+     "brier": 0.25,
+     "log_loss": 0.693147,
+     "note": "the de-vigged close at symmetric juice is 0.5 for both sides: the market benchmark for a cover probability at the market line"
+    }
+   },
+   "in_sample_identity": {
+    "window": "2015-2021 (IN SAMPLE for the champion — diagnostic only)",
+    "n": 4162,
+    "brier": 0.26276,
+    "log_loss": 0.720921,
+    "slope": 0.0128,
+    "slope_ci95": [
+     -0.1181,
+     0.1438
+    ],
+    "citl": -0.1509,
+    "citl_ci95": [
+     -0.2132,
+     -0.0886
+    ],
+    "ece": 0.09698,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.5008,
+    "mean_p": 0.5229,
+    "base_rate": 0.487,
+    "decomposition": {
+     "reliability": 0.01349,
+     "resolution": 0.00046,
+     "uncertainty": 0.24983,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   }
+  },
+  {
+   "key": "cfb|moneyline|close",
+   "label": "CFB moneyline (home win), pregame",
+   "n_oos": 3120,
+   "n_oof": 2388,
+   "folds": [
+    {
+     "train": "2022-2022",
+     "evaluate": 2023
+    },
+    {
+     "train": "2022-2023",
+     "evaluate": 2024
+    },
+    {
+     "train": "2022-2024",
+     "evaluate": 2025
+    }
+   ],
+   "fits_by_fold": {
+    "2023": {
+     "identity": {
+      "method": "identity",
+      "n_train": 732
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 732,
+      "T": 1.36035
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 732,
+      "a": -0.1079,
+      "b": 0.76407
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 732,
+      "a": 0.94146,
+      "b": 0.65529,
+      "c": 0.12387
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 732,
+      "a": -0.1079,
+      "b": 0.76407,
+      "window": "2022"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 732,
+      "blocks": 67
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 732
+     }
+    },
+    "2024": {
+     "identity": {
+      "method": "identity",
+      "n_train": 1518
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 1518,
+      "T": 1.28113
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 1518,
+      "a": -0.10174,
+      "b": 0.80684
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 1518,
+      "a": 0.98705,
+      "b": 0.69109,
+      "c": 0.1382
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 1518,
+      "a": -0.09461,
+      "b": 0.85016,
+      "window": "2023"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 1518,
+      "blocks": 51
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 1518
+     }
+    },
+    "2025": {
+     "identity": {
+      "method": "identity",
+      "n_train": 2313
+     },
+     "temperature": {
+      "method": "temperature",
+      "n_train": 2313,
+      "T": 1.25678
+     },
+     "platt": {
+      "method": "platt",
+      "n_train": 2313,
+      "a": -0.09329,
+      "b": 0.81969
+     },
+     "beta": {
+      "method": "beta",
+      "n_train": 2313,
+      "a": 0.77402,
+      "b": 0.8504,
+      "c": -0.15517
+     },
+     "rolling_platt": {
+      "method": "rolling_platt",
+      "n_train": 2313,
+      "a": -0.07749,
+      "b": 0.84787,
+      "window": "2024"
+     },
+     "isotonic": {
+      "method": "isotonic",
+      "n_train": 2313,
+      "blocks": 67
+     },
+     "venn_abers": {
+      "method": "venn_abers",
+      "n_train": 2313
+     }
+    }
+   },
+   "results": {
+    "identity": {
+     "method": "identity",
+     "params": 0,
+     "pooled": {
+      "n": 2388,
+      "brier": 0.185433,
+      "log_loss": 0.547063,
+      "slope": 0.8863,
+      "slope_ci95": [
+       0.8006,
+       0.972
+      ],
+      "citl": -0.1074,
+      "citl_ci95": [
+       -0.203,
+       -0.0118
+      ],
+      "ece": 0.03612,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7865,
+      "mean_p": 0.6042,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1484,
+        "observed": 0.1807,
+        "wilson95": [
+         0.137,
+         0.2345
+        ],
+        "p_lo": 0.022,
+        "p_hi": 0.238
+       },
+       {
+        "n": 239,
+        "mean_p": 0.299,
+        "observed": 0.3305,
+        "wilson95": [
+         0.274,
+         0.3925
+        ],
+        "p_lo": 0.239,
+        "p_hi": 0.354
+       },
+       {
+        "n": 239,
+        "mean_p": 0.404,
+        "observed": 0.3347,
+        "wilson95": [
+         0.2779,
+         0.3968
+        ],
+        "p_lo": 0.354,
+        "p_hi": 0.449
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5002,
+        "observed": 0.523,
+        "wilson95": [
+         0.4598,
+         0.5855
+        ],
+        "p_lo": 0.45,
+        "p_hi": 0.551
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5922,
+        "observed": 0.5439,
+        "wilson95": [
+         0.4806,
+         0.6059
+        ],
+        "p_lo": 0.551,
+        "p_hi": 0.634
+       },
+       {
+        "n": 238,
+        "mean_p": 0.6705,
+        "observed": 0.584,
+        "wilson95": [
+         0.5206,
+         0.6448
+        ],
+        "p_lo": 0.634,
+        "p_hi": 0.706
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7411,
+        "observed": 0.7322,
+        "wilson95": [
+         0.6727,
+         0.7844
+        ],
+        "p_lo": 0.706,
+        "p_hi": 0.777
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8174,
+        "observed": 0.7782,
+        "wilson95": [
+         0.7214,
+         0.8263
+        ],
+        "p_lo": 0.777,
+        "p_hi": 0.858
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8978,
+        "observed": 0.887,
+        "wilson95": [
+         0.8406,
+         0.9212
+        ],
+        "p_lo": 0.858,
+        "p_hi": 0.936
+       },
+       {
+        "n": 239,
+        "mean_p": 0.97,
+        "observed": 0.9582,
+        "wilson95": [
+         0.9247,
+         0.9771
+        ],
+        "p_lo": 0.936,
+        "p_hi": 1
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.0019,
+       "resolution": 0.05857,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18506,
+       "log_loss": 0.55262
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.19205,
+       "log_loss": 0.56015
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.17928,
+       "log_loss": 0.52876
+      }
+     ]
+    },
+    "temperature": {
+     "method": "temperature",
+     "params": 1,
+     "pooled": {
+      "n": 2388,
+      "brier": 0.185236,
+      "log_loss": 0.546181,
+      "slope": 1.1528,
+      "slope_ci95": [
+       1.0414,
+       1.2642
+      ],
+      "citl": -0.0289,
+      "citl_ci95": [
+       -0.1199,
+       0.0622
+      ],
+      "ece": 0.03664,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7865,
+      "mean_p": 0.591,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.2024,
+        "observed": 0.1765,
+        "wilson95": [
+         0.1333,
+         0.2299
+        ],
+        "p_lo": 0.0466,
+        "p_hi": 0.2891
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3411,
+        "observed": 0.3473,
+        "wilson95": [
+         0.2898,
+         0.4096
+        ],
+        "p_lo": 0.29,
+        "p_hi": 0.3872
+       },
+       {
+        "n": 239,
+        "mean_p": 0.4257,
+        "observed": 0.318,
+        "wilson95": [
+         0.2622,
+         0.3795
+        ],
+        "p_lo": 0.3874,
+        "p_hi": 0.4609
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5001,
+        "observed": 0.523,
+        "wilson95": [
+         0.4598,
+         0.5855
+        ],
+        "p_lo": 0.4609,
+        "p_hi": 0.5391
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5716,
+        "observed": 0.5523,
+        "wilson95": [
+         0.4889,
+         0.614
+        ],
+        "p_lo": 0.5398,
+        "p_hi": 0.6035
+       },
+       {
+        "n": 238,
+        "mean_p": 0.634,
+        "observed": 0.5756,
+        "wilson95": [
+         0.5121,
+         0.6367
+        ],
+        "p_lo": 0.6035,
+        "p_hi": 0.6621
+       },
+       {
+        "n": 239,
+        "mean_p": 0.6923,
+        "observed": 0.728,
+        "wilson95": [
+         0.6683,
+         0.7805
+        ],
+        "p_lo": 0.6621,
+        "p_hi": 0.7216
+       },
+       {
+        "n": 239,
+        "mean_p": 0.76,
+        "observed": 0.7908,
+        "wilson95": [
+         0.7348,
+         0.8376
+        ],
+        "p_lo": 0.7216,
+        "p_hi": 0.801
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8428,
+        "observed": 0.8787,
+        "wilson95": [
+         0.8312,
+         0.9142
+        ],
+        "p_lo": 0.801,
+        "p_hi": 0.8891
+       },
+       {
+        "n": 239,
+        "mean_p": 0.9387,
+        "observed": 0.9623,
+        "wilson95": [
+         0.93,
+         0.9801
+        ],
+        "p_lo": 0.8891,
+        "p_hi": 0.9993
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00207,
+       "resolution": 0.05909,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18526,
+       "log_loss": 0.55009
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.19067,
+       "log_loss": 0.55704
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.17986,
+       "log_loss": 0.53169
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.000881,
+      "delta_log_loss_ci95": [
+       -0.00655,
+       0.004021
+      ],
+      "delta_log_loss_sd": 0.002691,
+      "delta_brier": -0.000197,
+      "delta_brier_ci95": [
+       -0.001616,
+       0.001249
+      ],
+      "seasons_no_worse": "2/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI reaches 0",
+      "2/3 seasons no worse"
+     ]
+    },
+    "platt": {
+     "method": "platt",
+     "params": 2,
+     "pooled": {
+      "n": 2388,
+      "brier": 0.184985,
+      "log_loss": 0.54581,
+      "slope": 1.1147,
+      "slope_ci95": [
+       1.0069,
+       1.2224
+      ],
+      "citl": 0.0626,
+      "citl_ci95": [
+       -0.029,
+       0.1541
+      ],
+      "ece": 0.03368,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7865,
+      "mean_p": 0.5734,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1804,
+        "observed": 0.1765,
+        "wilson95": [
+         0.1333,
+         0.2299
+        ],
+        "p_lo": 0.039,
+        "p_hi": 0.2627
+       },
+       {
+        "n": 239,
+        "mean_p": 0.314,
+        "observed": 0.3347,
+        "wilson95": [
+         0.2779,
+         0.3968
+        ],
+        "p_lo": 0.2637,
+        "p_hi": 0.3589
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3988,
+        "observed": 0.3347,
+        "wilson95": [
+         0.2779,
+         0.3968
+        ],
+        "p_lo": 0.3597,
+        "p_hi": 0.4345
+       },
+       {
+        "n": 239,
+        "mean_p": 0.4749,
+        "observed": 0.523,
+        "wilson95": [
+         0.4598,
+         0.5855
+        ],
+        "p_lo": 0.4345,
+        "p_hi": 0.5144
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5492,
+        "observed": 0.5439,
+        "wilson95": [
+         0.4806,
+         0.6059
+        ],
+        "p_lo": 0.515,
+        "p_hi": 0.5822
+       },
+       {
+        "n": 238,
+        "mean_p": 0.6148,
+        "observed": 0.5798,
+        "wilson95": [
+         0.5163,
+         0.6408
+        ],
+        "p_lo": 0.5829,
+        "p_hi": 0.6442
+       },
+       {
+        "n": 239,
+        "mean_p": 0.6766,
+        "observed": 0.728,
+        "wilson95": [
+         0.6683,
+         0.7805
+        ],
+        "p_lo": 0.6442,
+        "p_hi": 0.7083
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7486,
+        "observed": 0.7908,
+        "wilson95": [
+         0.7348,
+         0.8376
+        ],
+        "p_lo": 0.7085,
+        "p_hi": 0.7927
+       },
+       {
+        "n": 239,
+        "mean_p": 0.837,
+        "observed": 0.8787,
+        "wilson95": [
+         0.8312,
+         0.9142
+        ],
+        "p_lo": 0.7927,
+        "p_hi": 0.8859
+       },
+       {
+        "n": 239,
+        "mean_p": 0.938,
+        "observed": 0.9623,
+        "wilson95": [
+         0.93,
+         0.9801
+        ],
+        "p_lo": 0.8859,
+        "p_hi": 0.9994
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00149,
+       "resolution": 0.05889,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18489,
+       "log_loss": 0.54929
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.19028,
+       "log_loss": 0.55657
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.17986,
+       "log_loss": 0.53183
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.001253,
+      "delta_log_loss_ci95": [
+       -0.006373,
+       0.003385
+      ],
+      "delta_log_loss_sd": 0.002514,
+      "delta_brier": -0.000448,
+      "delta_brier_ci95": [
+       -0.002002,
+       0.001056
+      ],
+      "seasons_no_worse": "2/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI reaches 0",
+      "2/3 seasons no worse"
+     ]
+    },
+    "beta": {
+     "method": "beta",
+     "params": 3,
+     "pooled": {
+      "n": 2388,
+      "brier": 0.185109,
+      "log_loss": 0.546271,
+      "slope": 1.1057,
+      "slope_ci95": [
+       0.9991,
+       1.2123
+      ],
+      "citl": 0.062,
+      "citl_ci95": [
+       -0.0297,
+       0.1537
+      ],
+      "ece": 0.03541,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7865,
+      "mean_p": 0.5735,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1705,
+        "observed": 0.1849,
+        "wilson95": [
+         0.1407,
+         0.2391
+        ],
+        "p_lo": 0.0332,
+        "p_hi": 0.2553
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3115,
+        "observed": 0.3264,
+        "wilson95": [
+         0.2701,
+         0.3881
+        ],
+        "p_lo": 0.2553,
+        "p_hi": 0.3596
+       },
+       {
+        "n": 239,
+        "mean_p": 0.4007,
+        "observed": 0.3305,
+        "wilson95": [
+         0.274,
+         0.3925
+        ],
+        "p_lo": 0.3601,
+        "p_hi": 0.4394
+       },
+       {
+        "n": 239,
+        "mean_p": 0.48,
+        "observed": 0.5272,
+        "wilson95": [
+         0.464,
+         0.5896
+        ],
+        "p_lo": 0.4396,
+        "p_hi": 0.5192
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5549,
+        "observed": 0.5523,
+        "wilson95": [
+         0.4889,
+         0.614
+        ],
+        "p_lo": 0.5194,
+        "p_hi": 0.5893
+       },
+       {
+        "n": 238,
+        "mean_p": 0.6203,
+        "observed": 0.5756,
+        "wilson95": [
+         0.5121,
+         0.6367
+        ],
+        "p_lo": 0.5896,
+        "p_hi": 0.6507
+       },
+       {
+        "n": 239,
+        "mean_p": 0.6803,
+        "observed": 0.728,
+        "wilson95": [
+         0.6683,
+         0.7805
+        ],
+        "p_lo": 0.6507,
+        "p_hi": 0.7101
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7494,
+        "observed": 0.7908,
+        "wilson95": [
+         0.7348,
+         0.8376
+        ],
+        "p_lo": 0.7103,
+        "p_hi": 0.7912
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8335,
+        "observed": 0.8787,
+        "wilson95": [
+         0.8312,
+         0.9142
+        ],
+        "p_lo": 0.7918,
+        "p_hi": 0.8807
+       },
+       {
+        "n": 239,
+        "mean_p": 0.9324,
+        "observed": 0.9582,
+        "wilson95": [
+         0.9247,
+         0.9771
+        ],
+        "p_lo": 0.8817,
+        "p_hi": 0.9995
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00163,
+       "resolution": 0.05844,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18476,
+       "log_loss": 0.54891
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.19077,
+       "log_loss": 0.55851
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.17987,
+       "log_loss": 0.53165
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.000792,
+      "delta_log_loss_ci95": [
+       -0.006049,
+       0.003919
+      ],
+      "delta_log_loss_sd": 0.0025,
+      "delta_brier": -0.000324,
+      "delta_brier_ci95": [
+       -0.001714,
+       0.001033
+      ],
+      "seasons_no_worse": "2/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI reaches 0",
+      "2/3 seasons no worse"
+     ]
+    },
+    "rolling_platt": {
+     "method": "rolling_platt",
+     "params": 2,
+     "pooled": {
+      "n": 2388,
+      "brier": 0.184875,
+      "log_loss": 0.545288,
+      "slope": 1.0826,
+      "slope_ci95": [
+       0.9779,
+       1.1872
+      ],
+      "citl": 0.0469,
+      "citl_ci95": [
+       -0.0452,
+       0.1389
+      ],
+      "ece": 0.03325,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7863,
+      "mean_p": 0.5765,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1757,
+        "observed": 0.1765,
+        "wilson95": [
+         0.1333,
+         0.2299
+        ],
+        "p_lo": 0.0358,
+        "p_hi": 0.2563
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3115,
+        "observed": 0.3473,
+        "wilson95": [
+         0.2898,
+         0.4096
+        ],
+        "p_lo": 0.2563,
+        "p_hi": 0.3572
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3986,
+        "observed": 0.3264,
+        "wilson95": [
+         0.2701,
+         0.3881
+        ],
+        "p_lo": 0.358,
+        "p_hi": 0.4351
+       },
+       {
+        "n": 239,
+        "mean_p": 0.4767,
+        "observed": 0.5146,
+        "wilson95": [
+         0.4516,
+         0.5773
+        ],
+        "p_lo": 0.4359,
+        "p_hi": 0.5181
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5533,
+        "observed": 0.5649,
+        "wilson95": [
+         0.5015,
+         0.6262
+        ],
+        "p_lo": 0.5189,
+        "p_hi": 0.588
+       },
+       {
+        "n": 238,
+        "mean_p": 0.6208,
+        "observed": 0.5714,
+        "wilson95": [
+         0.5079,
+         0.6327
+        ],
+        "p_lo": 0.5885,
+        "p_hi": 0.6506
+       },
+       {
+        "n": 239,
+        "mean_p": 0.6835,
+        "observed": 0.7197,
+        "wilson95": [
+         0.6596,
+         0.7728
+        ],
+        "p_lo": 0.6514,
+        "p_hi": 0.7147
+       },
+       {
+        "n": 239,
+        "mean_p": 0.756,
+        "observed": 0.795,
+        "wilson95": [
+         0.7393,
+         0.8413
+        ],
+        "p_lo": 0.7147,
+        "p_hi": 0.8
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8444,
+        "observed": 0.8745,
+        "wilson95": [
+         0.8265,
+         0.9106
+        ],
+        "p_lo": 0.8001,
+        "p_hi": 0.8934
+       },
+       {
+        "n": 239,
+        "mean_p": 0.9429,
+        "observed": 0.9623,
+        "wilson95": [
+         0.93,
+         0.9801
+        ],
+        "p_lo": 0.8934,
+        "p_hi": 0.9996
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00146,
+       "resolution": 0.0584,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18489,
+       "log_loss": 0.54929
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.1903,
+       "log_loss": 0.55625
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.17952,
+       "log_loss": 0.53059
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": -0.001775,
+      "delta_log_loss_ci95": [
+       -0.006436,
+       0.002634
+      ],
+      "delta_log_loss_sd": 0.0023,
+      "delta_brier": -0.000557,
+      "delta_brier_ci95": [
+       -0.00184,
+       0.000779
+      ],
+      "seasons_no_worse": "2/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss below identity",
+      "Brier below identity",
+      "Δ log loss 95% CI reaches 0",
+      "2/3 seasons no worse"
+     ]
+    },
+    "isotonic": {
+     "method": "isotonic",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2388,
+      "brier": 0.186546,
+      "log_loss": 0.561102,
+      "slope": 0.9051,
+      "slope_ci95": [
+       0.8081,
+       1.0022
+      ],
+      "citl": 0.0533,
+      "citl_ci95": [
+       -0.0397,
+       0.1464
+      ],
+      "ece": 0.03311,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7844,
+      "mean_p": 0.5755,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1562,
+        "observed": 0.1807,
+        "wilson95": [
+         0.137,
+         0.2345
+        ],
+        "p_lo": 0.0001,
+        "p_hi": 0.2239
+       },
+       {
+        "n": 239,
+        "mean_p": 0.2691,
+        "observed": 0.3305,
+        "wilson95": [
+         0.274,
+         0.3925
+        ],
+        "p_lo": 0.2241,
+        "p_hi": 0.3119
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3985,
+        "observed": 0.3849,
+        "wilson95": [
+         0.3255,
+         0.448
+        ],
+        "p_lo": 0.3119,
+        "p_hi": 0.5
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5193,
+        "observed": 0.4895,
+        "wilson95": [
+         0.4268,
+         0.5526
+        ],
+        "p_lo": 0.501,
+        "p_hi": 0.5264
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5588,
+        "observed": 0.5188,
+        "wilson95": [
+         0.4557,
+         0.5814
+        ],
+        "p_lo": 0.5265,
+        "p_hi": 0.5877
+       },
+       {
+        "n": 238,
+        "mean_p": 0.625,
+        "observed": 0.5924,
+        "wilson95": [
+         0.529,
+         0.6529
+        ],
+        "p_lo": 0.5877,
+        "p_hi": 0.6673
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7006,
+        "observed": 0.7238,
+        "wilson95": [
+         0.664,
+         0.7767
+        ],
+        "p_lo": 0.6683,
+        "p_hi": 0.7187
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7359,
+        "observed": 0.7824,
+        "wilson95": [
+         0.7259,
+         0.83
+        ],
+        "p_lo": 0.7189,
+        "p_hi": 0.7713
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8334,
+        "observed": 0.887,
+        "wilson95": [
+         0.8406,
+         0.9212
+        ],
+        "p_lo": 0.7713,
+        "p_hi": 0.8902
+       },
+       {
+        "n": 239,
+        "mean_p": 0.9564,
+        "observed": 0.9623,
+        "wilson95": [
+         0.93,
+         0.9801
+        ],
+        "p_lo": 0.8908,
+        "p_hi": 0.9999
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00137,
+       "resolution": 0.05734,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.18711,
+       "log_loss": 0.58917
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.19243,
+       "log_loss": 0.56304
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.1802,
+       "log_loss": 0.53185
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": 0.014039,
+      "delta_log_loss_ci95": [
+       0.00271,
+       0.029337
+      ],
+      "delta_log_loss_sd": 0.006856,
+      "delta_brier": 0.001114,
+      "delta_brier_ci95": [
+       -0.000305,
+       0.002601
+      ],
+      "seasons_no_worse": "0/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss NOT below identity",
+      "Brier NOT below identity",
+      "Δ log loss 95% CI reaches 0",
+      "only 0/3 seasons no worse"
+     ]
+    },
+    "venn_abers": {
+     "method": "venn_abers",
+     "params": "nonparametric",
+     "pooled": {
+      "n": 2388,
+      "brier": 0.187217,
+      "log_loss": 0.551457,
+      "slope": 1.0928,
+      "slope_ci95": [
+       0.9884,
+       1.1971
+      ],
+      "citl": 0.0754,
+      "citl_ci95": [
+       -0.0161,
+       0.1668
+      ],
+      "ece": 0.03229,
+      "ece_caveat": "binning-dependent; biased upward at small n",
+      "auc": 0.7815,
+      "mean_p": 0.5709,
+      "base_rate": 0.5854,
+      "reliability_curve": [
+       {
+        "n": 238,
+        "mean_p": 0.1835,
+        "observed": 0.1765,
+        "wilson95": [
+         0.1333,
+         0.2299
+        ],
+        "p_lo": 0.0769,
+        "p_hi": 0.2286
+       },
+       {
+        "n": 239,
+        "mean_p": 0.2764,
+        "observed": 0.3389,
+        "wilson95": [
+         0.2819,
+         0.401
+        ],
+        "p_lo": 0.2286,
+        "p_hi": 0.3143
+       },
+       {
+        "n": 239,
+        "mean_p": 0.3952,
+        "observed": 0.3808,
+        "wilson95": [
+         0.3215,
+         0.4437
+        ],
+        "p_lo": 0.3143,
+        "p_hi": 0.5124
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5249,
+        "observed": 0.5105,
+        "wilson95": [
+         0.4474,
+         0.5732
+        ],
+        "p_lo": 0.5124,
+        "p_hi": 0.5296
+       },
+       {
+        "n": 239,
+        "mean_p": 0.5434,
+        "observed": 0.5356,
+        "wilson95": [
+         0.4723,
+         0.5977
+        ],
+        "p_lo": 0.5296,
+        "p_hi": 0.5823
+       },
+       {
+        "n": 238,
+        "mean_p": 0.6165,
+        "observed": 0.5714,
+        "wilson95": [
+         0.5079,
+         0.6327
+        ],
+        "p_lo": 0.5823,
+        "p_hi": 0.6556
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7021,
+        "observed": 0.749,
+        "wilson95": [
+         0.6903,
+         0.7997
+        ],
+        "p_lo": 0.6556,
+        "p_hi": 0.7254
+       },
+       {
+        "n": 239,
+        "mean_p": 0.7271,
+        "observed": 0.7448,
+        "wilson95": [
+         0.6859,
+         0.7959
+        ],
+        "p_lo": 0.7254,
+        "p_hi": 0.7303
+       },
+       {
+        "n": 239,
+        "mean_p": 0.8118,
+        "observed": 0.8828,
+        "wilson95": [
+         0.8359,
+         0.9177
+        ],
+        "p_lo": 0.7323,
+        "p_hi": 0.8746
+       },
+       {
+        "n": 239,
+        "mean_p": 0.9263,
+        "observed": 0.9623,
+        "wilson95": [
+         0.93,
+         0.9801
+        ],
+        "p_lo": 0.8746,
+        "p_hi": 0.9773
+       }
+      ],
+      "decomposition": {
+       "reliability": 0.00153,
+       "resolution": 0.05606,
+       "uncertainty": 0.2427,
+       "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+      }
+     },
+     "by_season": [
+      {
+       "season": 2023,
+       "n": 786,
+       "brier": 0.1876,
+       "log_loss": 0.556
+      },
+      {
+       "season": 2024,
+       "n": 795,
+       "brier": 0.1928,
+       "log_loss": 0.56293
+      },
+      {
+       "season": 2025,
+       "n": 807,
+       "brier": 0.18134,
+       "log_loss": 0.53573
+      }
+     ],
+     "vs_identity": {
+      "delta_log_loss": 0.004394,
+      "delta_log_loss_ci95": [
+       -0.00215,
+       0.01065
+      ],
+      "delta_log_loss_sd": 0.003329,
+      "delta_brier": 0.001785,
+      "delta_brier_ci95": [
+       -0.000192,
+       0.003794
+      ],
+      "seasons_no_worse": "0/3",
+      "clusters": 46
+     },
+     "eligible": false,
+     "eligibility": [
+      "log loss NOT below identity",
+      "Brier NOT below identity",
+      "Δ log loss 95% CI reaches 0",
+      "only 0/3 seasons no worse"
+     ]
+    }
+   },
+   "eligible": [],
+   "chosen": "identity",
+   "status": "NOT_VALIDATED",
+   "why": "no candidate beat identity by the pre-registered rule; identity is NOT calibrated out of sample (slope 0.8863 CI [0.8006,0.972], CITL -0.1074 CI [-0.203,-0.0118])",
+   "final_map": {
+    "method": "identity"
+   },
+   "final_training_window": "2022-2025",
+   "domain": {
+    "p_min": 0.004,
+    "p01": 0.057,
+    "p05": 0.157,
+    "p95": 0.972,
+    "p99": 0.994,
+    "p_max": 1,
+    "n": 3120
+   },
+   "benchmark": null,
+   "in_sample_identity": {
+    "window": "2015-2021 (IN SAMPLE for the champion — diagnostic only)",
+    "n": 4757,
+    "brier": 0.174843,
+    "log_loss": 0.52159,
+    "slope": 0.9157,
+    "slope_ci95": [
+     0.8567,
+     0.9748
+    ],
+    "citl": -0.129,
+    "citl_ci95": [
+     -0.1985,
+     -0.0596
+    ],
+    "ece": 0.02278,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.8107,
+    "mean_p": 0.6036,
+    "base_rate": 0.5821,
+    "decomposition": {
+     "reliability": 0.00086,
+     "resolution": 0.06821,
+     "uncertainty": 0.24326,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   }
+  }
+ ],
+ "audits": {
+  "push": {
+   "all_integer_lines": {
+    "n": 1272,
+    "predicted": 0.0238,
+    "observed": 0.0487,
+    "wilson95": [
+     0.0382,
+     0.062
+    ]
+   },
+   "line_3": {
+    "n": 199,
+    "predicted": 0.0259,
+    "observed": 0.0804,
+    "wilson95": [
+     0.0501,
+     0.1266
+    ]
+   },
+   "line_7": {
+    "n": 127,
+    "predicted": 0.0236,
+    "observed": 0.1024,
+    "wilson95": [
+     0.0608,
+     0.1673
+    ]
+   },
+   "line_10": {
+    "n": 82,
+    "predicted": 0.0228,
+    "observed": 0.0732,
+    "wilson95": [
+     0.034,
+     0.1506
+    ]
+   },
+   "other_integers": {
+    "n": 864,
+    "predicted": 0.0234,
+    "observed": 0.0313,
+    "wilson95": [
+     0.0216,
+     0.0451
+    ]
+   }
+  },
+  "distribution": {
+   "integer_lines": {
+    "n": 1272,
+    "three_state_log_loss_pmf": 0.93403,
+    "three_state_log_loss_normal": 0.90759,
+    "push_log_loss_pmf": 0.23693,
+    "push_log_loss_normal": 0.20317
+   },
+   "half_point_lines": {
+    "n": 1848,
+    "cover_log_loss_pmf": 0.73474,
+    "cover_log_loss_normal": 0.74099
+   },
+   "verdict": "At integer MARKET lines the production curve (the empirical PMF re-centred on EdgeDesk’s fair margin by an integer shift) predicts pushes WORSE than a continuous-normal shortcut (push log loss 0.23693 vs 0.20317): the re-centring moves the key-number spikes off the market’s numbers. Neither is adequate there; see the anchored audit."
+  },
+  "key_numbers": [
+   {
+    "abs_margin": 1,
+    "empirical": 0.0337,
+    "wilson95": [
+     0.0279,
+     0.0406
+    ],
+    "pmf_mean_mass": 0.0399
+   },
+   {
+    "abs_margin": 2,
+    "empirical": 0.0327,
+    "wilson95": [
+     0.027,
+     0.0395
+    ],
+    "pmf_mean_mass": 0.0394
+   },
+   {
+    "abs_margin": 3,
+    "empirical": 0.108,
+    "wilson95": [
+     0.0976,
+     0.1194
+    ],
+    "pmf_mean_mass": 0.039
+   },
+   {
+    "abs_margin": 4,
+    "empirical": 0.0372,
+    "wilson95": [
+     0.0311,
+     0.0444
+    ],
+    "pmf_mean_mass": 0.0393
+   },
+   {
+    "abs_margin": 5,
+    "empirical": 0.0218,
+    "wilson95": [
+     0.0172,
+     0.0275
+    ],
+    "pmf_mean_mass": 0.0388
+   },
+   {
+    "abs_margin": 6,
+    "empirical": 0.0337,
+    "wilson95": [
+     0.0279,
+     0.0406
+    ],
+    "pmf_mean_mass": 0.0378
+   },
+   {
+    "abs_margin": 7,
+    "empirical": 0.0878,
+    "wilson95": [
+     0.0784,
+     0.0983
+    ],
+    "pmf_mean_mass": 0.0363
+   },
+   {
+    "abs_margin": 8,
+    "empirical": 0.0288,
+    "wilson95": [
+     0.0235,
+     0.0353
+    ],
+    "pmf_mean_mass": 0.0348
+   },
+   {
+    "abs_margin": 10,
+    "empirical": 0.0481,
+    "wilson95": [
+     0.0411,
+     0.0562
+    ],
+    "pmf_mean_mass": 0.0318
+   },
+   {
+    "abs_margin": 13,
+    "empirical": 0.0221,
+    "wilson95": [
+     0.0175,
+     0.0279
+    ],
+    "pmf_mean_mass": 0.0275
+   },
+   {
+    "abs_margin": 14,
+    "empirical": 0.0413,
+    "wilson95": [
+     0.0349,
+     0.0489
+    ],
+    "pmf_mean_mass": 0.0262
+   },
+   {
+    "abs_margin": 17,
+    "empirical": 0.0417,
+    "wilson95": [
+     0.0352,
+     0.0493
+    ],
+    "pmf_mean_mass": 0.0236
+   },
+   {
+    "abs_margin": 21,
+    "empirical": 0.0365,
+    "wilson95": [
+     0.0305,
+     0.0437
+    ],
+    "pmf_mean_mass": 0.0205
+   }
+  ],
+  "extremes": {
+   "prob_p95": 0.2379,
+   "prob_p99": 0.3144,
+   "gap_p95": 10.22,
+   "gap_p99": 14.7,
+   "n": 3120,
+   "basis": "|raw cover − 0.5| and |model − market| at the close, 2022-2025 OOS FBS games (football/cfb_ev/dataset.js)"
+  },
+  "location": {
+   "sd_ref": 2.15,
+   "n": 3120,
+   "basis": "median between-model SD of {V1 fair, V2 walk-forward ensemble} on 2022-2025 OOS games: disagreement at or below this is already absorbed by the calibrated distribution; only the excess is sampled"
+  },
+  "anchored": {
+   "method": "temperature",
+   "games": 2388,
+   "push": {
+    "all_integer_lines": {
+     "n": 933,
+     "predicted_raw": 0.0239,
+     "predicted_anchored": 0.0321,
+     "observed": 0.0525,
+     "wilson95": [
+      0.04,
+      0.0688
+     ]
+    },
+    "line_3": {
+     "n": 157,
+     "predicted_raw": 0.0243,
+     "predicted_anchored": 0.0556,
+     "observed": 0.0955,
+     "wilson95": [
+      0.0588,
+      0.1516
+     ]
+    },
+    "line_7": {
+     "n": 99,
+     "predicted_raw": 0.024,
+     "predicted_anchored": 0.0206,
+     "observed": 0.1111,
+     "wilson95": [
+      0.0632,
+      0.1881
+     ]
+    },
+    "line_10": {
+     "n": 59,
+     "predicted_raw": 0.0239,
+     "predicted_anchored": 0.0408,
+     "observed": 0.0678,
+     "wilson95": [
+      0.0267,
+      0.1618
+     ]
+    },
+    "other_integers": {
+     "n": 618,
+     "predicted_raw": 0.0238,
+     "predicted_anchored": 0.0271,
+     "observed": 0.0307,
+     "wilson95": [
+      0.0198,
+      0.0475
+     ]
+    }
+   },
+   "three_state_log_loss": {
+    "n": 933,
+    "raw": 0.95818,
+    "anchored": 0.87074
+   },
+   "key_numbers": [
+    {
+     "abs_margin": 1,
+     "empirical": 0.0314,
+     "raw_mean_mass": 0.04,
+     "anchored_mean_mass": 0.0358
+    },
+    {
+     "abs_margin": 2,
+     "empirical": 0.0322,
+     "raw_mean_mass": 0.0399,
+     "anchored_mean_mass": 0.0366
+    },
+    {
+     "abs_margin": 3,
+     "empirical": 0.1055,
+     "raw_mean_mass": 0.0387,
+     "anchored_mean_mass": 0.0458
+    },
+    {
+     "abs_margin": 4,
+     "empirical": 0.0356,
+     "raw_mean_mass": 0.0396,
+     "anchored_mean_mass": 0.044
+    },
+    {
+     "abs_margin": 5,
+     "empirical": 0.0235,
+     "raw_mean_mass": 0.039,
+     "anchored_mean_mass": 0.0461
+    },
+    {
+     "abs_margin": 6,
+     "empirical": 0.0314,
+     "raw_mean_mass": 0.038,
+     "anchored_mean_mass": 0.0413
+    },
+    {
+     "abs_margin": 7,
+     "empirical": 0.0871,
+     "raw_mean_mass": 0.0363,
+     "anchored_mean_mass": 0.0414
+    },
+    {
+     "abs_margin": 8,
+     "empirical": 0.031,
+     "raw_mean_mass": 0.0351,
+     "anchored_mean_mass": 0.036
+    },
+    {
+     "abs_margin": 10,
+     "empirical": 0.0482,
+     "raw_mean_mass": 0.0319,
+     "anchored_mean_mass": 0.0309
+    },
+    {
+     "abs_margin": 13,
+     "empirical": 0.0226,
+     "raw_mean_mass": 0.0276,
+     "anchored_mean_mass": 0.0235
+    },
+    {
+     "abs_margin": 14,
+     "empirical": 0.0423,
+     "raw_mean_mass": 0.0261,
+     "anchored_mean_mass": 0.0235
+    },
+    {
+     "abs_margin": 17,
+     "empirical": 0.0415,
+     "raw_mean_mass": 0.0236,
+     "anchored_mean_mass": 0.0236
+    },
+    {
+     "abs_margin": 21,
+     "empirical": 0.0377,
+     "raw_mean_mass": 0.0204,
+     "anchored_mean_mass": 0.0203
+    }
+   ],
+   "note": "OOF: each season read with the map fitted on the seasons before it, evaluated at the close and carried by the frozen distribution (fractional moves are mixtures of the two neighbouring integer moves)"
+  }
+ },
+ "alternate_line_domain": [
+  {
+   "checkpoint": "close_m7",
+   "n": 2363,
+   "identity": {
+    "brier": 0.230434,
+    "log_loss": 0.656274,
+    "slope": 0.0592,
+    "citl": -0.2102
+   },
+   "anchored": {
+    "method": "temperature",
+    "brier": 0.218437,
+    "log_loss": 0.628649,
+    "slope": 0.4432,
+    "citl": -0.0366
+   },
+   "mean_raw_p": 0.3671,
+   "mean_anchored_p": 0.3301,
+   "observed": 0.322,
+   "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
+  },
+  {
+   "checkpoint": "close_m3",
+   "n": 2364,
+   "identity": {
+    "brier": 0.260296,
+    "log_loss": 0.717115,
+    "slope": -0.0538,
+    "citl": -0.1671
+   },
+   "anchored": {
+    "method": "temperature",
+    "brier": 0.243665,
+    "log_loss": 0.680415,
+    "slope": 0.8875,
+    "citl": -0.0088
+   },
+   "mean_raw_p": 0.4607,
+   "mean_anchored_p": 0.4239,
+   "observed": 0.4217,
+   "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
+  },
+  {
+   "checkpoint": "close_p3",
+   "n": 2367,
+   "identity": {
+    "brier": 0.256415,
+    "log_loss": 0.710394,
+    "slope": -0.0419,
+    "citl": -0.0677
+   },
+   "anchored": {
+    "method": "temperature",
+    "brier": 0.241828,
+    "log_loss": 0.676698,
+    "slope": 1.2386,
+    "citl": 0.0461
+   },
+   "mean_raw_p": 0.6039,
+   "mean_anchored_p": 0.5773,
+   "observed": 0.5885,
+   "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
+  },
+  {
+   "checkpoint": "close_p7",
+   "n": 2368,
+   "identity": {
+    "brier": 0.22526,
+    "log_loss": 0.647348,
+    "slope": -0.0369,
+    "citl": -0.0102
+   },
+   "anchored": {
+    "method": "temperature",
+    "brier": 0.213609,
+    "log_loss": 0.618489,
+    "slope": 0.6702,
+    "citl": 0.0856
+   },
+   "mean_raw_p": 0.6934,
+   "mean_anchored_p": 0.6728,
+   "observed": 0.6913,
+   "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
+  }
+ ],
+ "holdout": {
+  "cfb|spread|close": {
+   "n": 162,
+   "identity": {
+    "n": 162,
+    "brier": 0.278359,
+    "log_loss": 0.756779,
+    "slope": -0.2707,
+    "slope_ci95": [
+     -0.8132,
+     0.2718
+    ],
+    "citl": -0.1337,
+    "citl_ci95": [
+     -0.4533,
+     0.1858
+    ],
+    "ece": 0.15412,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.4609,
+    "mean_p": 0.531,
+    "base_rate": 0.5,
+    "decomposition": {
+     "reliability": 0.04135,
+     "resolution": 0.01341,
+     "uncertainty": 0.25,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   },
+   "chosen": {
+    "method": "temperature",
+    "n": 162,
+    "brier": 0.25,
+    "log_loss": 0.693147,
+    "slope": -3.5764,
+    "slope_ci95": [
+     -537580.2764,
+     537573.1236
+    ],
+    "citl": 0,
+    "citl_ci95": [
+     -0.308,
+     0.308
+    ],
+    "ece": 0.09259,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.4609,
+    "mean_p": 0.5,
+    "base_rate": 0.5,
+    "decomposition": {
+     "reliability": 0.01341,
+     "resolution": 0.01341,
+     "uncertainty": 0.25,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   },
+   "delta_log_loss": -0.063632,
+   "delta_log_loss_ci95": [
+    -0.122172,
+    0.011454
+   ],
+   "verdict": "CONFIRMED: the holdout does not contradict the promotion"
+  },
+  "cfb|spread|open": {
+   "n": 0,
+   "note": "the published 2026 record carries no opener price or line for most games: no open-checkpoint holdout"
+  },
+  "cfb|moneyline|close": {
+   "n": 115,
+   "identity": {
+    "n": 115,
+    "brier": 0.150648,
+    "log_loss": 0.458976,
+    "slope": 1.2885,
+    "slope_ci95": [
+     0.7858,
+     1.7911
+    ],
+    "citl": -0.1401,
+    "citl_ci95": [
+     -0.5853,
+     0.3052
+    ],
+    "ece": 0.08206,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.8572,
+    "mean_p": 0.6408,
+    "base_rate": 0.6174,
+    "decomposition": {
+     "reliability": 0.01,
+     "resolution": 0.09518,
+     "uncertainty": 0.23622,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   },
+   "chosen": {
+    "method": "identity",
+    "n": 115,
+    "brier": 0.150648,
+    "log_loss": 0.458976,
+    "slope": 1.2885,
+    "slope_ci95": [
+     0.7858,
+     1.7911
+    ],
+    "citl": -0.1401,
+    "citl_ci95": [
+     -0.5853,
+     0.3052
+    ],
+    "ece": 0.08206,
+    "ece_caveat": "binning-dependent; biased upward at small n",
+    "auc": 0.8572,
+    "mean_p": 0.6408,
+    "base_rate": 0.6174,
+    "decomposition": {
+     "reliability": 0.01,
+     "resolution": 0.09518,
+     "uncertainty": 0.23622,
+     "note": "Murphy decomposition on 10 equal-mass bins (Brier ≈ REL − RES + UNC; within-bin variance makes it inexact, and REL is biased upward at small n — Ferro & Fricker 2012)"
+    }
+   },
+   "delta_log_loss": 0,
+   "delta_log_loss_ci95": [
+    0,
+    0
+   ],
+   "verdict": "nothing to confirm (NOT_VALIDATED)"
+  }
+ }
+}

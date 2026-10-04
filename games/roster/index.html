@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Roster | EdgeDesk Games</title>
+<meta name="description" content="Your franchise's roster: fictional players with ratings, archetypes, traits and careers that are yours to develop. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games/roster">
+<meta name="theme-color" content="#100e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games/roster">
+<meta property="og:title" content="Your roster — EdgeDesk Games">
+<meta property="og:description" content="Fictional players with ratings, archetypes, traits and careers, on a franchise that is yours for good.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Your roster — EdgeDesk Games">
+<meta name="twitter:description" content="Fictional players with ratings, archetypes, traits and careers, on a franchise that is yours for good.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260910a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260910a">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap" id="main">
+  <div class="sec" style="margin-top:18px">
+    <div class="card" id="stage">
+      <div class="eyebrow">Roster</div>
+      <div class="sk" style="width:55%;margin:16px 0"></div>
+      <div class="sk" style="width:35%;margin:10px 0"></div>
+      <div class="sk-label" style="text-align:left">Loading the roster</div>
+    </div>
+  </div>
+  <div id="groups"></div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260910a"></script>
+<script src="/games/lib/scoring.js?v=20260910a"></script>
+<script src="/games/lib/challenge.js?v=20260910a"></script>
+<script src="/games/lib/research_state.js?v=20260910a"></script>
+<script src="/games/lib/attribution.js?v=20260910a"></script>
+<script src="/games/lib/store.js?v=20260910a"></script>
+<script src="/games/lib/dynasty.js?v=20260910a"></script>
+<script src="/games/lib/social.js?v=20260910a"></script>
+<script src="/games/lib/auth.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/profile.js?v=20260910a"></script>
+<script src="/games/lib/franchise.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/football.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/roster.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/engine.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/paint.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/stage.js?v=20260910a"></script>
+<script src="/games/lib/gridiron/lineup.js?v=20260910a"></script>
+<script src="/games/games.js?v=20260910a"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDFranchise.roster','EDFranchise.playerCard','EDFranchise.setStarter','EDFranchise.release','EDFranchise.lineupBest',
+            'EDFranchise.exchangeList','EDFranchise.exchangeWithdraw','EDFranchise.chemistryLine','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,FR=window.EDFranchise,S=window.EDGamesSocial;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),groupsEl=$('groups'),after=$('after');
+  var esc=G.esc;
+
+  var READY=G.boot('roster');
+  var DATA=null,VIEWED={};
+
+  /* ---- no franchise yet --------------------------------------------------- */
+  function renderEmpty(state){
+    stage.className='card';
+    stage.innerHTML='<div class="fo-hero"><div class="eyebrow">Roster</div>'
+      +'<h1>Thirty-eight players, none of them anyone else’s.</h1>'
+      +'<p>A founding roster is generated when you found your franchise: quarterbacks, backs, receivers, two lines, '
+      +'a secondary and a kicking game, each with four ratings, an archetype, a development tier and, for some, a trait. '
+      +'Team overall lands around 68–72 — enough to play, with plenty to fix.</p>'
+      +'<ul class="fo-list"><li>Scout better in Price It and your Scouting Points rise.</li>'
+      +'<li>Play the week and your Team Credits do.</li><li>Every card, every season, every record stays.</li></ul>'
+      +'<div class="btn-row"><a class="btn btn-go btn-big" href="/games/franchise/?intent=roster" id="goFound">Found my franchise</a></div>'
+      +'<div class="ftp" style="margin-top:12px"><b>Free to play</b> · No account needed to start · Nothing here can be bought</div></div>';
+    groupsEl.innerHTML='';
+    after.innerHTML=state==='not_deployed'
+      ?'<div class="sec"><div class="card"><div class="empty">Franchise services are temporarily unavailable, so nothing can be saved to your record right now.<br><a class="btn btn-go" style="margin-top:14px" href="/games/play/">Play a game anyway</a></div></div></div>'
+      :'';
+    var go=$('goFound');
+    if(go)go.addEventListener('click',function(){G.track('signup_start_from_games',{placement:'roster',game_type:'franchise'});});
+  }
+
+  /* ---- the roster --------------------------------------------------------- */
+  function rate(rt){
+    return '<div class="rate">'
+      +'<div class="ovr"><div class="k">Team OVR</div><div class="v">'+esc(rt.overall)+'</div></div>'
+      +'<div><div class="k">Offense</div><div class="v">'+esc(rt.offense)+'</div></div>'
+      +'<div><div class="k">Defense</div><div class="v">'+esc(rt.defense)+'</div></div>'
+      +'<div><div class="k">Special</div><div class="v">'+esc(rt.special)+'</div></div></div>';
+  }
+  /* a release is offered only where the server would allow it: above the
+     roster's floor, and only for a man his position can spare; the server
+     decides again */
+  function groupHtml(g,rt,weak,strong,open,room){
+    var val=rt.groups&&rt.groups[g.position]!=null?rt.groups[g.position]:'—';
+    var cls=(weak&&weak.position===g.position)?' pos-weak':(strong&&strong.position===g.position)?' pos-strong':'';
+    var spare=g.players.length>g.starters;
+    var cards=g.players.map(function(p){
+      var actions='';
+      if(!FR.isStarter(p)){
+        /* which slot he takes: every starting slot, with the man who holds it now */
+        if(g.starters>1){
+          var opts='';
+          for(var k=1;k<=g.starters;k++){
+            var holder=null;g.players.forEach(function(x){if((x.depth|0)===k)holder=x;});
+            opts+='<option value="'+k+'"'+(k===g.starters?' selected':'')+'>'+esc(g.position)+k+(holder?' · '+esc(FR.fullName(holder))+' '+esc(holder.overall):'')+'</option>';
+          }
+          actions='<div class="pc-slot"><select aria-label="which slot" data-slot-sel="'+esc(p.id)+'">'+opts+'</select>'
+            +'<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="'+g.starters+'">Start him</button></div>';
+        }else{
+          actions='<button class="btn" type="button" data-start="'+esc(p.id)+'" data-slot="1">Start him</button>';
+        }
+      }
+      if(!FR.isStarter(p)&&spare&&room&&!room.floor)actions+='<button class="btn btn-ghost" type="button" data-release="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'">Release</button>';
+      /* the Exchange: a man of your own at your price, still playing for you until he sells */
+      if(p.listing)actions+='<span class="pc-line pc-listed">Listed on the <a href="/games/exchange/">Exchange</a> at <b>'+esc(FR.fmt(p.listing.price))+'</b> Credits · '
+        +'<button class="lnk" type="button" data-withdraw="'+esc(p.listing.id)+'">take it down</button></span>';
+      else if(spare&&room&&!room.floor)actions+='<button class="btn btn-ghost" type="button" data-list="'+esc(p.id)+'" data-name="'+esc(FR.fullName(p))+'" data-pos="'+esc(p.position)+'" data-ovr="'+esc(p.overall)+'">Sell on the Exchange</button>';
+      return FR.playerCard(p,{actions:actions,fit:fitFor(p)});
+    }).join('');
+    return '<details class="pos'+cls+'"'+(open?' open':'')+' data-pos="'+esc(g.position)+'">'
+      +'<summary><span class="p">'+esc(g.position)+'</span><span class="n">'+esc(g.name)+' · '+g.players.length+' · '+g.starters+' start'+(g.starters===1?'s':'')+'</span>'
+      +'<span class="r">'+esc(val)+'<small>OVR</small></span></summary>'
+      +'<div class="pc-grid">'+cards+'</div></details>';
+  }
+  /* CHEMISTRY. A property of the eleven who start, derived on the server
+     from the lineup and nothing else — how the archetypes fit the scheme,
+     how many games the starters have played together, whole units grown up
+     together, new arrivals still learning the calls — and printed term by
+     term, because a number you cannot explain is a number you cannot coach. */
+  function chemBar(side,name,scheme){
+    if(!side)return '';
+    var s=side.score|0,eff=+side.effect||0;
+    return '<div class="ch-side"><div class="ch-row"><b>'+esc(name)+'</b><span class="ch-word">'+esc(FR.chemistryWord(s))+'</span>'
+      +'<span class="ch-num">'+esc(s)+'<small>'+(eff>=0?'+':'')+esc(eff.toFixed(1))+' on the field</small></span></div>'
+      +'<div class="ch-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+s+'" aria-label="'+esc(name)+' chemistry"><div class="ch-fill" style="width:'+s+'%"></div></div>'
+      +'<div class="ch-why">'+esc(FR.chemistryLine(side).replace(/^\d+ · /,''))+(scheme?' · <i>'+esc(scheme.replace(/_/g,' '))+'</i>':'')+'</div>'
+      +(side.units&&side.units.length?'<div class="ch-units">'+side.units.map(function(u){return '<span class="'+(u.on?'on':'')+'">'+esc(u.name)+' '+esc(u.settled)+'/'+esc(u.of)+'</span>';}).join('')+'</div>':'')
+      +'</div>';
+  }
+  function chemBlock(c){
+    if(!c)return '';
+    return '<div class="chem"><div class="side-h" style="margin:14px 0 6px"><h2 style="font-size:14px">Chemistry · '+esc(c.team|0)+'</h2><span class="m">'+esc(c.version||'')+'</span></div>'
+      +'<div class="ch-grid">'+chemBar(c.offense,'Offense',(c.scheme||{}).offense)+chemBar(c.defense,'Defense',(c.scheme||{}).defense)+'</div>'
+      +'<div class="ftp" style="margin-top:8px">Chemistry is the eleven who start, not a number a man carries: how each archetype fits the scheme, '
+      +esc((c.rules||{}).tenure_games||8)+' games together to be settled, whole units grown together, a new arrival still learning the calls. '
+      +'A quarter of the effect reaches the rating on the field, as every trait does. Change the lineup and it changes.</div></div>';
+  }
+  /* THE TREATMENT ROOM. A hurt player keeps his card, his number and his
+     place on the chart; what he does not do is count toward the team rating
+     or take the field. The block only exists when somebody is in it. */
+  function injuryBlock(d){
+    var out=(d.players||[]).filter(function(p){return !FR.isAvailable(p);});
+    if(!out.length)return '';
+    return '<div class="side-h" style="margin-bottom:0"><h2 style="font-size:14px">Treatment room</h2>'
+      +'<span class="m">'+esc(out.length)+' unavailable</span></div>'
+      +'<ul class="inj">'+out.map(function(p){
+        return '<li><span class="p">'+esc(p.position)+'</span>'
+          +'<span class="o"><b>'+esc(FR.fullName(p))+'</b><small>OVR '+esc(p.overall)
+          +(FR.isStarter(p)?' · starter':'')+'</small></span>'
+          +'<span class="r">'+esc(FR.injuryLine(p))+'</span></li>';
+      }).join('')+'</ul>'
+      +'<div class="ftp" style="margin-top:8px">They are still yours — still on the roster, still against the ceiling. '
+      +'They are back the week the injury says, with nothing to do and nothing to press.</div>';
+  }
+  function renderRoster(d,fresh){
+    DATA=d;
+    var f=d.franchise,rt=d.rating||{},gs=FR.groups(d.players),weak=FR.weakest(rt),strong=FR.strongest(rt);
+    var room=FR.rosterRoom({active:d.players.length});
+    stage.className='card';
+    stage.setAttribute('style',FR.themeVars(f.theme));
+    stage.innerHTML='<div class="eyebrow">Roster · '+esc(d.players.length)+' of '+esc(room.max)+'</div>'
+      +'<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+esc(f.city)+' · '+esc(f.abbr)+'</div><div class="hq-name">'+esc(f.name)+'</div>'
+      +'<div class="hq-line">'+(strong?'Strongest: <b>'+esc(strong.name)+' '+esc(strong.value)+'</b>':'')
+      +(weak?' · Weakest: <b>'+esc(weak.name)+' '+esc(weak.value)+'</b>':'')+'</div></div></div>'
+      +rate(rt)
+      +chemBlock(d.chemistry)
+      +injuryBlock(d)
+      +'<div class="lineup"><div class="lu-tabs">'
+      +'<button type="button" class="lu-t on" data-lu="offense">Offense</button>'
+      +'<button type="button" class="lu-t" data-lu="defense">Defense</button>'
+      +'<button type="button" class="btn lu-best" id="bestLineup" title="Every position in order of overall among the fit">Best lineup</button></div>'
+      +'<canvas id="luField" class="lu-field" aria-label="Your starting eleven, in the positions they line up in; tap a man for his slot"></canvas>'
+      +'<div class="lu-fit" id="luFit"></div></div>'
+      +'<div class="ftp" style="margin-top:12px">Overall is the mean of a player’s four ratings. Team ratings weight the starters by position; '
+      +'the depth chart decides who starts, and only a fit player is counted. Every number here was generated on the server and cannot be edited.</div>';
+
+    var sides=[['offense','Offense','QB, RB, WR, TE, OL'],['defense','Defense','DL, LB, CB, S'],['special','Special teams','K, P']];
+    groupsEl.innerHTML=sides.map(function(sd){
+      var mine=gs.filter(function(g){return g.side===sd[0];});
+      var first=true;
+      return '<div class="side-h"><h2>'+esc(sd[1])+'</h2><span class="m">'+esc(rt[sd[0]]!=null?rt[sd[0]]+' OVR':'')+'</span></div>'
+        +mine.map(function(g){var h=groupHtml(g,rt,weak,strong,first&&sd[0]==='offense',room);first=false;return h;}).join('');
+    }).join('');
+
+    after.innerHTML='<div class="sec"><div class="card"><div class="eyebrow">Improving it</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px;line-height:1.6">Players develop in the offseason, after every season: the young grow toward their potential, '
+      +'the old fade, anyone 35 retires (33 and under 55 too), and a rookie is signed for every one who goes. A <a href="/games/franchise/">Training Center</a> '
+      +'speeds the young along. The <a href="/games/market/">draft class and the free agents</a> are where the roster changes on purpose: Scouting Points buy the truth '
+      +'about a prospect, two picks a season, Credits sign a veteran, men change hands between franchises on the <a href="/games/exchange/">Exchange</a>, and the roster runs '+esc(room.min)+' to '+esc(room.max)+' — above the floor a player his position can spare can be released here. '
+      +'The way to a better team is still the way to a better read: <a href="/games/price-it/">scout in Price It</a>, <a href="/games/pick-5/">play the week</a>, '
+      +'<a href="/games/two-minute-drill/">run the drill</a>. The retired are in the <a href="/games/trophies/">Trophy Room</a>.</p></div></div>';
+
+    wire();
+    paintLineup(f,'offense');
+    if(fresh)G.track('roster_view',{players:d.players.length,overall:rt.overall,weakest:weak?weak.position:null});
+  }
+  /* ── THE ELEVEN, ON A FIELD ─────────────────────────────────────────────
+     The same artist, the same camera and the same uniforms as the game
+     itself, so the roster page shows the men who actually take the snap
+     standing where they actually stand. */
+  var LU_SIDE='offense',LU_BOXES=[];
+  /* SATURDAY'S OPPONENT, from the franchise's own snapshot: their schemes are
+     what a matchup is read against */
+  function saturday(){
+    var snap=null;try{snap=FR.snapshot();}catch(_){}
+    var ng=snap&&snap.next_game;
+    return ng&&ng.opponent?ng.opponent:null;
+  }
+  function fitFor(p){
+    var f=DATA&&DATA.franchise,opp=saturday();
+    return {scheme:f?FR.fitFor(p,f):null,matchup:opp?FR.matchupFit(p,opp):null};
+  }
+  /* the men who can take the field: the drawer wants the roster, not a seed */
+  function fieldPlayers(){
+    return DATA&&DATA.players?DATA.players.filter(function(p){return p.status==='active'||!p.status;}):null;
+  }
+  function themeObj(key){
+    var t=null;
+    (FR&&FR.THEMES?FR.THEMES:[]).forEach(function(x){if(x.key===key)t=x;});
+    return t||{primary:'#7cc142',secondary:'#123326',ink:'#06231a'};
+  }
+  function paintLineup(f,side){
+    var LU=window.EDGridironLineup, cv=document.getElementById('luField');
+    if(!LU||!cv||!f)return;
+    LU_SIDE=side||LU_SIDE;
+    var th=themeObj(f.theme);
+    /* THE ELEVEN ON THE FIELD ARE YOUR ELEVEN. Drawn without the roster the
+       artist generates a team from the seed, so the field showed eleven men
+       who were not on the page below it. */
+    var team={id:f.id,city:f.city,name:f.name,abbr:f.abbr,theme:f.theme,logo:f.logo,
+      offense:f.offense,defense:f.defense,overall:f.overall||f.rating_overall||74,
+      seed:(f.city||'')+(f.name||''),players:fieldPlayers()};
+    function go(){
+      try{LU_BOXES=LU.draw(cv,team,LU_SIDE,{theme:th,homeColor:th.secondary||'#123326',
+        awayColor:'#1b2430',homeName:f.abbr||''})||[];cv.__boxes=LU_BOXES;}catch(e){}
+    }
+    go();
+    if(window.requestAnimationFrame)requestAnimationFrame(go);
+    if(!cv.__wired){
+      cv.__wired=1;
+      if(window.ResizeObserver){try{new ResizeObserver(go).observe(cv);}catch(e){}}
+      window.addEventListener('resize',go);
+      /* TAP A MAN FOR HIS SLOT: the nearest drawn man within reach opens the
+         slot — who holds it, how he fits, who is behind him */
+      cv.addEventListener('click',function(e){
+        var r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,best=null,bd=1e9;
+        LU_BOXES.forEach(function(b){var d=Math.hypot(b.x-x,b.y-y);if(d<bd){bd=d;best=b;}});
+        if(best&&bd<=Math.max(22,best.r*1.6))slotSheet(best);
+      });
+    }
+    paintFitLine();
+    var tabs=document.querySelectorAll('.lu-t');
+    Array.prototype.forEach.call(tabs,function(b){
+      b.onclick=function(){
+        Array.prototype.forEach.call(tabs,function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        paintLineup(f,b.getAttribute('data-lu'));
+        paintFitLine();
+      };
+    });
+  }
+
+  /* what the scheme thinks of the eleven, and who is coming on Saturday */
+  function paintFitLine(){
+    var el=$('luFit');if(!el||!DATA)return;
+    var c=DATA.chemistry||{},side=c[LU_SIDE]||{},opp=saturday();
+    var fit=side.fit==null?null:+side.fit,men=side.men||[];
+    var fights=men.filter(function(m){return (m.fit|0)<0;}).length,built=men.filter(function(m){return (m.fit|0)>=2;}).length;
+    var bits=[];
+    if(fit!=null)bits.push('<b>Scheme fit '+(fit>0?'+':'')+esc(fit)+'</b>'+(built?' · '+built+' built for it':'')+(fights?' · '+fights+' fighting it':''));
+    if(opp)bits.push('Saturday: <b>'+esc(opp.abbr||opp.name||'')+'</b> run '+esc(FR.schemeWord(opp.offense))+' and '+esc(FR.schemeWord(opp.defense)));
+    el.innerHTML=bits.join(' <span class="sep">·</span> ')+'<span class="lu-tap">Tap a man for his slot</span>';
+  }
+  var SHEET=null;
+  function closeSheet(){if(!SHEET)return;var s=SHEET;SHEET=null;s.classList.remove('on');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s);},220);}
+  function slotSheet(box){
+    if(!DATA)return;
+    var f=DATA.franchise,opp=saturday(),pos=box.pos;
+    var same=DATA.players.filter(function(p){return p.position===pos&&(p.status==='active'||!p.status);})
+      .sort(function(a,b){return ((a.depth|0)||99)-((b.depth|0)||99)||(b.overall|0)-(a.overall|0);});
+    var starter=null;same.forEach(function(p){if(box.pid&&String(p.id)===String(box.pid))starter=p;});
+    var n=FR.STARTERS?FR.STARTERS[pos]||1:1;
+    if(!starter)starter=same[0]||null;
+    var slot=starter?Math.max(1,Math.min(n,starter.depth|0||1)):1;
+    var backups=same.filter(function(p){return !starter||p.id!==starter.id;});
+    var st=starter?fitFor(starter):null;
+    function fitChips(ft){
+      if(!ft)return '';
+      var out='';
+      if(ft.scheme)out+='<span class="slt-fit '+(ft.scheme.value>0?'up':ft.scheme.value<0?'dn':'')+'"><i>Scheme</i>'+esc(ft.scheme.word)+(ft.scheme.value?' ('+(ft.scheme.value>0?'+':'')+esc(ft.scheme.value)+')':'')+'</span>';
+      if(ft.matchup)out+='<span class="slt-fit '+(ft.matchup.value>0?'up':ft.matchup.value<0?'dn':'')+'"><i>Saturday</i>'+esc(ft.matchup.word)+(ft.matchup.value?' ('+(ft.matchup.value>0?'+':'')+esc(ft.matchup.value)+')':'')+'</span>';
+      return out;
+    }
+    closeSheet();
+    var sh=document.createElement('div');sh.className='slt';sh.setAttribute('role','dialog');sh.setAttribute('aria-modal','true');
+    sh.innerHTML='<div class="slt-in"><div class="slt-h"><div><div class="eyebrow">'+esc(pos)+(n>1?esc(slot):'')+((box.label||box.slot)&&(box.label||box.slot)!==pos?' · '+esc(box.label||box.slot):'')+'</div>'
+      +'<div class="slt-t">'+(starter?esc(FR.fullName(starter)):'Nobody in the slot')+'</div></div>'
+      +'<button class="btn slt-x" type="button" id="rsX" aria-label="Close">✕</button></div>'
+      +(starter?FR.playerCard(starter,{compact:true})+'<div class="slt-fits">'+fitChips(st)+'</div>':'')
+      +'<div class="eyebrow" style="margin-top:14px">Behind him · '+esc(backups.length)+'</div>'
+      +(backups.length?'<ul class="slt-list">'+backups.map(function(p){
+          var d=starter?(p.overall|0)-(starter.overall|0):0,ft=fitFor(p),isStart=FR.isStarter(p);
+          return '<li><span class="p">'+esc(pos)+(isStart?esc(p.depth|0):'')+'</span><span class="o"><b>'+esc(FR.fullName(p))+'</b>'
+            +'<small>OVR '+esc(p.overall)+' <em class="'+(d>0?'up':d<0?'dn':'')+'">('+(d>0?'+':'')+esc(d)+')</em>'
+            +(ft.scheme&&ft.scheme.value?' · scheme '+(ft.scheme.value>0?'+':'')+esc(ft.scheme.value):'')+(ft.matchup&&ft.matchup.value?' · Saturday '+(ft.matchup.value>0?'+':'')+esc(ft.matchup.value):'')+'</small></span>'
+            +(isStart&&n>1&&(p.depth|0)!==slot?'<span class="r"><small>starts at '+esc(pos)+esc(p.depth|0)+'</small></span>':isStart?'<span class="r"></span>'
+              :'<span class="r"><button class="btn" type="button" data-slt-start="'+esc(p.id)+'" data-slt-slot="'+esc(slot)+'">Start him</button></span>')+'</li>';
+        }).join('')+'</ul>':'<div class="empty" style="padding:12px 0">Nobody else at '+esc(pos)+'.</div>')
+      +'</div>';
+    document.body.appendChild(sh);SHEET=sh;
+    setTimeout(function(){sh.classList.add('on');},10);
+    sh.addEventListener('click',function(e){if(e.target===sh)closeSheet();});
+    sh.querySelector('#rsX').addEventListener('click',closeSheet);
+    Array.prototype.forEach.call(sh.querySelectorAll('[data-slt-start]'),function(b){
+      b.addEventListener('click',function(){
+        var id=b.getAttribute('data-slt-start'),sl=+b.getAttribute('data-slt-slot')||1;
+        b.disabled=true;b.textContent='Moving…';
+        FR.setStarter(id,sl).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Could not change the lineup.');b.disabled=false;b.textContent='Start him';return;}
+          renderRoster(r.data,false);closeSheet();
+          G.toast('Lineup updated');
+          G.track('roster_change',{player:id,slot:sl,from:'slot_sheet',overall:r.data.rating?r.data.rating.overall:null});
+        });
+      });
+    });
+    G.track('slot_view',{position:pos,slot:slot,game_type:'franchise'});
+  }
+
+  /* re-read the roster, keeping the groups that were open */
+  function refresh(){
+    var openPos={};
+    Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+    return FR.roster().then(function(r){
+      if(!r.ok||!r.data)return;
+      renderRoster(r.data,false);
+      Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+    });
+  }
+  var WIRED=false;
+  function wire(){
+    var best=$('bestLineup');
+    if(best)best.onclick=function(){
+      best.disabled=true;best.textContent='Ordering…';
+      FR.lineupBest().then(function(r){
+        if(!r.ok||!r.data){G.toast(r.message||'Could not order the lineup.');best.disabled=false;best.textContent='Best lineup';return;}
+        var openPos={};
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+        renderRoster(r.data,false);
+        Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+        G.toast((r.data.moved|0)?(r.data.moved+' place'+(r.data.moved===1?'':'s')+' changed'):'Already the best lineup');
+        G.track('lineup_best',{moved:r.data.moved|0,overall:r.data.rating?r.data.rating.overall:null,chemistry:r.data.chemistry?r.data.chemistry.team:null,game_type:'franchise'});
+      });
+    };
+    if(WIRED)return;WIRED=true;
+    groupsEl.addEventListener('click',function(e){
+      var b=e.target.closest?e.target.closest('button[data-start]'):null;
+      if(b){
+        var id=b.getAttribute('data-start'),slot=+b.getAttribute('data-slot')||1;
+        var sel=groupsEl.querySelector('select[data-slot-sel="'+id+'"]');
+        if(sel)slot=+sel.value||slot;
+        b.disabled=true;b.textContent='Moving…';
+        FR.setStarter(id,slot).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Could not change the lineup.');b.disabled=false;b.textContent='Move into the lineup';return;}
+          var openPos={};
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos[d.getAttribute('data-pos')]=true;});
+          renderRoster(r.data,false);
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos[d.getAttribute('data-pos')];});
+          G.toast('Lineup updated');
+          G.track('roster_change',{player:id,slot:slot,overall:r.data.rating?r.data.rating.overall:null});
+        });
+        return;
+      }
+      var rb=e.target.closest?e.target.closest('button[data-release]'):null;
+      if(rb){
+        var rid=rb.getAttribute('data-release'),nm=rb.getAttribute('data-name')||'this player';
+        /* irreversible: the page asks once, plainly */
+        if(!window.confirm('Release '+nm+'? He leaves the franchise for good.'))return;
+        rb.disabled=true;rb.textContent='Releasing…';
+        FR.release(rid).then(function(r){
+          if(!r.ok||!r.data){G.toast(r.message||'Could not release the player.');rb.disabled=false;rb.textContent='Release';return;}
+          var openPos2={};
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details[open]'),function(d){openPos2[d.getAttribute('data-pos')]=true;});
+          renderRoster(r.data.roster,false);
+          Array.prototype.forEach.call(groupsEl.querySelectorAll('details'),function(d){d.open=!!openPos2[d.getAttribute('data-pos')];});
+          G.toast((r.data.released?r.data.released.name:'Player')+' released');
+          G.track('player_released',{player:rid,position:r.data.released?r.data.released.position:null,roster:r.data.roster_active});
+        });
+        return;
+      }
+      var lb=e.target.closest?e.target.closest('button[data-list]'):null;
+      if(lb){
+        var lid=lb.getAttribute('data-list'),lnm=lb.getAttribute('data-name'),lovr=+lb.getAttribute('data-ovr')||0;
+        var rules=(DATA&&DATA.exchange)||FR.EXCHANGE;
+        var ref=FR.signingCost?FR.signingCost(lovr):0;
+        var ans=window.prompt('List '+lnm+' on the Exchange. Your price, in Credits ('+rules.min_price+'–'+rules.max_price+'). '
+          +'The fee is '+rules.fee_pct+'%; he keeps playing for you until he sells.'+(ref?' The free-agent reference for a '+lovr+' is '+ref+'.':''),String(ref||rules.min_price));
+        if(ans==null)return;
+        var price=parseInt(ans,10);
+        if(!(price>=rules.min_price&&price<=rules.max_price)){G.toast('A price is between '+rules.min_price+' and '+rules.max_price+' Credits');return;}
+        lb.disabled=true;lb.textContent='Listing…';
+        FR.exchangeList(lid,price).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not list him.');lb.disabled=false;lb.textContent='Sell on the Exchange';return;}
+          var l=(r.data||{}).listing||{};
+          G.toast('Listed at '+FR.fmt(l.price)+' Credits — you receive '+FR.fmt(l.net)+' if he sells');
+          G.track('exchange_listed',{placement:'roster',price:l.price,fee:l.fee,position:(l.man||{}).position,overall:(l.man||{}).overall,game_type:'franchise'});
+          refresh();
+        });
+        return;
+      }
+      var wb=e.target.closest?e.target.closest('button[data-withdraw]'):null;
+      if(wb){
+        wb.disabled=true;
+        FR.exchangeWithdraw(wb.getAttribute('data-withdraw')).then(function(r){
+          if(!r.ok){G.toast(r.message||'Could not take it down.');wb.disabled=false;return;}
+          G.toast('Listing taken down');
+          G.track('exchange_withdrawn',{placement:'roster',game_type:'franchise'});
+          refresh();
+        });
+        return;
+      }
+      var card=e.target.closest?e.target.closest('.pc'):null;
+      if(card){
+        var pid=card.getAttribute('data-player');
+        if(pid&&!VIEWED[pid]){VIEWED[pid]=true;G.track('player_view',{player:pid,position:card.getAttribute('data-position'),depth:card.getAttribute('data-depth')});}
+      }
+    });
+  }
+
+  /* ---- boot --------------------------------------------------------------- */
+  G.franchiseReady().then(function(){
+    var st=FR.state();
+    if(st!=='franchise'){renderEmpty(st);return;}
+    return FR.roster().then(function(r){
+      if(!r.ok||!r.data){
+        stage.innerHTML='<div class="empty">The roster could not be loaded. '+esc(r.message||'Check your connection and reload.')+'</div>';
+        return;
+      }
+      renderRoster(r.data,true);
+    });
+  }).catch(function(){renderEmpty(FR.state());});
+  READY.catch(function(){});
+})();
+</script>
+</body>
+</html>

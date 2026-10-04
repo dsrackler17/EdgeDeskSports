@@ -1,0 +1,832 @@
+/* ===========================================================================
+   EDGEDESK GAMES — the shared shell.
+
+   Same brand as the research terminal (dark base, the EdgeDesk green, Space
+   Grotesk display / Inter body / JetBrains Mono for numbers) with more air,
+   bigger numbers and stronger feedback, because this is the front door rather
+   than the workbench.
+
+   Deliberately NOT here: anything that reads as a casino. No chips, no reels,
+   no fake currency, no flashing. Energy comes from scale, motion and contrast.
+
+   Mobile first. Every layout rule below is written for 320px and widened with
+   min-width queries, so the narrowest phone is the default rather than the
+   afterthought.
+   =========================================================================== */
+
+:root{
+  --ink:#100e0a;--panel:#191510;--raised:#221c15;--cell:#1e1913;
+  --line:#332a1b;--line2:#3a3124;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+  --val:#7cc142;            /* the EdgeDesk green */
+  --val-dim:#2b7d59;
+  --neg:#e2664b;--est:#d9a441;--obs:#2fa79a;--on-accent:#042320;--exp:#d274b0;
+  --radius:14px;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 8px 30px rgba(0,0,0,.45);
+  --tap:48px;               /* the thumb-friendly minimum, used everywhere */
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ink);color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;                      /* the page body never scrolls sideways */;color-scheme:dark;accent-color:var(--accent)}
+a{color:var(--val);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif;margin:0;line-height:1.15}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* focus is never removed, only restyled — a keyboard player must see where they are */
+:focus-visible{outline:2px solid var(--val);outline-offset:2px;border-radius:6px}
+
+.wrap{max-width:960px;margin:0 auto;padding:0 16px}
+@media(min-width:768px){.wrap{padding:0 24px}}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+.gh{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.92);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.gh-in{display:flex;align-items:center;gap:12px;height:56px}
+.gh-logo{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.06em;
+  font-size:13px;color:var(--text);white-space:nowrap}
+.gh-logo:hover{text-decoration:none}
+.mk{display:inline-block;width:9px;height:15px;background:var(--val);border-radius:2px;
+  transform:skewX(-12deg)}
+.gh-tag{color:var(--val);font-weight:700}
+.gh-sp{flex:1}
+/* the nav shrinks before the page does: fifteen rooms at 1280px must never
+   push the page wider than the viewport, so the nav scrolls within itself
+   if it ever has to (every room is in the footer regardless) */
+.gh-nav{display:flex;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.gh-nav::-webkit-scrollbar{display:none}
+.gh-nav a{padding:8px 8px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--dim);white-space:nowrap}
+.gh-nav a:hover{background:var(--cell);color:var(--text);text-decoration:none}
+.gh-nav a[aria-current]{color:var(--val);background:var(--cell)}
+/* The header is the only row on the page dense enough to overflow, and it got
+   denser when Head-to-Head and Groups arrived: four nav items plus the wordmark
+   is 413px of content on a 390px phone.
+   
+   So it sheds in two stages, and everything it sheds is reachable elsewhere on
+   the same page — Pick 5 and Groups are both in the footer of every page.
+   
+     under 480px   drop the wide-only nav items (H2H, Pick 5, Groups) — the
+                   War Room, the Drill and Price It stay, and every dropped
+                   item is in the footer of every page — and the logo's
+                   wordmark, leaving the mark and GAMES
+     under 380px   tighten the remaining links */
+@media(max-width:480px){
+  .gh-nav a{padding:8px 7px;font-size:12px}
+  .gh-only-wide{display:none}
+  /* the wordmark goes here too: with the War Room and the Drill in the nav,
+     "EDGEDESK GAMES" plus three links measured 401px on a 390px phone, and a
+     header that scrolls sideways is the first thing a visitor sees go wrong.
+     The mark and GAMES stay; the footer names EdgeDesk on every page. */
+  .gh-in{gap:8px}
+  .gh-word{display:none}
+}
+@media(max-width:379px){
+  .gh-nav a{padding:8px 6px;font-size:11.5px}
+  .wrap{padding:0 12px}
+}
+
+/* ── the free-to-play line, which appears near every entry point ────────── */
+.ftp{font-size:11.5px;color:var(--faint);letter-spacing:.02em}
+.ftp b{color:var(--dim);font-weight:600}
+
+/* ── buttons ────────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:var(--tap);padding:0 20px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--raised);color:var(--text);font:600 15px 'Inter',sans-serif;
+  cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease;
+  width:100%;text-align:center}
+.btn:hover{background:var(--cell);text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+/* The page-level primary action is the BRAND, not a status. --val stays
+   green where it means a genuine success state (.mission.done .chk). */
+.btn-go{background:var(--obs);border-color:var(--obs);color:var(--on-accent);font-weight:700}
+.btn-go:hover{background:#54c4b7;border-color:#54c4b7}
+.btn-ghost{background:transparent}
+.btn-row{display:grid;gap:10px;margin-top:14px}
+@media(min-width:560px){.btn-row.two{grid-template-columns:1fr 1fr}}
+
+/* ── cards ──────────────────────────────────────────────────────────────── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:18px;box-shadow:var(--shadow)}
+@media(min-width:768px){.card{padding:22px}}
+.card+.card{margin-top:14px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.14em;color:var(--faint);
+  text-transform:uppercase;margin-bottom:10px}
+
+/* ── the stat strip (streak / weekly score / rank) ──────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--cell);border:1px solid var(--line);border-radius:12px;
+  padding:12px 10px;text-align:center;min-width:0}
+.stat .k{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat .v{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;
+  line-height:1.1;margin-top:4px}
+.stat .v.on{color:var(--val)}
+.stat .s{font-size:10.5px;color:var(--faint);margin-top:2px}
+@media(min-width:560px){.stat .v{font-size:32px}}
+
+/* ── the matchup ────────────────────────────────────────────────────────── */
+.mu{text-align:center;padding:4px 0 2px}
+.mu-team{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;line-height:1.2;
+  overflow-wrap:break-word}
+@media(min-width:560px){.mu-team{font-size:30px}}
+.mu-vs{font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--faint);margin:6px 0}
+.mu-when{font-size:12.5px;color:var(--dim);margin-top:8px}
+.mu-side{font-size:10.5px;color:var(--faint);letter-spacing:.08em;text-transform:uppercase}
+
+/* ── the matchup context table ───────────────────────────────────────────
+   A three-column comparison rather than a heap of chips. Eight chips wrapped
+   to five lines on a 320px phone and pushed the selector — the whole point of
+   the screen — below the fold. Four labelled rows read faster, invite an
+   actual comparison, and fit. */
+.ctx{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px}
+.ctx caption{caption-side:top;font-size:10px;font-weight:700;letter-spacing:.12em;
+  color:var(--faint);text-transform:uppercase;text-align:left;padding-bottom:8px}
+.ctx th,.ctx td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.ctx tbody tr:last-child th,.ctx tbody tr:last-child td{border-bottom:0}
+.ctx thead th{font-size:10.5px;font-weight:700;color:var(--dim);text-align:center;
+  border-bottom:1px solid var(--line2);overflow-wrap:break-word}
+.ctx thead th:first-child{text-align:left}
+.ctx tbody th{font-weight:500;color:var(--faint);text-align:left;white-space:nowrap;
+  font-size:11.5px}
+.ctx td{text-align:center;font-family:'JetBrains Mono',monospace;color:var(--text);
+  font-variant-numeric:tabular-nums}
+.ctx td.na{color:var(--faint);font-family:'Inter',sans-serif}
+.ctx-note{font-size:11px;color:var(--faint);margin-top:8px;text-align:center}
+
+/* ── context chips ──────────────────────────────────────────────────────── */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center}
+.chip{background:var(--cell);border:1px solid var(--line);border-radius:999px;
+  padding:5px 11px;font-size:11.5px;color:var(--dim);white-space:nowrap}
+.chip b{color:var(--text);font-weight:600}
+
+/* ── the spread selector ────────────────────────────────────────────────── */
+.sel{margin-top:20px}
+.sel-read{text-align:center;margin-bottom:6px}
+.sel-line{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:34px;font-weight:700;color:var(--val);line-height:1.1}
+@media(min-width:560px){.sel-line{font-size:42px}}
+.sel-who{font-size:12.5px;color:var(--dim);margin-top:4px;min-height:1.2em}
+.sel-ends{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);
+  margin:10px 2px 2px;font-family:'JetBrains Mono',monospace}
+/* the track: a big, forgiving touch target. 44px of height is the hit area even
+   though the visible rail is thin. */
+.sel-range{-webkit-appearance:none;appearance:none;width:100%;height:44px;
+  background:transparent;cursor:pointer;margin:0;display:block;touch-action:pan-y}
+.sel-range::-webkit-slider-runnable-track{height:8px;border-radius:999px;
+  background:linear-gradient(90deg,var(--line2),var(--val-dim),var(--line2))}
+.sel-range::-moz-range-track{height:8px;border-radius:999px;
+  background:linear-gradient(90deg,var(--line2),var(--val-dim),var(--line2))}
+.sel-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:32px;height:32px;border-radius:50%;background:var(--val);
+  border:3px solid var(--ink);box-shadow:0 2px 10px rgba(124,193,66,.5);margin-top:-12px}
+.sel-range::-moz-range-thumb{width:32px;height:32px;border-radius:50%;background:var(--val);
+  border:3px solid var(--ink);box-shadow:0 2px 10px rgba(124,193,66,.5)}
+/* nudge buttons — the slider alone is fiddly at half-point precision on a phone */
+.sel-nudge{display:grid;grid-template-columns:var(--tap) 1fr var(--tap);gap:10px;
+  align-items:center;margin-top:6px}
+.nudge{min-height:var(--tap);width:100%;border-radius:12px;border:1px solid var(--line2);
+  background:var(--raised);color:var(--text);font:700 20px 'Inter',sans-serif;cursor:pointer}
+.nudge:active{transform:translateY(1px)}
+.sel-hint{font-size:11.5px;color:var(--faint);text-align:center}
+
+/* ── the reveal ─────────────────────────────────────────────────────────── */
+.reveal{animation:rise .34s cubic-bezier(.2,.8,.3,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+  .reveal,.pop{animation:none}
+  *{transition:none!important}
+}
+.prices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px}
+.price{background:var(--cell);border:1px solid var(--line);border-radius:12px;
+  padding:12px 8px;text-align:center;min-width:0}
+.price.mine{border-color:var(--val-dim);background:rgba(124,193,66,.07)}
+.price .k{font-size:9.5px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase}
+.price .v{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;margin-top:6px;
+  overflow-wrap:break-word}
+@media(min-width:560px){.price .v{font-size:20px}.price .k{font-size:10.5px}}
+.price .n{font-size:10px;color:var(--faint);margin-top:3px}
+.price.none .v{color:var(--faint);font-weight:400}
+
+.scorebox{text-align:center;margin:20px 0 4px}
+.scorebox .n{font-family:'Space Grotesk',sans-serif;font-size:64px;font-weight:700;
+  line-height:1;color:var(--val);animation:pop .4s cubic-bezier(.2,1.4,.4,1) both}
+@media(min-width:560px){.scorebox .n{font-size:80px}}
+@keyframes pop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+.scorebox .n.off{color:var(--dim)}
+.scorebox .l{font-size:11px;font-weight:700;letter-spacing:.14em;color:var(--faint);
+  text-transform:uppercase;margin-top:6px}
+.scorebox .b{font-size:14px;color:var(--text);margin-top:8px;font-weight:600}
+
+.deltas{display:grid;gap:8px;margin-top:16px}
+.delta{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+  font-size:13.5px;color:var(--text)}
+.delta b{color:var(--val);font-weight:700}
+
+/* ── research state badge ───────────────────────────────────────────────── */
+.rs{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell)}
+.rs .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.rs.ok{color:var(--val)}
+/* a button that reads as a link: an action inside a sentence */
+.lnk{background:none;border:0;padding:0;font:inherit;color:var(--val);cursor:pointer;text-decoration:underline}
+.lnk:disabled{color:var(--faint);cursor:default}
+.rs.warn{color:var(--est)}
+.rs.neg{color:var(--neg)}
+.rs.mut{color:var(--dim)}
+.rs-means{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.55}
+
+/* ── the "why" factor list ──────────────────────────────────────────────── */
+.facts{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.facts li{display:flex;gap:10px;font-size:13.5px;line-height:1.5;color:var(--dim)}
+.facts .s{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:12px;font-weight:800;margin-top:1px}
+.facts .s.p{background:rgba(124,193,66,.16);color:var(--val)}
+.facts .s.m{background:rgba(226,102,75,.16);color:var(--neg)}
+.facts .s.q{background:rgba(162,149,129,.16);color:var(--dim)}
+
+/* ── Pick 5 ─────────────────────────────────────────────────────────────── */
+.p5{display:grid;gap:12px}
+.p5-g{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+.p5-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px}
+.p5-n{font-size:10.5px;font-weight:700;letter-spacing:.12em;color:var(--faint)}
+.p5-when{font-size:11px;color:var(--faint);white-space:nowrap}
+.p5-picks{display:grid;gap:8px}
+.p5-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  min-height:var(--tap);padding:10px 14px;border-radius:11px;border:1px solid var(--line2);
+  background:var(--cell);color:var(--text);font:600 15px 'Inter',sans-serif;cursor:pointer;
+  text-align:left;width:100%;transition:border-color .12s,background .12s}
+.p5-btn .ln{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:14px;flex:none}
+.p5-btn[aria-pressed="true"]{border-color:var(--val);background:rgba(124,193,66,.12)}
+.p5-btn[aria-pressed="true"] .ln{color:var(--val)}
+.p5-btn:disabled{cursor:default;opacity:.9}
+.p5-res{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.p5-res.w{color:var(--val)}.p5-res.l{color:var(--neg)}.p5-res.p{color:var(--dim)}
+.p5-bar{position:sticky;bottom:0;z-index:30;background:rgba(16,14,10,.95);
+  backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px 0;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.p5-count{text-align:center;font-size:12.5px;color:var(--dim);margin-bottom:8px}
+
+/* ── leaderboard ────────────────────────────────────────────────────────── */
+.lb{width:100%;border-collapse:collapse;font-size:14px}
+.lb th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+.lb td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.lb tr:last-child td{border-bottom:0}
+.lb .r{color:var(--faint);width:38px;font-family:'JetBrains Mono',monospace}
+.lb .p{text-align:right;font-family:'JetBrains Mono',monospace;color:var(--val);font-weight:700}
+.lb .me{background:rgba(124,193,66,.07)}
+.empty{text-align:center;color:var(--dim);font-size:13.5px;padding:22px 10px;line-height:1.6}
+
+/* ── how it works ───────────────────────────────────────────────────────── */
+.steps{display:grid;gap:12px;margin-top:14px;counter-reset:s}
+@media(min-width:768px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:16px}
+.step .n{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:var(--val);
+  letter-spacing:.1em}
+.step h3{font-size:15px;margin:8px 0 6px}
+.step p{margin:0;font-size:13px;color:var(--dim);line-height:1.55}
+
+/* ── hero ───────────────────────────────────────────────────────────────── */
+.hero{padding:36px 0 26px;text-align:center}
+@media(min-width:768px){.hero{padding:56px 0 40px}}
+.hero h1{font-size:34px;font-weight:700;letter-spacing:-.02em}
+@media(min-width:560px){.hero h1{font-size:46px}}
+@media(min-width:960px){.hero h1{font-size:56px}}
+.hero .sub{color:var(--val);font-weight:700;font-size:14px;letter-spacing:.02em;margin-top:12px;
+  font-family:'Space Grotesk',sans-serif}
+.hero .lede{color:var(--dim);font-size:15px;margin:12px auto 0;max-width:44ch;line-height:1.6}
+.hero .btn-row{max-width:420px;margin-left:auto;margin-right:auto;margin-top:22px}
+.hero .ftp{margin-top:14px}
+
+/* ── section rhythm ─────────────────────────────────────────────────────── */
+.sec{margin:34px 0}
+@media(min-width:768px){.sec{margin:46px 0}}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+.sec-h h2{font-size:18px;font-weight:700}
+.sec-h .m{font-size:12px;color:var(--faint);white-space:nowrap}
+
+/* ── the account nudge ──────────────────────────────────────────────────── */
+.save{border:1px solid var(--val-dim);background:linear-gradient(180deg,rgba(124,193,66,.09),transparent)}
+.save ul{margin:10px 0 0;padding-left:18px;color:var(--dim);font-size:13.5px;line-height:1.7}
+
+/* ── toast ──────────────────────────────────────────────────────────────── */
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:80;
+  background:var(--raised);border:1px solid var(--line2);border-radius:10px;
+  padding:11px 18px;font-size:13.5px;box-shadow:var(--shadow);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+.gf{border-top:1px solid var(--line);margin-top:48px;padding:26px 0 40px;
+  font-size:12px;color:var(--faint);line-height:1.7}
+.gf a{color:var(--dim)}
+.gf .rule{font-weight:600;color:var(--dim)}
+.gf-links{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+
+/* ── skeleton while the artifact loads ──────────────────────────────────── */
+.sk{background:linear-gradient(90deg,var(--cell),var(--raised),var(--cell));
+  background-size:200% 100%;animation:sh 1.2s linear infinite;border-radius:8px;height:14px}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+.hide{display:none!important}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SOCIAL LAYER — Head-to-Head and Groups.
+
+   Same brand, more heat. A challenge screen is somebody's name against yours,
+   so it leads with the two of you and gets to the decision fast; the invite
+   landing in particular has to read in under ten seconds on a phone opened
+   from a group chat.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the versus block ───────────────────────────────────────────────────── */
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;
+  margin:18px 0 6px}
+.vs-p{text-align:center;min-width:0}
+.vs-av{width:52px;height:52px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px;
+  background:var(--cell);border:1px solid var(--line2);color:var(--dim)}
+.vs-p.you .vs-av{background:rgba(124,193,66,.14);border-color:var(--val-dim);color:var(--val)}
+.vs-p.win .vs-av{background:rgba(124,193,66,.2);border-color:var(--val);color:var(--val)}
+.vs-p.lose .vs-av{opacity:.6}
+.vs-n{font-weight:700;font-size:14px;overflow-wrap:break-word}
+.vs-s{font-size:11px;color:var(--faint);margin-top:3px}
+.vs-mid{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;
+  letter-spacing:.14em;color:var(--faint)}
+@media(min-width:560px){.vs-av{width:64px;height:64px;font-size:23px}.vs-n{font-size:16px}}
+
+/* ── challenge state ────────────────────────────────────────────────────── */
+.phase{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell);color:var(--dim)}
+.phase .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.phase.live{color:var(--est);border-color:rgba(217,164,65,.4)}
+.phase.done{color:var(--val);border-color:var(--val-dim)}
+.phase.wait{color:var(--obs);border-color:rgba(47,167,154,.35)}
+.phase.dead{color:var(--faint)}
+
+/* the sealed-answer notice: the product's integrity promise, stated plainly */
+.sealed{display:flex;gap:10px;align-items:flex-start;background:var(--cell);
+  border:1px solid var(--line);border-left:3px solid var(--obs);border-radius:10px;
+  padding:12px 14px;margin-top:14px;font-size:13px;color:var(--dim);line-height:1.55}
+.sealed b{color:var(--text);font-weight:600}
+
+/* ── side picker ────────────────────────────────────────────────────────── */
+.sides{display:grid;gap:10px;margin-top:16px}
+.side{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:var(--tap);padding:14px 16px;border-radius:12px;border:1px solid var(--line2);
+  background:var(--cell);color:var(--text);font:600 16px 'Inter',sans-serif;cursor:pointer;
+  text-align:left;width:100%;transition:border-color .12s,background .12s}
+.side .ln{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:15px;flex:none}
+.side[aria-pressed="true"]{border-color:var(--val);background:rgba(124,193,66,.12)}
+.side[aria-pressed="true"] .ln{color:var(--val)}
+.side:disabled{cursor:default}
+
+/* ── mode picker ────────────────────────────────────────────────────────── */
+.modes{display:grid;gap:8px;margin-top:12px}
+@media(min-width:640px){.modes{grid-template-columns:repeat(3,1fr)}}
+.mode{padding:13px 14px;border-radius:12px;border:1px solid var(--line2);background:var(--cell);
+  color:var(--text);cursor:pointer;text-align:left;min-height:var(--tap);width:100%}
+.mode[aria-pressed="true"]{border-color:var(--val);background:rgba(124,193,66,.1)}
+.mode .t{font-weight:700;font-size:14px}
+.mode .b{font-size:12px;color:var(--dim);margin-top:3px;line-height:1.45}
+
+/* ── locked line ────────────────────────────────────────────────────────── */
+.locked-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 14px;
+  margin-top:14px;font-size:13px}
+.locked-line .k{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase}
+.locked-line .v{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text)}
+
+/* ── the reveal, two answers side by side ───────────────────────────────── */
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.answer{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px 12px;
+  text-align:center;min-width:0}
+.answer.you{border-color:var(--val-dim);background:rgba(124,193,66,.07)}
+.answer .who{font-size:10.5px;font-weight:700;letter-spacing:.1em;color:var(--faint);
+  text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.answer .pick{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;margin-top:7px;
+  overflow-wrap:break-word}
+.answer .tag{font-size:11px;font-weight:700;margin-top:6px}
+.answer .tag.w{color:var(--val)}
+.answer .tag.l{color:var(--neg)}
+.answer .tag.d{color:var(--dim)}
+@media(min-width:560px){.answer .pick{font-size:19px}}
+
+/* ── invite / share ─────────────────────────────────────────────────────── */
+.invite{background:linear-gradient(180deg,rgba(124,193,66,.1),transparent);
+  border:1px solid var(--val-dim);border-radius:var(--radius);padding:18px}
+.invite .url{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);
+  background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  margin-top:12px;overflow-wrap:break-word;word-break:break-all}
+
+/* ── groups ─────────────────────────────────────────────────────────────── */
+.grp-head{display:flex;align-items:center;gap:12px}
+.grp-emoji{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  font-size:23px;background:var(--cell);border:1px solid var(--line2);flex:none}
+.grp-name{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;line-height:1.15;
+  overflow-wrap:break-word}
+.grp-meta{font-size:12px;color:var(--faint);margin-top:3px}
+@media(min-width:560px){.grp-name{font-size:26px}}
+
+.members{display:grid;gap:8px;margin-top:12px}
+.member{display:flex;align-items:center;gap:11px;background:var(--cell);border:1px solid var(--line);
+  border-radius:11px;padding:10px 13px;min-height:var(--tap);width:100%;text-align:left;
+  color:var(--text);cursor:pointer;font:inherit}
+.member .av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:var(--raised);border:1px solid var(--line2);font-weight:700;font-size:13px;color:var(--dim)}
+.member .nm{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.member .rt{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--faint);flex:none}
+.member .go{color:var(--faint);flex:none}
+.member.me{border-color:var(--val-dim)}
+
+/* ── the activity feed ──────────────────────────────────────────────────── */
+.feed{display:grid;gap:8px;margin-top:12px}
+.act{display:flex;gap:10px;font-size:13.5px;color:var(--dim);line-height:1.5;
+  background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.act .ic{flex:none;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  font-size:11px;background:var(--raised)}
+.act b{color:var(--text);font-weight:600}
+.act .when{color:var(--faint);font-size:11.5px;white-space:nowrap}
+
+/* ── active challenges on the home page ─────────────────────────────────── */
+.active{display:grid;gap:8px}
+.act-row{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;min-height:var(--tap);color:var(--text);width:100%;
+  text-align:left;font:inherit;cursor:pointer}
+.act-row:hover{text-decoration:none;background:var(--cell)}
+.act-row .mu{flex:1;min-width:0;text-align:left;padding:0}
+.act-row .t{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.act-row .s{font-size:11.5px;color:var(--faint);margin-top:2px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDGEDESK DYNASTY — the persistent layer.
+
+   The War Room is a football operations room, not a village and not a
+   casino: dark ground, the EdgeDesk green, big readable states, restrained
+   motion. On a phone it is a stack of stations, never a shrunken picture of
+   a desktop room. Every station is a real link with a text label.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── the level badge in the header ──────────────────────────────────────── */
+.gh-lvl{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;
+  background:rgba(124,193,66,.14);color:var(--val);font-size:10.5px;font-weight:800;
+  vertical-align:1px;letter-spacing:.02em}
+.gh-lvl[hidden]{display:none}
+@media(max-width:480px){.gh-lvl{display:none}}
+
+/* ── the pulse: what just changed, without stopping the page ────────────── */
+.pulse{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:70;
+  display:grid;gap:8px;width:min(92vw,420px);pointer-events:none}
+.pulse-chip{display:flex;align-items:center;gap:8px;background:var(--raised);
+  border:1px solid var(--line2);border-radius:12px;padding:10px 14px;font-size:13.5px;
+  box-shadow:var(--shadow);opacity:0;transform:translateY(-6px);
+  transition:opacity .25s ease,transform .25s ease}
+.pulse-chip.on{opacity:1;transform:none}
+.pulse-chip b{color:var(--val);font-weight:800;white-space:nowrap}
+.pulse-chip.ach b{color:var(--est)}
+.pulse-chip.mis b{color:var(--obs)}
+.pulse-chip span{color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* the one interrupting moment: a new level, or the War Room being created */
+.moment{position:fixed;inset:0;z-index:75;background:rgba(16,14,10,.74);display:grid;
+  place-items:center;padding:16px;opacity:0;transition:opacity .25s ease}
+.moment.on{opacity:1}
+.moment-card{background:var(--panel);border:1px solid var(--val-dim);border-radius:var(--radius);
+  padding:22px;max-width:420px;width:100%;box-shadow:var(--shadow);
+  transform:translateY(8px);transition:transform .25s ease}
+.moment.on .moment-card{transform:none}
+.moment-title{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;line-height:1.1}
+.moment-sub{color:var(--val);font-weight:700;margin-top:8px;font-size:15px}
+.moment-body{color:var(--dim);font-size:13.5px;line-height:1.55;margin-top:10px}
+
+/* ── level and XP ───────────────────────────────────────────────────────── */
+.lvl{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.lvl .n{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;line-height:1;
+  color:var(--val)}
+.lvl .t{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700}
+.lvl .s{font-size:12px;color:var(--faint)}
+@media(min-width:560px){.lvl .n{font-size:44px}}
+.xp{margin-top:12px}
+.xp-row{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--dim);
+  font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;margin-bottom:6px}
+.xp-row b{color:var(--text);font-weight:700}
+.xp-bar{height:10px;background:var(--cell);border:1px solid var(--line);border-radius:999px;
+  overflow:hidden}
+.xp-fill{height:100%;width:0;background:linear-gradient(90deg,var(--val-dim),var(--val));
+  border-radius:999px;transition:width .7s cubic-bezier(.2,.8,.3,1)}
+
+/* ── the room: stations ─────────────────────────────────────────────────── */
+.stations{display:grid;gap:10px;margin-top:14px}
+@media(min-width:560px){.stations{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:768px){.stations{grid-template-columns:repeat(3,1fr)}}
+.station{display:flex;flex-direction:column;gap:4px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;padding:14px;min-height:var(--tap);
+  color:var(--text);text-align:left;width:100%;font:inherit;cursor:pointer;
+  transition:border-color .12s,background .12s,transform .12s}
+.station:hover{text-decoration:none;background:var(--cell);border-color:var(--line2)}
+.station:active{transform:translateY(1px)}
+.station.hot{border-color:var(--val-dim);background:rgba(124,193,66,.06)}
+.station .k{font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--faint);
+  text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.station .k .go{color:var(--val);letter-spacing:0;font-size:11px}
+.station .v{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;line-height:1.2;
+  overflow-wrap:break-word}
+.station .s{font-size:12px;color:var(--dim);line-height:1.5}
+.station .s b{color:var(--val);font-weight:700}
+.station.wide{grid-column:1/-1}
+
+/* ── weekly missions ────────────────────────────────────────────────────── */
+.missions{display:grid;gap:8px;margin-top:12px}
+.mission{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+  background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:11px 14px;
+  min-height:var(--tap);color:var(--text)}
+.mission:hover{text-decoration:none;border-color:var(--line2)}
+.mission .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--line2);
+  display:grid;place-items:center;font-size:12px;font-weight:800;color:transparent;flex:none}
+.mission.done .chk{background:var(--val);border-color:var(--val);color:#06231a}
+.mission .t{font-weight:600;font-size:14px;min-width:0}
+.mission .h{font-size:11.5px;color:var(--faint);margin-top:2px}
+.mission .p{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--dim);white-space:nowrap}
+.mission.done .p{color:var(--val)}
+.mission.done .t{color:var(--dim)}
+.badge-week{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:6px 12px;
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell);color:var(--dim)}
+.badge-week.on{color:var(--val);border-color:var(--val-dim);background:rgba(124,193,66,.1)}
+
+/* ── the trophy wall ────────────────────────────────────────────────────── */
+.trophies{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+@media(min-width:560px){.trophies{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.trophies{grid-template-columns:repeat(4,1fr)}}
+.trophy{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px;
+  min-height:var(--tap);min-width:0}
+.trophy.earned{border-color:var(--val-dim);background:rgba(124,193,66,.07)}
+.trophy .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:var(--raised);border:1px solid var(--line2);color:var(--faint);font-size:14px;
+  font-weight:800;margin-bottom:8px}
+.trophy.earned .ic{background:rgba(124,193,66,.16);border-color:var(--val-dim);color:var(--val)}
+.trophy .n{font-weight:700;font-size:13px;overflow-wrap:break-word}
+.trophy .d{font-size:11.5px;color:var(--faint);margin-top:3px;line-height:1.45}
+.trophy .w{font-size:10.5px;color:var(--dim);margin-top:5px;font-family:'JetBrains Mono',monospace}
+.trophy:not(.earned) .n{color:var(--dim)}
+
+/* ── the welcome-back strip on the games home ───────────────────────────── */
+.wb{background:linear-gradient(180deg,rgba(124,193,66,.09),transparent);
+  border:1px solid var(--val-dim);border-radius:var(--radius);padding:16px}
+.wb-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.wb-week{display:grid;gap:6px;margin-top:12px;font-size:13.5px;color:var(--dim)}
+.wb-week li{display:flex;gap:8px;align-items:center;list-style:none}
+.wb-week ul{margin:0;padding:0}
+.wb-week .dot{width:8px;height:8px;border-radius:50%;background:var(--line2);flex:none}
+.wb-week .dot.on{background:var(--val)}
+.wb-week .dot.todo{background:var(--est)}
+.wb-week .r{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);white-space:nowrap;flex:none}
+
+/* the one big button a cold visitor sees first */
+.btn-big{min-height:60px;font-size:17px;border-radius:14px}
+.hero .eyebrow{margin-bottom:14px}
+.hero .btn-row+.btn-row{margin-top:10px}
+
+/* ── the new-visitor hero leads with the matchup, not the product ───────── */
+.hero-mu{margin:18px auto 0;max-width:420px}
+.hero-mu .mu-team{font-size:28px}
+@media(min-width:560px){.hero-mu .mu-team{font-size:36px}}
+.hero-mu .mu-vs{margin:4px 0}
+.hero-q{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--text);margin-top:14px}
+.hero-load{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:18px 0 6px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GAME FEEL — the lock beat, the staggered reveal, the read, the snapshot.
+   Motion is reserved for the moments that matter: the lock, the reveal, a
+   level, an achievement. Everything else holds still.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* the favourite/underdog readout: which way the player is leaning, and by
+   how much, as a bar that fills from the centre toward the favoured side */
+.lean{position:relative;height:10px;margin:10px 2px 2px;background:var(--cell);
+  border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lean .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line2)}
+.lean .fill{position:absolute;top:0;bottom:0;background:linear-gradient(90deg,var(--val-dim),var(--val));
+  transition:left .12s ease,width .12s ease}
+.lean-names{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;
+  color:var(--faint);margin:6px 2px 0}
+.lean-names span{transition:color .12s}
+.lean-names .on{color:var(--val)}
+.sel-line{transition:transform .12s ease}
+.sel-line.bump{transform:scale(1.04)}
+.sel-reset{display:block;margin:8px auto 0;background:none;border:0;color:var(--faint);
+  font:500 12px 'Inter',sans-serif;cursor:pointer;min-height:36px;padding:0 10px}
+.sel-reset:hover{color:var(--dim);text-decoration:underline}
+
+/* the lock beat: the price the player set, alone, for a breath */
+.linein{text-align:center;padding:34px 0 30px;animation:rise .28s ease both}
+.linein .eyebrow{color:var(--val)}
+.linein .ln{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;
+  font-size:40px;font-weight:700;color:var(--text);line-height:1.1;margin:8px 0 6px}
+.linein .s{font-size:13px;color:var(--dim)}
+@media(min-width:560px){.linein .ln{font-size:52px}}
+
+/* the reveal, staggered: your price, then the market, then EdgeDesk, then
+   the score. Under reduced motion everything is simply there. */
+.reveal .price{animation:rise .32s cubic-bezier(.2,.8,.3,1) both}
+.reveal .price:nth-child(1){animation-delay:.05s}
+.reveal .price:nth-child(2){animation-delay:.35s}
+.reveal .price:nth-child(3){animation-delay:.65s}
+.reveal .scorebox .n{animation-delay:1s}
+.reveal .cls,.reveal .deltas,.reveal .snap{animation:rise .3s ease both;animation-delay:1.15s}
+@media(prefers-reduced-motion:reduce){
+  .reveal .price,.reveal .scorebox .n,.reveal .cls,.reveal .deltas,.reveal .snap,.linein{animation:none}
+}
+
+/* the read: where the price sits against the consensus. Descriptive, never
+   a grade — the chip is neutral and the sentence explains it. */
+.cls{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:16px;text-align:center}
+.cls .chip{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:6px 13px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--line2);background:var(--cell);color:var(--text)}
+.cls .chip.near{color:var(--val);border-color:var(--val-dim)}
+.cls .chip.far{color:var(--est);border-color:rgba(217,164,65,.4)}
+.cls .m{font-size:12.5px;color:var(--dim)}
+
+/* the EdgeDesk snapshot: the free research teaser, worth reading on its own */
+.snap{margin-top:22px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:14px}
+.snap .eyebrow{margin-bottom:8px}
+.snap-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.snap-k{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.snap-v{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:3px;
+  overflow-wrap:break-word}
+.snap-v.plain{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;color:var(--text);line-height:1.5}
+.snap-cell{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.snap-cell.wide{grid-column:1/-1}
+.snap-how{margin-top:10px;display:grid;gap:6px}
+.snap-how div{display:flex;gap:8px;font-size:13px;color:var(--dim);line-height:1.5}
+.snap-how b{color:var(--text);font-weight:600}
+.snap-how .who{flex:none;width:18px;height:18px;border-radius:5px;display:grid;place-items:center;
+  font-size:11px;font-weight:800;background:rgba(124,193,66,.16);color:var(--val);margin-top:1px}
+.snap-how .who.b{background:rgba(47,167,154,.16);color:var(--obs)}
+.snap .btn-row{margin-top:12px}
+
+/* the premium moment, once a week, after research interest */
+.pro{border-color:var(--obs);background:linear-gradient(180deg,rgba(47,167,154,.08),transparent)}
+.pro .pro-t{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.25}
+.pro p{margin:8px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}
+
+/* labelled loading states — a skeleton says what it is waiting for */
+.sk-label{text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);margin-top:12px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THUMB REACH — the primary action inside the first screen on a phone.
+   Measured at 390×844 and 320×568: the Price It lock and the H2H create
+   button sat just under the fold, the War Room's stations under three
+   cards, and the home page's "this week" rows were 20px text links.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sel-q{font-size:15px;text-align:center;margin:18px 0 10px}
+.sel-reset{min-height:44px}
+.h2h-lede{color:var(--dim);font-size:14px;margin:8px 0 0;line-height:1.5}
+.h2h-blk{margin-top:16px}
+.wb-week li{min-height:44px}
+.wb-week li a{flex:1;display:flex;align-items:center;min-height:44px}
+@media(max-width:479px){
+  .mu-team{font-size:22px}
+  .mu-when{margin-top:5px}
+  .ctx{margin-top:10px}
+  .ctx th,.ctx td{padding:5px 4px}
+  .ctx caption{padding-bottom:5px}
+  .ctx-note{margin-top:5px}
+  .sel{margin-top:8px}
+  .sel-q{margin:10px 0 6px}
+  .lean{margin:8px 2px 0}
+  .sel-ends{margin:6px 2px 0}
+  .sel-nudge{margin-top:4px}
+  .sel .btn-row{margin-top:8px}
+  .h2h-blk{margin-top:12px}
+  .mode{padding:10px 12px}
+  .mode .b{font-size:11.5px}
+  .modes{gap:6px}
+  .sides{gap:8px;margin-top:10px}
+  .locked-line{margin-top:10px;padding:9px 12px}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE FACILITY — the franchise layer's shell: the rooms in the header, the
+   franchise chip, the thumb tab bar on a phone, the reward panel and the
+   conversion moment. The dark ground and the EdgeDesk green stay; a franchise
+   brings its own accent (`--fr-primary`) only inside its own chip and cards.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* League and the Front Office join the header only on a wide screen; on a
+   phone they live in the tab bar's HQ and in every footer */
+.gh-only-wider{display:none}
+@media(min-width:768px){.gh-only-wider{display:block}}
+
+/* the franchise chip: the mark and the abbreviation, next to the wordmark */
+.gh-fr{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 3px;border-radius:999px;
+  border:1px solid var(--line2);background:var(--cell);color:var(--fr-primary,var(--val));
+  font:800 11px 'Space Grotesk',sans-serif;letter-spacing:.06em;white-space:nowrap}
+.gh-fr:hover{text-decoration:none;border-color:var(--fr-primary,var(--val))}
+.gh-fr[hidden]{display:none}
+.gh-fr .fr-mark{width:22px;height:22px;border-radius:6px}
+/* on a phone the chip is the mark alone, and the header sheds the rooms the
+   tab bar (HQ, Scouting, Training) or the footer already carries: measured
+   at 390px, the chip, the level badge and four rooms overflowed by 60px */
+/* THE SAME BREAKPOINT AS THE TAB BAR. These used to sit at 479px while the
+   bar turned on at 480px, so at exactly 480 a phone showed both the full
+   header and the bar under it — the overflow this rule exists to prevent. */
+@media(max-width:480px){
+  .gh-fr .gh-fr-ab{display:none}.gh-fr{padding:3px}
+  .gh-home,.gh-train{display:none}
+  body.has-tabs .gh-scout{display:none}
+}
+
+/* the tab bar: five rooms under the thumb, phones only */
+.gtab{display:none}
+@media(max-width:480px){
+  .gtab{position:fixed;left:0;right:0;bottom:0;z-index:35;display:grid;grid-template-columns:repeat(5,1fr);
+    background:rgba(16,14,10,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .gtab a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    min-height:56px;font-size:10.5px;font-weight:600;color:var(--dim);letter-spacing:.02em}
+  .gtab a:hover{text-decoration:none}
+  .gtab a[aria-current]{color:var(--val)}
+  .gtab svg{width:22px;height:22px;fill:currentColor}
+  body.has-tabs{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+  body.has-tabs .toast{bottom:calc(76px + env(safe-area-inset-bottom))}
+  body.has-tabs .gf{padding-bottom:20px}
+  /* the Pick 5 lock bar rides above the tab bar rather than under it */
+  body.has-tabs .p5-bar{bottom:calc(64px + env(safe-area-inset-bottom))}
+}
+
+/* the headline a franchise-vs-franchise invite lands on. Game Day and
+   Head-to-Head both set it, so it lives here rather than in one page's
+   private stylesheet where the other could not reach it. */
+.h2h-h1{font-family:'Space Grotesk',Inter,sans-serif;font-size:26px;font-weight:700;line-height:1.15;
+  text-align:center;margin:10px 0 0;overflow-wrap:break-word}
+
+/* the reward panel on a reveal: what the franchise was credited */
+.rw{margin-top:16px;background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.rw.on{border-color:var(--val-dim);background:rgba(124,193,66,.06)}
+.rw .eyebrow{margin-bottom:8px}
+.rw-chips{display:flex;flex-wrap:wrap;gap:6px}
+.rw-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 11px;
+  font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line2)}
+.rw-chip b{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700}
+.rw-xp b{color:var(--val)}.rw-sp b{color:var(--obs)}.rw-tc b{color:var(--est)}.rw-cp b{color:var(--exp)}
+.rw-none{font-size:12.5px;color:var(--faint)}
+.rw-line{font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.5}
+.rw-ach{font-size:12.5px;color:var(--est);margin-top:8px}
+.rw-ach b{font-weight:700}
+
+/* the conversion moment: one sentence with real numbers, one button */
+.conv{border-color:var(--val-dim);background:linear-gradient(180deg,rgba(124,193,66,.09),transparent)}
+.conv-t{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;line-height:1.3}
+.conv-t b{color:var(--val)}
+.conv p{margin:8px 0 0;color:var(--dim);font-size:13.5px;line-height:1.55}
+
+/* ── THE AGE GATE ───────────────────────────────────────────────────────────
+   Asked once, at the door to the research terminal, and never on arrival at
+   a game. A "no" closes it for good. */
+.age-gate{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+  padding:18px;background:rgba(4,5,15,.72);backdrop-filter:blur(3px)}
+.age-gate.on{display:flex}
+.ag-card{width:100%;max-width:440px;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.ag-eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.ag-card h2{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;line-height:1.2;margin:6px 0 10px}
+.ag-card p{margin:0 0 10px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.ag-card p b{color:var(--text)}
+.ag-card .ag-fine{font-size:11.5px;line-height:1.55;color:var(--faint)}
+.ag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ag-row .btn{flex:1 1 auto;justify-content:center;text-align:center}
+@media(max-width:380px){.ag-row{flex-direction:column}}
+
+/* ── the connection, said out loud (resume_v1) ─────────────────────────────
+   One strip, four states, and no fifth. It never says a thing worked; it says
+   what the connection is doing, and the page underneath says what the server
+   answered. */
+.netb{
+  position:fixed;left:0;right:0;top:0;z-index:60;
+  padding:7px 12px;text-align:center;
+  font-family:'Inter',system-ui,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:.02em;
+  color:var(--ink);background:var(--est);
+  box-shadow:0 2px 12px rgba(0,0,0,.35);
+}
+.netb-offline{background:var(--neg);color:#fff}
+.netb-reconnecting{background:var(--est);color:var(--ink)}
+.netb-retry{background:var(--obs);color:var(--on-accent)}
+.netb-synced{background:var(--val);color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){
+  .netb-reconnecting{animation:netbpulse 1.4s ease-in-out infinite}
+}
+@keyframes netbpulse{50%{opacity:.72}}

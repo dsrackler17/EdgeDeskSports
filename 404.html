@@ -4,6 +4,7 @@
   gives a static host pretty routes:
     /join/{token}  ->  /collective/join.html?t={token}
     /c/{slug}      ->  /collective/#/{slug}
+    /tennis/…      ->  /app.html#research/football  (Tennis was retired)
   Anything else renders a small not-found page.
 -->
 <html lang="en">
@@ -17,12 +18,53 @@
   var p=location.pathname.split('/').filter(Boolean);
   if(p[0]==='join'&&p[1]){location.replace('/collective/join.html?t='+encodeURIComponent(p[1])+location.search.replace(/^\?/,'&').replace(/^&/,'&'));return;}
   if(p[0]==='c'&&p[1]){location.replace('/collective/#/'+encodeURIComponent(p[1]));return;}
+  /* Tennis is no longer an EdgeDesk product. An old or guessed tennis address
+     (/tennis, /wta, /research/tennis, /edges/tennis, anything deeper) lands on
+     Research, where the terminal's own router sends retired modules, instead
+     of on this page */
+  var tn=/^(tennis|wta|atp)$/i;
+  if(p[0]&&(tn.test(p[0])||((p[0]==='research'||p[0]==='edges')&&p[1]&&tn.test(p[1])))){location.replace('/app.html#research/football');return;}
+  /* EdgeDesk Games share links: /games/price-it/{slug} -> the real page with
+     the challenge named. The query form is the canonical one (a static host
+     cannot render a per-matchup document), and this keeps the pretty link
+     people actually paste into social working. */
+  if(p[0]==='games'&&p[1]&&p[2]){
+    var g=['price-it','pick-5'].indexOf(p[1])>=0?p[1]:null;
+    if(g){location.replace('/games/'+g+'/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    /* the social invite links people actually paste into a group chat:
+         /games/h2h/{token}     -> the challenge
+         /games/groups/{token}  -> the group
+       Both are private pages addressed by an unguessable token; the pages
+       themselves carry noindex. */
+    if(p[1]==='h2h'){location.replace('/games/h2h/?c='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+    if(p[1]==='groups'){location.replace('/games/groups/?g='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+  }
+  /* A member post: /articles/community/{slug} -> the one page that can render
+     it. A static host has no per-post document to serve, and these pages are
+     noindex by design, so the query form is the canonical one and this keeps
+     the link somebody pasted into a group chat working. */
+  if(p[0]==='articles'&&p[1]==='community'&&p[2]){
+    location.replace('/articles/community/?p='+encodeURIComponent(p[2])+location.search.replace(/^\?/,'&'));return;}
+  if(p[0]==='articles'&&p[1]==='community'){location.replace('/articles/community/');return;}
+  if(p[0]==='articles'&&p[1]==='write'){location.replace('/articles/write/');return;}
+
+  /* player prop research: /players/{nfl|cfb}/{player id} -> that player on
+     the Player Props page (#playerprops/<league>/player/<id>); /players and
+     /props land on the page itself */
+  if(p[0]==='players'&&(p[1]==='nfl'||p[1]==='cfb')&&p[2]){location.replace('/app.html#playerprops/'+p[1]+'/player/'+p[2]);return;}
+  if(p[0]==='players'||p[0]==='props'){location.replace('/app.html#playerprops');return;}
+
+  /* the War Room, the Drill, the Roster and the Front Office are single
+     pages: anything deeper lands on the page itself rather than on the games
+     home */
+  if(p[0]==='games'&&(p[1]==='dynasty'||p[1]==='two-minute-drill'||p[1]==='roster'||p[1]==='franchise'||p[1]==='gameday'||p[1]==='trophies'||p[1]==='market'||p[1]==='conference'||p[1]==='trades'||p[1]==='staff'||p[1]==='development'||p[1]==='packs'||p[1]==='exchange'||p[1]==='play')){location.replace('/games/'+p[1]+'/'+location.search);return;}
+  if(p[0]==='games'){location.replace('/games/');return;}
 })();
 </script>
 <style>
-:root{--bg:#0d0f13;--surface:#13161c;--border:#262c36;--text:#e7eaf0;--dim:#8a93a2;--accent:#4d8dff}
+:root{--bg:#100e0a;--surface:#191510;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--accent:#2fa79a}
 html,body{margin:0}
-body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;color-scheme:dark;accent-color:var(--accent)}
 a{color:var(--accent);text-decoration:none}
 .box{max-width:420px;text-align:center}
 .mk{display:inline-block;width:10px;height:16px;background:var(--accent);border-radius:2px;transform:skewX(-12deg);margin-right:8px;vertical-align:-2px}
@@ -35,7 +77,20 @@ p{color:var(--dim);font-size:13.5px;line-height:1.6}
   <span style="font-weight:800;letter-spacing:.06em"><span class="mk"></span>EDGEDESK</span>
   <h1>Nothing lives at this address</h1>
   <p>The page may have moved, or the link was truncated.</p>
-  <p><a href="/">EdgeDesk home</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
+  <p><a href="/">EdgeDesk home</a> &middot; <a href="/games/">EdgeDesk Games</a> &middot; <a href="/collective/">The Model Collective</a> &middot; <a href="/app.html">The terminal</a></p>
+  <!-- A link that should have worked is a bug report waiting to be typed, and
+       this is the page it happens on. The reporter records which address was
+       asked for, so a broken link somebody pasted is traceable. -->
+  <p style="margin-top:18px"><a href="#" data-ed-report="Something is broken">Report a broken link</a></p>
 </div>
+<script src="/lib/edgedesk_auth.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try{ window.EDReport.configure({
+  url:"https://iattxbkbufslbauoumga.supabase.co",
+  key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  version:'404', surface:'not-found'}); }catch(e){}
+</script>
 </body>
 </html>

@@ -1,0 +1,381 @@
+# COLLEGE BASEBALL — THE SOURCE PROBE, BEFORE ANYTHING IS BUILT ON IT.
+#
+# This is deliberately the first thing in the college baseball pipeline and,
+# for now, the only thing. mlb-pitchers.yml proves its source on a runner
+# before it rebuilds, because the tennis adapter once shipped correct-looking
+# code against a provider whose edge answered 403 to GitHub's runners, and only
+# a runner could show it.
+#
+# Here that rule is not a precaution, it is the whole reason this file exists
+# first: the session writing this code cannot reach ANY live sports host.
+# site.api.espn.com, data.ncaa.com, stats.ncaa.org and statsapi.mlb.com are all
+# refused by its egress policy with a 403 on CONNECT. Every line of a college
+# baseball ingest written from there would be a guess until a runner answers.
+#
+# It writes nothing: no database, no commit, no artifact. It asks each
+# candidate for one day of the completed 2026 season and reports what came
+# back, so the shape of the data decides the design instead of the other way
+# round.
+name: College baseball
+
+on:
+  # A pull request touching the probe runs it on a real runner, writing
+  # nothing. This is how the answer gets back at all: the workflow is not on
+  # the default branch yet, so workflow_dispatch cannot reach it, and the
+  # author's own session cannot reach the sources. The pull request IS the
+  # experiment. mlb-pitchers.yml probes its source the same way.
+  pull_request:
+    paths:
+      - 'tools/cbb/**'
+      - '.github/workflows/college-baseball.yml'
+  # THE SEASON IS FEBRUARY TO JUNE, so a daily job that runs all year would
+  # spend seven months importing nothing. It still runs: the job decides for
+  # itself whether the date is in season and exits early saying so, which is a
+  # fact worth recording rather than a schedule that silently stops.
+  schedule:
+    - cron: '40 10 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'A date inside a college baseball season (YYYY-MM-DD). Probe only. Default 2026-04-15.'
+        required: false
+        default: ''
+      season:
+        description: 'Season to refresh (blank = the current one).'
+        required: false
+        default: ''
+      commit:
+        description: 'Import into the database. Unchecked fetches and validates, writing nothing.'
+        type: boolean
+        required: false
+        default: false
+      allow_shrink:
+        description: 'Promote even if the card shrank. Only when the loss is known to be real.'
+        type: boolean
+        required: false
+        default: false
+      probe_only:
+        description: 'Ask the source questions and stop. Skips the 437-team walk entirely.'
+        type: boolean
+        required: false
+      skip_stats:
+        description: 'Refresh the games board only. Leaves the box-score archive as it is.'
+        type: boolean
+        required: false
+      stats_limit:
+        description: 'Read only the first N completed games. For a first run, where reading 5,500 box scores is not what you want to find out.'
+        required: false
+      ncaa_archive:
+        description: 'Import the NCAA season archive (2021-2026 player seasons). Off by default: completed seasons do not change nightly.'
+        type: boolean
+        required: false
+      deep_probe:
+        description: 'Re-run the exploratory source probes. Their questions are answered; they are kept for re-checking a source, not for every dispatch.'
+        type: boolean
+        required: false
+      club_map:
+        description: 'Resolve NCAA club codes to ESPN ids and write cbb.club_map. Needs commit=true to write; otherwise it resolves and reports.'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # Two refreshes staging into the same ledger race each other into one
+  # promote. A pull request probe writes nothing, so it gets its own group.
+  group: cbb-${{ github.event_name == 'pull_request' && github.ref || 'write' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash -eo pipefail {0}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Ask the candidates whether a runner can see the games
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.date }}" ]; then ARGS="--date ${{ inputs.date }}"; fi
+          node tools/cbb/probe_sources.js $ARGS
+
+      # EIGHTEEN EVENTS FOR A WEDNESDAY IN APRIL is what the first probe found,
+      # against a Division I field of about three hundred teams. That may be a
+      # normal midweek card or it may be a curated one, and the difference
+      # decides whether this source can honour "all the games during the
+      # season" at all. A board that shows part of the card while looking
+      # complete is worse than no board.
+      - name: Is it all the games, or a selection?
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_coverage.js
+
+      # THREE THINGS THE COVERAGE PROBE TURNED UP, each of which decides part
+      # of the ingest's shape: half the field missing from a week of
+      # scoreboards, the SAME URL answering 81 then 0 seconds apart, and a
+      # league calling itself Preseason 2026 in September 2026. The second is
+      # the dangerous one — a refresh that reads an empty answer as an empty
+      # day would delete a full card — so the rate at which the source lies is
+      # measured here rather than assumed.
+      - name: Can we get all the games, and is the source steady?
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_completeness.js
+
+      # THE SCOREBOARD IS NOT ALL THE GAMES — forty sampled teams already found
+      # one it missed. So the union walk is the design, and this prices it and
+      # proves it: every team's own schedule, unioned, against the scoreboard's
+      # answer for the same day, with the cost in seconds.
+      #
+      # It also asks the signals table, read-only and with the publishable key
+      # the browser already uses, whether a college baseball sport key is
+      # captured at all. Nothing in this repository references one, and a brief
+      # must not promise a market that is never written.
+      - name: Price the union walk, and check the market really exists
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        env:
+          CBB_SB_URL: ${{ vars.SB_URL }}
+          CBB_SB_KEY: ${{ vars.SB_ANON_KEY }}
+        run: node tools/cbb/probe_union.js
+
+      # ── THE SUITES, BEFORE ANYTHING IS WRITTEN ───────────────────────────
+      # The shaping, the union, the gate and the query layer all have to pass
+      # before a refresh is allowed to touch a live table. A broken union is
+      # how a card loses games quietly.
+      # WHICH STATS SOURCE ANSWERS. The board carries team records folded out
+      # of the game log — real, but no batting lines, no ERAs, no players. The
+      # candidates all sit behind this author's egress policy, so a runner asks
+      # them. Dispatch only: it is a design question, not a daily job.
+      - name: Which college stats source actually answers?
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_stats_sources.js
+
+      # The first stats probe ruled almost everything out and its most useful
+      # result was an embarrassment: I had never asked the host that already
+      # serves this project 5,500 games a season whether it also serves stats.
+      - name: Does the host that serves the games also serve the stats?
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_espn_stats.js
+
+      # One result from the probe above is not trustworthy as written: three
+      # paths on a host answered 403 while two paths on the SAME host answered
+      # 200 minutes earlier. That smells like my own pacing, not a closed
+      # endpoint, and this project has already been burned once by reading a
+      # throttle as a source defect. This asks again, slowly, with a control.
+      - name: Was that 403 the endpoint or my own pacing?
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_boxscore.js
+
+      # It was neither the path nor the pacing: it was the user agent. And the
+      # 200 it unlocked carries rosters, plays and odds branches that I had not
+      # opened before nearly concluding there are no player stats. This one
+      # prints the shape instead of testing another guess about it.
+      - name: Print the shape instead of guessing at it
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deep_probe == true }}
+        run: node tools/cbb/probe_outline.js
+
+      # ── IS THE SPORT IN THE MARKET FEED? ─────────────────────────────────
+      # My earlier attempt at this read the signals table as anon, got zero for
+      # every sport key INCLUDING two known-captured controls, and was therefore
+      # inconclusive — zero everywhere means RLS refused the read, not that the
+      # feed is empty. A runner holds the service role, which settles it. The
+      # probe refuses to draw a conclusion if its controls come back empty.
+      - name: Is college baseball in the market feed at all?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node tools/cbb/probe_market.js
+
+      - name: The shaping and the union must pass first
+        run: node tools/cbb/ingest.test.js
+
+      # A box score is a bare list of numbers whose meaning comes from a
+      # parallel list of labels, so the shaping is where this breaks silently.
+      # It runs on every event, including a pull request, because the point is
+      # to fail here rather than in a scheduled run at ten to eleven.
+      - name: The box-score shaping must pass too
+        run: node tools/cbb/stats.test.js
+
+      - name: The NCAA season archive must pass too
+        run: node tools/cbb/ncaa_archive.test.js
+
+      - name: The club alias table must pass too
+        run: node tools/cbb/team_aliases.test.js
+
+      # The archive keys clubs on NCAA codes, the games board on ESPN ids, and
+      # there is no shared identifier. Attaching a club's season archive to a
+      # game therefore needs a NAME match, which is exactly the kind of thing
+      # that looks fine and is quietly wrong for thirty clubs. This measures the
+      # rate and lists every miss; it builds no mapping and writes nothing.
+      # continue-on-error BECAUSE THIS IS A MEASUREMENT, NOT A GATE. It exists to
+      # report a match rate, and its failing killed the job before the alias
+      # verification below — which IS a gate — ever ran. A diagnostic that can
+      # block another diagnostic is a badly wired diagnostic.
+      - name: Can the archive be joined to the games board?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        continue-on-error: true
+        run: node tools/cbb/probe_team_join.js
+
+      # The alias table was written by hand from 35 measured misses, which means
+      # it can be wrong now and can rot when ESPN renames a club. This verifies
+      # every entry against the live list, and FAILS on the one thing that would
+      # do real damage: two archive clubs resolving to a single ESPN club, which
+      # would put one club's players on another club's game.
+      - name: Does every club alias still resolve?
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: node tools/cbb/probe_resolve_clubs.js
+
+      # ── WRITE THE CLUB MAPPING ───────────────────────────────────────────
+      # Resolves NCAA club codes to ESPN team ids and promotes cbb.club_map. It
+      # refuses before staging on a stale alias, on two codes claiming one club,
+      # and on a match rate that has collapsed since it was measured — each of
+      # those having actually happened while this was built.
+      #
+      # Separate from the archive import because a club mapping is cheap and the
+      # archive is 61,000 rows: re-resolving the mapping after ESPN renames a
+      # club should not mean re-importing six seasons of statistics.
+      - name: Write the club mapping
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.club_map == true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          ARGS="--check"
+          if [ "${{ inputs.commit }}" = "true" ]; then
+            if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+              echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be written."
+              exit 1
+            fi
+            ARGS="--commit"
+          fi
+          node tools/cbb/map_clubs.js $ARGS
+
+      # THE FIXTURES ABOVE ARE ONES I WROTE. This runs the same shaping over a
+      # REAL payload, on a day inside a completed season, with no credentials —
+      # which is the only way a pull request can catch the source changing a
+      # label or reordering a column. It prints one batting and one pitching
+      # line so a human can see that 2-for-4 did not land in the home-run
+      # column and that 6.2 innings became 20 outs.
+      #
+      # It cannot write: --sample-day takes its game ids from the scoreboard
+      # rather than the game log, and stats.js refuses to combine it with
+      # --commit for exactly that reason.
+      - name: Shape a real box score, with no credentials
+        run: node tools/cbb/stats.js --check --sample-day 20260509 --limit 6 --pace 400
+
+      # ── IS TODAY EVEN IN SEASON? ─────────────────────────────────────────
+      # February to June. Out of season the honest thing is to say so and stop,
+      # not to import an empty card — and certainly not to let the gate's
+      # shrinkage refusal fire every morning for seven months.
+      - name: Decide whether there is a season to refresh
+        id: plan
+        run: |
+          SEASON="${{ inputs.season }}"
+          if [ -z "$SEASON" ]; then SEASON=$(TZ=America/New_York date +%Y); fi
+          MONTH=$(TZ=America/New_York date +%m)
+          IN_SEASON=false
+          if [ "$MONTH" -ge 2 ] && [ "$MONTH" -le 6 ]; then IN_SEASON=true; fi
+          echo "season=$SEASON"        >> "$GITHUB_OUTPUT"
+          echo "in_season=$IN_SEASON"  >> "$GITHUB_OUTPUT"
+          echo "season=$SEASON in_season=$IN_SEASON"
+
+      - name: Out of season, there is nothing to import
+        if: ${{ github.event_name == 'schedule' && steps.plan.outputs.in_season != 'true' }}
+        run: |
+          echo "::notice::College baseball is out of season (February to June). Nothing was fetched or written."
+          echo "The promoted card is unchanged and the panel says out of season rather than showing an empty board."
+
+      # ── THE REFRESH ──────────────────────────────────────────────────────
+      # A scheduled run commits; a dispatch commits only when asked. The mode
+      # is always named explicitly, because an importer given no mode at all is
+      # a job that reports success having done nothing — a lesson this
+      # repository has already paid for once.
+      # A PROBE DISPATCH IS A PROBE DISPATCH. The walk takes two minutes and a
+      # runner publishes no logs until the whole job ends, so dragging it along
+      # behind a question meant the answer arrived four minutes late. It does
+      # not any more.
+      - name: Rebuild the card and import it
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          SEASON="${{ steps.plan.outputs.season }}"
+          ARGS="--season $SEASON"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          node tools/cbb/ingest.js $ARGS
+
+      # ── THE STATS REFRESH ────────────────────────────────────────────────
+      # SECOND, AND DEPENDENT ON THE FIRST. The stats importer reads box scores
+      # for games that are already in cbb.games, so the game log has to be
+      # current before this runs — and the ORPHAN_GAME refusal enforces the same
+      # ordering in SQL, so a wrong order here fails loudly rather than writing
+      # lines for games nobody can look up.
+      #
+      # It is its own step rather than part of the one above so that a stats
+      # failure cannot take the games board down with it. The board and club
+      # records do not depend on box scores; if this step fails, yesterday's
+      # archive stays live and the card is still correct.
+      - name: Import the box scores
+        if: ${{ github.event_name != 'pull_request' && inputs.probe_only != true && inputs.skip_stats != true && (github.event_name != 'schedule' || steps.plan.outputs.in_season == 'true') }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — no box score can be imported."
+            exit 1
+          fi
+          SEASON="${{ steps.plan.outputs.season }}"
+          ARGS="--season $SEASON"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.commit }}" = "true" ]; then
+            ARGS="$ARGS --commit"
+          else
+            ARGS="$ARGS --check"
+          fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          if [ -n "${{ inputs.stats_limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.stats_limit }}"; fi
+          node tools/cbb/stats.js $ARGS
+
+      # ── THE NCAA SEASON ARCHIVE ──────────────────────────────────────────
+      # Independent of everything above it. This reads NCAA's own published
+      # season totals from the ncaa_bbStats package, which SHIPS its data rather
+      # than scraping at read time — so unlike the NCAA site itself, it answers
+      # a datacenter address. It needs no game log and shares no failure mode
+      # with the box-score walk, which is why it is its own step.
+      #
+      # It runs on a dispatch only. The archive covers completed seasons and
+      # does not change daily, so putting it on the nightly schedule would
+      # re-import 61,000 unchanged rows every night to no purpose.
+      - name: Import the NCAA season archive
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.ncaa_archive == true }}
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — nothing can be imported."
+            exit 1
+          fi
+          ARGS=""
+          if [ "${{ inputs.commit }}" = "true" ]; then ARGS="--commit"; else ARGS="--check"; fi
+          if [ -n "${{ inputs.season }}" ]; then ARGS="$ARGS --season ${{ inputs.season }}"; fi
+          if [ "${{ inputs.allow_shrink }}" = "true" ]; then ARGS="$ARGS --allow-shrink"; fi
+          node tools/cbb/ncaa_archive.js $ARGS

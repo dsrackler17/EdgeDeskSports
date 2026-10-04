@@ -1,0 +1,235 @@
+# EdgeDesk Intelligence — is it actually deployed?
+#
+# THIS REPOSITORY DEPLOYS NOTHING AUTOMATICALLY. Every edge function carries a
+# manual `supabase functions deploy <name>` in its header and every .sql file is
+# applied by hand, so a merged pull request and a green CI run say nothing at
+# all about what is answering at the other end. A report that calls merged code
+# "shipped" is guessing.
+#
+# So this asks the deployment. It reads the function's own ?probe=1, checks the
+# ledger table against PostgREST, and fetches the two artifacts the desk reads
+# over HTTP. No secret value is printed — credential presence is reported as a
+# boolean, exactly as the function's own probe does.
+#
+# AND WHEN WHAT IS MERGED IS NOT WHAT IS RUNNING, IT DEPLOYS IT. If production
+# serves an edgedesk_ai, capture, props_cron, editorial_cron or research_cron
+# build other than this checkout's (STALE), the deploy jobs below call Deploy
+# intelligence, Deploy player props pipeline, Deploy editorial scheduler and
+# Deploy research scheduler for exactly those functions: their tests first,
+# then the deploy, then the verify job asks the deployment again and that
+# answer decides the run. Only on main, so a branch never ships itself, and
+# never a migration or any other finding: deploy_doctor.js deployPlan() names
+# the five checks a deploy fixes and nothing else. A manual run can switch it
+# off with auto_deploy.
+#
+# SECRETS: the ones the newsletter workflow already holds.
+#   SB_URL           optional; defaults to the project the rest of the repo uses
+#   SB_SERVICE_ROLE  optional; without it the ledger check reports UNKNOWN
+#                    rather than guessing. The anon key is enough for the rest.
+# The auto-deploy also uses the deploy workflows' SUPABASE_ACCESS_TOKEN and
+# SUPABASE_PROJECT_REF (passed with `secrets: inherit`).
+#
+# The job fails when something needs doing, so a scheduled run is a standing
+# answer to "is the thing I merged the thing that is running".
+name: Intelligence doctor
+
+on:
+  workflow_dispatch:
+    inputs:
+      auto_deploy:
+        description: "Deploy edgedesk_ai / capture / props_cron / editorial_cron / research_cron if the deployed build is STALE (main only)"
+        type: boolean
+        default: true
+      probe_answer:
+        description: "Also send ONE real question to the deployment and report the shape of the reply"
+        type: boolean
+        default: false
+      question:
+        description: "The question to send (blank = the reported North Texas / Texas State one)"
+        type: string
+        required: false
+  schedule:
+    # FOUR TIMES A DAY, NOT ONCE, AND THE REASON IS MEASURED.
+    # This was a single daily slot at 14:17. GitHub drops scheduled runs under
+    # load — supabase/capture_cron.sql documents this repository measuring a
+    # ~4.5 hour gap across every scheduled workflow on 2026-09-13 — and a
+    # once-a-day check that gets dropped is a day with no answer. As of
+    # 2026-09-15 the 14:17 slot had come round exactly once and been missed, so
+    # the workflow had never run itself: every run in its history was a manual
+    # dispatch. Four slots do not fix GitHub's scheduler, which is not
+    # something this repository can fix. They make one dropped slot cost six
+    # hours instead of a day. The job is ~20 seconds and writes nothing
+    # unless it has a stale function to deploy.
+    - cron: '17 2,8,14,20 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intelligence-doctor
+  cancel-in-progress: false
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      deploy_edgedesk_ai: ${{ steps.ask.outputs.deploy_edgedesk_ai }}
+      deploy_capture: ${{ steps.ask.outputs.deploy_capture }}
+      deploy_props_cron: ${{ steps.ask.outputs.deploy_props_cron }}
+      deploy_editorial_cron: ${{ steps.ask.outputs.deploy_editorial_cron }}
+      deploy_research_cron: ${{ steps.ask.outputs.deploy_research_cron }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # ONE RUN. IT REPORTS, IT ANNOTATES, AND IT DECIDES THE JOB.
+      #
+      # This used to be two: this step with `continue-on-error: true`, and a
+      # second `deploy_doctor.js > /dev/null` at the end whose only purpose was
+      # to set the exit code. That cost two full sets of probes against the
+      # deployment per run, let the summary and the verdict disagree (they were
+      # separate runs, seconds apart, against a board whose age moves), and —
+      # worst — made the FAILING step print nothing. Clicking the red X showed
+      # "Process completed with exit code 1" and no reason, while the reason sat
+      # in a different step. A monitor that will not say what is wrong is not
+      # doing the job it exists for.
+      #
+      # pipefail is what makes one step do both: without it the exit status of
+      # `doctor | tee` is tee's, which is always 0, and the job would pass while
+      # printing ACTION NEEDED.
+      #
+      # --auto-deploy writes the deploy jobs' inputs as step outputs, and lets
+      # this step pass when a deploy is the whole fix; the verify job's
+      # re-check then decides the run. Anything else still fails right here.
+      - name: Ask the deployment what it is running
+        id: ask
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          AUTO_DEPLOY: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.auto_deploy) && '--auto-deploy' || '' }}
+        run: |
+          set -o pipefail
+          node tools/intelligence/deploy_doctor.js --annotate $AUTO_DEPLOY | tee doctor.txt
+
+      - name: Put the answer in the run summary
+        if: always()
+        run: |
+          {
+            echo '## Intelligence deployment'
+            echo '```'
+            # The ::error:: / ::notice:: lines are for the run's own annotations;
+            # they are already rendered above the log, so keep them out of here.
+            grep -v '^::' doctor.txt 2>/dev/null || echo 'the doctor produced no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # WHAT IT IS RUNNING IS NOT WHAT IT ANSWERS.
+      # The doctor above establishes the build. This asks the deployment the
+      # question a customer asked and reports the SHAPE of the reply — did the
+      # writing model answer, did the four sections arrive, did any internal
+      # label leak into the prose, and was a deterministic read served when
+      # narration failed. No secret is printed and the answer is summarised,
+      # never dumped, so a public run log is not a copy of someone's research.
+      # `always()` because the doctor step above now FAILS the job when
+      # something needs deploying, and a skipped probe would be exactly
+      # backwards: the run where the deployment is in trouble is the run where
+      # somebody asked for this.
+      - name: Ask the deployment the customer's question
+        if: ${{ always() && inputs.probe_answer }}
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          node tools/intelligence/probe_live.js \
+            ${{ inputs.question && format('--question "{0}"', inputs.question) || '' }} | tee probe.txt
+        continue-on-error: true
+
+      - name: Put the answer's shape in the run summary
+        if: ${{ always() && inputs.probe_answer }}
+        run: |
+          {
+            echo '## What the deployment answered'
+            echo '```'
+            cat probe.txt 2>/dev/null || echo 'the probe produced no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # There is no second doctor run in this job on purpose. The step that
+      # asks the deployment is the step that decides the job, so the failure
+      # and the reason for it are the same piece of output.
+
+  # MERGED BUT NOT RUNNING: DEPLOY IT, THEN ASK AGAIN.
+  # Each deploy job runs only when the doctor named one of its functions (it
+  # names none off main, or with auto_deploy off). !cancelled() rather than
+  # success(), because a stale build beside a missing migration fails the
+  # doctor job and the build should still ship; the migration stays red there
+  # for a person. Each deploy workflow's own concurrency group queues it
+  # behind any deploy a person started by hand.
+  deploy:
+    needs: doctor
+    if: ${{ !cancelled() && (needs.doctor.outputs.deploy_edgedesk_ai == 'true' || needs.doctor.outputs.deploy_capture == 'true') }}
+    uses: ./.github/workflows/deploy-intelligence.yml
+    with:
+      deploy_function: ${{ needs.doctor.outputs.deploy_edgedesk_ai == 'true' }}
+      deploy_capture: ${{ needs.doctor.outputs.deploy_capture == 'true' }}
+    secrets: inherit
+
+  deploy_props:
+    needs: doctor
+    if: ${{ !cancelled() && needs.doctor.outputs.deploy_props_cron == 'true' }}
+    uses: ./.github/workflows/deploy-props-pipeline.yml
+    with:
+      deploy_function: true
+    secrets: inherit
+
+  deploy_editorial:
+    needs: doctor
+    if: ${{ !cancelled() && needs.doctor.outputs.deploy_editorial_cron == 'true' }}
+    uses: ./.github/workflows/deploy-editorial-cron.yml
+    secrets: inherit
+
+  deploy_research:
+    needs: doctor
+    if: ${{ !cancelled() && needs.doctor.outputs.deploy_research_cron == 'true' }}
+    uses: ./.github/workflows/deploy-research-cron.yml
+    with:
+      deploy_function: true
+    secrets: inherit
+
+  # THE SECOND DOCTOR RUN, AND THE ONE THAT DECIDES A RUN THAT DEPLOYED.
+  # The deployment changed, so the first answer is out of date. This waits for
+  # EVERY deploy job: each asking on its own would find another's function
+  # still stale mid-deploy and fail for it. Annotated, and it decides the run,
+  # so a deploy that did not take (a failed test gate, a missing token) is a
+  # red run that says why.
+  verify:
+    needs: [deploy, deploy_props, deploy_editorial, deploy_research]
+    if: ${{ !cancelled() && (needs.deploy.result != 'skipped' || needs.deploy_props.result != 'skipped' || needs.deploy_editorial.result != 'skipped' || needs.deploy_research.result != 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Ask the deployment again, now that it has changed
+        env:
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          set -o pipefail
+          node tools/intelligence/deploy_doctor.js --annotate | tee doctor.txt
+
+      - name: Put the answer in the run summary
+        if: always()
+        run: |
+          {
+            echo '## After the auto-deploy'
+            echo '```'
+            grep -v '^::' doctor.txt 2>/dev/null || echo 'the doctor produced no output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

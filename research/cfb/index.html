@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- not indexed: whether the research terminal sits behind the subscription is the owner's call (docs/cfb-terminal/DELIVERABLE.md) -->
+<meta name="robots" content="noindex">
+<title>CFB Research Terminal · EdgeDesk</title>
+<meta name="description" content="EdgeDesk's independent college football fair lines, why they differ from the market, what could make them wrong, and what price matters. Research, not picks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/research/cfb/terminal.css?v=20260928b">
+<link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
+</head>
+<body>
+<!-- THE CFB RESEARCH TERMINAL.
+     It computes nothing that is a projection: it reads the cached research
+     objects football/cfb_terminal/build.js writes hourly from the production
+     artifacts (the champion's slate, the Model Lab ledger, the frozen decision
+     policy) and renders them. The same lib/cfb_terminal.js that built them
+     answers "Ask this game" from them, so the page, the brief and the
+     assistant cannot disagree about a number. -->
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>EDGEDESK</b><span class="sub">CFB research terminal</span>
+      <a class="back" href="/app.html">Terminal →</a></div>
+    <nav class="nav" id="nav">
+      <a href="#/" data-r="queue">Research queue</a>
+      <a href="#/cleanest" data-r="cleanest">Cleanest</a>
+      <a href="#/uncertain" data-r="uncertain">High uncertainty</a>
+      <a href="#/brief" data-r="brief">Weekly brief</a>
+      <a href="#/watch" data-r="watch">Watchlist</a>
+      <a href="#/record" data-r="record">Record</a>
+      <a href="#/read" data-r="read">Read record</a>
+      <a href="#/ev" data-r="ev">EV lab</a>
+      <a href="#/why" data-r="why">Why EdgeDesk</a>
+      <a href="#/maturity" data-r="maturity">Model maturity</a>
+      <a href="#/terms" data-r="terms">Terms</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <div id="trust" class="trust" aria-label="Trust panel"></div>
+  <div id="view"><div class="empty">Loading EdgeDesk research…</div></div>
+  <!-- ONE canonical statement (lib/edgedesk_canon.js DISCLAIMER); every other
+       surface on the page carries a contextual maturity label instead. -->
+  <div class="foot">EdgeDesk is a sports market research and decision-support tool. Its numbers are estimates with measured error; a research status is not a bet signal, and a decision classifies the current price without promising any result. Signals can be wrong. 21+. Bet responsibly — 1-800-GAMBLER.
+    Every number on this page comes from EdgeDesk’s stored production outputs; a missing input is shown as missing. · <a href="#" data-ed-report="Wrong or missing data">Report a data problem</a></div>
+</main>
+<div class="tip" id="tip"></div>
+<script src="/lib/edgedesk_canon.js?v=20260930b"></script>
+<script src="/football/cfb_decision/decision.js?v=20260928a"></script>
+<script src="/football/cfb_lab/integrity.js?v=20260928a"></script>
+<script src="/lib/edgedesk_read.js?v=20260928c"></script>
+<script src="/lib/edgedesk_ev.js?v=20260928a"></script>
+<script src="/lib/cfb_terminal.js?v=20260928b"></script>
+<script src="/lib/edgedesk_report.js?v=20260907b"></script>
+<script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
+<script>
+try{ window.EDReport.configure({
+  url:"https://iattxbkbufslbauoumga.supabase.co",
+  key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8",
+  version:'cfb-terminal-2026-09', surface:'cfb-terminal'}); }catch(e){}
+</script>
+<!-- PLAYER PROP RESEARCH on every game page: the app's own prop kernel,
+     opportunity layer and section renderer (the same files, the same
+     versions), reading football/props/cfb/summary.json. EDDecision is loaded
+     so the kernel reads the same decision thresholds the app does. -->
+<script src="/lib/research_core.js?v=20260925p"></script>
+<script src="/lib/edgedesk_vocab.js?v=20260929a"></script>
+<script src="/lib/edgedesk_bankroll.js?v=20260929b"></script>
+<script src="/lib/edgedesk_market.js?v=20260929a"></script>
+<script src="/lib/edgedesk_decision.js?v=20260930b"></script>
+<script src="/lib/edgedesk_props.js?v=20260929fr1"></script>
+<script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
+<script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
+<script src="/research/cfb/terminal.js?v=20260929c"></script>
+</body>
+</html>

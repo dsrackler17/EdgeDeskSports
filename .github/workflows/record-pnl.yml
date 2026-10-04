@@ -1,0 +1,88 @@
+# EdgeDesk Record — profit and loss of the model's own recommendations.
+#
+# THE ONLY WRITER OF record/pnl/. It reads the ledgers the settlement jobs
+# keep — player props (football/props/<lg>/<season>/results.jsonl, graded by
+# the Player props job), game decisions (football/cfb_terminal/decisions/,
+# graded by the CFB Model Lab job) and the football model record
+# (record/football/, graded by the Football model record job) — and rebuilds
+# the P&L ledger and the Record's summary from them (tools/record/pnl_ledger.js).
+#
+# WHEN IT RUNS
+#   · right after any of those three jobs finishes (workflow_run), so a prop or
+#     a game that just settled reaches the Record within minutes;
+#   · hourly in season as a sweep, and by hand.
+#
+# IDEMPOTENT. One row per recommendation id; a settlement that moved at its
+# source updates its row and is logged on it; a run that finds nothing new
+# commits nothing. A single writer (this job, one at a time) means the
+# ledger's correction history can never be lost to a push race.
+#
+# NO SECRET is needed to publish (GITHUB_TOKEN commits). The Supabase copy
+# (supabase/model_pnl*.sql) is written only on main and only when SB_URL /
+# SB_SERVICE_ROLE are set; without them it logs and moves on. With them it is
+# checked against the page on every run, and a failure is shown, never hidden.
+name: Record P&L
+
+on:
+  workflow_run:
+    workflows:
+      - 'Player props'
+      - 'CFB Model Lab'
+      - 'Football model record'
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '41 * * 8-12,1 *'       # hourly, August through January
+    - cron: '41 13 * 2-7 1'         # Mondays out of season
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: record-pnl
+  cancel-in-progress: false
+
+jobs:
+  pnl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The P&L rules must pass before the ledger is allowed to move
+        run: |
+          node tools/record/pnl.test.js
+          node tools/record/pnl_ledger.test.js
+          node tools/record/verified_pnl.test.js
+
+      - name: Rebuild the P&L ledger and the Record's summary from the settled ledgers
+        run: node tools/record/pnl_ledger.js --write
+
+      - name: Publish record/pnl/
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main 'record: profit & loss — every recommendation at its recorded price' -- record/pnl/
+
+      # NEVER A SILENT GREEN. Until 2026-10-03 this step ended in
+      # `|| echo ::warning::`, and production had never been given model_pnl:
+      # every run logged PGRST202 and passed. Now a database without the schema
+      # exits 3 and one that disagrees with the page (verified_pnl_summary vs
+      # the Record card, any integrity check above 0) exits 4, each with an
+      # error annotation and a line in the run summary. The page is published
+      # above and never waits on the database, so the step may fail without
+      # failing the job; the run shows it. Fix: the "Deploy Record P&L schema"
+      # workflow.
+      - name: Copy to Supabase and prove it says what the page says (model_pnl)
+        continue-on-error: true
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/record/pnl_sync.js

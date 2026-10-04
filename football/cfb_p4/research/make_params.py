@@ -94,8 +94,24 @@ def build_universe():
                     'Power 5; the engine resolves the tier per season instead of assuming.'}
 
 
-def build_validation(rep, repl):
-    mh = rep.get('market_headline', {})
+def build_validation(rep, repl, eng=None):
+    # The headline describes what the ENGINE publishes. train_p4.py scores
+    # `blended_margin` -- rating difference plus home-field advantage, blended --
+    # which is the model's core but not its output: engine.js sums nine terms.
+    # Quoting the core's accuracy as the product's accuracy would describe a
+    # quantity no user ever sees, so backtest_engine.js replays the shipped
+    # engine cold over the held-out seasons and THAT is the number reported
+    # here. The core's own figure is kept beside it for comparison.
+    mh = dict(rep.get('market_headline', {}))
+    core = dict(mh)
+    if eng and eng.get('spread'):
+        mh['spread_mae_model'] = eng['spread']['mae_model']
+        mh['spread_mae_market'] = eng['spread']['mae_market']
+        mh['n_games'] = eng['n_projected']
+        if eng.get('total'):
+            mh['total_mae_model'] = eng['total']['mae_model']
+            mh['total_mae_market'] = eng['total']['mae_market']
+        mh['ats_vs_close'] = eng.get('ats_vs_close', mh.get('ats_vs_close', {}))
     ats = mh.get('ats_vs_close', {})
     best = None
     for k, v in ats.items():
@@ -125,6 +141,23 @@ def build_validation(rep, repl):
             'clv_open_to_close': mh.get('clv_open_to_close'),
             'beats_closing_line': bool(beats),
             'max_tier': 'RESEARCH_LEAN',
+            'measures': ('model.fair_spread exactly as engine.js publishes it, from a cold '
+                         'replay in kickoff order: every game is projected from state that '
+                         'contains only games that had already been played, then absorbed.'
+                         if eng else
+                         'the blended rating core, NOT the engine\'s published fair spread'),
+            'engine_replay': (None if not eng else
+                              {'n_projected': eng.get('n_projected'),
+                               'n_refused': eng.get('n_refused'),
+                               'refusal_status': eng.get('refusal_status'),
+                               'replay_from': eng.get('replay_from'),
+                               'winprob': eng.get('winprob')}),
+            'core_only': {'what': 'blended rating difference + HFA, the quantity train_p4.py '
+                                  'scores; the additional engine layers are not in it',
+                          'spread_mae_model': core.get('spread_mae_model'),
+                          'spread_mae_market': core.get('spread_mae_market'),
+                          'total_mae_model': core.get('total_mae_model'),
+                          'total_mae_market': core.get('total_mae_market')},
             'best_ats': (None if best is None else
                          '%s%% at %s+ points of disagreement (n=%d, p=%s)'
                          % (ats[best]['win_pct'], best, ats[best]['n'],
@@ -144,7 +177,15 @@ def build_validation(rep, repl):
             'layer_a': 'ratings, venue HFA, travel, rivalry, conference — tuned 2001-2013',
             'layer_b': 'efficiency, matchup, blend curve, QB, schedule, total — tuned 2014-2019',
             'layer_c': 'roster continuity, volatility, confidence — tuned 2018-2021',
-            'headline_test': '2022-2025, untouched by every layer',
+            'distributional': 'sigma, the residual PMFs and the spread-conditioned '
+                              'margin table — fitted 2014-2021, never on the headline '
+                              'window. Fitting sigma by maximum likelihood on 2022-2025 '
+                              'and then quoting that fit\'s own Brier score as held-out '
+                              'evidence is what an earlier build did; it is corrected '
+                              'here and the honest number is 0.19016 against the '
+                              'in-sample optimum of 0.17899.',
+            'headline_test': '2022-2025, untouched by every layer including the '
+                             'distributional one',
         },
     }
 
@@ -187,7 +228,15 @@ def main():
     P['built_at'] = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
     P['data_provenance'] = PROVENANCE
     P['universe'] = build_universe()
-    P['validation_summary'] = build_validation(rep, repl)
+    eng = None
+    eng_path = os.path.join(OUT, 'backtest_engine.json')
+    if os.path.exists(eng_path):
+        with open(eng_path) as f:
+            eng = json.load(f)
+    else:
+        print('[warn] %s absent — the headline will describe the rating core rather '
+              'than the engine. Run: node ../research/backtest_engine.js' % eng_path)
+    P['validation_summary'] = build_validation(rep, repl, eng)
     P['unavailable_by_design'] = {
         'weather_coefficients': 'no historical weather series exists in this corpus, so no '
                                 'weather coefficient was earned; supplied weather is shown and '

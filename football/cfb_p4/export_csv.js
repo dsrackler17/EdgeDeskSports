@@ -21,8 +21,10 @@
      --week N        one week
      --upcoming      games kicking off in the next 10 days (default)
      --all           the whole season
-     --p4-only       restrict to games involving a Power 4 team (default on;
-                     pass --all-fbs to include every FBS game)
+     --p4-only       restrict to games involving a Power 4 team. OFF by
+                     default: this export covers the whole FBS, the same
+                     slate the board renders, and the flag is kept only so a
+                     Power 4 sheet can still be produced deliberately.
      --schedule PATH a local schedules CSV or URL, for a season the public
                      mirror has not published yet
      --lines PATH    a local CSV of book numbers, columns:
@@ -58,6 +60,9 @@ var HERE = __dirname;
 global.window = global.window || global;
 require(path.join(HERE, 'params.js'));
 var E = require(path.join(HERE, 'engine.js'));
+/* the FBS universe: team identity, season conference and program group. The
+   same module the board and the coverage gate read. */
+var FBS = require(path.join(HERE, '..', 'fbs', 'fbs.js'));
 var P = global.window.EDCfbP4Params;
 
 var SCHED_URL = function (y) {
@@ -68,7 +73,7 @@ var LOOKAHEAD_DAYS = 10;
 
 /* ------------------------------------------------------------------ args */
 function parseArgs(argv) {
-  var a = { scope: 'upcoming', p4Only: true };
+  var a = { scope: 'upcoming', p4Only: false };
   for (var i = 2; i < argv.length; i++) {
     var k = argv[i];
     if (k === '--season') a.season = parseInt(argv[++i], 10);
@@ -159,7 +164,116 @@ var P4_HEAD = ['kickoff_tz', 'neutral_site', 'venue', 'home_conference', 'away_c
   'primary_driver_1', 'primary_driver_2', 'primary_driver_3',
   'counterargument_1', 'unavailable_inputs', 'data_quality_notes'];
 
-var HEAD = NFL_HEAD.concat(P4_HEAD);
+/* the FBS coverage block, appended AFTER both so a consumer that maps by
+   position keeps working. Byte-identical in name and order to app.html's
+   FBP4_CSV_HEAD tail — a sheet built here and one built in the browser have
+   to line up column for column or the Collective's uploader would be
+   mapping two different files. */
+var FBS_HEAD = ['home_team_id', 'away_team_id', 'home_conference_id', 'away_conference_id',
+  'home_fbs_group', 'away_fbs_group', 'home_division', 'away_division',
+  'matchup_type', 'is_conference_game', 'model_status', 'data_completeness',
+  'market_status', 'quote_timestamp', 'board_status',
+  /* reliability, appended last (lib/cfb_reliability.js). This offline
+     generator replays the engine without the input assembly reliability is
+     scored from, so it copies the published slate's score for a game that
+     slate carries under the same model version and leaves the four cells
+     empty otherwise — an empty cell, never an invented score */
+  'reliability_score', 'reliability_grade', 'projection_stability_sd', 'favorite_flip_rate'];
+
+/* the canonical tail, byte-identical to app.html's FBP4_CANON_HEAD: when the
+   number was computed, the research status and the separate decision status
+   (read from the canonical research build, football/cfb_terminal/board.json,
+   when it carries the game), the market snapshot, the price state, the
+   favorite flip, and what kind of row this is. An export is recomputed; the
+   FROZEN pregame record is record/football/cfb_<season>.json. */
+var CANON_HEAD = ['prediction_timestamp', 'research_status', 'decision_status', 'market_snapshot_home_line', 'market_snapshot_at',
+  'price_state', 'favorite_flip', 'row_kind'];
+/* the quote-level EV block, byte-identical to app.html's FB_QEV_HEAD: the
+   best-EV main-market quote and its EV. Offline there is no live board, so it
+   is read from the terminal build (board.json rows[].quote_ev, priced by
+   lib/edgedesk_quote_ev.js at build time) and says so in ev_source; a game the
+   build did not price exports ev_available=false with the reason. */
+var EV_HEAD = ['best_spread', 'best_price', 'best_book', 'best_quote_timestamp', 'model_cover_probability', 'model_push_probability',
+  'break_even_probability', 'probability_edge_pp', 'expected_value_pct', 'calibrated_expected_value_pct', 'model_fair_odds',
+  'ev_available', 'ev_unavailable_reason', 'ev_state', 'quote_decision_status', 'best_ev_team', 'ev_source'];
+var HEAD = NFL_HEAD.concat(P4_HEAD).concat(FBS_HEAD).concat(CANON_HEAD).concat(EV_HEAD);
+var FBS_AT = NFL_HEAD.length + P4_HEAD.length;
+var CANON_AT = FBS_AT + FBS_HEAD.length;
+var EV_AT = CANON_AT + CANON_HEAD.length;
+var CANON = (function () { try { return require(path.join(HERE, '..', '..', 'lib', 'edgedesk_canon.js')); } catch (e) { return null; } })();
+var CANON_BOARD = (function () {
+  try { var b = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'cfb_terminal', 'board.json'), 'utf8')), by = {}; (b.rows || []).forEach(function (r) { by[String(r.game_id)] = r; }); return by; }
+  catch (e) { return {}; }
+})();
+function canonTail(g, p, mkt) {
+  var cr = CANON_BOARD[String(g.game_id)] || null;
+  var fm = p && p.model ? p.model.fair_spread : null, mm = mkt && mkt.spread_line != null ? -mkt.spread_line : null;
+  return [(p && p.prediction_timestamp) || '', cr ? cr.research_status || '' : '', cr ? cr.decision_status || 'NO_DECISION' : 'NO_DECISION',
+    mkt && mkt.spread_line != null ? mkt.spread_line : '', (mkt && mkt.as_of) || '', cr ? cr.price_state || '' : '',
+    CANON && fm != null && mm != null ? String(CANON.favoriteFlip(fm, mm)) : '',
+    'OFFLINE_EXPORT: recomputed at export time; the frozen pregame record is record/football/cfb_' + (g.season || '') + '.json'];
+}
+
+function evTail(g) {
+  var cr = CANON_BOARD[String(g.game_id)] || null, x = cr && cr.quote_ev;
+  var src = 'OFFLINE_EXPORT: football/cfb_terminal/board.json quote_ev (priced at build time)';
+  if (!x) return ['', '', '', '', '', '', '', '', '', '', '', 'false', cr ? 'the terminal build carries no quote EV for this game' : 'the game is not on the terminal build', 'UNAVAILABLE', cr ? (cr.decision_status || 'NO_DECISION') : 'NO_DECISION', '', src];
+  var v = function (k) { return x[k] == null ? '' : x[k]; };
+  return [v('best_spread'), v('best_price'), v('best_book'), v('best_quote_timestamp'), v('model_cover_probability'), v('model_push_probability'),
+    v('break_even_probability'), v('probability_edge_pp'), v('expected_value_pct'), v('calibrated_expected_value_pct'), v('model_fair_odds'),
+    String(!!x.ev_available), v('ev_unavailable_reason'), v('ev_state'), v('decision_status'), v('best_team'), src];
+}
+
+/* THE BOARD WORD, READ OFF THE ONE RESEARCH STATUS (audit 2026-09-30 #6).
+   This was a classifier of its own — RESEARCH for every gap under 7, no
+   2-point threshold, no confidence or reliability rule — so the file could
+   say RESEARCH where the screen said MARKET ALIGNED (Pitt @ Virginia Tech).
+   It classifies nothing now: lib/edgedesk_canon.js researchStatus over the
+   projection and this export's market, with the published reliability
+   (football/fbs/slate.json) and no integrity-gate result (a 7+ gap is
+   INVESTIGATE: fail closed), named by EDCanon.boardWord. */
+function boardStatus(p, mkt, g) {
+  if (!CANON) throw new Error('lib/edgedesk_canon.js is required: it is the one research classifier');
+  relTail(g, p);   /* loads the published reliability once */
+  var r = g && g.game_id != null && PUBLISHED_REL ? PUBLISHED_REL[String(g.game_id)] : null;
+  var st = CANON.researchStatusFromProjection(p, mkt || {}, { reliability: r ? r.reliability_score : null, thresholds: { guard_gap: 21 } });
+  return CANON.boardWord(st);
+}
+function fbsTail(g, p, mkt, universe) {
+  var m = universe ? FBS.classifyGame(g, universe) : null;
+  var ctx = (p && p.layers && p.layers.uncertainty && p.layers.uncertainty.context) || null;
+  return [
+    (m && m.home.key) || FBS.normKey(g.home_team) || '',
+    (m && m.away.key) || FBS.normKey(g.away_team) || '',
+    (m && m.home.conference_id) || '',
+    (m && m.away.conference_id) || '',
+    (m && m.home.group) || '',
+    (m && m.away.group) || '',
+    (m && (m.home.is_fbs ? 'fbs' : 'non-fbs')) || '',
+    (m && (m.away.is_fbs ? 'fbs' : 'non-fbs')) || '',
+    (m && m.matchup_type) || '',
+    m ? String(!!m.is_conference_game) : '',
+    (p && p.status) || 'NO_PREDICTION',
+    (ctx && ctx.information_missing != null) ? Math.round((1 - ctx.information_missing) * 1000) / 10 : '',
+    (mkt && mkt.spread_line != null) ? (mkt.stale ? 'STALE QUOTE' : 'LIVE') : 'NO MARKET',
+    (mkt && mkt.as_of) || '',
+    boardStatus(p, mkt, g)
+  ].concat(relTail(g, p));
+}
+var PUBLISHED_REL = null;
+function relTail(g, p) {
+  if (PUBLISHED_REL === null) {
+    PUBLISHED_REL = {};
+    try {
+      var sl = JSON.parse(fs.readFileSync(path.join(HERE, '..', 'fbs', 'slate.json'), 'utf8'));
+      (sl.games || []).forEach(function (r) { if (r && r.reliability_score != null) PUBLISHED_REL[String(r.game_id)] = r; });
+    } catch (_) { /* no published slate: the cells stay empty */ }
+  }
+  var r = g && g.game_id != null ? PUBLISHED_REL[String(g.game_id)] : null;
+  if (!r || !p || p.status !== 'PREDICTED') return ['', '', '', ''];
+  var st = r.projection_stability || null;
+  return [r.reliability_score, r.reliability_grade || '', st ? st.projection_stability_sd : '', st ? st.favorite_flip_rate : ''];
+}
 
 var BASIS = (function () {
   var m = P.validation_summary && P.validation_summary.market;
@@ -243,7 +357,7 @@ function contrib(p, key) {
   return c ? r2(c.points) : '';
 }
 
-function csvRow(g, p, mkt, refSource, basis) {
+function csvRow(g, p, mkt, refSource, basis, universe) {
   var kick = String(g.start_date || '');
   var kickFmt = kick ? kick.slice(0, 10) + ' ' + kick.slice(11, 16) : '';
   var base = [g.season, g.week, g.game_id, kickFmt, g.away_team, g.home_team];
@@ -263,7 +377,10 @@ function csvRow(g, p, mkt, refSource, basis) {
     row[NFL_HEAD.length + 2] = g.venue || '';
     row[NFL_HEAD.length + 3] = g.home_conference || '';
     row[NFL_HEAD.length + 4] = g.away_conference || '';
-    row[HEAD.length - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
+    row[FBS_AT - 1] = (p && (p.reason || (p.missing || []).join('; '))) || '';
+    fbsTail(g, p, mkt, universe).forEach(function (v, i) { row[FBS_AT + i] = v; });
+    canonTail(g, p, mkt).forEach(function (v, i) { row[CANON_AT + i] = v; });
+    evTail(g).forEach(function (v, i) { row[EV_AT + i] = v; });
     return row.map(q).join(',');
   }
 
@@ -317,7 +434,10 @@ function csvRow(g, p, mkt, refSource, basis) {
     (ex.counterarguments[0] || {}).text || '',
     ex.unpredictable_variables.map(function (u) { return u.item; }).join('; '),
     ex.data_quality.map(function (d) { return d.text; }).join('; ')
-  ]).map(q).join(',');
+    /* the FBS block and the canonical tail on PREDICTED rows too: a predicted
+       row used to stop 19 columns short of the header, so every column after
+       data_quality_notes was mis-aligned for exactly the rows that matter */
+  ]).concat(fbsTail(g, p, mkt, universe)).concat(canonTail(g, p, mkt)).concat(evTail(g)).map(q).join(',');
 }
 
 /* ----------------------------------------------------------------- main */
@@ -338,7 +458,7 @@ async function main() {
   /* state: seeded, then advanced season by season on real results */
   var state = E.newState();
   var seededThrough = state.seededThrough;
-  var absorbed = 0, snapshots = {}, slate = [];
+  var absorbed = 0, snapshots = {}, slate = [], universe = null;
   var replay = a.season <= seededThrough;
   var firstSeason = seededThrough + 1;
 
@@ -377,8 +497,16 @@ async function main() {
       console.error('[warn] ' + y + ' schedule unavailable; its results are not absorbed');
       continue;
     }
-    var rows = parseCsv(text).map(normRow)
-      .filter(function (r) { return r.home_division === 'fbs' || r.away_division === 'fbs'; });
+    var raw = parseCsv(text).map(normRow);
+    /* the SEASON'S OWN universe, for the target season only — a past season's
+       alignment must never label this one's conferences */
+    if (y === a.season) universe = FBS.buildUniverse({ rows: raw, season: y,
+      source: 'cfbfastR-data schedules ' + y, params: P,
+      knownFbs: (P.rating && P.rating.seed_ratings) || null });
+    var rows = raw.filter(function (r) {
+      return FBS.isFbsDivision(r.home_division, r.home_team, { knownFbs: P.rating.seed_ratings })
+        || FBS.isFbsDivision(r.away_division, r.away_team, { knownFbs: P.rating.seed_ratings });
+    });
     rows.sort(function (x, z) { return String(x.start_date).localeCompare(String(z.start_date)); });
 
     for (var i = 0; i < rows.length; i++) {
@@ -469,14 +597,24 @@ async function main() {
         ? null : p.model.fair_total - mkt.total_line;
     }
     out.push(csvRow(g, p, mkt, played ? (refSource + ' — graded from the pregame snapshot')
-      : refSource, played ? 'pregame snapshot (state before kickoff, earlier results only)' : basis));
+      : refSource, played ? 'pregame snapshot (state before kickoff, earlier results only)' : basis,
+      universe));
   });
 
   var scopeLabel = a.scope === 'all' ? 'season' : a.scope === 'week' ? ('week' + a.week) : 'upcoming';
-  var name = a.out || ('edgedesk_cfb_p4_' + a.season + '_' + scopeLabel + '.csv');
+  var name = a.out || ('edgedesk_' + (a.p4Only ? 'cfb_p4' : 'fbs') + '_' + a.season + '_' + scopeLabel + '.csv');
   fs.writeFileSync(name, out.join('\n') + '\n');
+  var byType = {};
+  items.forEach(function (g) {
+    var m = universe ? FBS.classifyGame(g, universe) : null;
+    if (m) byType[m.matchup_type] = (byType[m.matchup_type] || 0) + 1;
+  });
   console.error('[write] ' + name + '  ' + items.length + ' games, '
-    + HEAD.length + ' columns');
+    + HEAD.length + ' columns'
+    + (universe ? ('  ' + JSON.stringify(byType)) : ''));
+  if (universe) console.error('[scope] ' + (a.p4Only ? 'Power 4 only (--p4-only)' : 'the whole FBS')
+    + ' · ' + universe.counts.fbs_teams + ' active FBS programs across '
+    + universe.conferences.length + ' conferences, derived from the ' + a.season + ' schedule feed');
   console.error('[basis] ' + basis);
   console.error('[record] ' + BASIS);
 }

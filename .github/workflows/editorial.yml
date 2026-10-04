@@ -1,0 +1,240 @@
+# EdgeDesk — the automated editorial system.
+#
+# The research already exists: the terminal prices every game on the board and
+# tools/articles/ turns that into a public article. THIS job adds the half that
+# makes the articles worth keeping — it picks the games that deserve a
+# permanent research trail, freezes what EdgeDesk said before each one, and
+# after the game audits that against what actually happened.
+#
+# WHAT A RUN DOES
+#   select    score every game on the board, apply the floor and the weekly
+#             cap, and store the decision with its itemised reasons. An
+#             operator's FEATURE or UNFEATURE survives this.
+#   pregame   for each featured game inside its lead-time window: capture an
+#             immutable research snapshot, build the article record, extract
+#             the falsifiable theses, run the quality gate, publish or hold.
+#   postgame  for each featured game that has finished: fetch the result AND
+#             the box score, refuse anything that is only a scoreboard, audit
+#             every pregame claim, grade the bet result and the process grade
+#             SEPARATELY, store the research lessons, publish or hold, and
+#             link the two articles to each other.
+#   memory    rebuild the aggregate the lessons answer.
+#
+# THEN the ordinary article build runs, because a postgame record is a record
+# in the same store and its page is built by the same builder.
+#
+# IT NEVER PUBLISHES A FABRICATED SUBSTITUTE. Missing odds, no projection, a
+# postponed game, a box score that is not ready, two providers disagreeing, a
+# failed narration, a failed quality check — each is a stated reason in the run
+# log and a held article. articles/data/editorial/runs.json is committed, so
+# "why did this game not get an article?" always has an answer in the history.
+#
+# SECRETS
+#   none are required. The schedule feeds, the ESPN box score and the
+#   settlement record are all public and keyless.
+#   ANTHROPIC_API_KEY  optional. With it, the postgame article carries four
+#                      short passages of connective prose drafted by a model
+#                      from a structured payload of EdgeDesk's own figures and
+#                      validated against them; a figure, a verdict or a name
+#                      the payload did not contain discards the whole draft.
+#                      Without it the same article publishes with EdgeDesk's
+#                      deterministic prose and identical numbers.
+name: Editorial system
+
+on:
+  schedule:
+    # EVERY FIFTEEN MINUTES, and almost always free.
+    #
+    # This was '25 */2 * * *'. Two hours is far too coarse for a job whose
+    # whole purpose is to notice things: a deployment that landed at :26 sat
+    # idle until :25 of the hour after next, and a game whose publication
+    # window opened just after a tick published up to two hours late.
+    #
+    # It is affordable because the run is a DISPATCHER first. With --if-due it
+    # reads featured.json, the snapshots, the run log and the retry ledger —
+    # all files already on disk — decides whether anything is owed, and exits
+    # without booting the research terminal or touching a feed when nothing
+    # is. That costs about 75ms. Only a tick that actually has work to do pays
+    # for the feed downloads.
+    #
+    # THE MINUTES ARE DELIBERATE. GitHub's own documentation says the schedule
+    # event is delayed "during periods of high loads", and names the start of
+    # every hour as the worst of them. '*/15' includes minute 0 and put this
+    # job in that stampede along with everything else in the repository.
+    #
+    # Observed, not assumed: between 12:58 and 16:35 this workflow logged ZERO
+    # scheduled runs while Publish research articles (16:09), Availability sync
+    # (16:07) and Injury sync (16:20) all fired. Scheduling works here; a
+    # quarter-hourly cron on the quarter-hours does not.
+    - cron: '7,22,37,52 * * * *'
+
+  # AND A FLOOR THAT DOES NOT DEPEND ON THE SCHEDULER AT ALL.
+  #
+  # A dropped cron slot is invisible: nothing fails, the work simply does not
+  # happen, and a game's publication window closes while the job that would
+  # have filled it was never started. These four jobs demonstrably fire on
+  # their own schedules, so chaining off them gives the editorial dispatcher a
+  # guaranteed heartbeat no matter what the scheduler does with our own cron.
+  #
+  # It is free: with --if-due the run reads files already on disk, decides
+  # nothing is owed, and exits in about 75ms without booting the research
+  # terminal. Running it more often costs nothing and missing a window costs an
+  # article.
+  workflow_run:
+    workflows:
+      - 'Settle finished games'
+      - 'Publish research articles'
+      - 'Injury sync'
+      - 'Availability sync'
+    types: [completed]
+    branches: [main]
+
+  # A CHANGE TO THE PIPELINE RUNS THE PIPELINE. Without this a deployment is
+  # only noticed by the next tick. The job's own commits touch articles/ and
+  # the sitemaps, never tools/editorial/, so this cannot retrigger itself.
+  push:
+    branches: [main]
+    paths:
+      - 'tools/editorial/**'
+      - 'tools/articles/**'
+      - '.github/workflows/editorial.yml'
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Which phase to run'
+        type: choice
+        options: ['all', 'select', 'pregame', 'postgame', 'memory']
+        default: 'all'
+      auto_publish:
+        description: 'Force publishing even if the stored auto-publish switches are off (they default ON)'
+        type: boolean
+        default: false
+      game:
+        description: 'One game only, e.g. NFL:2026_01_NE_SEA. Blank = all.'
+        type: string
+        default: ''
+      force:
+        description: 'Ignore the idempotency log for the named game (use with a game key)'
+        type: boolean
+        default: false
+      narrate:
+        description: 'Call the language model for connective prose (needs ANTHROPIC_API_KEY)'
+        type: boolean
+        default: false
+      source:
+        description: 'Who is waking the dispatcher (recorded on the heartbeat)'
+        type: string
+        default: 'manual'
+
+permissions:
+  contents: write
+
+concurrency:
+  # Two runs capturing a snapshot for the same game race each other into the
+  # same file. The snapshot id is a content hash so the race is harmless, but
+  # the article record and the run log are not, so they are serialised.
+  group: editorial
+  cancel-in-progress: false
+
+jobs:
+  editorial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # THE SYSTEM MUST PASS BEFORE IT IS ALLOWED TO WRITE A PAGE. An editorial
+      # pipeline that has stopped agreeing with its own grading rules is worse
+      # than one that did not run: it would publish an audit nobody can trust,
+      # and an audit nobody can trust is the only thing this product sells.
+      - name: The editorial system must pass before it publishes
+        run: |
+          node tools/editorial/editorial.test.js
+          node tools/editorial/publisher.test.js
+          node tools/editorial/windows.test.js
+          node tools/editorial/runtime.test.js
+          node tools/editorial/editorial_cron.test.js
+          node tools/articles/articles.test.js
+
+      # What the operator published or unpublished from a browser, first, so a
+      # decision made on a phone reaches the same run.
+      - name: Pull what was published from a browser
+        run: node tools/articles/sync.js --write
+
+      - name: Run the editorial pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ARGS="--network"
+          # WHO WOKE US, recorded on the heartbeat so scheduler health is
+          # measured from what actually invoked the dispatcher. The Supabase
+          # cron pokes workflow_dispatch and passes source=supabase_cron, which
+          # is how the primary and backup schedulers are told apart.
+          case "${{ github.event_name }}" in
+            schedule)     SRC=github_schedule ;;
+            workflow_run) SRC=github_workflow_run ;;
+            push)         SRC=github_push ;;
+            *)            SRC="${{ github.event.inputs.source }}" ;;
+          esac
+          case "$SRC" in
+            supabase_cron|github_schedule|github_workflow_run|github_push|manual|admin) ;;
+            *) SRC=manual ;;
+          esac
+          ARGS="$ARGS --source $SRC"
+          # A run the SUPABASE CRON asked for is the primary scheduler doing its
+          # job, so it uses the dispatcher gate exactly like a scheduled run. An
+          # operator pressing the button means it and runs the phases outright.
+          if [ "${{ github.event_name }}" != "workflow_dispatch" ] || [ "$SRC" = "supabase_cron" ]; then
+            ARGS="$ARGS --if-due"
+          fi
+          if [ "${{ github.event.inputs.auto_publish }}" = "true" ]; then ARGS="$ARGS --auto"; fi
+          if [ -n "${{ github.event.inputs.game }}" ]; then ARGS="$ARGS --game ${{ github.event.inputs.game }}"; fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          # Narration is opt-in twice over: the flag AND a key. With no key the
+          # pipeline says so in the run log and publishes the same article.
+          if [ "${{ github.event.inputs.narrate }}" = "true" ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+            ARGS="$ARGS --narrate"
+          fi
+          PHASE="${{ github.event.inputs.phase }}"
+          node tools/editorial/run.js "${PHASE:-all}" $ARGS
+
+      # The article records the editorial system just wrote are ordinary
+      # records; the ordinary builder renders them, the ordinary sitemap lists
+      # them, and the ordinary checks hold them.
+      - name: Build the public pages, the hubs and the sitemap
+        run: node tools/articles/build_articles.js
+
+      - name: Publish
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          N=$(node -e "const f=require('./articles/data/editorial/featured.json');console.log(f.counts.featured)" 2>/dev/null || echo '?')
+          # A concurrent push to main loses the race politely, not the work.
+          # This used to be `git pull --rebase` in a loop, and on 2026-09-14
+          # the rebase conflicted on articles/data/index.json (another job
+          # had rewritten the same generated file), stopped with unmerged
+          # paths, and every remaining attempt failed on "you have unmerged
+          # files". The shared helper puts this run's artifacts on the remote
+          # tip instead of merging them; nothing generated needs a merge.
+          bash tools/ci/push_generated.sh main \
+            "editorial: featured games, research snapshots and postgame audits (${N} featured)" \
+            -- articles sitemap.xml sitemap-articles.xml
+
+      # THE RUN LOG IS THE ANSWER TO "WHY DID THIS GAME NOT GET AN ARTICLE?"
+      # and it is worth having in the summary as well as in the commit.
+      #
+      # The redirect used to read >> "\$GITHUB_STEP_SUMMARY". Inside double
+      # quotes bash reads \$ as a literal dollar, so every run wrote a file
+      # named '$GITHUB_STEP_SUMMARY' into the repository root and the job
+      # summary came out empty. It is $GITHUB_STEP_SUMMARY, unescaped.
+      - name: Report
+        if: ${{ !cancelled() }}
+        run: |
+          node tools/editorial/report.js >> "$GITHUB_STEP_SUMMARY" \
+            || echo 'no run log to report' >> "$GITHUB_STEP_SUMMARY"

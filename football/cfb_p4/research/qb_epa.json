@@ -1,0 +1,1335 @@
+{
+ "schema": "edgedesk_qb_epa_experiment_v1",
+ "version": 1,
+ "generated_at": "2026-09-15T18:55:26.855Z",
+ "question": "does a measured quarterback add anything to the spread beyond the team rating that already contains him?",
+ "source": {
+  "corpus": "football/data/cache/fbs_epa/corpus",
+  "provider": "sportsdataverse/cfbfastR-cfb-data adv_passing via football/fbs_epa",
+  "ep_model_version": "2026.09.09",
+  "ep_model_training_seasons": [
+   2004,
+   2025
+  ],
+  "metric": "passing EPA per recorded dropback (attempts + sacks); scrambles excluded, garbage time included"
+ },
+ "method": {
+  "baseline": "the engine’s own rating gap plus its home-field advantage, taken from a state replayed COLD from 2014 with no shipped seed ratings",
+  "warmup_seasons": [
+   2014,
+   2015,
+   2016,
+   2017
+  ],
+  "evaluation_seasons": [
+   2018,
+   2019,
+   2020,
+   2021,
+   2022,
+   2023,
+   2024,
+   2025,
+   2026
+  ],
+  "completion_buffer_hours": 4,
+  "shrinkage": "n/(n+100), the engine’s own form and constant",
+  "centring": "the league EPA per dropback as it stood BEFORE this kickoff; the previous season’s closing rate until the current season has 20,000 reconciled dropbacks. Pass defence is centred on its OWN league line (allowed EPA per PLAY, also strictly lagged) rather than on the passer line, because the two are different quantities and the interaction term multiplies them",
+  "selection": "nested chronological: the candidate is chosen by an inner walk-forward over seasons strictly before the outer test season, then refit on everything before it",
+  "arms": {
+   "pregame": "the candidate is the leading passer of the last game that had FINISHED. This is what a deployable Saturday-morning forecast can know.",
+   "participant": "the candidate is the leading passer OF THE GAME BEING PREDICTED. Retrospective by construction, and an upper bound on what quarterback information could be worth rather than a forecast."
+  },
+  "leak_fixes": {
+   "seeded_ratings": "closed — coldState() empties every seeded rating, game count, scoring EWMA, efficiency EWMA and conference strength, and assertColdStart() fails the run if one survives",
+   "season_wide_centre": "closed — the centre is strictly lagged",
+   "actual_participant": "closed — split into two arms that are never pooled",
+   "selection_on_evaluation_folds": "closed — nested selection; the outer folds never inform the choice",
+   "same_kickoff_absorption": "closed — a game becomes history 4 hours after its own kickoff, so two games at one kickoff cannot see each other"
+  },
+  "residual_dependencies": [
+   "the rating hyperparameters (k, cap, hfa, carry, the two rating floors) are the shipped ones, fitted over the whole window. They are six smoothing constants rather than per-team information, and re-estimating them inside every fold is a different project. Declared, not hidden.",
+   "the provider’s expected-points model is ONE artifact (v2026.09.09, trained on 2004–2025) scored onto every season, so a 2018 fold uses a metric defined with knowledge of 2019–2025 football. This is a look-ahead in the metric’s definition, not in any outcome.",
+   "the 48-hour publication lag the source archive assumes is an assembly rule, not a recovered publication timestamp. This experiment does not rely on it: it uses kickoff plus a completion buffer, which is a property of the game rather than of the publisher."
+  ],
+  "exploratory": {
+   "seasons": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+   ],
+   "why": "these seasons have already informed feature choices in this repository (fit_qb_quality.js walked 2019–2026). Results on them are EXPLORATORY and are not a fresh untouched holdout. A genuinely fresh test means freezing this candidate and collecting prospective snapshots."
+  }
+ },
+ "features": {
+  "level": "career EPA per dropback, shrunk and differenced",
+  "recent": "last-five-game EPA per dropback, shrunk and differenced",
+  "change": "candidate minus incumbent — the part the team rating cannot contain",
+  "matchup": "each candidate against the pass defence he faces",
+  "level_and_change": "level and change together, two coefficients"
+ },
+ "sign_convention": "mae_delta is (adjusted - baseline), so NEGATIVE is better. `improvement` and the paired bootstrap are (baseline - adjusted), so POSITIVE is better. Both are published because reporting one and calling it the other is the easiest way to make a null result look like a finding.",
+ "structural_blind_spots": {
+  "transfer_involved": "STRUCTURAL, not small. A transfer cannot BE the pregame candidate until he has already played a game for his new team — the rule names the leading passer of the last completed game, and before that game he has none. So the pregame arm sees no transfers by construction, and the participant arm is the only place their effect is visible. Closing this needs a timestamped pregame starter source, not more history."
+ },
+ "arms": {
+  "pregame": {
+   "rows": 5554,
+   "counts": {
+    "released": 10558,
+    "skipped_non_fbs": 1373,
+    "skipped_no_candidate": 570,
+    "skipped_no_baseline": 0,
+    "skipped_no_history": 0,
+    "used": 5554,
+    "games_withheld_because_unfinished": 177383,
+    "predictions_with_an_unfinished_game_in_flight": 10558
+   },
+   "seasons": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ],
+   "folds": [
+    {
+     "season": 2019,
+     "train_games": 710,
+     "test_games": 709,
+     "inner_seasons": [],
+     "inner_ranking": [],
+     "selected": null,
+     "why": "no candidate could be selected from the inner folds"
+    },
+    {
+     "season": 2020,
+     "train_games": 1419,
+     "test_games": 447,
+     "inner_seasons": [
+      2019
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0105,
+       "inner_folds_improved": "1/1",
+       "inner_games": 709
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0082,
+       "inner_folds_improved": "1/1",
+       "inner_games": 709
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": 0.0125,
+       "inner_folds_improved": "0/1",
+       "inner_games": 709
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0153,
+       "inner_folds_improved": "0/1",
+       "inner_games": 709
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0276,
+       "inner_folds_improved": "0/1",
+       "inner_games": 709
+      }
+     ],
+     "selected": "level_and_change",
+     "coefficients": [
+      9.1863,
+      -4.3239,
+      0.2315
+     ],
+     "scored_games": 447,
+     "base_mae": 13.514,
+     "adj_mae": 13.4877,
+     "base_rmse": 16.8016,
+     "adj_rmse": 16.7569,
+     "mae_delta": -0.0263,
+     "improvement": 0.0263,
+     "base_brier": 0.188,
+     "adj_brier": 0.1878
+    },
+    {
+     "season": 2021,
+     "train_games": 1866,
+     "test_games": 692,
+     "inner_seasons": [
+      2019,
+      2020
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0166,
+       "inner_folds_improved": "2/2",
+       "inner_games": 1156
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0148,
+       "inner_folds_improved": "2/2",
+       "inner_games": 1156
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0121,
+       "inner_folds_improved": "1/2",
+       "inner_games": 1156
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0168,
+       "inner_folds_improved": "0/2",
+       "inner_games": 1156
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0176,
+       "inner_folds_improved": "0/2",
+       "inner_games": 1156
+      }
+     ],
+     "selected": "level_and_change",
+     "coefficients": [
+      9.394,
+      -4.0279,
+      -0.3175
+     ],
+     "scored_games": 692,
+     "base_mae": 13.1924,
+     "adj_mae": 13.1858,
+     "base_rmse": 16.3572,
+     "adj_rmse": 16.2899,
+     "mae_delta": -0.0066,
+     "improvement": 0.0066,
+     "base_brier": 0.1875,
+     "adj_brier": 0.1867
+    },
+    {
+     "season": 2022,
+     "train_games": 2558,
+     "test_games": 711,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0129,
+       "inner_folds_improved": "3/3",
+       "inner_games": 1848
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0039,
+       "inner_folds_improved": "2/3",
+       "inner_games": 1848
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": 0.0101,
+       "inner_folds_improved": "1/3",
+       "inner_games": 1848
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0108,
+       "inner_folds_improved": "0/3",
+       "inner_games": 1848
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0121,
+       "inner_folds_improved": "0/3",
+       "inner_games": 1848
+      }
+     ],
+     "selected": "level_and_change",
+     "coefficients": [
+      9.1389,
+      -8.5844,
+      -0.523
+     ],
+     "scored_games": 711,
+     "base_mae": 12.595,
+     "adj_mae": 12.6209,
+     "base_rmse": 15.9123,
+     "adj_rmse": 15.9229,
+     "mae_delta": 0.0259,
+     "improvement": -0.0259,
+     "base_brier": 0.1973,
+     "adj_brier": 0.1979
+    },
+    {
+     "season": 2023,
+     "train_games": 3269,
+     "test_games": 733,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0032,
+       "inner_folds_improved": "3/4",
+       "inner_games": 2559
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0021,
+       "inner_folds_improved": "3/4",
+       "inner_games": 2559
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0008,
+       "inner_folds_improved": "2/4",
+       "inner_games": 2559
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.003,
+       "inner_folds_improved": "1/4",
+       "inner_games": 2559
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0079,
+       "inner_folds_improved": "0/4",
+       "inner_games": 2559
+      }
+     ],
+     "selected": "level",
+     "coefficients": [
+      6.8885,
+      -0.6384
+     ],
+     "scored_games": 733,
+     "base_mae": 12.9301,
+     "adj_mae": 12.9083,
+     "base_rmse": 16.1868,
+     "adj_rmse": 16.1226,
+     "mae_delta": -0.0218,
+     "improvement": 0.0218,
+     "base_brier": 0.1855,
+     "adj_brier": 0.1848
+    },
+    {
+     "season": 2024,
+     "train_games": 4002,
+     "test_games": 751,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0083,
+       "inner_folds_improved": "4/5",
+       "inner_games": 3292
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0074,
+       "inner_folds_improved": "4/5",
+       "inner_games": 3292
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0074,
+       "inner_folds_improved": "3/5",
+       "inner_games": 3292
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0005,
+       "inner_folds_improved": "2/5",
+       "inner_games": 3292
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0053,
+       "inner_folds_improved": "1/5",
+       "inner_games": 3292
+      }
+     ],
+     "selected": "level_and_change",
+     "coefficients": [
+      8.0875,
+      -5.8373,
+      -0.6358
+     ],
+     "scored_games": 751,
+     "base_mae": 12.7664,
+     "adj_mae": 12.7699,
+     "base_rmse": 16.0904,
+     "adj_rmse": 16.1091,
+     "mae_delta": 0.0035,
+     "improvement": -0.0035,
+     "base_brier": 0.1896,
+     "adj_brier": 0.1892
+    },
+    {
+     "season": 2025,
+     "train_games": 4753,
+     "test_games": 754,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0069,
+       "inner_folds_improved": "5/6",
+       "inner_games": 4043
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0068,
+       "inner_folds_improved": "4/6",
+       "inner_games": 4043
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0061,
+       "inner_folds_improved": "4/6",
+       "inner_games": 4043
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": -0.002,
+       "inner_folds_improved": "3/6",
+       "inner_games": 4043
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0066,
+       "inner_folds_improved": "1/6",
+       "inner_games": 4043
+      }
+     ],
+     "selected": "level",
+     "coefficients": [
+      6.8236,
+      -0.4784
+     ],
+     "scored_games": 754,
+     "base_mae": 12.5419,
+     "adj_mae": 12.5131,
+     "base_rmse": 15.9268,
+     "adj_rmse": 15.8963,
+     "mae_delta": -0.0287,
+     "improvement": 0.0287,
+     "base_brier": 0.1818,
+     "adj_brier": 0.1808
+    },
+    {
+     "season": 2026,
+     "train_games": 5507,
+     "test_games": 47,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0126,
+       "inner_folds_improved": "5/7",
+       "inner_games": 4797
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0104,
+       "inner_folds_improved": "6/7",
+       "inner_games": 4797
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0051,
+       "inner_folds_improved": "4/7",
+       "inner_games": 4797
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": -0.0019,
+       "inner_folds_improved": "4/7",
+       "inner_games": 4797
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0082,
+       "inner_folds_improved": "1/7",
+       "inner_games": 4797
+      }
+     ],
+     "selected": "level_and_change",
+     "coefficients": [
+      8.2864,
+      -7.664,
+      -0.3083
+     ],
+     "scored_games": 47,
+     "base_mae": 14.6699,
+     "adj_mae": 14.6612,
+     "base_rmse": 17.5649,
+     "adj_rmse": 17.3461,
+     "mae_delta": -0.0087,
+     "improvement": 0.0087,
+     "base_brier": 0.1816,
+     "adj_brier": 0.1806
+    }
+   ],
+   "selected_by_fold": {
+    "2020": "level_and_change",
+    "2021": "level_and_change",
+    "2022": "level_and_change",
+    "2023": "level",
+    "2024": "level_and_change",
+    "2025": "level",
+    "2026": "level_and_change"
+   },
+   "selection_counts": {
+    "level_and_change": 5,
+    "level": 2
+   },
+   "pooled": {
+    "games": 4135,
+    "base_mae": 12.8987,
+    "adj_mae": 12.8907,
+    "mae_delta": -0.0081,
+    "base_brier": 0.1882,
+    "adj_brier": 0.1877,
+    "brier_delta": -0.0004,
+    "brier_basis": "a normal around the projected margin at the engine’s trained CFB sigma (14.9), applied identically to both arms so the difference is the mean shift alone",
+    "folds_improved": 5,
+    "folds_scored": 7,
+    "paired": {
+     "improvement": 0.0081,
+     "ci95": [
+      -0.0303,
+      0.048
+     ],
+     "p_two_sided": 0.672,
+     "n": 4135,
+     "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+    }
+   },
+   "subgroups": {
+    "starter_unchanged": {
+     "games": 3034,
+     "base_mae": 12.9758,
+     "adj_mae": 12.951,
+     "mae_delta": -0.0248,
+     "improvement": 0.0248,
+     "paired": {
+      "improvement": 0.0248,
+      "ci95": [
+       -0.0182,
+       0.067
+      ],
+      "p_two_sided": 0.24,
+      "n": 3034,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "starter_changed": {
+     "games": 1101,
+     "base_mae": 12.6863,
+     "adj_mae": 12.7244,
+     "mae_delta": 0.0381,
+     "improvement": -0.0381,
+     "paired": {
+      "improvement": -0.0381,
+      "ci95": [
+       -0.1192,
+       0.0466
+      ],
+      "p_two_sided": 0.33,
+      "n": 1101,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "low_history_qb": {
+     "games": 1073,
+     "base_mae": 13.1334,
+     "adj_mae": 13.114,
+     "mae_delta": -0.0194,
+     "improvement": 0.0194,
+     "paired": {
+      "improvement": 0.0194,
+      "ci95": [
+       -0.0571,
+       0.1015
+      ],
+      "p_two_sided": 0.56,
+      "n": 1073,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "transfer_involved": {
+     "games": 0,
+     "why": "STRUCTURAL, not small. A transfer cannot BE the pregame candidate until he has already played a game for his new team — the rule names the leading passer of the last completed game, and before that game he has none. So the pregame arm sees no transfers by construction, and the participant arm is the only place their effect is visible. Closing this needs a timestamped pregame starter source, not more history."
+    },
+    "early_season": {
+     "games": 751,
+     "base_mae": 13.8846,
+     "adj_mae": 13.8292,
+     "mae_delta": -0.0554,
+     "improvement": 0.0554,
+     "paired": {
+      "improvement": 0.0554,
+      "ci95": [
+       -0.0331,
+       0.1581
+      ],
+      "p_two_sided": 0.19,
+      "n": 751,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "p4_involved": {
+     "games": 2506,
+     "base_mae": 13.0051,
+     "adj_mae": 12.9633,
+     "mae_delta": -0.0418,
+     "improvement": 0.0418,
+     "paired": {
+      "improvement": 0.0418,
+      "ci95": [
+       -0.0077,
+       0.0895
+      ],
+      "p_two_sided": 0.1075,
+      "n": 2506,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "other_fbs": {
+     "games": 1629,
+     "base_mae": 12.7351,
+     "adj_mae": 12.7789,
+     "mae_delta": 0.0438,
+     "improvement": -0.0438,
+     "paired": {
+      "improvement": -0.0438,
+      "ci95": [
+       -0.1037,
+       0.0213
+      ],
+      "p_two_sided": 0.165,
+      "n": 1629,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    }
+   }
+  },
+  "participant": {
+   "rows": 5951,
+   "counts": {
+    "released": 10558,
+    "skipped_non_fbs": 1373,
+    "skipped_no_candidate": 173,
+    "skipped_no_baseline": 0,
+    "skipped_no_history": 0,
+    "used": 5951,
+    "games_withheld_because_unfinished": 177383,
+    "predictions_with_an_unfinished_game_in_flight": 10558
+   },
+   "seasons": [
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+   ],
+   "folds": [
+    {
+     "season": 2019,
+     "train_games": 754,
+     "test_games": 752,
+     "inner_seasons": [],
+     "inner_ranking": [],
+     "selected": null,
+     "why": "no candidate could be selected from the inner folds"
+    },
+    {
+     "season": 2020,
+     "train_games": 1506,
+     "test_games": 520,
+     "inner_seasons": [
+      2019
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.044,
+       "inner_folds_improved": "1/1",
+       "inner_games": 731
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.031,
+       "inner_folds_improved": "1/1",
+       "inner_games": 695
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0175,
+       "inner_folds_improved": "1/1",
+       "inner_games": 731
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0066,
+       "inner_folds_improved": "0/1",
+       "inner_games": 695
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0086,
+       "inner_folds_improved": "0/1",
+       "inner_games": 696
+      }
+     ],
+     "selected": "level",
+     "coefficients": [
+      11.0968,
+      0.2896
+     ],
+     "scored_games": 495,
+     "base_mae": 13.3914,
+     "adj_mae": 13.3581,
+     "base_rmse": 16.7083,
+     "adj_rmse": 16.6668,
+     "mae_delta": -0.0333,
+     "improvement": 0.0333,
+     "base_brier": 0.1858,
+     "adj_brier": 0.1851
+    },
+    {
+     "season": 2021,
+     "train_games": 2026,
+     "test_games": 734,
+     "inner_seasons": [
+      2019,
+      2020
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0397,
+       "inner_folds_improved": "2/2",
+       "inner_games": 1226
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0261,
+       "inner_folds_improved": "2/2",
+       "inner_games": 1124
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0206,
+       "inner_folds_improved": "2/2",
+       "inner_games": 1226
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0108,
+       "inner_folds_improved": "0/2",
+       "inner_games": 1125
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0112,
+       "inner_folds_improved": "0/2",
+       "inner_games": 1124
+      }
+     ],
+     "selected": "level",
+     "coefficients": [
+      10.8201,
+      -0.2375
+     ],
+     "scored_games": 713,
+     "base_mae": 13.1659,
+     "adj_mae": 13.2043,
+     "base_rmse": 16.3588,
+     "adj_rmse": 16.343,
+     "mae_delta": 0.0384,
+     "improvement": -0.0384,
+     "base_brier": 0.1882,
+     "adj_brier": 0.188
+    },
+    {
+     "season": 2022,
+     "train_games": 2760,
+     "test_games": 740,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021
+     ],
+     "inner_ranking": [
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0123,
+       "inner_folds_improved": "2/3",
+       "inner_games": 1939
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.011,
+       "inner_folds_improved": "2/3",
+       "inner_games": 1939
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0105,
+       "inner_folds_improved": "2/3",
+       "inner_games": 1779
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0067,
+       "inner_folds_improved": "1/3",
+       "inner_games": 1781
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.01,
+       "inner_folds_improved": "0/3",
+       "inner_games": 1779
+      }
+     ],
+     "selected": "recent",
+     "coefficients": [
+      8.0189,
+      -0.35
+     ],
+     "scored_games": 725,
+     "base_mae": 12.832,
+     "adj_mae": 12.8122,
+     "base_rmse": 16.2837,
+     "adj_rmse": 16.2445,
+     "mae_delta": -0.0198,
+     "improvement": 0.0198,
+     "base_brier": 0.1943,
+     "adj_brier": 0.1937
+    },
+    {
+     "season": 2023,
+     "train_games": 3500,
+     "test_games": 781,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022
+     ],
+     "inner_ranking": [
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0143,
+       "inner_folds_improved": "3/4",
+       "inner_games": 2664
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0095,
+       "inner_folds_improved": "3/4",
+       "inner_games": 2664
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0003,
+       "inner_folds_improved": "2/4",
+       "inner_games": 2454
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0032,
+       "inner_folds_improved": "2/4",
+       "inner_games": 2457
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0043,
+       "inner_folds_improved": "1/4",
+       "inner_games": 2454
+      }
+     ],
+     "selected": "recent",
+     "coefficients": [
+      7.7836,
+      -0.3863
+     ],
+     "scored_games": 758,
+     "base_mae": 12.9658,
+     "adj_mae": 12.9209,
+     "base_rmse": 16.3286,
+     "adj_rmse": 16.2483,
+     "mae_delta": -0.045,
+     "improvement": 0.045,
+     "base_brier": 0.1842,
+     "adj_brier": 0.1826
+    },
+    {
+     "season": 2024,
+     "train_games": 4281,
+     "test_games": 775,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023
+     ],
+     "inner_ranking": [
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0211,
+       "inner_folds_improved": "4/5",
+       "inner_games": 3422
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0105,
+       "inner_folds_improved": "4/5",
+       "inner_games": 3422
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0037,
+       "inner_folds_improved": "3/5",
+       "inner_games": 3167
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0014,
+       "inner_folds_improved": "3/5",
+       "inner_games": 3170
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0049,
+       "inner_folds_improved": "1/5",
+       "inner_games": 3167
+      }
+     ],
+     "selected": "recent",
+     "coefficients": [
+      8.487,
+      -0.3322
+     ],
+     "scored_games": 764,
+     "base_mae": 12.961,
+     "adj_mae": 12.932,
+     "base_rmse": 16.3441,
+     "adj_rmse": 16.3046,
+     "mae_delta": -0.0289,
+     "improvement": 0.0289,
+     "base_brier": 0.1932,
+     "adj_brier": 0.1924
+    },
+    {
+     "season": 2025,
+     "train_games": 5056,
+     "test_games": 803,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024
+     ],
+     "inner_ranking": [
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0225,
+       "inner_folds_improved": "5/6",
+       "inner_games": 4186
+      },
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.013,
+       "inner_folds_improved": "5/6",
+       "inner_games": 4186
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0062,
+       "inner_folds_improved": "4/6",
+       "inner_games": 3895
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0016,
+       "inner_folds_improved": "3/6",
+       "inner_games": 3898
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0035,
+       "inner_folds_improved": "2/6",
+       "inner_games": 3895
+      }
+     ],
+     "selected": "recent",
+     "coefficients": [
+      8.5298,
+      -0.2095
+     ],
+     "scored_games": 788,
+     "base_mae": 12.5158,
+     "adj_mae": 12.479,
+     "base_rmse": 15.9025,
+     "adj_rmse": 15.8652,
+     "mae_delta": -0.0367,
+     "improvement": 0.0367,
+     "base_brier": 0.1797,
+     "adj_brier": 0.1789
+    },
+    {
+     "season": 2026,
+     "train_games": 5859,
+     "test_games": 92,
+     "inner_seasons": [
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+     ],
+     "inner_ranking": [
+      {
+       "feature": "level",
+       "inner_mae_delta": -0.0253,
+       "inner_folds_improved": "6/7",
+       "inner_games": 4974
+      },
+      {
+       "feature": "recent",
+       "inner_mae_delta": -0.0248,
+       "inner_folds_improved": "6/7",
+       "inner_games": 4974
+      },
+      {
+       "feature": "level_and_change",
+       "inner_mae_delta": -0.0158,
+       "inner_folds_improved": "5/7",
+       "inner_games": 4642
+      },
+      {
+       "feature": "matchup",
+       "inner_mae_delta": 0.0013,
+       "inner_folds_improved": "4/7",
+       "inner_games": 4645
+      },
+      {
+       "feature": "change",
+       "inner_mae_delta": 0.0053,
+       "inner_folds_improved": "2/7",
+       "inner_games": 4642
+      }
+     ],
+     "selected": "level",
+     "coefficients": [
+      9.5687,
+      -0.0814
+     ],
+     "scored_games": 86,
+     "base_mae": 16.0422,
+     "adj_mae": 15.955,
+     "base_rmse": 19.7833,
+     "adj_rmse": 19.5466,
+     "mae_delta": -0.0873,
+     "improvement": 0.0873,
+     "base_brier": 0.1641,
+     "adj_brier": 0.1641
+    }
+   ],
+   "selected_by_fold": {
+    "2020": "level",
+    "2021": "level",
+    "2022": "recent",
+    "2023": "recent",
+    "2024": "recent",
+    "2025": "recent",
+    "2026": "level"
+   },
+   "selection_counts": {
+    "level": 3,
+    "recent": 4
+   },
+   "pooled": {
+    "games": 4329,
+    "base_mae": 13.0034,
+    "adj_mae": 12.9812,
+    "mae_delta": -0.0222,
+    "base_brier": 0.1871,
+    "adj_brier": 0.1863,
+    "brier_delta": -0.0008,
+    "brier_basis": "a normal around the projected margin at the engine’s trained CFB sigma (14.9), applied identically to both arms so the difference is the mean shift alone",
+    "folds_improved": 6,
+    "folds_scored": 7,
+    "paired": {
+     "improvement": 0.0222,
+     "ci95": [
+      -0.0197,
+      0.0632
+     ],
+     "p_two_sided": 0.271,
+     "n": 4329,
+     "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+    }
+   },
+   "subgroups": {
+    "starter_unchanged": {
+     "games": 2912,
+     "base_mae": 13.0541,
+     "adj_mae": 13.0362,
+     "mae_delta": -0.0179,
+     "improvement": 0.0179,
+     "paired": {
+      "improvement": 0.0179,
+      "ci95": [
+       -0.0341,
+       0.0696
+      ],
+      "p_two_sided": 0.43,
+      "n": 2912,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "starter_changed": {
+     "games": 1417,
+     "base_mae": 12.8991,
+     "adj_mae": 12.868,
+     "mae_delta": -0.0311,
+     "improvement": 0.0311,
+     "paired": {
+      "improvement": 0.0311,
+      "ci95": [
+       -0.0358,
+       0.1072
+      ],
+      "p_two_sided": 0.3925,
+      "n": 1417,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "low_history_qb": {
+     "games": 1353,
+     "base_mae": 13.7003,
+     "adj_mae": 13.6315,
+     "mae_delta": -0.0689,
+     "improvement": 0.0689,
+     "paired": {
+      "improvement": 0.0689,
+      "ci95": [
+       -0.0009,
+       0.1392
+      ],
+      "p_two_sided": 0.0575,
+      "n": 1353,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "transfer_involved": {
+     "games": 185,
+     "base_mae": 15.9335,
+     "adj_mae": 15.7201,
+     "mae_delta": -0.2134,
+     "improvement": 0.2134,
+     "paired": {
+      "improvement": 0.2134,
+      "ci95": [
+       0.001,
+       0.4103
+      ],
+      "p_two_sided": 0.0475,
+      "n": 185,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "early_season": {
+     "games": 1007,
+     "base_mae": 14.2595,
+     "adj_mae": 14.2048,
+     "mae_delta": -0.0547,
+     "improvement": 0.0547,
+     "paired": {
+      "improvement": 0.0547,
+      "ci95": [
+       -0.0279,
+       0.1346
+      ],
+      "p_two_sided": 0.18,
+      "n": 1007,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "p4_involved": {
+     "games": 2696,
+     "base_mae": 13.2195,
+     "adj_mae": 13.153,
+     "mae_delta": -0.0665,
+     "improvement": 0.0665,
+     "paired": {
+      "improvement": 0.0665,
+      "ci95": [
+       0.0169,
+       0.1169
+      ],
+      "p_two_sided": 0.0125,
+      "n": 2696,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    },
+    "other_fbs": {
+     "games": 1633,
+     "base_mae": 12.6465,
+     "adj_mae": 12.6975,
+     "mae_delta": 0.051,
+     "improvement": -0.051,
+     "paired": {
+      "improvement": -0.051,
+      "ci95": [
+       -0.1145,
+       0.0146
+      ],
+      "p_two_sided": 0.12,
+      "n": 1633,
+      "basis": "paired bootstrap over games of (baseline |error| - adjusted |error|). Positive is an improvement."
+     }
+    }
+   }
+  }
+ },
+ "promotion_rule": {
+  "id": "qb_epa_v1",
+  "declared_at": "2026-09-15",
+  "declared_before_the_result": true,
+  "conditions": [
+   "the PREGAME arm, not the participant arm — a price cannot know who actually threw",
+   "pooled held-out MAE improves by at least 0.02 points of spread",
+   "the paired bootstrap 95% interval excludes zero",
+   "at least five outer folds are scored and a majority of them improve",
+   "the feature selected by the inner folds is the SAME feature in a majority of outer folds — a coefficient whose own identity changes fold to fold is not one feature",
+   "the live feature definition matches the training definition exactly (same candidate rule, same shrinkage, same lagged centre)"
+  ],
+  "basis": "football/validation/feature-status.json carries the repository-wide rule; these are its conditions restated for this experiment and fixed before the numbers were read."
+ },
+ "verdict": {
+  "pregame": {
+   "passed": false,
+   "checks": [
+    {
+     "check": "pooled MAE improves by at least 0.02 points",
+     "ok": false,
+     "detail": "mae_delta -0.0081"
+    },
+    {
+     "check": "the paired 95% interval excludes zero",
+     "ok": false,
+     "detail": "95% CI [-0.0303,0.048]"
+    },
+    {
+     "check": "at least five outer folds are scored",
+     "ok": true,
+     "detail": "7 folds"
+    },
+    {
+     "check": "a majority of scored folds improve",
+     "ok": true,
+     "detail": "5 of 7"
+    },
+    {
+     "check": "the inner folds keep choosing the same feature",
+     "ok": true,
+     "detail": "level_and_change chosen 5 of 7 times"
+    }
+   ],
+   "dominant_feature": "level_and_change"
+  },
+  "participant": {
+   "passed": false,
+   "checks": [
+    {
+     "check": "pooled MAE improves by at least 0.02 points",
+     "ok": true,
+     "detail": "mae_delta -0.0222"
+    },
+    {
+     "check": "the paired 95% interval excludes zero",
+     "ok": false,
+     "detail": "95% CI [-0.0197,0.0632]"
+    },
+    {
+     "check": "at least five outer folds are scored",
+     "ok": true,
+     "detail": "7 folds"
+    },
+    {
+     "check": "a majority of scored folds improve",
+     "ok": true,
+     "detail": "6 of 7"
+    },
+    {
+     "check": "the inner folds keep choosing the same feature",
+     "ok": true,
+     "detail": "recent chosen 4 of 7 times"
+    }
+   ],
+   "dominant_feature": "recent"
+  }
+ },
+ "points_applied": false,
+ "decision": "the pregame arm did NOT pass the predeclared rule: pooled MAE improves by at least 0.02 points (mae_delta -0.0081); the paired 95% interval excludes zero (95% CI [-0.0303,0.048]). points_applied stays false and the QB layer contributes zero, exactly as it did before this experiment ran.",
+ "pricing_note": "Even a pass here would not by itself switch the engine on: football/fbs_epa/epa_contract.js separately establishes that the provider series is not on the scale params.qb.points_per_epa_db was fitted against, which is why this file fits its OWN coefficient rather than reusing that one. Source coverage, information coverage and priced coverage are three different numbers and none of them was moved to make another look better."
+}

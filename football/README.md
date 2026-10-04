@@ -20,11 +20,64 @@ football/
   research/     the full reproducible training pipeline + backtest report
   INTEGRATION.md  how this plugs into the existing EdgeDesk/Supabase stack
 
-  cfb_p4/       the CFB POWER 4 INTELLIGENCE MODEL — a separate, deeper engine
-                for the SEC / Big Ten / Big 12 / ACC, with its own five-layer
-                architecture (strength, talent, situation, matchup,
-                uncertainty), its own parameters, and its own backtest against
-                a real CFB line archive. See cfb_p4/README.md.
+  cfb_p4/       the CFB INTELLIGENCE MODEL — a separate, deeper engine with
+                its own five-layer architecture (strength, talent, situation,
+                matchup, uncertainty), its own parameters, and its own
+                backtest against a real CFB line archive. Named `cfb_p4` for
+                the tier it was BUILT FOR; it has always priced the whole
+                FBS — 136 seeded programs, conference strength for all
+                eleven conferences, and a held-out record measured over every
+                FBS-vs-FBS game rather than the power conferences alone.
+                See cfb_p4/README.md.
+
+  fbs_epa/      QUARTERBACK EPA — expected points added per dropback for every
+                FBS quarterback from 2014, from the successor SportsDataverse
+                repository, joined on the ESPN game and athlete ids the board
+                already uses. Includes the semantic audit that says what the
+                provider's EPA actually is, and the one flag that keeps it out
+                of the price: it is not on the scale the shipped coefficient
+                was fitted against. See fbs_epa/README.md.
+
+  fbs/          the FBS UNIVERSE — who is FBS this season, which conference
+                they are in THIS season, which program group that puts them
+                in, what belongs on the weekly slate and what kind of game
+                each one is. Derived from the season's own schedule feed,
+                never from a stored list, plus the CI gate that fails on a
+                real coverage regression. See fbs/README.md.
+
+  rankings/     the NATIONAL TEAM RANKINGS pipeline — talent + opponent-
+                adjusted performance + a measured SPECIAL TEAMS unit -> ETSR,
+                confidence, 22 ranked categories, immutable weekly snapshots
+                and a pipeline health report. Rebuilt in Actions, committed as
+                artifacts, rendered by a browser that computes nothing.
+                See rankings/README.md.
+
+  players/      the PLAYER QUALITY + SCHEME MATCHUP ENGINE — every active FBS
+                player rated 0-100 with provenance, rolled into position
+                groups, team units, scheme profiles, a matchup engine, a
+                run-defence gate and a seeded head-to-head simulator.
+                It moves NO projection: its own walk-forward says it does not
+                beat the Power 4 rating core out of sample, so it ships with
+                `points_applied:false` and is published as research.
+                See players/README.md.
+
+  cfb_v2/       the CFB V2 ENGINE, in SHADOW beside cfb_p4 — joint Bayesian
+                opponent adjustment of play-by-play efficiency at every weekly
+                freeze, preseason priors as distributions, matchup features, a
+                QB value model, a two-model (ridge + GBM) walk-forward ensemble,
+                calibrated heteroskedastic intervals, and a SEPARATE market
+                decision layer. v2.1.0 (red-teamed, hardened) beats V1 on the
+                2024-25 holdout (MAE 12.38 vs 12.65), still loses to the opener
+                (12.10) and the close (12.01); BET disabled. See
+                cfb_v2/README.md and docs/cfb-v2/REDTEAM.md.
+
+  personnel/    NON-QB PERSONNEL AVAILABILITY — how much worse a team is with
+                the expected replacement playing instead of each non-QB
+                absence: player quality, replacement quality, usage, position
+                and matchup leverage and unit concentration, scored 0-100 with
+                its confidence and evidence, frozen write-once beside every
+                pregame projection. A measurement: projection adjustment 0
+                until a coefficient is trained. See personnel/README.md.
 ```
 
 ## The honesty contract
@@ -66,8 +119,197 @@ What IS validated out of sample:
 
 ```
 node football/tests.js           # exit 0 = green (69 checks incl. parity goldens)
-node football/cfb_p4/tests.js    # exit 0 = green (65 checks incl. parity goldens)
+node football/cfb_p4/tests.js    # exit 0 = green (92 checks incl. parity goldens)
+node football/fbs/fbs.test.js    # the FBS universe: identity, conference, slate
+node tools/football/fbs_board_ui.test.js   # the board, cut out of app.html
+node tools/football/fbs_board.e2e.js       # the board in Chromium, 1280px and 390px
+node football/health/health.test.js   # the line guard and the orientation rules
 ```
+
+## FBS coverage
+
+The college board covers **every scheduled game with at least one active FBS
+team** — not only the games with a Power 4 participant. The slate, the
+conference filters, the ratings views and every export read one canonical
+universe built from the season's own schedule feed:
+
+```
+npm run cfb:fbs          # rebuild football/fbs/coverage.json + slate.json
+npm run cfb:fbs:check    # every coverage check, writing nothing
+npm run cfb:fbs:test     # the unit + board suites
+```
+
+The gate runs inside `football-weekly-build.yml` before anything is
+committed, and refuses to publish on a real coverage regression: an FBS
+program with no identity or no conference, an FBS-vs-FBS game missing from
+the rating state, a duplicated game, an FCS opponent quietly graded, an
+eligible game dropped. Full record: `fbs/README.md`.
+
+## Daily self-check & model health
+
+The models learn at runtime — every board load absorbs the latest completed
+games into the trained seeds — and a scheduled job proves that path still
+works every day:
+
+```
+node football/health/daily_check.js     # the same run the workflow does
+```
+
+`.github/workflows/model-health.yml` runs it daily (09:30 UTC, plus manual
+dispatch and on engine/params changes). It re-runs the app's whole data path
+headless: both engine test suites (python-parity goldens), the NFL and Power 4
+ingest against the live feeds, projections over the upcoming slate with sanity
+bounds, and a **line guard** that compares model fair spreads to the joined
+market numbers — a gap beyond the hard bound (14 pts NFL / 21 pts CFB) is
+flagged as a probable data fault (bad join, sign flip, FCS absorbed as FBS),
+never presented as an edge. It also says loudly when the current season is
+about to leave the engines' `trained_through + 1` window and a retrain is due.
+
+**One row pointing the wrong way.** Two spread conventions are in circulation
+and they are exact negations — a home favourite is NEGATIVE to a book and
+POSITIVE as a margin. A table uniformly in the wrong one is caught on the
+board (a slate where every home team is a market dog is not a slate); a table
+that is *mostly* right and carries one backwards row was not caught anywhere.
+Wisconsin @ Notre Dame arrived that way and the guard reported a 41.7-point
+disagreement, which is true and useless. The guard now separates the two: a
+gap past the hard bound that **collapses when the market number is negated**
+is an orientation fault, reported under `*_lines_orientation` with both
+readings, and taken out of the slate's gap statistics so one backwards row
+does not also make the honest games look like a broken model. The board drops
+such a line rather than using it, and the game keeps its projection with no
+market number. It is never flipped: guessing a convention from values is what
+produced every board bug this project has had. The predicate is the engine's
+own (`EDCfbP4.market.orientationFault`), so the headless check and the browser
+cannot drift apart. Rules: `node football/health/health.test.js`.
+
+The run commits `football/health.json`. The app reads that record and nothing
+else: a clean run advances the Football module's freshness stamp (so the
+"Stale — past its expected cadence" banner clears only when the pipeline
+really ran), the per-job results render in the pipeline ledger, and every
+board shows a **Model health** panel — the daily results plus a live line
+guard computed from the numbers on screen right now. A failed run keeps the
+last clean stamp, so a broken pipeline goes visibly stale instead of quietly
+looking fresh; a missing file renders as "no published run", never invented.
+The workflow turns red on any failing check so the repo owner is notified.
+
+In the browser the module also re-runs its own load (and re-absorbs new
+results) when the tab has sat on it for 6+ hours — the model keeps itself
+current without anyone pressing refresh.
+
+## Rosters
+
+`.github/workflows/roster-sync.yml` commits full FBS rosters from ESPN's
+public APIs to `football/rosters/` (weekly, and on demand with any
+`--season`). `fetch_rosters.js` takes the season's true FBS membership
+from the core API group, tops each roster up past the site endpoint's
+100-player cap via the core athlete index, and refuses to commit a
+wrong-shaped dataset.
+
+In the app, CFB lives entirely under the Football tab: the **CFB Rosters**
+segment browses every FBS team's player-level roster (each player's
+observed status — returning, transfer with the program they left, or new
+to the covered set), and every game card on the FBS board opens a **Rosters
+head-to-head** panel: five players to watch per side (ordered by position
+value — EdgeDesk view weights, not trained parameters — seniority, portal
+status and the previous program's seed rating) plus a position-by-position
+comparison graded on returning share + class-mix experience. Both say
+plainly that production and per-player talent exist in no public feed:
+they are roster-construction reads, never performance rankings, and no
+model number reads them.
+
+`espn_to_bundles.js` (browser + node) turns those datasets into the exact
+roster bundles the Power 4 engine's talent layer reads: returning share
+and portal in/out from athlete-id diffs against the previous season's
+dataset, experience as the trained (class−1)/3 mix from ESPN's live
+current class. The app uses cfbfastR as the primary roster source and
+falls back to these bundles when cfbfastR has not published the season;
+an FBS newcomer absent from the previous dataset gets continuity =
+unknown, never zero. What the roster layer can and cannot move is the
+engine's own honest contract: stability, youth, OL and volatility inputs
+and fewer declared unknowns — the mean spread shifts only on per-player
+recruiting stars, which no public feed carries.
+
+## Player quality
+
+`football/players/` answers the question the roster layer above cannot: not
+*how many* players are back, but **who is back, how good they are, and whether
+what they do well attacks what the opponent does badly.**
+
+Every active FBS player carries an **EdgeDesk Player Impact Rating** (0-100,
+where 50 is positional replacement and 12 points is one standard deviation of
+that position's own qualified population), built from cfbfastR's public
+play-attribution table, opponent-adjusted, and shrunk toward the prior by a
+constant `k = n̄(1−r)/r` **measured** from each position group's own observed
+season-to-season reliability. Every rating ships its confidence, its sample,
+its data completeness, every component used and every component missing.
+
+The layer feeds a matchup matrix, scheme edges, a **run-defence gate**, a
+player edge board, a seeded Monte Carlo simulator, a sensitivity analysis and a
+**Linemaker view** that keeps RAW MODEL, PLAYER-ADJUSTED, SCHEME-ADJUSTED,
+SIMULATION and MARKET as five separate numbers. It lives in the Football tab's
+**Players** segment and under every game card on the FBS board.
+
+**It changes no projection anywhere in EdgeDesk.** Held out on 2024-2025, the
+player layer moves spread MAE by 0.018 points (paired p = 0.40, and worse in
+2024), so `params.js` ships `points_applied:false` and the Linemaker view shows
+the player and scheme rungs flat on the raw model with the p-value on screen.
+The bar for moving a line is lower holdout MAE **and** a paired test at p<0.05
+**and** an improvement in every holdout season separately; the day the layer
+clears it, `validate.js` flips the flag and the ladder starts moving with no
+code change. Full record: `players/README.md` and `players/report/BACKTEST.md`.
+
+Three things it says out loud rather than hiding: no public feed publishes a
+college snap count (role is touch share, and is labelled as such); no public
+feed attributes a block, a tackle or a pressure short of a sack (so an
+offensive lineman has an EMPTY measure contract and his unit is rated from the
+team's own observed sack and stuff rates instead); and no legal public
+recruiting feed is wired in (the adapter exists, every recruiting field is
+null, and the recruiting data-quality dimension is zero on purpose).
+
+```
+node football/players/build_players.js --season 2026 --seasons 4
+node football/players/players.test.js            # 275 checks
+node tools/football/player_quality_ui.test.js    # 74 checks over the real page
+```
+
+`.github/workflows/player-ratings.yml` rebuilds and commits the datasets twice
+a week in season. It deliberately does NOT run the validator: recalibrating on
+a schedule is how a layer quietly starts fitting the recent past.
+
+## National rankings
+
+`football/rankings/` builds the board the site's **Rankings** segment renders:
+ETSR (points against an average FBS team, neutral field), talent and
+opponent-adjusted performance ranked separately, and twenty-two ranked
+categories including a **measured special-teams unit** — field goals over
+expectation by distance, net punting, kickoff coverage, returns, punts inside
+the 20, extra points and blocked kicks, out of the play table and the ESPN
+player box. Special teams is measured and ranked; it is deliberately NOT an
+ETSR input.
+
+```
+npm run cfb:refresh     # has a game gone FINAL since the board was built?
+npm run cfb:rankings    # one build of the current week
+npm run cfb:backfill    # every completed week, in order, so the history exists
+npm run cfb:health      # the pipeline health report
+node football/rankings/pipeline.test.js    # 139 end-to-end checks
+```
+
+`.github/workflows/football-weekly-build.yml` chases the games: every two
+hours in season the cheap FINAL-game check runs first and the expensive
+rebuild runs only if the feed has moved, plus a daily safety rebuild that
+skips the check entirely. The build is idempotent — running it three times
+produces the same tree as running it once.
+
+**A correction this pipeline forced.** `performance_v1` tested each metric's
+scoring floor against the WEIGHT-DISCOUNTED denominator while `min_n` is
+stated in OBSERVATIONS, and it deleted garbage-time plays instead of
+discounting them. The two compounded, and thirty-one FBS teams that had played
+a real game carried no offence and no defence rating at all. `performance_v2`
+asks the floor of the observations and the shrink of the weighted evidence,
+and scores garbage time at a declared discount. Nothing about `min_n`, the
+weights or the confidence model changed. Full record:
+`rankings/README.md`.
 
 ## Regenerating parameters
 

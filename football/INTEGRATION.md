@@ -1,104 +1,116 @@
 # Integrating the Football Engine into the existing EdgeDesk stack
 
-This repository is the EdgeDesk **frontend** plus the football research/
-training pipeline. The Supabase Edge Functions run server-side; the sources
-for `capture`, `model_predict`, `model_conf_odds`, `close` and `settle` have
-been reviewed directly (supplied by the owner), so this document reflects the
-REAL deployed architecture, not inference.
+This repository is the EdgeDesk **frontend**; the Supabase Edge Functions and
+SQL live in the Supabase project (`iattxbkbufslbauoumga`) and are not checked
+in here. This document maps the engine onto the EXISTING architecture — the
+audit below was read from the client code, which documents every contract it
+consumes — and specifies the smallest safe server-side adoption path. Nothing
+in this repo modifies a deployed function; the app integration is read-only
+and honestly gated until the server side is deployed.
 
-## The pipeline, as verified from function sources
+## The existing pipeline (as evidenced in app.html)
 
 ```
-capture (cron)     -> signals            full-board pricing, flag discipline,
-                                         entry freeze. NFL is ALREADY in scope:
-                                         AUTO_PREFIXES force-includes
-                                         americanfootball_nfl; NCAAF is in the
-                                         stable list. No changes needed.
-model_predict      -> model_predictions  THE multi-sport prediction engine.
-  (cron)                                 Registry: MLB, ATP, WTA, MMA, NFL,
-                                         WNBA. Its nfl_game_v1 model is
-                                         complete (compound TD/FG simulation,
-                                         real key-number mass, push-aware
-                                         probabilities, h2h/spreads/totals,
-                                         frozen CLV baselines) and is DORMANT
-                                         only because public.nfl_team_features
-                                         has no rows.
-close / settle     -> signals            closing snapshot + CLV, then results.
-                                         NFL/NCAAF grade through the existing
-                                         scores path. No changes needed.
-model_conf_odds    -> model_odds         CFB conference-title Monte Carlo
-                                         (SP+/model_ratings fuel). Unrelated to
-                                         model_predictions — NOT the football
-                                         integration point. (An earlier draft
-                                         of this document guessed it was, from
-                                         client-side evidence; the sources
-                                         corrected that.)
-frontend           <- model_predictions  MODEL engine renders any sport's rows,
-                                         joins signals, quarantines from CLV.
+capture (cron)        -> signals            odds scan, flags, entry freeze
+close / settle        -> signals            closing_sharp_fair, result, clv, beat_close
+ingest_mlb (cron)     -> games, *_features  MLB model inputs
+run_slate / project_game -> game_projections  MLB projection engine
+model_conf_odds       -> model_predictions  sport-keyed model-vs-market rows
+cfb_ingest (cron)     -> cfb.* schema       CFBD games/records/SP+/lines/roster
+venue_weather (cron)  -> venue_weather      per-event weather (league-generic)
+frontend MODEL engine <- model_predictions  renders ANY sport's rows
+                                            ("MLB today; CFB, golf and props
+                                             when their models exist")
 ```
 
-## Existing function selected: `model_predict` (`nfl_game_v1`) — with zero edits
+## Existing function selected: the `model_predictions` path (`model_conf_odds`)
 
-The engine your architecture already anticipates is the engine that runs.
-The ONLY missing piece is its declared data contract:
-`public.nfl_team_features` with `off_epa_play`, `def_epa_play`,
-`plays_per_game` (plus optional split columns it reports on).
+`model_predictions` is already sport-keyed (`sport_key`, `event_id`,
+`market`, `selection`, `point`, `model_prob`, `model_fair_american`,
+`model_edge`, `model_version`, `commence_time`) and the client MODEL engine
+renders it for any sport, joins it to `signals` by `event_id`, resolves
+two-sided conflicts, and keeps it quarantined from MARKET edges and CLV.
+That is precisely the designed extension point — football becomes a
+first-class model by WRITING ROWS, not by new infrastructure.
 
-That is what this repo now supplies:
+`run_slate`/`project_game` were NOT selected: they are the MLB projection
+engine with MLB feature tables (`pitcher_features`, `offense_features`) and
+an MLB-shaped output contract; extending them would entangle two sports'
+logic inside one function for no benefit.
 
-1. **`football/sql/010_nfl_team_features.sql`** — creates the exact table
-   `nfl_game_v1` reads, keyed by `team_norm` (normalized full team name, the
-   same `nrm()` the model applies to captured market names). Idempotent.
-2. **`supabase/functions/ingest_nfl_features/index.ts`** — a small,
-   self-contained cron feeder in the house style (BUILD string, CRON_SECRET
-   auth with an honest 401, `?dry=1` compute-only mode, sanity gate that
-   refuses to write an implausible batch, full diag in every response). It
-   fetches nflverse public data (games.csv + stats_team_week — keyless, no
-   odds quota) and writes 32 rows of **opponent-adjusted EPA levels**
-   computed by the trained EdgeDesk Football Engine recursion
-   (football/engine.js constants, walk-forward 1999–2025; recursion copied
-   verbatim with attribution, parity-tested against the engine at 1e-5).
+## Server-side adoption (shadow mode) — when you choose to deploy
 
-Why a new (small) function is genuinely necessary rather than an extension:
-no deployed function touches nflverse or any NFL efficiency source —
-`capture` prices odds, `ingest_mlb` is MLB StatsAPI, `cfb_ingest` is CFBD.
-Feeding features from inside `model_predict` itself would couple ingestion to
-prediction against that function's own module design (and its bundle is
-generated — hand edits are lost on rebuild). If you would rather host this
-inside `ingest_multisport`, send that function's source and the compute core
-(`computeFeatures`, exported) drops in unchanged.
+1. Copy `football/engine.js` + `football/params.js` into the function that
+   populates `model_predictions` (`model_conf_odds`). Both run under Deno
+   unchanged (`globalThis` export; no DOM, no deps).
+2. For each NFL/NCAAF event already returned by the existing `odds` proxy:
+   build the game object (home/away, week, rest, roof where known), call
+   `EDFootball.predictGame(...)`, and on `status:'PREDICTED'` write one row
+   per market side with `model_version: 'edgedesk_football_v1.0.0'`.
+   On `INSUFFICIENT_DATA`/`BLOCKED`: write nothing (the engine already
+   refuses to guess).
+3. **Database changes: none.** `model_predictions`, `signals`, grading,
+   CLV, and `research_model_current` are reused as-is. (Optional: add NFL to
+   the capture scanner's sport scope so `signals` carries NFL quotes and the
+   MODEL engine can join prices; NCAAF is already captured.)
+4. **Shadow mode is the existing doctrine**: MODEL rows render as UNPROVEN,
+   are counted nowhere, and graduate only via their own graded CLV — that IS
+   EdgeDesk's shadow mode, already built. No new gating needed.
+5. Rollback: delete/stop writing rows with this `model_version`. Historical
+   rows keep their frozen `model_version` — never overwritten.
 
-## Deployment order (shadow mode)
+## The shorter server path: feed `model_predict`, copy nothing
 
-1. Run `football/sql/010_nfl_team_features.sql` in the SQL editor.
-2. Create Edge Function `ingest_nfl_features`, paste
-   `supabase/functions/ingest_nfl_features/index.ts`, Verify JWT OFF.
-   No new secrets — it uses the existing CRON_SECRET convention.
-3. Test read-only: `POST .../ingest_nfl_features?dry=1&secret=CRON_SECRET`
-   → expect `rows_built: 32` and a diag block.
-4. Run it live once, then `model_predict?dry=1&sport=NFL`
-   → `data_quality.status` should flip from `insufficient_data` to `ok`,
-   with rows built once NFL markets are captured (season start).
-5. Schedule: weekly in the offseason, every 6–12h in season (before
-   `model_predict`'s own schedule).
-6. Shadow mode is the existing doctrine: NFL rows render in the app's MODEL
-   engine as UNPROVEN, counted nowhere, graduating only via their own graded
-   CLV. Nothing to configure.
+The route above still works, but it is not the only one, and it is no longer
+the shortest. Read from the deployed sources of `capture`, `model_predict`,
+`model_conf_odds`, `close` and `settle`:
 
-Rollback: stop the cron / delete rows from `nfl_team_features` —
-`nfl_game_v1` returns to `insufficient_data` and writes nothing. Historical
-`model_predictions` rows keep their frozen `model_version` snapshots.
+* `model_predict` **already contains a complete `nfl_game_v1` module.** It is
+  built and dormant, not missing. It reads `public.nfl_team_features` keyed by
+  `team_norm`, requires `off_epa_play`, `def_epa_play` and `plays_per_game`,
+  and writes `model_predictions` through the same ignore-duplicates CLV
+  baseline every other sport uses. Nothing in it needs editing — its bundle is
+  generated, so hand edits are lost on the next rebuild anyway.
+* `model_conf_odds` is the **CFB conference Monte Carlo** writing `model_odds`.
+  It is a different job from per-game NFL prediction.
 
-## Database changes
+So the only thing standing between the trained engine and server-side NFL rows
+is that `nfl_team_features` is empty. Two files in this change fill it:
 
-One new table (`nfl_team_features`, RLS enabled, service-role only).
-Nothing else: `signals`, `model_predictions`, grading, CLV and the model
-registry are used exactly as deployed.
+| file | what it is |
+|---|---|
+| `football/sql/010_nfl_team_features.sql` | the table, idempotent, RLS on with no policies (service-role only) |
+| `supabase/functions/ingest_nfl_features/index.ts` | the feeder, house style: `BUILD` string, `CRON_SECRET`, `?dry=1`, a sanity gate that refuses an implausible batch |
 
-## Frontend integration (live now)
+The feeder fetches public nflverse data (keyless, no odds quota) and writes 32
+rows of opponent-adjusted EPA levels from the same trained recursion as
+`football/engine.js`, parity-tested against it at 1e-5. It introduces no new
+secret and touches no deployed function.
+
+Deploy order: run `010`, create the function with Verify JWT OFF, prove it with
+`?dry=1&secret=…` (computes everything, writes nothing), run it once live, then
+check `model_predict?dry=1&sport=NFL` flips `data_quality.status` off
+`insufficient_data`. `collective/sql/027_schedule_nfl_features.sql` schedules
+the daily refresh and reads the existing cron conventions before writing one.
+
+Rollback: stop the job. `nfl_game_v1` returns to `insufficient_data` and writes
+nothing; historical `model_predictions` rows keep their frozen `model_version`.
+
+## Operational SQL (`collective/sql/`)
+
+Runbooks written against the live schema while getting Week 1 onto the wall,
+kept because each one documents a real failure and its fix. Every file leads
+with read-only steps; the ones that write go through the sanctioned
+maintenance path rather than around the append-only guard on
+`collective.projections`. `SUBMIT_GATE_NOTE.md` records why
+`ingest_submission`'s spread/probability check rejected correct submissions —
+fed the closing market's own spread and moneyline, it contradicts the market on
+6 of 16 games — and gives the one-line replacement.
+
+## Frontend integration (this change, live now)
 
 * New **Football** research module (research shell, `#research/football`):
-  NFL + CFB + **CFB Power 4** boards computed client-side by
+  NFL + **FBS Football** (all eleven conferences) boards computed client-side by
   `football/engine.js` and `football/cfb_p4/engine.js` from the
   same public sources the training pipeline uses (nflverse / cfbfastR-data,
   both CORS-open), matched to live `signals` quotes where capture covers the
@@ -113,15 +125,37 @@ registry are used exactly as deployed.
 * Nothing else changes: MLB, UFC, WTA, tennis, golf, Collective, odds,
   grading, settlement and AI behavior are untouched.
 
-The app's Football research module (Research → Football) is independent of
-all of the above — it computes client-side from the same public sources and
-gates honestly. Once `model_predict` writes NFL rows, the Edges board's
-MODEL-fair overlay picks them up automatically (the overlay already loads
-`americanfootball_nfl`/`ncaaf` from `model_predictions`).
+## The CFB model (`football/cfb_p4/`) and the FBS universe (`football/fbs/`)
 
-## The CFB Power 4 model (`football/cfb_p4/`)
+### Scope, stated once
 
-The Power 4 engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
+The board covers **every scheduled game with at least one active FBS team**,
+across all eleven FBS conferences and both independents. It is not restricted
+to games involving a Power 4 program, and the directory name `cfb_p4` refers
+to the tier the model was BUILT FOR, not the games it prices: the engine seeds
+136 programs, carries conference strength for every conference, and its
+held-out record is measured over every FBS-vs-FBS game.
+
+Who is FBS in a season, and which conference they play in that season, comes
+from `football/fbs/` — derived from the season's own schedule feed, never from
+a stored list, because realignment moves programs every winter. A deployment
+that wants the same slate the browser renders should build it the same way:
+
+```js
+const FBS = require('./football/fbs/fbs.js');
+const universe = FBS.buildUniverse({ rows, season, params: EDCfbP4Params });
+const slate    = FBS.buildSlate({ rows, universe, now: Date.now(), lookaheadDays: 10 });
+```
+
+`football/fbs/slate.json` is that slate as a committed artifact, one row per
+game, carrying `home_team_id`, `away_team_id`, both conferences and
+conference ids, both program groups, `matchup_type`, `is_conference_game`,
+`model_status`, `data_completeness`, `market_status` and `quote_timestamp`.
+`football/fbs/coverage.json` is the machine-readable diagnostic beside it.
+
+### The engine bundle
+
+The CFB engine is a SEPARATE bundle — its own `engine.js`, `params.js`,
 `goldens.json` and `tests.js` — and it plugs in the same way, with two
 differences worth knowing before deploying it server-side:
 
@@ -145,9 +179,9 @@ faked in their absence.
 NOT use it — it uses the public cfbfastR-data line archive, which carries
 opening numbers as well as closing ones.
 
-## Posting Power 4 slates to the Model Collective
+## Posting FBS slates to the Model Collective
 
-The Power 4 board's **Post to Collective** button downloads the slate and opens
+The FBS board's **Post to Collective** button downloads the slate and opens
 `collective/#dashboard`. It deliberately does NOT post on the reader's behalf:
 posting is an account action against their own creator profile, and the model,
 week and data-origin choices belong to them.
@@ -169,8 +203,321 @@ already in its synonym table:
 | `spread_pick` | pick side |
 | `confidence` | confidence |
 
-Columns the uploader does not recognise are ignored, so the Power 4 extras ride
+Columns the uploader does not recognise are ignored, so the model's extras and
+the FBS coverage columns (`home_conference`, `home_fbs_group`, `matchup_type`,
+`is_conference_game`, `model_status`, `data_completeness`, `market_status`,
+`quote_timestamp`) ride
 along harmlessly.
+
+### Two doors, and they are not the same function
+
+* The **browser upload** (Dashboard → Post a slate) posts to
+  `collective_public` → `/v1/dashboard/submit`.
+* The **API-key path** (a creator's script sending `x-collective-key`) posts to
+  `collective_ingest` → `/v1/projections`.
+
+Both hand the envelope to the same `ingest_submission` RPC, but they are
+different deployments: editing one does not change the other.
+
+### Edits `collective_ingest` needs for a non-NFL sport
+
+Neither blocks a submission — `marketSnapshot` is explicitly additive and
+returns null on any failure — but without them a college-football creator gets
+`market: null` on every receipt and an `available:false` market endpoint.
+
+1. `marketSnapshot()` hard-codes NFL:
+
+   ```ts
+   if (String(sport).toUpperCase() !== "NFL") return null;
+   ...
+   p_league: "nfl",
+   ```
+
+   Replace with a sport→league map, so a sport with no stored market returns
+   null and every other sport is looked up properly:
+
+   ```ts
+   // The league key the Collective's own odds feed stores. A sport missing
+   // here has no stored market: the snapshot is null and the submission still
+   // stands. The values must match what collective_odds_ingest writes —
+   // adding a sport here without adding it there yields an empty board.
+   const ODDS_LEAGUE: Record<string, string> = { NFL: "nfl", CFB: "ncaaf", NCAAF: "ncaaf" };
+
+   async function marketSnapshot(sport: string) {
+     const league = ODDS_LEAGUE[String(sport).toUpperCase()];
+     if (!league) return null;
+     ...
+     p_league: league,
+   ```
+
+2. `/v1/market` reads `auth.models[0]?.sport_code ?? "NFL"` — the FIRST model on
+   the account. A creator with an NFL model and a CFB model always gets the NFL
+   market back. It should take the model from the query
+   (`?model=<slug>`) and fall back to the first only when none is given.
+
+### A model per creator per sport, provisioned automatically
+
+The browser can pick the right model for a slate, and now does — the uploader
+reads the sport out of the file and selects the creator's model for it. What it
+cannot do is CREATE that model: no endpoint in the whole API exposes model
+creation, so a creator whose account predates a sport has nowhere for that
+sport's slates to land, and every row quarantines against the wrong schedule.
+
+This is the failure that produced "0 matched, 90 quarantined,
+unknown_team_home" on a college slate whose team names were, by then, byte-
+identical to the backend's own. `TCU` failed against `TCU`, because the lookup
+was never in the college schedule at all — the submission was attached to the
+account's only model, which was tagged NFL.
+
+The fix is one row per creator per sport, and it should not be the creator's
+job. Two places to do it, in order of preference:
+
+1. **When a sport is added.** Backfill every existing creator at the same time
+   the sport row is inserted:
+
+   ```sql
+   insert into models (creator_id, model_slug, model_name, sport_code)
+   select c.id,
+          c.slug || '-' || lower(:sport_code),
+          c.display_name || ' ' || :sport_name,
+          :sport_code
+     from creators c
+    where not exists (
+      select 1 from models m
+       where m.creator_id = c.id and m.sport_code = :sport_code);
+   ```
+
+2. **On first submission for a sport**, inside `ingest_submission`: if the
+   creator has no model for the envelope's `sport`, create one rather than
+   resolving the slate against another sport's schedule. This is the one that
+   makes it self-healing — a creator who joins after a sport is added, or a
+   sport added while a creator is mid-season, both work with nobody doing
+   anything.
+
+Either way the creator adds nothing. Until one of them exists, the dashboard
+refuses the post and names the missing model instead of letting the slate
+quarantine, which is the honest degradation but not the fix.
+
+**Do not** solve this by letting a submission carry its own sport independent
+of its model. The model is what the record belongs to; a model whose slates are
+half NFL and half college has no meaningful win percentage.
+
+### Retract cannot work against an append-only store
+
+`collective.projections` is append-only in the **database**, not merely by
+convention. A trigger raises
+
+```
+P0001  collective.projections is append-only (rule 8.3); use the service maintenance path
+```
+
+on any `DELETE`. `collective_ingest`'s `/v1/projections/retract` removes rows
+with an ordinary PostgREST `DELETE`, so against that database it can never
+succeed. Its dry run is worse than useless: it happily counts rows it will
+never be allowed to remove, so it reports `would_remove: 12` and the confirmed
+call comes back
+
+```
+retract_failed: Removed 0 row(s), then a chunk failed: DELETE projections failed: 400 …
+```
+
+Nothing is removed and nothing is half-done — the refusal lands on the first
+chunk, before anything is touched.
+
+**What that cost.** Both research boards' *Sync to Collective (API)* treated the
+refusal as fatal and returned before posting. The removal had changed nothing
+and the post was still valid, but a board whose games already had stored rows
+could not reach the Collective **at all**. One server-side rule took the NFL and
+the FBS sync offline.
+
+**What changed instead: the rule.** The Collective now shows and grades each
+model's **latest live submission received before the lock**, 30 minutes before
+kickoff. A re-upload replaces the model's number on every game that has not
+locked; every earlier submission stays stored as movement; a submission
+received at or after the lock is stored, flagged late, and excluded — whoever
+posts it. Nothing has to be removed for a correction to count, so the retract
+route's refusal no longer stands between a board and the wall. The group chose
+this after two creators reported the uploader as broken in one week: the
+latest upload is the master, and the lock protects the record.
+
+**What app.html does now.** *Sync to Collective (API)* is a dry run, one
+confirmation that says exactly what the post replaces and when games lock,
+and a post. It never asks the store for a delete. The standalone retract
+button keeps its guard against the append-only refusal (`fbRetractBlockedBy` /
+`fbRetractBlockedWhy`, recognised by the database's own words) and says that
+nothing is lost by it. `tools/collective/app_sync.test.js` drives both flows
+out of `app.html` itself.
+
+**What the client does** (`collective/index.html`): every `/v1/games` response
+is collapsed on arrival to one row per model per game — the latest live row
+received before the lock — so the wall, the model page, the record and the
+coverage agree whether or not the server has adopted the predicate yet; a row
+received after the lock that the server did not flag is flagged late on the
+page; the lock length is read from `/v1/meta` `lock_minutes` (30 when
+absent); the dashboard says before a post which games it will replace numbers
+on and which have already locked, the receipt says the same from the server's
+own counts, and the rules page, the legend, the game header (`LOCKS IN 2H` /
+`LOCKED`) and the `+n` beside a pick all state the lock rule.
+
+**What the server still needs** — none of it is in this repository, all of it
+is written down in `supabase/` (`lock_rule.sql`, one paste with no placeholders,
+`functions/collective_ingest/index.ts`):
+
+1. `board_models` (what `/v1/games` reads), the grader, consensus and the
+   coverage counts pick *the latest live row per model per game with
+   `received_at < lock_at(kickoff)`* instead of the first pre-kickoff one.
+   **This is the change that makes a re-upload reach the wall**: until the
+   view returns the later row, the page never sees it and cannot show it.
+2. `ingest_submission` sets `late` by the lock rather than by kickoff, and
+   counts `first` / `movement` against the new rule.
+3. `/v1/meta` publishes `lock_minutes`.
+
+Until 1 lands, the wall keeps showing each model's first submission and the
+page can only say so. That is the honest degradation; it is not the fix.
+
+### The Collective tab is locked because it asks anonymously
+
+`collective/embed.js` fetched `collective_embed /v1/embed/bootstrap` with no
+credential at all. An anonymous reader is entitled to nothing, so the payload
+came back with `entitled: false` and every pre-kickoff row carrying no numbers
+to show — for **everyone**, including a reader signed in to the very site the
+embed is running on. In the app's Collective tab that is the whole board greyed
+out for somebody who is paying for EdgeDesk, with no way from that screen to
+say so. Client-side unlocking is not an option and never was: the values are
+simply absent from the payload.
+
+**What app.html does now.** EdgeDesk and the Collective run on the same
+Supabase project, so the reader signed in to the app is already an identity the
+Collective can recognise. The tab sets `window.MCEmbedToken`, the embed calls it
+and sends `Authorization: Bearer <access token>` on the bootstrap. Two rules,
+because the embed also runs on other people's sites, and both are covered by
+`tools/collective/embed_auth.test.js`:
+
+* the token travels through a **function**, never a `data-` attribute — a
+  credential in the DOM is readable by anything else on the page;
+* it is sent **only** when the API base is the Collective's own. `data-api` is
+  there for testing and a credential must never follow it.
+
+The publishable anon key is itself a JWT, so it is rejected explicitly: the
+token is decoded and must carry `role: "authenticated"` and a subject. A `401`
+falls back to the anonymous request, and the locked panel now distinguishes
+"you are not signed in" from "you are signed in and the Collective does not
+have this account as a subscriber" instead of pitching a subscription at
+somebody who already has one.
+
+**What the server was doing.** Nothing. `collective_embed`'s bootstrap had the
+entitlement hardcoded:
+
+```ts
+const board = sport ? await buildGames(sport.code, sport.season, null, false) : ...
+...
+upcoming: { entitled: false, games: upcoming },
+```
+
+Two literals. It never read the Authorization header, never resolved a user,
+and never called `isEntitled()` — which already existed in `_shared/reads.ts`
+and already did the right thing. Every pre-kickoff row was locked for
+everyone, permanently, subscribers and creators included.
+
+Its `corsFor()` compounded it by allowing only `content-type`, so a
+cross-origin GET carrying `Authorization` was refused at the preflight and
+blocked by the browser before it left. (The shared `corsHeaders()` in
+`_shared/http.ts` allows it; the embed function was overriding that with a
+narrower set.)
+
+**The fix, applied to the deployed bundle:** resolve the caller with
+`GET /auth/v1/user` — verified by the auth server, never decoded in the
+function, and with the publishable anon key rejected explicitly since it is
+itself a JWT — then pass the result of `isEntitled()` into `buildGames()` and
+the `upcoming` envelope. `isEntitled()` gained EdgeDesk's own `subscriptions`
+table, read from the **public** schema (no `Accept-Profile`) and best-effort,
+so a rename there costs that one check rather than the whole board. A
+response built for one reader is `private, no-store`; the shared cache window
+applies only to the anonymous board. `Vary` carries `Authorization` as well as
+`Origin`.
+
+Two more defects came out of the same file once it was read properly:
+
+* **Only one sport ever reached the board.** `const sport = meta.sports[0]` —
+  the first sport in the list and only that one — so a Collective running
+  college football alongside the NFL put *no* college slate on the embed at
+  all. Four models on its own wall had nothing to show for themselves there,
+  which is the whole reason they are on it. Every active sport is built now,
+  capped **per sport** and then merged by kickoff: one shared cap is the same
+  bug wearing a hat, because an NFL Sunday is sixteen games and fills any
+  total limit on its own. Each game carries its `sport`, and the embed shows
+  it as a chip — a mixed list sorted by kickoff is unreadable otherwise.
+  `embed.upcoming_per_sport` (16) and `embed.settled_per_sport` (6) tune it.
+
+* **A free account counted as paid.** `isEntitled()` short-circuited on
+  `billing.enabled !== true` and returned true for anybody holding a session.
+  With identity resolution fixed, that would have handed the paid board to
+  every signed-in free account the moment it started working. The branch is
+  gone: the ways in are an active EdgeDesk subscription, an active Collective
+  subscription, or being a creator.
+
+The payload now carries `entitlement: { identified, entitled, via }`, so a
+locked reader can be told which check failed rather than left to guess — the
+app's Collective tab turns it into one line naming the case.
+
+**Client side, the anonymous board is the floor and is never gambled.** The
+first attempt at this sent the token *instead* of asking anonymously and
+recovered afterwards if that failed — and against a deployment that does not
+accept the header, which is every deployment until the API above ships, it
+turned a locked board into **no board at all**: *"The Model Collective is
+temporarily unreachable from this page."* A recovery path is not good enough
+there. It only runs after something has already gone wrong, and anything it
+does not anticipate still costs the whole panel.
+
+So `embed.js` always makes the anonymous request, exactly as it did before
+there was an identity to send, and that request alone decides whether the
+panel renders or falls back. The identified request rides alongside as an
+upgrade: its answer replaces what is on screen if it arrives, and if anything
+goes wrong with it nobody hears about it. Two requests for a signed-in reader
+is the price; the anonymous one is the cacheable one.
+
+"Unreachable" is only reported once there is nothing on screen **and** nothing
+still coming, so a slow identity cannot flash an outage over a board that is
+about to arrive.
+
+The state event carries `handoff`: `none` (signed out here), `pending`, `ok`,
+or `refused` — three different causes for `refused` (header not read, token
+rejected, preflight blocked), one consequence, and none of them the reader's
+doing. That is the case the product is in until the function above is
+deployed, and the Collective tab now says so by name rather than reporting the
+reader as signed out.
+
+### Deploying an edge function is not the same as calling one
+
+Worth writing down because it cost a day. This:
+
+```sql
+select net.http_post(
+  url := 'https://<project>.supabase.co/functions/v1/collective_embed',
+  headers := jsonb_build_object('Content-Type','application/json'),
+  body := '{}'::jsonb);
+```
+
+does **not** deploy anything. `pg_net`'s `http_post` makes an HTTP request
+*to* a function — it is how a scheduled job invokes one — and the code
+answering that URL stays whatever was last uploaded. Against
+`collective_embed` it is not even a useful invocation: the router answers
+`GET /v1/embed/bootstrap` and `POST /v1/embed/events`, so a POST to the
+function root falls through to `not_found` and returns 404.
+
+Deploying is one of:
+
+* **Dashboard** → Edge Functions → the function → Code → paste `index.ts` →
+  Deploy. Then, in that function's settings, turn **"Enforce JWT
+  verification" OFF** — it resolves the token itself and anonymous callers
+  have to keep working.
+* **CLI** — `supabase functions deploy collective_embed --no-verify-jwt`.
+
+One more trap, for the dashboard route specifically: **paste from the file,
+not from a chat message or anything else that renders markdown.** A hostname
+written next to the `www` prefix gets auto-linked in transit, and the bundle
+has arrived corrupted that way twice. The current source builds that
+comparison by concatenation so there is no literal for a renderer to eat.
 
 ### The one thing that is NOT in this repo
 
@@ -198,16 +545,63 @@ beside NFL with no further frontend change.
 
 ## Environment variables / secrets
 
-None new. The feeder reads `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
-`CRON_SECRET` — all already set for the other crons.
+None. All runtime sources are public and keyless; Supabase reads reuse the
+app's existing token path.
 
-## CFB (phase 2, optional)
+---
 
-`model_predict` has no CFB game model; its registry is designed for adding
-one (`SportPredictionModel` interface). A `cfb_game_v1` module can be built
-on the trained CFB constants in `football/params.js` plus the `cfb` schema —
-but `model_predict`'s bundle is GENERATED from a module tree
-(`scripts/bundle.mjs`), so that change belongs in the tree, not the pasted
-bundle. Send `supabase/functions/model_predict/{core,models}` if you want
-that built; until then CFB remains research-only in the app's Football
-module, which is fully live client-side.
+## The player quality + scheme matchup layer (`football/players/`)
+
+Added after the sections above and integrated the same way they were: as a
+read-only client-side layer over committed artifacts. **It touches no Edge
+Function, writes nothing to the database, and needs no secret.**
+
+### What it adds to the client
+
+| surface | where | what it reads |
+|---|---|---|
+| **Players** segment | Football tab, fourth segment | `football/players/current.json`, `index.json`, `teams/<key>.json` |
+| **Player quality & matchup** panel | under every game card on the FBS board | the same files, plus the engine's own projection for the game |
+
+Both lazy-load their module bundle (`config.js`, `epir.js`, `units.js`,
+`scheme.js`, `matchup.js`, `sim.js`, `params.js`) on first open, exactly as the
+the FBS board loads its own engine.
+
+### The coupling rules it keeps
+
+* **It is a fourth independent engine, not a change to the first three.** A
+  failed nflverse load no longer blanks the Players segment (the loader's
+  failure handler now exempts `players` the way it already exempted `p4`), and
+  a failed player build cannot touch the NFL board, the FBS board or the
+  CFB Rosters browser. Each renders its own gate.
+* **It joins on the same team key as everything else.** `EDPlayerRating.teamKey`
+  is byte-identical to `EDCfbP4.normKey`, and `players.test.js` cross-checks
+  them on the names two normalisers actually disagree about (Texas A&M, San
+  José State, Hawai'i). A divergence here would silently lose a team rather
+  than error, which is why it is a test and not a comment.
+* **It prices nothing.** Its walk-forward says it does not beat the CFB
+  rating core out of sample, so `params.js` ships
+  `calibration.*.points_applied: false` and the Linemaker view renders the
+  player and scheme rungs flat on the raw model with the p-value on screen.
+  No number anywhere else in EdgeDesk changed when this layer landed.
+* **The market never reaches a model number.** MARKET, MODEL, PLAYER QUALITY
+  and SIMULATION are four separately computed columns; the market enters only
+  as a cover probability counted over already-simulated margins.
+
+### Server-side adoption path, if it is ever wanted
+
+Nothing here needs the server. If the layer ever earns `points_applied: true`,
+the natural adoption is the one this document already specifies for the CFB
+engine: publish the player-adjusted fair line into `model_predictions` under a
+distinct `model_version` (`edgedesk_player_v1`) beside — never instead of — the
+existing rows, so the two records grade separately and the older one keeps its
+own history. Until the walk-forward says so, there is nothing to publish.
+
+### CI
+
+`.github/workflows/player-ratings.yml` rebuilds and commits the datasets twice a
+week in season, gated on both suites before and after the write plus a shape
+check that refuses to commit a wrong-sized dataset. It deliberately does **not**
+run `validate.js`: recalibrating on a schedule is how a research layer quietly
+starts fitting the recent past, so `points_applied` only ever changes when a
+human runs the validator and commits the result.

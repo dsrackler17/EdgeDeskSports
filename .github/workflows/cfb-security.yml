@@ -1,0 +1,37 @@
+# EdgeDesk CFB — the secret audit and the least-privilege checks, on every PR.
+#
+# A secret can arrive in any file, so this runs without a path filter. It is
+# offline and takes seconds: tools/cfb/secret_audit.js over every tracked file,
+# the page bundle, the kept logs and the workflows (a finding shows the file,
+# the line and a masked fingerprint, never the value), then the static checks
+# of football/cfb_production/security.test.js (every CFB security-definer
+# function revoked from anon, no public endpoint able to start a CFB refresh,
+# the internal pages noindex and read-only, log lines masked).
+name: CFB security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Secret audit (repository, page bundle, logs, workflows)
+        run: node tools/cfb/secret_audit.js
+      - name: Least privilege, public endpoints, internal pages, log masking
+        run: node football/cfb_production/security.test.js

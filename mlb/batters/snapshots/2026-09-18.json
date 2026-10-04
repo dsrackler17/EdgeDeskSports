@@ -1,0 +1,96 @@
+{
+  "snapshot_date": "2026-09-18",
+  "dataset": "offense",
+  "import_id": "mlboff-2016-2026-20260918T170405Z",
+  "coverage": {
+    "start": 2016,
+    "end": 2026
+  },
+  "provisional_seasons": [
+    2026
+  ],
+  "rating_version": "ED_BAT_PERF_V1",
+  "dataset_built_at": "2026-09-18T17:04:04.139835+00:00",
+  "source": "MLB Stats API (statsapi.mlb.com/api/v1), regular season, sport 1, game type R, player pool ALL",
+  "source_manifest_sha": "f5826aef76a71dfc1868e7605fd90ae7cab09789181df8aa644bda0d5efcb35c",
+  "rows": {
+    "batter_seasons": 10841,
+    "batter_team_seasons": 11858,
+    "batter_overview": 3240,
+    "batter_team_history": 6473,
+    "observed_batter_team_runs": 6936,
+    "team_offense_seasons": 330,
+    "team_offense_overview": 30,
+    "league_offense_seasons": 11,
+    "offense_validation": 11,
+    "offense_source_repairs": 34,
+    "offense_games_reconciliation": 1
+  },
+  "package_validation": "PASS: every player-season reconciled across 19 offensive counting fields; every team-season reconciled to independent team endpoint; source universe, pagination, unique keys, all 30 teams/year, total-base identities, SQLite integrity",
+  "independent_validation": {
+    "ok": true,
+    "checks": {
+      "count_batter_seasons": 10841,
+      "count_batter_team_seasons": 11858,
+      "count_batter_overview": 3240,
+      "count_batter_team_history": 6473,
+      "count_observed_team_runs": 6936,
+      "count_team_offense_seasons": 330,
+      "count_team_offense_overview": 30,
+      "count_league_seasons": 11,
+      "counts_agreeing": 8,
+      "unique_keys": true,
+      "rate_rows_rederived": 39719,
+      "total_base_identity": true,
+      "ratings_rederived": 18741,
+      "zero_pa_rows": 1973,
+      "walk_only_rows": 18,
+      "player_seasons_with_splits": 10841,
+      "traded_player_seasons": 952,
+      "games_field_differences": 1,
+      "league_seasons": 11,
+      "club_seasons": 330,
+      "player_games_sum_equals_team_games": 0,
+      "seasons_covered": 11,
+      "validation_seasons": 11,
+      "source_repairs": 34,
+      "batters": 3240,
+      "batters_with_pa": 2621,
+      "overview_blank_teams": 3240,
+      "overview_zero_team_count": 3240,
+      "overview_clubs_derived": true
+    },
+    "problems": []
+  },
+  "transformations": [
+    {
+      "field": "name_key",
+      "tables": [
+        "batter_seasons",
+        "batter_team_seasons",
+        "batter_overview",
+        "batter_team_history",
+        "observed_batter_team_runs"
+      ],
+      "reason": "Accent-folded player name, derived from player_name for resolution. The package ships no folded key, and MLB ids remain the join key — this is only for name lookup."
+    },
+    {
+      "field": "teams / team_count (batter_overview only)",
+      "tables": [
+        "batter_overview"
+      ],
+      "reason": "The package ships both blank on all 3,097 overview rows while carrying the clubs correctly at the team grain. The importer rebuilds them from batter_team_history IN THE SAME PACKAGE, ordered by plate appearances. Nothing is inferred from outside the dataset, and the per-club rows are the authority either way."
+    },
+    {
+      "field": "provisional",
+      "tables": [
+        "batter_seasons",
+        "batter_team_seasons",
+        "team_offense_seasons",
+        "league_offense_seasons"
+      ],
+      "reason": "True for any season imported before its regular season finished. Not a source field."
+    }
+  ],
+  "note": "A manifest of what was promoted, not a copy of the data. The data is the dataset directory, whose own build time and source fingerprint are recorded here."
+}

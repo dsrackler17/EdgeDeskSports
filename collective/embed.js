@@ -76,8 +76,8 @@
 
   /* ---------- tokens ---------- */
   var T = THEME === 'light'
-    ? { bg:'#f6f7f9', surface:'#ffffff', surface2:'#eef0f4', border:'#d8dde5', text:'#14181f', dim:'#5b6472', faint:'#8a93a2', accent:'#2f6fe0', pos:'#1e8f60', neg:'#c74e35', warn:'#a87718', gold:'#8a6d1d' }
-    : { bg:'#0d0f13', surface:'#13161c', surface2:'#191d25', border:'#262c36', text:'#e7eaf0', dim:'#8a93a2', faint:'#5b6472', accent:'#4d8dff', pos:'#2fb47c', neg:'#e26044', warn:'#d99a2b', gold:'#e3b84d' };
+    ? { bg:'#f6f7f9', surface:'#ffffff', surface2:'#eef0f4', border:'#d8dde5', text:'#14181f', dim:'#6f6553', faint:'#a29581', accent:'#2f6fe0', pos:'#1e8f60', neg:'#c74e35', warn:'#a87718', gold:'#8a6d1d' }
+    : { bg:'#100e0a', surface:'#191510', surface2:'#221c15', border:'#332a1b', text:'#f1ebdf', dim:'#a29581', faint:'#6f6553', accent:'#2fa79a', pos:'#76bd3e', neg:'#e26044', warn:'#d99a2b', gold:'#e3b84d' };
 
   var CSS = ''
     + ':host{all:initial}'
@@ -197,6 +197,47 @@
   box.innerHTML = '<div class="hd"><span class="wm"><span class="mk"></span>MODEL COLLECTIVE</span><span class="sp"></span><span class="sub">loading</span></div>' +
     '<div class="fallback">Loading the Collective…</div>';
 
+  /* What the host page cannot see from the outside, and needs to, when its
+     reader is looking at locked rows: whether an identity was handed over at
+     all, and whether the payload came back entitled. Those are two different
+     reasons for the same grey board -- "you are signed out here" and "you are
+     signed in and the Collective does not know this account" -- and a host
+     with its own accounts (the EdgeDesk app is one) can name the right one
+     instead of leaving the reader to guess. Fire-and-forget: a host that is
+     not listening is the normal case. */
+  /* The Collective's own answer about this reader, when it sends one:
+     whether it recognised anybody, and which entitlement it found. A host
+     page can then say "signed in, not on a paid plan" instead of showing the
+     same grey box for every reason.
+
+     Older payloads carry no entitlement block, and this has to keep working
+     against one: an embed is deployed on other people's sites and cannot
+     assume the API moved first. Then VIEWER and the lock are the fallback
+     they always were. */
+  function stateFrom(d, locked) {
+    var ent = (d && d.entitlement) || null;
+    return {
+      ok: true,
+      viewer: ent ? !!ent.identified : VIEWER,
+      entitled: ent ? !!ent.entitled : !locked,
+      via: ent && ent.via ? String(ent.via) : null,
+      handoff: HANDOFF,
+      forbidden: false,
+    };
+  }
+  /* The identified request can settle AFTER the floor has already painted,
+     and when it settles badly there is nothing new to draw -- only something
+     new to say. Re-announce without repainting. */
+  function refreshState() {
+    if (!LAST) return;
+    emitState(stateFrom(LAST, !!(LAST.upcoming && LAST.upcoming.entitled === false)));
+  }
+
+  function emitState(detail) {
+    try { mount.dispatchEvent(new CustomEvent('mc-state', { detail: detail, bubbles: true })); }
+    catch (e) {}
+  }
+
   function fallback(forbidden) {
     box.innerHTML =
       '<div class="hd"><a class="wm" href="' + esc(SITE) + '" target="_blank" rel="noopener"><span class="mk"></span>MODEL COLLECTIVE</a><span class="sp"></span><span class="sub">independent models, one record</span></div>' +
@@ -204,6 +245,8 @@
       '<a href="' + esc(SITE) + REFQ + '" target="_blank" rel="noopener">Open the Collective directly →</a>' +
       (forbidden ? '<br><br><span class="note">Site owner: register this domain in your Collective dashboard to activate the embed here.</span>' : '') +
       '</div>';
+    emitState({ ok: false, viewer: VIEWER, entitled: null, via: null,
+                handoff: HANDOFF, forbidden: !!forbidden });
   }
 
   var MARKET = null;
@@ -246,7 +289,13 @@
     }).join('');
 
     function gameBlock(g, entitled) {
-      var hd = '<div class="g-hd"><span class="l">' + esc(g.label) + '</span><span class="t">' + ko(g.kickoff_at) + '</span>' +
+      /* The board carries every sport the Collective runs, not just the
+         first one, so a row has to name its own: "Massachusetts @ Rutgers"
+         next to "NE @ SEA", sorted together by kickoff, is unreadable
+         otherwise. Absent on a payload that predates it, and then the chip
+         simply is not there. */
+      var sport = g.sport ? '<span class="chip" style="margin-left:6px">' + esc(g.sport) + '</span>' : '';
+      var hd = '<div class="g-hd"><span class="l">' + esc(g.label) + sport + '</span><span class="t">' + ko(g.kickoff_at) + '</span>' +
         (g.result ? '<span class="f">' + g.result.away_score + ' - ' + g.result.home_score + '</span>' : '') + '</div>';
       var cons = '';
       if (g.consensus && !g.consensus.locked && g.consensus.n) {
@@ -267,10 +316,38 @@
         var who = '<span class="nm" style="font-size:12px">' + esc(m.creator_slug) + '</span>';
         if (m.locked) return '<div class="mrow">' + who + '<span class="sp"></span><span class="lock">Subscriber number</span></div>';
         var grade = m.grade ? ' <span class="mono ' + esc(m.grade.pick_result) + '">' + esc(m.grade.pick_result) + '</span>' : '';
+        /* Same convention as pickedSide() in collective/index.html, which is
+           the canonical statement of it: line_at_submission and
+           projected_spread arrive in HOME convention, pick_side says which
+           team was picked, and an AWAY pick displays the exact inverse. The
+           pick is stated at the MARKET line it was made against (the model's
+           own spread is the spr chip's fact, not the pick's number), falling
+           back to the model's spread only when no market line was posted. */
+        var side = String(m.pick_side || '').trim().toLowerCase();
+        if (side !== 'home' && side !== 'away') side = null;
+        var team = side === 'home' ? g.home : (side === 'away' ? g.away : null);
+        var v = m.line_at_submission != null ? Number(m.line_at_submission)
+          : (m.projected_spread != null ? Number(m.projected_spread) : null);
+        if (v != null && !isFinite(v)) v = null;
+        var pspr = v == null ? null : (side === 'away' ? (v === 0 ? 0 : -v) : v);
         return '<div class="mrow">' + who + '<span class="sp"></span>' +
-          '<span class="mono">' + (m.pick_side ? 'pick ' + esc(m.pick_side) : 'no pick') + '</span>' +
-          '<span class="mono">spr ' + spr(m.projected_spread) + '</span>' +
-          (m.home_win_probability != null ? '<span class="mono">hw ' + pct(m.home_win_probability, 0) + '</span>' : '') +
+          '<span class="mono">' + (team != null ? 'pick ' + esc(team) + ' ' + (pspr == null ? '-' : spr(pspr))
+            : (m.pick_side ? 'pick ' + esc(m.pick_side) : 'no pick')) + '</span>' +
+          (m.projected_spread != null
+            ? '<span class="mono" title="the model’s own spread, stated for the home side">spr ' + esc(g.home) + ' ' + spr(m.projected_spread) + '</span>'
+            : '') +
+          /* the outright (moneyline) call, split from the spread pick and
+             stated for the NAMED winner — the side the win probability
+             favours, with that side's own chance */
+          (m.home_win_probability != null ? (function () {
+            var p = m.home_win_probability, h = p >= 0.5;
+            return '<span class="mono" title="the model’s outright (moneyline) winner and its chance to win the game">ml '
+              + esc(h ? g.home : g.away) + ' ' + pct(h ? p : 1 - p, 0) + '</span>';
+          })() : '') +
+          /* what a model that posted without a win probability has; home-stated
+             on the wire, like every number here, so it is labelled as such */
+          (m.home_win_probability == null && m.cover_probability != null
+            ? '<span class="mono" title="the model’s probability that the home side covers at the posted line">cv ' + pct(m.cover_probability, 0) + '</span>' : '') +
           (mktSpread != null && m.projected_spread != null
             ? '<span class="mono">' + MARKET.M.edgeHtml(m.projected_spread, mktSpread, g.home, g.away) + '</span>'
             : '') +
@@ -295,7 +372,9 @@
 
       (upcoming ? '<div class="sec"><h3>Upcoming</h3>' +
         (locked ? '<div class="mrow" style="border:1px solid ' + T.border + ';border-radius:8px;margin-bottom:8px;background:' + T.surface + '">' +
-          '<span style="font-size:12px">Pre-kickoff numbers and consensus are one subscription across every model here.</span>' +
+          '<span style="font-size:12px">' + (VIEWER
+            ? 'Signed in, and the Collective does not have this account as a subscriber \u2014 so pre-kickoff numbers and consensus stay locked. One subscription covers every model here.'
+            : 'Pre-kickoff numbers and consensus are one subscription across every model here.') + '</span>' +
           '<span class="sp"></span><a class="cta" href="' + esc(d.subscribe_url || SITE) + '" target="_blank" rel="noopener" data-sub>Unlock the board</a></div>' : '') +
         upcoming + '</div>' : '') +
 
@@ -312,6 +391,7 @@
       wireBox(box);
       ev('impression');
     }
+    emitState(stateFrom(d, locked));
   }
 
   function wireBox(box) {
@@ -325,19 +405,143 @@
     });
   }
 
+  /* ---------- who is reading ----------
+     The embed used to ask for the bootstrap anonymously, always. An anonymous
+     reader is entitled to nothing, so every pre-kickoff number came back
+     locked -- including for a reader signed in to the very site the embed is
+     running on. Inside the EdgeDesk app that is the whole board greyed out
+     for somebody who is paying, with no way from here to say so.
+
+     So a host page that can vouch for its reader may hand over their access
+     token. Two rules, because this script also runs on other people's sites:
+
+       - through a FUNCTION, never a data- attribute. A credential in the DOM
+         is readable by anything else on the page.
+       - only to the Collective's own API. A host can repoint `data-api` for
+         testing, and a credential must never follow it there.
+
+     What the token buys is decided server side, as it has to be: this asks,
+     it does not grant. A reader the Collective does not recognise as a
+     subscriber still sees locked rows -- and now the panel says which of the
+     two reasons it is, rather than pitching a subscription at somebody who
+     already has one. */
+  var VIEWER = false;
+  /* Whether this page's reader was actually handed over, and how it went.
+     'none'    nothing to hand over -- signed out on the host page
+     'pending' the identified request is still in flight
+     'ok'      the API answered it, and that answer is what is on screen
+     'refused' the API would not take it: not updated to read the header,
+               the token was rejected, a preflight blocked it. Three
+               different causes, one consequence, and NONE of them is the
+               reader's doing -- which is the thing worth telling them. */
+  var HANDOFF = 'none';
+  function viewerToken() {
+    if (API !== DEFAULT_API) return Promise.resolve(null);
+    var fn = window.MCEmbedToken;
+    if (typeof fn !== 'function') return Promise.resolve(null);
+    return Promise.resolve().then(fn).then(function (t) {
+      t = t && String(t).trim();
+      /* A JWT for a real person. The project's anon key is also a JWT, and
+         sending it would be indistinguishable from sending nothing while
+         making the panel claim a reader is signed in. */
+      if (!t) return null;
+      var parts = t.split('.');
+      if (parts.length !== 3) return null;
+      try {
+        var b = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b.length % 4) b += '=';
+        var claims = JSON.parse(atob(b));
+        if (claims.role !== 'authenticated' || !claims.sub) return null;
+      } catch (e) { return null; }
+      return t;
+    }).catch(function () { return null; });
+  }
+
   /* ---------- fetch ---------- */
-  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, TIMEOUT_MS);
-  fetch(API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME + (HOST ? '&host=' + encodeURIComponent(HOST) : ''),
-    ctrl ? { signal: ctrl.signal } : {})
-    .then(function (r) {
-      clearTimeout(timer);
-      if (r.status === 403) { fallback(true); return null; }
-      if (!r.ok) { fallback(false); return null; }
+  /* THE ANONYMOUS BOARD IS THE FLOOR, AND IT IS NEVER GAMBLED.
+
+     The first version of this sent the token INSTEAD of asking anonymously
+     and recovered afterwards if that failed. It turned a locked board into
+     no board at all -- "temporarily unreachable" -- against any deployment
+     that does not accept the header, which is every deployment until the API
+     ships. A recovery path is not good enough for that: it only runs after
+     something has already gone wrong, and anything it does not anticipate
+     (a render that throws, a redirect, a proxy) still costs the whole panel.
+
+     So the anonymous request is made ALWAYS, exactly as it was before there
+     was an identity to send, and it alone decides whether the panel renders
+     or falls back. The identified request rides alongside as an UPGRADE: if
+     it comes back, its answer replaces what is on screen; if anything at all
+     goes wrong with it, nobody hears about it and the floor stands.
+
+     Two requests for a signed-in reader is the price, and the anonymous one
+     is the cacheable one. Being unable to make the board worse is worth it. */
+  var BOOT = API + '/collective_embed/v1/embed/bootstrap?theme=' + THEME
+    + (HOST ? '&host=' + encodeURIComponent(HOST) : '');
+
+  viewerToken().then(function (tok) {
+    if (tok) HANDOFF = 'pending';
+
+    /* Each attempt owns its own timeout and abort controller. Sharing one
+       across attempts meant the second inherited an already-aborted signal
+       whenever the first had timed out, and died instantly. */
+    function ask(withToken) {
+      var c = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var t = setTimeout(function () { if (c) c.abort(); }, TIMEOUT_MS);
+      var opts = c ? { signal: c.signal } : {};
+      if (withToken) opts.headers = { authorization: 'Bearer ' + tok };
+      return fetch(BOOT, opts).then(
+        function (r) { clearTimeout(t); return r; },
+        function (e) { clearTimeout(t); throw e; });
+    }
+
+    /* Ranked, because the two answers race and the better one has to win
+       whichever order they land in. */
+    var best = 0;
+    var floorFailed = 0;   /* 0 fine, 1 unreachable, 2 origin not registered */
+
+    function paint(d, rank) {
+      if (!d || rank < best) return;
+      best = rank;
+      render(d);
+    }
+    /* "Unreachable" is only true once there is nothing on screen AND nothing
+       still coming. Falling back the moment the anonymous request failed
+       would flash an error over a board the identified request was about to
+       deliver -- and would report an outage that is not happening. */
+    function settle() {
+      if (best || HANDOFF === 'pending' || !floorFailed) return;
+      fallback(floorFailed === 2);
+    }
+
+    ask(false).then(function (r) {
+      if (r.status === 403) { floorFailed = 2; return null; }
+      if (!r.ok) { floorFailed = 1; return null; }
       return r.json();
-    })
-    .then(function (d) { if (d) render(d); })
-    .catch(function () { clearTimeout(timer); fallback(false); });
+    }).then(function (d) {
+      paint(d, 1);
+      settle();
+    }).catch(function () {
+      floorFailed = 1;
+      settle();
+    });
+
+    if (tok) {
+      ask(true).then(function (r) {
+        return r.ok ? r.json() : null;
+      }).then(function (d) {
+        if (d) { HANDOFF = 'ok'; VIEWER = true; paint(d, 2); }
+        else { HANDOFF = 'refused'; refreshState(); }
+        settle();
+      }).catch(function () {
+        /* Never fatal on its own: the floor decides whether there is a panel.
+           All this does is stop claiming the reader was recognised. */
+        HANDOFF = 'refused';
+        refreshState();
+        settle();
+      });
+    }
+  });
 
   /* When the market arrives, inject its styles into the shadow tree and
      repaint. The panel is already usable before this resolves. */

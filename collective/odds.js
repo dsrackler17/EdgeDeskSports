@@ -1,4 +1,4 @@
-/* Model Collective — NFL odds components.
+/* Model Collective — market odds components.
  *
  * The one place the front end reads market odds. Every Collective surface
  * (the wall, the board, model pages, the market page, the embed, the admin
@@ -45,10 +45,34 @@
     opts = opts || {};
     if (opts.api) CFG.api = String(opts.api).replace(/\/$/, '');
     if (opts.fn) CFG.fn = opts.fn;
-    if (opts.league) CFG.league = opts.league;
+    if (opts.league) CFG.league = MCOdds.leagueFor(opts.league);
     if (typeof opts.ttlMs === 'number') CFG.ttlMs = opts.ttlMs;
     return MCOdds;
   };
+
+  /* The Collective names a sport ('CFB'); the odds layer names a league
+     ('ncaaf'). One map, here, so no caller has to know both vocabularies.
+     An unrecognised code passes through lowercased rather than silently
+     becoming NFL: a wrong league that 404s is debuggable, a wrong league
+     that quietly returns another sport's games is not. */
+  var SPORT_LEAGUE = { NFL: 'nfl', CFB: 'ncaaf', NCAAF: 'ncaaf', CFP: 'ncaaf' };
+
+  MCOdds.leagueFor = function (code) {
+    if (!code) return CFG.league;
+    var k = String(code).toUpperCase();
+    return SPORT_LEAGUE[k] || String(code).toLowerCase();
+  };
+
+  /* Every route below is league-scoped. CFG.league used to exist and be read
+     by nothing — configure({league}) set it and all five builders went to a
+     hardcoded /v1/nfl/, so a College Football page asked an NFL endpoint for
+     NFL games, matched none of them, and rendered "no market posted" on a
+     working feed. */
+  function leagueOf(opts) {
+    return (opts && opts.league) ? MCOdds.leagueFor(opts.league) : CFG.league;
+  }
+
+  function route(opts, tail) { return '/v1/' + leagueOf(opts) + tail; }
 
   function apiBase() {
     if (CFG.api) return CFG.api;
@@ -80,7 +104,16 @@
            parses perfectly well as JSON with no `games` key, which the
            renderers would read as "this game has no market" rather than
            "we could not reach the market". */
-        if (!r.ok) throw new Error('odds request failed (' + r.status + ')');
+        if (!r.ok) {
+          /* Carry the status out with the error. Every failure used to arrive
+             at the renderers as the same bare "unavailable", so a sport the
+             deployed function has no route for looked identical to a feed
+             that had never polled -- and those need completely different
+             fixes. */
+          var e404 = new Error('odds request failed (' + r.status + ')');
+          e404.status = r.status;
+          throw e404;
+        }
         return r.json();
       })
       .then(function (d) {
@@ -94,12 +127,18 @@
         delete inflight[url];
         /* A failed request is "unavailable", never an empty board that could
            be mistaken for a week with no games. */
+        var lg = (path.match(/^\/v1\/([a-z0-9]+)\//) || [])[1] || CFG.league;
         return {
           state: 'unavailable',
+          league: lg,
           last_updated: (hit && hit.data && hit.data.last_updated) || null,
           age_seconds: null,
           notice: 'Odds unavailable.',
-          error: { message: (e && e.message) || 'request failed' },
+          error: {
+            message: (e && e.message) || 'request failed',
+            status: (e && e.status) || null,
+            league: lg
+          },
           games: []
         };
       });
@@ -119,22 +158,27 @@
     if (opts.books === undefined) opts.books = false;
     var q = [];
     if (opts.days) q.push('days=' + encodeURIComponent(opts.days));
+    /* the look-back. `days` only ever widened the future, and a fixed 24-hour
+       lower bound on the server dropped a game off the board a day after
+       kickoff — taking its closing line, and every record graded on it, with
+       it. A server that does not know this parameter ignores it. */
+    if (opts.back) q.push('back=' + encodeURIComponent(opts.back));
     if (opts.from) q.push('from=' + encodeURIComponent(opts.from));
     if (opts.to) q.push('to=' + encodeURIComponent(opts.to));
     if (opts.week) q.push('week=' + encodeURIComponent(opts.week));
     if (opts.limit) q.push('limit=' + encodeURIComponent(opts.limit));
     if (opts.books === false) q.push('books=0');
-    var path = '/v1/nfl/odds' + (q.length ? '?' + q.join('&') : '');
+    var path = route(opts, '/odds') + (q.length ? '?' + q.join('&') : '');
     return get(path, opts.ttlMs).then(index);
   };
 
-  MCOdds.status = function () { return get('/v1/nfl/status', 10000); };
+  MCOdds.status = function (opts) { return get(route(opts, '/status'), 10000); };
 
   /* One game by its odds event id, with the full book grid. Needed because
      the board is a time window: a game that finished days ago is not in it,
      and a link to that game must still open. */
-  MCOdds.event = function (eventId) {
-    return get('/v1/nfl/odds/' + encodeURIComponent(eventId), 30000)
+  MCOdds.event = function (eventId, opts) {
+    return get(route(opts, '/odds/') + encodeURIComponent(eventId), 30000)
       .then(function (d) { return (d && d.game) ? d : null; });
   };
 
@@ -144,12 +188,12 @@
     if (opts.market) q.push('market=' + encodeURIComponent(opts.market));
     if (opts.book) q.push('book=' + encodeURIComponent(opts.book));
     if (opts.outcome) q.push('outcome=' + encodeURIComponent(opts.outcome));
-    return get('/v1/nfl/odds/' + encodeURIComponent(eventId) + '/history' +
+    return get(route(opts, '/odds/') + encodeURIComponent(eventId) + '/history' +
       (q.length ? '?' + q.join('&') : ''), 30000);
   };
 
-  MCOdds.closingForGame = function (collectiveGameId) {
-    return get('/v1/nfl/closing/' + encodeURIComponent(collectiveGameId), 60000);
+  MCOdds.closingForGame = function (collectiveGameId, opts) {
+    return get(route(opts, '/closing/') + encodeURIComponent(collectiveGameId), 60000);
   };
 
   /* Adds lookup tables so a caller can find a game by either identity without
@@ -580,42 +624,42 @@
   /* ------------------------------------------------------------------- css */
   var CSS = [
     '.mco-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0}',
-    '.mco-tag{font-size:9.5px;letter-spacing:.14em;color:var(--faint,#5b6472);font-weight:700}',
+    '.mco-tag{font-size:9.5px;letter-spacing:.14em;color:var(--faint,#6f6553);font-weight:700}',
     '.mco-mk{white-space:nowrap}',
     '.mco-mk b{font-variant-numeric:tabular-nums}',
-    '.mco-dim{color:var(--dim,#8a93a2)}',
+    '.mco-dim{color:var(--dim,#a29581)}',
     '.mco-spacer{flex:1}',
-    '.mco-chip{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid var(--border,#262c36);white-space:nowrap}',
-    '.mco-fresh{color:var(--dim,#8a93a2)}',
+    '.mco-chip{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid var(--border,#332a1b);white-space:nowrap}',
+    '.mco-fresh{color:var(--dim,#a29581)}',
     '.mco-stale{color:var(--warn,#d99a2b);border-color:rgba(217,154,43,.45)}',
-    '.mco-none{color:var(--faint,#5b6472)}',
-    '.mco-live{color:var(--pos,#2fb47c);border-color:rgba(47,180,124,.5);font-weight:700;letter-spacing:.08em}',
-    '.mco-closed{color:var(--faint,#5b6472)}',
-    '.mco-empty{color:var(--dim,#8a93a2);font-size:12.5px;padding:8px 0}',
-    '.mco-card{border:1px solid var(--border,#262c36);border-radius:10px;padding:12px;background:var(--surface,#13161c)}',
+    '.mco-none{color:var(--faint,#6f6553)}',
+    '.mco-live{color:var(--pos,#76bd3e);border-color:rgba(118,189,62,.5);font-weight:700;letter-spacing:.08em}',
+    '.mco-closed{color:var(--faint,#6f6553)}',
+    '.mco-empty{color:var(--dim,#a29581);font-size:12.5px;padding:8px 0}',
+    '.mco-card{border:1px solid var(--border,#332a1b);border-radius:10px;padding:12px;background:var(--surface,#191510)}',
     '.mco-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}',
     '.mco-gm{font-weight:600}',
-    '.mco-cons,.mco-sharp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0;border-top:1px solid var(--border,#262c36)}',
-    '.mco-note{color:var(--faint,#5b6472);font-size:11px;flex-basis:100%}',
-    '.mco-mkt{border-top:1px solid var(--border,#262c36);padding-top:8px;margin-top:8px}',
-    '.mco-mkt-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#8a93a2);margin-bottom:4px}',
+    '.mco-cons,.mco-sharp{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;padding:6px 0;border-top:1px solid var(--border,#332a1b)}',
+    '.mco-note{color:var(--faint,#6f6553);font-size:11px;flex-basis:100%}',
+    '.mco-mkt{border-top:1px solid var(--border,#332a1b);padding-top:8px;margin-top:8px}',
+    '.mco-mkt-t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim,#a29581);margin-bottom:4px}',
     '.mco-tbl{width:100%;border-collapse:collapse;font-size:12.5px}',
     '.mco-tbl td,.mco-tbl th{padding:3px 6px;text-align:left;vertical-align:top}',
-    '.mco-tbl th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim,#8a93a2)}',
+    '.mco-tbl th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim,#a29581)}',
     '.mco-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}',
     '.mco-sel{white-space:nowrap}',
     '.mco-books{display:flex;gap:5px;flex-wrap:wrap}',
-    '.mco-bk{font-size:11px;border:1px solid var(--border,#262c36);border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}',
-    '.mco-bk i{font-style:normal;color:var(--faint,#5b6472);margin-right:5px}',
-    '.mco-best{border-color:rgba(47,180,124,.6);color:var(--pos,#2fb47c)}',
+    '.mco-bk{font-size:11px;border:1px solid var(--border,#332a1b);border-radius:6px;padding:1px 5px;font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.mco-bk i{font-style:normal;color:var(--faint,#6f6553);margin-right:5px}',
+    '.mco-best{border-color:rgba(118,189,62,.6);color:var(--pos,#76bd3e)}',
     '.mco-sharpbk i{color:var(--gold,#e3b84d)}',
-    '.mco-alt{font-size:10.5px;color:var(--faint,#5b6472);align-self:center}',
-    '.mco-oc{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border,#262c36);margin-top:8px;padding-top:8px;font-size:12.5px}',
+    '.mco-alt{font-size:10.5px;color:var(--faint,#6f6553);align-self:center}',
+    '.mco-oc{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border,#332a1b);margin-top:8px;padding-top:8px;font-size:12.5px}',
     '.mco-oc span{display:flex;flex-direction:column;font-variant-numeric:tabular-nums}',
-    '.mco-oc i{font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint,#5b6472)}',
+    '.mco-oc i{font-style:normal;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint,#6f6553)}',
     '.mco-edge{font-variant-numeric:tabular-nums}',
-    '.mco-foot{margin-top:10px;font-size:10.5px;color:var(--faint,#5b6472)}',
-    '.mco-move td{border-top:1px solid var(--border,#262c36)}'
+    '.mco-foot{margin-top:10px;font-size:10.5px;color:var(--faint,#6f6553)}',
+    '.mco-move td{border-top:1px solid var(--border,#332a1b)}'
   ].join('');
 
   /* Injected once per root, so the same components work in the page and

@@ -1,0 +1,110 @@
+{
+  "snapshot_date": "2026-09-20",
+  "import_id": "mlbhist-2016-2026-20260920T134623Z",
+  "imported_at": "2026-09-20T13:47:13.315Z",
+  "coverage": {
+    "start": 2016,
+    "end": 2026
+  },
+  "provisional_seasons": [
+    2026
+  ],
+  "rating_version": "ED_PITCH_PERF_V1",
+  "dataset_built_at": "2026-09-20T13:46:21.173627+00:00",
+  "source": "MLB Stats API (statsapi.mlb.com/api/v1), regular season, sport 1, game type R",
+  "source_manifest_sha": "38880c48efb95ddbdb95d4e02fe21490",
+  "counts": {
+    "pitcher_seasons": 9092,
+    "pitcher_team_seasons": 10198,
+    "pitcher_overview": 2624,
+    "pitcher_team_history": 5669,
+    "observed_team_runs": 5957,
+    "league_seasons": 11,
+    "teams": 330,
+    "validation": 11,
+    "source_repairs": 26
+  },
+  "source_repairs": 26,
+  "validation": {
+    "package": "PASS: every player-season reconciled to independently fetched all-team MLB totals for 14 counting fields; unique keys; pagination; 30 teams/year; innings-to-outs; SQLite integrity",
+    "independent_summary": "14/14 checks passed",
+    "independent_ok": true,
+    "per_season": [
+      {
+        "season": 2016,
+        "pitchers": 742,
+        "pitcher_team_rows": 824,
+        "reconciled": true
+      },
+      {
+        "season": 2017,
+        "pitchers": 755,
+        "pitcher_team_rows": 839,
+        "reconciled": true
+      },
+      {
+        "season": 2018,
+        "pitchers": 799,
+        "pitcher_team_rows": 892,
+        "reconciled": true
+      },
+      {
+        "season": 2019,
+        "pitchers": 831,
+        "pitcher_team_rows": 929,
+        "reconciled": true
+      },
+      {
+        "season": 2020,
+        "pitchers": 735,
+        "pitcher_team_rows": 770,
+        "reconciled": true
+      },
+      {
+        "season": 2021,
+        "pitchers": 909,
+        "pitcher_team_rows": 1031,
+        "reconciled": true
+      },
+      {
+        "season": 2022,
+        "pitchers": 871,
+        "pitcher_team_rows": 971,
+        "reconciled": true
+      },
+      {
+        "season": 2023,
+        "pitchers": 863,
+        "pitcher_team_rows": 965,
+        "reconciled": true
+      },
+      {
+        "season": 2024,
+        "pitchers": 855,
+        "pitcher_team_rows": 976,
+        "reconciled": true
+      },
+      {
+        "season": 2025,
+        "pitchers": 873,
+        "pitcher_team_rows": 1015,
+        "reconciled": true
+      },
+      {
+        "season": 2026,
+        "pitchers": 859,
+        "pitcher_team_rows": 986,
+        "reconciled": true
+      }
+    ]
+  },
+  "transformations": [
+    "name_key",
+    "team_ids_array",
+    "booleans",
+    "blanks_are_null",
+    "rating_version_stamped",
+    "provisional_flag"
+  ],
+  "note": "A manifest of one promoted import, kept dated so a later evaluation can state what the archive held on this date rather than assuming it always held what it holds now. It is not a copy of the rows."
+}

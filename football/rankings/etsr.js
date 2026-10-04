@@ -1,0 +1,873 @@
+/* ============================================================================
+   THE EDGEDESK TEAM STRENGTH RATING (ETSR)
+
+   ONE NUMBER, IN POINTS AGAINST AN AVERAGE FBS TEAM, ON A NEUTRAL FIELD.
+
+       ETSR(A) − ETSR(B)  =  the neutral-field spread.
+
+   HOME FIELD IS NOT IN IT. Neither is travel, rest, weather, a specific
+   quarterback's absence or a scheme matchup. All of those are GAME facts, not
+   TEAM facts, and they are applied by the matchup layer on top of this number.
+   Baking home field into a team rating makes every rating wrong by the same
+   few points and then double-counts it at kickoff.
+
+   HOW THE NUMBER IS MADE
+
+       ETSR = (1 − wP) × PRIOR        + wP × PERFORMANCE
+              PRIOR   = c × last season's ETSR + (1 − c) × talent
+              wP      = g / (g + k),  g = FBS-equivalent games played
+
+   * `c` is the PORTAL-ERA CARRYOVER COEFFICIENT. The league slope is measured
+     every build by regressing each season's ratings on the previous season's —
+     the same arithmetic this repo already uses to answer the NIL argument with
+     data instead of an opinion. Each team then moves around that league number
+     on its OWN continuity: returning production VALUE, quarterback continuity,
+     line continuity, returning starters, transfer churn. A team returning 75%
+     of its production value carries more of last season than a team that
+     rebuilt through thirty-five transfers, and the arithmetic says by how much.
+   * `k` is FITTED, not chosen: the ramp constant that minimises out-of-sample
+     margin error on a tune window. Until that fit has been run the rating says
+     `scalars_measured: false` and uses a declared fallback.
+   * Both points-per-z scalars are fitted the same way and carry the same flag.
+
+   TALENT AND PERFORMANCE NEVER COLLAPSE INTO EACH OTHER. They are published
+   separately, ranked separately, and the gap between them is one of the more
+   useful things on the board: an elite roster that has not yet played like one
+   is a real and visible state, not a rounding error.
+
+   Runs in the browser (window.EDRankETSR) and in node.
+   ========================================================================== */
+(function (root, factory) {
+  var req = (typeof require === 'function' && typeof module === 'object' && module.exports);
+  var cfg = req ? require('./config.js') : root.EDRankConfig;
+  var talent = req ? require('./talent.js') : root.EDRankTalent;
+  var api = factory(cfg, talent);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDRankETSR = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (CFG, TAL) {
+  'use strict';
+
+  var SCHEMA = 'edgedesk_team_strength_rating_v1';
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function num(v) { if (v == null || v === '') return null; var n = +v; return isFinite(n) ? n : null; }
+  function clamp(x, lo, hi) { return x < lo ? lo : (x > hi ? hi : x); }
+  function mean(a) { return a.length ? a.reduce(function (x, y) { return x + y; }, 0) / a.length : null; }
+  function r1(v) { return isNum(v) ? Math.round(v * 10) / 10 : null; }
+  function r2(v) { return isNum(v) ? Math.round(v * 100) / 100 : null; }
+  function r3(v) { return isNum(v) ? Math.round(v * 1000) / 1000 : null; }
+  function get(obj, path) {
+    var parts = String(path).split('.'), cur = obj, i;
+    for (i = 0; i < parts.length; i++) { if (cur == null) return null; cur = cur[parts[i]]; }
+    return cur;
+  }
+
+  /* ---------------------------------------------------------------------
+     CARRYOVER
+     --------------------------------------------------------------------- */
+  function carryover(continuityValue, leagueSlope) {
+    var C = CFG.CARRYOVER;
+    if (!isNum(leagueSlope)) {
+      return { coefficient: null, available: false,
+        reason: 'the league carryover slope could not be measured this build (too few teams with a rating in both seasons), so no prior-season carry is applied and the rating rests on talent' };
+    }
+    if (!isNum(continuityValue)) {
+      return { coefficient: clamp(leagueSlope, C.min_coef, C.max_coef), available: true,
+        league_slope: r3(leagueSlope), team_continuity: null, applied_span: 0,
+        basis: 'this team’s own continuity could not be measured, so it carries exactly the league slope and nothing more specific is claimed' };
+    }
+    var centred = 2 * clamp(continuityValue, 0, 1) - 1;          /* -1 .. +1 */
+    var coef = clamp(leagueSlope * (1 + C.span * centred), C.min_coef, C.max_coef);
+    return { coefficient: coef, available: true, league_slope: r3(leagueSlope),
+      team_continuity: r3(continuityValue), applied_span: r3(C.span * centred),
+      basis: 'the MEASURED league slope, moved by up to ' + Math.round(C.span * 100) + '% on this team’s own continuity, then clamped to [' + C.min_coef + ', ' + C.max_coef + ']: ' + C.clamp_basis };
+  }
+
+  /* ---------------------------------------------------------------------
+     COACHING / PROGRAM ADJUSTMENT
+
+     The score itself is already reliability-shrunk toward 50. The promotion
+     formula deliberately multiplies by reliability again: weak evidence gets
+     both a conservative score and a conservative point translation.
+
+     enabled computes the candidate so validation can inspect it.
+     affectsETSR is the separate promotion switch that may actually apply it.
+     --------------------------------------------------------------------- */
+  function coachingProgramAdjustment(ctx, config) {
+    var C = config || CFG.coachingProgram || {};
+    var cp = ctx && ctx.coaching_program;
+    var rating = num(cp && cp.rating);
+    var reliability = num(cp && cp.reliability);
+    var maxPts = num(C.maxPointAdjustment);
+    var out = {
+      enabled: C.enabled === true,
+      affects_etsr: C.enabled === true && C.affectsETSR === true,
+      rating: isNum(rating) ? r1(rating) : null,
+      reliability: isNum(reliability) ? r3(clamp(reliability, 0, 1)) : null,
+      max_point_adjustment: isNum(maxPts) ? r2(maxPts) : null,
+      candidate_points: null,
+      applied_points: 0,
+      weighted_etsr_points_before_recentering: 0,
+      apply_to: C.applyTo || 'prior',
+      formula: C.formula || null,
+      basis: C.basis || null,
+      reason: null
+    };
+    if (!out.enabled) {
+      out.reason = 'coachingProgram.enabled is false';
+      return out;
+    }
+    if (!(isNum(maxPts) && maxPts >= 0)) {
+      out.reason = 'coachingProgram.maxPointAdjustment is missing or invalid';
+      return out;
+    }
+    if (!isNum(rating) || !isNum(reliability)) {
+      out.reason = 'no measured coaching/program rating and reliability are available';
+      return out;
+    }
+    var rel = clamp(reliability, 0, 1);
+    var candidate = clamp(((rating - 50) / 50) * maxPts * rel, -maxPts, maxPts);
+    out.candidate_points = r3(candidate);
+    if (out.affects_etsr) out.applied_points = r3(candidate);
+    else out.reason = 'measured and ranked, but coachingProgram.affectsETSR is false pending walk-forward validation';
+    return out;
+  }
+
+  /* ---------------------------------------------------------------------
+     RUN DEFENCE POWER
+     --------------------------------------------------------------------- */
+  function runDefencePower(talentTeam, perfTeam) {
+    var R = CFG.RUN_DEFENCE_POWER, parts = [], missing = [], ws = 0, ss = 0;
+    function push(id, v01, why) {
+      var def = null, i;
+      for (i = 0; i < R.components.length; i++) if (R.components[i].id === id) def = R.components[i];
+      if (!def) return;
+      if (!isNum(v01)) { missing.push({ id: id, why: why || (id + ' is not observable for this team'), w: def.w }); return; }
+      parts.push({ id: id, value: r3(v01), weight: def.w, basis: def.basis });
+      ss += clamp(v01, 0, 1) * def.w; ws += def.w;
+    }
+    function fromRating(r) { return isNum(r) ? clamp((r - 20) / 60, 0, 1) : null; }
+    function fromZ(z, invert) { return isNum(z) ? clamp(0.5 + (invert ? -z : z) / 4, 0, 1) : null; }
+
+    var u = talentTeam ? talentTeam.units : null;
+    var hasEdge = !!(u && u.EDGE && u.EDGE.available);
+    var hasDl = !!(u && u.DL && u.DL.available);
+    /* A ROSTER THAT SPELLS ITS ENDS "DL" HAS NOT LOST ITS EDGE RUSHERS.
+       123 of 138 FBS programmes do exactly that. Counting edge_unit as absent
+       for them would drop the contract below its own completeness bar on a
+       naming convention alone — so where DL covers it, edge_unit's weight is
+       FOLDED INTO dl_unit rather than declared missing, and the record says so. */
+    var edgeW = 0;
+    for (var ci = 0; ci < R.components.length; ci++) if (R.components[ci].id === 'edge_unit') edgeW = R.components[ci].w;
+    if (!hasEdge && hasDl) {
+      var v = fromRating(u.DL.rating);
+      if (isNum(v)) {
+        parts.push({ id: 'dl_unit', value: r3(v), weight: R.components[0].w + edgeW,
+          basis: 'defensive-line unit rating, carrying the edge weight too because this roster spells its ends DL — a naming convention, not a missing unit',
+          absorbed: 'edge_unit' });
+        ss += clamp(v, 0, 1) * (R.components[0].w + edgeW); ws += R.components[0].w + edgeW;
+      } else missing.push({ id: 'dl_unit', why: 'no defensive-line rating for this roster', w: R.components[0].w + edgeW });
+    } else {
+      push('dl_unit', fromRating(hasDl ? u.DL.rating : null));
+      push('edge_unit', fromRating(hasEdge ? u.EDGE.rating : null),
+        'this roster spells neither EDGE nor DL, so the front has no rating at all');
+    }
+    push('lb_unit', fromRating(u && u.LB && u.LB.available ? u.LB.rating : null));
+
+    var ret = talentTeam && talentTeam.returning ? null : null;
+    var frontRet = null;
+    if (talentTeam && talentTeam._front_returning != null) frontRet = talentTeam._front_returning;
+    push('front_returning_value', frontRet,
+      'no prior-season player ratings for this front, so returning VALUE cannot be computed');
+
+    var rd = perfTeam && perfTeam.sub_units ? perfTeam.sub_units.run_defense : null;
+    function metricZ(id) {
+      if (!rd || !rd.used) return null;
+      for (var i = 0; i < rd.used.length; i++) if (rd.used[i].id === id) return rd.used[i].z;
+      return null;
+    }
+    push('rush_success_allowed', fromZ(metricZ('rd_success')));
+    push('stuff_rate', fromZ(metricZ('rd_stuffed')));
+    push('explosive_rush_allowed', fromZ(metricZ('rd_explosive')));
+    push('yards_per_rush_allowed', fromZ(metricZ('rd_ypc')));
+
+    var totalW = 0, i2;
+    for (i2 = 0; i2 < R.components.length; i2++) totalW += R.components[i2].w;
+    var completeness = totalW > 0 ? ws / totalW : 0;
+    if (completeness < R.min_completeness) {
+      return { score: null, available: false, band: 'UNKNOWN',
+        completeness: r2(completeness), components: parts, missing: missing,
+        reason: 'only ' + Math.round(completeness * 100) + '% of the run-defence contract arrived, below the '
+          + Math.round(R.min_completeness * 100) + '% it needs. A gate that always answers is a gate that is sometimes lying.',
+        unobservable: R.unobservable, qb_rush_defence: R.qb_rush_defence };
+    }
+    var score = (ss / ws) * 100;
+    var band = 'FRAGILE';
+    for (i2 = 0; i2 < R.bands.length; i2++) if (score >= R.bands[i2].min) { band = R.bands[i2].label; break; }
+    return { score: r1(score), available: true, band: band, completeness: r2(completeness),
+      components: parts, missing: missing, unobservable: R.unobservable,
+      qb_rush_defence: R.qb_rush_defence,
+      basis: 'a 0-100 run-defence power score over the components that arrived, renormalised over their weights. It feeds the game-level Run Defence Gate; it is not itself a spread adjustment.' };
+  }
+
+  /* ---------------------------------------------------------------------
+     DATA-QUALITY GATES  —  they cost CONFIDENCE, never points
+     --------------------------------------------------------------------- */
+  function gates(ctx) {
+    var T = CFG.GATE_THRESHOLDS, out = [];
+    function fire(id, detail) {
+      var g = CFG.gate(id);
+      if (!g) return;
+      out.push({ id: id, severity: g.severity, confidence_cost: g.confidence_cost,
+        duplicates_component: g.duplicates_component || null, basis: g.basis, detail: detail });
+    }
+    var s = ctx.sample || {};
+    if (!(s.fbs_equivalent_games >= T.low_sample_games)) {
+      fire('LOW_SAMPLE_SIZE', (s.fbs_equivalent_games == null ? 'no' : s.fbs_equivalent_games) + ' FBS-equivalent games played');
+    }
+    var qb = ctx.talent && ctx.talent.units && ctx.talent.units.QB;
+    if (!qb || !qb.available) fire('QB_UNKNOWN', 'the quarterback room produced no rateable player');
+    else if (qb.confidence < T.qb_confidence_floor) fire('QB_UNKNOWN', 'quarterback-room confidence ' + Math.round(qb.confidence * 100) + '%');
+    if (ctx.talent && isNum(ctx.talent.availability.unknown_share) && ctx.talent.availability.unknown_share >= T.injury_unknown_share) {
+      fire('INJURY_UNCERTAINTY', Math.round(ctx.talent.availability.unknown_share * 100) + '% of projected starter value has no availability record');
+    }
+    var vc = ctx.talent && ctx.talent.returning ? ctx.talent.returning.value_continuity : null;
+    if (isNum(vc) && (1 - vc) > T.transfer_turnover_share) {
+      fire('EXTREME_TRANSFER_TURNOVER', Math.round((1 - vc) * 100) + '% of last season’s production value is gone');
+    }
+    if (isNum(s.offensive_plays) && s.offensive_plays < T.thin_side_plays) fire('THIN_OFFENSIVE_DATA', s.offensive_plays + ' offensive plays observed');
+    if (isNum(s.defensive_plays) && s.defensive_plays < T.thin_side_plays) fire('THIN_DEFENSIVE_DATA', s.defensive_plays + ' defensive plays faced');
+    if (isNum(s.non_fbs_share) && s.non_fbs_share >= T.fcs_share) {
+      fire('FCS_DOMINATED_SAMPLE', Math.round(s.non_fbs_share * 100) + '% of games were against a pooled non-FBS opponent');
+    }
+    if (ctx.scheme_confidence != null && ctx.scheme_confidence < T.scheme_confidence_floor) {
+      fire('SCHEME_DATA_LOW_CONFIDENCE', 'tendency profile confidence ' + Math.round(ctx.scheme_confidence * 100) + '%');
+    }
+    if (!isNum(ctx.prev_etsr)) fire('PRIOR_SEASON_MISSING', 'no prior-season rating on file, so the prior term rests on talent alone');
+    return out;
+  }
+
+  function confidence(ctx, firedGates, wPerf) {
+    var C = CFG.CONFIDENCE, s = ctx.sample || {}, parts = {};
+    parts.player_data = clamp(num(ctx.talent && ctx.talent.player_confidence) || 0, 0, 1);
+    var g = num(s.fbs_equivalent_games) || 0;
+    parts.game_sample = g / (g + C.game_sample_k);
+    var opp = num(s.distinct_opponents) || 0;
+    parts.opponent_sample = opp / (opp + 3);
+    var qb = ctx.talent && ctx.talent.units && ctx.talent.units.QB;
+    parts.starter_certainty = clamp(((qb && qb.available ? qb.confidence : 0) + (num(ctx.talent && ctx.talent.player_confidence) || 0)) / 2, 0, 1);
+    var unk = num(ctx.talent && ctx.talent.availability.unknown_share);
+    parts.availability = isNum(unk) ? clamp(1 - unk, 0, 1) : 0;
+    parts.scheme_data = clamp(num(ctx.scheme_confidence) || 0, 0, 1);
+    parts.returning_production = (ctx.talent && ctx.talent.returning && isNum(ctx.talent.returning.value_continuity)) ? 0.9 : 0.25;
+
+    /* each block normalised internally, then mixed in the SAME proportion the
+       rating itself mixes prior and performance */
+    function block(spec) {
+      var s2 = 0, w2 = 0, k;
+      for (k in spec) {
+        if (!Object.prototype.hasOwnProperty.call(spec, k)) continue;
+        s2 += (parts[k] || 0) * spec[k]; w2 += spec[k];
+      }
+      return w2 > 0 ? s2 / w2 : 0;
+    }
+    var wp = clamp(isNum(wPerf) ? wPerf : 0, 0, 1);
+    var priorBlock = block(C.prior_side);
+    var perfBlock = block(C.performance_side);
+    var alwaysW = 0, alwaysS = 0, k3;
+    for (k3 in C.always) {
+      if (!Object.prototype.hasOwnProperty.call(C.always, k3)) continue;
+      alwaysS += (parts[k3] || 0) * C.always[k3]; alwaysW += C.always[k3];
+    }
+    var mixed = (1 - wp) * priorBlock + wp * perfBlock;
+    var base = mixed * (1 - alwaysW) + alwaysS;
+
+    var cost = 0;
+    for (var i = 0; i < firedGates.length; i++) cost += firedGates[i].confidence_cost;
+    /* a non-FBS-heavy sample is additionally proportional, not just a flag, and
+       only matters to the extent the rating leans on those games at all */
+    if (isNum(s.non_fbs_share)) cost += s.non_fbs_share * CFG.NON_FBS.confidence_penalty_per_share * 0.5 * wp;
+    return { value: r3(clamp(base - cost, 0.05, 0.99)), before_gates: r3(base),
+      gate_cost: r3(cost),
+      mix: { performance_weight: r3(wp), prior_block: r3(priorBlock), performance_block: r3(perfBlock),
+        always_block: r3(alwaysW > 0 ? alwaysS / alwaysW : 0), basis: C.split_basis },
+      parts: {
+        player_data: r3(parts.player_data), game_sample: r3(parts.game_sample),
+        opponent_sample: r3(parts.opponent_sample), starter_certainty: r3(parts.starter_certainty),
+        availability: r3(parts.availability), scheme_data: r3(parts.scheme_data),
+        returning_production: r3(parts.returning_production) },
+      basis: C.basis };
+  }
+
+  /* ---------------------------------------------------------------------
+     ONE TEAM
+     --------------------------------------------------------------------- */
+  function rateTeam(key, ctx, params) {
+    params = params || {};
+    var cal = params.calibration || {};
+    var talentPts = cal.talent_points_per_z, perfPts = cal.performance_points_per_z, rampK = cal.prior_ramp_k;
+    var measured = !!(cal.measured === true);
+    var tp = isNum(num(talentPts && talentPts.value)) ? num(talentPts.value) : CFG.ETSR.fallback_talent_points_per_z;
+    var pp = isNum(num(perfPts && perfPts.value)) ? num(perfPts.value) : CFG.ETSR.fallback_performance_points_per_z;
+    var kk = isNum(num(rampK && rampK.value)) ? num(rampK.value) : CFG.PRIORS.fallback_ramp_k;
+
+    var t = ctx.talent, p = ctx.performance;
+    var talentZ = (t && isNum(t.rating)) ? (t.rating - CFG.TALENT.scale.center) / CFG.TALENT.scale.sd : null;
+    var talentPoints = isNum(talentZ) ? talentZ * tp : null;
+    var perfZ = p && isNum(p.net_z) ? p.net_z : null;
+    var perfPoints = isNum(perfZ) ? perfZ * pp : null;
+
+    var cont = ctx.continuity;
+    var carry = carryover(cont ? cont.value : null, ctx.league_slope);
+    var cEff = carry.coefficient;
+    if (isNum(cEff)) cEff = Math.min(cEff, 1 - CFG.PRIORS.talent_floor_weight);
+
+    var prevEtsr = num(ctx.prev_etsr);
+    var priorPoints, priorParts;
+    if (isNum(prevEtsr) && isNum(cEff) && isNum(talentPoints)) {
+      priorPoints = cEff * prevEtsr + (1 - cEff) * talentPoints;
+      priorParts = { carried_from_last_season: r2(cEff * prevEtsr), from_talent: r2((1 - cEff) * talentPoints),
+        coefficient: r3(cEff), prev_etsr: r2(prevEtsr) };
+    } else if (isNum(talentPoints)) {
+      priorPoints = talentPoints;
+      priorParts = { carried_from_last_season: 0, from_talent: r2(talentPoints), coefficient: 0,
+        prev_etsr: isNum(prevEtsr) ? r2(prevEtsr) : null,
+        note: isNum(prevEtsr) ? 'no carryover coefficient could be formed, so the prior is talent alone'
+          : 'no prior-season rating exists for this team, so the prior is talent alone' };
+    } else {
+      priorPoints = null;
+      priorParts = { note: 'neither a prior-season rating nor a talent rating is available — no prior term can be formed' };
+    }
+
+    var cpAdjustment = coachingProgramAdjustment(ctx, CFG.coachingProgram);
+    var priorBeforeCoaching = priorPoints;
+    if (isNum(priorPoints) && isNum(cpAdjustment.applied_points) && cpAdjustment.applied_points !== 0) {
+      priorPoints += cpAdjustment.applied_points;
+    } else if (!isNum(priorPoints) && cpAdjustment.applied_points !== 0) {
+      cpAdjustment.applied_points = 0;
+      cpAdjustment.reason = 'a coaching/program candidate exists, but no PRIOR term exists for this team, so nothing is applied';
+    }
+    priorParts.before_coaching_program = r2(priorBeforeCoaching);
+    priorParts.coaching_program_adjustment = r2(cpAdjustment.applied_points);
+    priorParts.after_coaching_program = r2(priorPoints);
+
+    var gp = num(ctx.sample && ctx.sample.fbs_equivalent_games) || 0;
+    var wPerf = isNum(perfPoints) ? gp / (gp + kk) : 0;
+    if (!(gp >= CFG.PRIORS.min_games_for_performance)) wPerf = 0;
+    cpAdjustment.weighted_etsr_points_before_recentering = r3(
+      isNum(priorBeforeCoaching) ? (1 - wPerf) * cpAdjustment.applied_points : 0
+    );
+
+    var etsrRaw = null;
+    if (isNum(priorPoints) && isNum(perfPoints)) etsrRaw = (1 - wPerf) * priorPoints + wPerf * perfPoints;
+    else if (isNum(priorPoints)) etsrRaw = priorPoints;
+    else if (isNum(perfPoints)) etsrRaw = perfPoints;
+
+    var fired = gates(ctx);
+    var conf = confidence(ctx, fired, wPerf);
+
+    return {
+      key: key,
+      etsr_raw: r2(etsrRaw), etsr: null,            /* filled after the league re-centre */
+      available: isNum(etsrRaw),
+      weights: { performance: r3(wPerf), prior: r3(1 - wPerf), ramp_k: kk,
+        ramp_basis: CFG.PRIORS.ramp_basis, games_used: r2(gp),
+        talent_floor: CFG.PRIORS.talent_floor_weight, talent_floor_basis: CFG.PRIORS.talent_floor_basis },
+      prior: { points: r2(priorPoints), parts: priorParts, carryover: carry },
+      coaching_program_adjustment: cpAdjustment,
+      performance_points: r2(perfPoints), talent_points: r2(talentPoints),
+      scalars: { talent_points_per_z: tp, performance_points_per_z: pp, measured: measured,
+        basis: CFG.ETSR.scalar_basis },
+      confidence: conf, gates: fired,
+      home_field: CFG.ETSR.home_field
+    };
+  }
+
+  /* ---------------------------------------------------------------------
+     THE LEAGUE
+     --------------------------------------------------------------------- */
+  function build(input) {
+    var keys = input.keys, i, k;
+    var rows = {}, raws = [];
+    for (i = 0; i < keys.length; i++) {
+      k = keys[i];
+      var ctx = input.context[k];
+      rows[k] = rateTeam(k, ctx, input.params);
+      if (rows[k].available) raws.push(rows[k].etsr_raw);
+    }
+    /* RE-CENTRE so the average FBS team is exactly 0.0 — the convention that
+       makes "+17.2" mean something. */
+    var centre = raws.length ? mean(raws) : 0;
+    for (i = 0; i < keys.length; i++) {
+      k = keys[i];
+      if (!rows[k].available) continue;
+      rows[k].etsr = r2(rows[k].etsr_raw - centre);
+      rows[k].centre_applied = r2(-centre);
+    }
+    return { rows: rows, centre: r2(centre), centre_basis: CFG.ETSR.centre_basis };
+  }
+
+  /* ---------------------------------------------------------------------
+     RANKS
+     A team below the confidence floor keeps its RATING and loses its RANK.
+     --------------------------------------------------------------------- */
+  function rank(teams, category) {
+    var list = [], k;
+    for (k in teams) {
+      if (!Object.prototype.hasOwnProperty.call(teams, k)) continue;
+      var v = get(teams[k], category.field);
+      var confPath = category.confidence_field || null;
+      var conf = confPath ? num(get(teams[k], confPath))
+        : num(teams[k].confidence && teams[k].confidence.value);
+      if (!isNum(num(v))) continue;
+      list.push({ key: k, value: num(v), confidence: conf == null ? 0 : conf });
+    }
+    list.sort(function (a, b) {
+      if (b.value !== a.value) return category.dir === -1 ? b.value - a.value : a.value - b.value;
+      return a.key < b.key ? -1 : 1;
+    });
+    var out = {}, rankNo = 0;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].confidence < CFG.RANK_MIN_CONFIDENCE) {
+        out[list[i].key] = { rank: null, value: r2(list[i].value), unranked: true,
+          reason: (category.confidence_label || 'confidence') + ' ' + Math.round(list[i].confidence * 100) + '% is below the '
+            + Math.round(CFG.RANK_MIN_CONFIDENCE * 100) + '% floor. ' + CFG.RANK_MIN_CONFIDENCE_BASIS };
+        continue;
+      }
+      rankNo++;
+      out[list[i].key] = { rank: rankNo, value: r2(list[i].value), unranked: false };
+    }
+    return { ranks: out, ranked: rankNo, listed: list.length, category: category.id };
+  }
+
+  function rankAll(teams) {
+    var out = {}, i;
+    for (i = 0; i < CFG.RANKINGS.length; i++) {
+      var c = CFG.RANKINGS[i];
+      out[c.id] = rank(teams, c);
+    }
+    return out;
+  }
+
+  /* ---------------------------------------------------------------------
+     MOVEMENT — differenced, never narrated by a model
+     --------------------------------------------------------------------- */
+  function movement(now, prev, prevMeta) {
+    if (!prev) {
+      return { available: false,
+        reason: 'no earlier snapshot for this team, so nothing can be differenced. This is the first week it was rated.' };
+    }
+    var drivers = [], k;
+    var pairs = [
+      ['talent', 'talent.rating', 'talent'],
+      ['performance', 'performance.rating', 'performance'],
+      ['offense', 'performance.offense', 'offense'],
+      ['defense', 'performance.defense', 'defense'],
+      ['special_teams', 'performance.special_teams', 'special teams'],
+      ['run_offense', 'performance.run_offense', 'run offense'],
+      ['pass_offense', 'performance.pass_offense', 'pass offense'],
+      ['run_defense', 'run_defence_power.score', 'run defense'],
+      ['pass_defense', 'performance.pass_defense', 'pass defense'],
+      ['availability', 'availability.rating', 'availability'],
+      ['prior_weight', 'weights.performance', 'weight on this season'],
+      ['opponent_adjustment', 'performance.opponent_delta', 'opponent adjustment']
+    ];
+    for (var i = 0; i < pairs.length; i++) {
+      var a = num(get(now, pairs[i][1])), b = num(get(prev, pairs[i][1]));
+      if (!isNum(a) || !isNum(b)) continue;
+      var d = a - b;
+      if (Math.abs(d) < CFG.MOVEMENT.min_reportable_points) continue;
+      drivers.push({ id: pairs[i][0], label: pairs[i][2], from: r2(b), to: r2(a), delta: r2(d) });
+    }
+    drivers.sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
+    var cpMove = null;
+    var cpNow = num(get(now, 'coaching_program_rating'));
+    var cpPrev = num(get(prev, 'coaching_program.rating'));
+    if (isNum(cpNow) || isNum(cpPrev)) {
+      var cpInputsNow = now.coaching_program_inputs || {};
+      var cpInputsPrev = (prev.coaching_program && prev.coaching_program.inputs) || {};
+      var cpIds = {}, cpSub = {}, cpId;
+      for (cpId in cpInputsNow) if (Object.prototype.hasOwnProperty.call(cpInputsNow, cpId)) cpIds[cpId] = 1;
+      for (cpId in cpInputsPrev) if (Object.prototype.hasOwnProperty.call(cpInputsPrev, cpId)) cpIds[cpId] = 1;
+      var cpLabels = {
+        talent_conversion: 'talent conversion',
+        multi_season_program_overperformance: 'multi-season overperformance',
+        roster_management_retention: 'roster management / retention',
+        staff_continuity_stability: 'staff continuity / stability',
+        development: 'development',
+        game_management: 'game management'
+      };
+      for (cpId in cpIds) {
+        var na = cpInputsNow[cpId] || {}, pb = cpInputsPrev[cpId] || {};
+        var nv2 = num(na.value), pv2 = num(pb.value);
+        var nr2 = num(na.reliability), pr2 = num(pb.reliability);
+        cpSub[cpId] = {
+          label: cpLabels[cpId] || cpId.replace(/_/g, ' '),
+          value: { from: r2(pv2), to: r2(nv2),
+            delta: (isNum(nv2) && isNum(pv2)) ? r2(nv2 - pv2) : null },
+          reliability: { from: r2(pr2), to: r2(nr2),
+            delta: (isNum(nr2) && isNum(pr2)) ? r2(nr2 - pr2) : null }
+        };
+      }
+      var cpRawNow = num(get(now, 'coaching_program_raw_score'));
+      var cpRawPrev = num(get(prev, 'coaching_program.raw_score'));
+      var cpRelNow = num(get(now, 'coaching_program_reliability'));
+      var cpRelPrev = num(get(prev, 'coaching_program.reliability'));
+      cpMove = {
+        available: isNum(cpNow) && isNum(cpPrev),
+        reason: (isNum(cpNow) && isNum(cpPrev)) ? null
+          : 'both snapshots need a coaching/program score before its movement can be differenced',
+        rating: { from: r2(cpPrev), to: r2(cpNow),
+          delta: (isNum(cpNow) && isNum(cpPrev)) ? r2(cpNow - cpPrev) : null },
+        raw_score: { from: r2(cpRawPrev), to: r2(cpRawNow),
+          delta: (isNum(cpRawNow) && isNum(cpRawPrev)) ? r2(cpRawNow - cpRawPrev) : null },
+        reliability: { from: r2(cpRelPrev), to: r2(cpRelNow),
+          delta: (isNum(cpRelNow) && isNum(cpRelPrev)) ? r2(cpRelNow - cpRelPrev) : null },
+        inputs: cpSub
+      };
+      if (isNum(cpNow) && isNum(cpPrev)) {
+        var cpd = cpNow - cpPrev;
+        if (Math.abs(cpd) >= CFG.MOVEMENT.min_reportable_points) {
+          drivers.push({ id: 'coaching_program', label: 'coaching / program', from: r2(cpPrev), to: r2(cpNow), delta: r2(cpd) });
+          drivers.sort(function (x, y) { return Math.abs(y.delta) - Math.abs(x.delta); });
+        }
+      }
+    }
+    var etsrNow = num(get(now, 'etsr')), etsrPrev = num(get(prev, 'etsr'));
+    var rankNow = num(get(now, 'rank')), rankPrev = num(get(prev, 'rank'));
+    /* per-category movement, so every column on the board can show a Δ week
+       rather than only the overall one */
+    var cats = {}, ci;
+    for (ci = 0; ci < CFG.RANKINGS.length; ci++) {
+      var cat = CFG.RANKINGS[ci].id;
+      var nowR = now.ranks && now.ranks[cat];
+      var prevR = (prev.cat && prev.cat[cat]) ? { value: prev.cat[cat][0], rank: prev.cat[cat][1] }
+        : (prev.ranks && prev.ranks[cat]) || null;
+      if (!nowR || !prevR) continue;
+      var nv = num(nowR.value), pv = num(prevR.value);
+      var nr = num(nowR.rank), pr = num(prevR.rank);
+      if (!isNum(nv) && !isNum(nr)) continue;
+      cats[cat] = {
+        value: { from: r2(pv), to: r2(nv), delta: (isNum(nv) && isNum(pv)) ? r2(nv - pv) : null },
+        rank: { from: pr, to: nr, delta: (isNum(nr) && isNum(pr)) ? (pr - nr) : null }
+      };
+    }
+    return {
+      available: true,
+      /* WHICH week this is a delta against. A Δ over a two-week gap must not
+         be read as a Δ over one, so the comparison week ships with it. */
+      compared_against: prevMeta ? {
+        season: prevMeta.season, week_ordinal: prevMeta.week_ordinal,
+        week_label: prevMeta.week_label || null,
+        weeks_between: (prevMeta.current_ordinal != null && prevMeta.week_ordinal != null
+          && prevMeta.season === prevMeta.current_season)
+          ? (prevMeta.current_ordinal - prevMeta.week_ordinal) : null
+      } : null,
+      etsr: { from: r2(etsrPrev), to: r2(etsrNow),
+        delta: (isNum(etsrNow) && isNum(etsrPrev)) ? r2(etsrNow - etsrPrev) : null },
+      rank: { from: rankPrev, to: rankNow,
+        delta: (isNum(rankNow) && isNum(rankPrev)) ? (rankPrev - rankNow) : null },
+      categories: cats,
+      coaching_program: cpMove,
+      drivers: drivers,
+      basis: CFG.MOVEMENT.basis + ' ' + CFG.HISTORY.delta_basis
+    };
+  }
+
+  /* ---------------------------------------------------------------------
+     "WHY #1?"  —  built from ranked components, not from prose
+     --------------------------------------------------------------------- */
+  function why(teamKey, teams, ranks, opts) {
+    opts = opts || {};
+    var strengths = [], weaknesses = [], i;
+    var total = opts.team_count || Object.keys(teams).length;
+    for (i = 0; i < CFG.RANKINGS.length; i++) {
+      var c = CFG.RANKINGS[i];
+      if (c.id === 'overall') continue;
+      var r = ranks[c.id] && ranks[c.id].ranks[teamKey];
+      if (!r || r.unranked || !isNum(r.rank)) continue;
+      var row = { id: c.id, label: c.label, rank: r.rank, value: r.value, of: ranks[c.id].ranked };
+      if (r.rank <= Math.max(10, Math.round(total * 0.08))) strengths.push(row);
+      else if (r.rank >= Math.round(total * 0.55)) weaknesses.push(row);
+    }
+    strengths.sort(function (a, b) { return a.rank - b.rank; });
+    weaknesses.sort(function (a, b) { return b.rank - a.rank; });
+    var t = teams[teamKey];
+    var extra = [];
+    if (t && t.talent && t.talent.returning && isNum(t.talent.returning.value_continuity)) {
+      extra.push({ id: 'returning_value', label: 'returning production value',
+        text: Math.round(t.talent.returning.value_continuity * 100) + '% of last season’s production value is still on the roster' });
+    }
+    if (t && t.run_defence_power && t.run_defence_power.available) {
+      extra.push({ id: 'run_defence', label: 'run defence power',
+        text: 'run defence grades ' + t.run_defence_power.band + ' at ' + t.run_defence_power.score + '/100' });
+    }
+    return {
+      strengths: strengths.slice(0, 6), weaknesses: weaknesses.slice(0, 4), notes: extra,
+      basis: 'assembled from this team’s own component RANKS. Nothing here is written, chosen or ordered by a language model — the components are ranked, the top ones are the strengths and the bottom ones are the weaknesses.'
+    };
+  }
+
+  /* ---------------------------------------------------------------------
+     OVER / UNDERACHIEVEMENT, and the market column
+     --------------------------------------------------------------------- */
+  function achievement(teamKey, ranks) {
+    var t = ranks.talent && ranks.talent.ranks[teamKey];
+    var p = ranks.performance && ranks.performance.ranks[teamKey];
+    if (!t || !p || t.unranked || p.unranked || !isNum(t.rank) || !isNum(p.rank)) {
+      return { state: 'UNKNOWN', gap: null,
+        reason: 'a talent rank and a performance rank are both needed, and at least one is unranked' };
+    }
+    var gap = t.rank - p.rank;                     /* + = playing better than the roster says */
+    var th = CFG.ACHIEVEMENT.threshold_ranks;
+    var state = gap >= th ? 'OVERPERFORMING TALENT' : (gap <= -th ? 'UNDERPERFORMING TALENT' : 'IN LINE');
+    return { state: state, gap: gap, talent_rank: t.rank, performance_rank: p.rank,
+      basis: CFG.ACHIEVEMENT.basis };
+  }
+
+  function marketCompare(etsr, marketImplied) {
+    if (!isNum(num(marketImplied))) {
+      return { available: false, reason: 'no market-implied power number for this team — the closing-line archive did not reach enough of its games' };
+    }
+    var diff = num(etsr) - num(marketImplied);
+    var label = 'IN LINE';
+    for (var i = 0; i < CFG.MARKET.labels.length; i++) {
+      if (Math.abs(diff) >= CFG.MARKET.labels[i].min) { label = CFG.MARKET.labels[i].label; break; }
+    }
+    return { available: true, etsr: r2(num(etsr)), market_implied: r2(num(marketImplied)),
+      difference: r2(diff), label: label, is_input: false,
+      basis: CFG.MARKET.basis, never_call_it: CFG.MARKET.never_call_it };
+  }
+
+  /* ---------------------------------------------------------------------
+     STABILITY AND ANOMALIES  —  these FAIL a build
+     --------------------------------------------------------------------- */
+  /* the ranked pool of a board: `rank` is null for every team below the
+     confidence floor, so this is the LENGTH of the list the ranks index into */
+  function rankedPool(board) {
+    var c = 0, key;
+    for (key in board) {
+      if (!Object.prototype.hasOwnProperty.call(board, key)) continue;
+      if (isNum(board[key].rank)) c++;
+    }
+    return c;
+  }
+
+  /* positions 1..n over `keys`, in the order `board` ranks them */
+  function densePositions(keys, board) {
+    var sorted = keys.slice().sort(function (x, y) { return board[x].rank - board[y].rank; });
+    var pos = {}, i;
+    for (i = 0; i < sorted.length; i++) pos[sorted[i]] = i + 1;
+    return pos;
+  }
+
+  function stability(nowTeams, prevTeams, opts) {
+    if (!prevTeams) return { available: false, reason: 'no earlier snapshot to compare against' };
+
+    /* TWO BOARDS' RANK INTEGERS ARE NOT ON THE SAME SCALE, and subtracting
+       them pretends they are. A rank is a dense 1..N over the teams above the
+       confidence floor ONLY, and N moves with the season: 138 in the
+       preseason, 101 after week one, 68 after week two, 132 once week three's
+       games landed. The sixty-four teams that crossed the floor were INSERTED
+       into the ordering, and every team they passed reads as having moved.
+       On that exact pair of boards the raw numbers are 25.50 mean places and
+       56% of teams moving fifteen or more — four times the bound and a
+       REFUSING TO PUBLISH — while the same teams compared on the same scale
+       moved 6.21 places with 8.8% moving fifteen. The first pair is the list
+       getting longer. Only the second is the board moving, and the bounds are
+       a statement about the board.
+
+       So: measure over the teams ranked on BOTH sides, re-ranked densely
+       within that common set. The whole-board numbers are still computed and
+       still published, because they are what a reader comparing two printed
+       lists would see. */
+    var common = [], ratingShifts = [], k;
+    for (k in nowTeams) {
+      if (!Object.prototype.hasOwnProperty.call(nowTeams, k)) continue;
+      var a = nowTeams[k], b = prevTeams[k];
+      if (!b) continue;
+      if (isNum(a.rank) && isNum(b.rank)) common.push(k);
+      if (isNum(a.etsr) && isNum(b.etsr)) ratingShifts.push(Math.abs(a.etsr - b.etsr));
+    }
+    var posNow = densePositions(common, nowTeams), posPrev = densePositions(common, prevTeams);
+    var shifts = [], rawShifts = [], big = 0, rawBig = 0, n = common.length, i;
+    for (i = 0; i < common.length; i++) {
+      var key = common[i];
+      var s = Math.abs(posNow[key] - posPrev[key]);
+      shifts.push(s); if (s >= 15) big++;
+      var raw = Math.abs(nowTeams[key].rank - prevTeams[key].rank);
+      rawShifts.push(raw); if (raw >= 15) rawBig++;
+    }
+    var meanShift = shifts.length ? mean(shifts) : null;
+    var maxRating = ratingShifts.length ? Math.max.apply(null, ratingShifts) : null;
+    var shareBig = n ? big / n : null;
+    var nowPool = rankedPool(nowTeams), prevPool = rankedPool(prevTeams);
+    var S = CFG.STABILITY;
+    var failures = [];
+    if (isNum(meanShift) && meanShift > S.max_mean_rank_shift) failures.push('mean rank shift ' + r2(meanShift) + ' exceeds ' + S.max_mean_rank_shift);
+    if (isNum(shareBig) && shareBig > S.max_share_moving_15) failures.push(Math.round(shareBig * 100) + '% of teams moved 15+ places, above the ' + Math.round(S.max_share_moving_15 * 100) + '% bound');
+    if (isNum(maxRating) && maxRating > S.max_rating_shift_points) failures.push('largest ETSR move ' + r2(maxRating) + ' exceeds ' + S.max_rating_shift_points);
+
+    /* IS THIS A LIKE-FOR-LIKE COMPARISON? Two boards mixed differently — the
+       preseason against week one, most obviously — re-rank because the model
+       said they would, not because anything broke.
+
+       MEASURED OVER THE TEAMS THAT WERE RE-MIXED, not over the whole board.
+       A team whose game has not landed yet carries a weight shift of exactly
+       zero, and averaging those zeros in made a board look MORE like-for-like
+       the fewer of its games had arrived. Week 5 of 2026 is the case: at
+       21:27 on Saturday 36 of 138 teams had a new game, each re-mixed by
+       0.067, and the board-wide mean read 0.017; by Sunday morning most of the
+       slate was in, the rank shift had climbed past the bound while the mean
+       was still under 0.05, and the build REFUSED TO PUBLISH; once the last
+       games landed the mean reached 0.058 and the same comparison was excused
+       again. Same two weeks, three verdicts, decided by the hour the cron
+       fired. The rank shift does not dilute the same way — a re-mixed team
+       passes teams that did not play, so a partly-landed week already moves
+       most of the board (6.79 of the finished week's 8.03 places with under
+       two-thirds of its weight shift in) — and so the question "were these boards mixed
+       differently" is asked of the teams whose mix actually changed. The
+       board-wide mean is still published beside it. */
+    var wShifts = [], wRemixed = [];
+    for (k in nowTeams) {
+      if (!Object.prototype.hasOwnProperty.call(nowTeams, k)) continue;
+      var an = num(get(nowTeams[k], 'weights.performance'));
+      var bn = prevTeams[k] ? num(get(prevTeams[k], 'weights.performance')) : null;
+      if (isNum(an) && isNum(bn)) {
+        var dw = Math.abs(an - bn);
+        wShifts.push(dw);
+        if (dw > 0) wRemixed.push(dw);
+      }
+    }
+    var meanW = wShifts.length ? mean(wShifts) : null;
+    var meanWRemixed = wRemixed.length ? mean(wRemixed) : null;
+    var reconstructed = !!(opts && opts.previous_reconstructed);
+    var notComparable = [];
+    if (isNum(meanWRemixed) && meanWRemixed > S.comparable_weight_shift) {
+      notComparable.push('the weight on this season moved ' + r3(meanWRemixed)
+        + ' on average for the ' + wRemixed.length + ' teams with new games between the two boards, past the '
+        + S.comparable_weight_shift
+        + ' bound — they were mixed differently, so this is not a week-to-week comparison');
+    }
+    /* AND THE POOL. Re-ranking the common set removes the arithmetic of a
+       longer list; it cannot make that set representative. The teams ranked
+       twice are the most confident ones, so a pool that doubled leaves the
+       already-settled teams being compared and the newly-rateable ones — the
+       teams that actually moved — outside the measurement entirely. */
+    var biggerPool = Math.max(nowPool, prevPool);
+    var poolChange = biggerPool ? Math.abs(nowPool - prevPool) / biggerPool : null;
+    if (isNum(poolChange) && poolChange > S.comparable_pool_change) {
+      notComparable.push('the ranked pool went from ' + prevPool + ' teams to ' + nowPool
+        + ', a ' + Math.round(poolChange * 100) + '% change past the '
+        + Math.round(S.comparable_pool_change * 100) + '% bound — the ' + n
+        + ' teams compared here are the ones that cleared the confidence floor on both boards, '
+        + 'which is not the same thing as the board');
+    }
+    if (reconstructed) notComparable.push(S.reconstruction_note);
+    return { available: true, mean_rank_shift: r2(meanShift), share_moving_15: r3(shareBig),
+      max_rating_shift: r2(maxRating), teams_compared: n,
+      mean_prior_weight_shift: r3(meanW),
+      /* the number the comparability bound is tested on: the same shift over
+         the teams whose weight actually moved between the two boards */
+      prior_weight_shift_remixed: { mean: r3(meanWRemixed), teams: wRemixed.length,
+        basis: S.remixed_basis },
+      ranked_pool: { now: nowPool, previous: prevPool, compared: n,
+        change_share: isNum(poolChange) ? r3(poolChange) : null },
+      /* the same two numbers on the raw rank integers, unadjusted for the
+         list changing length. Published, never used as a bound. */
+      whole_board: { mean_rank_shift: r2(rawShifts.length ? mean(rawShifts) : null),
+        share_moving_15: r3(n ? rawBig / n : null),
+        basis: 'the raw difference between the two boards’ rank numbers, which is what two printed lists show and which counts a team as moved when the list grew underneath it. It is reported, never bounded.' },
+      comparable: notComparable.length === 0,
+      not_comparable_because: notComparable,
+      failures: failures,
+      fails_build: notComparable.length === 0 && failures.length > 0,
+      basis: S.basis + ' ' + S.like_for_like_basis + ' ' + S.comparable_basis + ' ' + S.pool_basis };
+  }
+
+  function anomalies(teams, prevTeams, opts) {
+    opts = opts || {};
+    var T = CFG.ANOMALY_THRESHOLDS, out = [], k;
+    var seenKeys = {};
+    for (k in teams) {
+      if (!Object.prototype.hasOwnProperty.call(teams, k)) continue;
+      var t = teams[k];
+      if (seenKeys[k]) out.push({ id: 'DUPLICATE_TEAM', severity: 'severe', team: k, detail: 'two rating rows for one team key' });
+      seenKeys[k] = 1;
+      if (t.etsr != null && (!isNum(t.etsr) || Math.abs(t.etsr) > T.rating_abs_max)) {
+        out.push({ id: 'IMPOSSIBLE_RATING', severity: 'severe', team: k, detail: 'ETSR ' + t.etsr + ' is outside the plausible band of ±' + T.rating_abs_max });
+      }
+      var tr = t.talent && t.talent.rating;
+      if (tr != null && (!isNum(tr) || tr < T.talent_abs_min || tr > T.talent_abs_max)) {
+        out.push({ id: 'IMPOSSIBLE_RATING', severity: 'severe', team: k, detail: 'talent rating ' + tr + ' is outside 1-99' });
+      }
+      var prev = prevTeams && prevTeams[k];
+      if (prev) {
+        if (isNum(t.etsr) && isNum(prev.etsr) && Math.abs(t.etsr - prev.etsr) > T.rating_jump_points) {
+          out.push({ id: 'RATING_JUMP', severity: 'severe', team: k,
+            detail: 'ETSR moved ' + r2(t.etsr - prev.etsr) + ' points in one week, beyond the ' + T.rating_jump_points + ' bound' });
+        }
+        var pt = prev.talent && prev.talent.rating;
+        if (isNum(tr) && isNum(pt) && (pt - tr) > T.talent_drop_points) {
+          /* WHOSE TALENT, MEASURED WHEN? Talent comes from the committed
+             player artifact, and a rebuilt player artifact moves it for
+             reasons that have nothing to do with a result — a roster sync, a
+             newly rateable player, a position spelling corrected. Comparing
+             across two different ones and calling the difference a collapse
+             would fail the build every time the player job lands between two
+             rankings runs, which freezes the board. It still fires; across
+             different artifacts it fires as a WARNING, naming both. */
+          var sameLayer = opts.player_artifact == null || opts.previous_player_artifact == null
+            || opts.player_artifact === opts.previous_player_artifact;
+          out.push({ id: 'TALENT_COLLAPSE', severity: sameLayer ? 'severe' : 'warn', team: k,
+            detail: 'talent fell ' + r2(pt - tr) + ' points in one week. Talent is not allowed to react to a result.'
+              + (sameLayer ? ''
+                : ' Reported as a WARNING rather than a failure: the two boards stood on DIFFERENT player artifacts ('
+                  + opts.previous_player_artifact + ' -> ' + opts.player_artifact
+                  + '), so this is the player layer being rebuilt, not talent reacting to a result.') });
+        }
+      }
+      if (t.duplicate_games && t.duplicate_games.length) {
+        out.push({ id: 'DUPLICATE_GAME', severity: 'severe', team: k, detail: t.duplicate_games.length + ' duplicated team-games' });
+      }
+      if (t.zero_snap_starters && t.zero_snap_starters.length) {
+        out.push({ id: 'ZERO_SNAP_STARTER', severity: 'warn', team: k,
+          detail: t.zero_snap_starters.length + ' projected starters have no attributed volume in any season read' });
+      }
+      if (t.talent && t.talent.missing_units && t.talent.missing_units.length) {
+        out.push({ id: 'MISSING_PLAYER_DATA', severity: 'warn', team: k,
+          detail: 'no rating at ' + t.talent.missing_units.join(', ') });
+      }
+    }
+    var expected = opts.expected_teams || null;
+    if (expected) {
+      for (var i = 0; i < expected.length; i++) {
+        if (!teams[expected[i]]) out.push({ id: 'MISSING_TEAM', severity: 'severe', team: expected[i], detail: 'in the schedule as FBS but produced no rating' });
+      }
+      for (k in teams) {
+        if (!Object.prototype.hasOwnProperty.call(teams, k)) continue;
+        if (expected.indexOf(k) < 0) out.push({ id: 'TEAM_MAPPING', severity: 'severe', team: k, detail: 'rated, but no schedule recognises this team key as FBS' });
+      }
+    }
+    if (opts.stability && opts.stability.failures && opts.stability.failures.length) {
+      /* a stability breach only FAILS the build when the two boards were
+         comparable. When they were not, it is still reported — loudly — but as
+         a warning, with the reason the comparison is not like-for-like */
+      out.push({ id: 'STABILITY',
+        severity: opts.stability.comparable === false ? 'warn' : 'severe', team: null,
+        detail: opts.stability.failures.join('; ')
+          + (opts.stability.comparable === false
+            ? ' — reported as a WARNING rather than a failure because ' + (opts.stability.not_comparable_because || []).join('; ')
+            : '') });
+    }
+    if (opts.missing_snapshot) out.push({ id: 'MISSING_SNAPSHOT', severity: 'severe', team: null, detail: opts.missing_snapshot });
+    return { list: out, severe: out.filter(function (a) { return a.severity === 'severe'; }).length,
+      warn: out.filter(function (a) { return a.severity === 'warn'; }).length, contract: CFG.ANOMALIES };
+  }
+
+  return { SCHEMA: SCHEMA, rateTeam: rateTeam, build: build, carryover: carryover,
+    runDefencePower: runDefencePower, gates: gates, confidence: confidence,
+    coachingProgramAdjustment: coachingProgramAdjustment,
+    rank: rank, rankAll: rankAll, movement: movement, why: why,
+    achievement: achievement, marketCompare: marketCompare,
+    stability: stability, anomalies: anomalies, get: get, config: CFG };
+});

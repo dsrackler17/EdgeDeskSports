@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The EdgeDesk research newsletter — College football Mondays, NFL Tuesdays</title>
+<meta name="description" content="Five to ten upcoming games worth your own research time, once a week. EdgeDesk's fair spread beside the market's number, the evidence behind each one, and what the model could not see. Research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/newsletter/">
+<meta property="og:title" content="The EdgeDesk research newsletter">
+<meta property="og:description" content="College football Monday, NFL Tuesday. Five to ten games worth researching, with EdgeDesk's number beside the market's and the limits printed next to both.">
+<meta property="og:url" content="https://edgedesksports.com/newsletter/">
+<meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE PUBLIC SIGNUP AND PREFERENCE PAGE.
+
+     WHAT IT CAN DO AND WHAT IT DELIBERATELY CANNOT.
+     public.newsletter_subscribers has row level security on and NO select
+     policy for anon or for a signed-in reader, so this page cannot read the
+     subscriber list, cannot check whether an address is already on it, and
+     cannot write to it. It posts one thing to one endpoint — the newsletter
+     edge function — which holds the service role and is the only path in.
+
+     WHICH MEANS THIS PAGE CANNOT TELL YOU WHETHER AN ADDRESS IS SUBSCRIBED,
+     and that is the point: an endpoint that answered differently for a known
+     address than for an unknown one would be an address checker. Every signup
+     gets the same answer, and the confirmation email is what decides.
+
+     CONSENT IS EXPLICIT AND RECORDED. The checkbox is not pre-ticked, the
+     endpoint refuses a signup without it, and the source and timestamp are
+     stored on the row.
+     =========================================================================== -->
+<style>
+:root{
+  --ink:#100e0a;--panel:#191510;--raised:#221c15;--cell:#1e1913;
+  --line:#332a1b;--line2:#3a3124;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+  --obs:#2fa79a;--est:#d9a441;--exp:#d274b0;--val:#7cc142;--neg:#e2664b;
+  --accent:var(--obs);--on-accent:#042320;--brand-lit:var(--exp);
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;accent-color:var(--obs)}
+a{color:var(--obs)}
+.mono{font-family:'JetBrains Mono',monospace}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;font-weight:600}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px}
+nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;gap:10px;padding:13px 0}
+.logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;color:var(--text);text-decoration:none}
+.logo .mk{width:10px;height:19px;background:linear-gradient(180deg,var(--obs),var(--brand-lit));border-radius:2px;transform:skewX(-11deg);flex:none}
+.nav-sp{flex:1}
+.nlink{color:var(--dim);font-size:13.5px;font-weight:500;padding:8px 11px;border-radius:7px;text-decoration:none}
+.ey{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);font-weight:500;display:block}
+.ey b{color:var(--obs);font-weight:500}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.12;margin:14px 0 14px}
+.lede{color:var(--dim);font-size:17px;max-width:56ch}
+section{padding:46px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:8px}
+.fld{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fld>label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+/* the two edition choices are labels too, and must not inherit the field
+   caption's uppercase treatment */
+.fld>label.opt{font-size:15px;text-transform:none;letter-spacing:0;color:var(--text);font-weight:400}
+input[type=email]{width:100%;background:var(--cell);border:1px solid var(--line2);color:var(--text);border-radius:10px;padding:13px;font-size:16px;font-family:'Inter',sans-serif}
+input[type=email]:focus{outline:2px solid var(--obs);outline-offset:-1px}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line2);border-radius:11px;margin-bottom:9px;cursor:pointer;background:var(--cell)}
+.opt.on{border-color:var(--obs);background:rgba(47,167,154,.07)}
+.opt input{width:19px;height:19px;margin-top:2px;flex:none}
+.opt b{display:block;font-size:15px}
+.opt small{color:var(--faint);font-size:12.5px;font-family:'JetBrains Mono',monospace}
+.consent{display:flex;gap:11px;align-items:flex-start;margin:14px 0 4px;font-size:12.5px;color:var(--dim);line-height:1.5;cursor:pointer}
+.consent input{width:17px;height:17px;margin-top:2px;flex:none}
+.btn{font-family:'Inter',sans-serif;font-weight:700;font-size:15px;border-radius:10px;padding:13px 22px;cursor:pointer;border:1px solid var(--obs);background:var(--obs);color:var(--on-accent);width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--text);border-color:var(--line2)}
+.msg{margin-top:14px;font-size:13.5px;border-radius:10px;padding:12px 14px;font-family:'JetBrains Mono',monospace;display:none;line-height:1.5}
+.msg.ok{display:block;background:rgba(124,193,66,.1);border:1px solid rgba(124,193,66,.35);color:var(--val)}
+.msg.err{display:block;background:rgba(226,102,75,.1);border:1px solid rgba(226,102,75,.35);color:var(--neg)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.what{border-left:3px solid var(--obs);padding-left:16px;margin:16px 0}
+.what h3{font-size:15px;margin-bottom:4px}
+.what p{color:var(--dim);font-size:14px}
+.pv{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid var(--line2);background:var(--cell);color:var(--obs);border-color:rgba(47,167,154,.42)}
+footer{border-top:1px solid var(--line);background:#0e0c07;padding:30px 0 42px;color:var(--faint);font-size:12.5px;margin-top:20px}
+footer a{color:var(--faint)}
+.sample{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:16px;font-size:13.5px;line-height:1.6}
+.sample .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
+.sample .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap nav-in">
+  <a class="logo" href="/"><span class="mk"></span>EdgeDesk</a>
+  <span class="nav-sp"></span>
+  <a class="nlink" href="/articles">Research</a>
+  <a class="nlink" href="/app.html#research/football">Terminal</a>
+</div></nav>
+
+<header class="wrap" style="padding-top:44px">
+  <span class="ey"><b>Research, not picks</b> · weekly</span>
+  <h1>The games worth your own research time, once a week.</h1>
+  <p class="lede">Monday: college football. Tuesday: the NFL, after Monday Night Football. Five games —
+  up to ten when more of them earn it — with EdgeDesk’s fair spread beside the market’s number, the
+  evidence behind the gap, and the thing the model could not see printed next to both.</p>
+</header>
+
+<section class="wrap" style="padding-top:26px">
+  <div class="card">
+    <form id="nlForm" novalidate>
+      <div class="fld">
+        <label for="nlEmail">Email address</label>
+        <input id="nlEmail" type="email" autocomplete="email" placeholder="you@email.com" required>
+      </div>
+      <div class="fld">
+        <label>Which editions</label>
+        <label class="opt" id="optCfb"><input type="checkbox" id="nlCfb">
+          <span><b>College Football Week Ahead</b><small>Mondays · 10:00 AM America/Chicago · all of FBS, not just the Power Four</small></span></label>
+        <label class="opt" id="optNfl"><input type="checkbox" id="nlNfl">
+          <span><b>NFL Week Ahead</b><small>Tuesdays · 10:00 AM America/Chicago · after Monday Night Football</small></span></label>
+      </div>
+      <label class="consent"><input type="checkbox" id="nlConsent">
+        <span>I’m asking EdgeDesk to email me the research editions I ticked above. I understand this is
+        <b style="color:var(--text)">research and information only</b> — not betting advice, not a prediction,
+        and never a guarantee of any outcome — and that I can unsubscribe from any email in one click.
+        I’m 21+ and I’ve read the <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.</span></label>
+      <button class="btn" id="nlSubmit" type="submit" disabled>Send me the confirmation link</button>
+      <div class="msg" id="nlMsg" role="status" aria-live="polite"></div>
+      <p style="color:var(--faint);font-size:12px;margin-top:12px;line-height:1.5">
+        Double opt-in: nothing is sent until you open the link in the confirmation email.
+        We don’t sell or share addresses, and there is no “EdgeDesk partner offers”.</p>
+    </form>
+  </div>
+</section>
+
+<section class="wrap" style="padding-top:34px">
+  <span class="ey">What is in it</span>
+  <div class="grid" style="margin-top:16px">
+    <div>
+      <div class="what"><h3>The number, and the book’s number</h3>
+        <p>EdgeDesk’s fair spread and the market’s, both quoted from the home team’s side, with the
+        sportsbook named and the time the quote was taken.</p></div>
+      <div class="what"><h3>Why the model sees it that way</h3>
+        <p>Two or three sentences built from the model’s own published matchup reads and measured
+        advantages. No invented injuries, no recalled history, no filler.</p></div>
+      <div class="what"><h3>What to watch before kickoff</h3>
+        <p>The largest thing the model could not measure on that game, in its own words.</p></div>
+    </div>
+    <div>
+      <div class="sample">
+        <div class="k">Sample game block</div>
+        <div style="font-weight:700;font-size:16px;margin:6px 0 2px">Detroit Lions at Buffalo Bills</div>
+        <div class="k" style="margin-bottom:10px">Thu Sep 17 · 3:15 PM CDT</div>
+        <div class="k">EdgeDesk fair spread</div><div class="v" style="color:var(--exp)">Buffalo Bills −4.4</div>
+        <div class="k" style="margin-top:8px">Market spread</div><div class="v" style="color:var(--obs)">Buffalo Bills −3.0</div>
+        <div class="k" style="margin-top:8px">Difference</div><div class="v" style="color:var(--est)">1.4 pts toward Buffalo</div>
+        <p style="color:var(--dim);margin-top:12px;font-size:13px">…then the evidence, the uncertainty and a link
+        into the full research.</p>
+      </div>
+      <p style="color:var(--faint);font-size:12px;margin-top:12px;line-height:1.5">
+        An illustration of the layout. Every real edition is built from the model’s output at the moment it is sent,
+        and the exact research and market snapshot behind it is stored so the email can be reproduced.</p>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" style="padding-top:8px">
+  <div class="card">
+    <span class="pv">What this is not</span>
+    <p style="color:var(--dim);font-size:14.5px;margin-top:12px;line-height:1.6">
+      It is not a picks service and it does not sell one. There are no locks, no confidence percentages the
+      model does not publish, and no claim that a disagreement with a book is an edge — EdgeDesk’s own NFL
+      model does not beat the closing line out of sample, and every edition says so. What the email gives you
+      is a shortlist and the evidence, so the research you do next starts somewhere useful.</p>
+    <p style="color:var(--faint);font-size:12.5px;margin-top:12px">Already subscribed? Every email carries a
+      preferences link. Signed in? Your preferences live in
+      <a href="/app.html#settings">Settings › Notifications</a>.</p>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <div>21+ · 1-800-GAMBLER · ncpgambling.org — research and information only, not betting advice.</div>
+  <div style="margin-top:10px">
+    <a href="/">Home</a> · <a href="/articles">Research articles</a> ·
+    <a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> ·
+    <a href="/disclaimer.html">Disclaimer</a></div>
+  <div style="margin-top:10px">© <span id="yr"></span> Rackler Tech Ventures LLC · 2013 89th St, Lubbock, TX 79423</div>
+</div></footer>
+
+<script>
+/* The newsletter edge function. It is the ONLY endpoint this page talks to,
+   and it holds the service role; nothing here carries a privileged key. */
+var NL_ENDPOINT = "https://iattxbkbufslbauoumga.supabase.co/functions/v1/newsletter";
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+var $ = function (id) { return document.getElementById(id); };
+var form = $('nlForm'), email = $('nlEmail'), cfb = $('nlCfb'), nfl = $('nlNfl'),
+    consent = $('nlConsent'), submit = $('nlSubmit'), msg = $('nlMsg');
+
+function valid() {
+  return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())
+    && (cfb.checked || nfl.checked) && consent.checked;
+}
+function sync() {
+  submit.disabled = !valid();
+  $('optCfb').classList.toggle('on', cfb.checked);
+  $('optNfl').classList.toggle('on', nfl.checked);
+}
+[email, cfb, nfl, consent].forEach(function (el) {
+  el.addEventListener('input', sync); el.addEventListener('change', sync);
+});
+sync();
+
+/* Prefill from ?sport=cfb|nfl|both, which is what the footer links use. */
+(function () {
+  var q = new URLSearchParams(location.search).get('sport');
+  if (!q) return;
+  q = q.toLowerCase();
+  if (q === 'cfb' || q === 'both') cfb.checked = true;
+  if (q === 'nfl' || q === 'both') nfl.checked = true;
+  sync();
+})();
+
+function say(kind, text) { msg.className = 'msg ' + kind; msg.textContent = text; }
+
+form.addEventListener('submit', function (e) {
+  e.preventDefault();
+  if (!valid()) return;
+  submit.disabled = true;
+  say('ok', 'Sending…');
+  fetch(NL_ENDPOINT + '/subscribe', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: email.value.trim().toLowerCase(),
+      cfb: cfb.checked, nfl: nfl.checked, consent: true,
+      source: 'newsletter_page'
+    })
+  }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+    .then(function (out) {
+      /* THE SAME ANSWER WHATEVER THE STATE. The endpoint does not tell this
+         page whether the address was already known, and neither does this. */
+      if (out.j && out.j.ok) {
+        say('ok', 'Check your inbox. The confirmation link expires in seven days, and nothing is sent until you open it.');
+        form.reset(); sync();
+        return;
+      }
+      var why = (out.j && out.j.reason) || 'unknown';
+      say('err', why === 'invalid_email' ? 'That does not look like an email address.'
+        : why === 'no_sport_selected' ? 'Pick at least one edition.'
+        : why === 'consent_required' ? 'Tick the consent box so we have a record of it.'
+        : why === 'confirmation_email_failed' ? 'We could not send the confirmation email just now. Try again in a minute.'
+        : 'Something went wrong (' + why + '). Try again, or email support@edgedesksports.com.');
+      submit.disabled = false;
+    })
+    .catch(function () {
+      say('err', 'Could not reach EdgeDesk. Check your connection and try again.');
+      submit.disabled = false;
+    });
+});
+</script>
+</body>
+</html>

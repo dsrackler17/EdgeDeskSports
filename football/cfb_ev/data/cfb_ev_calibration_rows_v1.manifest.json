@@ -1,0 +1,46 @@
+{
+ "schema": "edgedesk_ev_calibration_dataset_manifest_v1",
+ "dataset": "cfb_ev_calibration_rows_v1",
+ "built_at": "2026-09-28T03:27:27.023Z",
+ "rows": 27870,
+ "counts": {
+  "IN_SAMPLE|close": 4757,
+  "IN_SAMPLE|open": 4237,
+  "OOS|close": 3120,
+  "OOS|open": 3112,
+  "OOS|close_m7": 3120,
+  "OOS|close_m3": 3120,
+  "OOS|close_p3": 3120,
+  "OOS|close_p7": 3120,
+  "HOLDOUT_2026|close": 164
+ },
+ "holdout_rows": 164,
+ "dropped": {
+  "not_fbs": 1177,
+  "not_final": 1,
+  "no_close": 122,
+  "swapped": 11,
+  "opener_fault": 8,
+  "no_curve": 0
+ },
+ "csv_sha256": "26eb6a9a52d4a441a1f132cb05b6d8bd9348cbfe489c51596a004ed83c062124",
+ "model_version": "edgedesk_cfb_p4_v1.0.0",
+ "probability_path": "football/cfb_terminal/build.js v1Dist -> lib/edgedesk_read.js buildCurve -> sideProb (the game page path)",
+ "fair_source": "football/cfb_p4/research/disagreement_replay.js (cold, Tuesday 12:00 UTC freeze, market never an input) for 2015-2025; record/football/cfb_2026.json (published picks) for 2026",
+ "windows": {
+  "IN_SAMPLE": "2015-2021: the champion PMF (2006-2021) and tuning layers saw these seasons — diagnostics only",
+  "OOS": "2022-2025: untouched by every champion layer and by its PMF — the walk-forward tournament",
+  "HOLDOUT_2026": "the published 2026 record, read once"
+ },
+ "conventions": {
+  "market_home_line": "the line the HOME side lays (negative = home favoured), rounded to the half point as the production consensus rounds it",
+  "p_cover": "P(home covers | no push) from the production curve",
+  "y_cover": "1 home covered, 0 did not, blank = push",
+  "checkpoint": "close | open | close_{m,p}{3,7}: the home line moved by that many points (alternate-line domain rows)"
+ },
+ "inputs": {
+  "replay": "disagreement_replay.jsonl",
+  "archive": "betting/cfb_line_odds.csv.gz (sportsdataverse/cfbfastR-data)",
+  "swapped_archive_games_dropped": 11
+ }
+}

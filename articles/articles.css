@@ -1,0 +1,510 @@
+/* ============================================================================
+   EDGEDESK ARTICLES — a sports publication with a research terminal's manners.
+
+   The palette, the mono eyebrow and the card geometry are the terminal's
+   (app.html, brief.html). What changes for a public article is the reading
+   measure: one column, 17px, generous line height, because this page is read
+   rather than scanned. Tables and the model cards keep the terminal's density
+   so a number still looks like a number.
+
+   Dark by design. EdgeDesk has one look and an article is not a different
+   product; `color-scheme: dark` tells the browser so form controls and
+   scrollbars match rather than punching a white hole in the page.
+   ========================================================================== */
+:root{
+  --bg:#100e0a; --surface:#191510; --surface2:#221c15; --border:#332a1b;
+  --text:#f1ebdf; --dim:#a29581; --faint:#887e70;
+  --accent:#2fa79a; --pos:#76bd3e; --neg:#e26044; --warn:#d99a2b; --mdl:#d274b0;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --measure:760px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{margin:0;padding:0}
+body.a-body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;color-scheme:dark;
+  overflow-x:hidden}
+img{max-width:100%;height:auto}
+a{color:var(--accent)}
+
+/* ---- draft banner: only ever drawn on a noindex page --------------------- */
+.a-draftbar{background:var(--warn);color:#14100a;font-weight:700;font-size:13px;
+  padding:9px 16px;text-align:center}
+.a-draftbar b{text-transform:uppercase;letter-spacing:.04em}
+
+/* ---- site chrome --------------------------------------------------------- */
+.ah{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);
+  position:sticky;top:0;z-index:20;backdrop-filter:blur(10px)}
+.ah-brand{display:flex;align-items:center;gap:8px;font-weight:800;letter-spacing:-.02em;
+  font-size:17px;color:var(--text);text-decoration:none}
+.ah-mark{width:16px;height:16px;border-radius:4px;background:var(--pos);
+  clip-path:polygon(56% 0,100% 0,44% 100%,0 100%)}
+.ah-nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.ah-tab{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;
+  padding:6px 10px;border-radius:8px}
+.ah-tab:hover{color:var(--text);background:var(--surface2)}
+.ah-tab.on{color:var(--text);background:var(--surface2)}
+.ah-cta{font-size:12.5px;font-weight:700;text-decoration:none;color:#06210f;
+  background:var(--pos);padding:8px 13px;border-radius:9px;white-space:nowrap}
+
+.a-wrap{max-width:var(--measure);margin:0 auto;padding:26px 18px 64px}
+/* An INDEX is scanned, an ARTICLE is read, so they get different measures:
+   the hub opens out to fit three cards across, the article stays at a
+   comfortable 760px line length. */
+.a-wrap.hub{max-width:1120px}
+.a-article{display:block}
+
+/* ---- breadcrumbs and hero ------------------------------------------------ */
+.a-crumbs{font-size:12px;color:var(--faint);margin-bottom:18px}
+.a-crumbs a{color:var(--dim);text-decoration:none}
+.a-crumbs a:hover{color:var(--text)}
+.a-crumbs span{margin:0 4px}
+
+.a-hero{border-bottom:1px solid var(--border);padding-bottom:20px;margin-bottom:22px}
+.a-eyebrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.a-eyebrow a{color:var(--pos);text-decoration:none;font-weight:700}
+.a-status{border:1px solid var(--border);border-radius:999px;padding:2px 9px;color:var(--warn);
+  font-weight:700;background:var(--surface)}
+.a-conf{color:var(--faint)}
+.a-h1{font-size:clamp(27px,5.2vw,40px);line-height:1.13;letter-spacing:-.022em;
+  font-weight:800;margin:12px 0 0}
+.a-standfirst{font-size:18px;line-height:1.55;color:var(--dim);margin:12px 0 0}
+.a-gamebar{margin-top:18px;padding:13px 15px;border:1px solid var(--border);
+  border-radius:13px;background:var(--surface)}
+.a-matchup{font-size:16px;font-weight:700}
+.a-when{font-size:13.5px;color:var(--dim);margin-top:2px}
+.a-gmeta{font-size:12.5px;color:var(--faint);margin-top:4px}
+.a-byline{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;
+  font-size:12.5px;color:var(--faint)}
+.a-byline a{color:var(--dim);text-decoration:none}
+.a-frozen{color:var(--mdl)}
+
+/* ---- share --------------------------------------------------------------- */
+.a-share{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 20px}
+.a-sharek{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint)}
+.a-sharebtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--text);
+  background:var(--surface2);border:1px solid var(--border);border-radius:9px;
+  padding:6px 12px;text-decoration:none;cursor:pointer;display:inline-block}
+.a-sharebtn:hover{border-color:var(--dim)}
+
+/* ---- contents ------------------------------------------------------------ */
+.a-toc{border:1px solid var(--border);border-radius:13px;background:var(--surface);
+  padding:14px 18px;margin:0 0 26px}
+.a-tocH{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);margin:0 0 8px;font-weight:600}
+.a-toc ol{margin:0;padding-left:18px;columns:2;column-gap:24px}
+.a-toc li{font-size:13.5px;margin:3px 0;break-inside:avoid}
+.a-toc a{color:var(--dim);text-decoration:none}
+.a-toc a:hover{color:var(--text);text-decoration:underline}
+
+/* ---- section furniture --------------------------------------------------- */
+.a-sec{margin:0 0 34px;scroll-margin-top:74px}
+.a-h2{font-size:13px;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text);font-weight:700;margin:0 0 8px;padding-top:8px;
+  border-top:1px solid var(--border)}
+.a-h3{font-size:14px;font-weight:700;margin:20px 0 8px;letter-spacing:-.005em}
+.a-secnote{font-size:13.5px;color:var(--dim);margin:0 0 12px;line-height:1.55}
+.a-note{font-size:13px;color:var(--faint);line-height:1.6;margin:10px 0 0}
+.a-warn{font-size:13.5px;line-height:1.6;color:var(--text);background:rgba(217,154,43,.09);
+  border-left:3px solid var(--warn);border-radius:0 9px 9px 0;padding:11px 14px;margin:0 0 14px}
+.a-nodata{color:var(--faint);font-style:italic}
+.a-source{font-size:12px;color:var(--faint);line-height:1.65;margin:14px 0 0;
+  border-top:1px solid var(--border);padding-top:12px}
+.a-bul{margin:8px 0 0;padding-left:19px}
+.a-bul li{margin:5px 0;font-size:14.5px;line-height:1.6}
+.a-bul.a-dim li{color:var(--dim);font-size:13.5px}
+.a-tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;font-weight:700;border-radius:6px;padding:4px 9px;margin:0 0 12px}
+.a-tag.priced{color:var(--pos);background:rgba(118,189,62,.11);border:1px solid rgba(118,189,62,.3)}
+.a-tag.context{color:var(--mdl);background:rgba(210,116,176,.11);border:1px solid rgba(210,116,176,.3)}
+
+/* ---- the research read: one label, in the board's own tones --------------- */
+.a-rlab{margin:0 0 10px}
+.a-rchip{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.09em;font-weight:700;
+  border-radius:6px;padding:4px 9px;color:var(--dim);border:1px solid var(--border);background:var(--surface)}
+.a-rchip.k-worth-researching{color:var(--accent);border-color:rgba(47,167,154,.4);background:rgba(47,167,154,.1)}
+.a-rchip.k-major-disagreement{color:var(--warn);border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.1)}
+.a-rchip.k-low-reliability{color:var(--neg);border-color:rgba(226,96,68,.4);background:rgba(226,96,68,.1)}
+.a-rchip.k-market-aligned{color:var(--pos);border-color:rgba(118,189,62,.4);background:rgba(118,189,62,.1)}
+.a-rchip.k-near-pickem{color:#d9b84a;border-color:rgba(217,184,74,.4);background:rgba(217,184,74,.1)}
+
+/* ---- the read ------------------------------------------------------------ */
+.a-lede{font-size:17px;line-height:1.68;margin:0 0 13px}
+.a-read .a-lede:first-of-type{font-size:18px}
+
+/* ---- model snapshot cards ------------------------------------------------ */
+.a-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px}
+.a-card{border:1px solid var(--border);border-radius:13px;background:var(--surface);
+  padding:13px 14px;min-width:0}
+.a-card.lead{grid-column:1/-1;background:linear-gradient(180deg,rgba(47,167,154,.10),rgba(47,167,154,0));
+  border-color:rgba(47,167,154,.34)}
+.a-card.wide{grid-column:span 2}
+.a-card.absent{background:var(--surface2)}
+.a-ck{font-family:var(--mono);font-size:9.8px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);font-weight:600}
+.a-cv{font-size:23px;font-weight:800;letter-spacing:-.02em;margin-top:5px;line-height:1.15;
+  overflow-wrap:anywhere}
+.a-card.lead .a-cv{font-size:34px}
+.a-card.status .a-cv{font-size:17px;color:var(--warn);font-family:var(--mono);letter-spacing:.02em}
+.a-cs{font-size:11.5px;color:var(--faint);margin-top:5px;line-height:1.5}
+.a-cwhy{font-size:12.5px;color:var(--dim);margin-top:6px;line-height:1.55}
+.a-cscore,.a-cpair{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px}
+.a-cscore span,.a-cpair span{display:flex;flex-direction:column;min-width:0}
+.a-cscore i,.a-cpair i{font-style:normal;font-size:11.5px;color:var(--dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.a-cscore b,.a-cpair b{font-size:22px;font-weight:800;letter-spacing:-.02em}
+
+/* ---- drivers ------------------------------------------------------------- */
+.a-drivers{list-style:none;margin:10px 0 0;padding:0}
+.a-drivers li{display:flex;gap:13px;align-items:flex-start;padding:10px 0;
+  border-top:1px solid var(--border)}
+.a-drivers li:first-child{border-top:0}
+.a-dpts{font-family:var(--mono);font-size:15px;font-weight:700;min-width:56px;
+  text-align:right;color:var(--dim);flex:none}
+.a-dpts.pos{color:var(--pos)} .a-dpts.neg{color:var(--neg)}
+.a-dtext{font-size:14.5px;line-height:1.55}
+.a-excluded{margin-top:18px;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);padding:14px 16px}
+.a-excluded p:last-child{margin:0;font-size:13.5px;line-height:1.6;color:var(--dim)}
+
+/* ---- comparison tables --------------------------------------------------- */
+.a-tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  border:1px solid var(--border);border-radius:13px;background:var(--surface);margin-top:10px}
+.a-table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:430px}
+.a-table th,.a-table td{padding:9px 12px;text-align:left;vertical-align:top;
+  border-top:1px solid var(--border)}
+.a-table thead th{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--faint);border-top:0;font-weight:600;
+  position:sticky;top:0;background:var(--surface)}
+.a-table tbody th{font-weight:600;color:var(--dim);width:36%}
+.a-table tbody th .a-cn{display:block;font-weight:400;color:var(--faint);
+  font-size:11px;line-height:1.45;margin-top:2px}
+.a-table .a-group th{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--text);background:var(--surface2);width:auto}
+.a-c b{font-size:14.5px;font-weight:700}
+.a-c .a-cn{display:block;color:var(--faint);font-size:11px;line-height:1.45;margin-top:2px}
+.a-c.adv{background:rgba(118,189,62,.08)}
+.a-c.adv b{color:var(--pos)}
+
+/* ---- edges and cases ----------------------------------------------------- */
+.a-edgecols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:10px}
+.a-edgecol{border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:12px 16px 16px}
+.a-edgecol .a-h3{margin-top:4px}
+
+/* ---- matchups ------------------------------------------------------------ */
+.a-mgrid{display:grid;gap:12px;margin-top:10px}
+.a-m{border:1px solid var(--border);border-radius:13px;background:var(--surface);padding:14px 16px}
+.a-m.partial{border-style:dashed}
+.a-mh{font-size:14.5px;font-weight:700;margin:0 0 10px;letter-spacing:-.005em}
+.a-mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.a-mside{display:flex;flex-direction:column;gap:1px;min-width:0}
+.a-mteam{font-size:12px;color:var(--dim);overflow-wrap:anywhere}
+.a-mlabel{font-family:var(--mono);font-size:9.6px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.a-mv{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.a-mv.a-nodata{font-size:13px;font-weight:500}
+.a-mrank{font-size:11.5px;color:var(--faint)}
+.a-mread{font-size:14px;line-height:1.6;color:var(--text);margin:11px 0 0}
+
+/* ---- uncertainty --------------------------------------------------------- */
+.a-unclist{list-style:none;margin:10px 0 0;padding:0}
+.a-unclist li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--border)}
+.a-unclist li:first-child{border-top:0}
+.a-sev{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;font-weight:700;
+  border-radius:5px;padding:3px 7px;flex:none;min-width:62px;text-align:center;
+  border:1px solid var(--border);color:var(--dim);background:var(--surface)}
+.sev-high .a-sev{color:var(--neg);border-color:rgba(226,96,68,.4)}
+.sev-medium .a-sev{color:var(--warn);border-color:rgba(217,154,43,.4)}
+.sev-low .a-sev{color:var(--dim)}
+.a-unctext{font-size:14px;line-height:1.6}
+.a-unctext em{color:var(--faint);font-style:normal}
+
+/* ---- market -------------------------------------------------------------- */
+.a-mktgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.a-mb{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px 13px}
+.a-mb .a-cv{font-size:19px}
+.a-mkt-none{border:1px solid var(--border);border-radius:13px;background:var(--surface);
+  padding:14px 16px;font-size:14px;line-height:1.6}
+.a-mkt-none p{margin:0 0 8px} .a-mkt-none p:last-child{margin:0;color:var(--dim);font-size:13.5px}
+
+/* ---- bottom line, CTA ---------------------------------------------------- */
+.a-bottom p{font-size:16px;line-height:1.7;margin:0 0 13px}
+.a-cta{border:1px solid var(--border);border-radius:16px;background:var(--surface);
+  padding:22px;text-align:center;margin:8px 0 0}
+.a-ctaline{font-size:19px;font-weight:700;margin:0 0 14px;letter-spacing:-.01em}
+/* the standing positioning line, under a CTA whose own line says something
+   else — a postgame page leads with the two halves and still carries it */
+.a-ctaprompt{font-size:15px;font-weight:600;margin:-6px 0 14px;opacity:.78}
+.a-ctabtn{display:inline-block;background:var(--pos);color:#06210f;font-weight:800;
+  font-size:14px;padding:12px 22px;border-radius:11px;text-decoration:none}
+.a-ctabtn:hover{filter:brightness(1.07)}
+.a-ctalinks{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.a-ctalinks a{font-size:12.5px;color:var(--dim);text-decoration:none;
+  border:1px solid var(--border);border-radius:9px;padding:7px 12px;background:var(--surface2)}
+.a-ctalinks a:hover{color:var(--text);border-color:var(--dim)}
+
+/* ---- the hub ------------------------------------------------------------- */
+.a-hubhead{margin-bottom:18px;max-width:var(--measure)}
+.a-hubcount{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--faint);margin:10px 0 0}
+.a-filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+.a-filter{font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;
+  border:1px solid var(--border);border-radius:999px;padding:7px 15px;background:var(--surface)}
+.a-filter.on{color:var(--text);border-color:var(--pos);background:rgba(118,189,62,.1)}
+.a-sorttabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.a-sorttabs input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.a-sorttabs label{font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;
+  border:1px solid var(--border);border-radius:9px;padding:7px 12px;background:var(--surface)}
+.a-sorttabs input:checked+label{color:var(--text);border-color:var(--dim);background:var(--surface2)}
+.a-sorttabs input:focus-visible+label{outline:2px solid var(--accent);outline-offset:2px}
+.a-list{display:none;width:100%;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:13px;margin-top:16px}
+#sort-latest:checked~.a-list-latest,
+#sort-upcoming:checked~.a-list-upcoming,
+#sort-pregame:checked~.a-list-pregame,
+#sort-postgame:checked~.a-list-postgame,
+#sort-updated:checked~.a-list-updated{display:grid}
+.a-cardart{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;display:flex}
+.a-cardart>.a-cardlink{display:flex;flex-direction:column;width:100%}
+.a-cardsum{flex:1}
+.a-cardart:hover{border-color:var(--dim)}
+.a-cardlink{display:block;padding:15px 16px 16px;text-decoration:none;color:var(--text)}
+.a-cardtop{display:flex;gap:7px;align-items:center;flex-wrap:wrap;
+  font-family:var(--mono);font-size:9.6px;letter-spacing:.13em;text-transform:uppercase}
+.a-cardsport{color:var(--pos);font-weight:700}
+.a-cardimg{display:block;border-radius:10px;margin:10px 0 0;width:100%;height:auto}
+.a-cardh{font-size:17px;font-weight:800;letter-spacing:-.015em;margin:10px 0 6px;line-height:1.25}
+.a-cardsum{font-size:13.5px;line-height:1.55;color:var(--dim);margin:0}
+.a-cardmeta{display:flex;gap:10px;flex-wrap:wrap;margin-top:11px;font-size:11.5px;color:var(--faint)}
+.a-cardline{font-family:var(--mono);color:var(--text);font-weight:700}
+.a-about{margin-top:40px;border-top:1px solid var(--border);padding-top:20px;max-width:var(--measure)}
+.a-about p{font-size:14.5px;line-height:1.65;color:var(--dim)}
+.a-about code{font-family:var(--mono);font-size:12.5px;color:var(--warn);
+  background:var(--surface2);border-radius:5px;padding:1px 5px}
+
+/* ---- footer -------------------------------------------------------------- */
+.af{border-top:1px solid var(--border);margin-top:36px;padding:26px 18px 44px;
+  max-width:1120px;margin-left:auto;margin-right:auto}
+.af-line{font-size:13.5px;line-height:1.65;color:var(--dim);margin:0 0 14px}
+.af-line b{color:var(--text)}
+.af-nav{display:flex;gap:8px;flex-wrap:wrap}
+.af-nav a{font-size:12.5px;color:var(--dim);text-decoration:none}
+.af-nav a:hover{color:var(--text);text-decoration:underline}
+.af-legal{font-size:11.5px;color:var(--faint);margin:16px 0 0}
+
+/* ---- narrow screens ------------------------------------------------------ */
+@media (max-width:640px){
+  .a-wrap{padding:18px 14px 52px}
+  .ah{padding:11px 14px;gap:10px}
+  .ah-nav{order:3;width:100%;margin-left:0}
+  .ah-cta{margin-left:auto}
+  .a-toc ol{columns:1}
+  .a-card.wide{grid-column:1/-1}
+  .a-cards{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  .a-card.lead .a-cv{font-size:30px}
+  .a-mrow{grid-template-columns:1fr}
+  .a-dpts{min-width:50px;font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ============================================================================
+   MEMBER POSTS — the community section.
+
+   Deliberately NOT styled like a research article. The research pages open on
+   a model snapshot in mono type; a member post opens on a person's name and a
+   label saying whose view it is. A reader arriving from a shared link should
+   be able to tell the two apart before reading a word, so the label is the
+   loudest thing above the headline rather than a footnote under it.
+   ========================================================================== */
+.a-membertag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;font-weight:700;color:var(--mdl);background:rgba(210,116,176,.12);
+  border:1px solid rgba(210,116,176,.35);border-radius:6px;padding:3px 8px}
+.a-memberwarn{border:1px solid rgba(210,116,176,.3);background:rgba(210,116,176,.07);
+  border-radius:12px;padding:13px 16px;margin:0 0 22px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.a-memberwarn a{color:var(--accent)}
+.a-postbody{font-size:17px;line-height:1.72}
+.a-postbody p{margin:0 0 17px}
+.a-postbody a{overflow-wrap:anywhere}
+
+/* ---- the composer -------------------------------------------------------- */
+.a-composer{border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:18px 20px 20px;margin:14px 0 0}
+.a-flabel{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--faint);font-weight:600;margin:16px 0 6px}
+.a-flabel:first-child{margin-top:0}
+.a-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:10px;padding:11px 13px;font:inherit;font-size:15px}
+.a-input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.a-textarea{resize:vertical;min-height:280px;line-height:1.65;font-size:16px}
+.a-frow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-top:10px}
+.a-fnote{font-size:11.5px;color:var(--faint);margin:6px 0 0;line-height:1.55}
+.a-fmsg{font-size:13px;line-height:1.6;border-radius:10px;padding:11px 13px;margin:12px 0 0;
+  white-space:pre-wrap;font-family:var(--mono)}
+.a-fmsg.bad{color:var(--neg);background:rgba(226,96,68,.08);border:1px solid rgba(226,96,68,.3)}
+.a-fmsg.ok{color:var(--pos);background:rgba(118,189,62,.07);border:1px solid rgba(118,189,62,.3)}
+/* what pressing Publish will actually do, said before anything is written */
+.a-route{font-size:13.5px;line-height:1.6;border-radius:11px;padding:12px 15px;margin:16px 0 0;
+  border:1px solid var(--border);background:var(--surface);color:var(--dim)}
+.a-route.live{border-color:rgba(118,189,62,.4);background:rgba(118,189,62,.07);color:var(--text)}
+.a-route.queued{border-color:rgba(217,154,43,.4);background:rgba(217,154,43,.07);color:var(--text)}
+.a-about code,.a-bul code{font-family:var(--mono);font-size:12px;color:var(--warn);
+  background:var(--surface2);border-radius:5px;padding:1px 5px}
+
+/* ---- the write button on the research hub -------------------------------- */
+.a-writebar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:15px 18px;margin:0 0 22px}
+.a-writebar p{margin:0;font-size:13.5px;line-height:1.55;color:var(--dim);flex:1;min-width:220px}
+.a-writebar b{color:var(--text)}
+
+/* ==========================================================================
+   POSTGAME ANALYSIS
+   The second half of every featured game: what happened, what EdgeDesk said
+   beforehand, and which of the two agreed. It shares the article chrome
+   deliberately — same head, same measure, same type scale — because a reader
+   arriving from the pregame page should feel they are still in the same
+   document, one week later.
+
+   The one visual idea that is new here is the VERDICT CHIP. It carries the
+   only four words this system grades with, and the colours mean the same
+   thing on every page: green confirmed, amber partial, red contradicted,
+   grey not gradeable. Colour is never the only signal — the word is always
+   printed beside it — because a verdict a colourblind reader cannot read is
+   not a verdict.
+   ========================================================================== */
+
+/* ---- the final score in the hero ---------------------------------------- */
+.a-final{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:18px 0 4px;
+  border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px 18px}
+.a-finalside{display:flex;flex-direction:column;gap:2px;min-width:0}
+.a-finalt{font-size:12.5px;color:var(--dim);font-weight:600;overflow-wrap:anywhere}
+.a-finalp{font-family:var(--mono);font-size:34px;line-height:1;font-weight:700;
+  color:var(--text);font-variant-numeric:tabular-nums}
+.a-finalsep{font-family:var(--mono);font-size:24px;color:var(--faint)}
+.a-finalk{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--faint);font-weight:700}
+.a-betres{border:1px solid var(--border);border-radius:999px;padding:2px 9px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;font-weight:700;color:var(--dim)}
+
+/* ---- the before/after link ---------------------------------------------- */
+.a-related{margin:0 0 22px}
+.a-related a{display:flex;align-items:center;gap:14px;flex-wrap:wrap;text-decoration:none;
+  border:1px solid var(--border);border-radius:13px;background:var(--surface);
+  padding:13px 17px;color:var(--text)}
+.a-related a:hover{border-color:var(--accent)}
+.a-relk{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);font-weight:700}
+.a-relv{font-size:14.5px;font-weight:650;color:var(--accent);margin-left:auto}
+
+/* ---- verdict chips ------------------------------------------------------- */
+.a-vd{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;
+  text-transform:uppercase;font-weight:700;border-radius:6px;padding:3px 7px;white-space:nowrap;
+  border:1px solid var(--border);color:var(--dim);background:var(--surface2)}
+.a-vd-confirmed{color:var(--pos);border-color:rgba(118,189,62,.45);background:rgba(118,189,62,.1)}
+.a-vd-partially-confirmed{color:var(--warn);border-color:rgba(217,154,43,.45);background:rgba(217,154,43,.1)}
+.a-vd-not-confirmed{color:var(--neg);border-color:rgba(226,96,68,.45);background:rgba(226,96,68,.1)}
+.a-vd-inconclusive{color:var(--faint)}
+
+/* ---- the thesis audit table --------------------------------------------- */
+.a-tally{font-size:15px;line-height:1.6;margin:0 0 14px}
+.a-tally .a-dim{color:var(--faint);font-weight:400}
+.a-audittbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.a-audittbl th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint);font-weight:700;padding:8px 12px;
+  border-bottom:1px solid var(--border);vertical-align:bottom}
+.a-audittbl td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55}
+.a-audittbl tr:last-child td{border-bottom:0}
+.a-audittbl .a-claim{color:var(--text);min-width:200px}
+.a-audittbl .a-obs{color:var(--dim);min-width:180px}
+.a-audittbl .a-verdict{white-space:nowrap}
+.a-cat{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 4px}
+.a-why{display:block;font-size:12px;color:var(--faint);margin-top:6px;line-height:1.5}
+.a-legend{display:grid;grid-template-columns:auto 1fr;gap:7px 13px;margin:16px 0 0;
+  font-size:12.5px;color:var(--faint);line-height:1.55}
+.a-legend dt{margin:0}
+.a-legend dd{margin:0}
+
+/* ---- result versus process ---------------------------------------------- */
+.a-quad{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 16px}
+.a-quadcell{flex:1;min-width:150px;border:1px solid var(--border);border-radius:13px;
+  background:var(--surface);padding:13px 16px}
+.a-quadk{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--faint);font-weight:700;margin:0 0 6px}
+.a-quadv{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.a-verdictline{font-size:16.5px;line-height:1.65;border-left:3px solid var(--accent);
+  padding:2px 0 2px 15px;margin:0 0 16px;color:var(--text)}
+.a-qa{display:grid;gap:4px 0;margin:16px 0 0}
+.a-qa dt{font-weight:700;font-size:14.5px;color:var(--text);margin:12px 0 0}
+.a-qa dt:first-child{margin-top:0}
+.a-qa dd{margin:0;font-size:14.5px;line-height:1.65;color:var(--dim)}
+
+/* ---- the three scorecards ------------------------------------------------ */
+.a-scards{display:grid;gap:13px;grid-template-columns:1fr}
+@media(min-width:720px){.a-scards{grid-template-columns:repeat(3,1fr)}}
+.a-scard{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:15px 17px}
+.a-scard h3{margin:0 0 10px;font-size:13px;font-family:var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);font-weight:700}
+.a-scard ul{margin:0;padding:0 0 0 17px}
+.a-scard li{margin:0 0 9px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.a-scard li:last-child{margin-bottom:0}
+.a-scard-right{border-color:rgba(118,189,62,.3)}
+.a-scard-right h3{color:var(--pos)}
+.a-scard-wrong{border-color:rgba(226,96,68,.3)}
+.a-scard-wrong h3{color:var(--neg)}
+.a-scard-mkt h3{color:var(--mdl)}
+
+/* ---- what we said to watch ---------------------------------------------- */
+.a-watchlist{list-style:none;margin:0;padding:0}
+.a-watchlist li{border:1px solid var(--border);border-radius:13px;background:var(--surface);
+  padding:13px 16px;margin:0 0 10px}
+.a-watchq{margin:0 0 7px;font-size:14.5px;font-weight:650;color:var(--text);line-height:1.55}
+.a-watcha{margin:0;font-size:13.5px;color:var(--dim);line-height:1.6}
+.a-watcha .a-vd{margin-right:8px}
+
+/* ---- the research lessons ------------------------------------------------ */
+.a-lessonlist{list-style:none;margin:0;padding:0}
+.a-lesson{border:1px solid var(--border);border-left-width:3px;border-radius:13px;
+  background:var(--surface);padding:14px 17px;margin:0 0 12px}
+.a-sev-high{border-left-color:var(--neg)}
+.a-sev-medium{border-left-color:var(--warn)}
+.a-sev-low{border-left-color:var(--border)}
+.a-lessonhead{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 8px}
+.a-lessonhead .a-cat{display:inline-block;margin:0}
+.a-sev{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);font-weight:700}
+.a-review{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  font-weight:700;color:var(--warn);border:1px solid rgba(217,154,43,.4);
+  background:rgba(217,154,43,.09);border-radius:6px;padding:3px 7px}
+.a-lessontext{margin:0 0 9px;font-size:15px;line-height:1.65;color:var(--text)}
+.a-lessonmeta{margin:0 0 5px;font-size:12.5px;line-height:1.6;color:var(--faint)}
+.a-lessonmeta b{color:var(--dim);font-weight:650}
+.a-lessonmeta:last-child{margin-bottom:0}
+.a-subh{font-size:15px;margin:22px 0 10px;color:var(--text);font-weight:700}
+.a-nextlist{margin:0;padding:0 0 0 17px}
+.a-nextlist li{margin:0 0 9px;font-size:14px;line-height:1.62;color:var(--dim)}
+
+/* ---- the methodology notice --------------------------------------------- */
+.a-method{border:1px solid var(--border);border-radius:14px;background:var(--surface);
+  padding:16px 19px;margin:30px 0 0}
+.a-methodh{margin:0 0 10px;font-size:12px;font-family:var(--mono);letter-spacing:.13em;
+  text-transform:uppercase;color:var(--faint);font-weight:700}
+.a-method p{margin:0 0 9px;font-size:12.5px;line-height:1.62;color:var(--faint)}
+.a-method p:last-child{margin-bottom:0}
+
+/* ---- the article-type chip on a hub card -------------------------------- */
+.a-cardtype{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+  font-weight:700;border-radius:6px;padding:3px 7px;border:1px solid var(--border);color:var(--dim)}
+.a-cardtype.post{color:var(--accent);border-color:rgba(47,167,154,.42);background:rgba(47,167,154,.09)}
+
+/* ---- model-drafted connective prose, always labelled --------------------- */
+.a-narr{border-left:2px solid var(--surface2);padding-left:17px}
+.a-narr p{font-size:16.5px;line-height:1.7;margin:0 0 15px}
+.a-narrlabel{font-size:11.5px !important;line-height:1.55 !important;color:var(--faint);
+  margin:0 !important;padding-top:4px;border-top:1px solid var(--border)}
+.a-scard li .a-sclaim{display:block;color:var(--text)}
+.a-scard li .a-sobs{display:block;margin-top:4px;color:var(--dim);font-size:12.5px}
+.a-scard li .a-swhy{display:block;margin-top:3px;color:var(--faint);font-size:12px}

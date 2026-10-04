@@ -1,0 +1,627 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   The doctor's verdicts, on responses it cannot reach in CI.
+
+   Its whole job is to tell apart things that look the same from outside —
+   deployed-but-stale from not-deployed, a missing table from a table RLS
+   refused, an absent artifact from a proxy answering 403 on its behalf. Each
+   of those confusions would send an operator to do the wrong thing, so each
+   one is pinned here against a stubbed network.
+
+   Run: node tools/intelligence/deploy_doctor.test.js
+   =========================================================================== */
+'use strict';
+let pass = 0, fail = 0;
+const failures = [];
+function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push({ name, detail }); }
+function eq(name, got, want) { chk(name, got === want, { got, want }); }
+function done() {
+  failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 300) : '')));
+  console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail === 0 ? 0 : 1);
+}
+
+const D = require('./deploy_doctor.js');
+const WANT = D.expectedBuild();
+
+/* The healthy answer from capture's auth gate: a 401 saying it HOLDS a secret
+   and refused a caller that did not match. Appended to every table below as a
+   default so the fifteen cases that are about something else keep their old
+   verdicts; a test that is about capture's own secret lists its own entry,
+   which is matched first. */
+const CAP_BUILD = D.expectedCaptureBuild();
+const CAPTURE_ARMED = ['/functions/v1/capture',
+  { status: 401, body: JSON.stringify({ ok: false, build: CAP_BUILD, error: 'unauthorized',
+    reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+/* The packet ledger present, as the same kind of default: the cases about it
+   list their own entry, which is matched first. */
+const PACKETS_APPLIED = ['/rest/v1/research_packets', { status: 200, body: '[]' }];
+/* props_cron's GET health probe serving this checkout's build, the same kind
+   of default again. */
+const PROPS_BUILD = D.expectedFunctionBuild('props_cron');
+const propsCron = (over) => ['/functions/v1/props_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'props_cron', build: PROPS_BUILD, configured: { has_token: true }, health: [] }, over || {})) }];
+const PROPS_CURRENT = propsCron();
+/* editorial_cron's public GET probe serving this checkout's build. */
+const ED_BUILD = D.expectedFunctionBuild('editorial_cron');
+const editorialCron = (over) => ['/functions/v1/editorial_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'editorial_cron', build: ED_BUILD, configured: { has_token: true } }, over || {})) }];
+const EDITORIAL_CURRENT = editorialCron();
+/* research_cron's public GET probe serving this checkout's build. */
+const RS_BUILD = D.expectedFunctionBuild('research_cron');
+const researchCron = (over) => ['/functions/v1/research_cron', { status: 200, body: JSON.stringify(Object.assign(
+  { ok: true, service: 'research_cron', build: RS_BUILD, configured: { has_token: true }, scheduler: null }, over || {})) }];
+const RESEARCH_CURRENT = researchCron();
+
+/** Answer every URL from a table of {match: response}. */
+const SENT = [];
+function net(table) {
+  globalThis.fetch = async (url, init) => {
+    const u = String(url);
+    SENT.push({ url: u, method: (init && init.method) || 'GET' });
+    for (const [frag, res] of [...table, CAPTURE_ARMED, PACKETS_APPLIED, PROPS_CURRENT, EDITORIAL_CURRENT, RESEARCH_CURRENT]) {
+      if (u.indexOf(frag) >= 0) {
+        if (res.throw) throw new Error(res.throw);
+        return { ok: res.status >= 200 && res.status < 300, status: res.status, text: async () => res.body || '' };
+      }
+    }
+    return { ok: false, status: 404, text: async () => 'not found' };
+  };
+}
+const stateOf = (r, name) => (r.checks.find((c) => c.name === name) || {}).state;
+const detailOf = (r, name) => (r.checks.find((c) => c.name === name) || {}).detail || '';
+const OPTS = { url: 'https://p.test', key: 'k', site: 'https://s.test' };
+const probeBody = (over) => JSON.stringify(Object.assign({
+  ok: true, build: WANT, decisions_enabled: true, intelligence_loaded: true, intelligence_version: 1,
+  env: { anthropic_key: true },
+}, over || {}));
+const OK_ARTIFACTS = [
+  ['/football/fbs/slate.json', { status: 200, body: '{"games":[{},{}]}' }],
+  ['/football/availability/current.json', { status: 200, body: '{"teams":{"a":{}},"generated_at":"2026-09-14T12:00:00Z"}' }],
+];
+/** One signal row: captured `ageMin` ago, for a game `kickHrs` from now. */
+const signals = (ageMin, kickHrs) => ['/rest/v1/signals', { status: 200, body: JSON.stringify([{
+  last_seen_at: new Date(Date.now() - ageMin * 60000).toISOString(),
+  commence_time: new Date(Date.now() + kickHrs * 3600000).toISOString(),
+  sport_key: 'americanfootball_ncaaf', market: 'spreads',
+}]) }];
+/* A board captured 40 minutes ago for a game six days out: healthy on any
+   rung, so it never decides the verdict in tests about something else. */
+const OK_BOARD = signals(40, 144);
+
+(async function main() {
+  /* --- IS ANYTHING FILLING THE BOARD? ---------------------------------
+     Every other check here answers "is the right code deployed". Capture was
+     never scheduled at all, which none of them could see, so a customer found
+     it instead: a price captured 2,345 minutes before they were shown it. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+    const board = async (row) => stateOf(await (net([...base, row]), D.doctor(OPTS)), 'the board is being captured');
+
+    eq('a board captured 40 minutes ago for a game six days out is current',
+      await board(signals(40, 144)), 'CURRENT');
+    eq('the same 40-minute age is STALE twenty minutes before kickoff',
+      await board(signals(40, 0.33)), 'STALE');
+    eq('the 39-hour board production served is STALE',
+      await board(signals(2345, 60)), 'STALE');
+    chk('and a STALE verdict names the sport, the market and the kickoff of the row it judged',
+      await (async () => {
+        net([...base, signals(99, 0.02)]);
+        const d = detailOf(await D.doctor(OPTS), 'the board is being captured');
+        return /americanfootball_ncaaf/.test(d) && /spreads/.test(d) && /kicks off 20\d\d-/.test(d);
+      })());
+    /* THE CADENCE FLOOR. capture/index.ts is explicit that a cadence looser
+       than the rung it feeds "IS NOT A BUG": the near tier runs every ten
+       minutes, the rung inside half an hour of kickoff is five, and a
+       ten-minute-old price in that window is the system working. Grading it
+       against the rung alone turned every evening with a game about to start
+       red — run 32 of Intelligence doctor is the receipt, and its fix text
+       told the operator to go and apply a scheduler that was running
+       correctly at that very moment. */
+    eq('production run 32 exactly: 10 minutes old, kickoff in 0.2 hours, is AGING and not STALE',
+      await board(signals(10, 0.2)), 'AGING');
+    eq('a price inside its rung is still CURRENT, not merely aging',
+      await board(signals(3, 0.2)), 'CURRENT');
+    eq('past the cadence it is STALE again — 20 minutes cannot come from a 10-minute tier',
+      await board(signals(20, 0.2)), 'STALE');
+    /* The allowance only ever opens where a cadence is LOOSER than the rung it
+       feeds. The day tier runs every 30 minutes against rungs of 90 and 180,
+       so it is always inside them and AGING can never apply to it — an hour-old
+       day-tier board is simply current. The board tier is the other place the
+       gap is real: 240 minutes against a 180-minute rung at three days out. */
+    eq('the day tier is tighter than every rung it feeds, so an hour old is just CURRENT',
+      await board(signals(60, 20)), 'CURRENT');
+    eq('the 240-minute board tier past its 180-minute rung is AGING',
+      await board(signals(200, 60)), 'AGING');
+    eq('and past the board cadence itself it is STALE',
+      await board(signals(300, 60)), 'STALE');
+    chk('an AGING board does not make the run actionable',
+      await (async () => {
+        net([...base, signals(10, 0.2)]);
+        return (await D.doctor(OPTS)).verdict !== 'ACTION NEEDED';
+      })());
+    chk('and it says the scheduler is keeping cadence rather than accusing it',
+      await (async () => {
+        net([...base, signals(10, 0.2)]);
+        const c = (await D.doctor(OPTS)).checks.find((x) => x.name === 'the board is being captured');
+        return c.fix === null && /cannot serve this rung/.test(c.detail) && /Not a fault/.test(c.detail);
+      })());
+    chk('a genuinely stale board still names the cadence it fell behind',
+      await (async () => {
+        net([...base, signals(2345, 60)]);
+        const c = (await D.doctor(OPTS)).checks.find((x) => x.name === 'the board is being captured');
+        return /beyond the 240-minute cadence/.test(c.fix || '');
+      })());
+
+    eq('a board with no upcoming game on it at all is EMPTY',
+      await board(['/rest/v1/signals', { status: 200, body: '[]' }]), 'EMPTY');
+
+    net([...base, signals(2345, 60)]);
+    let s = await D.doctor(OPTS);
+    eq('a stale board makes the whole verdict actionable', s.verdict, 'ACTION NEEDED');
+    chk('and the fix names the scheduler rather than the function',
+      /capture_cron\.sql/.test((s.checks.find((c) => c.name === 'the board is being captured') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
+
+    net([...base, ['/rest/v1/signals', { status: 401, body: 'permission denied' }]]);
+    s = await D.doctor(OPTS);
+    eq('a key that may not read signals reports UNKNOWN rather than guessing',
+      stateOf(s, 'the board is being captured'), 'UNKNOWN');
+  }
+
+  /* --- IS THE PACKET LEDGER THERE, AND IS THE DEPLOYMENT WRITING TO IT? --
+     The r12+ build snapshots every single-game football packet into
+     research_packets and carries on when the write fails, so a missing
+     migration is invisible from the desk. */
+  {
+    const base = [['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], OK_BOARD, ...OK_ARTIFACTS];
+    net([['?probe=1', { status: 200, body: probeBody() }], ...base]);
+    let r = await D.doctor(OPTS);
+    eq('a packet table that answers is APPLIED', stateOf(r, 'research_packets applied'), 'APPLIED');
+    chk('a build that predates the packet probe field is not judged on it',
+      !r.checks.some((c) => c.name === 'research packets are being snapshotted'));
+    eq('and the verdict is clean', r.verdict, 'DEPLOYED AND CURRENT');
+
+    net([['?probe=1', { status: 200, body: probeBody() }],
+      ['/rest/v1/research_packets', { status: 404, body: JSON.stringify({ code: 'PGRST205', message: "Could not find the table 'public.research_packets' in the schema cache" }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a packet table the schema cache does not know is NOT_APPLIED', stateOf(r, 'research_packets applied'), 'NOT_APPLIED');
+    eq('which is actionable', r.verdict, 'ACTION NEEDED');
+    chk('and the fix names the migration', /research_packets\.sql/.test((r.checks.find((c) => c.name === 'research_packets applied') || {}).fix || ''));
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write: null, migration: 'supabase/research_packets.sql' } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment that has not yet built a packet in this isolate is IDLE, not failing', stateOf(r, 'research packets are being snapshotted'), 'IDLE');
+    eq('and IDLE does not decide the verdict', r.verdict, 'DEPLOYED AND CURRENT');
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write:
+      { ok: false, status: 404, at: '2026-09-16T12:00:00Z', packet_id: 'p1', detail: "Could not find the table 'public.research_packets'" } } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment whose last packet write failed is FAILING', stateOf(r, 'research packets are being snapshotted'), 'FAILING');
+    eq('which is actionable', r.verdict, 'ACTION NEEDED');
+    chk('and the detail carries the deployment\'s own reason, with no credential in it',
+      /Could not find the table/.test(detailOf(r, 'research packets are being snapshotted')) && !/k\b.*Bearer/.test(detailOf(r, 'research packets are being snapshotted')));
+
+    net([['?probe=1', { status: 200, body: probeBody({ packet_health: { last_packet_write: { ok: true, status: 201, at: '2026-09-16T12:00:00Z', packet_id: 'p1', detail: null } } }) }], ...base]);
+    r = await D.doctor(OPTS);
+    eq('a deployment whose last packet write succeeded is WRITING', stateOf(r, 'research packets are being snapshotted'), 'WRITING');
+    eq('and the verdict stays clean', r.verdict, 'DEPLOYED AND CURRENT');
+  }
+
+  /* --- IS CAPTURE REFUSING ITS CALLERS, OR IS NOBODY CALLING? ----------
+     Identical from the signals table, opposite fixes. A function deployed
+     without CRON_SECRET 401s pg_cron and the workflow alike, and every other
+     check in this file reads healthy while the board empties. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+    const NO_SECRET = ['/functions/v1/capture', { status: 401, body: JSON.stringify({
+      ok: false, error: 'unauthorized',
+      reason: 'CRON_SECRET is not set on this function, so every caller is rejected including the scheduler. '
+        + 'Capture has not run since the variable went missing.' }) }];
+
+    net([...base, OK_BOARD, NO_SECRET]);
+    let s = await D.doctor(OPTS);
+    eq('a capture holding no CRON_SECRET is reported even while the board still looks fresh',
+      stateOf(s, 'capture can accept its scheduler'), 'MISSING');
+    eq('and that alone makes the verdict actionable', s.verdict, 'ACTION NEEDED');
+    chk('and the fix names the function secret, not the scheduler',
+      /supabase secrets set CRON_SECRET/.test((s.checks.find((c) => c.name === 'capture can accept its scheduler') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'capture can accept its scheduler') || {}).fix);
+
+    net([...base, OK_BOARD]);
+    s = await D.doctor(OPTS);
+    eq('a capture that refuses a mismatched secret is ARMED, not broken',
+      stateOf(s, 'capture can accept its scheduler'), 'ARMED');
+    eq('and an armed capture over a fresh board stays clean', s.verdict, 'DEPLOYED AND CURRENT');
+
+    /* The pairing that matters: board stale AND capture armed means the fault
+       is the caller, and the stale fix must send the operator to the caller. */
+    net([...base, signals(2345, 60)]);
+    s = await D.doctor(OPTS);
+    eq('a stale board beside an armed capture still reports ARMED',
+      stateOf(s, 'capture can accept its scheduler'), 'ARMED');
+    chk('and the stale fix points at the capture check before the cron table',
+      /next check first/.test((s.checks.find((c) => c.name === 'the board is being captured') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 404, body: 'not found' }]]);
+    eq('a capture that is not deployed at all is NOT_DEPLOYED, not a secret problem',
+      stateOf(await D.doctor(OPTS), 'capture can accept its scheduler'), 'NOT_DEPLOYED');
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { throw: 'network unreachable' }]]);
+    eq('an unreachable capture is UNKNOWN rather than an accusation',
+      stateOf(await D.doctor(OPTS), 'capture can accept its scheduler'), 'UNKNOWN');
+
+    /* MERGED IS NOT DEPLOYED, FOR CAPTURE TOO. It is deployed by hand and it
+       stamps its build into every response including the 401, so this costs
+       nothing extra and catches the case where the fix for an empty board was
+       merged and never deployed — which looks exactly like every other cause. */
+    net([...base, OK_BOARD]);
+    let d = await D.doctor(OPTS);
+    eq('a capture serving this checkout is CURRENT',
+      stateOf(d, 'deployed capture matches this checkout'), 'CURRENT');
+
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: JSON.stringify({
+      ok: false, build: 'capture-v8-sharp', error: 'unauthorized',
+      reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }]]);
+    d = await D.doctor(OPTS);
+    eq('an older capture still serving is STALE',
+      stateOf(d, 'deployed capture matches this checkout'), 'STALE');
+    chk('and names both builds and the deploy command',
+      /capture-v8-sharp/.test(detailOf(d, 'deployed capture matches this checkout'))
+      && detailOf(d, 'deployed capture matches this checkout').indexOf(CAP_BUILD) >= 0
+      && /functions deploy capture/.test((d.checks.find((c) => c.name === 'deployed capture matches this checkout') || {}).fix || ''),
+      detailOf(d, 'deployed capture matches this checkout'));
+    eq('and a stale capture is action, not an unknown', d.verdict, 'ACTION NEEDED');
+    eq('while its auth state is still read independently',
+      stateOf(d, 'capture can accept its scheduler'), 'ARMED');
+
+    /* A capture too old to stamp a build must not be reported as matching. */
+    net([...base, OK_BOARD, ['/functions/v1/capture', { status: 401, body: '{"ok":false,"error":"unauthorized"}' }]]);
+    d = await D.doctor(OPTS);
+    chk('a capture that reports no build at all makes no build claim either way',
+      d.checks.every((c) => c.name !== 'deployed capture matches this checkout'),
+      d.checks.map((c) => c.name).join(', '));
+  }
+
+  chk('the expected build is read from the function source', /^edgedesk_ai-\d{4}-/.test(String(WANT)), WANT);
+
+  /* --- THE FAILURE HAS TO SAY WHAT FAILED ------------------------------
+     The doctor workflow ran the doctor twice: once for the report, and once
+     more with its output sent to /dev/null purely to set the exit code. The
+     step that went red therefore printed nothing at all, and the reason sat in
+     a different step's summary. These annotations are what put the reason on
+     the run itself. */
+  {
+    const base = [['?probe=1', { status: 200, body: probeBody() }],
+      ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS];
+
+    net([...base, signals(2345, 60)]);
+    let s = await D.doctor(OPTS);
+    let a = D.annotations(s);
+    chk('a failing check becomes an ::error:: naming the check',
+      a.some((l) => l.startsWith('::error::') && /the board is being captured/.test(l)), a.slice(0, 3));
+    chk('and carries the fix line, so the annotation is actionable on its own',
+      a.some((l) => l.startsWith('::error::') && /fix: /.test(l)), a.slice(0, 3));
+    chk('and the verdict is a ::notice:: counting what needs action',
+      a.some((l) => /^::notice::VERDICT: ACTION NEEDED — \d+ check\(s\) need action/.test(l)),
+      a[a.length - 1]);
+    chk('every annotation is a single line, or GitHub renders only the first',
+      a.every((l) => l.indexOf('\n') < 0 && l.indexOf('\r') < 0), a);
+
+    /* UNKNOWN IS NOT A FAILURE. Nobody got an answer to that question; saying
+       so as an error would send an operator to fix a thing that may be fine. */
+    net([...base, ['/rest/v1/signals', { status: 401, body: 'permission denied' }]]);
+    s = await D.doctor(OPTS);
+    a = D.annotations(s);
+    chk('an undetermined check is a ::warning::, never an ::error::',
+      a.some((l) => l.startsWith('::warning::') && /the board is being captured/.test(l))
+      && !a.some((l) => l.startsWith('::error::') && /the board is being captured/.test(l)), a);
+
+    /* A clean run still speaks. Silence reads the same as not having run. */
+    net([...base, OK_BOARD]);
+    s = await D.doctor(OPTS);
+    a = D.annotations(s);
+    chk('a clean run still emits a verdict notice and no errors',
+      a.length === 1 && /^::notice::VERDICT: DEPLOYED AND CURRENT$/.test(a[0]), a);
+  }
+
+  /* --- AUTO-DEPLOY FIXES STALE FUNCTIONS AND NOTHING ELSE ---------------
+     The doctor workflow deploys on its own what --auto-deploy names. Each
+     finding a deploy would NOT fix is pinned here as naming nothing, above
+     all the board's own STALE, which shares the word and not the remedy. */
+  {
+    const ledger = [['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+      ['recommendation_ledger', { status: 200, body: '[]' }]];
+    const staleFn = ['?probe=1', { status: 200, body: probeBody({ build: 'edgedesk_ai-2026-09-03-r5-presentation' }) }];
+    const okFn = ['?probe=1', { status: 200, body: probeBody() }];
+    const staleCap = ['/functions/v1/capture', { status: 401, body: JSON.stringify({ ok: false,
+      build: 'capture-v11-player-props-r1', error: 'unauthorized', reason: 'the x-cron-secret header did not match CRON_SECRET.' }) }];
+    const run = async (table) => (net([...table, ...OK_ARTIFACTS]), D.doctor(OPTS));
+
+    let s = await run([okFn, staleCap, ...ledger, OK_BOARD]);
+    let p = D.deployPlan(s);
+    chk('production 2026-09-29 exactly: a stale capture plans a capture deploy and nothing else',
+      p.capture && !p.edgedesk_ai && p.other.length === 0, p);
+    eq('and with --auto-deploy the doctor step passes, leaving the verdict to the re-check',
+      D.exitCode(s, { autoDeploy: true }), 0);
+    eq('but without it the same finding still fails the step', D.exitCode(s), 1);
+    let a = D.annotations(s, { autoDeploy: true });
+    chk('a stale function being deployed is a ::warning:: that says so, never an ::error::',
+      a.some((l) => l.startsWith('::warning::') && /deployed capture matches/.test(l) && /auto-deploying capture/.test(l))
+      && !a.some((l) => l.startsWith('::error::')), a);
+    chk('and the verdict notice counts it as fixed by this run',
+      /^::notice::VERDICT: ACTION NEEDED — 1 check\(s\) need action \(1 fixed by this run's auto-deploy\)$/.test(a[a.length - 1]),
+      a[a.length - 1]);
+    chk('without --auto-deploy the same check is the ::error:: it always was, fix line included',
+      D.annotations(s).some((l) => l.startsWith('::error::') && /deployed capture matches/.test(l) && /fix: supabase functions deploy capture/.test(l)));
+
+    s = await run([staleFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale edgedesk_ai build plans an edgedesk_ai deploy', p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+
+    s = await run([staleFn, staleCap, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('both stale plans both, each named once', p.edgedesk_ai && p.capture && p.functions.length === 2, p);
+
+    s = await run([okFn, ...ledger, signals(2345, 60)]);
+    p = D.deployPlan(s);
+    chk('a STALE BOARD deploys nothing: it is a scheduler, not a build',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('the board is being captured') >= 0, p);
+    eq('so it still fails the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 1);
+
+    s = await run([['?probe=1', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('NOT_DEPLOYED deploys nothing: a 404 is as likely a wrong SB_URL as a missing function',
+      !p.edgedesk_ai && !p.capture && p.other.indexOf('edgedesk_ai deployed') >= 0, p);
+
+    s = await run([staleFn, ['recommendation_ledger', { status: 404, body: '{"message":"relation \\"public.recommendation_ledger\\" does not exist"}' }], OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a stale build beside a missing table still deploys the build',
+      p.edgedesk_ai && p.other.indexOf('recommendation_ledger applied') >= 0, p);
+    eq('but the step fails, because the migration is still a person\'s job', D.exitCode(s, { autoDeploy: true }), 1);
+    a = D.annotations(s, { autoDeploy: true });
+    chk('and only the migration is an ::error::',
+      a.filter((l) => l.startsWith('::error::')).length === 1
+      && a.some((l) => l.startsWith('::error::') && /recommendation_ledger applied/.test(l)), a);
+
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('a current deployment plans nothing', p.functions.length === 0 && p.other.length === 0, p);
+    eq('and passes either way', D.exitCode(s, { autoDeploy: true }) + D.exitCode(s), 0);
+
+    /* props_cron, the Player Props scheduler. Its GET is behind JWT
+       verification and carries BUILD; the build it was first deployed with
+       carried none. */
+    const PC = 'deployed props_cron matches this checkout';
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('a props_cron serving this checkout is CURRENT', stateOf(s, PC), 'CURRENT');
+
+    s = await run([okFn, propsCron({ build: 'props_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older props_cron build is STALE', stateOf(s, PC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans a props_cron deploy and nothing else', p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+    chk('and is annotated as being deployed',
+      D.annotations(s, { autoDeploy: true }).some((l) => l.startsWith('::warning::') && /auto-deploying props_cron/.test(l)));
+
+    s = await run([okFn, propsCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: a props_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, PC), 'STALE');
+    chk('and says so rather than naming a build it does not have', /predates its build stamp/.test(detailOf(s, PC)), detailOf(s, PC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on props_cron is NOT_DEPLOYED', stateOf(s, 'props_cron deployed'), 'NOT_DEPLOYED');
+    chk('which is never auto-deployed', !D.deployPlan(s).props_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    net([okFn, ['/functions/v1/props_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, ...OK_ARTIFACTS, OK_BOARD]);
+    s = await D.doctor({ url: 'https://p.test', key: '', site: 'https://s.test' });
+    eq('without a key the platform answers for props_cron, so its build is UNKNOWN', stateOf(s, PC), 'UNKNOWN');
+    chk('and nothing is deployed on a guess', !D.deployPlan(s).props_cron);
+
+    s = await run([okFn, ['/functions/v1/props_cron', { status: 200, body: '{"ok":true}' }], ...ledger, OK_BOARD]);
+    eq('a 200 that is not props_cron\'s own probe is UNKNOWN, not STALE', stateOf(s, PC), 'UNKNOWN');
+
+    /* editorial_cron, the editorial scheduler. Deployed with --no-verify-jwt:
+       its GET is public and carries BUILD, and a POST to it dispatches the
+       editorial workflow, so the doctor must only ever GET it. */
+    const EC = 'deployed editorial_cron matches this checkout';
+    SENT.length = 0;
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('an editorial_cron serving this checkout is CURRENT', stateOf(s, EC), 'CURRENT');
+    const toEd = SENT.filter((x) => x.url.indexOf('/functions/v1/editorial_cron') >= 0);
+    chk('the doctor asks editorial_cron exactly once, with a GET: a POST would dispatch the editorial workflow',
+      toEd.length === 1 && toEd[0].method === 'GET', toEd);
+    chk('and every request the doctor sends anywhere is a GET', SENT.every((x) => x.method === 'GET'),
+      SENT.filter((x) => x.method !== 'GET'));
+
+    s = await run([okFn, editorialCron({ build: 'editorial_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older editorial_cron build is STALE', stateOf(s, EC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans an editorial_cron deploy and nothing else',
+      p.editorial_cron && !p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+
+    s = await run([okFn, editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('production 2026-09-29 exactly: an editorial_cron answering with no build predates the stamp, so it is STALE',
+      stateOf(s, EC), 'STALE');
+    chk('and says so', /predates its build stamp/.test(detailOf(s, EC)), detailOf(s, EC));
+    chk('and is deployed like any other stale build', D.deployPlan(s).editorial_cron);
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    /* PRODUCTION 2026-09-29, run 69: editorial_cron answered 404 while
+       editorial.yml was dispatched every ten minutes by the SQL poke
+       (README option A). An absent function is the documented install, and
+       calling it NOT_DEPLOYED turned every doctor run red for nothing. */
+    eq('a 404 on editorial_cron is NOT_INSTALLED, not NOT_DEPLOYED', stateOf(s, 'editorial_cron deployed'), 'NOT_INSTALLED');
+    chk('and names the SQL poke that schedules instead',
+      /editorial_poke/.test(detailOf(s, 'editorial_cron deployed')), detailOf(s, 'editorial_cron deployed'));
+    eq('so the verdict is unaffected', s.verdict, 'DEPLOYED AND CURRENT');
+    chk('it is never auto-deployed, and passes the step either way',
+      !D.deployPlan(s).editorial_cron && D.exitCode(s, { autoDeploy: true }) === 0 && D.exitCode(s) === 0);
+    chk('and it is neither an ::error:: nor a ::warning::',
+      !D.annotations(s).some((l) => /editorial_cron/.test(l)), D.annotations(s));
+
+    s = await run([okFn, ['/functions/v1/editorial_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on editorial_cron is UNKNOWN', stateOf(s, EC), 'UNKNOWN');
+    chk('and points at JWT verification, the likely cause', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === EC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).editorial_cron);
+
+    /* research_cron, the research-state job's scheduler. Deployed with
+       --no-verify-jwt like editorial_cron, but it has no other install: a 404
+       means research-state.yml is back on GitHub's schedule alone. */
+    const RC = 'deployed research_cron matches this checkout';
+    SENT.length = 0;
+    s = await run([okFn, ...ledger, OK_BOARD]);
+    eq('a research_cron serving this checkout is CURRENT', stateOf(s, RC), 'CURRENT');
+    const toRs = SENT.filter((x) => x.url.indexOf('/functions/v1/research_cron') >= 0);
+    chk('the doctor asks research_cron exactly once, with a GET and no credential: a POST is a tick that can dispatch research-state.yml',
+      toRs.length === 1 && toRs[0].method === 'GET', toRs);
+
+    s = await run([okFn, researchCron({ build: 'research_cron-2026-09-01-r0' }), ...ledger, OK_BOARD]);
+    eq('an older research_cron build is STALE', stateOf(s, RC), 'STALE');
+    p = D.deployPlan(s);
+    chk('and plans a research_cron deploy and nothing else',
+      p.research_cron && !p.editorial_cron && !p.props_cron && !p.edgedesk_ai && !p.capture && p.other.length === 0, p);
+    eq('which passes the step under --auto-deploy', D.exitCode(s, { autoDeploy: true }), 0);
+    chk('and is annotated as being deployed',
+      D.annotations(s, { autoDeploy: true }).some((l) => l.startsWith('::warning::') && /auto-deploying research_cron/.test(l)));
+
+    s = await run([okFn, researchCron({ build: undefined }), ...ledger, OK_BOARD]);
+    eq('a research_cron answering with no build predates the stamp, so it is STALE', stateOf(s, RC), 'STALE');
+
+    s = await run([okFn, ['/functions/v1/research_cron', { status: 404, body: 'not found' }], ...ledger, OK_BOARD]);
+    eq('a 404 on research_cron is NOT_DEPLOYED (there is no other install)', stateOf(s, 'research_cron deployed'), 'NOT_DEPLOYED');
+    chk('which names the deploy workflow and the SQL, and is never auto-deployed',
+      /Deploy research scheduler/.test((s.checks.find((c) => c.name === 'research_cron deployed') || {}).fix || '')
+      && /research_state_cron\.sql/.test((s.checks.find((c) => c.name === 'research_cron deployed') || {}).fix || '')
+      && !D.deployPlan(s).research_cron && D.exitCode(s, { autoDeploy: true }) === 1);
+
+    s = await run([okFn, ['/functions/v1/research_cron', { status: 401, body: '{"msg":"Missing authorization header"}' }], ...ledger, OK_BOARD]);
+    eq('a 401 on research_cron is UNKNOWN', stateOf(s, RC), 'UNKNOWN');
+    chk('and points at JWT verification, which also refuses every tick', /--no-verify-jwt/.test(
+      (s.checks.find((c) => c.name === RC) || {}).fix || ''));
+    chk('and deploys nothing on a guess', !D.deployPlan(s).research_cron);
+
+    s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('all four stale at once plans all four, and nothing else',
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && !p.research_cron && p.functions.length === 4 && p.other.length === 0, p);
+    s = await run([staleFn, staleCap, propsCron({ build: undefined }), editorialCron({ build: undefined }), researchCron({ build: undefined }), ...ledger, OK_BOARD]);
+    p = D.deployPlan(s);
+    chk('all five stale at once plans all five, and nothing else',
+      p.edgedesk_ai && p.capture && p.props_cron && p.editorial_cron && p.research_cron && p.functions.length === 5 && p.other.length === 0, p);
+  }
+
+  /* ---- everything deployed and current -------------------------------- */
+  net([['?probe=1', { status: 200, body: probeBody() }],
+    ['recommendation_ledger?select=correction_reason', { status: 200, body: '[]' }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  let r = await D.doctor(OPTS);
+  eq('a deployed, current, migrated project is reported as such', r.verdict, 'DEPLOYED AND CURRENT');
+  eq('the function is DEPLOYED', stateOf(r, 'edgedesk_ai deployed'), 'DEPLOYED');
+  eq('the build is CURRENT', stateOf(r, 'deployed build matches this checkout'), 'CURRENT');
+  eq('the ledger is APPLIED', stateOf(r, 'recommendation_ledger applied'), 'APPLIED');
+  eq('the corrections are APPLIED', stateOf(r, 'official-correction columns applied'), 'APPLIED');
+
+  /* ---- THE CENTRAL CONFUSION: merged but not deployed ------------------ */
+  net([['?probe=1', { status: 200, body: probeBody({ build: 'edgedesk_ai-2026-09-03-r5-presentation' }) }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('an older build serving is STALE, not missing', stateOf(r, 'deployed build matches this checkout'), 'STALE');
+  chk('and both builds are named so the gap is obvious',
+    /r5-presentation/.test(detailOf(r, 'deployed build matches this checkout'))
+    && detailOf(r, 'deployed build matches this checkout').indexOf(WANT) >= 0,
+    detailOf(r, 'deployed build matches this checkout'));
+  eq('which is action, not an unknown', r.verdict, 'ACTION NEEDED');
+
+  net([['?probe=1', { status: 404, body: 'not found' }], ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a 404 on the function is NOT_DEPLOYED', stateOf(r, 'edgedesk_ai deployed'), 'NOT_DEPLOYED');
+  chk('and names the command that fixes it',
+    /supabase functions deploy edgedesk_ai/.test((r.checks.find((c) => c.name === 'edgedesk_ai deployed') || {}).fix || ''));
+
+  /* ---- a missing table vs a table RLS refused -------------------------- */
+  net([['?probe=1', { status: 200, body: probeBody() }],
+    ['recommendation_ledger', { status: 404, body: '{"message":"relation \\"public.recommendation_ledger\\" does not exist"}' }],
+    ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('an absent table is NOT_APPLIED', stateOf(r, 'recommendation_ledger applied'), 'NOT_APPLIED');
+  chk('and says what it costs, not just that it is absent',
+    /going unrecorded/.test(detailOf(r, 'recommendation_ledger applied')), detailOf(r, 'recommendation_ledger applied'));
+
+  net([['?probe=1', { status: 200, body: probeBody() }],
+    ['recommendation_ledger', { status: 401, body: 'permission denied' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a table row-level security refused is APPLIED, not missing',
+    stateOf(r, 'recommendation_ledger applied'), 'APPLIED');
+
+  /* ---- the migration half-applied -------------------------------------- */
+  net([['?probe=1', { status: 200, body: probeBody() }],
+    ['recommendation_ledger?select=correction_reason', { status: 400, body: '{"code":"42703","message":"column recommendation_ledger.correction_reason does not exist"}' }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a ledger without the correction columns is caught', stateOf(r, 'official-correction columns applied'), 'NOT_APPLIED');
+  chk('and the fix says the migration is safe to re-run',
+    /idempotent/.test((r.checks.find((c) => c.name === 'official-correction columns applied') || {}).fix || ''));
+
+  /* ---- THE MISTAKE THE DOCTOR ITSELF MADE ------------------------------ */
+  net([['?probe=1', { status: 200, body: probeBody() }], ['recommendation_ledger', { status: 200, body: '[]' }],
+    ['/football/', { status: 403, body: 'forbidden' }]]);
+  r = await D.doctor(OPTS);
+  eq('a 403 on an artifact is UNKNOWN, because a proxy said no — not the file',
+    stateOf(r, 'FBS slate artifact published'), 'UNKNOWN');
+  chk('and it says so rather than sending anyone to republish',
+    /refused rather than absent/.test(detailOf(r, 'FBS slate artifact published')));
+  net([['?probe=1', { status: 200, body: probeBody() }], ['recommendation_ledger', { status: 200, body: '[]' }],
+    ['/football/', { status: 404, body: 'nope' }]]);
+  r = await D.doctor(OPTS);
+  eq('a 404 on an artifact IS missing', stateOf(r, 'FBS slate artifact published'), 'MISSING');
+
+  /* ---- the things a deployed build can still be wrong about ------------ */
+  net([['?probe=1', { status: 200, body: probeBody({ decisions_enabled: false }) }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a switched-off decision layer is reported', stateOf(r, 'decision layer'), 'DISABLED');
+  chk('with what it means for the reader',
+    /recommends nothing/.test(detailOf(r, 'decision layer')), detailOf(r, 'decision layer'));
+
+  net([['?probe=1', { status: 200, body: probeBody({ env: { anthropic_key: false } }) }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a deployment with no model key is caught before a user finds it',
+    stateOf(r, 'model credential configured on the deployment'), 'ABSENT');
+  chk('and no secret VALUE is ever in the report',
+    JSON.stringify(r).indexOf('anthropic_key') < 0 || !/sk-|eyJ/.test(JSON.stringify(r)));
+
+  net([['?probe=1', { status: 200, body: probeBody({ intelligence_loaded: false, intelligence_version: null }) }],
+    ['recommendation_ledger', { status: 200, body: '[]' }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor(OPTS);
+  eq('a current build that lost the kernel is caught',
+    stateOf(r, 'intelligence kernel loaded in the deployed build'), 'ABSENT');
+
+  /* ---- no credential is UNKNOWN, never a guess ------------------------- */
+  net([['?probe=1', { status: 200, body: probeBody() }], ...OK_ARTIFACTS, OK_BOARD]);
+  r = await D.doctor({ url: 'https://p.test', key: '', site: 'https://s.test' });
+  eq('without a key the ledger question is UNKNOWN, not assumed',
+    stateOf(r, 'recommendation_ledger applied'), 'UNKNOWN');
+  eq('and the overall verdict says so', r.verdict, 'INCOMPLETE');
+
+  /* ---- an unreachable project is not a broken one ---------------------- */
+  net([['?probe=1', { throw: 'network unreachable' }], ['recommendation_ledger', { throw: 'network unreachable' }],
+    ['/football/', { throw: 'network unreachable' }]]);
+  r = await D.doctor(OPTS);
+  eq('an unreachable project reports UNKNOWN throughout', r.verdict, 'INCOMPLETE');
+  chk('and never claims anything is not deployed',
+    r.checks.every((c) => c.state !== 'NOT_DEPLOYED' && c.state !== 'NOT_APPLIED'), r.checks.map((c) => c.state));
+
+  done();
+})().catch((e) => { console.error('CRASH', (e && e.stack) || e); process.exit(1); });

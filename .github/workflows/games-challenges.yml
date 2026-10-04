@@ -1,0 +1,162 @@
+# EdgeDesk Games — rebuild the challenge board.
+#
+# The /games pages read ONE committed artifact, games/data/challenges.json,
+# and compute nothing. This job produces it by running the CANONICAL Power 4
+# exporter (football/cfb_p4/export_csv.js) and reshaping its output — there is
+# no second pricing engine anywhere in the games layer, and this workflow is
+# the only thing that writes the artifact.
+#
+# It runs often because a challenge board goes stale fast: kickoffs pass, book
+# numbers land, and a game nobody can still play is not a challenge.
+name: Games challenge board
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '20 11 * * *'   # daily, after the overnight results have settled
+    - cron: '20 23 * * 4'   # Thursday evening, before the weekend slate
+  push:
+    branches: [main]
+    paths:
+      - 'games/build_challenges.js'
+      - 'games/lib/**'
+      - 'football/cfb_p4/export_csv.js'
+      - 'football/cfb_p4/params.js'
+      - 'football/rankings/current.json'
+      - '.github/workflows/games-challenges.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: games-challenges
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The suites gate the write, the same way the football build gates its
+      # own: a board that fails its own rules must not reach the site.
+      - name: Suites (before)
+        run: npm run games:test
+
+      # A missing secret in Actions is an empty string, never an error, so a
+      # misnamed or unset credential is invisible unless something says so.
+      # This says so, in the run summary, without failing the run: both jobs
+      # are designed to degrade rather than break.
+      - name: Report which credential is present
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
+            echo "::notice::Supabase service credential present." >&2
+            echo '- Supabase credential: **service role**' >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Single-quoted, and no backticks. This line was double-quoted with
+            # `signals` in it, so bash read the backticks as command substitution,
+            # ran 'signals' as a command, and printed the annotation with the word
+            # missing. The step still succeeded, which is how it shipped.
+            echo '::warning::SB_SERVICE_ROLE / SB_URL are empty in this run. They are not GitHub Actions repository secrets. This run falls back to the anon role: the board still builds, but the signals table (the fresher captured quotes) stays out of reach.' >&2
+            {
+              echo '- Supabase credential: **absent** — `SB_SERVICE_ROLE` and/or `SB_URL` resolved to an empty string.'
+              echo '- They must exist as **GitHub Actions repository secrets**; secrets stored in the Supabase dashboard are not visible here.'
+              echo '- This run falls back to the anon role: the board still builds, but `signals` (the fresher captured quotes) stays out of reach.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # WHICH ROLE READS THE MARKET.
+      #
+      # Measured on run 2 of this workflow, reading as anon:
+      #     cfb.lines  62 rows      signals  0 rows
+      # So anon is enough for the reference table but is gated out of the live
+      # captured quotes, which are the fresher source. The service role gets
+      # both.
+      #
+      # SB_SERVICE_ROLE / SB_URL are the names this repository already uses for
+      # its Supabase credentials — the first version of this step referenced a
+      # SUPABASE_SERVICE_KEY that does not exist, so it silently passed an empty
+      # string and fell back to anon. A missing secret is an empty string in
+      # Actions, never an error, so the name has to be right.
+      #
+      # The build still succeeds without either: it falls back to anon and says
+      # which role it used.
+      - name: Build the challenge board
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/build_challenges.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      # Prove the DATA, not just the code. build_challenges.js already refuses
+      # to write an empty board; this refuses to COMMIT one that is malformed.
+      - name: Refuse to publish a wrong-shaped board
+        run: |
+          node -e "
+            const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
+            const a = require('./games/data/challenges.json');
+            if (a.schema !== 'edgedesk_games_challenges_v1') fail('unexpected schema');
+            if (!Array.isArray(a.challenges) || !a.challenges.length) fail('no challenges');
+            if (!a.model_version) fail('no model version recorded');
+            if (!a.scoring_version) fail('no scoring version recorded');
+            for (const c of a.challenges) {
+              if (c.edgedesk_spread == null) fail(c.game_id + ' has no EdgeDesk price');
+              if (!c.slug) fail(c.game_id + ' has no slug');
+              if (!c.home_team || !c.away_team) fail(c.game_id + ' is missing a team');
+            }
+            const slugs = new Set(a.challenges.map(c => c.slug));
+            if (slugs.size !== a.challenges.length) fail('duplicate slugs on the board');
+            console.log('ok — ' + a.challenges.length + ' challenge(s), '
+              + a.counts.with_market + ' with a book number');
+            // A board with no market is publishable — Price It still works —
+            // but it disables Pick 5 and the Spread challenge entirely, so it
+            // must never pass silently.
+            if (a.counts.with_market === 0) {
+              console.log('::warning::No game on this board carries a book number. Pick 5 and '
+                + 'the Spread challenge will show their empty states; Price It is unaffected. '
+                + 'Read the [market] lines in the build step above — they name the row count '
+                + 'from each source and the role used.');
+            }
+          "
+
+      - name: Suites (after)
+        run: npm run games:test
+
+      # THE FRANCHISE LAYER reads the same artifact from the server side, so
+      # the board is published to game_board with the service role. Harmless
+      # without the credential or before supabase/games_franchise.sql is
+      # applied: the worker says so and exits 0. It computes no price — every
+      # row it sends is in the artifact this job just built.
+      - name: Publish the board to the franchise layer
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: node games/publish_board.js
+
+      # THE PUSH RACES THE OTHER JOBS THAT COMMIT TO MAIN -- the editorial job
+      # alone commits every ten minutes -- and a plain `git push` lost that
+      # race five times in two days after every suite had passed. The shared
+      # helper rebuilds this job's artifact on the remote tip and pushes
+      # again; it never rebases, never force-pushes, and treats an identical
+      # board already on main as success.
+      - name: Commit
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          N=$(node -p "require('./games/data/challenges.json').challenges.length")
+          # to the branch this run checked out, as the plain push did: main
+          # when scheduled, the dispatched branch when dispatched
+          bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" "games: challenge board (${N} matchups)" -- games/data/challenges.json

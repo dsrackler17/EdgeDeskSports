@@ -1,0 +1,147 @@
+# Deploy the Record P&L database: model_pnl, Verified P&L and its evidence.
+#
+# WHY THIS EXISTS. The 2026-10-03 audit of Verified P&L against production
+# found that supabase/model_pnl*.sql had never been applied there: every
+# "Record P&L" run called model_pnl_upsert, got PGRST202 (no such function),
+# printed a warning and went green. The page was right (it reads the committed
+# ledger, record/pnl/); the database simply did not exist, and nothing said so.
+# Same root cause as deploy-intelligence.yml's header: "merged" and "running"
+# were two different facts with nothing connecting them.
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
+# decision a person makes. What this removes is the copy-paste into the SQL
+# editor, the forgotten file and the wrong order.
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the SQL suite against a throwaway PostgreSQL (tools/record/pnl_sql.test.js:
+#      every file applied twice, the price lock, the evidence table, the
+#      verified_pnl_* parity with the page's own kernel);
+#   2. applies, each in one transaction with ON_ERROR_STOP, in dependency order:
+#        model_pnl.sql → model_pnl_states.sql → model_pnl_analytics.sql →
+#        model_pnl_verified.sql → model_pnl_quotes.sql → model_pnl_verified_views.sql
+#      every file is idempotent and additive and ends in a report; a row that
+#      reads CHECK THIS fails the run;
+#   3. copies the committed ledger and every stored quote its locked prices cite
+#      (tools/record/pnl_sync.js), then proves the database says what the page
+#      says: verified_pnl_summary() = the Record card, both strategies, every
+#      integrity check 0;
+#   4. re-runs the evidence and verified-views reports over the synced rows, and
+#      prints supabase/verified_pnl_report.sql (A–I).
+#   Opt-in: re-applies supabase/bettor_decisions.sql, which production runs an
+#   older version of (it refuses every WATCH / LEAN decision; see that step).
+#
+# SECRETS (the ones the other deploy workflows already use):
+#   SB_DB_URL                     the pooled Postgres connection string (to apply SQL)
+#   SB_URL, SB_SERVICE_ROLE       PostgREST with the service role (to sync)
+name: Deploy Record P&L schema
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: 'Apply supabase/model_pnl*.sql in order (idempotent, additive)'
+        type: boolean
+        default: true
+      sync:
+        description: 'Then copy the committed ledger and its cited quotes, and check the database against the page'
+        type: boolean
+        default: true
+      apply_bettor_decisions:
+        description: 'Re-apply supabase/bettor_decisions.sql — production refuses every WATCH / LEAN decision (23514) because it runs the 2026-09-28 18:28 version (idempotent)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-record-pnl
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          PNL_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/record/pnl_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+          SBURL: ${{ secrets.SB_URL }}
+          SBKEY: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_sb=$([ -n "$SBURL" ] && [ -n "$SBKEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set — the SQL cannot be applied from CI. Add it in Settings > Secrets and variables > Actions, or paste the six files into the SQL editor in the order this workflow's header gives."; exit 1; fi
+          if [ -z "$SBURL" ] || [ -z "$SBKEY" ]; then echo "::warning::SB_URL / SB_SERVICE_ROLE are not set — the schema can be applied, but the ledger cannot be copied."; fi
+
+      - name: Apply supabase/model_pnl*.sql, in dependency order
+        if: ${{ inputs.apply_schema }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          for f in model_pnl model_pnl_states model_pnl_analytics model_pnl_verified model_pnl_quotes model_pnl_verified_views; do
+            echo "── supabase/$f.sql"
+            if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f "supabase/$f.sql" 2>&1); then
+              echo "$out" | tail -20
+              echo "::error::supabase/$f.sql did not apply (rolled back; nothing after it was attempted)"
+              exit 1
+            fi
+            echo "$out" | tail -14
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/$f.sql: a report row says CHECK THIS"; exit 1; fi
+          done
+
+      # THE BET DECISIONS' OWN MIRROR. Production runs the 2026-09-28 18:28
+      # bettor_decisions.sql, whose decision check predates the v2 engine's
+      # WATCH and LEAN, so every CFB Model Lab run since has had its decision
+      # sync refused (23514 on bettor_decision_snapshots_decision_check, first
+      # row bds_0b368e37) and logged as "skipped". The current file drops and
+      # re-adds that check; re-applying it is idempotent and needs nothing new.
+      - name: Re-apply supabase/bettor_decisions.sql (the BET decisions' mirror)
+        if: ${{ inputs.apply_bettor_decisions }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/bettor_decisions.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/bettor_decisions.sql did not apply (rolled back)"; exit 1
+          fi
+          echo "$out" | tail -12
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/bettor_decisions.sql: a report row says CHECK THIS"; exit 1; fi
+          def=$(psql "$PGURL" -X -A -t -c "select pg_get_constraintdef(oid) from pg_constraint where conname = 'bettor_decision_snapshots_decision_check'")
+          echo "decision check: $def"
+          if ! echo "$def" | grep -q "WATCH" || ! echo "$def" | grep -q "LEAN"; then echo "::error::the decision check still refuses WATCH / LEAN"; exit 1; fi
+
+      - name: Copy the ledger and its cited quotes, and prove the database says what the page says
+        if: ${{ inputs.sync && steps.creds.outputs.have_sb == 'yes' }}
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/record/pnl_sync.js
+
+      - name: Re-check over the synced rows, and print the verification report (A–I)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          for f in model_pnl_quotes model_pnl_verified_views; do
+            out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f "supabase/$f.sql" 2>&1) || { echo "$out" | tail -20; echo "::error::supabase/$f.sql did not re-apply"; exit 1; }
+            echo "── supabase/$f.sql, over the synced rows"; echo "$out" | tail -8
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/$f.sql: a report row says CHECK THIS over the synced rows"; exit 1; fi
+          done
+          out=$(psql "$PGURL" -X -v ON_ERROR_STOP=1 -f supabase/verified_pnl_report.sql 2>&1) || { echo "$out" | tail -20; echo "::error::verified_pnl_report.sql failed"; exit 1; }
+          echo "$out"
+          if echo "$out" | grep -q 'DOES NOT RECONCILE'; then echo "::error::graded ≠ verified + record only in the database"; exit 1; fi

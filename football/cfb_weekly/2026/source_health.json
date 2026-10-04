@@ -1,0 +1,98 @@
+{
+ "as_of": "2026-10-04T15:17:35.525Z",
+ "critical_failures": [],
+ "season": 2026,
+ "sources": [
+  {
+   "coverage": 1.0,
+   "critical": true,
+   "detail": "0 games past kickoff + 36 h without a final score",
+   "error_rate": null,
+   "freshness_bound_hours": null,
+   "freshness_hours": null,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "schedule",
+   "status": "HEALTHY",
+   "used_by_pure_model": true,
+   "version": "95155f349351c3ef558f7a09"
+  },
+  {
+   "coverage": 1.0,
+   "critical": true,
+   "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0333",
+   "error_rate": 0.0,
+   "freshness_bound_hours": null,
+   "freshness_hours": null,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "pbp",
+   "status": "HEALTHY",
+   "used_by_pure_model": true,
+   "version": "d78e52df3b1678440721ef85"
+  },
+  {
+   "coverage": null,
+   "critical": true,
+   "detail": "weekly roster sync (Mon 10:00 UTC)",
+   "error_rate": null,
+   "freshness_bound_hours": 192,
+   "freshness_hours": 141.33,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "roster",
+   "status": "HEALTHY",
+   "used_by_pure_model": false,
+   "version": "cd24d5642cd0e23306671c1e"
+  },
+  {
+   "coverage": 0.0,
+   "critical": true,
+   "detail": "0 of 138 teams with an official report; 276 failed sources; not a pure-model input",
+   "error_rate": null,
+   "freshness_bound_hours": 12,
+   "freshness_hours": 3.06,
+   "last_successful_ingestion": null,
+   "source": "injury",
+   "status": "DEGRADED",
+   "used_by_pure_model": false,
+   "version": "5a10027fe83e04fbccb404b9"
+  },
+  {
+   "coverage": 0.9164,
+   "critical": true,
+   "detail": "starter context; the pure model derives the expected starter from play-by-play",
+   "error_rate": null,
+   "freshness_bound_hours": 36,
+   "freshness_hours": 1.32,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "qb_status",
+   "status": "HEALTHY",
+   "used_by_pure_model": false,
+   "version": "6791a7b6ec7ccba126704bbb"
+  },
+  {
+   "coverage": null,
+   "critical": true,
+   "detail": "newest quote in the Model Lab ledger; never a pure-model input",
+   "error_rate": null,
+   "freshness_bound_hours": 6,
+   "freshness_hours": 0.17,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "market",
+   "status": "HEALTHY",
+   "used_by_pure_model": false,
+   "version": "70186ae1306ce63887bab709"
+  },
+  {
+   "coverage": null,
+   "critical": true,
+   "detail": "football/venues/forecasts.json; V2.1 has no weather input (adding one is a model change)",
+   "error_rate": null,
+   "freshness_bound_hours": null,
+   "freshness_hours": 1.31,
+   "last_successful_ingestion": "2026-10-04T15:17:35.525Z",
+   "source": "weather",
+   "status": "NOT_USED_BY_MODEL",
+   "used_by_pure_model": false,
+   "version": "fc8d2f2905a64372a701ee6a"
+  }
+ ]
+}

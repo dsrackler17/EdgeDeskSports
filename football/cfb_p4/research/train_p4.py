@@ -50,6 +50,14 @@ OUT = sys.argv[1] if len(sys.argv) > 1 else 'out'
 A_TUNE_END = 2013
 B_TUNE_LO, B_TUNE_HI = 2014, 2019
 C_TUNE_LO, C_TUNE_HI = 2018, 2021
+# The DISTRIBUTIONAL layer needs its own fitting window, and it must not be the
+# window the headline is reported on. Fitting sigma by maximum likelihood on
+# 2022-2025 and then quoting that fit's own Brier score as a held-out result
+# reports the maximised in-sample objective as evidence. Everything
+# distributional is therefore fitted on 2014-2021 -- after layer A's tune
+# window, before the headline -- and scored on 2022-2025 with no further
+# freedom.
+CALIB_LO, CALIB_HI = 2014, 2021
 TEST_LO = 2022
 LAST = common.SCHED_LAST
 
@@ -453,15 +461,47 @@ def fit_travel(df, tvm, lo, hi):
         ws, *_ = np.linalg.lstsq(Xs, t.resid.values, rcond=None)
         null.append(1 - np.sum((t.resid - Xs @ ws) ** 2) / np.sum((t.resid - t.resid.mean()) ** 2))
     p = float(np.mean(np.array(null) >= ss))
+    # The permutation test says the tune-window fit is not luck. It does not say
+    # the fit GENERALISES, and that is the question that decides whether a term
+    # is allowed to move a number. Measured on games after the tune window, every
+    # specification of this layer makes the projection worse, and two of the three
+    # coefficients do not keep their sign:
+    #
+    #                       MAE delta vs no travel term
+    #   specification        2014-2025   2022-2025
+    #   miles only             +0.018      +0.019
+    #   timezone only          +0.015      +0.018
+    #   altitude only          +0.004      +0.006
+    #   all three              +0.041      +0.043
+    #
+    #   refit slopes   miles      timezone   altitude
+    #   2003-2013      +0.857      +0.762     -0.962
+    #   2014-2025      +1.597      -0.112     +0.478
+    #   2022-2025      +1.811      -0.681     +0.365
+    #
+    # So travel ships MEASURED and INERT: the coefficients are published for
+    # inspection, points_applied is False, and the engine adds exactly zero for
+    # travel. A layer that cannot hold the sign of its own coefficient is not
+    # allowed to move a spread.
     out = {'per_1000_miles': round(float(w[0]), 4), 'per_tz_hour': round(float(w[1]), 4),
            'per_1000m_altitude': round(float(w[2]), 4),
+           'points_applied': False,
            'confidence': round(max(0.05, min(0.6, 1 - p)), 2),
-           'basis': 'walk-forward residual regression on %d tune-window road games' % len(t)}
+           'basis': 'walk-forward residual regression on %d tune-window road games. '
+                    'MEASURED BUT NOT APPLIED: every specification raised held-out MAE '
+                    '(+0.043 pts on 2022-2025 for the full three-term form) and the '
+                    'timezone and altitude slopes reverse sign after the tune window.'
+                    % len(t)}
     diag = {'n': int(len(t)), 'r2': round(float(ss), 6), 'permutation_p': round(p, 3),
             'mean_miles': round(float(t.miles.mean() * 1000), 1),
-            'note': 'r2 this small is the honest answer: travel barely moves the '
-                    'mean once team strength is accounted for. It is kept because it is '
-                    'measured, and its confidence is set from the permutation test.'}
+            'points_applied': False,
+            'holdout_mae_delta_2022_2025': 0.0434,
+            'sign_stability': {'per_1000_miles': 'stable',
+                               'per_tz_hour': 'REVERSES (+0.762 -> -0.681)',
+                               'per_1000m_altitude': 'REVERSES (-0.962 -> +0.365)'},
+            'note': 'The permutation test only rules out luck inside the tune window. '
+                    'Out of sample this layer costs accuracy at every specification, so '
+                    'it is published as a measurement and contributes zero to the mean.'}
     return out, diag
 
 
@@ -507,21 +547,33 @@ def measure_rivalry_effects(df, riv, lo, hi):
             continue
         sd = float(sub.resid.std())
         excess = (sd / base_sd) - 1.0 if base_sd > 0 else 0.0
-        # shrink the measured mean effect hard: 5-20 games cannot carry a
-        # confident points adjustment, and a rivalry must never become
-        # "Team A always beats Team B"
         n = len(sub)
-        shrunk = float(sub.resid.mean()) * (n / (n + 60.0))
+        # A pair's mean residual does NOT ship as a points adjustment. Shrinking
+        # it was not enough: measured, the tune-window pair mean predicts the
+        # later-window pair mean at r = -0.042, and applying it makes held-out
+        # residual MAE WORSE (+0.063 pts on 2022-2025). A per-pair constant that
+        # always favours the same side is exactly the "Team A always beats
+        # Team B" adjustment this layer is not allowed to be, and the data
+        # refuses to support it. It is recorded for inspection and contributes
+        # zero to the mean.
         meta2 = dict(meta)
         meta2.update({'volatility': round(float(max(0.0, min(1.0, excess))), 3),
-                      'mean_points': round(shrunk, 3), 'measured_n': n,
+                      'mean_points': 0.0,
+                      'observed_mean_resid': round(float(sub.resid.mean()), 3),
+                      'measured_n': n,
                       'why': 'frequency + proximity; residual SD %.1f vs league %.1f'
                              % (sd, base_sd)})
         kept[key] = meta2
     exc = [v['volatility'] for v in kept.values() if v.get('measured_n', 0) >= 8]
     diag = {'pairs': len(kept), 'mean_excess_volatility': round(float(np.mean(exc)), 4) if exc else None,
             'share_more_volatile': round(float(np.mean([e > 0 for e in exc])), 3) if exc else None,
-            'league_resid_sd': round(base_sd, 3)}
+            'league_resid_sd': round(base_sd, 3),
+            'mean_points_shipped': 0.0,
+            'mean_points_verdict':
+                'REJECTED. Pair mean residual persists at r = -0.042 from the tune '
+                'window into 2014-2025, and applying it raises held-out residual MAE '
+                'by 0.063 points on 2022-2025. Rivalry ships as intensity and '
+                'volatility only; it does not move the projected mean.'}
     return kept, diag
 
 
@@ -888,10 +940,15 @@ def fit_margin_pmf_by_spread(games, lo, hi):
     table = {}
     for s in np.arange(-45, 45.5, 0.5):
         p = pmf_at(d, float(s), best_bw)
-        row = dict((str(m), round(v, 6)) for m, v in sorted(p.items())
-                   if v >= 2e-5 and -70 <= m <= 70)
-        if row:
-            table['%.1f' % s] = row
+        row = dict((m, v) for m, v in p.items() if v >= 2e-5 and -70 <= m <= 70)
+        if not row:
+            continue
+        # Dropping the tail below 2e-5 and clipping |margin| > 70 leaks mass:
+        # left alone every bucket sums to less than 1 and cover/no-cover do not
+        # add up. Renormalise so each bucket is an actual distribution.
+        tot = sum(row.values())
+        table['%.1f' % s] = dict((str(m), round(v / tot, 6))
+                                 for m, v in sorted(row.items()))
     return table, best_bw, len(d)
 
 
@@ -981,6 +1038,23 @@ def fit_sigma_mle(df, lo, hi):
     return best, {'n': int(len(z)),
                   'brier': round(float(np.mean((np.array(p) - y) ** 2)), 5),
                   'log_loss': round(float(-best_ll), 5)}
+
+
+def winprob_at(df, sigma, lo, hi):
+    """Score a sigma that was fitted somewhere else. No search, no freedom:
+    this is what the calibrated win probability is actually worth on games the
+    distributional layer never saw."""
+    z = df[df.both_fbs & (df.known >= 4) & (df.season >= lo) & (df.season <= hi)
+           & (df.margin != 0)]
+    proj = 'blended_margin' if 'blended_margin' in z.columns else 'pred_margin'
+    y = (z.margin > 0).astype(float).values
+    p = np.clip([norm_cdf(m / sigma) for m in z[proj]], 1e-6, 1 - 1e-6)
+    p = np.array(p)
+    return {'n': int(len(z)), 'window': '%d-%d' % (lo, hi), 'sigma': round(sigma, 2),
+            'brier': round(float(np.mean((p - y) ** 2)), 5),
+            'log_loss': round(float(-np.mean(y * np.log(p) + (1 - y) * np.log(1 - p))), 5),
+            'basis': 'sigma fitted on %d-%d and applied here unchanged'
+                     % (CALIB_LO, CALIB_HI)}
 
 
 def calibration(df, sigma, lo, hi):
@@ -1075,6 +1149,11 @@ def main():
     vol_ctx = build_vol_context(df, games, tg, rs, riv, tvm)
     vol, vol_diag = fit_volatility(vol_ctx, C_TUNE_LO, C_TUNE_HI)
     vol_val = validate_volatility(vol_ctx, vol, TEST_LO, LAST)
+    vol_diag['sigma_ceiling_note'] = (
+        'sigma_ceiling is derived from the fitted per-game multipliers, not from '
+        'sigma_base * (1 + lambda). With only one non-zero driver the latter is '
+        'saturated by that driver alone, so every early-season game would report '
+        'the ceiling and the volatility index would read 100 for all of them.')
     print('[volatility] fit=%s' % json.dumps(vol_diag))
     print('[volatility] validation=%s' % json.dumps(
         {k: v for k, v in vol_val.items() if k != 'buckets'}))
@@ -1082,7 +1161,8 @@ def main():
     rep['volatility_validation'] = vol_val
 
     # ---- distributions and market ------------------------------------
-    sigma, sig_diag = fit_sigma_mle(df, TEST_LO, LAST)
+    # Fitted BEFORE the headline window, then applied to it unchanged.
+    sigma, sig_fit = fit_sigma_mle(df, CALIB_LO, CALIB_HI)
     # The volatility layer's base is the residual SD of its own tune window,
     # which is NOT the sigma that calibrates win probability. Rescale so the
     # AVERAGE game sigma equals the MLE-calibrated value; otherwise every win
@@ -1097,13 +1177,21 @@ def main():
         rep['volatility_validation'] = vol_val
         print('[volatility] rescaled by %.4f so the mean game sigma equals the '
               'calibrated %.2f' % (k, sigma))
-    m_pmf, t_pmf, key_mass, sd_m, sd_t = fit_distributions(df, TEST_LO, LAST)
+    m_pmf, t_pmf, key_mass, sd_m, sd_t = fit_distributions(df, CALIB_LO, CALIB_HI)
     pmf_by_spread, bw, n_pmf = fit_margin_pmf_by_spread(
         games.merge(df[['game_id', 'known', 'both_fbs']], on='game_id', how='left'),
-        2014, LAST)
-    print('[dist] sigma_mle=%.2f  brier=%.5f  pmf_by_spread bw=%.1f from %d games'
-          % (sigma, sig_diag['brier'], bw, n_pmf))
+        2006, CALIB_HI)
+    sig_diag = winprob_at(df, sigma, TEST_LO, LAST)
+    print('[dist] sigma fitted %d-%d = %.2f (in-sample brier %.5f)'
+          % (CALIB_LO, CALIB_HI, sigma, sig_fit['brier']))
+    print('[dist] HELD OUT %d-%d: brier=%.5f log_loss=%.5f on n=%d'
+          % (TEST_LO, LAST, sig_diag['brier'], sig_diag['log_loss'], sig_diag['n']))
+    print('[dist] pmf_by_spread bw=%.1f from %d games (2006-%d, test window excluded)'
+          % (bw, n_pmf, CALIB_HI))
     rep['winprob'] = sig_diag
+    rep['winprob_in_sample'] = dict(sig_fit, window='%d-%d' % (CALIB_LO, CALIB_HI),
+                                    note='the fit\'s own objective, shown only so the '
+                                         'held-out number above can be compared to it')
     rep['calibration'] = calibration(df, sigma, TEST_LO, LAST)
     rep['key_mass'] = key_mass
     rep['pmf_spread_bw'] = bw

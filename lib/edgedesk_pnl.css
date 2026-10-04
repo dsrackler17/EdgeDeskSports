@@ -1,0 +1,329 @@
+/* ===========================================================================
+   EDGEDESK P&L — the Records page's profit and loss (lib/edgedesk_pnl_ui.js).
+   EdgeDesk's own tokens (app.html / record.html :root), with fallbacks so the
+   section renders the same on both pages. Mobile first. The hierarchy is the
+   point: net units is the largest number on the page, then PROFIT / LOSS,
+   then ROI, record, win rate and bets — all before the first scroll.
+   =========================================================================== */
+.pnl-root{--p-bg:var(--bg,#100e0a);--p-s1:var(--surface,#191510);--p-s2:var(--surface2,#221c15);--p-bd:var(--border,#332a1b);--p-tx:var(--text,#f1ebdf);--p-dim:var(--dim,#a29581);--p-faint:var(--faint,#8a7f6e);--p-acc:var(--accent,#2fa79a);--p-pos:var(--pos,#76bd3e);--p-neg:var(--neg,#e26044);--p-warn:var(--warn,#d99a2b);
+  position:relative;color:var(--p-tx);font-family:'Inter',system-ui,sans-serif;min-width:0}
+.pnl-root *{box-sizing:border-box}
+.pnl-root b{font-weight:600}
+.pnl-loading,.pnl-empty{border:1px dashed var(--p-bd);border-radius:10px;padding:16px;color:var(--p-dim);font-size:13px;line-height:1.55;margin:10px 0}
+.pnl-empty.sm{padding:10px 12px;font-size:12.5px}
+.pnl-pos{color:var(--p-pos)}.pnl-neg{color:var(--p-neg)}.pnl-flat{color:var(--p-tx)}.pnl-mut{color:var(--p-dim);font-size:.92em}
+.pnl-note{color:var(--p-dim);font-size:12.5px;line-height:1.55;margin:8px 0 0;max-width:80ch}
+.pnl-note b{color:var(--p-tx)}
+.pnl-note.warn{color:var(--p-warn)}
+.pnl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---- 1. THE SUMMARY: up or down, by how much ---------------------------- */
+.pnl-hero{border:1px solid var(--p-bd);border-radius:16px;background:var(--p-s1);padding:16px 16px 14px;margin:4px 0 12px}
+.pnl-hero.profit{background:linear-gradient(180deg,rgba(118,189,62,.09),var(--p-s1) 70%);border-color:rgba(118,189,62,.35)}
+.pnl-hero.loss{background:linear-gradient(180deg,rgba(226,96,68,.09),var(--p-s1) 70%);border-color:rgba(226,96,68,.35)}
+.pnl-hero-ey{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-net{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(52px,15vw,76px);letter-spacing:-.04em;line-height:1;margin:10px 0 2px;font-variant-numeric:proportional-nums}
+.pnl-verdict{font-size:14px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.pnl-hero.profit .pnl-verdict{color:var(--p-pos)}.pnl-hero.loss .pnl-verdict{color:var(--p-neg)}.pnl-hero.even .pnl-verdict{color:var(--p-tx)}
+.pnl-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--p-bd)}
+@media(min-width:560px){.pnl-stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pnl-st-k{font-size:11.5px;color:var(--p-dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.pnl-st-v{font-size:19px;font-weight:700;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-hero-per{font-size:13px;color:var(--p-dim);margin-top:12px;line-height:1.45}
+.pnl-hero-none{font-size:clamp(20px,5.6vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:10px 0 6px}
+.pnl-hero-sub{font-size:15px;color:var(--p-dim)}
+.pnl-hero-sub b{color:var(--p-tx);font-weight:700}
+.pnl-hero.pnl-skel .pnl-hero-none{color:var(--p-dim);font-weight:600}
+/* MODEL PERFORMANCE: the graded record leads when no priced bet has settled */
+.pnl-perf-rec{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.035em;line-height:1;margin:10px 0 4px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-perf-sub{font-size:15px;color:var(--p-dim)}
+.pnl-perf-sub b{color:var(--p-tx);font-weight:700}
+.pnl-perf-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--p-bd)}
+/* the verified P&L's own status, small, while it has nothing settled */
+.pnl-status{border:1px dashed var(--p-bd);border-radius:12px;padding:10px 14px;margin:0 0 4px;background:transparent}
+.pnl-status-ey{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-status-v{font-size:15px;font-weight:700;margin-top:4px}
+.pnl-status-s{font-size:12.5px;color:var(--p-dim);margin-top:2px;line-height:1.45}
+.pnl-status-s b{color:var(--p-tx)}
+
+/* ---- 2. VERIFIED P&L: up or down, by how much, over how many priced decisions */
+.pnl-ver{border:1px solid var(--p-bd);border-radius:16px;background:var(--p-s1);padding:16px 16px 14px;margin:0 0 12px}
+.pnl-ver.profit{background:linear-gradient(180deg,rgba(118,189,62,.10),var(--p-s1) 70%);border-color:rgba(118,189,62,.45)}
+.pnl-ver.loss{background:linear-gradient(180deg,rgba(226,96,68,.10),var(--p-s1) 70%);border-color:rgba(226,96,68,.45)}
+.pnl-ver.none{border-style:dashed}
+.pnl-ver-ey{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-ver-tag{margin-left:auto;font:800 11px 'Inter',sans-serif;letter-spacing:.14em;border-radius:20px;padding:3px 10px;border:1px solid var(--p-bd);color:var(--p-tx)}
+.pnl-ver-tag.profit{color:var(--p-pos);border-color:rgba(118,189,62,.55)}.pnl-ver-tag.loss{color:var(--p-neg);border-color:rgba(226,96,68,.55)}
+.pnl-ver-net{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.04em;line-height:1.02;margin:10px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-ver-roi{font-weight:800;font-size:clamp(20px,5.6vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-ver-n{font-size:15px;color:var(--p-dim);margin-top:6px;line-height:1.45}
+.pnl-ver-n b,.pnl-ver-inc b{color:var(--p-tx);font-weight:700}
+.pnl-ver-none{font-size:clamp(20px,5.6vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.2;margin:10px 0 2px}
+.pnl-ver.pnl-skel .pnl-ver-none{color:var(--p-dim);font-weight:600}
+.pnl-ver-inc{font-size:13px;color:var(--p-dim);margin-top:8px;line-height:1.55;font-variant-numeric:tabular-nums}
+.pnl-ver-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--p-bd)}
+@media(min-width:620px){.pnl-ver-dl{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.pnl-vd{min-width:0}
+.pnl-vd-k{font-size:11px;color:var(--p-dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.pnl-vd-v{font-size:18px;font-weight:700;margin-top:2px;letter-spacing:-.01em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-ver-mk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+@media(min-width:620px){.pnl-ver-mk{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pnl-vm{border:1px solid var(--p-bd);border-radius:10px;background:var(--p-bg);padding:10px 12px;min-width:0}
+.pnl-vm-k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--p-dim);font-weight:700}
+.pnl-vm-v{font-size:clamp(18px,5vw,22px);font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums}
+.pnl-vm-r{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.pnl-vm-n{font-size:12px;color:var(--p-dim);margin-top:2px;font-variant-numeric:tabular-nums}
+.pnl-vm-o{font-size:11.5px;color:var(--p-dim);margin-top:1px}
+.pnl-vm-s{color:var(--p-warn)}
+@media(max-width:619px){.pnl-ver-dl .pnl-vd[data-k="record_only"]{grid-column:1/-1}}
+.pnl-ver-per{font-size:12.5px;color:var(--p-dim);margin-top:12px;line-height:1.45}
+/* P&L at the graded price: the record's picks in units (game picks at the close) — the Verified card's shape, its own name */
+.pnl-grd{border:1px solid var(--p-bd);border-radius:16px;background:var(--p-s1);padding:16px 16px 14px;margin:0 0 12px}
+.pnl-grd.profit{background:linear-gradient(180deg,rgba(118,189,62,.10),var(--p-s1) 70%);border-color:rgba(118,189,62,.45)}
+.pnl-grd.loss{background:linear-gradient(180deg,rgba(226,96,68,.10),var(--p-s1) 70%);border-color:rgba(226,96,68,.45)}
+.pnl-grd-ey{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-grd-net{font-family:'Inter',sans-serif;font-weight:800;font-size:clamp(44px,13vw,68px);letter-spacing:-.04em;line-height:1.02;margin:10px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-grd-roi{font-weight:800;font-size:clamp(20px,5.6vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-grd-n{font-size:15px;color:var(--p-dim);margin-top:6px;line-height:1.45}
+.pnl-grd-inc{font-size:13px;color:var(--p-dim);margin-top:8px;line-height:1.55;font-variant-numeric:tabular-nums}
+.pnl-grd-n b,.pnl-grd-inc b{color:var(--p-tx);font-weight:700}
+/* a row's price and units in the graded history: "−108 · 1.00u risked · +0.93u" */
+.pnl-pc{white-space:normal !important}
+.pnl-pc-o{font-weight:700;color:var(--p-tx);font-variant-numeric:tabular-nums}
+.pnl-pc b{font-variant-numeric:tabular-nums}
+.pnl-ro{color:var(--p-tx);font-weight:600}
+.pnl-dflt{font:600 9.5px 'JetBrains Mono',monospace;border-radius:4px;padding:1px 4px;border:1px solid var(--p-bd);color:var(--p-dim);vertical-align:middle}
+
+/* ---- the four views, each with its own net ------------------------------- */
+.pnl-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:12px;padding:4px}
+.pnl-tabs button{border:0;background:transparent;color:var(--p-dim);border-radius:9px;min-height:54px;padding:6px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
+.pnl-tabs button.on{background:var(--p-s2);color:var(--p-tx);box-shadow:inset 0 0 0 1px var(--p-bd)}
+.pnl-tab-k{font:700 13px 'Inter',sans-serif;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.pnl-tab-v{font:600 13px 'JetBrains Mono',monospace;white-space:nowrap}
+.pnl-tab-r{font:500 11px 'JetBrains Mono',monospace;white-space:nowrap;color:var(--p-dim);max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:479px){.pnl-long{display:none}}
+.pnl-short{display:none}
+@media(max-width:479px){.pnl-short{display:inline}}
+.pnl-opts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:10px 0 4px}
+.pnl-seg{display:flex;gap:2px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:10px;padding:3px;max-width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pnl-seg::-webkit-scrollbar{display:none}
+.pnl-seg button{flex:0 0 auto;border:0;background:transparent;color:var(--p-dim);font:600 13px 'Inter',sans-serif;padding:0 12px;min-height:38px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.pnl-seg button.on{background:var(--p-s2);color:var(--p-tx);box-shadow:inset 0 0 0 1px var(--p-bd)}
+.pnl-seg-sm button{padding:0 10px;font-size:12.5px}
+.pnl-o{position:relative}
+.pnl-in-sm{min-height:38px;padding:4px 10px;font-size:13px;width:auto}
+.pnl-chk{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--p-dim);min-height:38px;cursor:pointer}
+.pnl-chk input{width:18px;height:18px;accent-color:var(--p-acc);margin:0}
+.pnl-seg button:focus-visible,.pnl-tabs button:focus-visible,.pnl-btn:focus-visible,.pnl-help:focus-visible,.pnl-click:focus-visible,.pnl-svg:focus-visible,.pnl-det>summary:focus-visible{outline:2px solid var(--p-acc);outline-offset:2px}
+
+/* help: a small info button, a popover */
+.pnl-help{width:22px;height:22px;min-width:22px;border-radius:50%;border:1px solid var(--p-bd);background:var(--p-s2);color:var(--p-dim);font:700 11px Georgia,serif;font-style:italic;cursor:pointer;padding:0;line-height:1;position:relative;text-transform:none;letter-spacing:0}
+.pnl-help::after{content:'';position:absolute;inset:-10px}
+.pnl-pop{position:absolute;z-index:30;background:var(--p-s2);border:1px solid var(--p-bd);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.55;color:var(--p-tx);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.pnl-sample{display:inline-block;font:500 10px 'JetBrains Mono',monospace;color:var(--p-dim);border:1px solid var(--p-bd);border-radius:20px;padding:1px 7px;white-space:nowrap;vertical-align:middle}
+.pnl-sample.warn{color:var(--p-warn);border-color:rgba(217,154,43,.45)}
+
+/* sections */
+.pnl-sec{margin:18px 0 0;min-width:0}
+.pnl-sh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:8px}
+.pnl-sh h4{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.pnl-sub{font-size:12.5px;color:var(--p-dim)}
+.pnl-h5{font-size:13px;font-weight:700;margin:14px 0 6px}
+
+/* ---- the one chart --------------------------------------------------------- */
+.pnl-legend{display:inline-flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--p-dim)}
+.pnl-legend span{display:inline-flex;align-items:center;gap:6px}
+.pnl-legend i{display:inline-block;width:18px;height:0;border-top:2px solid var(--p-acc)}
+.pnl-legend i.k-peak{border-top:1px dashed var(--p-dim)}
+.pnl-chart{position:relative;border:1px solid var(--p-bd);border-radius:12px;background:var(--p-s1);padding:8px 4px 2px;min-height:120px}
+.pnl-svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.pnl-grid{stroke:var(--p-bd);stroke-width:1}
+.pnl-zero{stroke:var(--p-dim);stroke-width:1;opacity:.6}
+.pnl-ax{fill:var(--p-dim);font:500 11px 'JetBrains Mono',monospace}
+.pnl-line{fill:none;stroke:var(--p-acc);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.pnl-peak{fill:none;stroke:var(--p-dim);stroke-width:1;stroke-dasharray:4 3;opacity:.7}
+.pnl-end{fill:var(--p-acc);stroke:var(--p-s1);stroke-width:2}
+.pnl-hit{fill:var(--p-tx);stroke:var(--p-s1);stroke-width:2}
+.pnl-cross{stroke:var(--p-dim);stroke-width:1}
+.pnl-over{fill:transparent;cursor:crosshair}
+.pnl-tip{position:absolute;z-index:4;pointer-events:none;background:var(--p-s2);border:1px solid var(--p-bd);border-radius:9px;padding:8px 10px;font-size:12px;line-height:1.45;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.45);color:var(--p-dim)}
+.pnl-tip-d{color:var(--p-tx);font-weight:700}
+.pnl-tip-s{color:var(--p-tx)}
+.pnl-tip-v{font-weight:700;color:var(--p-tx)}
+.pnl-tip-v.pnl-pos{color:var(--p-pos)}.pnl-tip-v.pnl-neg{color:var(--p-neg)}
+.pnl-under{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--p-dim);margin:8px 2px 0}
+.pnl-under b{font-weight:700;font-variant-numeric:tabular-nums;margin-left:4px}
+
+/* ---- the historical record: wins and losses, never units ----------------- */
+.pnl-hist{border:1px solid var(--p-bd);border-radius:14px;background:var(--p-s1);padding:14px 16px;margin:12px 0 0}
+.pnl-hist-h{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--p-dim);font-weight:700;display:flex;align-items:center;gap:8px}
+.pnl-hist-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:12px}
+.pnl-hm{min-width:0}
+.pnl-hm-w{font-size:11.5px;color:var(--p-warn);margin-top:2px}
+.pnl-hm-l{font-size:11.5px;color:var(--p-dim);margin-top:2px}
+/* the graded record's headline: how many, W-L-P, win % — the second answer on the page */
+.pnl-hist-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px;margin-top:10px;font-size:14px;color:var(--p-dim)}
+.pnl-hist-top b{color:var(--p-tx);font-weight:800;font-size:clamp(20px,5.4vw,26px);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pnl-ht-s{font-size:12.5px}
+.pnl-hist-by{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:10px;font-size:12.5px;color:var(--p-dim);font-variant-numeric:tabular-nums}
+.pnl-hist-by b{color:var(--p-tx)}
+.pnl-link{background:none;border:0;padding:0;color:var(--p-acc);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pnl-link:focus-visible{outline:2px solid var(--p-acc);outline-offset:2px;border-radius:3px}
+/* an internal disagreement between the page's own figures */
+.pnl-integrity{border:1px solid var(--p-neg);background:rgba(226,96,68,.12);color:var(--p-tx);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;margin:0 0 10px;overflow-wrap:anywhere}
+/* "waiting for settlement": said once, never a table of zeros */
+.pnl-wait{border:1px dashed var(--p-bd);border-radius:10px;padding:12px 14px;color:var(--p-dim);font-size:13px;line-height:1.55;margin:8px 0}
+.pnl-wait b{color:var(--p-tx)}
+.pnl-why{margin-top:14px}
+.pnl-whyl{list-style:none;margin:6px 0 0;padding:0;border:1px solid var(--p-bd);border-radius:10px;overflow:hidden;max-width:560px}
+.pnl-whyl li{display:flex;justify-content:space-between;gap:12px;padding:7px 12px;font-size:13px;border-top:1px solid var(--p-bd)}
+.pnl-whyl li:first-child{border-top:0}
+.pnl-whyl li b{font-variant-numeric:tabular-nums}
+.pnl-whyl .pnl-whyt{background:var(--p-s2);font-weight:600}
+.pnl-tab-v[data-kind="record"]{font-size:12px}
+.pnl-hm-k{font-size:12px;color:var(--p-dim);font-weight:600}
+.pnl-hm-v{font-size:clamp(17px,4.6vw,22px);font-weight:700;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pnl-hm-p{font-size:13px;color:var(--p-dim);margin-top:1px;font-variant-numeric:tabular-nums}
+.pnl-hist-note{font-size:12.5px;color:var(--p-dim);margin:12px 0 0;line-height:1.5}
+
+/* ---- How P&L works / Advanced Analytics: collapsed ---------------------- */
+.pnl-det{border:1px solid var(--p-bd);border-radius:12px;background:var(--p-s1);margin:12px 0;padding:0 14px}
+.pnl-det>summary{cursor:pointer;min-height:48px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:14.5px;list-style:none}
+.pnl-det>summary::-webkit-details-marker{display:none}
+.pnl-det>summary::before{content:'▸';color:var(--p-dim);font-size:12px;transition:transform .15s}
+.pnl-det[open]>summary::before{transform:rotate(90deg)}
+.pnl-det[open]{padding-bottom:14px}
+.pnl-det .pnl-det{background:var(--p-bg);margin:8px 0}
+.pnl-det .pnl-det>summary{font-size:13.5px;font-weight:600;min-height:44px}
+.pnl-how{margin-top:18px}
+.pnl-adv>[data-r="advslot"]{margin-top:18px}
+.pnl-cnt{font:500 10.5px 'JetBrains Mono',monospace;color:var(--p-dim);border:1px solid var(--p-bd);border-radius:20px;padding:1px 7px}
+.pnl-ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--p-dim);line-height:1.6}
+.pnl-ul b{color:var(--p-tx)}
+.pnl-gloss{margin:10px 0 0}
+.pnl-gloss dt{font-weight:700;font-size:13px;margin-top:10px}
+.pnl-gloss dd{margin:3px 0 0;color:var(--p-dim);font-size:13px;line-height:1.55}
+
+/* advanced: small cards, data quality, drawdown, comparisons */
+.pnl-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media(min-width:560px){.pnl-cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pnl-card{border:1px solid var(--p-bd);border-radius:10px;padding:11px 12px;background:var(--p-bg);min-width:0}
+.pnl-cl{font-size:10.5px;color:var(--p-dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600;display:flex;align-items:center;gap:6px}
+.pnl-v{font-family:'Inter',sans-serif;font-weight:700;font-size:18px;letter-spacing:-.02em;margin-top:4px;overflow-wrap:anywhere}
+.pnl-v.sm{font-size:16px}
+.pnl-cs{font-size:11.5px;color:var(--p-dim);margin-top:3px;line-height:1.4}
+.pnl-dq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pnl-dqi{border:1px solid var(--p-bd);border-radius:10px;padding:10px 12px;background:var(--p-bg);min-width:0}
+.pnl-dqn{font-weight:700;font-size:18px}
+.pnl-dql{font-size:12.5px;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+@media(min-width:720px){.pnl-dq{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pnl-dd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pnl-ddi{border:1px solid var(--p-bd);border-radius:10px;padding:10px 12px;background:var(--p-bg);min-width:0}
+@media(min-width:760px){.pnl-dd{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.pnl-cmps{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+@media(min-width:560px){.pnl-cmps{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pnl-cmp{border:1px solid var(--p-bd);border-radius:10px;padding:12px;background:var(--p-bg);min-width:0}
+.pnl-cmph{font-weight:700;font-size:14px;margin-bottom:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pnl-kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;border-top:1px solid rgba(51,42,27,.6)}
+.pnl-kv span{color:var(--p-dim)}
+
+/* tables: scroll on wide screens, labelled cards on phones */
+.pnl-tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--p-bd);border-radius:10px;background:var(--p-s1)}
+.pnl-t{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pnl-t th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--p-dim);font-weight:600;padding:9px 10px;border-bottom:1px solid var(--p-bd);white-space:nowrap;background:var(--p-s2)}
+.pnl-t td{padding:9px 10px;border-bottom:1px solid rgba(51,42,27,.55);vertical-align:top;white-space:nowrap}
+.pnl-t td:first-child{white-space:normal}
+.pnl-t tbody tr:last-child td{border-bottom:0}
+.pnl-t td.pnl-read{white-space:normal;min-width:150px}
+.pnl-read .pnl-sample{white-space:normal}
+.pnl-click{cursor:pointer}
+.pnl-click:hover td{background:rgba(255,255,255,.025)}
+.pnl-click.open td{background:rgba(47,167,154,.07)}
+.pnl-res{display:inline-block;font:700 11px 'Inter',sans-serif;border-radius:20px;padding:2px 9px;border:1px solid var(--p-bd);color:var(--p-dim);text-transform:uppercase;letter-spacing:.04em}
+.pnl-res.r-win{color:var(--p-pos);border-color:rgba(118,189,62,.45)}
+.pnl-res.r-loss{color:var(--p-neg);border-color:rgba(226,96,68,.45)}
+.pnl-res.r-push,.pnl-res.r-void{color:var(--p-tx)}
+.pnl-grade{font:600 9.5px 'JetBrains Mono',monospace;border-radius:4px;padding:1px 5px;border:1px solid var(--p-bd);color:var(--p-dim);vertical-align:middle}
+.pnl-corr{font:600 9.5px 'JetBrains Mono',monospace;color:var(--p-warn)}
+.pnl-audit td,.pnl-drill td{white-space:normal;background:var(--p-bg)}
+.pnl-audit-dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px 16px;margin:4px 0}
+.pnl-audit-dl dt{font-size:10.5px;color:var(--p-dim);text-transform:uppercase;letter-spacing:.05em}
+.pnl-audit-dl dd{margin:2px 0 0;font-size:12.5px;overflow-wrap:anywhere}
+.pnl-corrs{margin-top:8px;font-size:12.5px}
+@media(max-width:640px){
+  .pnl-tw{border:0;background:transparent;overflow:visible}
+  .pnl-t,.pnl-t tbody,.pnl-t tr,.pnl-t td{display:block;width:100%}
+  .pnl-t{min-width:0 !important}
+  .pnl-t thead{display:none}
+  .pnl-t tr{border:1px solid var(--p-bd);border-radius:10px;background:var(--p-s1);margin:0 0 8px;padding:6px 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+  .pnl-t td{white-space:normal;border:0;padding:4px 10px;min-width:0;overflow-wrap:anywhere}
+  .pnl-t td::before{content:attr(data-l);display:block;font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--p-dim);margin-bottom:1px}
+  .pnl-t td:first-child{grid-column:1/-1;font-size:14px}
+  .pnl-t td:first-child::before{display:none}
+  .pnl-t td.pnl-read{grid-column:span 2;min-width:0}
+  .pnl-t tr.pnl-drill{display:block;padding:10px 12px}
+  .pnl-t tr.pnl-drill td{padding:0;background:transparent}
+  .pnl-t tr.pnl-drill td::before{display:none}
+  .pnl-drillin .pnl-t tr{background:var(--p-bg)}
+  .pnl-audit-dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ---- the ledger: six columns; on a phone, a two-line row ---------------- */
+.pnl-lt{font-size:13px}
+.pnl-lt td,.pnl-t.pnl-lt td:first-child{white-space:nowrap}
+.pnl-lt td[data-l="Bet"]{white-space:normal;font-weight:600;color:var(--p-tx);width:100%}
+.pnl-lt td[data-l="Units"],.pnl-lt th:last-child{text-align:right}
+.pnl-lt .pnl-pl{font-weight:700;font-variant-numeric:tabular-nums}
+.pnl-lt td[data-l="Status"],.pnl-ht th:last-child{text-align:right;white-space:nowrap}
+.pnl-lt td.pnl-rs.ver{color:var(--p-pos);font-weight:600}
+@media(max-width:640px){
+  .pnl-tw-l{border:0;background:transparent}
+  .pnl-lt tr.pnl-lr{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"bet bet bet units" "date sport odds res";column-gap:10px;row-gap:4px;padding:10px 12px;align-items:center}
+  .pnl-lt tr.pnl-lr td{padding:0;font-size:12.5px;color:var(--p-dim)}
+  .pnl-lt tr.pnl-lr td::before{display:none}
+  .pnl-lt td[data-l="Bet"]{grid-area:bet;font-size:14.5px;color:var(--p-tx)}
+  .pnl-lt td[data-l="Units"]{grid-area:units;font-size:15px;text-align:right}
+  .pnl-lt td[data-l="Units"].pnl-pos{color:var(--p-pos)}.pnl-lt td[data-l="Units"].pnl-neg{color:var(--p-neg)}.pnl-lt td[data-l="Units"].pnl-flat{color:var(--p-tx)}
+  .pnl-lt td[data-l="Date"]{grid-area:date}
+  .pnl-lt td[data-l="Sport"]{grid-area:sport}
+  .pnl-lt td[data-l="Odds"]{grid-area:odds}
+  .pnl-lt td[data-l="Result"]{grid-area:res;text-align:right}
+  .pnl-lt td[data-l="Status"]{grid-area:units;text-align:right;font-size:12.5px}
+  .pnl-ht tr.pnl-lr{grid-template-areas:"bet bet bet bet" "date sport res res" "units units units units"}
+  .pnl-ht td[data-l="Status"]{text-align:left;font-size:12.5px}
+  .pnl-lt tr.pnl-audit{display:block;padding:10px 12px}
+  .pnl-lt tr.pnl-audit td{padding:0;background:transparent}
+  .pnl-lt tr.pnl-audit td::before{display:none}
+}
+
+/* bars, inputs, buttons */
+.pnl-in{width:100%;background:var(--p-s1);color:var(--p-tx);border:1px solid var(--p-bd);border-radius:9px;min-height:42px;padding:8px 11px;font:500 14px 'Inter',sans-serif;color-scheme:dark}
+.pnl-in:focus{outline:2px solid var(--p-acc);outline-offset:1px}
+.pnl-in.pnl-in-sm{width:auto;min-height:38px;padding:4px 10px;font-size:13px}
+.pnl-prow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.pnl-prow input{flex:1 1 240px}
+.pnl-lbar{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.pnl-lbar input{flex:1 1 220px;min-width:0}
+/* the status control scrolls inside its own box, never the page */
+.pnl-lbar>[data-r="lstat"]{min-width:0;max-width:100%}
+.pnl-btn{border:1px solid var(--p-bd);background:var(--p-s2);color:var(--p-tx);border-radius:9px;min-height:42px;padding:0 14px;font:600 13px 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
+.pnl-btn[disabled]{opacity:.45;cursor:default}
+.pnl-lcount{font-size:13px;color:var(--p-dim);margin:6px 0 8px;line-height:1.5}
+.pnl-pager{display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;font-size:12.5px;color:var(--p-dim)}
+
+/* SHARE: the Record as an image (lib/edgedesk_record_card.js) — the button, and the dialog with its preview */
+.pnl-share-btn{border-color:var(--p-acc);color:var(--p-acc);display:inline-flex;align-items:center;gap:6px}
+.pnl-share-btn::before{content:"";width:14px;height:14px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E") center/contain no-repeat}
+.pnl-shm{position:fixed;inset:0;z-index:1000;background:rgba(6,5,3,.72);display:flex;align-items:flex-start;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.pnl-shm[hidden]{display:none}
+.pnl-shm-box{width:100%;max-width:720px;background:var(--p-s1);border:1px solid var(--p-bd);border-radius:16px;padding:16px;margin:auto 0;box-shadow:0 20px 60px rgba(0,0,0,.55);color:var(--p-tx)}
+.pnl-shm-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pnl-shm-h h4{margin:0;font:800 18px 'Inter',sans-serif;letter-spacing:-.01em}
+.pnl-shm-x{border:1px solid var(--p-bd);background:var(--p-s2);color:var(--p-tx);border-radius:50%;width:40px;height:40px;font-size:22px;line-height:1;cursor:pointer}
+.pnl-shm-cv{margin:12px 0;border:1px solid var(--p-bd);border-radius:12px;overflow:hidden;background:var(--p-bg);display:flex;justify-content:center}
+.pnl-shm-cv canvas{display:block;width:100%;height:auto;max-height:62vh;object-fit:contain}
+.pnl-shm-acts{display:flex;flex-wrap:wrap;gap:8px}
+.pnl-shm-acts .pnl-btn{flex:1 1 140px}
+.pnl-shm-main{background:var(--p-acc);border-color:var(--p-acc);color:#0b0a07}
+.pnl-shm-st{min-height:20px;font-size:13px;color:var(--p-acc);margin:8px 0 2px}
+.pnl-shm-txt{white-space:pre-wrap;word-break:break-word;font:500 13px/1.5 'JetBrains Mono',monospace;color:var(--p-dim);background:var(--p-bg);border:1px solid var(--p-bd);border-radius:10px;padding:10px 12px;margin:6px 0 8px}

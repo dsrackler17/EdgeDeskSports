@@ -1,0 +1,53 @@
+# EdgeDesk CFB board market integrity — the read-only audit and its contracts.
+#
+# The audit is what says whether the board's Market column, staleness and week
+# scoping agree with the quotes the providers actually delivered. It has to keep
+# resolving team names exactly as the board does, and the SQL version has to
+# stay read-only, so both are checked on every pull request that could move
+# either side.
+#
+# Offline: no network, no credentials, nothing written outside temp dirs.
+name: CFB board integrity tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/football/cfb_board_*'
+      - 'tools/football/fixtures/cfb_schedule_*'
+      - 'supabase/audits/**'
+      - 'supabase/cfb_lab.sql'
+      - 'football/fbs/fbs.js'
+      - 'football/cfb_lab/ledger/**'
+      - 'lib/edgedesk_quote_ev.js'
+      - 'lib/edgedesk_canon.js'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/cfb-board-integrity-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cfb-board-integrity-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The audit's rules (week window, heartbeats, reference market) and a smoke run
+        run: node tools/football/cfb_board_audit.test.js
+      - name: The committed SQL audit is exactly what the generator builds from fbs.js
+        run: node tools/football/cfb_board_audit_sql.js --check
+      - name: The SQL audit is read-only and finds every seeded failure (real PostgreSQL)
+        env:
+          CFB_BOARD_SQL_REQUIRED: '1'
+        run: node tools/football/cfb_board_audit_sql.test.js
+      - name: The board's own functions still lift out of app.html
+        run: node tools/football/cfb_board_repro_app.js > /dev/null

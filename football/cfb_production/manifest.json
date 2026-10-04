@@ -1,0 +1,350 @@
+{
+ "manifest_schema": "cfb_production_manifest_v1",
+ "champion_model_version": "edgedesk_cfb_p4_v1.0.0",
+ "champion_label": "V1",
+ "champion_selection": "NOT_RUN",
+ "champion_selection_note": "No Model Championship has been run in this project. The champion is the governance record (football/cfb_lab/governance/model_roles.jsonl); edgedesk_cfb_v2.1.0 is ELIGIBLE_FOR_PROMOTION and becomes champion only when a person runs: node football/cfb_lab/governance.js promote --model edgedesk_cfb_v2.1.0 --reason \"...\" --actor <name>",
+ "production_model_version": "edgedesk_cfb_v2.1.0",
+ "production_model_status": "ELIGIBLE_FOR_PROMOTION; governance role challenger",
+ "production_pathway": {
+  "pure_model": "edgedesk_cfb_v2.1.0",
+  "engine": "edgedesk_cfb_v2",
+  "artifact_dir": "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0",
+  "weekly_engine": "football/cfb_v2/research/v2/weekly (run.py)",
+  "model_lab": "football/cfb_lab (hourly checkpoints, settlement, governance)",
+  "decision_engine": "football/cfb_decision/decision.js cfb_decision_engine_v1 (shadow)",
+  "betting": "DISABLED (fail-safe policy cfb_decision_policy_v1)"
+ },
+ "feature_version": "cfb_v2_fv2",
+ "training_data_version": "trained_through_2025/dev2016-2023/holdout2024-2025/seed20260927:b36017da0654",
+ "team_rating_version": "cfb_team_state_v1+ratings:7349c450baae",
+ "player_model_version": "qb_level:d501f28d5464+cfb_qb_state_v1 (personnel units cfb_personnel_foundation_v1: research, not an input)",
+ "matchup_model_version": "D_gbm:a330204057dc (matchup residual cfb_matchup_resid_v1: research, not an input)",
+ "ensemble_version": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+ "ensemble_weights": {
+  "C_ridge": 0.5,
+  "D_gbm": 0.5
+ },
+ "calibration_version": "edgedesk_cfb_v2.1.0:97cadb764756",
+ "uncertainty_version": "edgedesk_cfb_v2.1.0:87ab0a945da9",
+ "market_engine_version": "edgedesk_cfb_v2.1.0:market:368d4363a149",
+ "decision_policy_version": "cfb_decision_policy_v1",
+ "decision_policy": {
+  "version": "cfb_decision_policy_v1",
+  "dir": "cfb_decision_policy_v1",
+  "status": "SHADOW",
+  "bet_enabled": false,
+  "sha256": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe"
+ },
+ "decision_engine_version": "cfb_decision_engine_v1",
+ "decision_calibration": {
+  "version": "cfb_decision_calibration_v1",
+  "base_model_version": "edgedesk_cfb_v2.1.0",
+  "ok": true
+ },
+ "decision_baseline": {
+  "version": "cfb_decision_baseline_001",
+  "base_model_version": "edgedesk_cfb_v2.1.0",
+  "ok": true
+ },
+ "model_lab_versions": {
+  "ensemble_version_recorded_by_lab": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+  "note": null
+ },
+ "v1_fallback": {
+  "model_version": "edgedesk_cfb_p4_v1.0.0",
+  "feature_version": "cfb_p4_fv1",
+  "params_sha256": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+  "present": true
+ },
+ "artifact_hashes": {
+  "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/MANIFEST.json": {
+   "sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+   "git_blob": "8cfaa2508e05676635d29b3b6acd7ac874c903b4",
+   "bytes": 309
+  },
+  "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/gbm_D.txt": {
+   "sha256": "a330204057dc98b0efe20a3e7e7e9bc8ae219203c4a862ffc9fc00c1b8709105",
+   "git_blob": "bcc4d4dee43102254ea54fc77c8870d372fff773",
+   "bytes": 199823
+  },
+  "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/meta.json": {
+   "sha256": "471655d7ca0921e3285e534ab5c9ec53b9ea8ba9f0457835502b1569c5a09ea3",
+   "git_blob": "ba52e1fb74a96f66082ad8daa4daf7cf93476888",
+   "bytes": 41398
+  },
+  "football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0/models.json": {
+   "sha256": "1bc462b573537a71939a98b6f54b5604df3a83ec97249a96d69da7492c260d89",
+   "git_blob": "3bd678159837868df43f02ff9c3c834e64fec69a",
+   "bytes": 14386
+  },
+  "football/cfb_v2/params.js": {
+   "sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
+   "git_blob": "39a9fb2381a63985232e001816f53c2a08de0537",
+   "bytes": 9600
+  },
+  "football/cfb_v2/engine.js": {
+   "sha256": "745c1c3c9390dda7133ced12327978e383dd8d45d24cd4de6b02168e77b9c72c",
+   "git_blob": "ef1c9dc39da8f9437e4030347da05d34bae4de17",
+   "bytes": 25300
+  },
+  "football/cfb_v2/artifacts/weekly/expected_margin_v1.json": {
+   "sha256": "ef644e6ba862216a9cf72dd9e5e5f58b02e519b3b136e50af9c115f5bb250174",
+   "git_blob": "5d68f1d4a7eadf863710c3a552a57e14673ba155",
+   "bytes": 3788
+  },
+  "football/cfb_v2/artifacts/decision/cfb_decision_policy_v1/policy.json": {
+   "sha256": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe",
+   "git_blob": "045fd1f6f94d651741cf15ebd862966bc106d98d",
+   "bytes": 3770
+  },
+  "football/cfb_v2/artifacts/decision/cfb_decision_baseline_001/MANIFEST.json": {
+   "sha256": "d90f3789c988eb54dd0c1c3905b43591cc8d64c6caee70563fb4cdf4e237f1e0",
+   "git_blob": "8391da05ba85258f811face0a6f6bd2af3ec1337",
+   "bytes": 3889
+  },
+  "football/cfb_v2/artifacts/decision/cfb_decision_calibration_v1/MANIFEST.json": {
+   "sha256": "a7f523e1cd55edd8d696020deb733f0b9fadc1e71c828f1bf3b4b34bb6dbbe90",
+   "git_blob": "5e66f3f22d6707b70f65f18f2f6ce92755bf1135",
+   "bytes": 1977
+  },
+  "football/cfb_v2/artifacts/decision/cfb_decision_calibration_v1/calibration.json": {
+   "sha256": "389ad41f71309edcc190fd1f303468bf477a8b86e329ce4b62a0a36ee27e8421",
+   "git_blob": "4019b8a057e3b381e3353be4622db1a04ef3fb82",
+   "bytes": 19100
+  },
+  "football/cfb_decision/decision.js": {
+   "sha256": "a55a80ace753a16eccabe713f06b7e12a0c4503f4be8b9c3a1e09512e13dac7c",
+   "git_blob": "e846ff893b1e7f412f7559c2462b6b54cccffdaa",
+   "bytes": 51343
+  },
+  "football/cfb_p4/params.js": {
+   "sha256": "fac5ae0e37d5ea7319a407e4de70baa728741687e54a3f7649d15a0053dd4b0b",
+   "git_blob": "718fb35d36c7c1c84d30c60960919048ff44339c",
+   "bytes": 572995
+  },
+  "football/cfb_production/compatibility.json": {
+   "sha256": "72df056d56414f048cfcb5c2e9124f95a10b09d512c26d6fae38548e1f311163",
+   "git_blob": "260c49e73065b8d38cb67e4610f1416b77a94442",
+   "bytes": 3230
+  }
+ },
+ "migration_version": "cfbmig_a5f9c646b088acb6",
+ "migrations": {
+  "supabase/cfb_decision.sql": {
+   "sha256": "c9fa8c119673110e7782f8ff8d080cf49a28a1781d80abc53947af2b08210fd7",
+   "git_blob": "3e2516460ffa128c7b50af301248b4e638aeef4c",
+   "bytes": 21899
+  },
+  "supabase/cfb_lab.sql": {
+   "sha256": "7aa288bc2d5be097ad0c62ce943310fb1c4b7707202052dd1a29274e81c04c2f",
+   "git_blob": "64703d3477c62e9b7a9ec5ea3732a72aac14536d",
+   "bytes": 90995
+  },
+  "supabase/cfb_lab_cron.sql": {
+   "sha256": "4e63c60c5f0fca8d295ec099ebe8fd290e72041322191c8d8334c18759da25e2",
+   "git_blob": "d05be4d863dc19fb7fe5a500b9400035eeae4def",
+   "bytes": 13642
+  },
+  "supabase/cfb_market.sql": {
+   "sha256": "d7bedeb15294063b006baa80101469050c6713ab6d3b1aefbf645acae71f0412",
+   "git_blob": "83bce553a37e24a681b3e82aad7715b985729cc0",
+   "bytes": 19572
+  },
+  "supabase/cfb_market_integrity.sql": {
+   "sha256": "b5908d380208c742f138ed77d9c17668aae7bfc634f37b077fbc110bb05631d2",
+   "git_blob": "2c71d23d74be8d2c0f940fa5299029aef6dcae99",
+   "bytes": 32175
+  },
+  "supabase/cfb_matchup.sql": {
+   "sha256": "1d9bf2aee6f691982d60755845322a363c37a8779228e17a80fff45705a38fc7",
+   "git_blob": "3558d9d7ba0428c1ece00a9c3337e21371fbf8d5",
+   "bytes": 18475
+  },
+  "supabase/cfb_personnel.sql": {
+   "sha256": "af1aa79d28886d636d8c0b33c52ff7acd077af1d31f4455ceaab78c43f0f3f77",
+   "git_blob": "9a04df7bb839578ed059b4afefd9942570ee5211",
+   "bytes": 19856
+  },
+  "supabase/cfb_production.sql": {
+   "sha256": "834f43d497e1787ad506418e9a6e663d81f30a9f4562819d3c1646eb1c49f199",
+   "git_blob": "9e6b7e90cd52136841fadca24b4914500571fd4f",
+   "bytes": 86470
+  },
+  "supabase/cfb_terminal_analytics.sql": {
+   "sha256": "50e339d2ab6df000c908b5fd7aa84868382df5c5cdba3e8a90ba27d517388363",
+   "git_blob": "7d481602087864d41a62d664091255fab74e444d",
+   "bytes": 7822
+  },
+  "supabase/cfb_v2_model.sql": {
+   "sha256": "ade9b7cb20fe6e1c6a750cf8a970bcc4f58aab9238452a74c63d19f34ee5cf29",
+   "git_blob": "9e64587d94539564d260231416145f7c267ad6e0",
+   "bytes": 23143
+  },
+  "supabase/cfb_weekly.sql": {
+   "sha256": "bcc4f273ff06fc8c9621a9b618888e7473bc32d03c386b05f87d1078391f47a2",
+   "git_blob": "faa60104880578b64a327a6eeed0d9f403cd0203",
+   "bytes": 26016
+  }
+ },
+ "compatibility": {
+  "entry": {
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "role": "PRODUCTION_PATHWAY",
+   "status": "COMPATIBLE",
+   "feature_version": "cfb_v2_fv2",
+   "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+   "params_sha256": "3584530610636453317b83e9e80485c3b962079842e734210eedfb45d17f2a0b",
+   "engine_sha256": "745c1c3c9390dda7133ced12327978e383dd8d45d24cd4de6b02168e77b9c72c",
+   "calibration_version": "edgedesk_cfb_v2.1.0:97cadb764756",
+   "ensemble_version": "edgedesk_cfb_v2.1.0:e105ca1727a6",
+   "market_engine_version": "edgedesk_cfb_v2.1.0:market:368d4363a149",
+   "decision_policy_version": "cfb_decision_policy_v1",
+   "decision_policy_sha256": "cb9019a29de20cefd96ac7dbb95b9a5f79381dfb5c2df469d7cb33992c9142fe",
+   "decision_baseline_version": "cfb_decision_baseline_001",
+   "decision_calibration_version": "cfb_decision_calibration_v1",
+   "decision_calibration_manifest_sha256": "a7f523e1cd55edd8d696020deb733f0b9fadc1e71c828f1bf3b4b34bb6dbbe90",
+   "decision_engine_version": "cfb_decision_engine_v1",
+   "bet_enabled_allowed": false,
+   "evidence": "artifact football/cfb_v2/artifacts/edgedesk_cfb_v2.1.0 verifies against its MANIFEST.json; params.promotion ELIGIBLE_FOR_PROMOTION (backtest gates G1-G7 passed, report in params.js); decision baseline cfb_decision_baseline_001 was frozen on this model (base_model_version) with policy cfb_decision_policy_v1 (SHADOW, betting disabled) and calibration cfb_decision_calibration_v1 (base edgedesk_cfb_v2.1.0). No Model Championship was run.",
+   "decided_by": "cfb production hardening (football/cfb_production/manifest.js --write-compat)",
+   "decided_at": "2026-09-27T17:00:00.000Z"
+  },
+  "checks": [
+   {
+    "check": "versions agree (config.py, params.js, models.json)",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "feature schema agrees (config.py, params.js, models.json)",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "artifact files verify against MANIFEST.json",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "the compatibility matrix has a COMPATIBLE entry for edgedesk_cfb_v2.1.0",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "feature schema is the one the entry names",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "artifact MANIFEST is the one the entry pins",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "params.js is the one the entry pins (calibration, market rule, gates)",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "engine.js is the one the entry pins",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "calibration version matches the entry",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "ensemble version matches the entry",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "market engine version matches the entry",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "the decision policy the engine would load is the pinned one",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "decision policy content is the pinned content",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "decision baseline belongs to this model and its pinned files verify",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "decision calibration is the pinned one, belongs to this model and verifies",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "decision engine version is the pinned one",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "betting stays disabled unless the pinned policy enables it",
+    "ok": true,
+    "code": null
+   },
+   {
+    "check": "the fallback (V1 champion) is present and pinned",
+    "ok": true,
+    "code": null
+   }
+  ],
+  "ok": true
+ },
+ "fallback_hierarchy": [
+  {
+   "level": 1,
+   "mode": "FULL",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "when": "V2.1 artifact verifies, inputs pass the contract, every source fresh",
+   "display": "FULL"
+  },
+  {
+   "level": 2,
+   "mode": "DEGRADED",
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "when": "a validated degraded mode of the weekly engine (DEGRADED_PBP / DEGRADED_AVAILABILITY / DEGRADED_MARKET): reliability capped, BET never issued",
+   "display": "the mode, always shown"
+  },
+  {
+   "level": 3,
+   "mode": "FALLBACK_MODEL",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "when": "V2.1 inference unavailable (artifact / compatibility / input contract failure): the previous stable champion (governance champion V1, football/fbs/slate.json)",
+   "display": "FALLBACK_MODEL — V1"
+  },
+  {
+   "level": 4,
+   "mode": "UNAVAILABLE",
+   "model_version": null,
+   "when": "neither model can produce a trustworthy projection",
+   "display": "Prediction unavailable (never a substitute number)"
+  }
+ ],
+ "fallback_rules": [
+  "No level substitutes a model that is not listed here (candidate edgedesk_cfb_v2.0.0 is never a fallback).",
+  "Every level below FULL displays its mode; decisions at levels 2-4 are PASS / UNAVAILABLE with the reason, never BET."
+ ],
+ "deployed_at": "2026-09-27T19:42:20.652Z",
+ "recorded_by": "football/cfb_production/manifest.js",
+ "git_commit": "c65003f70f057c848ac726e538b2afe492c7bd86",
+ "git_dirty": false,
+ "git_dirty_paths": [],
+ "supersedes": "cfbm_8338ed296ce94d11c63daae1",
+ "reason": "migration set changed: supabase/cfb_terminal_analytics.sql (the research terminal's product analytics) arrived from main; no model, artifact or policy changed",
+ "content_sha256": "c3d41ede7ea9e14cb02c6a7be23be3577bb0d701096847ad1be9c248929ef9aa",
+ "manifest_id": "cfbm_f86ae717dfd4dd772a89c995"
+}

@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Google tag (gtag.js) — the SAME property the rest of the site reports to.
+     No second analytics vendor is introduced for Games. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>EdgeDesk Games | Free Football Prediction Games</title>
+<meta name="description" content="Play free football pricing and prediction games, compare your read with the market, and explore the research behind the numbers. Free to play, no real-money wagering.">
+<link rel="canonical" href="https://edgedesksports.com/games">
+<meta name="theme-color" content="#100e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:url" content="https://edgedesksports.com/games">
+<meta property="og:title" content="EdgeDesk Games — free football games, real research underneath">
+<meta property="og:description" content="Price the market. Make your picks. See how your read compares. Free to play, no real-money wagering.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="EdgeDesk Games — free football games, real research underneath">
+<meta name="twitter:description" content="Price the market. Make your picks. See how your read compares.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260910a">
+<link rel="stylesheet" href="/games/franchise.css?v=20260910a">
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+
+  <!-- THE FIRST FIVE SECONDS ------------------------------------------------
+       Two heroes, one shown. A cold visitor gets the pitch and one button that
+       starts a real game. A returning player gets their own state — level,
+       what this week still needs, one CONTINUE — and never the pitch again.
+       Which one paints is decided by a two-line inline script that reads the
+       local envelope BEFORE the modules load, so the right hero is the first
+       thing on screen rather than a swap the eye catches. -->
+  <!-- FRANCHISE HQ ----------------------------------------------------------
+       The most important screen in the product. A returning owner sees their
+       franchise first: the name, the record, the team overall, what is next,
+       how prepared this week is, and the one thing to do now. It paints from
+       the cached snapshot before the network answers and repaints from the
+       server; it says when it is showing a cached copy. -->
+  <section class="sec hide" id="heroHq" style="margin-top:0">
+    <div class="hq" id="hq"></div>
+    <div class="hq-note" id="hqNote"></div>
+    <div id="hqSave" style="margin-top:14px"></div>
+  </section>
+
+  <section class="hero" id="heroNew">
+    <div class="eyebrow" style="color:var(--val)">Free to play · today’s Price It</div>
+    <h1>Think you know<br>the line?</h1>
+    <div class="hero-mu" id="heroMu">
+      <div class="hero-load" aria-live="polite">Loading matchup</div>
+    </div>
+    <div class="hero-q">Where would you price it?</div>
+    <div class="btn-row">
+      <a class="btn btn-go btn-big" id="startFree" href="/games/price-it/" data-cta="start-free">Price this game</a>
+    </div>
+    <div class="btn-row two">
+      <a class="btn" href="/games/h2h/" data-cta="h2h">Challenge a friend</a>
+      <a class="btn" href="/games/two-minute-drill/" data-cta="drill">Two-Minute Drill</a>
+    </div>
+    <div class="ftp"><b>Free to play</b> · No signup needed · No real-money wagering</div>
+  </section>
+
+  <section class="sec hide" id="heroBack" style="margin-top:22px">
+    <div class="wb">
+      <div class="wb-top">
+        <div>
+          <div class="eyebrow" style="margin-bottom:4px">Welcome back</div>
+          <div class="lvl"><span class="n" id="wbLevel">Level 1</span><span class="t" id="wbTitle">Rookie Analyst</span></div>
+          <div class="s" id="wbStage" style="font-size:12px;color:var(--faint);margin-top:2px"></div>
+        </div>
+        <a class="btn" href="/games/dynasty/" style="width:auto;min-width:140px" data-cta="war-room">Open War Room</a>
+      </div>
+      <div class="xp"><div class="xp-row"><b id="wbXp">0 XP</b><span id="wbNext"></span></div>
+        <div class="xp-bar" role="progressbar" aria-label="progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="wbBar"><div class="xp-fill" id="wbFill"></div></div></div>
+      <div class="wb-week"><div class="eyebrow" style="margin:12px 0 2px">This week</div><ul id="wbList"></ul></div>
+      <div class="btn-row"><a class="btn btn-go btn-big" id="continueBtn" href="/games/price-it/" data-cta="continue">Continue</a></div>
+      <div class="ftp" style="margin-top:10px" id="wbNote"><b>Free to play</b> · No real-money wagering</div>
+    </div>
+    <!-- the conversion moment: one sentence with real numbers, one button,
+         only for a player who has played and is not yet a franchise -->
+    <div id="convSlot" style="margin-top:14px"></div>
+  </section>
+  <script>
+  /* Decide the hero before the modules load: a visitor with any completed
+     game on this device is a returning player. Wrapped, because a browser
+     that blocks storage must still see the pitch. */
+  (function(){try{var o=JSON.parse(localStorage.getItem('edgedesk_games_v1')||'null');
+    var played=o&&o.v===1&&(((o.price_it||{}).played|0)>0||Object.keys((o.pick5||{}).cards||{}).length>0
+      ||Object.keys(((o.drill||{}).daily)||{}).length>0);
+    /* a franchise owner (a cached snapshot that belongs to the signed-in
+       account) sees the HQ first, before any module loads */
+    var owner=false;
+    try{var ses=JSON.parse(localStorage.getItem('edgedesk_session')||'null');
+      /* the SAME rule the library uses: a token past its expiry is not a
+         signed-in account, so its cache key is the device's. Reading `sub`
+         without checking `exp` would paint an HQ hero for a lapsed session
+         that every call behind it then answers as anonymous. */
+      var clm=ses&&ses.access_token?JSON.parse(atob(ses.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))):null;
+      var sub=clm&&clm.sub&&!(clm.exp&&clm.exp*1000<Date.now())?clm.sub:null;
+      var key=sub||'anon';
+      owner=!!(o&&o.franchise&&o.franchise.snapshot&&o.franchise.user_id===key);}catch(_){owner=false;}
+    if(owner){document.getElementById('heroNew').classList.add('hide');document.getElementById('heroHq').classList.remove('hide');}
+    else if(played){document.getElementById('heroNew').classList.add('hide');document.getElementById('heroBack').classList.remove('hide');}
+  }catch(_){}})();
+  </script>
+
+  <!-- ACTIVE CHALLENGES ---------------------------------------------------
+       A returning player's own state comes first: what is waiting on them,
+       what is waiting on somebody else, and what has settled since they were
+       last here. Hidden entirely when there is nothing real to show, rather
+       than rendering an empty shell. -->
+  <section class="sec hide" id="activeSec">
+    <div class="sec-h"><h2>Your challenges</h2><span class="m" id="activeNote"></span></div>
+    <div class="active" id="activeList"></div>
+  </section>
+
+  <!-- TODAY'S CHALLENGE ------------------------------------------------- -->
+  <section class="sec">
+    <div class="sec-h"><h2>Today’s challenge</h2><span class="m" id="chWeek"></span></div>
+    <div class="card" id="todayCard">
+      <div class="eyebrow">Price It</div>
+      <div class="sk" style="width:60%;margin:14px auto"></div>
+      <div class="sk" style="width:40%;margin:10px auto"></div>
+    </div>
+  </section>
+
+  <!-- YOUR NUMBERS ------------------------------------------------------ -->
+  <section class="sec">
+    <div class="sec-h"><h2>Your numbers</h2><span class="m" id="statNote"></span></div>
+    <div class="stats">
+      <div class="stat"><div class="k">Streak</div><div class="v" id="stStreak">—</div><div class="s" id="stStreakSub">days in a row</div></div>
+      <div class="stat"><div class="k">This week</div><div class="v" id="stWeek">—</div><div class="s">points this week</div></div>
+      <div class="stat"><div class="k">Rank</div><div class="v" id="stRank">—</div><div class="s" id="stRankSub">weekly leaderboard</div></div>
+    </div>
+    <div class="stats" style="margin-top:8px">
+      <div class="stat" style="grid-column:span 3"><div class="k">Your records</div>
+        <div class="s" id="stRecords" style="font-size:12.5px;color:var(--dim);margin-top:6px">
+          Play a challenge and your record appears here.</div></div>
+    </div>
+  </section>
+
+  <!-- WEEKLY LEADERBOARD ------------------------------------------------ -->
+  <section class="sec">
+    <div class="sec-h"><h2>Weekly leaderboard</h2><span class="m" id="lbReset"></span></div>
+    <div class="card" id="lbCard">
+      <div class="empty">Loading the board…</div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS ------------------------------------------------------ -->
+  <section class="sec">
+    <div class="sec-h"><h2>How close can you get?</h2></div>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Study the matchup</h3>
+        <p>Two teams, the kickoff, and the context EdgeDesk already has on them. The spread stays hidden.</p></div>
+      <div class="step"><div class="n">02</div><h3>Set your line</h3>
+        <p>Move the selector to where you think the game should be priced, in half-point steps, then lock it.</p></div>
+      <div class="step"><div class="n">03</div><h3>Reveal the market and EdgeDesk</h3>
+        <p>See the book’s number, EdgeDesk’s projection, how far your read sat from each — and why EdgeDesk prices it there.</p></div>
+    </div>
+  </section>
+
+  <!-- EDGEDESK DYNASTY -----------------------------------------------------
+       The public explainer for the persistent layer: what a War Room is, how it
+       grows, and what it never does. This is the copy a search engine and a
+       cold visitor read; the War Room itself is personal state. -->
+  <section class="sec">
+    <div class="sec-h"><h2>Your War Room grows with every game</h2></div>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Play real games</h3>
+        <p>Every Price It, Pick 5 card, Two-Minute Drill and Head-to-Head earns XP on a published table. Nothing else does.</p></div>
+      <div class="step"><div class="n">02</div><h3>Level up the room</h3>
+        <p>The Garage becomes the Film Room, the Analytics Lab, Football Operations, Market Command. Levels change how the room looks — never a number.</p></div>
+      <div class="step"><div class="n">03</div><h3>Missions and achievements</h3>
+        <p>Five missions a football week, a trophy wall built from your record, and a research history you can point at.</p></div>
+    </div>
+    <div class="btn-row two" style="margin-top:16px">
+      <a class="btn btn-go" href="/games/dynasty/" data-cta="dynasty-section">See your War Room</a>
+      <a class="btn" href="/games/two-minute-drill/" data-cta="drill-section">Run the Two-Minute Drill</a>
+    </div>
+    <div class="ftp" style="margin-top:12px">XP is research progression, not a betting skill. A subscriber earns exactly the same XP as everyone else.</div>
+  </section>
+
+  <!-- THE FRANCHISE -----------------------------------------------------------
+       The public explainer for the persistent franchise: what it is, how the
+       real games build it, and what it never is. The HQ above is personal
+       state; this is the copy a cold visitor and a search engine read. -->
+  <section class="sec" id="franchiseSec">
+    <div class="sec-h"><h2>Build a franchise by proving you understand football</h2></div>
+    <div class="steps">
+      <div class="step"><div class="n">01</div><h3>Scout</h3>
+        <p>Price It is your scouting department. The closer your line sits to the benchmark, the more Scouting Points your franchise earns.</p></div>
+      <div class="step"><div class="n">02</div><h3>Play the week</h3>
+        <p>Pick 5 is the weekly slate, the Two-Minute Drill is practice, Head-to-Head is competition. Each one pays the franchise in its own currency.</p></div>
+      <div class="step"><div class="n">03</div><h3>Build</h3>
+        <p>A roster of fictional players nobody else has, a record, a history, a trophy room. Seasons, weekly games and a draft arrive on top of it.</p></div>
+    </div>
+    <div class="btn-row two" style="margin-top:16px">
+      <a class="btn btn-go" href="/games/franchise/?intent=home_explainer" data-cta="franchise-section">Found your franchise</a>
+      <a class="btn" href="/games/roster/" data-cta="roster-section">See how a roster works</a>
+    </div>
+    <div class="ftp" style="margin-top:12px">Free to play. Nothing in the franchise can be bought: no packs, no premium players, no paid resources. Skill at reading football is the only way up.</div>
+  </section>
+
+  <!-- HEAD-TO-HEAD --------------------------------------------------------
+       The public explainer for the social layer. The challenge and group pages
+       themselves are private and carry noindex, so this is the page a search
+       engine or a cold visitor actually reads. -->
+  <section class="sec">
+    <div class="sec-h"><h2>Challenge a friend</h2></div>
+    <div class="card">
+      <p style="margin:0 0 12px;color:var(--dim);font-size:14px;line-height:1.65">
+        Pick a game, make your call, and send a link. Your pick stays sealed until they make
+        theirs — the server will not hand over either answer until you have both locked, so
+        there is nothing to peek at.
+      </p>
+      <div class="steps">
+        <div class="step"><div class="n">01</div><h3>Winner</h3>
+          <p>Straight up. Whoever picks the side that wins takes it.</p></div>
+        <div class="step"><div class="n">02</div><h3>Spread</h3>
+          <p>Pick a side against the line as it stood when the challenge was made. A push is a draw.</p></div>
+        <div class="step"><div class="n">03</div><h3>Price It</h3>
+          <p>You both set the line you think is fair. Closer to the number wins.</p></div>
+      </div>
+      <div class="btn-row two" style="margin-top:16px">
+        <a class="btn btn-go" href="/games/h2h/" data-cta="h2h-section">Start a challenge</a>
+        <a class="btn" href="/games/groups/" data-cta="groups-section">Start a group</a>
+      </div>
+      <div class="ftp" style="margin-top:12px">Free to play · No entry fee · No prizes · No real-money wagering</div>
+    </div>
+  </section>
+
+  <!-- THE RESEARCH PRODUCT ---------------------------------------------- -->
+  <section class="sec">
+    <div class="sec-h"><h2>Want the research behind the number?</h2></div>
+    <div class="card">
+      <p style="margin:0 0 12px;color:var(--dim);font-size:14px;line-height:1.65">
+        The number you are playing against comes out of the same football research terminal EdgeDesk
+        runs for itself: opponent-adjusted team ratings, roster and player continuity, matchup layers,
+        an outcome range, and a model that states plainly what it could not read. It shows its price,
+        the market’s price, the gap between them and the uncertainty around all three.
+      </p>
+      <p style="margin:0 0 14px;color:var(--faint);font-size:12.5px;line-height:1.6">
+        EdgeDesk is research, not picks. Its projection does not beat the closing line, and a
+        disagreement with the market is a reason to read further — not evidence of an edge.
+      </p>
+      <div class="btn-row"><a class="btn" id="openResearch" href="/app.html">Open EdgeDesk research</a></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260910a"></script>
+<script src="/games/lib/scoring.js?v=20260910a"></script>
+<script src="/games/lib/challenge.js?v=20260910a"></script>
+<script src="/games/lib/research_state.js?v=20260910a"></script>
+<script src="/games/lib/attribution.js?v=20260910a"></script>
+<script src="/games/lib/store.js?v=20260910a"></script>
+<script src="/games/lib/dynasty.js?v=20260910a"></script>
+<script src="/games/lib/drill.js?v=20260910a"></script>
+<script src="/games/lib/leaderboard.js?v=20260910a"></script>
+<script src="/games/lib/social.js?v=20260910a"></script>
+<script src="/games/lib/auth.js?v=20260910a"></script>
+<script src="/games/lib/franchise.js?v=20260910a"></script>
+<script src="/games/games.js?v=20260910a"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDGamesStore.drillDaily','EDGamesStore.drillRecord','EDGamesDynasty.summary','EDGames.pulse','EDFranchise.snapshot','EDGames.franchiseReady'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,ST=window.EDGamesStore,W=window.EDGamesWeek,
+      CH=window.EDGamesChallenge,LB=window.EDGamesLeaderboard,S=window.EDGamesSocial,
+      DY=window.EDGamesDynasty,DR=window.EDGamesDrill,FR=window.EDFranchise;
+  var $=function(id){return document.getElementById(id);};
+
+  var READY=G.boot('home');
+
+  /* ---- FRANCHISE HQ ---------------------------------------------------------
+     Painted from the snapshot at once, repainted when the server answers.
+     Every number is the server's; the meters are the published preparation
+     read over this week's counts (EDFranchise.prep). */
+  var FEATURED=null,LIVE=null,HQ_TRACKED=false,HQ_CACHED=true;   /* cached until the server answers */
+  function meter(cls,k,v,s){
+    var pct=v==null?0:Math.max(0,Math.min(100,v));
+    return '<div class="meter '+cls+'"><div class="k"><span>'+k+'</span><b>'+(v==null?'—':pct+'%')+'</b></div>'
+      +'<div class="bar"><div class="fill" style="width:'+pct+'%"></div></div><div class="s">'+s+'</div></div>';
+  }
+  function paintHq(cached){
+    if(!FR)return false;
+    var snap=FR.snapshot();
+    if(!snap||!snap.franchise)return false;
+    var f=snap.franchise,id=FR.identity(f),res=snap.resources||{},rt=snap.rating||{},ss=snap.season||{},wk=snap.week||{};
+    var li=FR.levelInfo(res.xp),pr=snap.prep||FR.prep(wk);   /* the server's number when it has one */
+    var ph=FR.gamePhase(snap),ng=ph&&ph.game,lg=snap.last_game,rv=snap.rival;
+    var today=W.dayKey(),wkKey=W.weekKey();
+    var priced=FEATURED?!!ST.priceItResult(FEATURED.game_id):false;
+    var drillDone=!!ST.drillDaily(today),card=ST.pick5Card(wkKey);
+    /* THE FOUR QUESTIONS, in order: who am I playing, what should I do
+       today, what do I earn, how does this help my team. Every objective
+       names its reward by the published table, and the primary action is
+       the first thing not yet done today. */
+    var rows=[],next=null,nextText=null,nextEarn=null;
+    function row(done,text,href,earn,help){rows.push({done:done,text:text,href:href,earn:earn,help:help});if(!done&&!next){next=href;nextText=text;nextEarn=earn;}}
+    /* A PACK YOU HAVE EARNED COMES FIRST. It is the one objective that is a
+       reward rather than a chore, and it was invisible: the Packs room is not
+       in a phone's tab bar, so the moment the whole progression pays out was
+       reachable only from a footer link. Nothing here can be bought. */
+    var rep=snap.reputation||null;
+    if(rep&&(rep.packs|0)>0)
+      row(false,'Packs: '+(rep.packs|0)+' waiting','/games/packs/',
+        'three players, keep one','Earned by playing, never bought. Rank '+(rep.rank|0)+' reaches '+(rep.edge|0)+' above your team overall.');
+    /* GAME DAY first: when Saturday's game is open it is the thing to do;
+       between seasons, starting the next one is */
+    if(ph&&ph.phase==='ready')row(false,'Game Day: play Week '+(ng.week|0)+' '+FR.matchupLine(ng),'/games/gameday/','+100 XP · +40 TC · a win +60 XP · +60 TC · +2 CP','Simulated from your roster, your scheme and this week’s preparation.');
+    else if(ph&&ph.phase==='complete')row(false,'Start the next season on Game Day','/games/gameday/','a new schedule','Eight games, one a week, and the rival to close it.');
+    else if(ph&&ph.phase==='preseason')row(false,'Set '+(ss.label||'Season I')+'’s schedule on Game Day','/games/gameday/','a schedule','Eight games, one a week, and a rival for life.');
+    var lad=snap.ladder||{},chs=snap.challenges||{};
+    if(FEATURED)row(priced,priced?'Scouting report filed: '+FEATURED.away_team+' vs '+FEATURED.home_team:'File today’s scouting report: '+FEATURED.away_team+' vs '+FEATURED.home_team,
+      '/games/price-it/?g='+encodeURIComponent(FEATURED.slug),'+50 XP · up to +40 SP · up to +20 TC','Scouting Points reveal prospects. '+(wk.price_it|0)+' of 3 this week.');
+    row(drillDone,drillDone?'Practice: today’s drill done':'Practice: run today’s Two-Minute Drill','/games/two-minute-drill/','+40 XP · up to +30 TC','Team Credits pay for upgrades.');
+    row(!!(card&&card.submitted_at),card&&card.submitted_at?'Weekly slate: card submitted':'Weekly slate: submit your Pick 5 card','/games/pick-5/','+75 XP · +25 TC · +10 XP +15 TC per correct side','Preparation for Saturday.');
+    row((wk.research|0)>0,(wk.research|0)>0?'Film: research reviewed this week':'Film: open the research on one matchup','/games/price-it/','+15 XP','Preparation for Saturday.');
+    row((wk.fc|0)>0,(wk.fc|0)>0?'Rivalry: a franchise challenge played this week':'Rivalry: challenge a friend’s franchise','/games/gameday/#challenges','+60 XP · +30 TC · a win +40 XP · +40 TC · +2 CP','Your roster against theirs, on the server. The ladder and the rivalry move.');
+    /* the conference: a round waiting to be played is the thing to do; a
+       conference forming or resting between seasons is a door, not a chore */
+    var cf=snap.conference||null,inj=snap.injuries||null,bw=FR.bowlWatch(ss);
+    if(cf&&cf.ready)row(false,'Conference: play '+(cf.next?FR.roundName(cf.next).toLowerCase():'the round')+' in '+G.esc(cf.name||'your conference'),'/games/conference/',
+      '+'+FR.ECONOMY.conf_game.xp+' XP · +'+FR.ECONOMY.conf_game.tc+' TC · a win +'+FR.ECONOMY.conf_win.xp+' XP · +'+FR.ECONOMY.conf_win.tc+' TC · +'+FR.ECONOMY.conf_win.cp+' CP',
+      'Anyone in the conference can play it — whoever gets there first plays it for everybody.');
+    else if(cf&&cf.status==='forming')row(false,'Conference: '+(cf.members|0)+' of '+FR.CONFERENCE.start_min+' franchises in '+G.esc(cf.name||'your conference'),'/games/conference/','a season to draw','Send the link to anyone; founding a franchise is free.');
+    else if(!cf)row(false,'Conference: start a league of friends','/games/conference/','standings of your own','Everybody plays everybody, one round a football week, and a bracket decides it.');
+    else if((wk.conf|0)>0)row(true,'Conference: a round played this week','/games/conference/','','The standings are the sum of what happened.');
+    /* the coaching staff: an empty seat, or Coach Points sitting idle */
+    var sfb=snap.staff||null;
+    if(sfb&&(sfb.filled|0)<(sfb.seats|0)&&(res.coach_points|0)>=(sfb.hire_cost|0))
+      row(false,'Staff: '+((sfb.seats|0)-(sfb.filled|0))+' seat'+(((sfb.seats|0)-(sfb.filled|0))===1?'':'s')+' to fill','/games/staff/',
+        (sfb.hire_cost|0)+' CP each','A head coach, two coordinators and a trainer. Every level makes the team better.');
+    else if(sfb&&(sfb.filled|0)>0&&(res.coach_points|0)>=(sfb.next_cost|0)&&(sfb.next_cost|0)>0)
+      row(false,'Staff: '+G.esc(FR.fmt(res.coach_points))+' Coach Points to spend','/games/staff/',
+        'the next level is '+(sfb.next_cost|0)+' CP','Coach Points buy nothing else. Every tenfold in level is another third of what a coach can be.');
+    /* the bowl: a winning record is a thing to chase, and a bowl to play is
+       the thing to do */
+    if(ng&&ng.bowl)row(false,'Bowl: play '+G.esc(ng.bowl_name||'the bowl'),'/games/gameday/',
+      '+'+FR.ECONOMY.bowl_game.xp+' XP · +'+FR.ECONOMY.bowl_game.tc+' TC · a win +'+FR.ECONOMY.bowl_win.xp+' XP · +'+FR.ECONOMY.bowl_win.tc+' TC · +'+FR.ECONOMY.bowl_win.cp+' CP',
+      'One game against a club rated above you. Win it and it is on the wall.');
+    else if(ss.status==='active'&&bw&&!bw.earned&&bw.need)row(false,'Bowl: '+bw.need+' more win'+(bw.need===1?'':'s')+' earns a ninth game','/games/gameday/',
+      'a bowl','A season with more wins than losses plays one more, against a club rated above you.');
+    /* the draft: picks to use are the roster's way forward; last, so the day's
+       objectives come first */
+    var mk=snap.market||{};
+    if((mk.picks|0)>0)row(false,'Draft: '+(mk.picks|0)+' pick'+((mk.picks|0)===1?'':'s')+' to use on the '+G.esc(ss.label||'Season I')+' class','/games/market/','a prospect for the roster',
+      (mk.unscouted|0)>0?(res.scouting_points|0)>=(mk.scout_sp||20)?'Scout first — '+(mk.scout_sp||20)+' SP reveals a prospect — or take a chance.':'A scouting report is '+(mk.scout_sp||20)+' SP; Price It earns them. Or take a chance.':'Every prospect is scouted.');
+    var el=$('hq');
+    el.setAttribute('style',FR.themeVars(f.theme));
+    el.innerHTML='<div class="hq-id">'+FR.logoSvg(f.logo,56,f.theme)
+      +'<div><div class="hq-city">'+G.esc(f.city)+' · '+G.esc(f.abbr)+' · Level '+li.level+'</div>'
+      +'<div class="hq-name">'+G.esc(f.name)+'</div>'
+      +'<div class="hq-line">'+G.esc(id.offense?id.offense.label:f.offense)+' · '+G.esc(id.defense?id.defense.label:f.defense)
+      +' · <b>Founder Season '+G.esc(f.founded_season)+'</b></div></div>'
+      +'<div class="hq-rec">'+G.esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'<span class="s">'+G.esc(ss.label||'Season I')+' · '+G.esc(ss.status||'preseason')+'</span></div></div>'
+      /* 1. who am I playing — the opponent by name and mark, when the game
+         opens, and the two calendars: the franchise's own season, and the
+         real football week that feeds it */
+      +'<div class="hq-next">'
+      +(ng
+        ?'<div class="opp">'+FR.logoSvg((ng.opponent||{}).logo,40,(ng.opponent||{}).theme)+'<div><div class="k">Next up · Week '+(ng.week|0)+' of '+(ss.weeks|0)+(ng.rival?' · <span class="rival-tag">Rival</span>':'')+'</div>'
+          +'<div class="v">'+G.esc(FR.matchupLine(ng))+'</div><div class="s">OVR '+G.esc((ng.opponent||{}).overall)+' · '+G.esc((ng.opponent||{}).style||'')+'</div></div></div>'
+          +'<div>'+(ph.phase==='ready'
+            ?'<div class="st">Saturday’s game is open. <a href="/games/gameday/">Play it now</a>.</div>'
+            :'<div class="st wait">Kicks off Saturday · '+G.esc(ph.opens?ph.opens.label:'')+'</div><div class="s">Every scouting report, card and drill this week counts toward it.</div>')
+          +(lg?'<div class="s">Last: <a href="/games/gameday/?game='+G.esc(lg.id)+'"><b>'+G.esc(FR.resultLine(lg))+'</b> '+G.esc(FR.matchupLine(lg))+'</a>'+(lg.potg?' · POTG '+G.esc(lg.potg.name):'')+'</div>':'')+'</div>'
+        :ph&&ph.phase==='complete'
+        ?'<div><div class="k">Complete</div><div class="v">'+G.esc(ss.label||'Season')+' · '+G.esc((ss.wins|0)+'–'+(ss.losses|0)+(ss.ties?'–'+ss.ties:''))+'</div></div>'
+          +'<div><div class="v" style="font-size:15px">The record is on the books.</div><div class="s"><a href="/games/gameday/">Start the next season</a> whenever you like; the offseason runs first — a year older, the young develop, the old retire, rookies sign — and the careers and the trophies stay.</div></div>'
+        :'<div><div class="k">Next up</div><div class="v">'+(ss.status==='preseason'?'Preseason':'Week '+(ss.week|0)+' of '+(ss.weeks|0))+'</div></div>'
+          +'<div><div class="v" style="font-size:15px">'+(ss.status==='preseason'?'Your first opponent is revealed when '+G.esc(ss.label||'Season I')+'’s schedule is set.':'Game Day is Saturday.')+'</div>'
+          +'<div class="s">Until then, every scouting report, card and drill counts toward this week’s preparation.</div></div>')
+      +'</div>'
+      +'<div class="hq-cal"><span><b>'+G.esc(ss.label||'Season I')+'</b> · '+G.esc(ss.status==='preseason'?'preseason':ss.status==='complete'?'complete':'week '+((ss.week|0)+(ng?1:0))+' of '+(ss.weeks|0))+' · '+(ss.weeks|0)+' weeks'
+      +(rv&&rv.name?' · rival <b>'+G.esc(rv.name)+'</b> '+G.esc((rv.wins|0)+'–'+(rv.losses|0)):'')
+      +(lad.games?' · ladder <b>#'+G.esc(lad.rank)+'</b> '+G.esc(lad.rating):'')
+      /* the rank rides with the calendar: what the franchise has DONE, and how
+         far the next pack is. Reads from the record, so it cannot drift. */
+      +(rep?' · <a href="/games/packs/">rank <b>'+(rep.rank|0)+'</b></a> '+(rep.points|0)+'/'+(rep.next_at|0)
+        +((rep.packs|0)>0?' · <a href="/games/packs/"><b>Packs: '+(rep.packs|0)+' waiting</b></a>':''):'')
+      +(mk.max?' · roster <b>'+G.esc(mk.active|0)+'</b> of '+G.esc(mk.max):'')+((mk.picks|0)>0?' · <b>'+G.esc(mk.picks)+'</b> pick'+((mk.picks|0)===1?'':'s'):'')
+      +(chs.last?' · last challenge <b>'+G.esc(chs.last.result||'')+' '+G.esc((chs.last.score_for|0)+'–'+(chs.last.score_against|0))+'</b> vs '+G.esc((chs.last.them||{}).name||''):'')
+      +((inj&&(inj.out|0)>0)?' · <b>'+G.esc(inj.out)+'</b> hurt':'')
+      +((snap.staff&&(snap.staff.filled|0)>0)?' · staff <b>'+G.esc(snap.staff.filled)+'</b> of '+G.esc(snap.staff.seats)+(snap.staff.best?' · best level <b>'+G.esc(snap.staff.best)+'</b>':''):'')
+      +(cf?' · '+G.esc(cf.name||'conference')+' <b>'+G.esc(cf.place?'#'+cf.place+' of '+(cf.members|0):cf.status)+'</b>'+(cf.line?' '+G.esc(cf.line):'')+(cf.titles?' · <b>'+G.esc(cf.titles)+'</b> ring'+((cf.titles|0)===1?'':'s'):''):'')+'</span>'
+      +'<span>'+(LIVE?'<b>'+G.esc(LIVE.season)+' CFB</b> · Week '+G.esc(LIVE.week)+' · live slate':'<b>Live slate</b> · loading')+'</span></div>'
+      /* 2. what should I do today, and 3. what do I earn */
+      +'<div class="eyebrow" style="margin:16px 0 0">Today</div>'
+      +(next
+        ?'<div class="hq-today"><div class="t">'+G.esc(nextText)+'</div><div class="e">Earns '+G.esc(nextEarn)+'</div>'
+          +'<div class="btn-row" style="margin-top:10px"><a class="btn btn-go btn-big" href="'+G.esc(next)+'" data-cta="hq-continue">Do it now</a></div></div>'
+        :'<div class="hq-today done"><div class="t">Everything on today’s list is done.</div><div class="e">The week’s preparation is banked; the roster is where the rest of the day goes.</div>'
+          +'<div class="btn-row" style="margin-top:10px"><a class="btn btn-go btn-big" href="/games/roster/" data-cta="hq-continue">Open the roster</a></div></div>')
+      +'<ul class="obj">'+rows.map(function(r){
+        return '<li'+(r.done?' class="done"':'')+'><span class="dot '+(r.done?'on':'todo')+'"></span><a href="'+G.esc(r.href)+'"><span class="t">'+G.esc(r.text)+'</span><span class="h">'+G.esc(r.help)+'</span></a><span class="r">'+G.esc(r.earn)+'</span></li>';
+      }).join('')+'</ul>'
+      /* 4. how does this help my team */
+      +'<div class="eyebrow" style="margin:16px 0 0">This week · what it feeds</div>'
+      +'<div class="meters">'
+      +meter('scout','Scouting',pr.scouting,(wk.price_it|0)+' of 3 matchups priced · feeds the game plan')
+      +meter('prep','Preparation',pr.preparation,'scouting, the card, practice and film · feeds Saturday')
+      +meter('iq','Market IQ',pr.market_iq,wk.price_it_avg_score!=null?'average Price It score this week':'price a matchup to read it')
+      +'</div>'
+      +'<div class="eyebrow" style="margin:16px 0 0">The team</div>'
+      +'<div class="rate">'
+      +'<div class="ovr"><div class="k">Team OVR</div><div class="v">'+G.esc(rt.overall!=null?rt.overall:'—')+'</div></div>'
+      +'<div><div class="k">Offense</div><div class="v">'+G.esc(rt.offense!=null?rt.offense:'—')+'</div></div>'
+      +'<div><div class="k">Defense</div><div class="v">'+G.esc(rt.defense!=null?rt.defense:'—')+'</div></div>'
+      +'<div><div class="k">Special</div><div class="v">'+G.esc(rt.special!=null?rt.special:'—')+'</div></div></div>'
+      +'<div class="eyebrow" style="margin:16px 0 0">Next reward</div>'
+      +'<div class="xp"><div class="xp-row"><b>Level '+li.level+' · '+G.esc(FR.fmt(res.xp))+' XP</b><span>'+(li.next?G.esc(FR.fmt(li.remaining))+' to level '+(li.level+1):'Max level')+'</span></div>'
+      +'<div class="xp-bar" role="progressbar" aria-label="progress to the next level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+li.pct+'"><div class="xp-fill" style="width:'+li.pct+'%"></div></div></div>'
+      +'<div class="res"><div class="sp"><div class="k">Scouting</div><div class="v">'+G.esc(FR.fmt(res.scouting_points))+'</div></div>'
+      +'<div class="tc"><div class="k">Credits</div><div class="v">'+G.esc(FR.fmt(res.team_credits))+'</div></div>'
+      +'<div class="cp"><div class="k">Coach</div><div class="v">'+G.esc(FR.fmt(res.coach_points))+'</div></div></div>'
+      +(snap.offseason?'<div class="hq-off"><b>'+G.esc(FR.offseasonLine(snap.offseason))+'</b> <a href="/games/trophies/">The report</a></div>':'')
+      +'<div class="btn-row two"><a class="btn" href="/games/gameday/" data-cta="hq-gameday">Game Day</a><a class="btn" href="/games/roster/" data-cta="hq-roster">Roster</a></div>'
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/franchise/" data-cta="hq-office">Front Office</a><a class="btn btn-ghost" href="/games/trophies/" data-cta="hq-trophies">Trophy Room</a></div>'
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/market/" data-cta="hq-market">Draft &amp; Market</a>'
+      +'<a class="btn btn-ghost" href="/games/conference/" data-cta="hq-conference">Conference</a></div>'
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/trades/" data-cta="hq-trades">Trades</a>'
+      +'<a class="btn btn-ghost" href="/games/staff/" data-cta="hq-staff">Coaching Staff</a></div>';
+    $('hqNote').innerHTML=(cached?'<b>Showing the last copy EdgeDesk sent.</b> Reconnect to refresh. ':'')
+      +'Free to play · No real-money wagering · Nothing in the franchise can be bought.';
+    /* a franchise that lives on this device alone: the one form that keeps it */
+    var sv=$('hqSave');
+    if(sv&&!sv.getAttribute('data-done')){
+      if(FR.owner()==='device'){sv.innerHTML=G.conversionCard('hq');G.wireConversion(function(){sv.setAttribute('data-done','1');setTimeout(function(){sv.innerHTML='';},2500);});}
+      else sv.innerHTML='';
+    }
+    $('heroNew').classList.add('hide');$('heroBack').classList.add('hide');$('heroHq').classList.remove('hide');
+    if(!HQ_TRACKED){HQ_TRACKED=true;G.track('franchise_home_view',{placement:'hq',level:li.level,overall:rt.overall,cached:!!cached});}
+    return true;
+  }
+  paintHq(true);
+  document.addEventListener('edgames:franchise',function(e){
+    var r=e.detail||{};
+    HQ_CACHED=!!(r.home&&r.home.cached);
+    if(!paintHq(HQ_CACHED)){
+      /* not a franchise: the conversion moment, for an engaged player */
+      if(ST.engaged()&&FR&&FR.state()!=='franchise'&&$('convSlot')){$('convSlot').innerHTML=G.conversionCard('home');G.wireConversion();}
+    }
+  });
+
+  /* ---- welcome back ---------------------------------------------------------
+     Only ever real state. The list is what this football week still needs
+     from the player, and CONTINUE goes to the first thing on it. */
+  var SUM=DY?DY.summary(ST.read()):null;
+  function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function paintWelcome(featured){
+    if(!SUM||!SUM.created)return;
+    $('heroNew').classList.add('hide');$('heroBack').classList.remove('hide');
+    $('wbLevel').textContent='Level '+SUM.level;
+    $('wbTitle').textContent=SUM.title;
+    $('wbStage').textContent=SUM.stage.name+(SUM.next_stage?' · next: '+SUM.next_stage.name+' at level '+SUM.next_stage.level:'');
+    $('wbXp').textContent=fmt(SUM.xp)+' XP';
+    $('wbNext').textContent=SUM.next?fmt(SUM.next.remaining)+' to level '+SUM.next.level:'Max level';
+    var pct=SUM.next?SUM.next.pct:100;
+    $('wbBar').setAttribute('aria-valuenow',String(pct));
+    setTimeout(function(){$('wbFill').style.width=pct+'%';},60);
+
+    var today=W.dayKey(),wk=W.weekKey();
+    var priced=featured?!!ST.priceItResult(featured.game_id):false;
+    var drillDone=!!ST.drillDaily(today);
+    var card=ST.pick5Card(wk);
+    var m=SUM.missions;
+    var rows=[],next=null;
+    function row(state,text,href,earn){rows.push({state:state,text:text,href:href,earn:earn});if(state==='todo'&&!next)next=href;}
+    if(featured)row(priced?'on':'todo',priced?'Today’s Price It: done':'Today’s Price It: '+featured.away_team+' vs '+featured.home_team,
+      '/games/price-it/?g='+encodeURIComponent(featured.slug),'+50 XP · up to +40 SP');
+    row(drillDone?'on':'todo',drillDone?'Two-Minute Drill: done today':'Two-Minute Drill: not yet today','/games/two-minute-drill/','+40 XP');
+    row(card&&card.submitted_at?'on':'todo',card&&card.submitted_at?'Pick 5: card submitted':'Pick 5: card open','/games/pick-5/','+75 XP');
+    row(m.complete?'on':(m.done?'todo':'todo'),'Weekly missions: '+m.done+' of '+m.total,'/games/dynasty/','+150 XP');
+    $('wbList').innerHTML=rows.map(function(r){
+      return '<li><span class="dot '+(r.state==='on'?'on':'todo')+'"></span><a href="'+G.esc(r.href)+'" style="color:var(--text)">'+G.esc(r.text)+'</a><span class="r">'+G.esc(r.earn)+'</span></li>';
+    }).join('');
+    var c=$('continueBtn');
+    c.href=next||'/games/dynasty/';
+    c.textContent=next?'Continue':'Open War Room';
+    $('wbNote').textContent=ST.storageWorks()?'Saved on this device · Free to play · No real-money wagering':'This session only · Free to play · No real-money wagering';
+  }
+  paintWelcome(null);
+
+  /* the campaign rides along on the research link */
+  $('openResearch').href=G.withAttribution('/app.html')+'#research/football';
+  $('openResearch').addEventListener('click',function(){
+    G.track('research_cta_click',{placement:'home_footer',game_type:'none'});
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-cta]'),function(a){
+    a.addEventListener('click',function(){
+      G.track('next_game_click',{game_type:a.getAttribute('data-cta'),placement:'home_hero'});
+    });
+  });
+
+  /* ---- your numbers (local, anonymous) ---- */
+  function paintStats(){
+    var streak=ST.liveStreak(),wk=ST.weeklyScore(),pi=ST.priceItRecord(),p5=ST.pick5Record();
+    $('stStreak').textContent=streak?('🔥 '+streak):'—';
+    $('stStreak').className='v'+(streak?' on':'');
+    $('stStreakSub').textContent=streak===1?'day':'days in a row';
+    /* zero is a real score, not a missing one: a player who has locked a
+       price this week has a weekly score of 0, and showing them a dash reads
+       as "you have not played". Only a week with no plays at all is blank. */
+    var played=pi.played||p5.decided||Object.keys(ST.read().pick5.cards).length;
+    $('stWeek').textContent=played?String(wk):'—';
+    $('stWeek').className='v'+(wk>0?' on':'');
+    var bits=[];
+    if(SUM&&SUM.created)bits.push('Level '+SUM.level+' · '+SUM.title+' · '+fmt(SUM.xp)+' XP');
+    if(pi.played)bits.push('Price It: '+pi.played+' game'+(pi.played===1?'':'s')
+      +' · average difference '+pi.avg_distance.toFixed(1)+' pts');
+    if(p5.label)bits.push('Pick 5: '+p5.label);
+    var dr=ST.drillRecord();
+    if(dr.runs)bits.push('Drill best: '+fmt(dr.best));
+    $('stRecords').textContent=bits.length?bits.join('  ·  ')
+      :'Play a challenge and your record appears here.';
+    $('statNote').textContent=ST.storageWorks()?'saved on this device':'this session only';
+    $('lbReset').textContent='resets in '+W.daysLeft()+' day'+(W.daysLeft()===1?'':'s');
+  }
+  paintStats();
+
+  /* ---- today's challenge ---- */
+  G.artifact().then(function(a){
+    var ch=CH.featured(a.challenges,W.dayKey());
+    $('chWeek').textContent=a.season+' · Week '+(ch&&ch.week!=null?ch.week:'—');
+    if(!ch){
+      $('todayCard').innerHTML='<div class="empty">No matchup is playable right now. '
+        +'The board refills when the next slate is built.</div>';
+      return;
+    }
+    var href='/games/price-it/?g='+encodeURIComponent(ch.slug);
+    /* the first game a cold visitor plays is today's matchup, named in the
+       hero itself: the question is the pitch */
+    $('startFree').href=href;
+    $('heroMu').innerHTML='<div class="mu">'
+      +'<div class="mu-side">'+(ch.neutral_site?'Neutral site':'Away')+'</div>'
+      +'<div class="mu-team">'+G.esc(ch.away_team)+'</div>'
+      +'<div class="mu-vs">VS</div>'
+      +'<div class="mu-team">'+G.esc(ch.home_team)+'</div>'
+      +'<div class="mu-side">'+(ch.neutral_site?'':'Home')+'</div>'
+      +'<div class="mu-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</div></div>';
+    FEATURED=ch;
+    LIVE={season:a.season,week:ch.week!=null?ch.week:'—'};
+    paintWelcome(ch);
+    paintHq(HQ_CACHED);
+    $('todayCard').innerHTML=
+      '<div class="eyebrow">Price It</div>'
+      +'<div class="mu">'
+      +'<div class="mu-side">'+(ch.neutral_site?'Neutral site':'Away')+'</div>'
+      +'<div class="mu-team">'+G.esc(ch.away_team)+'</div>'
+      +'<div class="mu-vs">VS</div>'
+      +'<div class="mu-team">'+G.esc(ch.home_team)+'</div>'
+      +'<div class="mu-side">'+(ch.neutral_site?'':'Home')+'</div>'
+      +'<div class="mu-when">'+G.esc(G.kickoffLabel(ch.kickoff))+'</div>'
+      +'</div>'
+      +'<div class="btn-row"><a class="btn btn-go" href="'+href+'">Play</a></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:12px">The spread is hidden until you lock your price.</div>';
+    $('todayCard').querySelector('a').addEventListener('click',function(){
+      G.track('next_game_click',{game_type:'price_it',game_id:ch.game_id,
+        game_slug:ch.slug,research_state:ch.research_state,placement:'home_today'});
+    });
+  }).catch(function(){
+    $('heroMu').innerHTML='<div class="hero-load">Today’s matchup could not be loaded</div>';
+    $('todayCard').innerHTML='<div class="empty">Today’s challenge could not be loaded. '
+      +'<a href="/games/price-it/">Open Price It</a> to try again.</div>';
+  });
+
+  /* ---- weekly leaderboard ----
+     Reads the real table when it is deployed. Until then, and on any failure,
+     the honest empty state — never a fabricated name. */
+  LB.top(W.weekKey(),10).then(function(res){
+    var me=ST.displayName();
+    if(!res.available||!res.rows.length){
+      $('lbCard').innerHTML='<div class="empty">No leaderboard results yet. Be the first.<br>'
+        +'<span style="color:var(--faint);font-size:12px">Weekly scores reset '+W.BOUNDARY.label+'.</span></div>';
+      return;
+    }
+    var rows=res.rows.map(function(r,i){
+      var mine=me&&r.display_name===me;
+      return '<tr'+(mine?' class="me"':'')+'><td class="r">'+(i+1)+'</td>'
+        +'<td>'+G.esc(r.display_name||'—')+'</td>'
+        +'<td class="p">'+(r.score==null?'—':r.score)+'</td></tr>';
+    }).join('');
+    $('lbCard').innerHTML='<table class="lb"><thead><tr><th class="r">#</th><th>Player</th>'
+      +'<th style="text-align:right">Points</th></tr></thead><tbody>'+rows+'</tbody></table>';
+    var rank=LB.rankOf(res.rows,me);
+    if(rank)$('stRank').textContent='#'+rank;
+  });
+
+  /* ---- the return loop ---------------------------------------------------
+     What is actually waiting on this player. Only ever real state: a signed-out
+     visitor with no challenges sees none of this, rather than an empty shell
+     implying they should have some. */
+  READY.then(function(){
+    if(!S||!S.signedIn())return;               /* anonymous challenges live on their own links */
+    return S.rpc('h2h_mine',{}).then(function(r){
+      if(!r.ok||!r.data||!r.data.length)return;
+      var rows=r.data.slice(0,6);
+      var waiting=rows.filter(function(c){return c.status==='WAITING';}).length;
+      var settled=rows.filter(function(c){return c.status==='FINAL'||c.status==='DRAW';}).length;
+      $('activeNote').textContent=[waiting?(waiting+' waiting on an opponent'):'',
+        settled?(settled+' settled'):''].filter(Boolean).join(' · ');
+      $('activeList').innerHTML=rows.map(function(c){
+        var label=(S.PHASE_LABEL[c.status]||c.status);
+        return '<a class="act-row" href="/games/h2h/'+G.esc(c.invite_token)+'">'
+          +'<span class="mu"><span class="t">'+G.esc(c.away_team+' vs '+c.home_team)+'</span>'
+          +'<span class="s">'+G.esc(label)+' · '+G.esc(c.mode)+'</span></span>'
+          +'<span style="color:var(--faint)">&rsaquo;</span></a>';
+      }).join('');
+      $('activeSec').classList.remove('hide');
+    });
+  }).catch(function(){ /* the social layer is optional on this page */ });
+})();
+</script>
+</body>
+</html>

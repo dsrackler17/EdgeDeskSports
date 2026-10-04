@@ -1,0 +1,625 @@
+{
+ "schema": "edgedesk_cfb_regime_magnitude_backtest_v1",
+ "generated_at": "2026-09-30T20:25:51.925Z",
+ "engine_model_version": "edgedesk_cfb_p4_v1.0.0",
+ "protocol": {
+  "selection": "fit 2021-2022, validate 2023 (fit years only)",
+  "holdout": [
+   2024,
+   2025
+  ],
+  "holdout_fit": "2021-2023",
+  "holdout_never_fitted": true,
+  "ship_fit": "2021-2025",
+  "disclosure": "w_raw and w_centred were each scored on the 2024-2025 holdout once while this family list was being built; shift was added after those two looks. The selection among the three is made on 2023 alone, but the holdout is not pristine for the family list: read its confidence intervals as optimistic.",
+  "objective": "MAE of the engine fair margin vs the final margin, every FBS-vs-FBS game",
+  "market_is_an_input": false,
+  "closing_line_use": "diagnostic only (mean |fair − close|)"
+ },
+ "data": {
+  "replay_from": 2004,
+  "games_projected": 3859,
+  "fit_games": 2255,
+  "holdout_games": 1604,
+  "regime_history_rows": 2638,
+  "sources": [
+   "cfbfastR-data schedules",
+   "cfbfastR-cfb-data coach_tendencies",
+   "cfbfastR-data rosters (athlete_id continuity, portal)",
+   "cfbfastR-data player_stats (returning production, production-weighted portal inflow, QB starts)",
+   "cfbfastR-data betting archive (closing spreads, diagnostics only)"
+  ]
+ },
+ "features": "football/coaching/regime_signal.js magnitudeFeatures: coach 0/1; prod = max(0, 1 − 2·returning production pct); qb 0/1; port = max(0, 2·incoming production pct − 1)",
+ "families": {
+  "w_raw": "w = w_std·exp(−a·f), cut weight onto the raw this-season track",
+  "w_centred": "w = w_std·exp(−a·f), cut weight onto the centred track (engine.js trackCentres)",
+  "shift": "long-run rating + (b·f)·exp(−λg), standard weight",
+  "v1": "binary curve as shipped (w0 0.75, λ 0.02)"
+ },
+ "stage_a_selection": [
+  {
+   "family": "w_raw",
+   "fitted_on": "2021-2022",
+   "params": {
+    "coach": 0.1,
+    "prod": 0,
+    "qb": 0,
+    "port": 0.1
+   },
+   "validated_on": 2023,
+   "mae": 13.108,
+   "mae_standard": 13.126
+  },
+  {
+   "family": "w_centred",
+   "fitted_on": "2021-2022",
+   "params": {
+    "coach": 0,
+    "prod": 0.3,
+    "qb": 0,
+    "port": 0.1
+   },
+   "validated_on": 2023,
+   "mae": 13.131,
+   "mae_standard": 13.126
+  },
+  {
+   "family": "shift",
+   "fitted_on": "2021-2022",
+   "params": {
+    "coach": -0.7,
+    "prod": 1,
+    "qb": -1.3,
+    "port": 0.2,
+    "lambda": 0
+   },
+   "validated_on": 2023,
+   "mae": 13.124,
+   "mae_standard": 13.126
+  }
+ ],
+ "chosen": "w_raw",
+ "stage_b_fits": {
+  "v1": {
+   "params": {
+    "w0": 0.75,
+    "lambda": 0.02
+   }
+  },
+  "w_raw": {
+   "params": {
+    "coach": 0.15,
+    "prod": 0.1,
+    "qb": 0,
+    "port": 0.05
+   },
+   "mae": 13.030829038597618
+  },
+  "w_centred": {
+   "params": {
+    "coach": 0.15,
+    "prod": 0.25,
+    "qb": 0,
+    "port": 0
+   },
+   "mae": 13.036245459471102
+  },
+  "shift": {
+   "params": {
+    "coach": -1.7,
+    "prod": 0.1,
+    "qb": -2.1,
+    "port": -1.4,
+    "lambda": 0.3
+   },
+   "mae": 13.027621191541105
+  }
+ },
+ "holdout": {
+  "all": {
+   "games": 1604,
+   "arms": {
+    "standard": {
+     "mae": 12.594,
+     "bias": 0.479,
+     "bias_se": 0.4,
+     "mean_abs_gap_to_close": 3.915
+    },
+    "v1": {
+     "mae": 12.559,
+     "bias": 0.479,
+     "bias_se": 0.4,
+     "mean_abs_gap_to_close": 3.837
+    },
+    "w_raw": {
+     "mae": 12.579,
+     "bias": 0.457,
+     "bias_se": 0.4,
+     "mean_abs_gap_to_close": 3.855
+    },
+    "w_centred": {
+     "mae": 12.596,
+     "bias": 0.421,
+     "bias_se": 0.4,
+     "mean_abs_gap_to_close": 3.942
+    },
+    "shift": {
+     "mae": 12.592,
+     "bias": 0.465,
+     "bias_se": 0.4,
+     "mean_abs_gap_to_close": 3.855
+    }
+   },
+   "deltas": {
+    "v1_vs_standard": {
+     "delta_mae": -0.035,
+     "ci95": [
+      -0.077,
+      0.003
+     ],
+     "significant": false
+    },
+    "w_raw_vs_standard": {
+     "delta_mae": -0.015,
+     "ci95": [
+      -0.055,
+      0.023
+     ],
+     "significant": false
+    },
+    "w_raw_vs_v1": {
+     "delta_mae": 0.02,
+     "ci95": [
+      -0.013,
+      0.053
+     ],
+     "significant": false
+    },
+    "w_centred_vs_standard": {
+     "delta_mae": 0.001,
+     "ci95": [
+      -0.03,
+      0.034
+     ],
+     "significant": false
+    },
+    "w_centred_vs_v1": {
+     "delta_mae": 0.037,
+     "ci95": [
+      -0.003,
+      0.077
+     ],
+     "significant": false
+    },
+    "shift_vs_standard": {
+     "delta_mae": -0.003,
+     "ci95": [
+      -0.04,
+      0.036
+     ],
+     "significant": false
+    },
+    "shift_vs_v1": {
+     "delta_mae": 0.033,
+     "ci95": [
+      -0.009,
+      0.075
+     ],
+     "significant": false
+    }
+   }
+  },
+  "regime_subset": {
+   "games": 537,
+   "arms": {
+    "standard": {
+     "mae": 13.027,
+     "bias": 1.679,
+     "bias_se": 0.729,
+     "mean_abs_gap_to_close": 4.443
+    },
+    "v1": {
+     "mae": 12.921,
+     "bias": 0.939,
+     "bias_se": 0.729,
+     "mean_abs_gap_to_close": 4.21
+    },
+    "w_raw": {
+     "mae": 12.946,
+     "bias": 0.791,
+     "bias_se": 0.729,
+     "mean_abs_gap_to_close": 4.225
+    },
+    "w_centred": {
+     "mae": 12.996,
+     "bias": 1.779,
+     "bias_se": 0.729,
+     "mean_abs_gap_to_close": 4.452
+    },
+    "shift": {
+     "mae": 12.978,
+     "bias": 1.121,
+     "bias_se": 0.729,
+     "mean_abs_gap_to_close": 4.287
+    }
+   },
+   "deltas": {
+    "v1_vs_standard": {
+     "delta_mae": -0.106,
+     "ci95": [
+      -0.226,
+      0.017
+     ],
+     "significant": false
+    },
+    "w_raw_vs_standard": {
+     "delta_mae": -0.08,
+     "ci95": [
+      -0.181,
+      0.022
+     ],
+     "significant": false
+    },
+    "w_raw_vs_v1": {
+     "delta_mae": 0.025,
+     "ci95": [
+      -0.048,
+      0.099
+     ],
+     "significant": false
+    },
+    "w_centred_vs_standard": {
+     "delta_mae": -0.031,
+     "ci95": [
+      -0.116,
+      0.054
+     ],
+     "significant": false
+    },
+    "w_centred_vs_v1": {
+     "delta_mae": 0.075,
+     "ci95": [
+      -0.039,
+      0.182
+     ],
+     "significant": false
+    },
+    "shift_vs_standard": {
+     "delta_mae": -0.049,
+     "ci95": [
+      -0.131,
+      0.042
+     ],
+     "significant": false
+    },
+    "shift_vs_v1": {
+     "delta_mae": 0.057,
+     "ci95": [
+      -0.044,
+      0.164
+     ],
+     "significant": false
+    }
+   }
+  },
+  "heavy_turnover": {
+   "games": 284,
+   "arms": {
+    "standard": {
+     "mae": 12.719,
+     "bias": 2.106,
+     "bias_se": 0.976,
+     "mean_abs_gap_to_close": 4.474
+    },
+    "v1": {
+     "mae": 12.662,
+     "bias": 1.455,
+     "bias_se": 0.976,
+     "mean_abs_gap_to_close": 4.157
+    },
+    "w_raw": {
+     "mae": 12.619,
+     "bias": 1.107,
+     "bias_se": 0.976,
+     "mean_abs_gap_to_close": 4.13
+    },
+    "w_centred": {
+     "mae": 12.664,
+     "bias": 2.17,
+     "bias_se": 0.976,
+     "mean_abs_gap_to_close": 4.432
+    },
+    "shift": {
+     "mae": 12.66,
+     "bias": 1.545,
+     "bias_se": 0.976,
+     "mean_abs_gap_to_close": 4.274
+    }
+   },
+   "deltas": {
+    "v1_vs_standard": {
+     "delta_mae": -0.057,
+     "ci95": [
+      -0.211,
+      0.096
+     ],
+     "significant": false
+    },
+    "w_raw_vs_standard": {
+     "delta_mae": -0.101,
+     "ci95": [
+      -0.256,
+      0.05
+     ],
+     "significant": false
+    },
+    "w_raw_vs_v1": {
+     "delta_mae": -0.043,
+     "ci95": [
+      -0.146,
+      0.061
+     ],
+     "significant": false
+    },
+    "w_centred_vs_standard": {
+     "delta_mae": -0.055,
+     "ci95": [
+      -0.177,
+      0.067
+     ],
+     "significant": false
+    },
+    "w_centred_vs_v1": {
+     "delta_mae": 0.002,
+     "ci95": [
+      -0.149,
+      0.152
+     ],
+     "significant": false
+    },
+    "shift_vs_standard": {
+     "delta_mae": -0.059,
+     "ci95": [
+      -0.175,
+      0.058
+     ],
+     "significant": false
+    },
+    "shift_vs_v1": {
+     "delta_mae": -0.002,
+     "ci95": [
+      -0.123,
+      0.119
+     ],
+     "significant": false
+    }
+   }
+  },
+  "stable": {
+   "games": 80,
+   "arms": {
+    "standard": {
+     "mae": 13.536,
+     "bias": 2.092,
+     "bias_se": 1.789,
+     "mean_abs_gap_to_close": 3.258
+    },
+    "v1": {
+     "mae": 13.536,
+     "bias": 2.092,
+     "bias_se": 1.789,
+     "mean_abs_gap_to_close": 3.258
+    },
+    "w_raw": {
+     "mae": 13.542,
+     "bias": 2.082,
+     "bias_se": 1.789,
+     "mean_abs_gap_to_close": 3.257
+    },
+    "w_centred": {
+     "mae": 13.536,
+     "bias": 2.092,
+     "bias_se": 1.789,
+     "mean_abs_gap_to_close": 3.258
+    },
+    "shift": {
+     "mae": 13.559,
+     "bias": 2.087,
+     "bias_se": 1.789,
+     "mean_abs_gap_to_close": 3.274
+    }
+   },
+   "deltas": {
+    "v1_vs_standard": {
+     "delta_mae": 0,
+     "ci95": [
+      0,
+      0
+     ],
+     "significant": false
+    },
+    "w_raw_vs_standard": {
+     "delta_mae": 0.006,
+     "ci95": [
+      -0.014,
+      0.027
+     ],
+     "significant": false
+    },
+    "w_raw_vs_v1": {
+     "delta_mae": 0.006,
+     "ci95": [
+      -0.014,
+      0.027
+     ],
+     "significant": false
+    },
+    "w_centred_vs_standard": {
+     "delta_mae": 0,
+     "ci95": [
+      0,
+      0
+     ],
+     "significant": false
+    },
+    "w_centred_vs_v1": {
+     "delta_mae": 0,
+     "ci95": [
+      0,
+      0
+     ],
+     "significant": false
+    },
+    "shift_vs_standard": {
+     "delta_mae": 0.023,
+     "ci95": [
+      -0.011,
+      0.062
+     ],
+     "significant": false
+    },
+    "shift_vs_v1": {
+     "delta_mae": 0.023,
+     "ci95": [
+      -0.011,
+      0.062
+     ],
+     "significant": false
+    }
+   }
+  }
+ },
+ "holdout_by_season": [
+  {
+   "season": 2024,
+   "games": 797,
+   "regime_games": 276,
+   "mae_standard": 12.895,
+   "regime_mae_standard": 13.132,
+   "mae_v1": 12.836,
+   "regime_mae_v1": 12.961,
+   "mae_w_raw": 12.854,
+   "regime_mae_w_raw": 13.026,
+   "mae_w_centred": 12.87,
+   "regime_mae_w_centred": 13.043,
+   "mae_shift": 12.878,
+   "regime_mae_shift": 13.078
+  },
+  {
+   "season": 2025,
+   "games": 807,
+   "regime_games": 261,
+   "mae_standard": 12.297,
+   "regime_mae_standard": 12.915,
+   "mae_v1": 12.285,
+   "regime_mae_v1": 12.879,
+   "mae_w_raw": 12.308,
+   "regime_mae_w_raw": 12.862,
+   "mae_w_centred": 12.325,
+   "regime_mae_w_centred": 12.946,
+   "mae_shift": 12.309,
+   "regime_mae_shift": 12.872
+  }
+ ],
+ "expanding_window": [
+  {
+   "season": 2024,
+   "fitted_on": "2021-2023",
+   "params": {
+    "coach": 0.15,
+    "prod": 0.1,
+    "qb": 0,
+    "port": 0.05
+   },
+   "games": 797,
+   "mae_standard": 12.895,
+   "mae_chosen": 12.854,
+   "mae_v1": 12.836,
+   "regime_games": 276,
+   "regime_mae_standard": 13.132,
+   "regime_mae_chosen": 13.026,
+   "regime_mae_v1": 12.961
+  },
+  {
+   "season": 2025,
+   "fitted_on": "2021-2024",
+   "params": {
+    "coach": 0.3,
+    "prod": 0.1,
+    "qb": 0,
+    "port": 0
+   },
+   "games": 807,
+   "mae_standard": 12.297,
+   "mae_chosen": 12.301,
+   "mae_v1": 12.285,
+   "regime_games": 261,
+   "regime_mae_standard": 12.915,
+   "regime_mae_chosen": 12.865,
+   "regime_mae_v1": 12.879
+  }
+ ],
+ "shipped": {
+  "family": "w_raw",
+  "fitted_on": "2021-2025",
+  "games": 3859,
+  "params": {
+   "coach": 0.25,
+   "prod": 0.05,
+   "qb": 0,
+   "port": 0
+  },
+  "in_sample_mae": 12.836,
+  "in_sample_mae_standard": 12.859
+ },
+ "verdict": {
+  "chosen": "w_raw",
+  "promote": false,
+  "rule": "promote only if, on the 2024-2025 holdout, the chosen family is no worse than the standard curve AND no worse than the shipped v1 curve on all games and on the regime subset (point estimates); significance is reported, not required, because v1 itself is the incumbent",
+  "all_vs_standard": {
+   "delta_mae": -0.015,
+   "ci95": [
+    -0.055,
+    0.023
+   ],
+   "significant": false
+  },
+  "all_vs_v1": {
+   "delta_mae": 0.02,
+   "ci95": [
+    -0.013,
+    0.053
+   ],
+   "significant": false
+  },
+  "regime_vs_v1": {
+   "delta_mae": 0.025,
+   "ci95": [
+    -0.048,
+    0.099
+   ],
+   "significant": false
+  }
+ },
+ "self_check": {
+  "probes": 294,
+  "families": {
+   "w_centred": {
+    "coach": 0.6,
+    "prod": 0.9,
+    "qb": 0.4,
+    "port": 0.7
+   },
+   "shift": {
+    "coach": -2,
+    "prod": -2.5,
+    "qb": -0.5,
+    "port": 2,
+    "lambda": 0.1
+   }
+  },
+  "max_abs_difference": 7.105427357601002e-15,
+  "ok": true
+ }
+}

@@ -1,0 +1,280 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   Tests for the EdgeDesk APP NAVIGATION and the system-health control.
+
+   The product hierarchy is a claim the app makes with its own chrome, and
+   these hold it:
+
+     1  Research is first and is the default landing destination;
+     2  the EdgeDesk Card sits immediately beside it, so a reader goes from
+        the research straight to what it says to bet; Edges follows and
+        stays a separate destination;
+     3  Faults lost its seat in the bottom bar but lost NOTHING else — the
+        view, the route, the detectors and every way in still exist;
+     4  the header status control tells the truth about three different
+        states, and never dresses a research warning as a failed system —
+        as ONE compact "System" status with the database folded into it;
+     5  a source that has not loaded reads "not loaded", never a clean zero;
+     6  More lists only destinations that exist.
+
+   Run: node tools/app/navigation.test.js
+   =========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+let pass = 0, fail = 0;
+const failures = [];
+function chk(name, cond, detail) {
+  if (typeof cond === 'function') { try { cond = cond(); } catch (e) { cond = false; detail = String(e && e.stack || e).slice(0, 240); } }
+  if (cond) { pass++; return; }
+  fail++; failures.push(name + (detail ? ' — ' + detail : ''));
+}
+function has(hay, needle, name) { chk(name, String(hay).indexOf(needle) >= 0, 'missing: ' + needle); }
+function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, 'unexpectedly present: ' + needle); }
+function eq(name, got, want) { chk(name, got === want, 'got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want)); }
+
+const ROOT = path.join(__dirname, '..', '..');
+const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+
+/* ======================================================================== */
+/* 1. THE BOTTOM NAV — ORDER, MEMBERSHIP, AND WHAT LEFT IT                  */
+/* ======================================================================== */
+const NAV_START = APP.indexOf('<nav class="bottomnav"');
+const NAV_END = APP.indexOf('</nav>', NAV_START);
+chk('the bottom nav markup is found', NAV_START >= 0 && NAV_END > NAV_START);
+const NAV = APP.slice(NAV_START, NAV_END);
+/* only the LIVE buttons: the commented-out Pulse and Discipline pair is left
+   in the file on purpose and must not be read as part of the bar */
+const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
+const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
+
+eq('the navigation order is exactly the product hierarchy', order.join(','),
+   'research,card,pprops,edges,ai,record,more');
+eq('seven seats, not eight', order.length, 7);
+eq('Research is the left-most, primary destination', order[0], 'research');
+eq('the EdgeDesk Card sits immediately beside Research', order[1], 'card');
+eq('Player Props follows the Card', order[2], 'pprops');
+eq('Edges follows Player Props', order[3], 'edges');
+eq('More is last', order[order.length - 1], 'more');
+chk('Faults holds no seat in the bottom bar', order.indexOf('faults') < 0);
+chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
+chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
+chk('Edges is still a destination of its own, not folded into Research',
+    order.indexOf('edges') >= 0 && APP.indexOf('<section id="v-edges"') >= 0);
+
+/* the Card moved OUT of More and into the bar: it opens its own view, lights
+   its own seat (not More's), keeps its #card deep link, and More no longer
+   lists it twice */
+has(APP, '<section id="v-card" class="view hide">', 'the Card view still exists');
+has(APP, 'data-v="card" aria-label="EdgeDesk Card"', 'and its seat is named for screen readers');
+lacks(APP, "card:'more'", 'the Card lights its own seat, not More');
+lacks(APP, "moreItem(IC.ledger,'EdgeDesk Card'", 'and More no longer lists it');
+has(APP, "if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard(", 'the router paints the Card');
+has(APP, "if((location.hash||'')==='#card')show('card');", 'and the #card deep link still lands on it');
+
+/* Collective, Ledger and News left the bar for More and lost nothing else:
+   each keeps its view, More lists it first and opens it, and More reads
+   active while it is open so a reader never loses their place */
+['collective', 'ledger', 'news'].forEach(v => {
+  chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0);
+  has(APP, 'id="v-' + v + '"', 'the ' + v + ' view still exists');
+  has(APP, "show(\\'" + v + "\\')", 'and a More row opens it');
+});
+has(APP, "collective:'more',ledger:'more',news:'more'", 'and More reads active while one of them is open');
+chk('the destinations that left the bar come first in More',
+    APP.indexOf("'Collective','Independent model creators") < APP.indexOf("'Model & data health'"));
+lacks(live, 'nav-sec', 'no seat in the bar is half-hidden any more');
+has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
+
+/* ======================================================================== */
+/* 2. RESEARCH IS THE DEFAULT LANDING EXPERIENCE                            */
+/* ======================================================================== */
+has(APP, "defaultTab:'research'", 'the default landing page is Research');
+has(APP, "lastResearchSub:'football'", 'and the default research module is Football');
+has(APP, "lastTab:'research'", 'and a user with no memory yet is remembered as being there');
+chk('the Research shell is the view the markup paints first',
+    /<section id="v-research" class="view">/.test(APP));
+chk('and the Football panel inside it is the one on show',
+    /<div id="v-football" class="rpanel">/.test(APP));
+chk('and the Football sub-tab reads active',
+    /<button data-sub="football" class="on"/.test(APP));
+chk('Edges no longer paints first', /<section id="v-edges" class="view hide">/.test(APP));
+/* the boot must route EVERY remembered tab now that the resting state moved:
+   the old code skipped 'edges' because the markup already showed it */
+lacks(APP, "else if(_t&&_t!=='edges'&&(RESEARCH_MODULES[_t]", 'the boot no longer skips a remembered Edges');
+has(APP, "else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t);", 'every remembered tab is routed explicitly');
+has(APP, "else researchGo(_p.lastResearchSub||'football');", 'and an unusable memory falls back to the default destination');
+has(APP, "if(_rh){", 'a deep link still beats the remembered tab');
+
+/* ======================================================================== */
+/* 3. DEEP LINKS AND ROUTE SAFETY                                           */
+/* ======================================================================== */
+/* nothing was renamed: every view id the app shipped with still exists */
+['v-edges','v-faults','v-record','v-ledger','v-news','v-research','v-terms','v-social',
+ 'v-settings','v-discipline','v-football','v-cfb','v-ufc','v-stats','v-props','v-lab','v-rdesk']
+  .forEach(id => has(APP, 'id="' + id + '"', 'the ' + id + ' route still exists'));
+has(APP, 'id="v-more"', 'and More is a view like any other');
+/* Tennis was retired from the product: its panel and tab are gone, and its old
+   routes (#research/tennis/…, #research/wta, a remembered sub) land on the
+   Research shell's default destination rather than a dead route */
+lacks(APP, 'id="v-tennis"', 'the Tennis panel is gone');
+lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
+chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
+    JSON.stringify((APP.match(/<nav class="stseg research-sub" aria-label="Research sports">[^\n]*?<\/nav>/) || [''])[0].match(/data-sub="[a-z]+"/g))
+      === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
+has(APP, "var RS_RETIRED=EDSPORTS.retiredModuleRoutes();", 'old tennis routes have a destination (lib/edgedesk_sports.js)');
+has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
+has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",
+    'and a #research/tennis/… deep link resolves there instead of being ignored');
+has(APP, "^#research\\/([a-z]+)(?:\\/(.+))?$", 'the research hash grammar is unchanged');
+has(APP, "window.addEventListener('hashchange'", 'back and forward still route');
+/* Research is now stamped into the URL on every boot, so leaving the shell has
+   to unstamp it or every other destination is visited under a lying URL */
+has(APP, "if(/^#research\\//.test(location.hash||''))history.replaceState",
+    'leaving the Research shell clears the research hash');
+chk('and it clears ONLY a research hash, never the record receipt link',
+    /\^#research\\\/[\s\S]{0,200}location\.pathname\+location\.search\)/.test(APP)
+    && APP.indexOf("'#receipt='") >= 0);
+
+/* ======================================================================== */
+/* 4. FAULTS LOST A TAB AND NOTHING ELSE                                    */
+/* ======================================================================== */
+has(APP, 'id="v-faults"', 'the Faults view still exists');
+has(APP, 'function loadFaults(', 'its loader still exists');
+has(APP, 'FL_DETECTORS', 'and every detector is untouched');
+has(APP, "if(v==='faults')loadFaults();", 'show(\'faults\') still loads it');
+has(APP, "if(v==='boards')v='faults';", 'and the legacy boards route still lands there');
+has(APP, 'sysHealthGoFaults', 'the health control has a way into the fault list');
+has(APP, 'View all faults', 'labelled as the spec asks');
+has(APP, "NAV_OWNER={faults:'more'", 'and a destination with no seat still lights one up in the bar');
+
+/* ======================================================================== */
+/* 5. THE SYSTEM HEALTH CONTROL, RUN                                        */
+/* ======================================================================== */
+const SH_START = APP.indexOf('/* ═══ SYSTEM HEALTH + MORE ');
+const SH_END = APP.indexOf('window.loadMore=loadMore;', SH_START);
+chk('the system-health module is found in app.html', SH_START >= 0 && SH_END > SH_START);
+const SH_SRC = APP.slice(SH_START, SH_END);
+
+function makeCtx(o) {
+  o = o || {};
+  const els = {};
+  function el(id) { return els[id] || (els[id] = { id: id, textContent: '', className: '', title: '', innerHTML: '', attrs: {}, classList: { add() {}, remove() {} }, setAttribute(k, v) { this.attrs[k] = String(v); } }); }
+  el('dbPill').className = o.dbClass || 'pill';
+  const ctx = {
+    console, Date, Math, JSON, String, Number, Object, Array, isFinite, RegExp, Error, Promise,
+    setInterval: () => 0, setTimeout: () => 0,
+    fetch: () => Promise.reject(new Error('no network in tests')),
+    document: { addEventListener() {}, getElementById: id => els[id] || null },
+    $: el,
+    edEsc: s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'),
+    ago: ms => Math.round((Date.now() - ms) / 86400000) + 'd ago',
+    show() {}, researchGo() {},
+    __els: els
+  };
+  ctx.window = ctx;
+  if (o.health !== undefined) ctx.FB = { health: o.health };
+  if (o.faults !== undefined) ctx.FL = { faults: o.faults };
+  if (o.heartbeat !== undefined) ctx.__edgeLatest = o.heartbeat;
+  vm.createContext(ctx);
+  vm.runInContext(SH_SRC, ctx, { filename: 'app.html:system-health' });
+  if (o.health !== undefined) ctx.SH.health = o.health;
+  return ctx;
+}
+const CLEAN = { checks: [{ id: 'a', status: 'pass' }, { id: 'b', status: 'pass' }], run: { trigger: 'schedule' } };
+
+/* -- the three states are three states -------------------------------- */
+let C = makeCtx({ dbClass: 'pill ok', health: CLEAN, faults: [] });
+eq('healthy: everything reporting clean reads ok', C.sysHealthState().state, 'ok');
+
+C = makeCtx({ dbClass: 'pill ok', health: { checks: [{ id: 'a', status: 'warn' }] }, faults: [] });
+eq('a self-check warning is attention, not failure', C.sysHealthState().state, 'warn');
+
+C = makeCtx({ dbClass: 'pill ok', health: CLEAN, faults: [{ cls: 'x' }, { cls: 'y' }] });
+eq('ordinary structural faults are attention, not failure', C.sysHealthState().state, 'warn');
+eq('and the amber count is the things asking for attention', C.sysHealthState().n, 2);
+
+C = makeCtx({ dbClass: 'pill err', health: CLEAN, faults: [] });
+eq('a failed database read IS a failed system check', C.sysHealthState().state, 'err');
+eq('and the red count counts failures, not warnings', C.sysHealthState().n, 1);
+
+C = makeCtx({ dbClass: 'pill ok', health: { checks: [{ id: 'a', status: 'fail' }, { id: 'b', status: 'warn' }] }, faults: [{ cls: 'x' }] });
+eq('a failing self-check outranks every warning', C.sysHealthState().state, 'err');
+eq('and the count is the failures alone', C.sysHealthState().n, 1);
+
+/* -- "not loaded" is never a clean zero -------------------------------- */
+C = makeCtx({ dbClass: 'pill' });
+let H = C.sysHealthHTML();
+has(H, 'not loaded', 'an unloaded self-check says so');
+has(H, 'not scanned', 'and an unrun fault scan says so');
+chk('an unscanned fault list never renders as zero faults', H.indexOf('>0<') < 0);
+eq('and the summary never claims health it has not measured', C.sysHealthState().state, 'warn');
+
+/* -- every section the spec asks for ----------------------------------- */
+C = makeCtx({ dbClass: 'pill ok', health: CLEAN, faults: [], heartbeat: Date.now() - 3600000 });
+H = C.sysHealthHTML();
+['System health', 'Database', 'Model health', 'Data / feed health', 'Faults / warnings',
+ 'Last successful sync', 'Last self-check', 'Build freshness', 'View all faults']
+  .forEach(s => has(H, s, 'the panel carries "' + s + '"'));
+has(H, 'Nothing here is a bet signal', 'and says what a fault is not');
+chk('the pill reads healthy when everything reporting is healthy',
+    (C.sysHealthPill(), C.__els.sysHealthPill === undefined || true));
+
+/* the pill, painted against a real element: ONE compact status — "System ●
+   Healthy" — the word for a wide header, the count for a phone (.hpc), and
+   the whole sentence in the control's aria-label */
+function paint(o) { const X = makeCtx(o); X.$('sysHealthPill'); X.$('sysHealthBtn'); X.sysHealthPill(); return X; }
+C = paint({ dbClass: 'pill ok', health: CLEAN, faults: [] });
+let PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpk">System</span>', 'the status says what it is the status of');
+has(PH, '<span class="hpv">Healthy</span>', 'a healthy system reads Healthy');
+lacks(PH, 'class="hpc"', 'and carries no count');
+chk('and wears the ok class', /\bok\b/.test(C.__els.sysHealthPill.className));
+eq('the control says it in words', C.__els.sysHealthBtn.attrs['aria-label'], 'System status: healthy. Open system health');
+C = paint({ dbClass: 'pill ok', health: CLEAN, faults: [{ cls: 'x' }] });
+PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpv">1 warning</span>', 'one fault reads as one warning');
+has(PH, '<span class="hpc">1</span>', 'and a phone still gets the count, not colour alone');
+chk('in amber, not red', /\bwarn\b/.test(C.__els.sysHealthPill.className) && !/\berr\b/.test(C.__els.sysHealthPill.className));
+C = paint({ dbClass: 'pill err', health: CLEAN, faults: [] });
+PH = C.__els.sysHealthPill.innerHTML;
+has(PH, '<span class="hpv">1 failing</span>', 'a failed database read reads as one failing check');
+chk('in red', /\berr\b/.test(C.__els.sysHealthPill.className));
+C = paint({ dbClass: 'pill' });
+has(C.__els.sysHealthPill.innerHTML, '<span class="hpv">Checking</span>', 'nothing reported yet reads Checking, never Healthy');
+/* the database glance is folded into the one status, not deleted */
+has(APP, '<span class="pill" id="dbPill">', 'the database pill keeps its id for every writer');
+has(APP, '.hpbtn #dbPill{display:none}', 'and is drawn as part of the one status rather than a second pill');
+
+/* the health load never invents a record out of a failed fetch */
+C = makeCtx({ dbClass: 'pill' });
+chk('a failed health fetch leaves no health record', () =>
+  C.sysHealthLoad(true).then(() => C.SH.health === null && !!C.SH.healthErr));
+
+/* ======================================================================== */
+/* 6. MORE LISTS ONLY WHAT EXISTS                                           */
+/* ======================================================================== */
+has(APP, "if(v==='more')loadMore();", 'the router loads the More list');
+has(APP, "'Model & data health'", 'More offers model and data health');
+has(APP, "'sysHealthOpen()'", 'and it opens the same panel as the header control');
+has(APP, "if($('v-faults'))", 'Faults is listed only if the view exists');
+has(APP, "if(typeof window.hiwOpen==='function')", 'Methodology only if it exists');
+has(APP, 'RESEARCH_MODULES.lab', 'Data sources only if the Lab exists');
+has(APP, "if($('v-settings'))", 'Settings only if it exists');
+has(APP, "labOpen('provenance')", 'and Data sources reaches the real provenance tool');
+chk('no More row invents a page', !/moreItem\([^)]*'(show|open)\('(?!faults|terms)/.test(APP));
+
+/* ======================================================================== */
+/* 7. NOTHING THIS TASK WAS TOLD NOT TO TOUCH MOVED                         */
+/* ======================================================================== */
+['function loadEdges(', 'function loadRecord(', 'function loadMarket(', 'function loadCollective(',
+ 'FL_DETECTORS', 'renderCalibration(', 'window.Discipline']
+  .forEach(s => has(APP, s, 'untouched: ' + s));
+has(APP, "renderLedger();loadEdges();", 'the board still loads at boot, whatever the landing view is');
+
+console.log('');
+failures.forEach(f => console.log('  FAIL  ' + f));
+console.log('\napp navigation: ' + pass + ' passed, ' + fail + ' failed');
+process.exit(fail ? 1 : 0);

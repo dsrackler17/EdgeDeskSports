@@ -1,0 +1,98 @@
+{
+  "name": "EdgeDesk CFB Elite Model Dataset Blueprint",
+  "version": "1.0",
+  "grain": "one game prediction snapshot per prediction timestamp",
+  "sign_convention": {
+    "final_margin_home": "home_points - away_points; positive = home wins",
+    "pure_model_margin": "positive = home projected to win by N",
+    "book_spread_home": "RECOMMENDED internal convention: home expected margin; positive = home favored. Convert provider conventions at ingest boundary.",
+    "warning": "Do not mix sportsbook display convention (often home -3) with internal home-margin convention (+3). Add automated sign tests."
+  },
+  "snapshot_policy": {
+    "immutable": true,
+    "required_keys": [
+      "game_id",
+      "prediction_ts",
+      "model_version"
+    ],
+    "rule": "Every feature must be reconstructible using only information known at prediction_ts."
+  },
+  "layers": {
+    "pure": "football-only predictive inputs",
+    "market": "sportsbook/external-market inputs after pure projection is frozen",
+    "evaluation": "post-prediction benchmark fields",
+    "target": "outcomes never used as features",
+    "context": "identifiers and non-predictive row metadata"
+  },
+  "recommended_submodels": [
+    {
+      "name": "adjusted_efficiency_ridge",
+      "inputs": [
+        "adjusted_efficiency",
+        "trenches",
+        "havoc",
+        "finishing_drives",
+        "field_position"
+      ],
+      "target": "final_margin_home"
+    },
+    {
+      "name": "bayesian_latent_strength",
+      "inputs": [
+        "prior",
+        "adjusted_efficiency",
+        "availability",
+        "special_teams",
+        "location"
+      ],
+      "target": "final_margin_home"
+    },
+    {
+      "name": "drive_efficiency_model",
+      "inputs": [
+        "drive_efficiency",
+        "field_position",
+        "tempo",
+        "matchup"
+      ],
+      "target": "final_margin_home"
+    },
+    {
+      "name": "dynamic_margin_elo",
+      "inputs": [
+        "prior",
+        "recent_form",
+        "location"
+      ],
+      "target": "final_margin_home"
+    },
+    {
+      "name": "gradient_boosted_matchup",
+      "inputs": [
+        "adjusted_efficiency",
+        "matchup",
+        "availability",
+        "weather",
+        "location"
+      ],
+      "target": "final_margin_home"
+    }
+  ],
+  "ensemble_policy": "Generate strict walk-forward out-of-fold predictions for every submodel, then fit non-negative stacking weights (prefer sum-to-one unless validation clearly supports another constraint).",
+  "calibration_policy": "Calibrate win/cover probabilities strictly out-of-sample; track Brier, log loss and reliability curves.",
+  "evaluation": [
+    "MAE",
+    "RMSE",
+    "bias",
+    "Brier",
+    "log_loss",
+    "interval_coverage_50",
+    "interval_coverage_80",
+    "interval_coverage_95",
+    "ATS_by_edge_bucket",
+    "ROI_after_vig",
+    "CLV",
+    "max_drawdown"
+  ],
+  "feature_count": 140
+}

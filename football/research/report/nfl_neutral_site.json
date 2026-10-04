@@ -1,0 +1,51 @@
+{
+ "schema": "edgedesk_nfl_neutral_site_v1",
+ "generated_at": "2026-09-30T20:59:31.663Z",
+ "generated_by": "football/research/nfl_neutral_site.js",
+ "data": {
+  "predictions": "football/nfl/.cache/research_out/nfl_oos.csv (walk-forward: each season from weights fitted on the seasons before it)",
+  "sites": "nflverse games.csv location = Neutral",
+  "games": 90,
+  "seasons": [
+   2003,
+   2025
+  ],
+  "regular_season": 66,
+  "postseason": 24
+ },
+ "intercept_removed_pts": 2.481,
+ "intercept_note": "the shipped intercept (football/params.js w_spread), removed from every season’s walk-forward prediction; nfl_oos.csv does not carry each season’s own fitted intercept, so earlier seasons are approximated",
+ "mean_residual_at_neutral_sites": -2.997,
+ "mean_residual_ci95": [
+  -6.02,
+  -0.009
+ ],
+ "mae": {
+  "with_home_field": 11.309,
+  "without": 11.033,
+  "delta": -0.276,
+  "delta_ci95": [
+   -0.752,
+   0.234
+  ],
+  "significant": false
+ },
+ "regular_season_only": {
+  "games": 66,
+  "delta": -0.172,
+  "delta_ci95": [
+   -0.759,
+   0.417
+  ]
+ },
+ "context_gap_to_close": {
+  "games": 90,
+  "delta": -0.803,
+  "delta_ci95": [
+   -1.217,
+   -0.377
+  ],
+  "note": "context only: the market is never an input to the number, and the pass/fail is the final margin"
+ },
+ "decision": "NOT significant on final margins (the interval includes zero). Shipped as a correction of what the term means — a neutral site has no home team — not as a fitted gain."
+}

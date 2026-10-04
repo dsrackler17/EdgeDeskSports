@@ -1,0 +1,138 @@
+{
+ "schema": "edgedesk_disagreement_explainer_fit_v1",
+ "generated_at": "2026-09-30T18:32:55.683Z",
+ "rules": {
+  "fit": [
+   2021,
+   2023
+  ],
+  "holdout": [
+   2024,
+   2025
+  ],
+  "ship": [
+   2021,
+   2025
+  ],
+  "t_significant": 1.96
+ },
+ "terms": [
+  "rating",
+  "prior",
+  "turnover",
+  "home_field",
+  "qb_change",
+  "conference",
+  "matchup",
+  "other"
+ ],
+ "labels": {
+  "rating": "rating-gap scale",
+  "prior": "last season’s share of the rating",
+  "turnover": "last season’s share on a turned-over roster",
+  "home_field": "home field (engine constant)",
+  "qb_change": "quarterback change",
+  "conference": "conference strength",
+  "matchup": "stylistic matchup",
+  "other": "travel, schedule, injuries, rivalry"
+ },
+ "target": "fair − close (home margin), every FBS-vs-FBS game with a close",
+ "market_is_an_input": false,
+ "source": "football/cfb_p4/research/replay_rows.js --explainer (cold replay of the shipped engine; cfbfastR schedules, closing archive, regime history)",
+ "evaluation_fit": {
+  "version": "edgedesk_disagreement_explainer_v1",
+  "fitted_on": "2021-2023",
+  "games": 2249,
+  "intercept": -0.2205,
+  "intercept_se": 0.4982,
+  "coef": {
+   "rating": -0.0335,
+   "prior": -0.4184,
+   "turnover": 0.4968,
+   "home_field": 0.4309,
+   "qb_change": 0.5017,
+   "conference": 0.1863
+  },
+  "se": {
+   "rating": 0.01,
+   "prior": 0.0335,
+   "turnover": 0.0767,
+   "home_field": 0.1249,
+   "qb_change": 0.1527,
+   "conference": 0.049
+  },
+  "significant": {
+   "rating": true,
+   "prior": true,
+   "turnover": true,
+   "home_field": true,
+   "qb_change": true,
+   "conference": true
+  },
+  "unfitted": [
+   "matchup",
+   "other"
+  ],
+  "unfitted_why": "zero on every replayed game (the cold replay carries no efficiency or injury feed), so no discount can be measured: shown, never discounted",
+  "residual_sd": 4.928
+ },
+ "holdout": {
+  "games": 1602,
+  "r2": 0.03,
+  "mean_abs_gap": 3.915,
+  "mean_abs_unexplained": 3.669,
+  "gaps_7_plus": {
+   "games": 229,
+   "mean_abs_gap": 9.848,
+   "mean_abs_unexplained": 8.738
+  }
+ },
+ "explainer": {
+  "version": "edgedesk_disagreement_explainer_v1",
+  "fitted_on": "2021-2025",
+  "games": 3851,
+  "intercept": -0.0835,
+  "intercept_se": 0.3159,
+  "coef": {
+   "rating": -0.019,
+   "prior": -0.3627,
+   "turnover": 0.4817,
+   "home_field": 0.392,
+   "qb_change": 0.7887,
+   "conference": 0.0276
+  },
+  "se": {
+   "rating": 0.0076,
+   "prior": 0.0263,
+   "turnover": 0.0586,
+   "home_field": 0.0799,
+   "qb_change": 0.1149,
+   "conference": 0.0374
+  },
+  "significant": {
+   "rating": true,
+   "prior": true,
+   "turnover": true,
+   "home_field": true,
+   "qb_change": true,
+   "conference": false
+  },
+  "unfitted": [
+   "matchup",
+   "other"
+  ],
+  "unfitted_why": "zero on every replayed game (the cold replay carries no efficiency or injury feed), so no discount can be measured: shown, never discounted",
+  "residual_sd": 4.86,
+  "holdout": {
+   "games": 1602,
+   "r2": 0.03,
+   "mean_abs_gap": 3.915,
+   "mean_abs_unexplained": 3.669,
+   "gaps_7_plus": {
+    "games": 229,
+    "mean_abs_gap": 9.848,
+    "mean_abs_unexplained": 8.738
+   }
+  }
+ }
+}

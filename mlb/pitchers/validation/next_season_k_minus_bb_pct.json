@@ -1,0 +1,322 @@
+{
+  "schema": "edgedesk_mlb_feature_evaluation_v1",
+  "generated_at": "2026-09-16T23:31:10.810Z",
+  "target": "k_minus_bb_pct",
+  "target_label": "K-BB%",
+  "coverage": {
+    "start": 2016,
+    "end": 2025
+  },
+  "target_seasons": [
+    2017,
+    2018,
+    2019,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "population": {
+    "rows": 2288,
+    "rule": "pitcher-seasons with at least one completed prior season, a defined prior and outcome value, a source-reported position of P, a prior workload of at least half the minimum, and an outcome workload of at least the per-role minimum. The outcome workload filter is a statement about whether the rate is measurable at all, not a feature, and it is the only condition that reads the target season.",
+    "minimum_outs": {
+      "starter": 240,
+      "reliever": 90,
+      "mixed": 150
+    },
+    "stratified_on": "the PRIOR season’s role, which is known before the season being predicted. Stratifying on the outcome season’s role would be conditioning on the future."
+  },
+  "methods": {
+    "league_prior": "the league’s value for this role in the PRIOR season (nothing about the pitcher)",
+    "carry_forward": "the pitcher’s own value last season — THE INCUMBENT. A candidate that does not beat this has earned nothing.",
+    "baseline_3y": "the innings-weighted value over up to three prior seasons, recomputed from counting statistics",
+    "shrunk": "the three-year baseline shrunk toward the prior league value by outs/(outs+K), with K chosen on TRAINING seasons only",
+    "fitted": "ridge regression on twelve as-of features, REFIT at every target season on pairs strictly earlier than it"
+  },
+  "fitted_features": [
+    "prior_value",
+    "base_value",
+    "prior_innings",
+    "base_innings",
+    "prior_era_minus_fip",
+    "trend_value",
+    "workload_change_pct",
+    "prior_age",
+    "seasons_before",
+    "role_changed_flag",
+    "team_changed_flag",
+    "gap_flag"
+  ],
+  "refits": {
+    "fitted": 7,
+    "skipped": 1
+  },
+  "results": [
+    {
+      "method": "league_prior",
+      "n": 2272,
+      "mae": 0.047561,
+      "rmse": 0.061935,
+      "vs_carry_forward": {
+        "mean_mae_difference": 0.000889,
+        "standard_error": 0.000981,
+        "pairs": 2272,
+        "beats_incumbent": false,
+        "beats_incumbent_beyond_its_own_spread": false
+      }
+    },
+    {
+      "method": "carry_forward",
+      "n": 2272,
+      "mae": 0.046672,
+      "rmse": 0.060836,
+      "vs_carry_forward": null
+    },
+    {
+      "method": "baseline_3y",
+      "n": 2272,
+      "mae": 0.043303,
+      "rmse": 0.056808,
+      "vs_carry_forward": {
+        "mean_mae_difference": -0.00337,
+        "standard_error": 0.000557,
+        "pairs": 2272,
+        "beats_incumbent": true,
+        "beats_incumbent_beyond_its_own_spread": true
+      }
+    },
+    {
+      "method": "shrunk",
+      "n": 2272,
+      "mae": 0.039032,
+      "rmse": 0.050993,
+      "vs_carry_forward": {
+        "mean_mae_difference": -0.007641,
+        "standard_error": 0.000686,
+        "pairs": 2272,
+        "beats_incumbent": true,
+        "beats_incumbent_beyond_its_own_spread": true
+      }
+    },
+    {
+      "method": "fitted",
+      "n": 1970,
+      "mae": 0.038757,
+      "rmse": 0.050329,
+      "vs_carry_forward": {
+        "mean_mae_difference": -0.007651,
+        "standard_error": 0.000679,
+        "pairs": 1970,
+        "beats_incumbent": true,
+        "beats_incumbent_beyond_its_own_spread": true
+      }
+    }
+  ],
+  "by_prior_role": {
+    "starter": {
+      "league_prior": {
+        "n": 885,
+        "mae": 0.043752
+      },
+      "carry_forward": {
+        "n": 885,
+        "mae": 0.035338
+      },
+      "baseline_3y": {
+        "n": 885,
+        "mae": 0.034226
+      },
+      "shrunk": {
+        "n": 885,
+        "mae": 0.033216
+      },
+      "fitted": {
+        "n": 770,
+        "mae": 0.032612
+      }
+    },
+    "reliever": {
+      "league_prior": {
+        "n": 1134,
+        "mae": 0.05092
+      },
+      "carry_forward": {
+        "n": 1134,
+        "mae": 0.055455
+      },
+      "baseline_3y": {
+        "n": 1134,
+        "mae": 0.050141
+      },
+      "shrunk": {
+        "n": 1134,
+        "mae": 0.043358
+      },
+      "fitted": {
+        "n": 972,
+        "mae": 0.043378
+      }
+    },
+    "mixed": {
+      "league_prior": {
+        "n": 253,
+        "mae": 0.04583
+      },
+      "carry_forward": {
+        "n": 253,
+        "mae": 0.046956
+      },
+      "baseline_3y": {
+        "n": 253,
+        "mae": 0.044401
+      },
+      "shrunk": {
+        "n": 253,
+        "mae": 0.039981
+      },
+      "fitted": {
+        "n": 228,
+        "mae": 0.03981
+      }
+    }
+  },
+  "per_season": [
+    {
+      "season": 2017,
+      "n": 302,
+      "train_rows": 0,
+      "shrinkage_k": 300,
+      "fitted": false,
+      "mae": {
+        "league_prior": 0.050335,
+        "carry_forward": 0.048399,
+        "baseline_3y": 0.048399,
+        "shrunk": 0.042377,
+        "fitted": null
+      }
+    },
+    {
+      "season": 2018,
+      "n": 313,
+      "train_rows": 302,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.049922,
+        "carry_forward": 0.048881,
+        "baseline_3y": 0.045074,
+        "shrunk": 0.040239,
+        "fitted": 0.041792
+      }
+    },
+    {
+      "season": 2019,
+      "n": 296,
+      "train_rows": 615,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.050371,
+        "carry_forward": 0.044572,
+        "baseline_3y": 0.042383,
+        "shrunk": 0.038897,
+        "fitted": 0.038562
+      }
+    },
+    {
+      "season": 2021,
+      "n": 224,
+      "train_rows": 927,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.05108,
+        "carry_forward": 0.056183,
+        "baseline_3y": 0.046261,
+        "shrunk": 0.042037,
+        "fitted": 0.044119
+      }
+    },
+    {
+      "season": 2022,
+      "n": 283,
+      "train_rows": 1151,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.047288,
+        "carry_forward": 0.046789,
+        "baseline_3y": 0.043517,
+        "shrunk": 0.038595,
+        "fitted": 0.040542
+      }
+    },
+    {
+      "season": 2023,
+      "n": 289,
+      "train_rows": 1434,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.04453,
+        "carry_forward": 0.046313,
+        "baseline_3y": 0.042566,
+        "shrunk": 0.037784,
+        "fitted": 0.036099
+      }
+    },
+    {
+      "season": 2024,
+      "n": 282,
+      "train_rows": 1723,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.042108,
+        "carry_forward": 0.041049,
+        "baseline_3y": 0.03941,
+        "shrunk": 0.035491,
+        "fitted": 0.033987
+      }
+    },
+    {
+      "season": 2025,
+      "n": 283,
+      "train_rows": 2005,
+      "shrinkage_k": 200,
+      "fitted": true,
+      "mae": {
+        "league_prior": 0.045068,
+        "carry_forward": 0.042909,
+        "baseline_3y": 0.038942,
+        "shrunk": 0.037128,
+        "fitted": 0.037044
+      }
+    }
+  ],
+  "shortened_season": {
+    "as_target": {
+      "rows": 16,
+      "excluded": true,
+      "note": "2020 is excluded as a target season: 60 games is not a year, and a rate over a third of the usual sample is a different measurement rather than a harder one."
+    },
+    "in_baselines": {
+      "rows": 669,
+      "median_share": 0.1635,
+      "note": "These rows carry 2020 innings inside their multi-year baseline. The share is stated on every feature row so a caller can drop them; they are kept here because dropping every 2021-2023 row would leave almost nothing."
+    }
+  },
+  "verdict": {
+    "improved_on_incumbent": true,
+    "improvement_survives_its_own_spread": true,
+    "best_candidate": "fitted",
+    "statement": "Over 2272 chronologically out-of-sample pitcher-seasons, carrying last season's K-BB% forward gives a mean absolute error of 0.046672. The best candidate (fitted) gives 0.038757 — better by 17.0%, and the per-row difference (-0.007651, standard error 0.000679) is more than twice its own spread away from zero. That is a real if modest improvement in NEXT-SEASON RATE ACCURACY. It is not a game model, not an edge, and nothing has been promoted on it."
+  },
+  "promotion": {
+    "promoted": false,
+    "registry": "research_model_current",
+    "rule": "Nothing here is promoted. EdgeDesk promotes a model only on a chronological out-of-sample record against the incumbent, and a next-season RATE forecast is not a game model in any case. No live price, fair line or EV reads any of this."
+  },
+  "not_a_price": "performance_index and every feature above are DESCRIPTIVE. None is converted into a probability, a fair price or a betting edge, here or anywhere else in EdgeDesk."
+}

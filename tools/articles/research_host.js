@@ -1,0 +1,443 @@
+#!/usr/bin/env node
+/* ============================================================================
+   THE RESEARCH HOST — run EdgeDesk's REAL research, headless.
+
+   WHY THIS EXISTS. The article system publishes what EdgeDesk already knows.
+   It must therefore READ the research rather than recompute it, and the
+   research lives in one place: the football module inside app.html, reached
+   through window.fbBriefGame() and window.fbNflBriefGame(). A generator that
+   re-derived a fair spread from the rankings artifact would be a SECOND model
+   wearing the first one's name, and the first time the two disagreed the
+   published article would be wrong in a way nothing could catch.
+
+   So this file boots the actual module — the real script block, out of the
+   real file, in a VM — exactly the way tools/football/_module.js boots it for
+   the test suite, and then drives the actual load path:
+
+     window.loadFootball()   the NFL board (nflverse schedule + trained engine)
+     window.fbP4Load()       the Power 4 board (cfbfastR schedule + P4 engine)
+     window.fbBriefGame()    the CFB matchup research payload
+     window.fbNflBriefGame() the NFL matchup research payload
+
+   NOTHING HERE COMPUTES A NUMBER. Every projection, probability, confidence
+   figure and status label in an article came out of those four calls.
+
+   THE TWO THINGS A BROWSER HAS THAT NODE DOES NOT are supplied here and
+   nowhere else:
+     1  fetch — served from the repo for its own committed artifacts, from a
+        cache directory for the two public schedule feeds, and refused (404)
+        for everything else. A refused fetch is a normal condition the module
+        already handles; it is never faked into a success.
+     2  <script src> — fbScript() appends a tag and waits for onload. The stub
+        DOM here loads the repo file into the same VM and fires it, so the
+        roster bundler the talent layer needs actually arrives.
+
+   OFFLINE BY DEFAULT. The feeds are cached under football/data/cache/ (the
+   same place the pipeline scripts cache theirs). Pass { network: true } to
+   let a cache miss go to the network; without it a miss is reported, and the
+   generator says which feed it could not read rather than publishing a game
+   it could not price.
+   ========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const M = require(path.join(__dirname, '..', 'football', '_module.js'));
+const ROOT = M.ROOT;
+/* the pipeline's own cache convention (EDP_CACHE / --cache DIR), so one build
+   shares a download with build_box, build_players and build_rankings */
+const CACHE_DIR = process.env.EDP_CACHE || path.join(ROOT, 'football', 'data', 'cache');
+
+/* The two public, keyless feeds the board itself reads. Same URLs as app.html
+   (FBP4_URL_SCHED and FB_URL_NFL); if those ever move, they move here too and
+   tools/articles/articles.test.js says so. */
+const FEEDS = {
+  cfb: y => 'https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_' + y + '.csv',
+  nfl: () => 'https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv'
+};
+
+function cacheNameFor(url) {
+  const base = String(url).split('?')[0].split('/').pop() || 'feed';
+  return 'articles_' + base.replace(/[^A-Za-z0-9._-]/g, '_');
+}
+
+/* ------------------------------------------------------------------ fetch */
+/* Repo-relative first (an artifact this checkout already carries), then the
+   feed cache, then — only with { network: true } — the network. */
+function makeFetch(opts, log) {
+  const network = !!opts.network;
+  const seen = { served: [], refused: [], fetched: [] };
+  const mem = Object.create(null);
+
+  function reply(text) {
+    return { ok: true, status: 200, headers: { get: () => null },
+      text: () => Promise.resolve(text),
+      json: () => Promise.resolve(JSON.parse(text)) };
+  }
+  const missing = { ok: false, status: 404, headers: { get: () => null },
+    text: () => Promise.resolve(''), json: () => Promise.resolve(null) };
+
+  function edgedeskFetch(url) {
+    const u = String(url);
+    if (mem[u] !== undefined) return Promise.resolve(mem[u] === null ? missing : reply(mem[u]));
+
+    if (!/^[a-z]+:/i.test(u)) {
+      const f = path.join(ROOT, u.split('?')[0].replace(/^\/+/, ''));
+      if (f.startsWith(ROOT) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+        const text = fs.readFileSync(f, 'utf8');
+        seen.served.push(u); mem[u] = text;
+        return Promise.resolve(reply(text));
+      }
+      seen.refused.push(u); mem[u] = null;
+      return Promise.resolve(missing);
+    }
+
+    const cached = path.join(CACHE_DIR, cacheNameFor(u));
+    if (fs.existsSync(cached)) {
+      const text = fs.readFileSync(cached, 'utf8');
+      seen.served.push(u); mem[u] = text;
+      return Promise.resolve(reply(text));
+    }
+    if (!network) { seen.refused.push(u); mem[u] = null; return Promise.resolve(missing); }
+
+    return globalThis.fetch(u).then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(text => {
+      try { fs.mkdirSync(CACHE_DIR, { recursive: true }); fs.writeFileSync(cached, text); } catch (_) {}
+      seen.fetched.push(u); mem[u] = text;
+      log('  fetched ' + u.split('/').pop() + ' (' + Math.round(text.length / 1024) + ' KB)');
+      return reply(text);
+    }).catch(e => {
+      seen.refused.push(u + ' — ' + (e && e.message));
+      mem[u] = null;
+      return missing;
+    });
+  };
+  return [edgedeskFetch, seen];
+}
+
+/* --------------------------------------------------------- the stub browser */
+/* fbScript() is the module's own loader for the P4 engine, its params and the
+   roster bundler. In a browser those arrive as <script src>. Here the element
+   runs the repo file in this VM and fires onload, so the module's own
+   `if (!window.EDEspnRosterBundles) throw` check is a real check. */
+function installScriptLoader(win, seen) {
+  const doc = win.document;
+  const loaded = Object.create(null);
+  doc.createElement = function (tag) {
+    const el = M.stubElement();
+    if (String(tag).toLowerCase() !== 'script') return el;
+    let src = null;
+    const handlers = { load: [], error: [] };
+    Object.defineProperty(el, 'src', {
+      get() { return src; },
+      set(v) {
+        src = String(v);
+        const file = path.join(ROOT, src.split('?')[0].replace(/^\/+/, ''));
+        setTimeout(function () {
+          let okRun = false;
+          if (!loaded[src] && file.startsWith(ROOT) && fs.existsSync(file)) {
+            try {
+              win.module = { exports: {} };
+              vm.runInContext(fs.readFileSync(file, 'utf8'), win, { filename: src });
+              delete win.module;
+              loaded[src] = true; okRun = true;
+              seen.served.push(src);
+            } catch (e) { seen.refused.push(src + ' — ' + (e && e.message)); }
+          } else if (loaded[src]) { okRun = true; }
+          else { seen.refused.push(src); }
+          if (okRun) { if (el.onload) el.onload(); handlers.load.forEach(f => f()); }
+          else { if (el.onerror) el.onerror(new Error('failed to load ' + src)); handlers.error.forEach(f => f()); }
+        }, 0);
+      }
+    });
+    el.setAttribute = function (k, v) { if (k === 'src') el.src = v; };
+    el.getAttribute = function (k) { return k === 'src' ? src : null; };
+    el.addEventListener = function (ev, fn) { if (handlers[ev]) handlers[ev].push(fn); };
+    return el;
+  };
+  doc.querySelector = function () { return null; };
+}
+
+/* ------------------------------------------------------------------- boot */
+/* Everything the football module reaches for that lives in ANOTHER script
+   block of app.html. Each one is a no-op that resolves, never a value that
+   invents data: edHealthFetch returning null is "the health record could not
+   be read", which the board already renders honestly. */
+function installPageGlobals(win) {
+  win.$ = function () { return null; };
+  win.edHealthFetch = function () { return Promise.resolve(null); };
+  win.edUser = function () { return null; };
+  win.edToken = function () { return Promise.resolve(null); };
+  win.edEvent = function () {};
+  win.renderFootball = function () {};
+  win.rsMetaRender = function () {};
+  win.rsParseStamp = function (s) { const t = Date.parse(s); return isFinite(t) ? t : null; };
+  win.rsTkDrawerClose = function () {};
+  win.researchGo = function () {};
+}
+
+/* Inject captured quotes into the two boards' signal maps. Returns a
+   provenance sentence for the article, or null when nothing was injected. */
+function installMarketSnapshot(win, quotes) {
+  const byGame = Object.create(null);
+  if (!quotes || !quotes.length) return byGame;
+  quotes.forEach(function (q) {
+    const sport = String(q.sport || '').toUpperCase();
+    const bag = sport === 'NFL' ? win.FB.nfl.sig : sport === 'CFB' ? win.FB.p4.sig : null;
+    if (!bag || !q.home || !q.away || !q.kickoff) return;
+    const rows = [];
+    const at = q.captured_at || null;
+    if (q.spread && q.spread.point != null && q.spread.selection) {
+      /* BOTH SIDES, BECAUSE THE LIVE CAPTURE HAS BOTH SIDES.
+         public.signals writes one row per selection, so a priced game reaches
+         the board as the home row and the away row of the same handicap, and
+         the board's reader (fbMarketFromEvent) looks for the HOME row and
+         negates it. A replay that carried only the captured side therefore
+         joined about half a college slate and silently dropped the rest.
+         A point spread is one number with two ends: -2.5 on one team IS +2.5
+         on the other. Mirroring it is arithmetic on the captured fact, not a
+         second price — the book, the timestamp and the handicap are the ones
+         that were captured, and no juice is stated on either side. */
+      const norm = function (v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]+/g, ''); };
+      const sel = q.spread.selection;
+      const other = norm(sel) === norm(q.home) ? q.away : (norm(sel) === norm(q.away) ? q.home : null);
+      const point = +q.spread.point;
+      rows.push({ market: 'spreads', selection: sel, point: point,
+        best_book: q.spread.book || null, last_seen_at: at, first_seen_at: at });
+      if (other) {
+        rows.push({ market: 'spreads', selection: other, point: point === 0 ? 0 : -point,
+          best_book: q.spread.book || null, last_seen_at: at, first_seen_at: at });
+      }
+    }
+    if (q.total && q.total.point != null) {
+      rows.push({ market: 'totals', selection: 'Over', point: +q.total.point,
+        best_book: q.total.book || (q.spread && q.spread.book) || null, last_seen_at: at, first_seen_at: at });
+    }
+    if (!rows.length) return;
+    bag['snapshot:' + q.game_id] = { home: q.home, away: q.away, t: q.kickoff, rows: rows };
+    const books = [...new Set([q.spread && q.spread.book, q.total && q.total.book].filter(Boolean))];
+    byGame[sport + ':' + q.game_id] =
+      'The sportsbook number on this page is a quote EdgeDesk captured'
+      + (books.length ? ' at ' + books.join(' and ') : '')
+      + (q.captured_at ? ' on ' + String(q.captured_at).slice(0, 10) : '')
+      + ', replayed from a committed snapshot rather than read live. It is the book\u2019s number, not EdgeDesk\u2019s, and EdgeDesk\u2019s own number was produced before it was read.'
+      + (q.from ? ' Source: ' + q.from + '.' : '');
+  });
+  return byGame;
+}
+
+/* Wait for a condition the load path sets, bounded. The board's own loader
+   has exactly this shape (FBP4_LOAD_TIMEOUT_MS): an optional data source that
+   never answers must not hold the whole build, and what did arrive is used. */
+function waitFor(test, ms) {
+  const until = Date.now() + ms;
+  return new Promise(function (resolve) {
+    (function tick() {
+      let done = false;
+      try { done = !!test(); } catch (_) { done = false; }
+      if (done || Date.now() > until) return resolve(done);
+      setTimeout(tick, 100);
+    })();
+  });
+}
+
+const LOAD_TIMEOUT_MS = 120000;
+
+/* Boot the module, load both boards, and hand back the doors the article
+   generator uses. Returns { win, cfb(home,away), nfl(home,away), slate(), notes }. */
+async function open(opts) {
+  opts = opts || {};
+  const log = opts.quiet ? function () {} : function (...a) { console.log(...a); };
+  if (opts.marketQuotes === undefined) {
+    try { opts.marketQuotes = require(path.join(__dirname, 'store.js')).loadMarketSnapshots(); }
+    catch (_) { opts.marketQuotes = []; }
+  }
+
+  const boot = M.boot();
+  if (boot.error) throw new Error('the football module would not run: ' + (boot.error.message || boot.error));
+  const win = boot.win;
+
+  installPageGlobals(win);
+  /* A CALLER'S OWN PAGE GLOBALS, opt-in. The personal-research job
+     (tools/personal/research_state.js) supplies a read-only sbFetch/sbGet so
+     the board joins the same captured quotes a signed-in browser reads; the
+     article generator passes nothing and runs exactly as before. */
+  if (opts.globals) Object.keys(opts.globals).forEach(function (k) { win[k] = opts.globals[k]; });
+  const [fetchImpl, seen] = makeFetch(opts, log);
+  win.fetch = fetchImpl;
+  installScriptLoader(win, seen);
+
+  /* the committed engines, in the same globals fbP4Ensure()/fbEnsureEngine()
+     check for, so both short-circuit to the shipped build rather than racing
+     a script tag for it */
+  M.loadEngine(win, ROOT);
+  M.loadNflEngine(win, ROOT);
+  /* THE RESEARCH VIEW AND ITS FRESHNESS POLICY, as the page loads them. The
+     view (lib/cfb_research_view.js) is a plain <script src> outside the
+     football module, and EDINTEL — whose quoteState judges a captured quote
+     current or stale — is another block of app.html. The brief's research
+     view is built by the page's own adapter; without these it is simply
+     absent, never approximated. */
+  /* reliability (lib/cfb_reliability.js) first, as the page's script tags
+     order them: the view reads the scored reliability the adapter builds with
+     it, and without it a document would fall back to the legacy coverage */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_reliability.js'), 'utf8'), win,
+      { filename: 'lib/cfb_reliability.js' });
+  } catch (e) { log('  reliability: ' + (e && e.message)); }
+  /* THE ONE RESEARCH CLASSIFIER (lib/edgedesk_canon.js, a <script src> on
+     the page): the view's label is canon's researchStatus since audit
+     2026-09-30 #6, so a host without it would publish no research label */
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win,
+      { filename: 'lib/edgedesk_canon.js' });
+  } catch (e) { log('  research classifier: ' + (e && e.message)); }
+  try {
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win,
+      { filename: 'lib/cfb_research_view.js' });
+  } catch (e) { log('  research view: ' + (e && e.message)); }
+  /* THE MAJOR-DISAGREEMENT INTEGRITY GATE and its measured parameters, as the
+     page loads them: without them a 7+ gap publishes as INVESTIGATE —
+     VERIFICATION INCOMPLETE (fail closed), never as a verified disagreement */
+  ['football/cfb_p4/margin_calibration.js', 'football/cfb_p4/disagreement_params.js', 'lib/cfb_disagreement.js'].forEach(function (f) {
+    try { vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f }); }
+    catch (e) { log('  ' + f + ': ' + (e && e.message)); }
+  });
+  try {
+    const a = boot.app.indexOf('/*__EDINTEL_START__*/'), b = boot.app.indexOf('/*__EDINTEL_END__*/');
+    if (a > 0 && b > a) vm.runInContext(boot.app.slice(a, b), win, { filename: 'app.html#EDINTEL' });
+  } catch (e) { log('  freshness policy: ' + (e && e.message)); }
+
+  log('booting the EdgeDesk football module…');
+  try { await win.loadFootball(false); } catch (e) { log('  NFL board: ' + (e && e.message)); }
+  await waitFor(() => (win.FB.nfl.up || []).length, 5000);
+  log('  NFL board: ' + (win.FB.nfl.up || []).length + ' upcoming, season ' + win.FB.nfl.curSeason);
+
+  if (typeof win.fbP4Load !== 'function') {
+    throw new Error('app.html does not export window.fbP4Load — the Power 4 board cannot be loaded headlessly');
+  }
+  /* THE TERMINAL'S OWN LOADER when the page exports it: the replay, then the
+     efficiency late join and the canonical rating, exactly as the board runs
+     them — so an article prices a game the way the terminal and the published
+     build do (tools/football/page_build_parity.test.js), and its research
+     view can say it priced from the published inputs. The bare replay is the
+     fallback for an older page.
+     The P4 load ends in optional joins (rosters, book lines, weather). Any of
+     them can be unreachable here, and the board is built to render without
+     them, so the slate is awaited rather than the whole chain. */
+  const p4Loader = typeof win.fbP4LoadGuarded === 'function' ? win.fbP4LoadGuarded : win.fbP4Load;
+  let p4Settled = false;
+  p4Loader(false).then(() => { p4Settled = true; }, () => { p4Settled = true; });
+  await waitFor(() => p4Settled || (win.FB.p4.up || []).length, LOAD_TIMEOUT_MS);
+  if (!p4Settled) await waitFor(() => p4Settled, 15000);
+  log('  Power 4 board: ' + (win.FB.p4.up || []).length + ' upcoming, season ' + win.FB.p4.season
+    + (win.FB.p4.gate ? ' — GATE: ' + win.FB.p4.gate : ''));
+  /* the committed model record, so the research view's history — the
+     published path, the projection status, what changed — is the one the
+     terminal shows. A record that will not load leaves NO HISTORY. */
+  if (typeof win.fbP4RecordEnsure === 'function' && win.FB.p4.season) {
+    try { await win.fbP4RecordEnsure(win.FB.p4.season); } catch (_) {}
+  }
+
+  /* ---- captured book quotes, replayed --------------------------------- */
+  /* The live capture (Supabase `signals`) is behind an account and a build
+     server has no session for it, so without this a headless build sees NO
+     MARKET on every college game while the terminal sees the quote it
+     captured hours earlier — two different research states for one game.
+     A snapshot is injected in the SAME shape fbMarketFromEvent() reads a
+     live capture in, so the module's own fbP4Market() / fbNflMarketFor()
+     join it, its own fbP4StatusFor() classifies it, and its own orientation
+     check can still throw it out. Nothing here decides anything: it makes a
+     number visible to code that was always going to judge it. */
+  const marketSourceByGame = installMarketSnapshot(win, opts.marketQuotes || []);
+
+  const notes = {
+    market_snapshots: Object.keys(marketSourceByGame).length,
+    served: [...new Set(seen.served)],
+    refused: [...new Set(seen.refused)],
+    fetched: [...new Set(seen.fetched)],
+    cfb_gate: win.FB.p4.gate || null,
+    cfb_notes: (win.FB.p4.notes || []).slice(),
+    nfl_notes: (win.FB.nfl.notes || []).slice(),
+    rankings: {
+      season: win.FB.rk.data && win.FB.rk.data.season,
+      week_label: win.FB.rk.data && win.FB.rk.data.week_label,
+      generated_at: win.FB.rk.data && win.FB.rk.data.generated_at,
+      team_count: win.FB.rk.data && win.FB.rk.data.team_count
+    }
+  };
+
+  /* ---- the slate: every upcoming game on either board, one shape --------- */
+  function slate() {
+    const out = [];
+    (win.FB.p4.up || []).forEach(function (u) {
+      out.push({
+        sport: 'CFB', game_id: String(u.g.game_id), kickoff: u.g.start_date,
+        kickoff_ms: u.t, home: u.g.home_team, away: u.g.away_team,
+        venue: u.g.venue || null, neutral_site: !!u.g.neutral_site,
+        conference_game: !!u.g.conference_game, week: u.g.week == null ? null : +u.g.week,
+        season: +u.g.season,
+        home_conference: u.g.home_conference || null, away_conference: u.g.away_conference || null,
+        home_division: u.g.home_division || null, away_division: u.g.away_division || null,
+        /* THE SCHEDULE ROW'S OWN WORD ON WHAT KIND OF GAME THIS IS. cfbfastR
+           carries `season_type` and a free-text `notes` that names a
+           conference championship, a playoff round or a bowl. The editorial
+           system reads those rather than inferring a stage from a week
+           number, which cannot tell Week 0 from a title game. */
+        season_type: u.g.season_type || null,
+        notes: u.g.notes || null
+      });
+    });
+    (win.FB.nfl.up || []).forEach(function (u) {
+      const g = u.g;
+      out.push({
+        sport: 'NFL', game_id: String(g.game_id), kickoff: new Date(u.t).toISOString(),
+        kickoff_ms: u.t, home: g.home_team, away: g.away_team,
+        venue: g.stadium || null, neutral_site: String(g.location || '').toLowerCase() === 'neutral',
+        division_game: String(g.div_game) === '1', week: g.week == null ? null : +g.week,
+        season: +g.season, roof: g.roof || null, surface: g.surface || null,
+        game_type: g.game_type || 'REG',
+        /* THE KICKOFF AS THE FEED WRITES IT. `kickoff_ms` above is the board's
+           own parse, and the board parses "gameday T gametime" with no zone —
+           so on a UTC runner a 20:15 Eastern kickoff becomes 20:15 UTC and a
+           Monday night game reads as a Monday afternoon one. That is harmless
+           for a board that only orders games by it and wrong for anything
+           that asks WHICH WINDOW a game is in. nflverse carries the Eastern
+           weekday and wall clock as their own columns; they are the
+           authority, and tools/editorial/featured.js uses them. */
+        weekday: g.weekday || null,
+        gametime_et: g.gametime || null,
+        gameday: g.gameday || null,
+        /* the provider's own event id, which is the clean join to a box score */
+        espn_id: g.espn || null,
+        /* the consensus closing numbers the feed publishes, for CLV after the
+           game. Carried, never used as EdgeDesk's own number. */
+        nflverse_spread_line: g.spread_line == null ? null : +g.spread_line,
+        nflverse_total_line: g.total_line == null ? null : +g.total_line,
+        away_rest: g.away_rest == null ? null : +g.away_rest,
+        home_rest: g.home_rest == null ? null : +g.home_rest
+      });
+    });
+    out.sort((a, b) => a.kickoff_ms - b.kickoff_ms);
+    return out;
+  }
+
+  return {
+    win: win,
+    notes: notes,
+    slate: slate,
+    /* the two research doors, called exactly as the terminal calls them */
+    cfb: (home, away, t) => win.fbBriefGame({ home: home, away: away, t: t }),
+    nfl: (home, away, t) => win.fbNflBriefGame({ home: home, away: away, t: t }),
+    /* where THIS game's sportsbook number came from, when it came from a
+       committed snapshot rather than the live capture */
+    marketSourceFor: (sport, gameId) => marketSourceByGame[sport + ':' + gameId] || null
+  };
+}
+
+module.exports = { open, installMarketSnapshot, FEEDS, CACHE_DIR, cacheNameFor, ROOT,
+  /* the stub browser, for suites that drive the page's own loaders */
+  makeFetch, installScriptLoader, installPageGlobals };

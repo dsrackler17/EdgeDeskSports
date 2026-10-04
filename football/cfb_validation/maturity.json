@@ -1,0 +1,383 @@
+{
+ "schema": "edgedesk_cfb_maturity_v1",
+ "generated_at": "2026-10-04T15:29:55.974Z",
+ "maturity_definitions": {
+  "PRODUCTION_VALIDATED": {
+   "key": "PRODUCTION_VALIDATED",
+   "label": "PRODUCTION VALIDATED",
+   "rank": 6,
+   "means": "In production and prospectively validated: its walk-forward badge and, where it makes price claims, its CLV badge are earned under the rules below."
+  },
+  "PRODUCTION": {
+   "key": "PRODUCTION",
+   "label": "PRODUCTION",
+   "rank": 5,
+   "means": "The governed champion or a production component: it produces the published number, is walk-forward tested on history, and is tracked prospectively — but has not yet earned PRODUCTION VALIDATED on live, frozen predictions."
+  },
+  "SHADOW": {
+   "key": "SHADOW",
+   "label": "SHADOW",
+   "rank": 4,
+   "means": "Runs beside production on the same games and is graded the same way, but its output moves no published number."
+  },
+  "EXPERIMENTAL": {
+   "key": "EXPERIMENTAL",
+   "label": "EXPERIMENTAL",
+   "rank": 3,
+   "means": "Tracked prospectively. The current version has not yet accumulated enough closing-line evidence for validated betting claims."
+  },
+  "RESEARCH_ONLY": {
+   "key": "RESEARCH_ONLY",
+   "label": "RESEARCH ONLY",
+   "rank": 2,
+   "means": "Shown and explained as context. It has not passed walk-forward validation, so it moves no line and makes no probability claim."
+  },
+  "UNVALIDATED": {
+   "key": "UNVALIDATED",
+   "label": "UNVALIDATED",
+   "rank": 1,
+   "means": "Computed and displayed, but its own validation failed or has not run: read it as a description, not as evidence."
+  },
+  "DEPRECATED": {
+   "key": "DEPRECATED",
+   "label": "DEPRECATED",
+   "rank": 0,
+   "means": "Retired. Kept for the record; no longer computed for new games."
+  }
+ },
+ "badge_rules": {
+  "WALK_FORWARD_TRACKED": {
+   "label": "WALK-FORWARD TRACKED",
+   "rule": "Predictions of this exact version are frozen write-once before kickoff in the Model Lab ledger (origin LIVE) and graded after the game. No minimum: it is a statement about method, not performance."
+  },
+  "WALK_FORWARD_VALIDATED": {
+   "label": "WALK-FORWARD VALIDATED",
+   "min_n": 700,
+   "rule": "At least 700 settled prospective (LIVE, frozen pre-kickoff) games of this exact version; an MAE difference whose 95% bootstrap CI lies entirely below zero — against the model it replaces for a challenger, or against its own pre-registered holdout reference + 0.25 pts for the incumbent (the backtest holds prospectively); win-probability calibration error (ECE) at most 0.03; 80% interval coverage between 75% and 85%."
+  },
+  "CLV_PENDING": {
+   "label": "CLV PENDING",
+   "rule": "Closing-line value is being recorded, but fewer than 200 settled, priced, multi-book decisions exist, or the 95% CI of mean CLV includes zero."
+  },
+  "CLV_VALIDATED": {
+   "label": "CLV VALIDATED",
+   "min_n": 200,
+   "rule": "At least 200 settled decisions priced at a real quote with 2+ books at the close; mean CLV above zero with the 95% bootstrap CI lower bound above zero."
+  }
+ },
+ "reference_mae": 12.6017,
+ "champion": "edgedesk_cfb_p4_v1.0.0",
+ "modules": [
+  {
+   "id": "cfb_v1",
+   "model": "CFB production pricing model (V1)",
+   "sport": "CFB",
+   "version": "edgedesk_cfb_p4_v1.0.0",
+   "status": "PRODUCTION",
+   "status_label": "PRODUCTION",
+   "status_means": "The governed champion or a production component: it produces the published number, is walk-forward tested on history, and is tracked prospectively — but has not yet earned PRODUCTION VALIDATED on live, frozen predictions.",
+   "training_cutoff": "trained through the 2025 season; walk-forward held out 2022–2025",
+   "live_n": 502,
+   "walk_forward_status": "WALK-FORWARD TRACKED · 59 / 700 settled live games",
+   "clv_status": "CLV PENDING · 0 / 200 settled priced multi-book decisions",
+   "pricing_impact": "YES",
+   "pricing_impact_text": "MOVES THE LINE",
+   "reason": "The governance champion: every published CFB fair spread comes from it. Walk-forward tested on history (MAE 12.77 vs close 12.02, 2022–2025); not yet prospectively validated.",
+   "badges": [
+    {
+     "key": "WALK_FORWARD_TRACKED",
+     "label": "WALK-FORWARD TRACKED",
+     "earned": true,
+     "detail": "502 frozen live predictions on file"
+    },
+    {
+     "key": "WALK_FORWARD_VALIDATED",
+     "label": "WALK-FORWARD VALIDATED",
+     "earned": false,
+     "progress": "59 / 700 settled live games",
+     "detail": "not earned: 59 of 700 settled live games"
+    },
+    {
+     "key": "CLV_PENDING",
+     "label": "CLV PENDING",
+     "earned": false,
+     "progress": "0 / 200 settled priced multi-book decisions",
+     "detail": "CLV not validated"
+    }
+   ]
+  },
+  {
+   "id": "cfb_v2",
+   "model": "CFB V2.1 challenger",
+   "sport": "CFB",
+   "version": "edgedesk_cfb_v2.1.0",
+   "status": "SHADOW",
+   "status_label": "SHADOW",
+   "status_means": "Runs beside production on the same games and is graded the same way, but its output moves no published number.",
+   "training_cutoff": "weekly Tuesday freeze; 2024–2025 used in development",
+   "live_n": 701,
+   "walk_forward_status": "WALK-FORWARD TRACKED · 0 / 700 settled live games",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Graded beside V1 on every game; promotion needs about one season of prospective evidence (docs/cfb-audit/EXECUTIVE.md §9).",
+   "badges": [
+    {
+     "key": "WALK_FORWARD_TRACKED",
+     "label": "WALK-FORWARD TRACKED",
+     "earned": true,
+     "detail": "701 frozen live predictions on file"
+    },
+    {
+     "key": "WALK_FORWARD_VALIDATED",
+     "label": "WALK-FORWARD VALIDATED",
+     "earned": false,
+     "progress": "0 / 700 settled live games",
+     "detail": "not earned: 0 of 700 settled live games"
+    }
+   ]
+  },
+  {
+   "id": "etsr",
+   "model": "Current FBS Power Rating (ETSR)",
+   "sport": "CFB",
+   "version": "edgedesk_national_rankings_v1",
+   "status": "SHADOW",
+   "status_label": "SHADOW",
+   "status_means": "Runs beside production on the same games and is graded the same way, but its output moves no published number.",
+   "training_cutoff": "rebuilt weekly",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Point-scale calibration not yet measured (calibration.measured is false), so it stays out of pricing.",
+   "badges": []
+  },
+  {
+   "id": "player_quality",
+   "model": "Player quality",
+   "sport": "CFB",
+   "version": "football/players/current.json",
+   "status": "RESEARCH_ONLY",
+   "status_label": "RESEARCH ONLY",
+   "status_means": "Shown and explained as context. It has not passed walk-forward validation, so it moves no line and makes no probability claim.",
+   "training_cutoff": "rebuilt weekly",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Walk-forward validation not yet passed.",
+   "badges": []
+  },
+  {
+   "id": "personnel",
+   "model": "Personnel availability impact (non-QB)",
+   "sport": "CFB",
+   "version": "football/personnel",
+   "status": "RESEARCH_ONLY",
+   "status_label": "RESEARCH ONLY",
+   "status_means": "Shown and explained as context. It has not passed walk-forward validation, so it moves no line and makes no probability claim.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Measurement only: the coefficient is not trained, so the projection effect is 0.0 points.",
+   "badges": []
+  },
+  {
+   "id": "qb_absence",
+   "model": "Quarterback absence term",
+   "sport": "CFB",
+   "version": "edgedesk_cfb_p4_v1.0.0",
+   "status": "PRODUCTION",
+   "status_label": "PRODUCTION",
+   "status_means": "The governed champion or a production component: it produces the published number, is walk-forward tested on history, and is tracked prospectively — but has not yet earned PRODUCTION VALIDATED on live, frozen predictions.",
+   "training_cutoff": "2,846 games through 2025",
+   "live_n": null,
+   "walk_forward_status": "HISTORICAL BACKTEST ONLY",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "YES",
+   "pricing_impact_text": "MOVES THE LINE",
+   "reason": "Prices 3.90 pts only when a primary quarterback absence is reported; QB quality (EPA) itself is not priced for college.",
+   "badges": []
+  },
+  {
+   "id": "v1_matchup",
+   "model": "V1 stylistic matchup term",
+   "sport": "CFB",
+   "version": "edgedesk_cfb_p4_v1.0.0",
+   "status": "PRODUCTION",
+   "status_label": "PRODUCTION",
+   "status_means": "The governed champion or a production component: it produces the published number, is walk-forward tested on history, and is tracked prospectively — but has not yet earned PRODUCTION VALIDATED on live, frozen predictions.",
+   "training_cutoff": "through 2025",
+   "live_n": null,
+   "walk_forward_status": "HISTORICAL BACKTEST ONLY",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "YES",
+   "pricing_impact_text": "MOVES THE LINE",
+   "reason": "Part of the champion’s fair spread (median 1.1 pts, p99 4.6).",
+   "badges": []
+  },
+  {
+   "id": "matchup_intel",
+   "model": "Matchup intelligence cards",
+   "sport": "CFB",
+   "version": "football/cfb_matchup",
+   "status": "RESEARCH_ONLY",
+   "status_label": "RESEARCH ONLY",
+   "status_means": "Shown and explained as context. It has not passed walk-forward validation, so it moves no line and makes no probability claim.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Unit-versus-unit context; the matchup shadow is not promoted.",
+   "badges": []
+  },
+  {
+   "id": "integrity_gate",
+   "model": "Major-disagreement integrity gate",
+   "sport": "CFB",
+   "version": "lib/cfb_disagreement.js",
+   "status": "PRODUCTION",
+   "status_label": "PRODUCTION",
+   "status_means": "The governed champion or a production component: it produces the published number, is walk-forward tested on history, and is tracked prospectively — but has not yet earned PRODUCTION VALIDATED on live, frozen predictions.",
+   "training_cutoff": "parameters fitted on 2015–2021",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Decides VERIFIED MAJOR vs INVESTIGATE; labels research, never prices.",
+   "badges": []
+  },
+  {
+   "id": "margin_calibrator",
+   "model": "Football-only margin calibrator",
+   "sport": "CFB",
+   "version": "cfb_margin_cal_v1",
+   "status": "SHADOW",
+   "status_label": "SHADOW",
+   "status_means": "Runs beside production on the same games and is graded the same way, but its output moves no published number.",
+   "training_cutoff": "2015–2025 walk-forward",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Walk-forward gain −0.041 MAE, under the 0.05 promotion bar.",
+   "badges": []
+  },
+  {
+   "id": "decision_engine",
+   "model": "Decision engine (BET / PASS)",
+   "sport": "CFB",
+   "version": "cfb_decision_policy_v1",
+   "status": "SHADOW",
+   "status_label": "SHADOW",
+   "status_means": "Runs beside production on the same games and is graded the same way, but its output moves no published number.",
+   "training_cutoff": "frozen policy",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Betting disabled by policy: calibrated EV is below zero at every price.",
+   "badges": []
+  },
+  {
+   "id": "market_timing",
+   "model": "Market timing (bet now vs wait)",
+   "sport": "CFB",
+   "version": "cfb_decision_policy_v1.wait",
+   "status": "UNVALIDATED",
+   "status_label": "UNVALIDATED",
+   "status_means": "Computed and displayed, but its own validation failed or has not run: read it as a description, not as evidence.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "The policy’s WAIT rule is disabled: no validated evidence that waiting pays.",
+   "badges": []
+  },
+  {
+   "id": "clv_prediction",
+   "model": "CLV / market-intelligence challenger",
+   "sport": "CFB",
+   "version": "football/cfb_market",
+   "status": "SHADOW",
+   "status_label": "SHADOW",
+   "status_means": "Runs beside production on the same games and is graded the same way, but its output moves no published number.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Market-informed; kept apart from the pure line by design and never priced.",
+   "badges": []
+  },
+  {
+   "id": "reliability",
+   "model": "Reliability score",
+   "sport": "CFB",
+   "version": "lib/cfb_reliability.js",
+   "status": "UNVALIDATED",
+   "status_label": "UNVALIDATED",
+   "status_means": "Computed and displayed, but its own validation failed or has not run: read it as a description, not as evidence.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "Describes input completeness; its correlation with error is about zero, so it gates display only.",
+   "badges": []
+  },
+  {
+   "id": "nfl_model",
+   "model": "NFL spread model",
+   "sport": "NFL",
+   "version": "football/engine.js",
+   "status": "EXPERIMENTAL",
+   "status_label": "EXPERIMENTAL",
+   "status_means": "Tracked prospectively. The current version has not yet accumulated enough closing-line evidence for validated betting claims.",
+   "training_cutoff": "see docs/model-card-football.md",
+   "live_n": null,
+   "walk_forward_status": "HISTORICAL BACKTEST ONLY",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "YES",
+   "pricing_impact_text": "MOVES THE LINE",
+   "reason": "Prices the NFL fair line. Tier LEAN: break-even history at 1.5+ pts of disagreement, not a profit (football/validation/pricing_nfl.json).",
+   "badges": []
+  },
+  {
+   "id": "ufc_research",
+   "model": "UFC research layer",
+   "sport": "UFC",
+   "version": "ufc-research-1.0",
+   "status": "RESEARCH_ONLY",
+   "status_label": "RESEARCH ONLY",
+   "status_means": "Shown and explained as context. It has not passed walk-forward validation, so it moves no line and makes no probability claim.",
+   "training_cutoff": "—",
+   "live_n": null,
+   "walk_forward_status": "NOT APPLICABLE",
+   "clv_status": "NOT APPLICABLE",
+   "pricing_impact": "NO",
+   "pricing_impact_text": "RESEARCH CONTEXT ONLY",
+   "reason": "No EdgeDesk UFC model exists: the one probability shown is the market’s, de-vigged and labelled as such.",
+   "badges": []
+  }
+ ],
+ "divergence_research": {
+  "status": "DIRECTIONAL",
+  "action": "Use rating-state divergence as an UNCERTAINTY / RESEARCH FLAG (the high-uncertainty view and the game page) — the error link is directional, not established at 95%. The fair spread is NOT changed. A football-only correction (final − fair = 0.2113 × divergence, fitted on 2015–2021) improves the 2022–2025 walk-forward MAE by 0.0764 pts (CI [-0.1063,-0.0438]), clearing the 0.05 bar: it is QUEUED as a research candidate for the challenger pipeline (RESEARCH → CHALLENGER → WALK-FORWARD → SHADOW → PROMOTION), never applied to production directly."
+ }
+}

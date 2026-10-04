@@ -1,0 +1,95 @@
+# EdgeDesk Record P&L — the suites a pull request must pass.
+#
+# The P&L section answers "if I had followed every EdgeDesk recommendation,
+# how much would I be up or down?" A change that assumes −110 for a price that
+# was never captured, mixes flat and recommended staking, computes ROI as
+# anything but net ÷ risked, double-counts a settlement, lets a corrected
+# result slip in silently, rewrites a recorded recommendation or exposes a
+# reader's bankroll has to fail on the PR that makes it.
+name: Record P&L tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_pnl*.js'
+      - 'lib/edgedesk_record_card.js'
+      - 'lib/edgedesk_pnl.css'
+      - 'lib/edgedesk_edge_pnl*'
+      - 'tools/record/pnl*'
+      - 'tools/record/price_lock.js'
+      - 'tools/record/verified_pnl*'
+      - 'tools/record/football_record*'
+      - 'tools/record/quote_ledger*'
+      - 'tools/record/signal_pnl*'
+      - 'supabase/model_pnl*.sql'
+      - 'supabase/signal_pnl*.sql'
+      - 'supabase/capture_v9_qualification.sql'
+      - 'supabase/close_v7_parity.sql'
+      - 'record/pnl/**'
+      - 'football/props/grade.js'
+      - 'football/props/verify_ledger.js'
+      - 'app.html'
+      - 'record.html'
+      - '.github/workflows/record-pnl*.yml'
+      - '.github/workflows/deploy-record-pnl.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_pnl*.js'
+      - 'lib/edgedesk_record_card.js'
+      - 'lib/edgedesk_edge_pnl*'
+      - 'tools/record/pnl*'
+      - 'tools/record/price_lock.js'
+      - 'tools/record/quote_ledger*'
+      - 'tools/record/verified_pnl*'
+      - 'tools/record/signal_pnl*'
+      - 'supabase/model_pnl*.sql'
+      - 'supabase/signal_pnl*.sql'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: record-pnl-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The arithmetic (American odds, flat vs staked, ROI, drawdown, streaks, CLV, calibration, sample labels)
+        run: node tools/record/pnl.test.js
+      - name: The ledger (every source, idempotent rebuilds, corrected scores and stats, frozen recommendations, nothing deleted)
+        run: node tools/record/pnl_ledger.test.js
+      - name: Verified P&L (no price = no verified P&L; the price lock at or before the decision, frozen; an idempotent backfill; graded = priced + record only)
+        run: node tools/record/verified_pnl.test.js
+      - name: The record's quote ledger (every priced pregame reading of every NFL and college game the model prices, kept append-only; the lock prices a pick from it only at or before the decision)
+        run: node tools/record/quote_ledger.test.js
+      - name: The Record's share card (what it says, the post under 280, every format keeps every piece inside the image)
+        run: node tools/record/record_card.test.js
+      - name: The database (idempotent upsert, derived P&L, the price lock, verification and its reasons, verified_pnl_* parity and integrity, RLS, a reader's own dollars)
+        env:
+          PNL_SQL_REQUIRED: '1'
+        run: node tools/record/pnl_sql.test.js
+      - name: Flagged-edge P&L — the odds math (+150 win = 1.50, -110 win = 0.909, loss = -1, push = 0, void not a bet)
+        run: node tools/record/signal_pnl.test.js
+      - name: Flagged-edge P&L — the database (dry run, idempotent backfill, the settlement hook, summary = raw sum, hand-check, RLS)
+        env:
+          PNL_SQL_REQUIRED: '1'
+        run: node tools/record/signal_pnl_sql.test.js
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The Record's P&L section in a real browser (record.html and the app, 375 / 390 / 430 / 768 / 1440 px)
+        run: node tools/record/pnl_ui.test.js
+      - name: Flagged-edge P&L in a real browser (record.html #edge-pnl at 375-1440 px, the app's Records tab and Pipeline health)
+        env:
+          PNL_UI_REQUIRED: '1'
+        run: node tools/record/signal_pnl_ui.test.js

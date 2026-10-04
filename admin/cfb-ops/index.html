@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>CFB Operations</title>
+<meta name="description" content="Internal operational dashboard for the EdgeDesk college football production pathway: health, versions, jobs, sources, freshness, decisions, warnings and incidents.">
+<!--
+  CFB OPERATIONS — the production system's operational dashboard, separate
+  from the research Model Lab (admin/cfb-lab/). It reads ONE stored file and
+  computes nothing of its own:
+
+    football/cfb_production/reports/ops.json   written by
+                                               football/cfb_production/health.js
+                                               from committed artifacts and, when
+                                               the job has credentials, the
+                                               database's own cfb_health()
+
+  Sections: system health, model version, last weekly run, source health,
+  odds age, PBP age, failed jobs, degraded games, predictions, bet decisions,
+  warnings, incidents. Every section shows OK / WARNING / CRITICAL / UNKNOWN as
+  health.js decided it; UNKNOWN is never drawn as OK. Every string from the
+  JSON is escaped.
+
+  All rendering is a pure block between the EDOPS markers below (data in, HTML
+  string out, no DOM access) so football/cfb_production/ui.test.js runs the
+  very code this page runs against real and hostile ops.json files.
+-->
+<style>
+.viz-root{
+  color-scheme:dark;
+  --page:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;
+  --text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--grid:#2c2a23;
+  --series-1:#3987e5;--series-1-soft:rgba(57,135,229,.16);
+  --warning:#fab219;--critical:#e05252;--good:#2fb82f;
+  --warning-soft:rgba(250,178,25,.12);--critical-soft:rgba(224,82,82,.12);--good-soft:rgba(47,184,47,.12);
+}
+@media (prefers-color-scheme: light){
+  :root:where(:not([data-theme="dark"])) .viz-root{
+    color-scheme:light;
+    --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+    --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;
+    --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+    --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+    --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+  }
+  html:where(:not([data-theme="dark"])){background:#f9f9f7}
+}
+:root[data-theme="light"] .viz-root{
+  color-scheme:light;
+  --page:#f9f9f7;--surface:#fcfcfb;--surface2:#f2f1ec;--border:rgba(11,11,11,.12);
+  --text:#0b0b0b;--dim:#52514e;--faint:#898781;--grid:#e1e0d9;
+  --series-1:#2a78d6;--series-1-soft:rgba(42,120,214,.14);
+  --warning:#a86b00;--critical:#b42323;--good:#0b7a0b;
+  --warning-soft:rgba(168,107,0,.10);--critical-soft:rgba(180,35,35,.08);--good-soft:rgba(11,122,11,.08);
+}
+*{box-sizing:border-box;margin:0}
+html{background:#100e0a}
+:root[data-theme="light"]{background:#f9f9f7}
+body.viz-root{background:var(--page);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.45;overflow-x:hidden}
+.wrap{max-width:1280px;margin:0 auto;padding:0 16px 48px}
+header{border-bottom:1px solid var(--border);padding:14px 0 10px}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:18px;font-weight:700}
+.tag{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:12px;padding:2px 8px;font-weight:600}
+.sub{color:var(--dim);font-size:12.5px;margin-top:6px;max-width:860px;overflow-wrap:anywhere}
+.err{color:var(--critical);font-size:13px;margin-top:8px}
+.toc{position:sticky;top:0;z-index:5;background:var(--page);border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:2px 14px;padding:8px 0;margin-bottom:14px;font-size:12.5px}
+.toc a{color:var(--dim);text-decoration:none;white-space:nowrap}
+.toc a:hover,.toc a:focus{color:var(--text);text-decoration:underline}
+.stamp{font-size:11.5px;color:var(--faint);margin:0 0 12px;overflow-wrap:anywhere}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;min-width:0;scroll-margin-top:44px}
+.card>h2{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.note{font-size:12px;color:var(--dim);margin:2px 0 8px;max-width:900px;overflow-wrap:anywhere}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.tile{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
+.tile .l{font-size:11px;color:var(--dim)}
+.tile .v{font-size:16px;font-weight:600;margin-top:1px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:4px 0 8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;padding:5px 7px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:4px 7px;border-bottom:1px solid var(--grid);vertical-align:top;white-space:nowrap}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.txt{white-space:normal;min-width:220px;max-width:560px;overflow-wrap:anywhere}
+.mv{font-size:10.5px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+.chip{display:inline-block;font-size:9.5px;line-height:1.5;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:9px;padding:0 6px;color:var(--dim);font-weight:700;white-space:nowrap}
+.chip.good{color:var(--good);border-color:var(--good);background:var(--good-soft)}
+.chip.warn{color:var(--warning);border-color:var(--warning);background:var(--warning-soft)}
+.chip.bad{color:var(--critical);border-color:var(--critical);background:var(--critical-soft)}
+.chip.info{color:var(--series-1);border-color:var(--series-1);background:var(--series-1-soft)}
+.empty{border:1px dashed var(--border);border-radius:8px;padding:10px 12px;color:var(--dim);font-size:12.5px;margin:6px 0}
+.banner{border:1px solid var(--border);border-left:3px solid var(--warning);border-radius:8px;padding:9px 12px;margin:6px 0 10px;font-size:12.5px;background:var(--warning-soft)}
+.banner.bad{border-left-color:var(--critical);background:var(--critical-soft)}
+.banner.good{border-left-color:var(--good);background:var(--good-soft)}
+@media(max-width:560px){.tile .v{font-size:15px}td.txt{min-width:180px}}
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+  <header>
+    <div class="hd"><h1>CFB Operations</h1><span class="tag">Internal · production operations</span></div>
+    <p class="sub">The production pathway's health, read from what the jobs stored. Research, grading and model comparison live in the Model Lab. A missing BET is preferable to a false BET: when a section is not OK, decisions fail closed. Runbook: <span class="mv">docs/cfb-production/RUNBOOK.md</span>.</p>
+    <p class="err" id="err" role="alert"></p>
+  </header>
+  <main id="ops" aria-live="polite"><p class="empty">Loading ops.json…</p></main>
+</div>
+<script>
+/*__EDOPS_START__*/
+(function(){
+  'use strict';
+  var D='\u2014';
+  function isNum(x){ return typeof x==='number'&&isFinite(x); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function txt(s){ return s==null||s===''?D:esc(s); }
+  function it(x){ return isNum(x)?String(Math.round(x)):D; }
+  function pc(x){ return isNum(x)?(100*x).toFixed(1)+'%':D; }
+  function when(t){ if(t==null||t==='') return D; var s=String(t); return /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(s)?esc(s.slice(0,10)+' '+s.slice(11,16)+'Z'):esc(s); }
+  function age(m){ if(!isNum(m)) return D; if(m<120) return Math.round(m)+' min'; if(m<2880) return (m/60).toFixed(1)+' h'; return (m/1440).toFixed(1)+' d'; }
+  var CHIP={OK:'good',WARNING:'warn',CRITICAL:'bad',UNKNOWN:'',HEALTHY:'good',CLOSED:'good',OPEN:'bad',HALF_OPEN:'warn',STALE:'warn',DEGRADED:'warn',MISSING:'bad',
+    PUBLISHED:'good',FAILED:'bad',GATE_FAILED:'bad',LOCKED:'warn',INFO:'info',NOT_USED_BY_MODEL:'',NOT_CONFIGURED:'',RESOLVED:''};
+  function chip(s){ var k=String(s==null?'UNKNOWN':s); return '<span class="chip'+(CHIP[k]?' '+CHIP[k]:'')+'">'+esc(k)+'</span>'; }
+  function val(v){
+    if(v==null) return D;
+    if(isNum(v)) return String(Math.round(v*1000)/1000);
+    if(typeof v==='boolean') return v?'yes':'no';
+    if(Array.isArray(v)) return v.length?v.map(val).join('; '):D;
+    if(typeof v==='object') return Object.keys(v).map(function(k){ return esc(k)+': '+val(v[k]); }).join(' · ')||D;
+    return esc(v);
+  }
+  function tile(l,v){ return '<div class="tile"><div class="l">'+esc(l)+'</div><div class="v">'+v+'</div></div>'; }
+  function table(head,rows){
+    if(!rows.length) return '';
+    return '<div class="scroll"><table><thead><tr>'+head.map(function(h){ return '<th>'+esc(h)+'</th>'; }).join('')+'</tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+  }
+  function card(id,title,sec,body){
+    var s=sec&&sec.status||'UNKNOWN';
+    return '<section class="card" id="'+esc(id)+'"><h2>'+esc(title)+' '+chip(s)+'</h2>'+(sec?body:'<p class="empty">This section is missing from ops.json.</p>')+'</section>';
+  }
+  var SECTIONS=[['system','System health'],['model','Model version'],['weekly','Last weekly run'],['sources','Source health'],['odds','Odds age'],['pbp','PBP age'],
+    ['jobs','Failed jobs'],['degraded','Degraded games'],['predictions','Predictions'],['bets','Bet decisions'],['warnings','Warnings'],['incidents','Incidents']];
+
+  function system(o){
+    var s=o.system||{}, by=s.by_section||{};
+    var cls=s.status==='OK'?'good':s.status==='CRITICAL'?'bad':'';
+    var rows=Object.keys(by).map(function(k){ return '<tr><td>'+esc(k.replace(/_/g,' '))+'</td><td>'+chip(by[k])+'</td></tr>'; });
+    var db=o.database?'<h3 class="note">Database cfb_health()</h3>'+table(['check','status','detail'],(o.database.checks||[]).map(function(c){ return '<tr><td>'+esc(c.check_name)+'</td><td>'+chip(c.status)+'</td><td class="txt">'+txt(c.detail)+'</td></tr>'; }))
+      :'<p class="note">No database answer in this file (the build had no credentials): heartbeats, locks and incidents are in Postgres, cfb_health().</p>';
+    return card('system','System health',s,'<div class="banner '+cls+'"><b>'+esc(s.status||'UNKNOWN')+'</b> '+txt(s.rule)+'</div>'+table(['section','status'],rows)+db);
+  }
+  function model(o){
+    var m=o.sections&&o.sections.model_version; if(!m) return card('model','Model version',null,'');
+    var comp=(m.compatibility||[]).map(function(c){ return '<tr><td class="txt">'+esc(c.check)+'</td><td>'+chip(c.ok?'OK':'CRITICAL')+'</td><td class="txt">'+txt(c.code)+(c.detail?' '+esc(c.detail):'')+'</td></tr>'; });
+    var fb=(m.fallback_hierarchy||[]).map(function(f){ return '<tr><td class="num">'+it(f.level)+'</td><td>'+txt(f.mode)+'</td><td><span class="mv">'+txt(f.model_version)+'</span></td><td class="txt">'+txt(f.when)+'</td></tr>'; });
+    var probs=(m.manifest_problems||[]).map(function(p){ return '<li>'+esc(p)+'</li>'; }).join('');
+    return card('model','Model version',m,'<div class="kpis">'+tile('Champion (governance)','<span class="mv">'+txt(m.champion)+'</span>')
+      +tile('Champion selection',txt(m.champion_selection))+tile('Production pathway model','<span class="mv">'+txt(m.production_model)+'</span>')
+      +tile('Status',txt(m.production_status))+tile('Feature schema','<span class="mv">'+txt(m.feature_version)+'</span>')
+      +tile('Calibration','<span class="mv">'+txt(m.calibration_version)+'</span>')+tile('Ensemble','<span class="mv">'+txt(m.ensemble_version)+'</span>')
+      +tile('Decision policy','<span class="mv">'+txt(m.decision_policy_version)+'</span>')+tile('Manifest','<span class="mv">'+txt(m.manifest_id)+'</span>')
+      +tile('Deployed',when(m.deployed_at))+tile('Commit','<span class="mv">'+txt(m.git_commit&&String(m.git_commit).slice(0,12))+(m.git_dirty?' (dirty)':'')+'</span>')+'</div>'
+      +(probs?'<div class="banner"><b>Manifest does not match the files</b><ul>'+probs+'</ul></div>':'')
+      +'<p class="note">Compatibility (an incompatible tuple fails the job; nothing runs on it):</p>'+table(['check','result','detail'],comp)
+      +'<p class="note">Fallback hierarchy (every level below FULL shows its mode; no level issues a BET):</p>'+table(['level','mode','model','when'],fb));
+  }
+  function weekly(o){
+    var w=o.sections&&o.sections.last_weekly_run; if(!w) return card('weekly','Last weekly run',null,'');
+    var g=w.stage_groups||{}, errs=(w.errors||[]).map(function(e){ return '<tr><td>'+txt(e.stage)+'</td><td>'+txt(e['class'])+'</td><td class="txt">'+txt(e.message)+'</td></tr>'; });
+    return card('weekly','Last weekly run',w,(w.detail?'<div class="banner bad"><b>No run</b> '+esc(w.detail)+'</div>':'')
+      +'<div class="kpis">'+tile('Run','<span class="mv">'+txt(w.run_id)+'</span>')+tile('Mode',txt(w.mode))+tile('Status',w.run_status?chip(w.run_status):D)
+      +tile('Started',when(w.started_at))+tile('Last published',when(w.last_published_at))+tile('Age',age(w.age_minutes))+tile('Runs recorded',it(w.runs_recorded))+'</div>'
+      +table(['stage group','status'],Object.keys(g).map(function(k){ return '<tr><td>'+esc(k)+'</td><td>'+(g[k]?chip(g[k]):D)+'</td></tr>'; }))
+      +table(['stage','class','error'],errs));
+  }
+  function sources(o){
+    var s=o.sections&&o.sections.source_health; if(!s) return card('sources','Source health',null,'');
+    var rows=(s.sources||[]).map(function(x){ return '<tr><td>'+esc(x.source)+'</td><td>'+txt(x.origin)+'</td><td>'+chip(x.status)+'</td><td>'+when(x.last_success)+'</td><td class="num">'+age(x.age_minutes)
+      +'</td><td class="num">'+(isNum(x.error_rate)?pc(x.error_rate):D)+'</td><td class="num">'+(isNum(x.coverage)?pc(x.coverage):D)+'</td><td class="txt">'+txt(x.incident||x.detail)+'</td></tr>'; });
+    return card('sources','Source health',s,(s.detail?'<p class="note">'+esc(s.detail)+'</p>':'')+(rows.length?table(['source','from','status','last success','age','error rate','coverage','current incident'],rows):'<p class="empty">No source-health record.</p>'));
+  }
+  function odds(o){
+    var s=o.sections&&o.sections.odds_age; if(!s) return card('odds','Odds age',null,'');
+    return card('odds','Odds age',s,'<div class="kpis">'+tile('Newest quote',when(s.newest_quote_at))+tile('Age',age(s.age_minutes))+tile('Stale after',age(s.stale_after_minutes))
+      +tile('Games within 48 h',it(s.games_within_48h))+tile('Games marked stale',it(s.games_marked_stale)+' of '+it(s.games_this_week))+'</div><p class="note">'+txt(s.rule)+'</p>');
+  }
+  function pbp(o){
+    var s=o.sections&&o.sections.pbp_age; if(!s) return card('pbp','PBP age',null,'');
+    return card('pbp','PBP age',s,'<div class="kpis">'+tile('PBP status',s.pbp_status?chip(s.pbp_status):D)+tile('Last success',when(s.last_success))+tile('Age',age(s.age_minutes))
+      +tile('Coverage',isNum(s.coverage)?pc(s.coverage):D)+tile('Error rate',isNum(s.error_rate)?pc(s.error_rate):D)+'</div><p class="note">'+txt(s.detail)+'</p><p class="note">'+txt(s.rule)+'</p>');
+  }
+  function jobs(o){
+    var s=o.sections&&o.sections.failed_jobs; if(!s) return card('jobs','Failed jobs',null,'');
+    var rows=(s.failed||[]).map(function(f){ return '<tr><td>'+esc(f.job)+'</td><td>'+esc(f.step)+'</td><td>'+when(f.at)+'</td><td class="txt">'+txt(f.error)+'</td></tr>'; });
+    return card('jobs','Failed jobs',s,'<div class="kpis">'+tile('Model Lab last run',when(s.lab_last_run_at))+tile('Age',age(s.lab_last_run_age_minutes))+'</div>'
+      +(rows.length?table(['job','step','at','error'],rows):'<p class="empty">No failed step in the committed job logs.</p>')+'<p class="note">'+txt(s.note)+'</p>');
+  }
+  function degraded(o){
+    var s=o.sections&&o.sections.degraded_games; if(!s) return card('degraded','Degraded games',null,'');
+    var rows=(s.degraded||[]).slice(0,100).map(function(g){ return '<tr><td class="mv">'+esc(g.game_id)+'</td><td>'+esc(g.away)+' at '+esc(g.home)+'</td><td>'+(g.modes||[]).map(chip).join(' ')+'</td><td class="num">'+txt(g.fallback_level)+'</td><td class="txt">'+txt(g.reason)+'</td></tr>'; });
+    return card('degraded','Degraded games',s,'<div class="kpis">'+tile('V2.1 rows',it(s.v21_rows))+tile('Degraded',it(s.degraded_count))+tile('Lab data quality',val(s.lab_data_quality))+'</div>'
+      +(rows.length?table(['game','matchup','modes','level','reason'],rows):'<p class="empty">No degraded game.</p>'));
+  }
+  function predictions(o){
+    var s=o.sections&&o.sections.predictions; if(!s) return card('predictions','Predictions',null,'');
+    var rows=(s.lab_models||[]).map(function(m){ return '<tr><td>'+txt(m.label)+'</td><td><span class="mv">'+txt(m.model_version)+'</span></td><td>'+txt(m.role)+'</td><td class="num">'+it(m.snapshots)+'</td><td>'+when(m.latest_snapshot_at)+'</td><td class="num">'+it(m.upcoming_games)+'</td></tr>'; });
+    return card('predictions','Predictions',s,'<div class="kpis">'+tile('V2.1 current.json',when(s.v21_current_generated_at))+tile('Age',age(s.v21_current_age_minutes))+tile('Rows',it(s.v21_rows))
+      +tile('Mode',txt(s.v21_mode))+tile('Frozen snapshot files',it(s.frozen_snapshot_files))+tile('Lab games this week',it(s.lab_games_this_week))+'</div>'+table(['model','version','role','snapshots','latest','upcoming'],rows));
+  }
+  function bets(o){
+    var s=o.sections&&o.sections.bet_decisions; if(!s) return card('bets','Bet decisions',null,'');
+    var by=s.by_role_status||{};
+    return card('bets','Bet decisions',s,'<div class="kpis">'+tile('Betting',s.betting_enabled?'<span class="chip bad">ENABLED</span>':'<span class="chip good">DISABLED</span>')
+      +tile('Policy','<span class="mv">'+txt(s.policy)+'</span> '+txt(s.policy_status))+tile('BET decisions',it(s.bets))+tile('Decision rows',it(s.decision_rows))+'</div>'
+      +table(['role:status','count'],Object.keys(by).map(function(k){ return '<tr><td>'+esc(k)+'</td><td class="num">'+it(by[k])+'</td></tr>'; }))
+      +(s.roles?'<p class="note">'+Object.keys(s.roles).map(function(k){ return esc(k)+': '+txt(s.roles[k]); }).join(' · ')+'</p>':'')+'<p class="note">'+txt(s.rule)+'</p>');
+  }
+  function warnings(o){
+    var s=o.sections&&o.sections.warnings; if(!s) return card('warnings','Warnings',null,'');
+    var rows=(s.warnings||[]).map(function(w){ return '<tr><td>'+chip(w.severity)+'</td><td>'+txt(w.source)+'</td><td>'+txt(w.rule)+'</td><td class="txt">'+txt(w.message)+(w.detail?' <span class="mv">'+val(w.detail)+'</span>':'')+'</td></tr>'; });
+    return card('warnings','Warnings',s,(rows.length?table(['severity','source','rule','message'],rows):'<p class="empty">No warning.</p>')
+      +'<p class="note">Output anomalies are diagnostics ('+it(s.anomaly_rows)+' V2.1 rows, '+it(s.anomaly_baseline_weeks)+' baseline weeks): they flag, they never change a number or cancel a bet.</p>');
+  }
+  function incidents(o){
+    var s=o.sections&&o.sections.incidents; if(!s) return card('incidents','Incidents',null,'');
+    var rows=(s.open||[]).map(function(i){ return '<tr><td>'+chip(i.severity)+'</td><td class="mv">'+esc(i.incident_key)+'</td><td>'+txt(i.error_code)+'</td><td>'+txt(i.job)+'</td><td class="num">'+it(i.occurrences)+'</td><td>'+when(i.opened_at)+'</td><td>'+when(i.last_at)+'</td><td class="txt">'+txt(i.message)+'</td></tr>'; });
+    return card('incidents','Incidents',s,(rows.length?table(['severity','incident','code','job','count','opened','last','message'],rows):'<p class="empty">No open incident'+(s.status==='UNKNOWN'?' known to this file':'')+'.</p>')+'<p class="note">'+txt(s.detail)+'</p>');
+  }
+  function nav(){ return '<nav class="toc" aria-label="Sections">'+SECTIONS.map(function(s){ return '<a href="#'+s[0]+'">'+esc(s[1])+'</a>'; }).join('')+'</nav>'; }
+  function render(o){
+    if(!o||typeof o!=='object') return nav()+'<div class="banner bad"><b>ops.json did not load</b> Nothing below is known: treat the system as UNKNOWN, not healthy.</div>'
+      +SECTIONS.map(function(s){ return card(s[0],s[1],null,''); }).join('');
+    return nav()+'<p class="stamp">Generated '+when(o.generated_at)+' · season '+txt(o.season)+(o.in_season?' · in season':' · off season')+' · reads: '+(o.reads||[]).map(esc).join(', ')+'</p>'
+      +system(o)+model(o)+weekly(o)+sources(o)+odds(o)+pbp(o)+jobs(o)+degraded(o)+predictions(o)+bets(o)+warnings(o)+incidents(o);
+  }
+  window.EDOPS={render:render,SECTIONS:SECTIONS,fmt:{esc:esc,age:age,when:when,pc:pc},system:system,model:model,weekly:weekly,sources:sources,odds:odds,pbp:pbp,jobs:jobs,degraded:degraded,predictions:predictions,bets:bets,warnings:warnings,incidents:incidents};
+})();
+/*__EDOPS_END__*/
+(function(){
+  'use strict';
+  if(typeof document==='undefined') return;
+  var host=document.getElementById('ops'), err=document.getElementById('err');
+  fetch('../../football/cfb_production/reports/ops.json',{cache:'no-cache'})
+    .then(function(r){ if(!r.ok) throw new Error('ops.json '+r.status); return r.json(); })
+    .catch(function(e){ err.textContent='ops.json could not be read ('+String(e&&e.message||e)+').'; return null; })
+    .then(function(o){ host.innerHTML=window.EDOPS.render(o); })
+    .catch(function(e){ err.textContent='The dashboard could not be rendered: '+String(e&&e.message||e); });
+})();
+</script>
+</body>
+</html>

@@ -7,24 +7,37 @@ pipeline in this directory from public data; nothing is quoted from memory.
 
 | | model | closing market |
 |---|---|---|
-| spread MAE, 2022-2025 | **12.989** | **12.029** |
-| total MAE, 2022-2025 | 12.893 | 12.497 |
+| spread MAE, 2022-2025 | **12.769** | **12.015** |
+| total MAE, 2022-2025 | 12.913 | 12.501 |
 
-The model is roughly **1.0 points per game worse than the closing line** on the
-spread and 0.4 worse on the total, over 3113 games in seasons that no layer of it
+The model is roughly **0.8 points per game worse than the closing line** on the
+spread and 0.4 worse on the total, over 3127 games in seasons that no layer of it
 was tuned on. It does not beat the market.
+
+**What is being measured.** `model.fair_spread` exactly as
+`football/cfb_p4/engine.js` publishes it, from a cold replay in kickoff order:
+each game is projected from state containing only games already played, and
+absorbed only afterwards. That distinction matters because the training run
+scores `blended_margin` — the opponent-adjusted rating difference plus
+home-field advantage — which is the model's core but not its output. The
+engine sums nine terms. Scoring the core and calling it the product would
+describe a number no user ever sees; on this window the core alone is
+12.989, so the additional layers are worth 0.220 points of MAE.
+
+5 of 3132 games in the window were REFUSED rather than projected: a team had
+no rating yet, and the engine declines to invent one.
 
 Against the close, by size of disagreement:
 
 | gap >= | n | wins | win % | one-sided p |
 |---|---|---|---|---|
-| 0.5 | 2824 | 1402 | 49.65% | 0.6536 |
-| 1 | 2569 | 1264 | 49.20% | 0.7963 |
-| 1.5 | 2340 | 1145 | 48.93% | 0.8541 |
-| 2 | 2123 | 1041 | 49.03% | 0.819 |
-| 3 | 1722 | 850 | 49.36% | 0.7103 |
-| 4 | 1395 | 694 | 49.75% | 0.5848 |
-| 6 | 839 | 392 | 46.72% | 0.9734 |
+| 0.5 | 2829 | 1399 | 49.45% | 0.7263 |
+| 1 | 2599 | 1298 | 49.94% | 0.5313 |
+| 1.5 | 2366 | 1178 | 49.79% | 0.5895 |
+| 2 | 2140 | 1053 | 49.21% | 0.7754 |
+| 3 | 1652 | 790 | 47.82% | 0.9638 |
+| 4 | 1261 | 594 | 47.11% | 0.9814 |
+| 6 | 722 | 335 | 46.40% | 0.9757 |
 
 Not one threshold clears break-even, and the biggest disagreements are the
 *worst* — the classic signature of a projection noisier than the market it is
@@ -60,7 +73,7 @@ out of sample:
 | layer | measured |
 |---|---|
 | home-field advantage | a single league constant of 4.082 pts — the per-venue table was tested and rejected (see below) |
-| win-probability calibration | Brier 0.19008 over 3113 games (a market-free baseline of 0.25 is a coin flip) |
+| win-probability calibration | Brier 0.19016 over 3113 games (a market-free baseline of 0.25 is a coin flip) |
 | quarterback layer | 10.1 points of spread per 1.0 EPA/dropback of QB edge; tune r2 0.00656, TEST r2 0.00809, permutation p 0.0 |
 | quarterback absence | 3.90 points, measured over 2846 games where the primary QB took no dropbacks |
 | schedule stress | moves the number by 1.13 points on average; tune r2 0.00685, test r2 0.00254 |
@@ -100,9 +113,18 @@ validated one.
 
 ## Regression constants (Section XXI), measured rather than assumed
 
-Game-to-game persistence of each statistic within a season. A statistic with
-near-zero persistence is almost entirely regressed to the mean; one that repeats
-is barely touched. Nothing here was chosen by hand.
+Game-to-game persistence of each statistic within a season, measured rather
+than assumed. Nothing here was chosen by hand.
+
+**These constants are published, not applied.** `strength.regress()` is a public
+helper on the engine's strength API and a caller can shrink any statistic by its
+own measured persistence, but the projection path does not call it. The reason is
+specific: the matchup pair weights were fitted against the unregressed,
+opponent-adjusted efficiency EWMAs, so regressing those same inputs at read time
+would move them off the surface the weights were trained on. Applying the table
+inside the projection means refitting the matchup layer on regressed inputs and
+showing that it helps out of sample — which has not been done, so the table stays
+a measurement and this section does not claim otherwise.
 
 | statistic | n | lag-1 correlation |
 |---|---|---|
@@ -150,21 +172,21 @@ The preseason belief is half gone by four or five games and under 15% by twelve.
 
 | absolute margin | share of games |
 |---|---|
-| 1 | 3.37% |
-| 2 | 3.28% |
-| 3 | 10.79% |
-| 4 | 3.73% |
-| 6 | 3.41% |
-| 7 | 8.77% |
-| 8 | 2.89% |
-| 10 | 4.82% |
-| 13 | 2.22% |
-| 14 | 4.14% |
-| 17 | 4.18% |
-| 21 | 3.60% |
+| 1 | 3.46% |
+| 2 | 2.53% |
+| 3 | 9.26% |
+| 4 | 3.39% |
+| 6 | 3.34% |
+| 7 | 8.51% |
+| 8 | 2.57% |
+| 10 | 4.61% |
+| 13 | 1.58% |
+| 14 | 4.61% |
+| 17 | 3.34% |
+| 21 | 3.93% |
 
 Conditioned on the market number — which the line archive makes possible —
-**P(margin = 3 | spread = 3) = 6.66%** in the Power 4, against the **8.8%** this
+**P(margin = 3 | spread = 3) = 6.67%** in the Power 4, against the **8.8%** this
 repo ships for the NFL. The three is real in college football, but it is worth
 appreciably less, and a model that reuses NFL key-number mass mis-prices every
 field-goal-sized spread.
@@ -177,23 +199,45 @@ pick'em never gets a fabricated push.
 
 | predicted bin | n | mean predicted | observed |
 |---|---|---|---|
-| 0.0-0.1 | 30 | 0.07 | 0.1 |
-| 0.1-0.2 | 102 | 0.158 | 0.098 |
-| 0.2-0.3 | 210 | 0.257 | 0.248 |
-| 0.3-0.4 | 296 | 0.353 | 0.338 |
-| 0.4-0.5 | 370 | 0.45 | 0.395 |
-| 0.5-0.6 | 429 | 0.55 | 0.55 |
-| 0.6-0.7 | 503 | 0.651 | 0.602 |
-| 0.7-0.8 | 476 | 0.752 | 0.748 |
-| 0.8-0.9 | 409 | 0.848 | 0.844 |
-| 0.9-1.0 | 288 | 0.942 | 0.941 |
+| 0.0-0.1 | 36 | 0.068 | 0.083 |
+| 0.1-0.2 | 107 | 0.154 | 0.112 |
+| 0.2-0.3 | 217 | 0.253 | 0.249 |
+| 0.3-0.4 | 288 | 0.352 | 0.344 |
+| 0.4-0.5 | 360 | 0.449 | 0.397 |
+| 0.5-0.6 | 408 | 0.55 | 0.551 |
+| 0.6-0.7 | 477 | 0.65 | 0.591 |
+| 0.7-0.8 | 461 | 0.75 | 0.74 |
+| 0.8-0.9 | 434 | 0.847 | 0.82 |
+| 0.9-1.0 | 325 | 0.944 | 0.945 |
 
 ## Firewall
 
 - layer A (ratings, venue, travel, rivalry, conference): tuned 2001-2013
 - layer B (efficiency, matchup, blend, QB, schedule, total): tuned 2014-2019
 - layer C (roster continuity, volatility, confidence): tuned 2018-2021
+- distributional layer (sigma, residual PMFs, spread-conditioned margin table):
+  fitted **2014-2021**
 - headline test window: **2022-2025**, untouched by every layer
+
+### A breach that was here, and what it was worth
+
+An earlier build fitted sigma by maximum likelihood **on 2022-2025** and then
+reported that fit's own Brier score as a held-out result. That is the fit's
+maximised objective, not evidence, and the calibration table and residual PMFs
+were built the same way. Everything distributional is now fitted on 2014-2021
+and applied to the headline window unchanged.
+
+The correction is worth stating precisely, because the honest answer is that
+it was small:
+
+| window | Brier | log loss |
+|---|---|---|
+| in-sample optimum (2014-2021, where sigma was fitted) | 0.17899 | 0.53123 |
+| held out (2022-2025, sigma applied unchanged) | 0.19016 | 0.55878 |
+
+So the reported number barely moved. That does not make the earlier version
+acceptable — a claim of "untouched by every layer" either holds or it does
+not, and the size of the error is not what decides that.
 
 Secondary window 2014-2021 (layers A only were frozen by then): model spread MAE 13.398
 vs market 12.464.
@@ -214,3 +258,134 @@ python3 gen_report.py out        # -> this file
 node ../tests.js                 # must exit 0
 ```
 
+
+## v1.1 — market calibration and the error dashboard (2026-08-27)
+
+v1.1 changes NO model parameter. It ran the experiment the record demanded:
+learn, walk-forward, how much of the raw projection to keep against the
+closing market, and build the error dashboard every future change must be
+judged on. Generated by `research/calibrate.js` from a cold shipped-engine
+replay 2002–2025 (no live efficiency feed — the matchup layer declares
+itself unavailable, matching how the browser runs between trainings) joined
+to the cfbfastR-data betting archive. Artifacts:
+`../calibration.js` (the auditable record the app reads) and
+`report/error_slices.json` (the full dashboard).
+
+**The calibration verdict.** For `calibrated = α·model + (1−α)·close`,
+fitted by least squares only on seasons before each evaluated season
+(11 walk-forward years, 2015–2025, n=7,845):
+
+| | pooled OOS spread MAE |
+|---|---|
+| raw model | 13.057 |
+| market close | 12.291 |
+| calibrated — global α | 12.291 |
+| calibrated — week-bucketed α | 12.291 |
+| calibrated — disagreement-bucketed α | 12.291 |
+
+α clamps to **zero** in every scheme, every year, every bucket; unclamped it
+is −0.047 (weeks 0–2: −0.053, 3–5: −0.102, 6+: −0.020). The raw model's
+deviations from the close carry no margin information at any horizon —
+mildly the opposite. Calibrated therefore EQUALS the close, and the app says
+that in words rather than shipping a duplicate column dressed as a model.
+
+**The one measured signal: close anticipation.** When the raw model
+disagreed with the OPENING line, the close moved toward the model:
+53.5% at 1+ pts (n=6,866) · 54.2% at 2+ (n=5,444) · **54.7% at 3+
+(n=4,214)** · **56.1% at 5+ (n=2,313)**. Direction only: a least-squares
+blend `close ≈ β·model + (1−β)·open` (β≈0.40 in-sample) predicts the close
+WORSE out-of-sample than the open alone (MAE 2.15 vs 1.67), so no
+"anticipated close" number ships. The proxy is also not profit: moving
+toward ≠ covering the vig, and a model trained on public results resembling
+the consensus the close converges to is a candidate mechanism.
+
+**What the dashboard says to build next** (from `error_slices.json`,
+OOS window 2015–2025):
+
+* **Preseason is the weak spot, measured**: weeks 0–2 raw MAE 13.40 vs
+  market 12.02 (gap 1.38); weeks 6+ 12.99 vs 12.36 (gap 0.63). Evidence for
+  improving the preseason prior — not for touching the in-season core.
+* **Disagreement is a wrongness meter**: raw vs market MAE by |model−close|
+  bucket — <3 pts: 12.37 vs 12.26 · 3–7: 12.97 vs 12.27 · 7–14: 14.69 vs
+  12.36 · 14+: 20.59 vs 13.11 (ATS 42.4%). A big gap is the model being
+  wrong, which is exactly how the board's INVESTIGATE / DATA FAULT statuses
+  treat it.
+* **A specific correctable bias**: when the market makes the home side a
+  DOG, the model over-rates home by **+3.70 points** on average
+  (home favourites: −0.15). Overall home bias +1.36. That is the next
+  evidence-driven prior fix.
+* Season-by-season raw−market gap is stable (2021–2025: 0.79, 0.73, 0.96,
+  0.81, 0.50) — no regime where the raw model wins.
+
+Reproduce: `fetch_data.sh` (schedules + betting archive) →
+`build_market.py out` → `node calibrate.js --data <dir>`.
+
+## v1.2 — the correction experiments and the phase discovery (2026-08-27)
+
+v1.1 named the targets; v1.2 tested the fixes **as hypotheses**, walk-forward
+on the byte-identical frame (`v12.js` recomputes the frame and refuses to
+write artifacts unless n / raw MAE / market MAE match the v1.1 record
+exactly — they do: n=7,845, 13.0567, 12.2915). Pre-registered survival
+criteria: pooled OOS MAE improvement ≥ 0.05 pts AND better in a majority of
+eval years (corrections); pooled OOS Brier beats the constant base rate by
+≥ 0.002 (movement model). The scientific lineage stands: **v1.0 raw engine =
+the untouched control · v1.1 = the calibration experiment · v1.2 = this
+correction experiment.**
+
+**E1 — preseason prior (weeks 0–2 only, market-independent). REJECTED.**
+Two rescales of the raw spread fitted walk-forward on weeks 0–2 games:
+`b·m` (shrink) and `a + b·m` (affine). Both LOSE to raw out of sample —
+pooled weeks 0–2 MAE: raw 13.353 · shrink 13.369 · affine 13.381 (shrink
+better in only 6/11 years; final full-frame fits b=0.980, a=0.67/b=0.96 —
+essentially the identity). The weeks 0–2 gap to market is **missing
+information** (transfers, coaching, QB battles the market knows and the
+model cannot see), not a fixable scale or bias. The evidence now says the
+preseason fix is a data source, not a coefficient.
+
+**E2 — home-dog de-bias (a hypothesis, not a permanent adjustment).
+REJECTED at the pre-registered bar — the closest call.** Keyed on the
+model's OWN call (projected home margin < 0; keying on the market's call
+would make the model market-dependent, so it can never ship — recorded as a
+diagnostic: model-defined bias +2.11 vs the dashboard's market-defined
++3.70). A constant walk-forward de-bias (final δ = −1.96) improved the
+subset's pooled OOS MAE 13.303 → 13.262 — **+0.041 pts, under the 0.05
+bar**, though better in 8/11 years. It stays a hypothesis; the 2026 season
+is the right next test, not a bigger fit.
+
+**E3 — opening→closing movement model (direction only, never the number).
+REJECTED.** Logistic on features knowable at the open (disagreement size,
+preseason flag, model-home-dog, power-conference host): pooled OOS Brier
+0.2513 vs 0.2510 for the constant base rate. Nothing in these features
+turns the flat 54.7% into a per-game probability.
+
+**E4 — directional robustness: the sweep that found the real structure.**
+Toward-model rates with Wilson 95% CIs across thresholds × slices
+(15/33 slices robust at 3+). The discovery:
+
+| toward-model % | 1+ | 3+ | 5+ | 7+ |
+|---|---|---|---|---|
+| **weeks 0–2** | 49.5 | 49.7 | 49.7 | 47.5 |
+| **weeks 3+**  | 54.2 | 55.7 | 57.7 | **59.2** |
+
+**The toward-model signal is an in-season phenomenon.** Preseason it is a
+coin flip at every threshold (CIs straddle 50); in-season it is robust at
+every threshold and strengthens monotonically with disagreement. This
+coheres with E1: in weeks 0–2 the model lacks information, so its
+disagreements carry nothing; from week 3 its disagreements with the opener
+are real (direction-only) signal. Also robust at 3+: both model-fav and
+model-dog sides, SEC / Sun Belt / American / Mountain West hosts;
+season-by-season it swings (2013–14 ≈ 63%, 2019 43%, 2025 57%) — robust
+pooled, not uniform.
+
+**Verdict: nothing ships as an adjustment.** No stage survived, so no
+adjusted number exists anywhere — every spread the app shows remains the
+raw v1.0 control, and the artifact (`v12_correction.js`) records the
+rejections, the near-miss, the final fits, and the phase finding. The daily
+health run verifies the artifact and that its frame stamp still matches the
+v1.1 record. Per the v1.2 design this closes the build phase: the next move
+is to let the 2026 season grade v1.0's raw record, the direction proxy, and
+the home-dog near-miss on games none of these fits have seen.
+
+Reproduce: `fetch_data.sh` → `build_market.py out` →
+`node v12.js --data <dir>` (requires `calibration.js` from `calibrate.js`
+first — the frame check reads it).

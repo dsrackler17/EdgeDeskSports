@@ -1,0 +1,267 @@
+{
+ "schema": "edgedesk_nfl_regime_v1",
+ "generated_at": "2026-09-30T20:59:18.291163+00:00",
+ "question": "After the model\u2019s quarterback layer, do a new head coach, a new starting quarterback or the regular starter being out leave a residual the model misses?",
+ "signals": {
+  "hc_new": "the head coach\u2019s tenure with the team began this season (incl. a mid-season change)",
+  "qb_new": "the game\u2019s starting quarterback is not last season\u2019s primary starter",
+  "qb_out": "the team has started 2+ games this season and the game\u2019s starter is not its regular starter so far"
+ },
+ "fit": "OLS of the out-of-sample residual on home-minus-away signals (hc_new and qb_new split at week 6), walk-forward from 2006",
+ "validation_seasons": "2016-2023",
+ "holdout_seasons": [
+  2024,
+  2025
+ ],
+ "holdout_scored": true,
+ "coefficients_by_season": {
+  "2007": {
+   "hc_new_early": -6.4788,
+   "hc_new_late": -0.6171,
+   "qb_new_early": 3.1186,
+   "qb_new_late": 1.3749,
+   "qb_out": -2.5688,
+   "intercept": -2.2329
+  },
+  "2008": {
+   "hc_new_early": -3.2647,
+   "hc_new_late": -1.0836,
+   "qb_new_early": 1.0061,
+   "qb_new_late": -0.5997,
+   "qb_out": -1.8677,
+   "intercept": -0.8916
+  },
+  "2009": {
+   "hc_new_early": -2.5045,
+   "hc_new_late": -0.4986,
+   "qb_new_early": 1.6043,
+   "qb_new_late": 0.5258,
+   "qb_out": -2.871,
+   "intercept": -0.6349
+  },
+  "2010": {
+   "hc_new_early": -2.6584,
+   "hc_new_late": -1.266,
+   "qb_new_early": 1.8167,
+   "qb_new_late": 0.2405,
+   "qb_out": -2.1831,
+   "intercept": -0.4896
+  },
+  "2011": {
+   "hc_new_early": -2.5578,
+   "hc_new_late": -1.3064,
+   "qb_new_early": 1.5312,
+   "qb_new_late": -0.4499,
+   "qb_out": -1.6991,
+   "intercept": -0.5273
+  },
+  "2012": {
+   "hc_new_early": -1.6269,
+   "hc_new_late": -1.1308,
+   "qb_new_early": 0.8351,
+   "qb_new_late": -0.6918,
+   "qb_out": -2.013,
+   "intercept": -0.2334
+  },
+  "2013": {
+   "hc_new_early": -1.9216,
+   "hc_new_late": -1.3035,
+   "qb_new_early": 0.7426,
+   "qb_new_late": -0.3179,
+   "qb_out": -2.2797,
+   "intercept": -0.2168
+  },
+  "2014": {
+   "hc_new_early": -1.3296,
+   "hc_new_late": -0.9388,
+   "qb_new_early": 0.8651,
+   "qb_new_late": -0.2654,
+   "qb_out": -2.4464,
+   "intercept": -0.1178
+  },
+  "2015": {
+   "hc_new_early": -1.3281,
+   "hc_new_late": -1.2208,
+   "qb_new_early": 0.4384,
+   "qb_new_late": -0.2467,
+   "qb_out": -2.4863,
+   "intercept": -0.0817
+  },
+  "2016": {
+   "hc_new_early": -1.1208,
+   "hc_new_late": -1.1065,
+   "qb_new_early": 0.4902,
+   "qb_new_late": -0.3762,
+   "qb_out": -2.5558,
+   "intercept": -0.1455
+  },
+  "2017": {
+   "hc_new_early": -1.1532,
+   "hc_new_late": -1.0275,
+   "qb_new_early": 0.6719,
+   "qb_new_late": -0.5782,
+   "qb_out": -2.6853,
+   "intercept": -0.0657
+  },
+  "2018": {
+   "hc_new_early": -0.8761,
+   "hc_new_late": -0.9218,
+   "qb_new_early": 0.4768,
+   "qb_new_late": -0.6319,
+   "qb_out": -2.7332,
+   "intercept": -0.0448
+  },
+  "2019": {
+   "hc_new_early": -0.9612,
+   "hc_new_late": -0.7894,
+   "qb_new_early": 0.2836,
+   "qb_new_late": -0.6293,
+   "qb_out": -2.7404,
+   "intercept": -0.0636
+  },
+  "2020": {
+   "hc_new_early": -1.2646,
+   "hc_new_late": -0.708,
+   "qb_new_early": 0.339,
+   "qb_new_late": -0.6815,
+   "qb_out": -2.6572,
+   "intercept": -0.2159
+  },
+  "2021": {
+   "hc_new_early": -1.3846,
+   "hc_new_late": -0.6742,
+   "qb_new_early": 0.4628,
+   "qb_new_late": -0.6451,
+   "qb_out": -2.6192,
+   "intercept": -0.3346
+  },
+  "2022": {
+   "hc_new_early": -1.6309,
+   "hc_new_late": -0.8911,
+   "qb_new_early": 0.3923,
+   "qb_new_late": -0.5098,
+   "qb_out": -2.8007,
+   "intercept": -0.3141
+  },
+  "2023": {
+   "hc_new_early": -1.3766,
+   "hc_new_late": -1.0148,
+   "qb_new_early": 0.1096,
+   "qb_new_late": -0.695,
+   "qb_out": -2.4039,
+   "intercept": -0.2985
+  },
+  "2024": {
+   "hc_new_early": -1.4883,
+   "hc_new_late": -0.9011,
+   "qb_new_early": 0.1276,
+   "qb_new_late": -0.7276,
+   "qb_out": -2.3287,
+   "intercept": -0.2291
+  },
+  "2025": {
+   "hc_new_early": -1.4883,
+   "hc_new_late": -0.9011,
+   "qb_new_early": 0.1276,
+   "qb_new_late": -0.7276,
+   "qb_out": -2.3287,
+   "intercept": -0.2291
+  }
+ },
+ "shipped_coefficients": {
+  "hc_new_early": -1.4883,
+  "hc_new_late": -0.9011,
+  "qb_new_early": 0.1276,
+  "qb_new_late": -0.7276,
+  "qb_out": -2.3287,
+  "intercept": -0.2291
+ },
+ "validation": {
+  "regime_subset": {
+   "games": 1062,
+   "mae_model": 10.224,
+   "mae_adjusted": 10.085,
+   "delta": -0.139,
+   "delta_ci95": [
+    -0.275,
+    -0.012
+   ],
+   "bias_model": 1.299,
+   "bias_adjusted": 0.087
+  },
+  "overall": {
+   "games": 2191,
+   "mae_model": 10.216,
+   "mae_adjusted": 10.153
+  },
+  "significant": true
+ },
+ "prevalence": {
+  "hc_new": 0.2215,
+  "qb_new": 0.4062,
+  "qb_out": 0.1647
+ },
+ "holdout": {
+  "regime_subset": {
+   "games": 303,
+   "mae_model": 10.509,
+   "mae_adjusted": 10.34,
+   "delta": -0.169,
+   "delta_ci95": [
+    -0.394,
+    0.056
+   ],
+   "bias_model": 1.294,
+   "bias_adjusted": 0.166
+  },
+  "overall": {
+   "games": 570,
+   "mae_model": 10.139,
+   "mae_adjusted": 10.041
+  },
+  "significant": false,
+  "by_season": {
+   "2024": {
+    "regime_subset": {
+     "games": 146,
+     "mae_model": 10.681,
+     "mae_adjusted": 10.299,
+     "delta": -0.382,
+     "delta_ci95": [
+      -0.708,
+      -0.048
+     ],
+     "bias_model": 1.439,
+     "bias_adjusted": 0.293
+    },
+    "overall": {
+     "games": 285,
+     "mae_model": 10.112,
+     "mae_adjusted": 9.912
+    },
+    "significant": true
+   },
+   "2025": {
+    "regime_subset": {
+     "games": 157,
+     "mae_model": 10.35,
+     "mae_adjusted": 10.378,
+     "delta": 0.028,
+     "delta_ci95": [
+      -0.28,
+      0.332
+     ],
+     "bias_model": 1.157,
+     "bias_adjusted": 0.045
+    },
+    "overall": {
+     "games": 285,
+     "mae_model": 10.166,
+     "mae_adjusted": 10.171
+    },
+    "significant": false
+   }
+  }
+ },
+ "promoted": false
+}

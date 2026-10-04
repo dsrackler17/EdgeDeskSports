@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-1PXVBV53FZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-1PXVBV53FZ');
+</script>
+<title>Head-to-Head | EdgeDesk Games</title>
+<meta name="description" content="Challenge a friend on a football game. Pick the winner, a side against the line, or price it yourself — their pick stays hidden until you lock yours. Free to play, no real-money wagering.">
+<meta name="theme-color" content="#100e0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0d11'/%3E%3Cpath d='M18 6 L23 6 L14 26 L9 26 Z' fill='%233fb883'/%3E%3C/svg%3E">
+<!-- A specific challenge is a private page between two people: it is addressed
+     by an unguessable token and must never be indexed. The robots tag is static
+     because a static host cannot vary it per URL, so the whole route is
+     noindex; the public explainer for Head-to-Head lives on /games. -->
+<meta name="robots" content="noindex,nofollow">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Games">
+<meta property="og:title" content="You've been challenged — EdgeDesk Games">
+<meta property="og:description" content="A friend challenged you on a football game. Their pick is hidden until you lock yours. Free to play, no real-money wagering.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="You've been challenged — EdgeDesk Games">
+<meta name="twitter:description" content="Their pick is hidden until you lock yours. Free to play.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/games/games.css?v=20260910a">
+<style>
+/* Head-to-Head only. This page is somebody's name against yours, so the
+   headline is the biggest thing on it and the decision is one screen away on
+   a phone. Mobile first: every rule is written for 320px and widened with
+   min-width queries only. Nothing here moves for a player who asked it not to. */
+.h2h-h1{font-family:'Space Grotesk',Inter,sans-serif;font-size:26px;font-weight:700;line-height:1.15;
+  text-align:center;margin:10px 0 0;overflow-wrap:break-word}
+.h2h-h2{font-family:'Space Grotesk',Inter,sans-serif;font-size:24px;font-weight:700;line-height:1.15;
+  text-align:center;margin:16px 0 0;overflow-wrap:break-word}
+.h2h-result{font-size:32px;margin-top:18px;animation:pop .3s cubic-bezier(.2,.8,.3,1) both}
+.h2h-result.win{color:var(--val)}
+.h2h-result.draw{color:var(--dim)}
+.h2h-chip{text-align:center;margin-top:10px}
+/* the sealed notice, compact: one line of flowing text rather than a flex row */
+.h2h-sealed{display:block;margin-top:12px;padding:10px 12px;font-size:12.5px;line-height:1.5}
+.h2h-mean,.h2h-when{text-align:center;font-size:12.5px;color:var(--dim);margin-top:12px;line-height:1.5}
+.h2h-when{font-size:13.5px;color:var(--text);font-weight:600}
+.h2h-when .dim{color:var(--dim);font-weight:500}
+.h2h-series{text-align:center;font-size:12.5px;color:var(--dim);margin-top:8px;line-height:1.5}
+.h2h-series b{color:var(--text);font-weight:600}
+.h2h-serie{background:var(--cell);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+  margin-top:14px;text-align:center}
+.h2h-serie .rec{font-size:14px;color:var(--text);margin-top:4px}
+.h2h-serie .rec b{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--val)}
+.h2h-serie .run{font-size:12.5px;color:var(--dim);margin-top:3px}
+.h2h-honest{margin-top:8px;line-height:1.5}
+.h2h-loading{text-align:center;font-size:13.5px;color:var(--dim);margin-top:12px}
+/* the slider's hit area meets the same thumb minimum as every button */
+#stage .sel-range{height:var(--tap)}
+@media(min-width:560px){
+  .h2h-h1{font-size:30px}
+  .h2h-h2{font-size:26px}
+  .h2h-result{font-size:38px}
+}
+@media(prefers-reduced-motion:reduce){
+  .h2h-result{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="gh"></div>
+
+<main class="wrap">
+  <div class="sec" style="margin-top:20px">
+    <div class="card" id="stage" aria-busy="true">
+      <div class="eyebrow">Head-to-Head</div>
+      <div class="h2h-loading" role="status">Loading challenge</div>
+      <div class="sk" style="width:55%;margin:12px auto"></div>
+      <div class="sk" style="width:35%;margin:10px auto"></div>
+    </div>
+  </div>
+  <div id="after"></div>
+</main>
+
+<div id="gt"></div>
+<div id="gf"></div>
+
+<script src="/games/lib/week.js?v=20260910a"></script>
+<script src="/games/lib/scoring.js?v=20260910a"></script>
+<script src="/games/lib/challenge.js?v=20260910a"></script>
+<script src="/games/lib/research_state.js?v=20260910a"></script>
+<script src="/games/lib/attribution.js?v=20260910a"></script>
+<script src="/games/lib/store.js?v=20260910a"></script>
+<script src="/games/lib/dynasty.js?v=20260910a"></script>
+<script src="/games/lib/social.js?v=20260910a"></script>
+<script src="/games/lib/h2h_grade.js?v=20260910a"></script>
+<script src="/games/lib/auth.js?v=20260910a"></script>
+<script src="/games/lib/franchise.js?v=20260910a"></script>
+<script src="/games/games.js?v=20260910a"></script>
+<script>
+/* STALE SCRIPT GUARD. A browser can keep an old games.js or store.js for
+   longer than it keeps this page, and a page built for the new library
+   then dies on the first function the old copy lacks — a skeleton that
+   never fills. The asset URLs above carry a version token so that cannot
+   happen from here on; this is the belt for the braces: if a required
+   function is missing, say so and offer a fresh load instead of a dead
+   screen. */
+(function(){
+  var need=['EDGamesStore.recordEvent','EDGamesDynasty.rivalry','EDGames.pulse'];
+  var miss=need.filter(function(k){var p=k.split('.'),o=window[p[0]];return !o||typeof o[p[1]]!=='function';});
+  if(!miss.length)return;
+  var host=document.getElementById('stage')||document.querySelector('main');
+  if(host)host.innerHTML='<div class="card"><div class="eyebrow">EdgeDesk Games</div>'
+    +'<div class="empty">This page needs a newer copy of EdgeDesk Games than your browser has kept.<br>'
+    +'<a class="btn btn-go" style="margin-top:14px" href="'+location.pathname+'?fresh='+Date.now()+'">Reload the page</a></div></div>';
+  try{console.warn('stale games scripts: '+miss.join(', '));}catch(_){}
+})();
+</script>
+<script>
+(function(){
+  'use strict';
+  var G=window.EDGames,S=window.EDGamesSocial,ST=window.EDGamesStore,DY=window.EDGamesDynasty,
+      CH=window.EDGamesChallenge,SC=window.EDGamesScoring,RS=window.EDGamesResearchState;
+  var $=function(id){return document.getElementById(id);};
+  var stage=$('stage'),after=$('after');
+  var POOL=[],ART=null,TOKEN=null,DRAFT={mode:'spread',game:null,selection:null};
+  /* The same selector bounds Price It uses, from the one place that declares
+     them — with a literal fallback, because a browser holding a CACHED
+     games.js from before the constant existed rendered "Baylor -undefined"
+     and a slider that ran to 100. */
+  var RANGE=(G&&typeof G.SPREAD_RANGE==='number')?G.SPREAD_RANGE:42;
+  var STEP=(G&&typeof G.SPREAD_STEP==='number')?G.SPREAD_STEP:0.5;
+
+  /* boot() resolves once the social endpoint is configured, so nothing calls an
+     RPC against an unconfigured client and reports a false "not deployed". */
+  var READY=G.boot('h2h');
+
+  /* The token comes from the pretty path /games/h2h/{token} (rewritten by
+     404.html) or from ?c= directly. */
+  function param(k){
+    var m=new RegExp('[?&]'+k+'=([^&]*)').exec(location.search);
+    return m?decodeURIComponent(m[1].replace(/\+/g,' ')):null;
+  }
+  TOKEN=param('c');
+  /* Set when the challenge was started from a group member row. An invite is a
+     LINK, not a directed message — there is no way to push a challenge at
+     somebody — so this only names who the link is meant for, and shapes the
+     share text. The opponent is still whoever opens it. */
+  var VS=param('vs');
+
+  function initials(n){
+    return String(n||'?').trim().split(/\s+/).map(function(w){return w[0];})
+      .join('').slice(0,2).toUpperCase()||'?';
+  }
+  function esc(s){return G.esc(s);}
+  function nameOf(e,fallback){return e&&e.display_name?String(e.display_name):fallback;}
+  /* the other player's display name, cut the way the ledger stores it, so a
+     rivalry looked up here is the same rivalry the War Room shows */
+  function opponentOf(ch){
+    if(!ch||!ch.your_slot)return null;
+    var o=S.entry(ch,ch.your_slot==='a'?'b':'a');
+    return o&&o.display_name?String(o.display_name).slice(0,40):null;
+  }
+  function painted(){stage.removeAttribute('aria-busy');}
+
+  /* ── shared pieces ─────────────────────────────────────────────────────── */
+
+  function backendDown(msg){
+    painted();
+    stage.className='card';
+    stage.innerHTML='<div class="eyebrow">Head-to-Head</div>'
+      +'<div class="empty">'+esc(msg||'Head-to-Head is not available right now.')+'<br>'
+      +'<a href="/games/">Back to EdgeDesk Games</a> · '
+      +'<a href="/games/price-it/">Play Price It</a></div>';
+  }
+
+  /* The server's error strings are lowercase fragments written for a log.
+     A player gets a sentence. Anything unrecognised that already reads as a
+     sentence — capitalised, spaced, punctuated, no code in it — is allowed
+     through; everything else gets the generic line for that action. */
+  function humanError(msg,generic){
+    var m=String(msg||'');
+    if(/already cancelled|is already CANCELLED/i.test(m))return 'This challenge was cancelled.';
+    if(/expired/i.test(m))return 'This challenge has expired.';
+    if(/already (locked|final|draw|settled|has two)/i.test(m))return 'This challenge has already been completed.';
+    if(/already submitted/i.test(m))return 'You have already locked a pick on this challenge.';
+    if(/kick|started|closed/i.test(m))return 'This game has started, so picks are closed.';
+    if(/no such challenge/i.test(m))return 'This challenge could not be found. The link may be wrong, or it has expired.';
+    if(/^[A-Z][^{}<>_\[\]]{10,150}[.!?]$/.test(m)&&m.indexOf(' ')>0)return m;
+    return generic;
+  }
+
+  function phaseBadge(p){
+    var cls=p==='FINAL'||p==='DRAW'?'done':p==='IN_PROGRESS'?'live'
+      :p==='EXPIRED'||p==='CANCELLED'||p==='MISSING'?'dead':'wait';
+    return '<span class="phase '+cls+'"><span class="dot"></span>'
+      +esc(S.PHASE_LABEL[p]||p)+'</span>';
+  }
+
+  /* "Spread challenge" — what kind of call the invite is asking for */
+  function modeChip(ch){
+    var m=S.MODES[ch.mode];
+    return '<span class="phase wait"><span class="dot"></span>'
+      +esc((m?m.label:String(ch.mode||'Head-to-Head'))+' challenge')+'</span>';
+  }
+
+  /* one sentence on what the mode means, under the button */
+  function modeMeaning(ch){
+    var m=S.MODES[ch.mode]||{label:String(ch.mode||''),blurb:''};
+    var short={
+      winner:'pick who wins outright — a tie is a draw.',
+      spread:'pick a side against the locked line, wherever the market goes.',
+      price_it:'set the line you think is fair — closer to the benchmark wins.'
+    }[ch.mode]||m.blurb;
+    return m.label+': '+short;
+  }
+
+  function vsBlock(ch,aName,bName,out){
+    function side(name,slot,isYou){
+      var o=out?out[slot]:null;
+      var cls=(o==='win'?' win':o==='loss'?' lose':'')+(isYou?' you':'');
+      var sub=isYou?'you':o==='win'?'won':o==='draw'?'draw':'';
+      return '<div class="vs-p'+cls+'"><div class="vs-av">'+esc(initials(name))+'</div>'
+        +'<div class="vs-n">'+esc(name||'Waiting…')+'</div>'
+        +(sub?'<div class="vs-s">'+esc(sub)+'</div>':'')+'</div>';
+    }
+    return '<div class="vs">'+side(aName,'a',ch&&ch.your_slot==='a')
+      +'<div class="vs-mid">VS</div>'+side(bName,'b',ch&&ch.your_slot==='b')+'</div>';
+  }
+
+  /* big = the invite landing: the matchup at full .mu-team size */
+  function matchupLine(ch,big){
+    return '<div style="text-align:center;margin-top:'+(big?8:6)+'px">'
+      +'<div class="mu-team"'+(big?'':' style="font-size:19px"')+'>'+esc(ch.away_team)
+      +' <span style="color:var(--faint)">vs</span> '+esc(ch.home_team)+'</div>'
+      +'<div class="mu-when">'+esc(G.kickoffLabel(ch.kickoff))+'</div></div>';
+  }
+
+  /* the line each side is getting, from the SNAPSHOT on the challenge */
+  function sideLine(ch,side){
+    var s=ch.market_snapshot&&ch.market_snapshot.spread;
+    if(s==null||!isFinite(s))return '';
+    var v=side==='home'?s:-s,r=Math.round(v*10)/10;
+    if(r===0)return 'PK';
+    return (r<0?'−':'+')+Math.abs(r).toFixed(1);
+  }
+
+  function pickLabel(ch,sel){
+    if(!sel)return '—';
+    if(ch.mode==='price_it')
+      return G.line({home_team:ch.home_team,away_team:ch.away_team},sel.spread)||'Pick ’em';
+    var team=sel.side==='home'?ch.home_team:ch.away_team;
+    return ch.mode==='spread'?(team+' '+sideLine(ch,sel.side)):team;
+  }
+
+  function researchLink(ch,where,ghost){
+    return '<div class="btn-row"><button class="btn'+(ghost?' btn-ghost':'')+'" type="button" data-research="'
+      +esc(where)+'">Research this game →</button></div>';
+  }
+  function wireResearch(ch){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-research]'),function(b){
+      b.addEventListener('click',function(){
+        var c=CH.bySlug(POOL,ch.game_slug)||{game_id:ch.canonical_game_id,slug:ch.game_slug,
+          research_state:null};
+        G.track('research_open_from_h2h',{game_id:ch.canonical_game_id,game_slug:ch.game_slug,
+          game_type:'h2h',mode:ch.mode,placement:b.getAttribute('data-research')});
+        G.openResearch(c,'h2h_'+b.getAttribute('data-research'));
+      });
+    });
+  }
+
+  /* ── the series ─────────────────────────────────────────────────────────
+     Head-to-Head history against this opponent, from the player's OWN ledger
+     (dynasty.rivalry over the h2h_* rows this page records). Only real rows,
+     only when at least one challenge between them has settled. */
+  function seriesOf(oppName){
+    if(!DY||!ST||!oppName)return null;
+    try{
+      var r=DY.rivalry(ST.read(),String(oppName).slice(0,40));
+      return r&&r.settled>=1?r:null;
+    }catch(_){return null;}
+  }
+  function runWord(n){
+    var W=['','','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'];
+    return n<W.length?W[n]:String(n);
+  }
+  /* "All-time vs Davis: 3–1 · 2 in a row for you" */
+  function rivalryLine(r,left){
+    if(!r)return '';
+    var run=Math.abs(r.streak|0);
+    return '<div class="h2h-series"'+(left?' style="text-align:left"':'')+'>All-time vs <b>'+esc(r.opponent)+'</b>: <b>'+esc(r.record)+'</b>'
+      +(run>=2?esc(' · '+run+' in a row for '+(r.streak>0?'you':'them')):'')+'</div>';
+  }
+  /* the block on a result: "Series vs Davis: 3–1" and "Two in a row for you" */
+  function seriesBlock(r){
+    if(!r)return '';
+    var run=Math.abs(r.streak|0);
+    return '<div class="h2h-serie"><div class="eyebrow">Series</div>'
+      +'<div class="rec">Series vs '+esc(r.opponent)+': <b>'+esc(r.record)+'</b></div>'
+      +(run>=2?'<div class="run">'+esc(runWord(run)+' in a row for '+(r.streak>0?'you':'them'))+'</div>':'')
+      +'</div>';
+  }
+
+  /* native share where the browser has it, the clipboard where it does not */
+  function share(text,url){
+    if(navigator.share){navigator.share({title:'EdgeDesk Games',text:text,url:url}).catch(function(){});return;}
+    doCopy(text,url);
+  }
+
+  /* ── 1. CREATE ─────────────────────────────────────────────────────────── */
+
+  function renderCreate(){
+    painted();
+    var live=CH.playable(POOL);
+    if(!live.length){ backendDown('No matchup is available to challenge on right now.'); return; }
+    DRAFT.game=DRAFT.game||live[0];
+    var opts=live.slice(0,30).map(function(c){
+      return '<option value="'+esc(c.slug)+'"'+(c.slug===DRAFT.game.slug?' selected':'')+'>'
+        +esc(c.away_team+' at '+c.home_team)+'</option>';
+    }).join('');
+    var ser=VS?seriesOf(VS):null;
+
+    stage.className='card';
+    stage.innerHTML='<div class="eyebrow">Head-to-Head</div>'
+      +'<h1 style="font-size:24px;font-family:\'Space Grotesk\',sans-serif">'
+      +(VS?('Challenge '+esc(VS)+'.<br>Settle it on the field.'):'Challenge a friend.<br>Settle it on the field.')+'</h1>'
+      +'<p class="h2h-lede">Pick a game, make your call, send '
+      +(VS?('the link to '+esc(VS)+'.'):'the link.')+' Your pick stays sealed until they make theirs.</p>'
+      +rivalryLine(ser,true)
+      +'<div class="h2h-blk"><div class="eyebrow">The game</div>'
+      +'<select id="gamePick" class="btn" style="text-align:left;padding:0 14px" '
+      +'aria-label="Choose a matchup">'+opts+'</select></div>'
+      +'<div class="h2h-blk"><div class="eyebrow">The challenge</div>'
+      +'<div class="modes" id="modes"></div></div>'
+      +'<div id="pickHost"></div>'
+      +'<div class="btn-row"><button class="btn btn-go" id="create" type="button" disabled>Create the challenge</button></div>'
+      +'<div class="ftp" style="text-align:center;margin-top:12px"><b>Free to play</b> · No real-money wagering</div>';
+
+    paintModes();
+    paintPicker();
+    $('gamePick').addEventListener('change',function(){
+      DRAFT.game=CH.bySlug(POOL,this.value)||DRAFT.game;
+      DRAFT.selection=null;
+      paintModes(); paintPicker();
+    });
+    $('create').addEventListener('click',doCreate);
+    G.track('h2h_create',{stage:'open',game_type:'h2h'});
+  }
+
+  function modeAvailable(m){
+    if(m==='spread')return !!(DRAFT.game&&DRAFT.game.market_spread!=null);
+    return true;
+  }
+
+  function paintModes(){
+    var host=$('modes');if(!host)return;
+    if(!modeAvailable(DRAFT.mode))DRAFT.mode='winner';
+    host.innerHTML=['spread','winner','price_it'].map(function(k){
+      var m=S.MODES[k],ok=modeAvailable(k);
+      return '<button class="mode" type="button" data-mode="'+k+'"'
+        +' aria-pressed="'+(DRAFT.mode===k?'true':'false')+'"'+(ok?'':' disabled')+'>'
+        +'<div class="t">'+esc(m.label)+'</div><div class="b">'
+        +esc(ok?m.blurb:'No book number on this game yet.')+'</div></button>';
+    }).join('');
+    Array.prototype.forEach.call(host.querySelectorAll('.mode'),function(b){
+      b.addEventListener('click',function(){
+        DRAFT.mode=b.getAttribute('data-mode');DRAFT.selection=null;
+        paintModes();paintPicker();
+      });
+    });
+  }
+
+  function paintPicker(){
+    var host=$('pickHost'),ch=DRAFT.game;if(!host||!ch)return;
+    var pseudo={home_team:ch.home_team,away_team:ch.away_team,
+      market_snapshot:{spread:ch.market_spread},mode:DRAFT.mode};
+    if(DRAFT.mode==='price_it'){
+      var cur=DRAFT.selection&&DRAFT.selection.spread!=null?DRAFT.selection.spread:0;
+      host.innerHTML='<div class="sel" style="margin-top:18px">'
+        +'<div class="eyebrow">Your line</div>'
+        +'<div class="sel-read" aria-live="polite"><div class="sel-line mono" id="rl">'
+        +esc(G.line(ch,cur)||'Pick ’em')+'</div></div>'
+        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −'+RANGE+'</span><span>'
+        +esc(ch.home_team)+' −'+RANGE+'</span></div>'
+        +'<input class="sel-range" type="range" id="sl" min="'+(-RANGE)+'" max="'+RANGE+'" step="'+STEP+'" value="'
+        +(-cur)+'" aria-label="Your line for this game, in points">'
+        +'<div class="sel-nudge"><button class="nudge" id="dn" type="button" aria-label="Half a point toward '+esc(ch.away_team)+'">−</button>'
+        +'<div class="sel-hint">Half-point steps</div>'
+        +'<button class="nudge" id="up" type="button" aria-label="Half a point toward '+esc(ch.home_team)+'">+</button></div></div>';
+      var sl=$('sl');
+      function paint(){
+        var v=-(+sl.value);
+        DRAFT.selection={spread:v};
+        $('rl').textContent=G.line(ch,v)||'Pick ’em';
+        $('create').disabled=false;
+      }
+      sl.addEventListener('input',paint);
+      $('dn').addEventListener('click',function(){sl.value=Math.min(RANGE,(+sl.value)+STEP);paint();});
+      $('up').addEventListener('click',function(){sl.value=Math.max(-RANGE,(+sl.value)-STEP);paint();});
+      paint();
+      return;
+    }
+    host.innerHTML='<div class="h2h-blk"><div class="eyebrow">Your pick</div>'
+      +'<div class="sides">'
+      +sideBtn(pseudo,'away',ch.away_team)+sideBtn(pseudo,'home',ch.home_team)
+      +'</div></div>'
+      +(DRAFT.mode==='spread'&&ch.market_spread!=null
+        ? '<div class="locked-line"><span class="k">Locked line</span><span class="v">'
+          +esc(G.line(ch,ch.market_spread))+'</span></div>'
+          +'<div class="ftp" style="margin-top:6px">Snapshotted now — the challenge settles on this line wherever the market goes.</div>'
+        :'');
+    Array.prototype.forEach.call(host.querySelectorAll('.side'),function(b){
+      b.addEventListener('click',function(){
+        DRAFT.selection={side:b.getAttribute('data-side')};
+        Array.prototype.forEach.call(host.querySelectorAll('.side'),function(o){
+          o.setAttribute('aria-pressed',o===b?'true':'false');
+        });
+        $('create').disabled=false;
+      });
+    });
+  }
+
+  function sideBtn(pseudo,side,team){
+    var on=DRAFT.selection&&DRAFT.selection.side===side;
+    var ln=pseudo.mode==='spread'?sideLine(pseudo,side):'';
+    return '<button class="side" type="button" data-side="'+side+'" aria-pressed="'+(on?'true':'false')+'">'
+      +'<span>'+esc(team)+'</span>'+(ln?'<span class="ln">'+esc(ln)+'</span>':'')+'</button>';
+  }
+
+  function doCreate(){
+    var ch=DRAFT.game;
+    if(!ch||!DRAFT.selection)return;
+    var btn=$('create');btn.disabled=true;btn.textContent='Creating…';
+    S.createChallenge({
+      mode:DRAFT.mode,game_id:ch.game_id,slug:ch.slug,
+      home_team:ch.home_team,away_team:ch.away_team,
+      kickoff:ch.kickoff?new Date(String(ch.kickoff).replace(' ','T')).toISOString():null,
+      market:{spread:ch.market_spread,edgedesk:ch.edgedesk_spread,
+        research_state:ch.research_state,captured_at:new Date().toISOString()},
+      selection:DRAFT.selection
+    }).then(function(r){
+      btn.disabled=false;btn.textContent='Create the challenge';
+      if(!r.ok){G.toast(humanError(r.message,'Could not create the challenge. Check your connection and try again.'));return;}
+      G.track('h2h_invite_generated',{game_id:ch.game_id,game_slug:ch.slug,
+        game_type:'h2h',mode:DRAFT.mode,research_state:ch.research_state,
+        from_group:VS?'member':'direct'});
+      /* on the player's record: a challenge created this week is the
+         "challenge a friend" mission, and it is keyed by the token so a
+         re-render can never count it twice */
+      try{ST.recordEvent('h2h_create',r.data.invite_token,{mode:DRAFT.mode,game_id:String(ch.game_id)});}catch(_){}
+      renderInvite(r.data.invite_token,ch);
+      setTimeout(function(){try{G.pulse({game_type:'h2h'});}catch(_){}},700);
+    });
+  }
+
+  function renderInvite(token,ch){
+    painted();
+    var url=S.challengeUrl(token);
+    var ser=VS?seriesOf(VS):null;
+    stage.className='card reveal';
+    stage.innerHTML='<div class="eyebrow">Challenge created</div>'
+      +'<div class="invite"><div style="font-family:\'Space Grotesk\',sans-serif;font-size:19px;font-weight:700">'
+      +(VS?('Send this to '+esc(VS)):'Send this to a friend')+'</div>'
+      +'<p style="color:var(--dim);font-size:13.5px;margin:8px 0 0">Your pick is sealed. They cannot see it '
+      +'until they make theirs.</p>'
+      +'<div class="url" id="inviteUrl">'+esc(url)+'</div>'
+      +'<div class="btn-row two"><button class="btn btn-go" id="shareBtn" type="button">Send the challenge</button>'
+      +'<button class="btn" id="copyBtn" type="button">Copy link</button></div>'
+      +rivalryLine(ser)+'</div>'
+      +'<div class="btn-row"><a class="btn btn-ghost" href="/games/h2h/'+encodeURIComponent(token)+'">View the challenge</a></div>';
+    var text=(VS?(VS+' — I'):'I')+' challenged you on '+ch.away_team+' vs '+ch.home_team+'.\n\n'
+      +'Think you know the game better?\n\nTake the challenge:\n'+url
+      +'\n\nEdgeDesk Games\nFree to play. No real-money wagering.';
+    function shared(how){
+      G.track('h2h_invite_generated',{stage:'shared',how:how,game_type:'h2h',mode:DRAFT.mode});
+    }
+    $('shareBtn').addEventListener('click',function(){
+      if(navigator.share){
+        navigator.share({title:'EdgeDesk Games',text:text,url:url}).then(function(){shared('native');},function(){});
+      }else{copy(text+'',url,'native_fallback');}
+    });
+    $('copyBtn').addEventListener('click',function(){copy(text,url,'copy');});
+    function copy(t,u,how){
+      var payload=t;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(payload).then(function(){
+          G.toast('Challenge link copied');shared(how);
+        },function(){G.toast('Copy this: '+u);});
+      }else{G.toast('Copy this: '+u);}
+    }
+  }
+
+  /* ── 2. VIEW / ANSWER ──────────────────────────────────────────────────── */
+
+  /* THE FRANCHISES BEHIND THE NAMES. A Head-to-Head is between two people;
+     when both have franchises, the page says which, with the marks, and
+     the record between the two franchises on the board and on the field.
+     Read after the challenge paints; the settlement is untouched. */
+  var FR=window.EDFranchise,FR_CTX={};
+  function paintFranchiseContext(ch){
+    if(!FR||!ch||!ch.invite_token)return;
+    FR.h2hContext(ch.invite_token).then(function(r){
+      if(!r.ok||!r.data)return;
+      var d=r.data,sides=stage.querySelectorAll('.vs-p');
+      [d.a,d.b].forEach(function(f,i){
+        if(!f||!sides[i]||sides[i].querySelector('.vs-fr'))return;
+        var el=document.createElement('div');el.className='vs-fr';
+        el.innerHTML=FR.logoSvg(f.logo,18,f.theme)+'<span>'+esc(((f.city||'')+' '+(f.name||'')).trim())+' · OVR '+esc(f.overall)+'</span>';
+        sides[i].appendChild(el);
+      });
+      var vs=stage.querySelector('.vs');
+      if(d.a&&d.b&&vs&&!stage.querySelector('.h2h-riv')){
+        var rv=d.rivalry_a||{},line=document.createElement('div');line.className='h2h-riv';
+        line.textContent=((d.a.city||'')+' '+(d.a.name||'')).trim()+' vs '+((d.b.city||'')+' '+(d.b.name||'')).trim()
+          +' · '+(rv.h2h_wins|0)+'–'+(rv.h2h_losses|0)+(rv.h2h_draws?'–'+rv.h2h_draws:'')+' on the board'
+          +((rv.fc_wins|rv.fc_losses|rv.fc_ties)?' · '+(rv.fc_wins|0)+'–'+(rv.fc_losses|0)+(rv.fc_ties?'–'+rv.fc_ties:'')+' on the field':'');
+        vs.parentNode.insertBefore(line,vs.nextSibling);
+        if(ch.settlement&&!FR_CTX[ch.invite_token]){FR_CTX[ch.invite_token]=true;G.track('h2h_franchise_complete',{mode:ch.mode,game_id:ch.canonical_game_id});}
+      }
+    });
+  }
+  function renderChallenge(ch){
+    renderChallengeInner(ch);
+    paintFranchiseContext(ch);
+  }
+  function renderChallengeInner(ch){
+    painted();
+    var p=S.phase(ch),a=S.entry(ch,'a'),b=S.entry(ch,'b');
+    var selA=S.selectionOf(ch,'a'),selB=S.selectionOf(ch,'b');
+    var aName=nameOf(a,'A friend'),bName=nameOf(b,'Waiting…');
+    var oppName=opponentOf(ch);
+    stage.className='card reveal';
+
+    /* THE INVITE LANDING — the most important acquisition screen in the
+       product. A stranger from a group chat, on a phone, must read who is
+       calling them out, on what, and lock a pick without scrolling. Nothing
+       sits between the headline and the button but the decision itself. */
+    if(p==='YOUR_TURN'){
+      stage.innerHTML='<div class="eyebrow">Head-to-Head</div>'
+        +'<h1 class="h2h-h1">'+esc(aName)+' challenged you</h1>'
+        +matchupLine(ch,true)
+        +'<div class="h2h-chip">'+modeChip(ch)+'</div>'
+        +'<div class="sealed h2h-sealed">🔒 <b>'+esc(aName)+'’s pick is hidden.</b> '
+        +'It stays sealed until you lock yours — nothing to peek at.</div>'
+        +answerPicker(ch)
+        +'<div class="btn-row"><button class="btn btn-go" id="lockIt" type="button" disabled>Lock my pick</button></div>'
+        +'<div class="h2h-mean">'+esc(modeMeaning(ch))+'</div>'
+        +researchLink(ch,'before_pick',true)
+        +'<div class="ftp" style="text-align:center;margin-top:10px"><b>Free to play</b> · No signup needed · No real-money wagering</div>';
+      wireAnswer(ch);
+      wireResearch(ch);
+      G.track('h2h_invite_open',{game_id:ch.canonical_game_id,game_slug:ch.game_slug,
+        game_type:'h2h',mode:ch.mode,identity:S.signedIn()?'authenticated':'anonymous'});
+      return;
+    }
+
+    var res=ch.settlement||null;
+    var oa=res?res.outcome_a:null, ob=res?res.outcome_b:null;
+    var mine=ch.your_slot?(ch.your_slot==='a'?oa:ob):null;
+    var head='<div class="eyebrow">Head-to-Head</div>'
+      +vsBlock(ch,a?aName:'…',bName,res?{a:oa,b:ob}:null)
+      +matchupLine(ch);
+
+    if(p==='WAITING_FOR_OPPONENT'){
+      var url=S.challengeUrl(ch.invite_token);
+      /* the opponent is whoever opens the link; a series can only be named
+         when the link was made for somebody in particular */
+      var waitFor=b&&b.display_name?String(b.display_name):(VS?String(VS):null);
+      stage.innerHTML=head
+        +'<div style="text-align:center;margin-top:12px">'+phaseBadge(p)+'</div>'
+        +'<div class="sealed"><span>🔒</span><span><b>Your pick is sealed.</b> '
+        +'Nobody sees it until your opponent locks theirs.</span></div>'
+        +'<div class="invite" style="margin-top:16px">'
+        +'<div style="font-weight:700">'+(waitFor?('Waiting on '+esc(waitFor)):'Nobody has taken it yet')+'</div>'
+        +'<div class="url">'+esc(url)+'</div>'
+        +'<div class="btn-row two"><button class="btn btn-go" id="shareBtn" type="button">Send the challenge</button>'
+        +'<button class="btn" id="copyBtn" type="button">Copy link</button></div>'
+        +rivalryLine(seriesOf(waitFor))+'</div>'
+        +researchLink(ch,'waiting');
+      var text=(waitFor?(waitFor+' — I'):'I')+' challenged you on '+ch.away_team+' vs '+ch.home_team+'.\n\nTake the challenge:\n'+url
+        +'\n\nEdgeDesk Games\nFree to play. No real-money wagering.';
+      $('shareBtn').addEventListener('click',function(){share(text,url);});
+      $('copyBtn').addEventListener('click',function(){doCopy(text,url);});
+      wireResearch(ch);
+      return;
+    }
+
+    if(p==='EXPIRED'||p==='CANCELLED'){
+      stage.innerHTML=head
+        +'<div style="text-align:center;margin-top:12px">'+phaseBadge(p)+'</div>'
+        +'<div class="empty">'+(p==='EXPIRED'
+          ?'This challenge expired before both picks were in.'
+          :'This challenge was cancelled.')+'</div>'
+        +'<div class="btn-row"><a class="btn btn-go" href="/games/h2h/">Start a new challenge</a></div>'
+        +researchLink(ch,p.toLowerCase(),true);
+      wireResearch(ch);
+      return;
+    }
+
+    /* locked, live, final or draw — both answers are public now */
+
+    /* The player's own record, written FIRST so the series below already
+       counts this result. The War Room's H2H board reads these rows — an
+       observer with the link records nothing. Every row is keyed by the
+       token, so a reload writes nothing new. */
+    var wrote=false;
+    if(ch.your_slot&&ch.invite_token){
+      try{
+        wrote=ST.recordEvent('h2h_locked',ch.invite_token,{opponent:oppName,mode:ch.mode,
+          game_id:String(ch.canonical_game_id||'')}).recorded||wrote;
+        if(res){
+          /* one row per settled challenge whatever the outcome: a loss is a
+             locked, settled challenge that was neither a win nor a draw */
+          wrote=ST.recordEvent('h2h_settled',ch.invite_token,{opponent:oppName,mode:ch.mode,
+            outcome:mine||null}).recorded||wrote;
+          if(mine==='win')wrote=ST.recordEvent('h2h_win',ch.invite_token,{opponent:oppName,mode:ch.mode}).recorded||wrote;
+          if(mine==='draw')wrote=ST.recordEvent('h2h_draw',ch.invite_token,{opponent:oppName,mode:ch.mode}).recorded||wrote;
+        }
+      }catch(_){}
+    }
+    var series=ch.your_slot?seriesOf(oppName):null;
+
+    function ansCard(e,sel,outcome){
+      var tag=outcome==='win'?'<div class="tag w">Won</div>'
+        :outcome==='loss'?'<div class="tag l">Lost</div>'
+        :outcome==='draw'?'<div class="tag d">Draw</div>':'';
+      return '<div class="answer'+(e&&e.is_you?' you':'')+'">'
+        +'<div class="who">'+esc(e?e.display_name:'—')+'</div>'
+        +'<div class="pick">'+esc(pickLabel(ch,sel))+'</div>'+tag+'</div>';
+    }
+
+    var body=head;
+    if(res){
+      /* the moment. A win is yours; a loss is the other player's win, never
+         a verdict on the call you made. */
+      var headline=(p==='DRAW'||oa==='draw')?'Draw'
+        :mine==='win'?'You win'
+        :oa==='win'?(aName+' wins'):ob==='win'?(bName+' wins'):'Final';
+      var hcls=headline==='You win'?' win':headline==='Draw'?' draw':'';
+      body+='<h2 class="h2h-h2 h2h-result'+hcls+'">'+esc(headline)+'</h2>';
+    }else{
+      body+='<h2 class="h2h-h2">Picks are in</h2>';
+    }
+    body+='<div class="answers">'+ansCard(a,selA,oa)+ansCard(b,selB,ob)+'</div>';
+
+    if(ch.mode==='spread'&&ch.market_snapshot&&ch.market_snapshot.spread!=null){
+      body+='<div class="locked-line"><span class="k">Locked line</span><span class="v">'
+        +esc(G.line(ch,ch.market_snapshot.spread))+'</span></div>';
+    }
+    if(ch.mode==='price_it'){
+      body+=priceItContext(ch);
+    }
+    if(res){
+      body+='<div class="delta" style="margin-top:14px">'+esc(settlementLine(ch,res))+'</div>';
+      body+=seriesBlock(series);
+      body+=resultCtas(ch,mine);
+    }else{
+      var when=G.kickoffLabel(ch.kickoff);
+      body+='<div class="h2h-when">'+(p==='IN_PROGRESS'
+        ?'Game in progress <span class="dim">· the result posts when the final score lands</span>'
+        :('Game starts '+(when?esc(when):'soon')))+'</div>';
+      body+=rivalryLine(series);
+      body+='<div class="btn-row two"><button class="btn btn-go" id="shareMu" type="button">Share matchup</button>'
+        +'<button class="btn" type="button" data-research="'+(p==='IN_PROGRESS'?'in_progress':'locked')+'">Research this game →</button></div>';
+    }
+    stage.innerHTML=body;
+    wireResearch(ch);
+    if(res)wireResultCtas(ch);
+    var sm=$('shareMu');
+    if(sm)sm.addEventListener('click',function(){shareMatchup(ch,p);});
+    if(p==='LOCKED'||p==='IN_PROGRESS')G.track('h2h_both_locked',{game_id:ch.canonical_game_id,
+      game_type:'h2h',mode:ch.mode});
+    if(res)G.track('h2h_settled',{game_id:ch.canonical_game_id,game_type:'h2h',mode:ch.mode,
+      outcome:ch.your_slot?mine:'observer'});
+    if(wrote)setTimeout(function(){try{G.pulse({game_type:'h2h'});}catch(_){}},700);
+  }
+
+  function answerPicker(ch){
+    if(ch.mode==='price_it'){
+      return '<div class="sel" style="margin-top:14px">'
+        +'<div class="sel-read" aria-live="polite"><div class="sel-line mono" id="rl">Pick ’em</div>'
+        +'<div class="sel-who" id="rw">Set the line you think is fair</div></div>'
+        +'<div class="sel-ends"><span>'+esc(ch.away_team)+' −'+RANGE+'</span><span>'+esc(ch.home_team)+' −'+RANGE+'</span></div>'
+        +'<input class="sel-range" type="range" id="sl" min="'+(-RANGE)+'" max="'+RANGE+'" step="'+STEP+'" value="0"'
+        +' aria-label="Your line for this game, in points">'
+        +'<div class="sel-nudge"><button class="nudge" id="dn" type="button" aria-label="Half a point toward '+esc(ch.away_team)+'">−</button>'
+        +'<div class="sel-hint">Half-point steps</div>'
+        +'<button class="nudge" id="up" type="button" aria-label="Half a point toward '+esc(ch.home_team)+'">+</button></div></div>';
+    }
+    var out='<div class="sides" style="margin-top:14px">'
+      +'<button class="side" type="button" data-side="away" aria-pressed="false"><span>'
+      +esc(ch.away_team)+'</span>'+(ch.mode==='spread'?'<span class="ln">'+esc(sideLine(ch,'away'))+'</span>':'')+'</button>'
+      +'<button class="side" type="button" data-side="home" aria-pressed="false"><span>'
+      +esc(ch.home_team)+'</span>'+(ch.mode==='spread'?'<span class="ln">'+esc(sideLine(ch,'home'))+'</span>':'')+'</button>'
+      +'</div>';
+    if(ch.mode==='spread'&&ch.market_snapshot&&ch.market_snapshot.spread!=null){
+      out+='<div class="locked-line" style="margin-top:10px"><span class="k">Locked line</span><span class="v">'
+        +esc(G.line(ch,ch.market_snapshot.spread))+'</span></div>';
+    }
+    return out;
+  }
+
+  function wireAnswer(ch){
+    var sel=null,btn=$('lockIt');
+    if(ch.mode==='price_it'){
+      var sl=$('sl');
+      function paint(){
+        var v=-(+sl.value);sel={spread:v};
+        $('rl').textContent=G.line(ch,v)||'Pick ’em';
+        $('rw').textContent=v===0?'Even game — nobody is giving points'
+          :((v<0?ch.home_team:ch.away_team)+' gives '+Math.abs(v).toFixed(1)+' points');
+        btn.disabled=false;
+      }
+      sl.addEventListener('input',paint);
+      $('dn').addEventListener('click',function(){sl.value=Math.min(RANGE,(+sl.value)+STEP);paint();});
+      $('up').addEventListener('click',function(){sl.value=Math.max(-RANGE,(+sl.value)-STEP);paint();});
+      paint();
+    }else{
+      Array.prototype.forEach.call(document.querySelectorAll('.side'),function(b){
+        b.addEventListener('click',function(){
+          sel={side:b.getAttribute('data-side')};
+          Array.prototype.forEach.call(document.querySelectorAll('.side'),function(o){
+            o.setAttribute('aria-pressed',o===b?'true':'false');
+          });
+          btn.disabled=false;
+        });
+      });
+    }
+    btn.addEventListener('click',function(){
+      if(!sel)return;
+      /* the page can already see that kickoff has passed; say so plainly
+         rather than sending a pick the server is about to refuse */
+      var kick=ch.kickoff?Date.parse(String(ch.kickoff).replace(' ','T')):NaN;
+      if(isFinite(kick)&&kick<=Date.now()){G.toast('This game has started, so picks are closed.');return;}
+      btn.disabled=true;btn.textContent='Locking…';
+      S.submitChallenge(ch.invite_token,sel).then(function(r){
+        if(!r.ok){
+          btn.disabled=false;btn.textContent='Lock my pick';
+          G.toast(humanError(r.message,'Could not lock your pick. Check your connection and try again.'));return;
+        }
+        G.track('h2h_opponent_submit',{game_id:ch.canonical_game_id,game_type:'h2h',
+          mode:ch.mode,identity:S.signedIn()?'authenticated':'anonymous'});
+        try{ST.recordEvent('h2h_submit',ch.invite_token,{mode:ch.mode,game_id:String(ch.canonical_game_id||'')});}catch(_){}
+        load();
+      });
+    });
+  }
+
+  function priceItContext(ch){
+    var snap=ch.market_snapshot||{};
+    var rows='';
+    if(snap.spread!=null)rows+='<div class="price"><div class="k">Market</div><div class="v">'
+      +esc(G.line(ch,snap.spread))+'</div><div class="n">at challenge time</div></div>';
+    if(snap.edgedesk!=null)rows+='<div class="price"><div class="k">EdgeDesk</div><div class="v">'
+      +esc(G.line(ch,snap.edgedesk))+'</div><div class="n">model</div></div>';
+    if(!rows)return '';
+    return '<div class="prices" style="margin-top:12px;grid-template-columns:repeat(2,1fr)">'+rows+'</div>'
+      +'<div class="ftp" style="text-align:center;margin-top:8px">Neither number is the right answer — '
+      +'EdgeDesk does not beat the closing line.</div>';
+  }
+
+  function settlementLine(ch,res){
+    var ev=res.evidence||{};
+    var base=ev.reason?String(ev.reason):'';
+    var score=(ev.home_score!=null&&ev.away_score!=null)
+      ?(ch.away_team+' '+ev.away_score+' · '+ch.home_team+' '+ev.home_score):'';
+    return [score,base].filter(Boolean).join(' — ') || 'Settled.';
+  }
+
+  /* after a result, in this order: run it back, read the research, then the
+     ways to bring somebody else in. The research line stays honest about the
+     model whichever way the game went. */
+  function resultCtas(ch,mine){
+    return '<div class="btn-row"><button class="btn btn-go" id="rematch" type="button">Run it back</button></div>'
+      +'<div class="btn-row"><button class="btn" data-research="after_result" type="button">Review the matchup →</button></div>'
+      +'<div class="ftp h2h-honest" style="text-align:center">EdgeDesk gets games wrong too. The research shows its number, '
+      +'the market’s, and what it could not read — not a verdict on your call.</div>'
+      +'<div class="btn-row two"><a class="btn btn-ghost" href="/games/h2h/">Challenge someone else</a>'
+      +'<button class="btn btn-ghost" id="shareRes" type="button">Share this result</button></div>';
+  }
+
+  function wireResultCtas(ch){
+    var rm=$('rematch');
+    if(rm)rm.addEventListener('click',function(){
+      var opp=opponentOf(ch);
+      G.track('h2h_rematch',{game_id:ch.canonical_game_id,game_type:'h2h',mode:ch.mode});
+      G.track('rematch',{game_id:ch.canonical_game_id,game_type:'h2h',mode:ch.mode,
+        outcome:ch.your_slot?(ch.your_slot==='a'?(ch.settlement||{}).outcome_a:(ch.settlement||{}).outcome_b):'observer',
+        series:opp?!!seriesOf(opp):false});
+      DRAFT.mode=ch.mode;DRAFT.game=null;DRAFT.selection=null;
+      /* the rematch is a new link made for the same person, so the create
+         screen and the invite text can name them */
+      if(opp&&!VS)VS=opp;
+      history.replaceState(null,'','/games/h2h/'+(opp?('?vs='+encodeURIComponent(opp)):''));
+      TOKEN=null;renderCreate();
+      window.scrollTo(0,0);
+    });
+    var sh=$('shareRes');
+    if(sh)sh.addEventListener('click',function(){shareResult(ch);});
+  }
+
+  /* "Davis vs me on Texas vs Oklahoma / Picks are in. Game Saturday · 3:30 PM." */
+  function shareMatchup(ch,p){
+    var a=S.entry(ch,'a'),b=S.entry(ch,'b');
+    var who=ch.your_slot?(nameOf(S.entry(ch,ch.your_slot==='a'?'b':'a'),'A friend')+' vs me')
+      :(nameOf(a,'A')+' vs '+nameOf(b,'B'));
+    var when=G.kickoffLabel(ch.kickoff);
+    var text=who+' on '+ch.away_team+' vs '+ch.home_team+'\nPicks are in.'
+      +(p==='IN_PROGRESS'?' Game in progress.':(when?(' Game '+when+'.'):''));
+    var url=S.challengeUrl(ch.invite_token);
+    G.track('share_result',{game_type:'h2h',mode:ch.mode,game_id:ch.canonical_game_id,stage:'locked'});
+    share(text,url);
+  }
+
+  /* "I beat Davis / Texas vs Oklahoma / Series: 3–1 / Think you can beat me?" */
+  function shareResult(ch){
+    var a=S.entry(ch,'a'),b=S.entry(ch,'b');
+    var res=ch.settlement||{};
+    var me=ch.your_slot,first,L;
+    if(me){
+      var opp=nameOf(S.entry(ch,me==='a'?'b':'a'),'A friend');
+      var mine=me==='a'?res.outcome_a:res.outcome_b;
+      first=mine==='win'?('I beat '+opp):mine==='loss'?(opp+' beat me'):(opp+' and I drew');
+    }else{
+      var an=nameOf(a,'A'),bn=nameOf(b,'B');
+      first=res.outcome_a==='win'?(an+' beat '+bn):res.outcome_b==='win'?(bn+' beat '+an):(an+' and '+bn+' drew');
+    }
+    L=[first,ch.away_team+' vs '+ch.home_team];
+    var ser=me?seriesOf(opponentOf(ch)):null;
+    if(ser)L.push('Series: '+ser.record);
+    L.push('',me?'Think you can beat me?':'Think you can beat them?');
+    var text=L.join('\n'),url=location.origin+'/games/h2h/';
+    G.track('share_result',{game_type:'h2h',mode:ch.mode,game_id:ch.canonical_game_id,stage:'result'});
+    share(text,url);
+  }
+
+  function doCopy(text,url){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text+'\n'+url).then(function(){G.toast('Copied');},
+        function(){G.toast('Copy this: '+url);});
+    }else G.toast('Copy this: '+url);
+  }
+
+  /* the account nudge, only after they have actually done something */
+  function renderAfter(ch){
+    if(!ch||S.signedIn()||!ch.your_slot){after.innerHTML='';return;}
+    after.innerHTML='<div class="sec"><div class="card save"><div class="eyebrow">Save your record</div>'
+      +'<p style="margin:0;color:var(--dim);font-size:14px">Create a free EdgeDesk account to keep your</p>'
+      +'<ul><li>Head-to-Head record</li><li>game rating</li><li>streak</li><li>group standings</li></ul>'
+      +'<div class="btn-row"><a class="btn" id="saveBtn" href="#">Save my record</a></div>'
+      +'<div class="ftp" style="margin-top:10px">Your result is kept on this device until you do.</div>'
+      +'</div></div>';
+    var s=$('saveBtn');
+    s.href=G.withAttribution('/app.html',{intent:'save_games_record'})+'#account';
+    s.addEventListener('click',function(){
+      G.track('signup_from_h2h',{game_type:'h2h',mode:ch.mode,game_id:ch.canonical_game_id});
+    });
+  }
+
+  /* ── boot ──────────────────────────────────────────────────────────────── */
+
+  function load(){
+    if(!TOKEN){
+      G.artifact().then(function(a){ART=a;POOL=a.challenges;renderCreate();})
+        .catch(function(){backendDown('The challenge board could not be loaded. Check your connection and try again.');});
+      return;
+    }
+    Promise.all([
+      G.artifact().catch(function(){return null;}),
+      S.viewChallenge(TOKEN)
+    ]).then(function(r){
+      ART=r[0];POOL=(r[0]&&r[0].challenges)||[];
+      var res=r[1];
+      if(!res.ok){
+        /* a token nobody issued is the player's problem to hear about; an
+           undeployed function is ours — and the two must not be confused */
+        var gone=res.error==='P0002'||/no such challenge/i.test(String(res.message||''));
+        backendDown(gone
+          ? 'This challenge could not be found. The link may be wrong, or it has expired.'
+          : (res.error==='not_configured'||res.status===404)
+            ? 'Head-to-Head needs its database applied (supabase/games_social.sql). '
+              +'Price It and Pick 5 are unaffected.'
+            : humanError(res.message,'This challenge could not be loaded. Check your connection and try again.'));
+        return;
+      }
+      if(!res.data){backendDown('This challenge could not be found. The link may be wrong, or it has expired.');return;}
+      renderChallenge(res.data);
+      renderAfter(res.data);
+    });
+  }
+  READY.then(load, load);
+})();
+</script>
+</body>
+</html>

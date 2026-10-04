@@ -1,0 +1,397 @@
+{
+ "schema": "edgedesk_props_sources_v1",
+ "source": "sheets 01_Coverage, 02_Sources, 10_CFB_NFL_Bridge",
+ "sources": [
+  {
+   "source": "nflverse",
+   "league": "NFL",
+   "data": "Player stats, PBP, rosters, schedules, players",
+   "coverage": "1999+",
+   "access": "Public data releases",
+   "license_note": "CC BY 4.0 for most nflverse data; verify dataset-specific notes",
+   "url": "https://nflverse.nflverse.com/",
+   "role": "PRIMARY"
+  },
+  {
+   "source": "nflreadr player stats",
+   "league": "NFL",
+   "data": "Weekly player stats",
+   "coverage": "1999+",
+   "access": "Season-partitioned releases",
+   "license_note": "nflverse license applies",
+   "url": "https://nflreadr.nflverse.com/reference/load_player_stats",
+   "role": "PRIMARY"
+  },
+  {
+   "source": "nflreadr PBP",
+   "league": "NFL",
+   "data": "Play-by-play",
+   "coverage": "1999+",
+   "access": "Season-partitioned releases",
+   "license_note": "nflverse license applies",
+   "url": "https://nflreadr.nflverse.com/reference/load_pbp",
+   "role": "PRIMARY"
+  },
+  {
+   "source": "SportsDataverse / cfbfastR",
+   "league": "CFB",
+   "data": "PBP, schedules, player box, rosters, advanced stats",
+   "coverage": "2004+ varies by family",
+   "access": "GitHub release assets / package loaders",
+   "license_note": "SportsDataverse release store is CC BY 4.0; upstream-source terms still matter",
+   "url": "https://cfbfastr.sportsdataverse.org/",
+   "role": "PRIMARY"
+  },
+  {
+   "source": "CollegeFootballData",
+   "league": "CFB",
+   "data": "Games, players, recruiting, ratings, analytics",
+   "coverage": "Varies by endpoint",
+   "access": "Bearer API",
+   "license_note": "Check current API terms and access tier",
+   "url": "https://api.collegefootballdata.com/",
+   "role": "ENRICH"
+  },
+  {
+   "source": "The Odds API",
+   "league": "BOTH",
+   "data": "Observed sportsbook odds, player props, historical snapshots",
+   "coverage": "Props history from 2023-05-03",
+   "access": "Paid historical API",
+   "license_note": "Commercial API terms",
+   "url": "https://the-odds-api.com/historical-odds-data/",
+   "role": "PRIMARY MARKET"
+  },
+  {
+   "source": "SportsGameOdds",
+   "league": "BOTH",
+   "data": "Player props, per-book open/close, historical odds",
+   "coverage": "Availability varies by league/tier",
+   "access": "Commercial REST API",
+   "license_note": "Commercial API terms",
+   "url": "https://sportsgameodds.com/use-cases/historical-odds-data-api",
+   "role": "SECONDARY MARKET"
+  },
+  {
+   "source": "Open-Meteo / weather archive",
+   "league": "BOTH",
+   "data": "Weather observations / historical forecast context",
+   "coverage": "Historical",
+   "access": "REST",
+   "license_note": "Check attribution/terms for deployed usage",
+   "url": "https://open-meteo.com/",
+   "role": "ENRICH"
+  }
+ ],
+ "coverage": [
+  {
+   "league": "NFL",
+   "family": "Player game stats",
+   "start": 2011,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "nflverse weekly player stats + PBP",
+   "lineage": "Observed",
+   "note": "Use full window for outcome/distribution models"
+  },
+  {
+   "league": "NFL",
+   "family": "Play-by-play",
+   "start": 2011,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "nflverse PBP",
+   "lineage": "Observed",
+   "note": "1999+ exists; 2011 chosen to keep era/relevance balance"
+  },
+  {
+   "league": "NFL",
+   "family": "Rosters / player IDs",
+   "start": 2011,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "nflverse players + rosters",
+   "lineage": "Observed",
+   "note": "GSIS primary identity; retain ESPN/PFR IDs when present"
+  },
+  {
+   "league": "NFL",
+   "family": "Snap / participation",
+   "start": 2012,
+   "end": 2026,
+   "tier": "ENRICH",
+   "primary_source": "nflverse / source-specific snap data",
+   "lineage": "Observed",
+   "note": "Coverage varies; never silently impute as observed"
+  },
+  {
+   "league": "NFL",
+   "family": "Next Gen / tracking-derived",
+   "start": 2016,
+   "end": 2026,
+   "tier": "ENRICH",
+   "primary_source": "nflverse NGS",
+   "lineage": "Observed",
+   "note": "Use only when available; model must tolerate missing history"
+  },
+  {
+   "league": "NFL",
+   "family": "Sportsbook player props",
+   "start": 2023,
+   "end": 2026,
+   "tier": "MARKET",
+   "primary_source": "The Odds API historical event odds",
+   "lineage": "Observed",
+   "note": "Additional markets including player props available from 2023-05-03"
+  },
+  {
+   "league": "CFB",
+   "family": "Player game stats",
+   "start": 2014,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "SportsDataverse / cfbfastR player box + PBP",
+   "lineage": "Observed",
+   "note": "Primary modeling window"
+  },
+  {
+   "league": "CFB",
+   "family": "Play-by-play",
+   "start": 2014,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "cfbfastR classic or ESPN-derived PBP",
+   "lineage": "Observed",
+   "note": "Classic FBS PBP 2014+; ESPN-derived history extends earlier"
+  },
+  {
+   "league": "CFB",
+   "family": "Deep PBP backfill",
+   "start": 2004,
+   "end": 2013,
+   "tier": "OPTIONAL",
+   "primary_source": "SportsDataverse ESPN-derived CFB PBP",
+   "lineage": "Observed",
+   "note": "Useful for research; do not force into core model if feature definitions drift"
+  },
+  {
+   "league": "CFB",
+   "family": "Rosters / player IDs",
+   "start": 2014,
+   "end": 2026,
+   "tier": "CORE",
+   "primary_source": "SportsDataverse ESPN CFB rosters",
+   "lineage": "Observed",
+   "note": "Needed for player identity and college-to-NFL bridge"
+  },
+  {
+   "league": "CFB",
+   "family": "Recruiting / talent context",
+   "start": 2014,
+   "end": 2026,
+   "tier": "ENRICH",
+   "primary_source": "CFBD / cfbfastR recruiting + team talent",
+   "lineage": "Observed",
+   "note": "Point-in-time season context only"
+  },
+  {
+   "league": "CFB",
+   "family": "Sportsbook player props",
+   "start": 2023,
+   "end": 2026,
+   "tier": "MARKET",
+   "primary_source": "The Odds API historical event odds",
+   "lineage": "Observed",
+   "note": "Player-prop history starts 2023-05-03 in this provider"
+  },
+  {
+   "league": "BOTH",
+   "family": "Game lines / totals",
+   "start": 2020,
+   "end": 2026,
+   "tier": "MARKET",
+   "primary_source": "The Odds API / SportsGameOdds",
+   "lineage": "Observed",
+   "note": "Use team total/spread context; earlier history can come from sport-specific public data"
+  },
+  {
+   "league": "BOTH",
+   "family": "Weather",
+   "start": 2011,
+   "end": 2026,
+   "tier": "ENRICH",
+   "primary_source": "Historical weather provider / Open-Meteo archive",
+   "lineage": "Observed",
+   "note": "Join by venue coordinates and kickoff; freeze pregame forecast for live pipeline"
+  },
+  {
+   "league": "BOTH",
+   "family": "Synthetic/reconstructed prop lines",
+   "start": 2011,
+   "end": 2022,
+   "tier": "RESEARCH ONLY",
+   "primary_source": "Model-derived",
+   "lineage": "Reconstructed",
+   "note": "NEVER mix with observed sportsbook lines; keep separate lineage flag"
+  }
+ ],
+ "identity_steps": [
+  {
+   "step": "Step 1",
+   "method": "Exact provider ID match",
+   "when": "Use when a source already exposes crosswalkable IDs",
+   "confidence": "1.00",
+   "disposition": "AUTO"
+  },
+  {
+   "step": "Step 2",
+   "method": "Normalized name + college + draft year",
+   "when": "Strong bridge for drafted players",
+   "confidence": "0.98",
+   "disposition": "AUTO"
+  },
+  {
+   "step": "Step 3",
+   "method": "Normalized name + college + position + birth/age proxy",
+   "when": "Use when draft metadata absent",
+   "confidence": "0.94",
+   "disposition": "AUTO + REVIEW"
+  },
+  {
+   "step": "Step 4",
+   "method": "Name + team season adjacency + roster evidence",
+   "when": "UDFA / transfers / aliases",
+   "confidence": "0.90",
+   "disposition": "REVIEW"
+  },
+  {
+   "step": "Step 5",
+   "method": "Manual override table",
+   "when": "Ambiguous names, suffixes, transfers, duplicate names",
+   "confidence": "1.00 after review",
+   "disposition": "MANUAL"
+  }
+ ],
+ "serving_view": [
+  {
+   "view": "v_player_props_board",
+   "column": "league",
+   "type": "text",
+   "purpose": "Filter / display"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "game_id",
+   "type": "text",
+   "purpose": "Join to matchup"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "player_id",
+   "type": "text",
+   "purpose": "Player link"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "player_name",
+   "type": "text",
+   "purpose": "Display"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "position",
+   "type": "text",
+   "purpose": "Display/filter"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "market_key",
+   "type": "text",
+   "purpose": "Canonical prop"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "sportsbook",
+   "type": "text",
+   "purpose": "Best book or quote source"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "line",
+   "type": "numeric",
+   "purpose": "Current/best line"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "price",
+   "type": "int",
+   "purpose": "American odds"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "model_mean",
+   "type": "numeric",
+   "purpose": "Projected mean/median depending market"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "model_over_prob",
+   "type": "numeric",
+   "purpose": "Model P(over)"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "market_no_vig_over_prob",
+   "type": "numeric",
+   "purpose": "Consensus market P(over)"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "edge_prob",
+   "type": "numeric",
+   "purpose": "Model minus market probability"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "expected_value_pct",
+   "type": "numeric",
+   "purpose": "Expected ROI at quoted price"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "fair_price",
+   "type": "int",
+   "purpose": "Model fair American price"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "confidence",
+   "type": "numeric",
+   "purpose": "Calibrated 0-1 model confidence"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "data_quality",
+   "type": "numeric",
+   "purpose": "Input quality score"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "line_move",
+   "type": "numeric",
+   "purpose": "Open-to-current move"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "book_count",
+   "type": "int",
+   "purpose": "Market depth"
+  },
+  {
+   "view": "v_player_props_board",
+   "column": "updated_at",
+   "type": "timestamptz",
+   "purpose": "Freshness"
+  }
+ ]
+}

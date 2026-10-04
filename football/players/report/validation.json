@@ -1,0 +1,218 @@
+{
+ "schema": "edgedesk_player_validation_v1",
+ "generated_at": "2026-09-04T12:30:20.334Z",
+ "config_version": {
+  "player_rating": "player_rating_v1",
+  "scheme_matchup": "scheme_matchup_v1",
+  "simulation": "simulation_v1",
+  "run_gate": "run_defence_gate_v1"
+ },
+ "seasons": [
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "tune_seasons": [
+  2022,
+  2023
+ ],
+ "holdout_seasons": [
+  2024,
+  2025
+ ],
+ "games_replayed": 3132,
+ "games_scored": 3132,
+ "leakage_controls": [
+  "player ratings for a game in season Y week W are rebuilt from plays in seasons < Y plus season Y weeks < W, and the rebuild is real rather than a filter over finished ratings",
+  "the baseline is the Power 4 rating recursion replayed cold in kickoff order: every game predicted before it is absorbed",
+  "the scalars are fitted on a tune window and scored on a holdout window the fit never saw",
+  "the market is never an input to any model number in this file; it is a benchmark column"
+ ],
+ "arms": {
+  "baseline": {
+   "n": 1606,
+   "spread_mae": 12.826,
+   "brier": 0.1882,
+   "ats_vs_close": 0.5115,
+   "ats_n": 436
+  },
+  "recruiting": {
+   "ran": false,
+   "reason": "no recruiting feed is wired in (see recruiting_adapter.js). The \"baseline + recruiting\" arm the spec asks for cannot be run, and running it with fabricated or placebo pedigree would be worse than not running it."
+  },
+  "player": {
+   "n": 1606,
+   "spread_mae": 12.808,
+   "brier": 0.1877,
+   "ats_vs_close": 0.5092,
+   "ats_n": 436
+  },
+  "player_scheme": {
+   "n": 1606,
+   "spread_mae": 12.813,
+   "brier": 0.1877,
+   "ats_vs_close": 0.5138,
+   "ats_n": 436
+  },
+  "market": {
+   "n": 444,
+   "spread_mae": 11.77,
+   "brier": null,
+   "ats_vs_close": null,
+   "ats_n": 0
+  }
+ },
+ "fits": {
+  "player": {
+   "slope": 0.294782625835184,
+   "intercept": -0.7501564136466524,
+   "n": 1526,
+   "r2": 0.0021632207061198856
+  },
+  "scheme": {
+   "slope": 1.4367256122541807,
+   "intercept": -0.7645236697691946,
+   "n": 1526,
+   "r2": 0.0005265869095633305
+  }
+ },
+ "paired_tests": {
+  "player": {
+   "n": 1606,
+   "mean_diff": 0.0171,
+   "sd": 0.8179,
+   "t": 0.8372,
+   "p": 0.4025,
+   "basis": "paired difference of per-game absolute error, second arm minus first; positive mean_diff means the second arm is closer to the truth"
+  },
+  "scheme": {
+   "n": 1606,
+   "mean_diff": -0.004,
+   "sd": 0.422,
+   "t": -0.3837,
+   "p": 0.7012,
+   "basis": "paired difference of per-game absolute error, second arm minus first; positive mean_diff means the second arm is closer to the truth"
+  }
+ },
+ "per_season": {
+  "player": [
+   {
+    "season": 2024,
+    "n": 798,
+    "mae_before": 13.032,
+    "mae_after": 13.058,
+    "improves": false
+   },
+   {
+    "season": 2025,
+    "n": 808,
+    "mae_before": 12.622,
+    "mae_after": 12.562,
+    "improves": true
+   }
+  ],
+  "scheme": [
+   {
+    "season": 2024,
+    "n": 798,
+    "mae_before": 13.058,
+    "mae_after": 13.055,
+    "improves": true
+   },
+   {
+    "season": 2025,
+    "n": 808,
+    "mae_before": 12.562,
+    "mae_after": 12.573,
+    "improves": false
+   }
+  ]
+ },
+ "bar": "a layer moves a line only if it lowers holdout MAE, survives a paired test at p < 0.05, AND is better in every holdout season separately",
+ "calibration": {
+  "player_points_per_unit": {
+   "value": 0.2948,
+   "points_applied": false,
+   "tune_seasons": [
+    2022,
+    2023
+   ],
+   "holdout_seasons": [
+    2024,
+    2025
+   ],
+   "tune_n": 1526,
+   "tune_r2": 0.0022,
+   "holdout_mae_baseline": 12.826,
+   "holdout_mae_with": 12.808,
+   "paired_test": {
+    "n": 1606,
+    "mean_diff": 0.0171,
+    "sd": 0.8179,
+    "t": 0.8372,
+    "p": 0.4025,
+    "basis": "paired difference of per-game absolute error, second arm minus first; positive mean_diff means the second arm is closer to the truth"
+   },
+   "per_season": [
+    {
+     "season": 2024,
+     "n": 798,
+     "mae_before": 13.032,
+     "mae_after": 13.058,
+     "improves": false
+    },
+    {
+     "season": 2025,
+     "n": 808,
+     "mae_before": 12.622,
+     "mae_after": 12.562,
+     "improves": true
+    }
+   ],
+   "basis": "points of spread per matchup point of team player-quality gap, fitted by least squares on the tune window’s residual from the Power 4 rating core and scored on a holdout the fit never saw",
+   "bar": "lower holdout MAE, a paired test at p < 0.05 over the per-game absolute errors, AND a lower MAE in every holdout season separately",
+   "reason": "the layer did not clear the bar (pooled MAE fell by only 0.018 points; paired p = 0.403; it is worse in 2024), so this scalar moves NO line. The gap is still published, because knowing which team is better on player quality is useful research even when it does not price the game better than the rating core already does."
+  },
+  "scheme_points_per_unit": {
+   "value": 1.4367,
+   "points_applied": false,
+   "tune_n": 1526,
+   "tune_r2": 0.0005,
+   "holdout_mae_with_player": 12.808,
+   "holdout_mae_with_scheme": 12.813,
+   "paired_test": {
+    "n": 1606,
+    "mean_diff": -0.004,
+    "sd": 0.422,
+    "t": -0.3837,
+    "p": 0.7012,
+    "basis": "paired difference of per-game absolute error, second arm minus first; positive mean_diff means the second arm is closer to the truth"
+   },
+   "per_season": [
+    {
+     "season": 2024,
+     "n": 798,
+     "mae_before": 13.058,
+     "mae_after": 13.055,
+     "improves": true
+    },
+    {
+     "season": 2025,
+     "n": 808,
+     "mae_before": 12.562,
+     "mae_after": 12.573,
+     "improves": false
+    }
+   ],
+   "basis": "points of spread per matchup point of style-interaction gap, fitted on the residual left after the player scalar",
+   "bar": "the same three-part bar as the player scalar, applied to the residual the player scalar leaves behind",
+   "reason": "the scheme layer did not clear the bar (pooled holdout MAE did not fall; paired p = 0.701; it is worse in 2025), so it moves NO line and is published as research context only."
+  }
+ },
+ "verdict": {
+  "player_quality_improves_out_of_sample": false,
+  "scheme_improves_out_of_sample": false,
+  "statement": "the player-quality layer did NOT improve holdout spread MAE. It ships with points_applied:false: it is published as research, it moves no projection, and the Football board’s existing numbers are unchanged by it."
+ }
+}

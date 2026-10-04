@@ -1,0 +1,559 @@
+# EdgeDesk Football — the build.
+#
+# ONE workflow, in dependency order, because the layers genuinely depend on each
+# other and three workflows racing each other to commit the same tree is how you
+# get a Tuesday where the rankings were built on last week's players.
+#
+#   FINAL-game check  ->  box enrichment  ->  player ratings (+ the v2
+#   candidate)  ->  national rankings + ETSR + special teams  ->  weekly
+#   snapshot + history  ->  health report  ->  tests  ->  one commit
+#
+# NO EDGE FUNCTION IS INVOLVED IN ANY OF IT. Every number is computed here and
+# committed as an artifact; the browser reads the artifact and computes nothing.
+#
+# THREE WAYS IT RUNS, which is what "automatic refresh" means here:
+#
+#   1  AFTER COMPLETED-GAME INGESTION. In season it wakes every two hours and
+#      asks the cheap question first — football/rankings/refresh.js compares the
+#      DIGEST of the schedule feed's FINAL games against the digest the
+#      published board recorded. Same set of games, recent build: it stops,
+#      having spent one CSV. A game has gone final, or a result was corrected:
+#      it rebuilds. So a Saturday result is on the board within a couple of
+#      hours of the feed publishing it, without a rebuild every twenty minutes.
+#
+#   2  THE DAILY SAFETY REBUILD. Once a morning the check is skipped entirely
+#      and the whole thing runs regardless, so a stuck feed shows up as a build
+#      that ran and found nothing rather than as a board nobody looked at.
+#
+#   3  MANUALLY, with workflow_dispatch — including a full-season BACKFILL that
+#      rebuilds every completed week in order so the weekly history exists.
+#
+# WHAT THIS JOB DELIBERATELY DOES NOT DO: it does not run the feature
+# walk-forward and it does not recalibrate a weight. Refitting on a schedule is
+# precisely how a research layer starts fitting the recent past without anybody
+# deciding to. Promotion is a human decision made by running
+# `npm run cfb:validate` and committing what it writes.
+name: Football weekly build
+# manual trigger: run CFB injury identity browser patch
+
+on:
+  workflow_dispatch:
+    inputs:
+      season:
+        description: 'Season year (default: current, Jan/Feb -> prior year)'
+        required: false
+        default: ''
+      seasons:
+        description: 'How many seasons of history to read (default 4)'
+        required: false
+        default: ''
+      allow_anomalies:
+        description: 'Publish even if severe anomalies are found (use deliberately)'
+        type: boolean
+        required: false
+        default: false
+      force:
+        description: 'Rebuild even if no new FINAL game has been played'
+        type: boolean
+        required: false
+        default: true
+      backfill:
+        description: 'Rebuild EVERY completed week of the season in order, so the weekly history exists'
+        type: boolean
+        required: false
+        default: false
+      rewrite_history:
+        description: 'Allow the backfill to overwrite snapshots for weeks that are already finished'
+        type: boolean
+        required: false
+        default: false
+  # IN SEASON THE BOARD CHASES THE GAMES. Every two hours from August through
+  # January the FINAL-game check runs and the rest of the job runs only if the
+  # feed has moved; at 09:40 the check is skipped and the safety rebuild runs
+  # whatever happened. Out of season the only thing that moves is the roster,
+  # so Tuesday is enough.
+  schedule:
+    - cron: '40 9 * 8-12,1 *'      # the daily safety rebuild, in season
+    - cron: '20 */2 * 8-12,1 *'    # the FINAL-game chase, in season
+    - cron: '40 9 * 2-7 2'         # Tuesdays only, February through July
+  push:
+    branches: [main]
+    paths:
+      - 'football/players/config.js'
+      - 'football/players/epir.js'
+      - 'football/players/units.js'
+      - 'football/players/scheme.js'
+      - 'football/players/build_players.js'
+      - 'football/players/run_build.js'
+      - 'football/players/*.test.js'
+      - 'football/availability/**'
+      - 'football/matchup/inputs.js'
+      - 'football/matchup/contract.js'
+      - 'football/offfield/reader.js'
+      - 'football/matchup/*.test.js'
+      - 'football/cfb_p4/engine.js'
+      - 'football/cfb_p4/canonical_rating.test.js'
+      - 'football/cfb_p4/injury_pricing.test.js'
+      - 'football/fbs/build_coverage.js'
+      - 'lib/cfb_reliability.js'
+      - 'lib/game_evidence.js'
+      - 'lib/market_consensus.js'
+      - 'football/enrichment/**/*.js'
+      - 'tools/football/patch_cfb_fixture_availability.js'
+      - 'tools/football/patch_cfb_injury_identity.js'
+      - 'tools/football/patch_cfb_canonical_rating.js'
+      - 'tools/football/patch_cfb_schedule_rating.js'
+      - 'football/rankings/engine_efficiency.js'
+      - 'football/fbs/efficiency_replay.test.js'
+      - 'package.json'
+      - 'football/data/**'
+      - 'football/rankings/config.js'
+      - 'football/rankings/performance.js'
+      - 'football/rankings/engine_efficiency.js'
+      - 'football/rankings/special_teams.js'
+      - 'football/rankings/history.js'
+      - 'football/rankings/talent.js'
+      - 'football/rankings/etsr.js'
+      - 'football/rankings/build_rankings.js'
+      - 'football/rankings/backfill.js'
+      - 'football/rankings/refresh.js'
+      - 'football/rankings/*.test.js'
+      - 'football/rating/sync_rankings.js'
+      - 'football/rating/sync_rankings.test.js'
+      - 'tools/football/patch_cfb_engine_efficiency.js'
+      - 'tools/football/patch_coaching_program_ui.js'
+      - 'tools/football/patch_nfl_coaching_staff_ui.js'
+      - '.github/workflows/football-weekly-build.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: football-weekly-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # pyarrow reads the ONE format the season-in-progress box score is
+      # published in. Everything else in this repository runs on a bare Node
+      # install; this is the single dependency and it has a fallback.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install the parquet reader
+        run: pip install --quiet pyarrow
+
+      # Cache the raw feeds between runs: the play tables are ~55 MB a season
+      # and they do not change once a season is over. THE SEASON IN PROGRESS IS
+      # NOT CACHED ACROSS RUNS — football/data/feed_cache.js refuses to serve it
+      # from a cache older than half an hour, because a rebuild that reads last
+      # week's copy of this week's football goes green, commits nothing, and
+      # freezes the rankings.
+      - name: Cache raw football feeds
+        uses: actions/cache@v4
+        with:
+          path: .cache/football
+          key: football-feeds-${{ github.run_id }}
+          restore-keys: |
+            football-feeds-
+
+      # ---------------------------------------------------------------
+      # 1. IS THERE FOOTBALL THE BOARD HAS NOT READ YET?
+      # One schedule CSV. Everything after this step is skipped when the
+      # answer is no — except on the daily safety cron, a push, or a manual
+      # run with force, where the question is not asked at all.
+      # ---------------------------------------------------------------
+      - name: Decide whether this run is forced
+        id: mode
+        run: |
+          FORCED=false
+          if [ "${{ github.event_name }}" != "schedule" ]; then FORCED=true; fi
+          if [ "${{ github.event.schedule }}" = "40 9 * 8-12,1 *" ]; then FORCED=true; fi
+          if [ "${{ github.event.schedule }}" = "40 9 * 2-7 2" ]; then FORCED=true; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.force }}" != "true" ]; then FORCED=false; fi
+          echo "forced=$FORCED" >> "$GITHUB_OUTPUT"
+          echo "this run is $([ "$FORCED" = "true" ] && echo 'FORCED (safety rebuild / push / manual)' || echo 'GATED on new FINAL games')"
+
+      - name: Check for newly FINAL games
+        id: refresh
+        if: steps.mode.outputs.forced != 'true'
+        run: |
+          set +e
+          node football/rankings/refresh.js --cache .cache/football \
+            ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          CODE=$?
+          set -e
+          if [ "$CODE" = "10" ]; then echo "nothing new — this run stops here"; exit 0; fi
+          if [ "$CODE" != "0" ]; then echo "the check itself failed; rebuilding rather than guessing"; echo "rebuild=true" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Should the rest of this job run?
+        id: go
+        run: |
+          if [ "${{ steps.mode.outputs.forced }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo 'forced run'
+          elif [ "${{ steps.refresh.outputs.rebuild }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; echo "rebuilding: ${{ steps.refresh.outputs.reason }}"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"; echo "up to date: ${{ steps.refresh.outputs.reason }}"
+          fi
+
+      # Materialise the canonical ETSR compatibility view BEFORE the preflight.
+      # This adapter fits nothing and changes no model weight; it only makes the
+      # legacy football/rating/current.json contract describe the rankings file
+      # already on disk. Without this bootstrap, the old rating file can fail
+      # the new contract before the workflow reaches the later publication step.
+      - name: Materialize canonical power rating for preflight
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node football/rating/sync_rankings.js
+          node football/rating/sync_rankings.test.js
+
+      # app.html is a checked-in legacy single-file client. Apply the same
+      # fixture-scoped availability contract before any other CFB browser patch.
+      - name: Patch browser fixture-scoped CFB availability
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_fixture_availability.js
+
+      - name: Patch browser CFB injury identity
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_injury_identity.js
+
+      # Keep the browser on the same canonical neutral-field rating backbone.
+      - name: Patch browser canonical CFB rating
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_canonical_rating.js
+
+      - name: Patch browser canonical schedule ratings
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_schedule_rating.js
+
+      # The suites gate the write. A build that would commit a dataset its own
+      # rules reject has to fail BEFORE it writes anything.
+      - name: Patch legacy CFB browser efficiency
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_cfb_engine_efficiency.js
+
+      - name: Patch Coaching / Program rankings UI
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_coaching_program_ui.js
+
+      - name: Patch NFL Coaching / Staff UI
+        if: steps.go.outputs.run == 'true'
+        run: node tools/football/patch_nfl_coaching_staff_ui.js
+
+      - name: Suites (before)
+        if: steps.go.outputs.run == 'true'
+        run: npm run cfb:test
+
+      - name: Box-score enrichment
+        if: steps.go.outputs.run == 'true'
+        run: node football/data/build_box.js --seasons 4 --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      - name: Starter context for player-rating input
+        if: steps.go.outputs.run == 'true'
+        run: node football/starters/build_starters.js --sport cfb
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Player ratings (v1 canonical, v2 candidate)
+        if: steps.go.outputs.run == 'true'
+        run: node --max-old-space-size=6144 football/players/build_players.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+
+      # Rankings now read the head-coach continuity artifact. Build it first so
+      # this weekly run never grades staff from last week's committed file.
+      # The source carries HC only; a fetch/read failure degrades staff evidence
+      # to unavailable instead of blocking the entire rankings build.
+      - name: Coaching continuity for rankings
+        if: steps.go.outputs.run == 'true'
+        run: node football/coaching/build_coaching.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: National rankings, special teams and ETSR
+        if: steps.go.outputs.run == 'true' && github.event.inputs.backfill != 'true'
+        run: node --max-old-space-size=6144 football/rankings/build_rankings.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+          ${{ github.event.inputs.allow_anomalies == 'true' && '--allow-anomalies' || '' }}
+
+      # The backfill walks every completed week in order and leaves the board
+      # standing at the latest one — the state a weekly job would have reached
+      # had it run every week. Manual only: it is minutes of work and it writes
+      # history, so nothing schedules it.
+      - name: Season backfill (every completed week, in order)
+        if: steps.go.outputs.run == 'true' && github.event.inputs.backfill == 'true'
+        run: node football/rankings/backfill.js --cache .cache/football
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          ${{ github.event.inputs.seasons && format('--seasons {0}', github.event.inputs.seasons) || '' }}
+          ${{ github.event.inputs.rewrite_history == 'true' && '--rewrite-history' || '' }}
+
+      # THE INPUTS THE COVERAGE GATE NOW JOINS. build_coverage.js used to send
+      # the engine a request with every optional field null; it now sends the
+      # same request the terminal sends, and reads the starter context and the
+      # team profiles to do it. Both are rebuilt here so a weekly run is
+      # self-consistent rather than publishing a card against last week's
+      # starters. They are cheap against the cache this job already warms, and
+      # a failure is not fatal: the assembly degrades to a declared gap.
+      # THE APP'S POWER-RATING ENDPOINT IS NOW A VIEW OF ETSR, NOT A SECOND
+      # MODEL. This keeps the legacy app contract while making the national
+      # rankings pipeline the one source of truth for team strength.
+      - name: Publish canonical FBS power rating
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node football/rating/sync_rankings.js
+          node football/rating/sync_rankings.test.js
+
+      - name: Starter context
+        if: steps.go.outputs.run == 'true'
+        run: node football/starters/build_starters.js --sport cfb
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Team-game profiles
+        if: steps.go.outputs.run == 'true'
+        run: node football/matchup/build_profiles.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # TEAM RECRUITING TALENT. The per-player ratings are still subscription
+      # data; the per-TEAM composite is public and keyless in the same mirror
+      # this job already reads for play attribution, and it fills a contract
+      # field that had been reported as a permanent gap. Research only: no
+      # coefficient is fitted against it, so it moves no point.
+      - name: Team recruiting talent
+        if: steps.go.outputs.run == 'true'
+        run: node football/players/build_team_talent.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # WHY THE PRODUCTION-ATTRIBUTION COUNT IS WHAT IT IS. It separates the
+      # populations the single published number was hiding — a feed that does
+      # not cover a position, a player who has not played, an identity the
+      # roster does not carry, and an actual broken join — so a regression in
+      # the last of those is visible instead of being absorbed into the first
+      # three. It is a diagnostic and never gates the build.
+      - name: Attribution audit
+        if: steps.go.outputs.run == 'true'
+        run: node football/players/attribution_audit.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # THE FBS COVERAGE GATE. The board claims to carry every game involving
+      # an active FBS team; this is the job allowed to say that is no longer
+      # true. It rebuilds the universe from the season's own schedule feed,
+      # replays the state the browser replays, and fails on a real coverage
+      # regression — an unmapped program, a conference that vanished, an
+      # eligible game dropped, a duplicate, an FCS opponent quietly graded.
+      # It also writes the machine-readable diagnostic the site links to.
+      # EVERY STADIUM THE SLATE NEEDS, AND WHO IS COACHING. Both are read
+      # from the same public mirror this job already reads for schedules and
+      # rosters, and both fill contract fields that were published as
+      # permanent gaps. The venue build is what lets the away side of an
+      # FBS-vs-FCS game have a travel distance at all; the coaching build
+      # answers the head-coach half of the staff question and refuses the
+      # coordinator half, which that feed does not carry.
+      - name: Stadium geography
+        run: node football/venues/build_venues.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Matchup metrics for the research desk
+        run: node tools/football/build_matchup_metrics.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: NFL feeds for the identity and pricing builds (games, team-week, player-week)
+        run: node tools/football/fetch_nfl_feeds.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      - name: Team identity profiles for the research desk
+        run: node tools/football/build_team_identity.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+        continue-on-error: true
+
+      # Slice 4: the closing-line archive and the pricing validation the desk
+      # prices from. The validation replays twenty seasons of the NFL engine
+      # against the close (a few seconds once the team-week files are cached).
+      - name: Closing-line archive
+        run: node tools/football/build_lines_archive.js
+        continue-on-error: true
+
+      - name: Injury archive (official report, every season)
+        run: node tools/football/build_injury_archive.js
+        continue-on-error: true
+
+      - name: NFL stadium table verification
+        run: node tools/football/verify_nfl_stadiums.js
+        continue-on-error: true
+
+      - name: Pricing validation (NFL replay, CFB report copy)
+        run: node tools/football/validate_pricing.js && node tools/football/validate_pricing.js --sport cfb
+        continue-on-error: true
+
+      - name: CFB line archive with openers, and the movement validation
+        run: node tools/football/build_lines_archive.js --sport cfb && node tools/football/validate_movement.js --sport cfb && node tools/football/validate_movement.js --sport nfl
+        continue-on-error: true
+
+      # THE ENRICHMENT LAYER RUNS BEFORE RELIABILITY IS SCORED
+      # (football/enrichment/). The FCS bridge rates the FCS field on the
+      # engine's own scale and tests itself walk-forward against the shared
+      # floor; the evidence build reads every availability, quarterback and
+      # market provider, records each one's health, and writes one evidence
+      # package per game. Neither moves a projection. Neither may fail the
+      # build: a provider refusing is a recorded provider failure, and the
+      # coverage gate below scores from the contract alone (and says so) when
+      # there is no package.
+      - name: FCS rating bridge (shadow)
+        if: steps.go.outputs.run == 'true'
+        run: node football/enrichment/fcs/build_fcs.js
+        continue-on-error: true
+
+      - name: Enrichment evidence packages
+        if: steps.go.outputs.run == 'true'
+        run: node football/enrichment/build_enrichment.js
+        continue-on-error: true
+
+      - name: FBS coverage gate
+        if: steps.go.outputs.run == 'true'
+        run: node football/fbs/build_coverage.js
+          ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+
+      # WHERE EVERY MISSING CONFIDENCE POINT WENT, written beside the slate.
+      # The card publishes a percentage; this publishes the arithmetic behind
+      # it — every contract field, what it feeds, and the exact points it
+      # costs — so "73%" is auditable rather than asserted. It also fails
+      # loudly if the ledger stops adding up to 100.
+      - name: Confidence ledger
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node tools/football/confidence_ledger.js --json --out football/fbs/confidence.json \
+            ${{ github.event.inputs.season && format('--season {0}', github.event.inputs.season) || '' }}
+          node -e "
+            const r = require('./football/fbs/confidence.json');
+            const bad = r.summary.reconciliation_failures || [];
+            const dis = r.ledgers.reduce((n, l) => n + ((l.disagreements || []).length), 0);
+            console.log('[ledger] ' + r.summary.games + ' games · mean ' + r.summary.confidence.mean
+              + '% · median ' + r.summary.confidence.median + '% · lower decile ' + r.summary.confidence.p10 + '%');
+            if (bad.length) { console.error('[ledger] ' + bad.length + ' game(s) do not add to 100'); process.exit(1); }
+            if (dis) console.error('[ledger] ' + dis + ' contract/score disagreement(s) — the contract and the '
+              + 'weighted score describe the same game differently on those inputs');
+          "
+
+      # Re-run against what was actually written. The first pass proved the code
+      # is sound; this proves the DATA is.
+      - name: Suites (after)
+        if: steps.go.outputs.run == 'true'
+        run: npm run cfb:test
+
+      - name: Refuse to publish a wrong-shaped dataset
+        if: steps.go.outputs.run == 'true'
+        run: |
+          node -e "
+            const fail = s => { console.error('REFUSING TO COMMIT: ' + s); process.exit(1); };
+            const p = require('./football/players/current.json');
+            if (!(p.player_count > 8000)) fail('only ' + p.player_count + ' players');
+            if (Object.keys(p.teams).length < 100) fail('only ' + Object.keys(p.teams).length + ' teams in the player layer');
+            const r = require('./football/rankings/current.json');
+            if (r.schema !== 'edgedesk_national_rankings_v1') fail('unexpected rankings schema');
+            if (!(r.team_count > 120)) fail('only ' + r.team_count + ' teams ranked');
+            if (r.anomalies.severe > 0) fail(r.anomalies.severe + ' severe anomalies');
+            if (!r.performance_diagnostics.all_converged) fail('the opponent adjustment did not converge');
+            if (r.market.is_input !== false) fail('the market is marked as an input, which it must never be');
+            const fresh = r.data_freshness || {};
+            if (!(fresh.completed_games > 0) && r.week_ordinal > 0)
+              fail('the board says ' + r.week_label + ' but this build read no completed game — the feed is stale');
+            if (!fresh.completed_games_digest && r.week_ordinal > 0)
+              fail('the board carries no completed-game digest, so the refresh check cannot tell whether it is current');
+            const power = require('./football/rating/current.json');
+            if (power.source_schema !== 'edgedesk_national_rankings_v1')
+              fail('the app power-rating endpoint is not sourced from national ETSR');
+            if (power.team_count !== r.team_count)
+              fail('power-rating compatibility view has ' + power.team_count + ' teams, rankings has ' + r.team_count);
+            const powerByKey = Object.fromEntries(power.teams.map(t => [t.key, t]));
+            for (const [k, rt] of Object.entries(r.teams)) {
+              if (!powerByKey[k] || Math.abs(powerByKey[k].rating - rt.etsr) > 0.011)
+                fail('power-rating drift for ' + k + ': app ' + (powerByKey[k] && powerByKey[k].rating) + ' vs ETSR ' + rt.etsr);
+            }
+            const h = require('./football/rankings/health.json');
+            if (h.teams_processed !== h.fbs_teams_expected)
+              fail(h.teams_processed + ' of ' + h.fbs_teams_expected + ' FBS teams were processed');
+            if (!h.last_rankings_build) fail('the health report carries no build timestamp');
+            const hist = require('./football/rankings/history.json');
+            if (!hist.snapshots.length) fail('no weekly snapshot is on file');
+            const reg = require('./football/validation/feature-status.json');
+            const moved = reg.features.filter(f => f.may_move_lines);
+            const cov = require('./football/fbs/coverage.json');
+            if (!cov.ok) fail(cov.failures.length + ' FBS coverage check(s) failed: '
+              + cov.failures.map(f => f.name).join('; '));
+            if (!(cov.counts.fbs_teams > 120)) fail('only ' + cov.counts.fbs_teams + ' active FBS programs resolved');
+            if (!(cov.conferences.length >= 10)) fail('only ' + cov.conferences.length + ' conferences resolved');
+            console.log('     FBS coverage: ' + cov.counts.fbs_teams + ' programs, '
+              + cov.conferences.length + ' conferences, ' + cov.slate.total + ' games on the slate '
+              + JSON.stringify(cov.slate.by_group));
+            console.log('ok — ' + r.team_count + ' teams, ' + p.player_count + ' players, '
+              + r.season + ' ' + r.week_label + ', ' + moved.length + ' validated feature(s)');
+            console.log('     read ' + fresh.completed_games + ' completed games ('
+              + fresh.team_games_read + ' team-games), rated ' + fresh.teams_with_a_performance_rating
+              + ' teams on the play this season has produced so far');
+            console.log('     ratings: ' + Object.keys(h.ratings).map(k => h.ratings[k] + ' ' + k).join(', '));
+            console.log('     history: ' + hist.snapshots.map(s => s.week_label).join(' -> '));
+          "
+
+      - name: Commit
+        if: steps.go.outputs.run == 'true'
+        env:
+          # app.html is SOURCE that this job patches in place, not an artifact:
+          # on a rejected push the helper merges our patch onto the new tip
+          # instead of overwriting the file, so a pull request merged while this
+          # job ran is never reverted (tools/ci/push_generated.sh)
+          PUSH_MERGE_PATHS: app.html
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          # -A OVER THE PATHS, for the reason starter-context.yml and
+          # availability-sync.yml already say out loud: `git add a b c` stages
+          # NOTHING if any one path is missing, and a new artifact's first run
+          # is exactly when one is. This job regenerates the stadium geography
+          # and the coaching table; without them listed it rebuilt both every
+          # week and committed neither.
+          SEASON=$(node -p "require('./football/rankings/current.json').season")
+          WEEK=$(node -p "require('./football/rankings/current.json').week_label")
+          # AND THE PUSH RETRIES, because this repository pushes to main from
+          # several scheduled jobs and they overlap. This one raced the model
+          # health job, was rejected non-fast-forward, and failed the whole
+          # weekly build over a two-second overlap after every test had
+          # passed. The shared helper stages these paths (a missing one is
+          # skipped rather than aborting the add), commits, and on a rejected
+          # push rebuilds the commit on the remote tip -- no rebase, so a
+          # generated file both sides rewrote cannot leave unmerged paths.
+          bash tools/ci/push_generated.sh "${GITHUB_REF_NAME}" \
+            "football: ${SEASON} ${WEEK} ratings and rankings" -- \
+            football/players/current.json football/players/index.json \
+            football/players/params.js football/players/teams \
+            football/players/snapshots football/players/candidates \
+            football/data/box football/rankings/current.json football/rankings/engine_efficiency.json \
+            football/rankings/snapshots football/rankings/params.js \
+            football/rankings/history.json football/rankings/health.json \
+            football/rating/current.json app.html \
+            football/matchup/metrics.json \
+            football/fbs/coverage.json football/fbs/slate.json football/fbs/reliability.json \
+            football/enrichment football/validation/fcs_bridge_cfb.json \
+            football/starters football/matchup \
+            football/venues football/coaching \
+            football/pricing football/validation/key_numbers.json football/validation/pricing_nfl.json football/validation/pricing_cfb.json \
+            football/validation/feature-status-nfl.json football/venues/nfl_stadiums.verification.json \
+            football/validation/movement_nfl.json football/validation/movement_cfb.json \
+            app.html

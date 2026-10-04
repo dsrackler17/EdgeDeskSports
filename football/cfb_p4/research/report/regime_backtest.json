@@ -1,0 +1,562 @@
+{
+ "schema": "edgedesk_cfb_regime_backtest_v1",
+ "generated_at": "2026-09-30T20:26:42.291Z",
+ "engine_model_version": "edgedesk_cfb_p4_v1.0.0",
+ "data": {
+  "replay_from": 2004,
+  "fit_from": 2007,
+  "test_window": "2014-2025",
+  "games_projected": 13531,
+  "regime_history_rows": 2638,
+  "sources": [
+   "cfbfastR-data schedules",
+   "cfbfastR-cfb-data coach_tendencies (head coaches, 2005+)",
+   "cfbfastR-data rosters (athlete_id continuity)",
+   "cfbfastR-data player_stats (returning production, 2015+)",
+   "cfbfastR-data betting archive (closing spreads, diagnostics only)"
+  ]
+ },
+ "signal": {
+  "id": "cfb_regime_signal_v1",
+  "continuity_pct_max": 0.5,
+  "transfers_out_pct_min": 0.75,
+  "definition": "new head coach (tenure began this season) AND (returning roster share or returning production at or below the season FBS median, OR transfers out at or above the season 75th percentile); a coach change with no continuity measurement fires on the coach change alone"
+ },
+ "curve_family": "w_regime(g) = min(w_standard(g), w0 * exp(-lambda * g)); w0 = 1, lambda = 0 is the standard curve",
+ "objective": "mean absolute error of the engine fair margin against the final margin, on games involving a regime team",
+ "standard_curve": {
+  "0": 1,
+  "1": 1,
+  "2": 1,
+  "3": 1,
+  "4": 0.8,
+  "5": 0.8,
+  "6": 0.6,
+  "7": 0.6,
+  "8": 0.6,
+  "9": 0.6,
+  "10": 0.6,
+  "11": 0.6,
+  "12": 0.6,
+  "13": 0.6,
+  "14": 0.6,
+  "15": 0.6
+ },
+ "walk_forward": {
+  "by_season": [
+   {
+    "season": 2014,
+    "train_games": 995,
+    "test_games": 100,
+    "curve": {
+     "w0": 0.65,
+     "lambda": 0
+    },
+    "mae_standard": 12.796,
+    "mae_regime": 12.982,
+    "delta": 0.187,
+    "mean_abs_gap_to_close_standard": 3.764,
+    "mean_abs_gap_to_close_regime": 3.866,
+    "mae_close": 11.871
+   },
+   {
+    "season": 2015,
+    "train_games": 1095,
+    "test_games": 156,
+    "curve": {
+     "w0": 0.65,
+     "lambda": 0
+    },
+    "mae_standard": 13.683,
+    "mae_regime": 13.913,
+    "delta": 0.23,
+    "mean_abs_gap_to_close_standard": 3.922,
+    "mean_abs_gap_to_close_regime": 4.119,
+    "mae_close": 12.87
+   },
+   {
+    "season": 2016,
+    "train_games": 1251,
+    "test_games": 169,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 14.31,
+    "mae_regime": 14.325,
+    "delta": 0.015,
+    "mean_abs_gap_to_close_standard": 4.133,
+    "mean_abs_gap_to_close_regime": 4.078,
+    "mae_close": 13.572
+   },
+   {
+    "season": 2017,
+    "train_games": 1420,
+    "test_games": 162,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.536,
+    "mae_regime": 13.566,
+    "delta": 0.03,
+    "mean_abs_gap_to_close_standard": 4.315,
+    "mean_abs_gap_to_close_regime": 4.192,
+    "mae_close": 12.437
+   },
+   {
+    "season": 2018,
+    "train_games": 1582,
+    "test_games": 181,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.497,
+    "mae_regime": 12.471,
+    "delta": -0.026,
+    "mean_abs_gap_to_close_standard": 3.657,
+    "mean_abs_gap_to_close_regime": 3.622,
+    "mae_close": 12.133
+   },
+   {
+    "season": 2019,
+    "train_games": 1763,
+    "test_games": 198,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 14.978,
+    "mae_regime": 14.946,
+    "delta": -0.032,
+    "mean_abs_gap_to_close_standard": 4.151,
+    "mean_abs_gap_to_close_regime": 4.15,
+    "mae_close": 13.633
+   },
+   {
+    "season": 2020,
+    "train_games": 1961,
+    "test_games": 118,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.382,
+    "mae_regime": 12.126,
+    "delta": -0.256,
+    "mean_abs_gap_to_close_standard": 4.542,
+    "mean_abs_gap_to_close_regime": 4.51,
+    "mae_close": 12.78
+   },
+   {
+    "season": 2021,
+    "train_games": 2079,
+    "test_games": 162,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 14.593,
+    "mae_regime": 14.518,
+    "delta": -0.075,
+    "mean_abs_gap_to_close_standard": 4.056,
+    "mean_abs_gap_to_close_regime": 4.263,
+    "mae_close": 13.475
+   },
+   {
+    "season": 2022,
+    "train_games": 2241,
+    "test_games": 227,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.047,
+    "mae_regime": 12.947,
+    "delta": -0.1,
+    "mean_abs_gap_to_close_standard": 4.778,
+    "mean_abs_gap_to_close_regime": 4.938,
+    "mae_close": 12.565
+   },
+   {
+    "season": 2023,
+    "train_games": 2468,
+    "test_games": 193,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.781,
+    "mae_regime": 13.783,
+    "delta": 0.002,
+    "mean_abs_gap_to_close_standard": 4.445,
+    "mean_abs_gap_to_close_regime": 4.231,
+    "mae_close": 12.575
+   },
+   {
+    "season": 2024,
+    "train_games": 2661,
+    "test_games": 276,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.132,
+    "mae_regime": 12.961,
+    "delta": -0.171,
+    "mean_abs_gap_to_close_standard": 4.551,
+    "mean_abs_gap_to_close_regime": 4.35,
+    "mae_close": 11.955
+   },
+   {
+    "season": 2025,
+    "train_games": 2937,
+    "test_games": 261,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.915,
+    "mae_regime": 12.879,
+    "delta": -0.037,
+    "mean_abs_gap_to_close_standard": 4.329,
+    "mean_abs_gap_to_close_regime": 4.062,
+    "mae_close": 12.566
+   }
+  ],
+  "pooled": {
+   "games": 2203,
+   "mae_standard": 13.479,
+   "mae_regime": 13.447,
+   "delta": -0.032,
+   "delta_ci95": [
+    -0.095,
+    0.033
+   ],
+   "significant": false,
+   "improved_seasons": 7,
+   "seasons": 12,
+   "with_close": 2180,
+   "mean_abs_gap_to_close_standard": 4.264,
+   "mean_abs_gap_to_close_regime": 4.22,
+   "mae_close": 12.686,
+   "ats_vs_close_at_2pts": {
+    "standard": {
+     "n": 1506,
+     "win_pct": 48.207
+    },
+    "regime": {
+     "n": 1519,
+     "win_pct": 48.19
+    }
+   }
+  }
+ },
+ "sensitivity_every_coach_change": {
+  "note": "the same fit on every new head coach, continuity ignored (not shipped)",
+  "by_season": [
+   {
+    "season": 2014,
+    "train_games": 1570,
+    "test_games": 162,
+    "curve": {
+     "w0": 0.65,
+     "lambda": 0
+    },
+    "mae_standard": 13.563,
+    "mae_regime": 13.59,
+    "delta": 0.027,
+    "mean_abs_gap_to_close_standard": 3.981,
+    "mean_abs_gap_to_close_regime": 3.874,
+    "mae_close": 12.199
+   },
+   {
+    "season": 2015,
+    "train_games": 1732,
+    "test_games": 175,
+    "curve": {
+     "w0": 0.7,
+     "lambda": 0
+    },
+    "mae_standard": 13.358,
+    "mae_regime": 13.52,
+    "delta": 0.162,
+    "mean_abs_gap_to_close_standard": 3.8,
+    "mean_abs_gap_to_close_regime": 3.917,
+    "mae_close": 12.581
+   },
+   {
+    "season": 2016,
+    "train_games": 1907,
+    "test_games": 226,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.835,
+    "mae_regime": 13.915,
+    "delta": 0.08,
+    "mean_abs_gap_to_close_standard": 4.12,
+    "mean_abs_gap_to_close_regime": 4.092,
+    "mae_close": 13.142
+   },
+   {
+    "season": 2017,
+    "train_games": 2133,
+    "test_games": 189,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.076,
+    "mae_regime": 13.131,
+    "delta": 0.055,
+    "mean_abs_gap_to_close_standard": 4.243,
+    "mean_abs_gap_to_close_regime": 4.182,
+    "mae_close": 12.054
+   },
+   {
+    "season": 2018,
+    "train_games": 2322,
+    "test_games": 206,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.795,
+    "mae_regime": 12.784,
+    "delta": -0.01,
+    "mean_abs_gap_to_close_standard": 3.67,
+    "mean_abs_gap_to_close_regime": 3.726,
+    "mae_close": 12.479
+   },
+   {
+    "season": 2019,
+    "train_games": 2528,
+    "test_games": 228,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 14.364,
+    "mae_regime": 14.334,
+    "delta": -0.031,
+    "mean_abs_gap_to_close_standard": 4.008,
+    "mean_abs_gap_to_close_regime": 4.003,
+    "mae_close": 12.977
+   },
+   {
+    "season": 2020,
+    "train_games": 2756,
+    "test_games": 144,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.654,
+    "mae_regime": 12.294,
+    "delta": -0.36,
+    "mean_abs_gap_to_close_standard": 4.815,
+    "mean_abs_gap_to_close_regime": 4.585,
+    "mae_close": 12.351
+   },
+   {
+    "season": 2021,
+    "train_games": 2900,
+    "test_games": 182,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 14.65,
+    "mae_regime": 14.592,
+    "delta": -0.058,
+    "mean_abs_gap_to_close_standard": 4.058,
+    "mean_abs_gap_to_close_regime": 4.212,
+    "mae_close": 13.273
+   },
+   {
+    "season": 2022,
+    "train_games": 3082,
+    "test_games": 246,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.04
+    },
+    "mae_standard": 12.886,
+    "mae_regime": 12.831,
+    "delta": -0.055,
+    "mean_abs_gap_to_close_standard": 4.844,
+    "mean_abs_gap_to_close_regime": 5.028,
+    "mae_close": 12.278
+   },
+   {
+    "season": 2023,
+    "train_games": 3328,
+    "test_games": 222,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.7,
+    "mae_regime": 13.688,
+    "delta": -0.012,
+    "mean_abs_gap_to_close_standard": 4.424,
+    "mean_abs_gap_to_close_regime": 4.194,
+    "mae_close": 12.541
+   },
+   {
+    "season": 2024,
+    "train_games": 3550,
+    "test_games": 318,
+    "curve": {
+     "w0": 0.8,
+     "lambda": 0.02
+    },
+    "mae_standard": 13.14,
+    "mae_regime": 12.972,
+    "delta": -0.168,
+    "mean_abs_gap_to_close_standard": 4.344,
+    "mean_abs_gap_to_close_regime": 4.153,
+    "mae_close": 12.188
+   },
+   {
+    "season": 2025,
+    "train_games": 3868,
+    "test_games": 276,
+    "curve": {
+     "w0": 0.75,
+     "lambda": 0.02
+    },
+    "mae_standard": 12.689,
+    "mae_regime": 12.677,
+    "delta": -0.012,
+    "mean_abs_gap_to_close_standard": 4.303,
+    "mean_abs_gap_to_close_regime": 4.002,
+    "mae_close": 12.374
+   }
+  ],
+  "pooled": {
+   "games": 2574,
+   "mae_standard": 13.374,
+   "mae_regime": 13.342,
+   "delta": -0.032,
+   "delta_ci95": [
+    -0.088,
+    0.024
+   ],
+   "significant": false,
+   "improved_seasons": 8,
+   "seasons": 12,
+   "with_close": 2540,
+   "mean_abs_gap_to_close_standard": 4.232,
+   "mean_abs_gap_to_close_regime": 4.17,
+   "mae_close": 12.528,
+   "ats_vs_close_at_2pts": {
+    "standard": {
+     "n": 1746,
+     "win_pct": 48.11
+    },
+    "regime": {
+     "n": 1752,
+     "win_pct": 47.945
+    }
+   }
+  }
+ },
+ "shipped": {
+  "fitted_on": "2007-2025",
+  "games": 3198,
+  "curve": {
+   "w0": 0.75,
+   "lambda": 0.02
+  },
+  "table": {
+   "0": 0.75,
+   "1": 0.7351,
+   "2": 0.7206,
+   "3": 0.7063,
+   "4": 0.6923,
+   "5": 0.6786,
+   "6": 0.6,
+   "7": 0.6,
+   "8": 0.6,
+   "9": 0.6,
+   "10": 0.6,
+   "11": 0.6,
+   "12": 0.59,
+   "13": 0.5783,
+   "14": 0.5668,
+   "15": 0.5556
+  },
+  "in_sample_mae_regime": 13.211,
+  "in_sample_mae_standard": 13.276
+ },
+ "min_games": {
+  "N": 6,
+  "rule": "held-out, regime curve applied: when EdgeDesk and the close disagree by 2+ points, the share of games in which EdgeDesk’s side covers, in 2-game buckets of the regime side’s games played; N is the first bucket start from which regime games cover within 2.5 percentage points of every other game at every later bucket",
+  "rule_params": {
+   "disagreement_pts": 2,
+   "bucket_games": 2,
+   "tolerance_pp": 2.5,
+   "last_bucket_from": 8
+  },
+  "table": [
+   {
+    "games_played_from": 0,
+    "games_played_to": 1,
+    "regime_games": 221,
+    "regime_cover_pct": 46.606,
+    "other_games": 628,
+    "other_cover_pct": 47.93,
+    "difference_pp": -1.324
+   },
+   {
+    "games_played_from": 2,
+    "games_played_to": 3,
+    "regime_games": 266,
+    "regime_cover_pct": 52.632,
+    "other_games": 749,
+    "other_cover_pct": 47.53,
+    "difference_pp": 5.102
+   },
+   {
+    "games_played_from": 4,
+    "games_played_to": 5,
+    "regime_games": 267,
+    "regime_cover_pct": 44.195,
+    "other_games": 735,
+    "other_cover_pct": 50.476,
+    "difference_pp": -6.281
+   },
+   {
+    "games_played_from": 6,
+    "games_played_to": 7,
+    "regime_games": 257,
+    "regime_cover_pct": 50.973,
+    "other_games": 695,
+    "other_cover_pct": 48.777,
+    "difference_pp": 2.196
+   },
+   {
+    "games_played_from": 8,
+    "games_played_to": null,
+    "regime_games": 508,
+    "regime_cover_pct": 47.244,
+    "other_games": 1368,
+    "other_cover_pct": 49.269,
+    "difference_pp": -2.025
+   }
+  ]
+ },
+ "self_check": {
+  "probes": 128,
+  "probe_curve": {
+   "w0": 0.5,
+   "lambda": 0.1
+  },
+  "max_abs_difference": 7.105427357601002e-15,
+  "ok": true
+ }
+}

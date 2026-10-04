@@ -1,0 +1,150 @@
+# EdgeDesk — the checks that gate every change to the personal research
+# terminal and the growth layer on top of it: the watchlist, alerts, journal
+# and Compare My Number, research cards, personas, the partner program and
+# its campaigns, trial activation, acquisition attribution and public samples.
+#
+#   suites      the libraries, the job's database pass (in-memory PostgREST),
+#               the page wiring, the AI desk's personal answers — offline.
+#   migrations  supabase/personal_research.sql, affiliates.sql and growth.sql
+#               applied TWICE to a real PostgreSQL on the runner's own
+#               throwaway cluster, and attacked as other readers, as anon and
+#               as the service role.
+#
+# The browser suite (tools/personal/personal_ui.e2e.js) needs Playwright and
+# is run by hand: npm run personal:e2e. Nothing here deploys or writes.
+name: Personal research CI
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_personal*.js'
+      - 'lib/edgedesk_personal.css'
+      - 'lib/edgedesk_share_card.js'
+      - 'lib/edgedesk_pricing.js'
+      - 'tools/billing/**'
+      - 'terms.html'
+      - 'lib/research_core.js'
+      - 'supabase/personal_research.sql'
+      - 'supabase/bettor_decisions.sql'
+      - 'supabase/bankroll_and_stakes.sql'
+      - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'lib/edgedesk_bankroll.js'
+      - 'tools/bettor/**'
+      - 'supabase/affiliates.sql'
+      - 'supabase/growth.sql'
+      - 'supabase/billing.sql'
+      - 'supabase/stripe_webhook.sql'
+      - 'supabase/referral_codes.sql'
+      - 'supabase/billing_hardening.sql'
+      - 'supabase/billing_reconcile_cron.sql'
+      - 'supabase/subscription_price.sql'
+      - 'supabase/community_posts.sql'
+      - 'supabase/funnel.sql'
+      - 'supabase/functions/stripe_webhook/**'
+      - 'supabase/functions/create_checkout_session/**'
+      - 'supabase/functions/sync_subscription/**'
+      - 'lib/edgedesk_access.js'
+      - 'admin/billing/**'
+      - 'supabase/functions/edgedesk_ai/_mine.js'
+      - 'tools/personal/**'
+      - 'supabase/functions/research_cron/**'
+      - 'supabase/research_state_cron.sql'
+      - '.github/workflows/research-state.yml'
+      - '.github/workflows/deploy-research-cron.yml'
+      - 'lib/edgedesk_home.js'
+      - 'research/sample/**'
+      - 'admin/growth/**'
+      - 'admin/affiliates/**'
+      - 'index.html'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/personal-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Alerts, Top 5, journal grading, CLV and the job's database pass
+        run: node tools/personal/personal.test.js
+      - name: One source for the offer, the books, the page wiring, no tout language
+        run: node tools/personal/personal_wiring.test.js
+      # research_cron is research-state.yml's primary scheduler; this imports
+      # the deployed file and replays whole days against the landing page's
+      # own freshness windows.
+      - name: The research-state scheduler dispatches on cadence, never stampedes, keeps game lines on the board
+        run: node tools/personal/research_cron.test.js
+      # The offer's other half: what Stripe is asked about the payment links
+      # (every wrong price, mode and trial must fail), and the paywall,
+      # settings card and checkout agreeing on who has already paid.
+      - name: The Stripe offer verifier fails every link that sells something else
+        run: node tools/billing/verify_stripe_offer.test.js
+      - name: A comped account is paid; the paywall, settings and checkout agree
+        run: node tools/billing/comp_entitlement.test.js
+      - name: The Stripe webhook grants access by status, never by price
+        run: node tools/billing/stripe_webhook.test.js
+      - name: A subscriber's life through the real webhook and paywall, on either price
+        run: node tools/billing/subscriber_lifecycle.test.js
+      # The billing core is copied into three single-file Edge Functions; every
+      # copy must be byte-identical, and its pieces (which subscription a row
+      # describes, Stripe retries and deadlines, what a log line may carry) hold.
+      - name: One billing core in three functions, and what it decides
+        run: node tools/billing/billing_core.test.js
+      - name: The browser asks the database for access, never decides it, and gives up boundedly
+        run: node tools/billing/access_client.test.js
+      - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
+        run: node tools/personal/growth.test.js
+      - name: The AI desk answers the reader's research from their own rows
+        run: node tools/intelligence/mine.test.js
+      - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
+        run: node tools/bettor/decision.test.js
+      - name: The unified football decision engine (NFL and CFB)
+        run: node tools/bettor/football_decision.test.js
+      - name: One meaning per state (market state, research vs decision, raw vs calibrated EV, exposure, beginner mode)
+        run: node tools/bettor/consistency.test.js
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; each suite starts its own throwaway
+      # cluster, applies its migrations twice, and tears it down.
+      # Billing hardening: the one access rule, the one writer, and the
+      # migration applied over production-shaped data (hand-made rows, comps,
+      # duplicates, deliveries that never resolved) without changing a row.
+      - name: Billing hardening installs over production's shape; one rule, one writer
+        run: node tools/billing/billing_hardening_sql.test.js
+      # Every way a checkout can go — wallets, closed tabs, late, duplicate and
+      # out-of-order webhooks, Stripe and database failures, duplicates, comps —
+      # through the three shipped Edge Functions against the real SQL.
+      - name: Every checkout converges between Stripe and EdgeDesk
+        run: node tools/billing/billing_flow.test.js
+      - name: Personal rows are private, the journal and the reader's number are write-once
+        run: node tools/personal/personal_sql.test.js
+      - name: The partner program and its campaigns track what happened and never rewrite money or credit
+        run: node tools/personal/affiliates_sql.test.js
+      - name: The bettor's bankroll units and placed bets are private; EdgeDesk's frozen decisions are write-once and pregame
+        run: node tools/bettor/bettor_sql.test.js
+      - name: Trial activation, acquisition attribution and public samples
+        run: node tools/personal/growth_sql.test.js
+      - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
+        env:
+          RESEARCH_CRON_SQL_REQUIRED: '1'
+        run: node tools/personal/research_cron_sql.test.js

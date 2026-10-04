@@ -1,0 +1,127 @@
+# Deploy the Player Props price pipeline's server side: the props_cron edge
+# function (the PRIMARY scheduler and the page's "refresh prices now") and its
+# SQL (supabase/player_props_pipeline.sql, then supabase/player_props_cron.sql).
+#
+# Its own workflow because Deploy intelligence is at GitHub's ten-input limit,
+# and because "merged" and "running" must never be two silent facts again (see
+# the header of deploy-intelligence.yml). MANUAL ON PURPOSE, with the same one
+# narrow exception: the Intelligence doctor calls it (workflow_call) to deploy
+# props_cron when production answers with a build other than main's. That
+# call never applies the SQL.
+#
+# SECRETS (the same ones Deploy intelligence uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional)
+# And ONE secret on the Supabase side, set once by the account owner:
+#   supabase secrets set PROPS_GH_TOKEN=<a token with actions:write on this repository>
+# (EDITORIAL_GH_TOKEN is used when PROPS_GH_TOKEN is unset.) The scheduler SQL
+# needs no database setting and no key: it calls the project's own props_cron
+# URL, which runs with JWT verification off (below).
+name: Deploy player props pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/props_cron (JWT verification OFF: pg_cron sends no JWT)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply supabase/player_props_pipeline.sql (health, run log, refresh requests; idempotent)'
+        type: boolean
+        default: true
+      apply_cron:
+        description: 'Apply supabase/player_props_cron.sql (the five-minute pg_cron poke; needs pg_cron + pg_net)'
+        type: boolean
+        default: false
+  # The Intelligence doctor's auto-deploy. The function only: apply_sql and
+  # apply_cron are not declared here, so they read as empty and both SQL
+  # steps stay skipped.
+  workflow_call:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/props_cron'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-props-pipeline
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The freshness kernel, the scheduler and the SQL must pass before anything ships
+        env:
+          PLAYER_PROPS_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/props/props_freshness.test.js
+          node tools/props/props_cron.test.js
+          node tools/props/props_pipeline_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — props_cron cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — the SQL cannot be applied from CI (paste the files into the SQL editor instead)."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt IS LOAD-BEARING, as it is for capture in
+      # deploy-intelligence.yml. On 2026-09-29 this project's gateway answered
+      # every pg_cron poke with 401 "Invalid JWT" (the anon key, verified byte
+      # for byte), and Supabase refuses the edgedesk.* database settings a
+      # service key would have lived in. Deployed with verification ON, the
+      # five-minute scheduler is rejected before props_cron sees it and prices
+      # wait for someone to press Refresh. Nothing is opened: Refresh and
+      # status check the reader's session themselves (getUser), and a tick
+      # dispatches only when a game is due, outside a four-minute debounce.
+      - name: Deploy props_cron
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy props_cron \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" \
+            --no-verify-jwt
+
+      - name: Apply supabase/player_props_pipeline.sql
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/player_props_pipeline.sql)
+          echo "$out" | tail -12
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::player_props_pipeline.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/player_props_cron.sql
+        if: ${{ inputs.apply_cron && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/player_props_cron.sql)
+          echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::player_props_cron.sql: a report row says CHECK THIS"; exit 1; fi

@@ -1,0 +1,415 @@
+#!/usr/bin/env node
+/* ===========================================================================
+   THE FOOTBALL MODEL RECORD — record, close, settle, grade. NFL and CFB.
+
+   The research tool's own record, kept apart from the edges record on
+   purpose: this grades the NUMBER the football model publishes, not a price
+   the capture flagged. See tools/record/football_record_core.js for the rules.
+
+   One run does four things, in order:
+
+     1  RECORD every PREDICTED game on the two published slates
+        (football/nfl/slate.json, football/fbs/slate.json) whose number was
+        published before kickoff. --backfill first replays every committed
+        version of both slates from git history, oldest first, so a number
+        that was on the site before kickoff is on the record even if this
+        job did not exist yet — the commit time is the proof it was pregame.
+     2  QUOTE the market for every recorded game still ahead of kickoff that
+        has no quote yet (NFL: the slate's own nflverse reference line from
+        the same build; CFB: ESPN's line). Never after kickoff.
+     3  CLOSE and SETTLE every game that has kicked off: the closing line
+        and the final score, from nflverse (NFL) and ESPN + cfbfastR (CFB).
+     4  GRADE and write record/football/{nfl,cfb}_<season>.json and
+        record/football/summary.json — only when something actually changed.
+
+   Usage
+     node tools/record/football_record.js              # dry run: prints what it would record
+     node tools/record/football_record.js --write      # write the record
+     node tools/record/football_record.js --backfill   # replay the slates' git history first
+     node tools/record/football_record.js --offline    # no network: record projections only
+     node tools/record/football_record.js --history ../clone   # replay from another clone's history
+     options: --season 2026  --now <ISO>  --out record/football
+   =========================================================================== */
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const { execFileSync } = require('child_process');
+const C = require('./football_record_core.js');
+const PL = require('./price_lock.js');
+const Q = require('./quote_ledger.js');
+const S = require('./football_record_sources.js');
+const { writeIfChanged } = require(path.join(__dirname, '..', 'football', 'write_if_changed.js'));
+
+const ROOT = path.join(__dirname, '..', '..');
+const SLATES = { nfl: 'football/nfl/slate.json', cfb: 'football/fbs/slate.json' };
+const DAY = 86400000;
+/* how far back a kicked-off game keeps being chased for its close and final */
+const CHASE_DAYS = 21;
+/* how far ahead a game is quoted (the slates look 10–12 days out) */
+const QUOTE_DAYS = 12;
+const MAX_ESPN_DATES = 24;
+const MAX_ESPN_SUMMARIES = 40;
+/* A GRADED college game whose close carries no price is asked for one by its
+   own id: ESPN's summary keeps the closing quote of a finished game, prices
+   included. Newest first, capped per run, and at most PRICE_ASKS times per
+   game — a game ESPN never priced keeps no price, and nothing is assumed. */
+const PRICE_CHASE_DAYS = 120;
+const MAX_ESPN_PRICE_SUMMARIES = 60;
+const PRICE_ASKS = 3;
+
+function args(argv) {
+  const a = { write: false, backfill: false, offline: false, season: null, now: null, out: 'record/football', history: null };
+  for (let i = 2; i < argv.length; i++) {
+    const k = argv[i];
+    if (k === '--write') a.write = true;
+    else if (k === '--backfill') a.backfill = true;
+    else if (k === '--offline') a.offline = true;
+    else if (k === '--history') { a.history = argv[++i]; a.backfill = true; }
+    else if (k === '--season') a.season = Number(argv[++i]);
+    else if (k === '--now') a.now = argv[++i];
+    else if (k === '--out') a.out = argv[++i];
+    else throw new Error('unknown option ' + k);
+  }
+  return a;
+}
+
+function readJson(file) { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) { return null; } }
+
+function cfbModelVersion() {
+  try {
+    const m = /"model_version"\s*:\s*"([^"]+)"/.exec(fs.readFileSync(path.join(ROOT, 'football', 'cfb_p4', 'params.js'), 'utf8'));
+    return m ? m[1] : null;
+  } catch (_) { return null; }
+}
+
+/* Every committed version of a file, oldest first. Needs the history to be
+   present (fetch-depth: 0, or --history <another clone>); a shallow clone
+   yields what it has. */
+function gitVersions(rel, repo) {
+  const cwd = repo || ROOT;
+  let log = '';
+  try { log = execFileSync('git', ['log', '--format=%H %cI', '--reverse', '--', rel], { cwd, maxBuffer: 64 << 20 }).toString(); } catch (_) { return []; }
+  return log.trim().split('\n').filter(Boolean).map((line) => {
+    const [sha, at] = line.split(' ');
+    return { sha, at, read() {
+      try { return JSON.parse(execFileSync('git', ['show', sha + ':' + rel], { cwd, maxBuffer: 512 << 20 }).toString()); } catch (_) { return null; }
+    } };
+  });
+}
+
+/* ----------------------------------------------------------- step 1 */
+function ingestSlate(sport, ledger, slate, ctx, tally) {
+  if (!slate || !Array.isArray(slate.games)) return;
+  const meta = { season: slate.season, model_version: sport === 'cfb' ? ctx.cfbVersion : null };
+  const published = slate.generated_at || ctx.commit_at || null;
+  slate.games.forEach((g) => {
+    const p = C.projectionFromSlate(sport, g, meta);
+    if (!p) { tally.unpriced++; return; }
+    if (p.season !== ledger.season) return;
+    /* the NFL slate carries the nflverse line from the very build that
+       produced the number: the market at the moment of publication */
+    const market = p.reference_market ? Object.assign({}, p.reference_market, { at: published }) : null;
+    const r = C.recordProjection(ledger, p, { published_at: published, commit_at: ctx.commit_at || null, now: ctx.now,
+      market, replay: !!ctx.replay, provenance: ctx.provenance || null });
+    if (r.indexOf('refused:') === 0) { const why = r.slice(8); tally.refused[why] = (tally.refused[why] || 0) + 1; }
+    else tally[r]++;
+  });
+}
+
+/* ----------------------------------------------------------- step 2–3 */
+async function nflSources(ledger, now, log, quotes, fixed) {
+  let rows = {};
+  try { rows = S.parseNflverse(await S.fetchText(S.URL_NFL, 60000), ledger.season); log.push('nflverse: ' + Object.keys(rows).length + ' games'); }
+  catch (e) { log.push('nflverse: unreachable (' + String(e.message).slice(0, 80) + ')'); }
+  /* THE NFL QUOTE LEDGER: nflverse's line is a reference, not a price (no
+     book, no capture time). ESPN's scoreboard carries a named book's line and
+     prices; read it for every recorded game ahead of kickoff, matched to the
+     record's nflverse id through nflverse's own ESPN id. */
+  const nowMs = Date.parse(now);
+  const byEspn = {};
+  Object.keys(ledger.games).forEach((id) => { const r = rows[id]; if (r && r.espn_id && quoteWanted(ledger.games[id], nowMs)) byEspn[String(r.espn_id)] = id; });
+  const dates = Array.from(new Set(Object.keys(byEspn).map((eid) => S.etDate(ledger.games[byEspn[eid]].kickoff)).filter(Boolean))).sort().slice(0, MAX_ESPN_DATES);
+  let read = 0, bad = 0;
+  for (const d of dates) {
+    try {
+      const sb = S.parseEspnScoreboard(JSON.parse(await S.fetchText(S.espnScoreboardUrl('nfl', d), 30000)));
+      const at = readClock(now, fixed);
+      read++;
+      Object.keys(sb).forEach((eid) => {
+        const id = byEspn[eid], g = sb[eid], e = id && ledger.games[id];
+        if (!e || !g.market) return;
+        quotes.push(...Q.rowsFromMarket('nfl', id, g.market, at, e.kickoff, { home: e.home, away: e.away }));
+      });
+    } catch (_) { bad++; }
+  }
+  if (dates.length) log.push('espn nfl prices: ' + read + '/' + dates.length + ' scoreboard day(s) read' + (bad ? ', ' + bad + ' failed' : '') + ', ' + Object.keys(byEspn).length + ' game(s) ahead');
+  const t = { market: 0, close: 0, final: 0, close_price: 0 };
+  Object.keys(ledger.games).forEach((id) => {
+    const e = ledger.games[id], r = rows[id];
+    if (!r) return;
+    if (r.market && C.fillMarket(e, r.market, now)) t.market++;
+    /* a held close takes the consensus closing prices for the same line */
+    const hadPrice = e.close && !C.lacksClosePrice(e);
+    if (r.close && C.setClose(e, r.close, now)) { t.close++; if (!hadPrice && !C.lacksClosePrice(e)) t.close_price++; }
+    if (r.final && C.setFinal(e, r.final, now)) t.final++;
+  });
+  log.push('nfl filled: ' + JSON.stringify(t));
+}
+
+function needsEspn(e, nowMs) {
+  const k = Date.parse(e.kickoff);
+  if (!Number.isFinite(k)) return false;
+  /* ahead: until it has a quote, and every run inside the pre-close window,
+     where the last line before kickoff is kept as the close's fallback */
+  if (k > nowMs) return k - nowMs <= QUOTE_DAYS * DAY && (!e.market_pick || !e.entry || k - nowMs <= C.PRECLOSE_HOURS * 3600000);
+  return nowMs - k <= CHASE_DAYS * DAY && (!e.final || !e.close || e.close.home_line == null);
+}
+function lacksClose(e) { return !e.close || e.close.home_line == null; }
+/** THE QUOTE LEDGER: every recorded game still ahead of kickoff and inside the
+    quote window is read every run, so its prices are kept as they move
+    (tools/record/quote_ledger.js) — not only until it has a first quote */
+function quoteWanted(e, nowMs) {
+  const k = Date.parse(e.kickoff);
+  return Number.isFinite(k) && k > nowMs && k - nowMs <= QUOTE_DAYS * DAY;
+}
+/* the moment a feed was read: the real clock on a live run, the run's own
+   --now when it is replayed (so a test is deterministic) */
+function readClock(now, fixed) { return fixed ? now : new Date().toISOString(); }
+/** a finished, closed game still waiting on its closing price */
+function needsPrice(e, nowMs) {
+  const k = Date.parse(e.kickoff);
+  if (!Number.isFinite(k) || k > nowMs || nowMs - k > PRICE_CHASE_DAYS * DAY) return false;
+  return !!e.final && !lacksClose(e) && C.lacksClosePrice(e) && (e.close_price_asks || 0) < PRICE_ASKS;
+}
+
+async function cfbSources(ledger, now, log, quotes, fixed) {
+  const nowMs = Date.parse(now);
+  let sched = {};
+  try { sched = S.parseCfbSchedule(await S.fetchText(S.URL_CFB_SCHED(ledger.season), 60000), ledger.season); log.push('cfbfastR: ' + Object.keys(sched).length + ' games'); }
+  catch (e) { log.push('cfbfastR: unreachable (' + String(e.message).slice(0, 80) + ')'); }
+
+  const want = Object.keys(ledger.games).filter((id) => needsEspn(ledger.games[id], nowMs));
+  const ahead = Object.keys(ledger.games).filter((id) => quoteWanted(ledger.games[id], nowMs));
+  const dates = Array.from(new Set(want.concat(ahead).map((id) => S.etDate(ledger.games[id].kickoff)).filter(Boolean))).sort().slice(-MAX_ESPN_DATES);
+  const espn = {}, readAt = {};
+  let ok = 0, bad = 0;
+  for (const d of dates) {
+    try {
+      const sb = S.parseEspnScoreboard(JSON.parse(await S.fetchText(S.espnScoreboardUrl('cfb', d), 30000)));
+      const at = readClock(now, fixed);
+      Object.keys(sb).forEach((id) => { readAt[id] = at; });
+      Object.assign(espn, sb); ok++;
+    }
+    catch (e) { bad++; }
+  }
+  /* WHAT THE SCOREBOARD SAID ABOUT FINISHED GAMES, in the log on every run:
+     the first live run found 160 finished games and 0 closes, and only a
+     count like this says whether that is a parser or a feed with no odds. */
+  const fin = want.map((id) => espn[id]).filter((g) => g && g.completed);
+  log.push('espn finished games on the scoreboard: ' + fin.length + ', carrying odds ' + fin.filter((g) => g.odds_n > 0).length
+    + ', with a readable line ' + fin.filter((g) => g.close && g.close.home_line != null).length);
+  /* asked for by its own id: a game the day's scoreboard did not carry (the
+     groups filter, a moved date), then a finished game it carried with no
+     line — the summary's odds block can outlive the scoreboard's. Newest
+     first, capped per run; the next run takes the rest. */
+  const byKick = (a, b) => Date.parse(ledger.games[b].kickoff) - Date.parse(ledger.games[a].kickoff);
+  const absent = want.filter((id) => !espn[id]);
+  const bare = want.filter((id) => espn[id] && espn[id].completed && (!espn[id].close || espn[id].close.home_line == null)
+    && lacksClose(ledger.games[id])).sort(byKick);
+  const ask = absent.concat(bare).slice(0, MAX_ESPN_SUMMARIES);
+  let sum = 0, sumLine = 0;
+  for (const id of ask) {
+    try {
+      const g = S.parseEspnSummary(JSON.parse(await S.fetchText(S.espnSummaryUrl('cfb', id), 30000)), id);
+      if (!g) continue;
+      sum++;
+      if (g.close && g.close.home_line != null) sumLine++;
+      if (!espn[id] || (g.close && g.close.home_line != null) || (g.market && !espn[id].market)) espn[id] = g;
+    } catch (_) { /* noted in the count */ }
+  }
+  log.push('espn: ' + ok + ' scoreboard day(s) read' + (bad ? ', ' + bad + ' failed' : '') + ', ' + sum + '/' + ask.length
+    + ' summaries (' + sumLine + ' with a closing line), ' + want.length + ' game(s) wanted');
+
+  /* closing prices for games already graded without one */
+  const priceAsk = Object.keys(ledger.games).filter((id) => ask.indexOf(id) < 0 && needsPrice(ledger.games[id], nowMs))
+    .sort(byKick).slice(0, MAX_ESPN_PRICE_SUMMARIES);
+  const priceRead = {};
+  let pSum = 0, pPriced = 0;
+  for (const id of priceAsk) {
+    try {
+      const g = S.parseEspnSummary(JSON.parse(await S.fetchText(S.espnSummaryUrl('cfb', id), 30000)), id);
+      priceRead[id] = true;
+      pSum++;
+      if (g && g.close && g.close.prices) { pPriced++; espn[id] = g; }
+    } catch (_) { /* unread: not counted as an ask */ }
+  }
+  if (priceAsk.length) log.push('espn closing prices: ' + pSum + '/' + priceAsk.length + ' summaries read, ' + pPriced + ' carrying prices');
+
+  const t = { market: 0, close: 0, final: 0, contested: 0, last_quote: 0, close_from_last_quote: 0, close_price: 0, price_asks_spent: 0 };
+  /* THE QUOTE LEDGER: every priced pregame reading of a recorded game, kept */
+  Object.keys(ledger.games).forEach((id) => {
+    const e = ledger.games[id], es = espn[id];
+    if (es && es.market && readAt[id] && quoteWanted(e, nowMs)) quotes.push(...Q.rowsFromMarket('cfb', id, es.market, readAt[id], e.kickoff, { home: e.home, away: e.away }));
+  });
+  Object.keys(ledger.games).forEach((id) => {
+    const e = ledger.games[id], es = espn[id], cs = sched[id];
+    if (es && es.market && C.fillMarket(e, es.market, now)) t.market++;
+    if (es && es.market && C.noteQuote(e, es.market, now)) t.last_quote++;
+    const hadPrice = !C.lacksClosePrice(e);
+    if (es && es.close && C.setClose(e, es.close, now)) { t.close++; if (!hadPrice && !C.lacksClosePrice(e)) t.close_price++; }
+    /* a summary was read for this game's price and gave none it could use */
+    if (priceRead[id] && C.lacksClosePrice(e)) { e.close_price_asks = (e.close_price_asks || 0) + 1; t.price_asks_spent++; }
+    /* two finals that disagree settle nothing */
+    const a = es && es.final, b = cs && cs.final;
+    if (a && b && (a.home_score !== b.home_score || a.away_score !== b.away_score)) { t.contested++; return; }
+    const f = a && b ? { home_score: a.home_score, away_score: a.away_score, source: 'espn+cfbfastR' } : (a || b);
+    if (f && Date.parse(e.kickoff) <= nowMs && C.setFinal(e, f, now)) t.final++;
+    /* the source kept no close for a finished game: its last pregame line */
+    if (C.closeFromLastQuote(e, now)) t.close_from_last_quote++;
+  });
+  log.push('cfb filled: ' + JSON.stringify(t));
+}
+
+/* ----------------------------------------------------------- step 4 */
+function compactRow(e) {
+  const g = e.grade || {};
+  return {
+    game_id: e.game_id, week: e.week, kickoff: e.kickoff, home: e.home, away: e.away,
+    home_code: e.home_code, away_code: e.away_code, group: e.group,
+    model_line: e.pick && e.pick.home_line, model_total: e.pick && e.pick.total,
+    entry_line: e.entry && e.entry.market && e.entry.market.home_line, close_line: e.close && e.close.home_line,
+    close_total: e.close && e.close.total,
+    final: e.final ? [e.final.away_score, e.final.home_score] : null,
+    status: g.status, ats: g.spread && g.spread.result, ats_side: g.spread && g.spread.side,
+    ou: g.total && g.total.result, ou_side: g.total && g.total.side,
+    clv: g.clv_entry && g.clv_entry.spread ? g.clv_entry.spread.pts : null,
+    reliability: e.pick && e.pick.reliability ? e.pick.reliability.score : null,
+  };
+}
+
+function buildSummary(ledgers, sums, now) {
+  const out = {
+    schema: C.SUMMARY_SCHEMA, generated_at: now, season: ledgers.nfl.season,
+    what: 'The football model’s own record: the number it published before kickoff, graded against the closing line and the final. Separate from the edges record, which grades flagged prices.',
+    rules: [
+      'Only numbers published before kickoff are recorded; the pick is the last pregame number and the first is kept beside it.',
+      'Against the spread and the total, the model’s side is set by its number against the CLOSE and graded on the final.',
+      'This is a record, not P&L: no entry price was captured with the model’s number, so its results are wins and losses. Closing prices are kept where the source gives them; nothing is ever priced at an assumed −110.',
+      'CLV is in points: how far the market moved toward the side the model leaned, from the quote recorded with the number to the close, from the same source.',
+      'No close, no final, no total: nothing is estimated. A final two feeds disagree on settles nothing.',
+    ],
+    sources: {
+      nfl: { projection: SLATES.nfl, market: 'nflverse consensus (the slate’s own reference line)', close: 'nflverse consensus at the final', final: 'nflverse' },
+      cfb: { projection: SLATES.cfb, market: 'ESPN scoreboard line (named book)', close: 'ESPN line frozen at kickoff; where ESPN keeps none for a finished game, the last ESPN line this record captured before kickoff', final: 'ESPN and cfbfastR, which must agree' },
+    },
+    sports: { nfl: sums.nfl, cfb: sums.cfb },
+    cfb_groups: {},
+    recent: {},
+  };
+  ['p4', 'other_fbs', 'fbs_fcs'].forEach((grp) => {
+    const sub = Object.assign({}, ledgers.cfb, { games: {} });
+    Object.keys(ledgers.cfb.games).forEach((k) => { if (ledgers.cfb.games[k].group === grp) sub.games[k] = ledgers.cfb.games[k]; });
+    const grades = {}; Object.keys(sub.games).forEach((k) => { grades[k] = sub.games[k].grade; });
+    const s = C.summarize(sub, grades);
+    out.cfb_groups[grp] = { counts: s.counts, ats: s.ats, ou: s.ou, su: s.su, clv: { spread_entry: s.clv.spread_entry }, error: s.error };
+  });
+  ['nfl', 'cfb'].forEach((sp) => {
+    const done = Object.values(ledgers[sp].games).filter((e) => e.grade && (e.grade.status === 'GRADED' || e.grade.status === 'FINAL_NO_CLOSE'));
+    done.sort((a, b) => Date.parse(b.kickoff) - Date.parse(a.kickoff));
+    out.recent[sp] = done.slice(0, 12).map(compactRow);
+  });
+  return out;
+}
+
+async function run(opts) {
+  const now = opts.now || new Date().toISOString();
+  const slates = { nfl: readJson(path.join(ROOT, SLATES.nfl)), cfb: readJson(path.join(ROOT, SLATES.cfb)) };
+  const season = opts.season || (slates.nfl && slates.nfl.season) || (slates.cfb && slates.cfb.season);
+  if (!season) throw new Error('no season: neither slate could be read');
+  const outDir = path.isAbsolute(opts.out) ? opts.out : path.join(ROOT, opts.out);
+  const file = (sp) => path.join(outDir, sp + '_' + season + '.json');
+  const ledgers = {
+    nfl: readJson(file('nfl')) || C.emptyLedger('nfl', season),
+    cfb: readJson(file('cfb')) || C.emptyLedger('cfb', season),
+  };
+  const cfbVersion = cfbModelVersion();
+  const log = [];
+  const tallies = {};
+
+  for (const sp of ['nfl', 'cfb']) {
+    const t = (tallies[sp] = { new: 0, revised: 0, unchanged: 0, unpriced: 0, refused: {} });
+    if (opts.backfill) {
+      const vs = gitVersions(SLATES[sp], opts.history && path.resolve(opts.history));
+      vs.forEach((v) => ingestSlate(sp, ledgers[sp], v.read(), { now, commit_at: v.at, replay: true, provenance: 'git ' + v.sha.slice(0, 10), cfbVersion }, t));
+      log.push(sp + ' backfill: replayed ' + vs.length + ' committed version(s) of ' + SLATES[sp]);
+    }
+    ingestSlate(sp, ledgers[sp], slates[sp], { now, cfbVersion }, t);
+  }
+
+  const fresh = { nfl: [], cfb: [] };
+  if (!opts.offline) {
+    await nflSources(ledgers.nfl, now, log, fresh.nfl, !!opts.now);
+    await cfbSources(ledgers.cfb, now, log, fresh.cfb, !!opts.now);
+  } else log.push('offline: no market, close or final was read');
+  /* the quote ledgers: append-only, written on a change and on the heartbeat */
+  const quoteFiles = {}, kept = {};
+  for (const sp of ['nfl', 'cfb']) {
+    quoteFiles[sp] = path.join(outDir, 'quotes', sp + '_' + season + '.jsonl');
+    const stored = Q.read(quoteFiles[sp]);
+    kept[sp] = { stored, added: Q.select(stored, fresh[sp]) };
+    if (fresh[sp].length || kept[sp].added.length) log.push(sp + ' quote ledger: ' + fresh[sp].length + ' priced reading(s) · ' + kept[sp].added.length + ' kept (a change or a heartbeat) · ' + stored.length + ' already stored');
+  }
+
+  /* THE PRICE LOCK — and its backfill: each pick's market as the quotes
+     EdgeDesk stored saw it when the number was published (no network: the
+     quote ledgers are committed). Only leagues with a stored-quote source. */
+  for (const sp of ['nfl', 'cfb']) {
+    const lg = sp.toUpperCase();
+    if (!(PL.CONFIG.price_snapshots.sources || []).some((x) => x.league === lg)) { log.push(sp + ' price lock: no stored-quote source for ' + lg + ' — its picks stay record-only'); continue; }
+    /* the quotes stored by every source, this record's own ledger as the run leaves it */
+    const quotes = PL.readQuotes(ROOT, season, lg, { record_quotes: kept[sp].stored.concat(kept[sp].added) });
+    let locked = 0, touched = 0;
+    Object.keys(ledgers[sp].games).forEach((id) => {
+      const e = ledgers[sp].games[id];
+      if (C.lockPrice(e, quotes[id] || [], now)) touched++;
+      const L = e.pick && e.pick.price_lock;
+      if (L) locked += ['spread', 'total', 'moneyline'].filter((m) => L[m] && L[m].status === 'locked').length;
+    });
+    log.push(sp + ' price lock: ' + Object.keys(quotes).length + ' game(s) with stored quotes · ' + locked + ' market(s) locked · ' + touched + ' pick(s) updated this run');
+  }
+
+  const sums = {};
+  const written = {};
+  if (opts.write) for (const sp of ['nfl', 'cfb']) { const n = Q.append(quoteFiles[sp], kept[sp].added); if (n) written['quotes_' + sp] = n + ' row(s) appended'; }
+  for (const sp of ['nfl', 'cfb']) {
+    sums[sp] = C.gradeLedger(ledgers[sp], now);
+    ledgers[sp].updated_at = now;
+    if (opts.write) written[sp] = writeIfChanged(file(sp), ledgers[sp], { pretty: true, newline: true });
+  }
+  const summary = buildSummary(ledgers, sums, now);
+  if (opts.write) written.summary = writeIfChanged(path.join(outDir, 'summary.json'), summary, { pretty: true, newline: true });
+  return { season, tallies, log, summary, ledgers, written };
+}
+
+function line(s) {
+  const a = s.ats.all, c = s.clv.spread_entry;
+  return s.counts.recorded + ' recorded · ' + s.counts.graded + ' graded · ATS ' + a.w + '-' + a.l + '-' + a.p
+    + ' · O/U ' + s.ou.all.w + '-' + s.ou.all.l + '-' + s.ou.all.p + ' · SU ' + s.su.w + '-' + s.su.l
+    + ' · CLV ' + (c.n ? ((c.avg > 0 ? '+' : '') + c.avg + ' pts avg, beat the close ' + c.beat_pct + '% (n=' + c.n + ')') : 'n=0');
+}
+
+if (require.main === module) {
+  let opts;
+  try { opts = args(process.argv); } catch (e) { console.error(e.message); process.exit(2); }
+  run(opts).then((r) => {
+    ['nfl', 'cfb'].forEach((sp) => {
+      console.log(sp.toUpperCase() + ' ' + r.season + ' — this run: ' + JSON.stringify(r.tallies[sp]));
+      console.log('  ' + line(r.summary.sports[sp]));
+    });
+    r.log.forEach((l) => console.log('  · ' + l));
+    if (opts.write) console.log('written: ' + JSON.stringify(r.written));
+    else console.log('dry run: nothing written (pass --write)');
+  }).catch((e) => { console.error('football record failed: ' + (e && e.stack || e)); process.exit(1); });
+}
+
+module.exports = { run, ingestSlate, needsEspn, needsPrice, quoteWanted, buildSummary, gitVersions };

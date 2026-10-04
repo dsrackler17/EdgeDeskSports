@@ -1,0 +1,381 @@
+{
+ "schema": "edgedesk_cfb_divergence_backtest_v1",
+ "generated_at": "2026-09-28T00:00:00Z",
+ "definition": "rating_state_divergence = (current FBS power rating home − away) − (production pricing state home − away), neutral-field points",
+ "source": {
+  "replay": "football/cfb_p4/research/disagreement_replay.js (cold, Tuesday freeze, market never an input)",
+  "market": "cfbfastR cfb_line_odds multi-book opener/close",
+  "current_rating_proxy": "point-in-time current-rating core (football/rating/edr.js: opponent-adjusted capped margin + measured carryover); roster and availability components are not in the historical corpus",
+  "opener_fault_rule": "an opener more than 60 pts or more than 17 pts from a multi-book close is dropped as a data fault (forensics rule)"
+ },
+ "n": {
+  "all": 8223,
+  "dev": 4883,
+  "holdout": 3127,
+  "live_2026": 213
+ },
+ "bands": {
+  "fitted_on": "DEV 2015–2021 only",
+  "basis": "|divergence| p50 → MODERATE, p90 → LARGE",
+  "moderate": 2.82,
+  "large": 7.22
+ },
+ "folds": {
+  "DEV_2015_2021": {
+   "LOW": {
+    "n": 2442,
+    "mae": 13.135,
+    "median_ae": 10.741,
+    "p90_ae": 27.333,
+    "bias": 1.515,
+    "favorite_overprojection": 0.218,
+    "market_disagreement": 3.214,
+    "opener_mae": 12.586,
+    "edgedesk_minus_opener_error": 0.564,
+    "close_mae": 12.453,
+    "close_moved_toward_pct": 51.8,
+    "moves_counted": 1867,
+    "clv_points": 0.141,
+    "residual_toward_current_rating": 0.428
+   },
+   "MODERATE": {
+    "n": 1952,
+    "mae": 12.937,
+    "median_ae": 10.691,
+    "p90_ae": 26.674,
+    "bias": 1.626,
+    "favorite_overprojection": 0.707,
+    "market_disagreement": 3.839,
+    "opener_mae": 12.396,
+    "edgedesk_minus_opener_error": 0.445,
+    "close_mae": 12.379,
+    "close_moved_toward_pct": 53.9,
+    "moves_counted": 1489,
+    "clv_points": 0.247,
+    "residual_toward_current_rating": 0.924
+   },
+   "LARGE": {
+    "n": 489,
+    "mae": 13.732,
+    "median_ae": 11.871,
+    "p90_ae": 28.194,
+    "bias": 1.631,
+    "favorite_overprojection": 2.126,
+    "market_disagreement": 4.964,
+    "opener_mae": 12.634,
+    "edgedesk_minus_opener_error": 0.893,
+    "close_mae": 12.66,
+    "close_moved_toward_pct": 60.5,
+    "moves_counted": 367,
+    "clv_points": 0.609,
+    "residual_toward_current_rating": 1.718
+   },
+   "ALL": {
+    "n": 4883,
+    "mae": 13.115,
+    "median_ae": 10.848,
+    "p90_ae": 27.205,
+    "bias": 1.571,
+    "favorite_overprojection": 0.605,
+    "market_disagreement": 3.633,
+    "opener_mae": 12.515,
+    "edgedesk_minus_opener_error": 0.549,
+    "close_mae": 12.444,
+    "close_moved_toward_pct": 53.5,
+    "moves_counted": 3723,
+    "clv_points": 0.229,
+    "residual_toward_current_rating": 0.756
+   }
+  },
+  "HOLDOUT_2022_2025": {
+   "LOW": {
+    "n": 1637,
+    "mae": 12.715,
+    "median_ae": 10.427,
+    "p90_ae": 26.544,
+    "bias": 1.037,
+    "favorite_overprojection": 0.537,
+    "market_disagreement": 3.436,
+    "opener_mae": 12.268,
+    "edgedesk_minus_opener_error": 0.427,
+    "close_mae": 12.169,
+    "close_moved_toward_pct": 54.5,
+    "moves_counted": 1432,
+    "clv_points": 0.271,
+    "residual_toward_current_rating": 1.187
+   },
+   "MODERATE": {
+    "n": 1203,
+    "mae": 12.63,
+    "median_ae": 10.347,
+    "p90_ae": 26.382,
+    "bias": 1.593,
+    "favorite_overprojection": 1.657,
+    "market_disagreement": 4.198,
+    "opener_mae": 12.059,
+    "edgedesk_minus_opener_error": 0.563,
+    "close_mae": 11.913,
+    "close_moved_toward_pct": 52.7,
+    "moves_counted": 1044,
+    "clv_points": 0.212,
+    "residual_toward_current_rating": 2.494
+   },
+   "LARGE": {
+    "n": 287,
+    "mae": 13.257,
+    "median_ae": 12.172,
+    "p90_ae": 25.076,
+    "bias": 0.44,
+    "favorite_overprojection": 2.96,
+    "market_disagreement": 5.813,
+    "opener_mae": 11.652,
+    "edgedesk_minus_opener_error": 1.604,
+    "close_mae": 11.558,
+    "close_moved_toward_pct": 55.9,
+    "moves_counted": 256,
+    "clv_points": 0.132,
+    "residual_toward_current_rating": 3.593
+   },
+   "ALL": {
+    "n": 3127,
+    "mae": 12.732,
+    "median_ae": 10.561,
+    "p90_ae": 26.37,
+    "bias": 1.196,
+    "favorite_overprojection": 1.19,
+    "market_disagreement": 3.948,
+    "opener_mae": 12.131,
+    "edgedesk_minus_opener_error": 0.588,
+    "close_mae": 12.015,
+    "close_moved_toward_pct": 53.9,
+    "moves_counted": 2732,
+    "clv_points": 0.236,
+    "residual_toward_current_rating": 1.911
+   }
+  },
+  "LIVE_2026": {
+   "LOW": {
+    "n": 85,
+    "mae": 12.151,
+    "median_ae": 10.606,
+    "p90_ae": 23.757,
+    "bias": 1.397,
+    "favorite_overprojection": -0.515,
+    "market_disagreement": 4.657,
+    "opener_mae": 13.5,
+    "edgedesk_minus_opener_error": 2.486,
+    "close_mae": 9.643,
+    "close_moved_toward_pct": 39.1,
+    "moves_counted": 23,
+    "clv_points": -0.017,
+    "residual_toward_current_rating": -0.582
+   },
+   "MODERATE": {
+    "n": 103,
+    "mae": 12.829,
+    "median_ae": 11.805,
+    "p90_ae": 23.31,
+    "bias": 0.994,
+    "favorite_overprojection": 0.446,
+    "market_disagreement": 2.898,
+    "opener_mae": 8.773,
+    "edgedesk_minus_opener_error": 0.567,
+    "close_mae": 10.604,
+    "close_moved_toward_pct": 42.9,
+    "moves_counted": 14,
+    "clv_points": 0,
+    "residual_toward_current_rating": 2.769
+   },
+   "LARGE": {
+    "n": 25,
+    "mae": 12.754,
+    "median_ae": 11.681,
+    "p90_ae": 22.118,
+    "bias": -0.764,
+    "favorite_overprojection": 1.561,
+    "market_disagreement": 3.767,
+    "opener_mae": 11.143,
+    "edgedesk_minus_opener_error": 3.63,
+    "close_mae": 10.708,
+    "close_moved_toward_pct": 40,
+    "moves_counted": 5,
+    "clv_points": 0.357,
+    "residual_toward_current_rating": 3.236
+   },
+   "ALL": {
+    "n": 213,
+    "mae": 12.549,
+    "median_ae": 11.254,
+    "p90_ae": 23.31,
+    "bias": 0.948,
+    "favorite_overprojection": 0.193,
+    "market_disagreement": 3.882,
+    "opener_mae": 11.422,
+    "edgedesk_minus_opener_error": 1.896,
+    "close_mae": 10.25,
+    "close_moved_toward_pct": 40.5,
+    "moves_counted": 42,
+    "clv_points": 0.034,
+    "residual_toward_current_rating": 1.486
+   }
+  }
+ },
+ "mae_difference_large_minus_low_ci95": {
+  "DEV_2015_2021": [
+   -0.363,
+   1.587
+  ],
+  "HOLDOUT_2022_2025": [
+   -0.643,
+   1.778
+  ],
+  "LIVE_2026": [
+   -3.303,
+   4.6
+  ]
+ },
+ "by_season": [
+  {
+   "season": 2015,
+   "n": 723,
+   "n_large": 65,
+   "n_low": 368,
+   "mae_large": 12.611,
+   "mae_low": 13.574,
+   "diff": -0.964
+  },
+  {
+   "season": 2016,
+   "n": 719,
+   "n_large": 76,
+   "n_low": 331,
+   "mae_large": 14.286,
+   "mae_low": 13.129,
+   "diff": 1.157
+  },
+  {
+   "season": 2017,
+   "n": 735,
+   "n_large": 73,
+   "n_low": 362,
+   "mae_large": 11.699,
+   "mae_low": 13.163,
+   "diff": -1.463
+  },
+  {
+   "season": 2018,
+   "n": 732,
+   "n_large": 64,
+   "n_low": 382,
+   "mae_large": 15.337,
+   "mae_low": 12.977,
+   "diff": 2.36
+  },
+  {
+   "season": 2019,
+   "n": 734,
+   "n_large": 68,
+   "n_low": 383,
+   "mae_large": 12.733,
+   "mae_low": 13.054,
+   "diff": -0.321
+  },
+  {
+   "season": 2020,
+   "n": 508,
+   "n_large": 64,
+   "n_low": 234,
+   "mae_large": 15.201,
+   "mae_low": 13.456,
+   "diff": 1.744
+  },
+  {
+   "season": 2021,
+   "n": 732,
+   "n_large": 79,
+   "n_low": 382,
+   "mae_large": 14.369,
+   "mae_low": 12.731,
+   "diff": 1.638
+  },
+  {
+   "season": 2022,
+   "n": 733,
+   "n_large": 89,
+   "n_low": 364,
+   "mae_large": 13.399,
+   "mae_low": 13.038,
+   "diff": 0.361
+  },
+  {
+   "season": 2023,
+   "n": 790,
+   "n_large": 75,
+   "n_low": 414,
+   "mae_large": 15.78,
+   "mae_low": 12.725,
+   "diff": 3.055
+  },
+  {
+   "season": 2024,
+   "n": 797,
+   "n_large": 63,
+   "n_low": 412,
+   "mae_large": 12.755,
+   "mae_low": 12.648,
+   "diff": 0.107
+  },
+  {
+   "season": 2025,
+   "n": 807,
+   "n_large": 60,
+   "n_low": 447,
+   "mae_large": 10.419,
+   "mae_low": 12.503,
+   "diff": -2.083
+  },
+  {
+   "season": 2026,
+   "n": 213,
+   "n_large": 25,
+   "n_low": 85,
+   "mae_large": 12.754,
+   "mae_low": 12.151,
+   "diff": 0.604
+  }
+ ],
+ "fold_consistency": {
+  "seasons_scored": 11,
+  "seasons_large_worse": 7,
+  "longest_consecutive_run": 5
+ },
+ "football_only_correction": {
+  "beta_fitted_on_dev": 0.2113,
+  "holdout_mae_base": 12.7318,
+  "holdout_mae_corrected": 12.6555,
+  "holdout_mae_change": -0.0764,
+  "holdout_change_ci": [
+   -0.1063,
+   -0.0438
+  ],
+  "promotion_bar": -0.05,
+  "clears_bar": true
+ },
+ "verdict": {
+  "predicts_error": false,
+  "status": "DIRECTIONAL",
+  "use_as_flag": true,
+  "reading": "LARGE divergence (|div| ≥ 7.22 pts) vs LOW (< 2.82): holdout MAE 13.257 (n 287) vs 12.715 (n 1637), difference CI [-0.643,1.778]; development 13.732 vs 13.135; pooled CI [-0.185,1.333]; 7 of 11 seasons worse. EdgeDesk − opener error 1.604 vs 0.427; favourite over-projection 2.96 vs 0.537 (difference CI [0.418,4.339]); market disagreement 5.813 vs 3.436 pts.",
+  "action": "Use rating-state divergence as an UNCERTAINTY / RESEARCH FLAG (the high-uncertainty view and the game page) — the error link is directional, not established at 95%. The fair spread is NOT changed. A football-only correction (final − fair = 0.2113 × divergence, fitted on 2015–2021) improves the 2022–2025 walk-forward MAE by 0.0764 pts (CI [-0.1063,-0.0438]), clearing the 0.05 bar: it is QUEUED as a research candidate for the challenger pipeline (RESEARCH → CHALLENGER → WALK-FORWARD → SHADOW → PROMOTION), never applied to production directly.",
+  "market_note": "The close moved toward EdgeDesk 55.9% of the time on LARGE-divergence holdout games vs 54.5% on LOW: the market partly absorbs the same information, which is not an edge after the vig.",
+  "pooled_mae_difference_ci95": [
+   -0.185,
+   1.333
+  ],
+  "favorite_overprojection_difference_ci95": [
+   0.418,
+   4.339
+  ]
+ },
+ "production_effect": "none: the fair spread is unchanged; the divergence is a research and uncertainty flag (lib/edgedesk_canon.js gameDivergence)."
+}
