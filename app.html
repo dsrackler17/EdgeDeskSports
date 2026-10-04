@@ -2916,6 +2916,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
+<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261004pf1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3211,6 +3212,12 @@ body.focus .dk-focusnote{display:block}
        every book → best price → fair probability → EV → research context → decision.
        Research, not picks. docs/player-props/DESIGN.md -->
   <section id="v-pprops" class="view hide"><div id="ppHost"></div></section>
+
+  <!-- PORTFOLIO — the reader's own sportsbook bets and prediction-market positions,
+       on every platform, with their P&L (lib/edgedesk_portfolio_ui.js over the
+       lib/edgedesk_portfolio.js engine; supabase/portfolio.sql under row level
+       security). Reached from More and #portfolio. docs/portfolio-architecture.md -->
+  <section id="v-portfolio" class="view hide"><div id="pfoHost"></div></section>
 
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
        Panels keep their original ids so every existing $() lookup and render
@@ -3926,6 +3933,11 @@ window.mcRefresh=function(){
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
 <script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
+<!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
+<script src="/lib/edgedesk_portfolio.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_import.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_connectors.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261004pf1"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5203,9 +5215,9 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
      their own; they are reached through More (or the header health control),
      so More is the tab that reads active while one of them is open. Without
      this the bar shows nothing active and a reader loses their place. */
-  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more'};var navOn=NAV_OWNER[v]||v;
+  var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',ledger:'more',news:'more',portfolio:'more'};var navOn=NAV_OWNER[v]||v;
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v===navOn);if(b[j].dataset.v===navOn)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}window.scrollTo(0,0);try{if(v!=='settings'){var _pp=prefs();_pp.lastTab=v;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}}catch(_){}
-  if(v==='record'){loadRecord();try{if(typeof rpnlOpen==='function')rpnlOpen(false);}catch(_){}}if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/if(v==='pprops'){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}}else{try{if(/^#playerprops/.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}}/*ADDED: PLAYER PROPS terminal; its #playerprops link belongs to it alone*/
+  if(v==='record'){loadRecord();try{if(typeof rpnlOpen==='function')rpnlOpen(false);}catch(_){}}if(v==='edges')loadEdges();if(v==='faults')loadFaults();if(v==='more')loadMore();if(v==='boards')loadBoards();if(v==='news')loadNews();if(v==='ledger')loadMarket();if(v==='settings')loadSettings();if(v==='discipline')loadDiscipline();/*ADDED*/if(v==='collective')loadCollective();/*ADDED: Model Collective tab*/if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard($('eddCardHost'));}catch(_){}}/*ADDED: the EdgeDesk Card (bettor decision layer)*/if(v==='portfolio'){try{if(window.EDPortfolioUI)window.EDPortfolioUI.show($('pfoHost'));}catch(_){}}/*ADDED: Portfolio (lib/edgedesk_portfolio_ui.js)*/if(v==='pprops'){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}}else{try{if(/^#playerprops/.test(location.hash||''))history.replaceState(null,'',location.pathname+location.search);}catch(_){}}/*ADDED: PLAYER PROPS terminal; its #playerprops link belongs to it alone*/
   if(v==='social')loadSocial();else plStop();}
 
 /* ===== RESEARCH shell: one sub-nav, one module registry ==================
@@ -19301,7 +19313,7 @@ function renderSetEdge(){
 
   out+=setCard('Startup',null,
     setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
-      ['research','pprops','edges','collective','record','ledger','news','faults'].map(function(t){
+      ['research','pprops','portfolio','edges','collective','record','ledger','news','faults'].map(function(t){
         return '<option value="'+t+'"'+(p.defaultTab===t?' selected':'')+'>'+(t==='pprops'?'Player Props':t.charAt(0).toUpperCase()+t.slice(1))+'</option>';}).join('')+'</select>',
       'Research is the default. Faults is still selectable; it just no longer holds a seat in the nav bar')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
@@ -20137,12 +20149,14 @@ function loadMore(){
     games:'<rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 12h3M8.5 10.5v3"/><circle cx="15.5" cy="11" r="1"/><circle cx="17.5" cy="13.5" r="1"/>',
     collective:'<circle cx="12" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="12" cy="19" r="2"/><path d="M12 7v10M7 12h10"/>',
     ledger:'<path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M9 5v14"/>',
-    news:'<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'
+    news:'<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+    portfolio:'<path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/><path d="M3 12h18"/>'
   };
   var rows=[];
   /* the destinations that left the bottom bar come first: they are product,
      not plumbing, and each opens its own untouched view */
   var dest=[];
+  if($('v-portfolio'))dest.push(moreItem(IC.portfolio,'Portfolio','Your bets and prediction-market positions on every platform, and whether you are up or down.','show(\'portfolio\')'));
   if($('v-collective'))dest.push(moreItem(IC.collective,'Collective','Independent model creators, one independently graded record.','show(\'collective\')'));
   if($('v-ledger'))dest.push(moreItem(IC.ledger,'Ledger','The market\u2019s moves tracked automatically, plus the bets you log by hand.','show(\'ledger\')'));
   if($('v-news'))dest.push(moreItem(IC.news,'News','News that touches a tracked team or a structural rule, with Moat Alerts.','show(\'news\')'));
@@ -20185,6 +20199,7 @@ try{applyPrefs();renderAvatar();loadSubStatus();
   var _p=prefs();var _t=_p.rememberTab?(_p.lastTab||_p.defaultTab):_p.defaultTab;
   var _rh=null;try{_rh=researchParseHash();}catch(__){}
   if((location.hash||'')==='#card')show('card'); /* the EdgeDesk Card deep link */
+  else if((location.hash||'')==='#portfolio')show('portfolio'); /* the Portfolio deep link */
   else if(/^#playerprops/.test(location.hash||''))show('pprops'); /* the Player Props deep link (#playerprops[/<league>[/<prop>]]) */
   else if(_rh){ /* a #research/<module>[/<entity>] deep link beats the remembered tab */
     researchGo(_rh.sub);

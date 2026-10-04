@@ -1,0 +1,72 @@
+# Deploy the Portfolio database: supabase/portfolio.sql.
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
+# decision a person makes. What this removes is the copy-paste of eight
+# parts into the SQL editor, and the part forgotten in the middle.
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the SQL suite against a throwaway PostgreSQL (tools/portfolio/
+#      portfolio_sql.test.js: the file applied twice, row level security
+#      attacked as another reader and as anon, every derived figure in parity
+#      with the browser's engine, the import pipeline end to end);
+#   2. applies supabase/portfolio.sql in ONE transaction with ON_ERROR_STOP —
+#      the file is idempotent and additive, takes its tables without waiting
+#      while holding any (so a reader saving a position cannot deadlock it),
+#      and ends in a report; a row that reads CHECK THIS fails the run.
+#   Nothing else is written: Phase A has no data to sync.
+#
+# AFTER IT: Supabase serves the public schema already, so the page works as
+# soon as this is green. portfolio_private is deliberately NOT exposed —
+# leave it out of Settings > API > Exposed schemas.
+#
+# SECRETS (the one the other deploy workflows already use):
+#   SB_DB_URL   the pooled Postgres connection string
+name: Deploy Portfolio schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-portfolio
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/portfolio/portfolio_sql.test.js
+
+      - name: Check the credential exists before claiming anything
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set. Add it in Settings > Secrets and variables > Actions, or paste supabase/parts/portfolio.part1-of-*.sql … the last part into the SQL editor, in order."; exit 1; fi
+
+      - name: Apply supabase/portfolio.sql (one transaction)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/portfolio.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/portfolio.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -16
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio.sql: a report row says CHECK THIS"; exit 1; fi
