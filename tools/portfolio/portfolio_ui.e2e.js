@@ -265,6 +265,34 @@ const CSV = [
     chk('imported history keeps its own dates: settled at the placed time, not today',
       db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and source = 'CSV' and settled_at = placed_at and settled_at < '2026-09-30';`) === '2');
 
+    /* an incremental export: the platform from the file's name, then the same
+       columns remembered, and a bet that settled since — an UPDATE */
+    const CSV2 = ['Bet ID,Placed,Event,Selection,Odds,Stake,Status,Payout', 'MGM-5,2026-09-20 13:00,Bears @ Packers,Bears +3.5,-105,21,Open,'].join('\n');
+    await page.click('#pfoHost [data-act="imp-reset"]');
+    await page.setInputFiles('#pfoHost input[type="file"]', { name: 'betmgm-history.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV2) });
+    await waitText(page, /from the file's name/);
+    t = await text(page);
+    chk('a file with no platform column: the platform comes from its name, and the unchecked format is flagged', /Platform: BetMGM/.test(t) && /not yet checked this format against a real BetMGM export/.test(t), t.slice(t.search(/Review/i), t.search(/Review/i) + 400));
+    await page.click('#pfoHost [data-act="imp-check"]');
+    await waitText(page, /Detected/i);
+    await page.click('#pfoHost [data-act="imp-commit"]');
+    await waitText(page, /Imported 1/);
+    const CSV3 = CSV2.replace('Open,', 'Won,41');
+    await page.click('#pfoHost [data-act="imp-reset"]');
+    await page.setInputFiles('#pfoHost input[type="file"]', { name: 'export.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV3) });
+    await waitText(page, /a layout you imported before/);
+    chk('the same columns again: read the way they were imported before, platform included', /Platform: BetMGM/.test(await text(page)));
+    await page.click('#pfoHost [data-act="imp-check"]');
+    await waitText(page, /Updates/i);
+    t = (await text(page)).replace(/\s+/g, ' ');
+    chk('the bet that settled since is an UPDATE, with the estimate shown before anything is stored', /1 Updates/i.test(t) && /If you import these: 1 settled, P&L \+\$20\.00/.test(t)
+      && /update 1/.test(t), t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 500));
+    await page.click('#pfoHost [data-act="imp-commit"]');
+    await waitText(page, /updated 1/);
+    chk('…and committing updates the stored bet in place: WON, +$20.00, still one bet',
+      db.sql(`select status || ':' || profit_loss::text || ':' || count(*) over () from public.portfolio_positions where user_id = '${A}' and external_position_id = 'MGM-5';`) === 'WON:20:1');
+    await shot(page, 'desktop-import-update');
+
     /* ═══ the Decision Grade, the journal, the calendar, the coach ═══════ */
     await tab(page, 'overview');
     await waitText(page, /Decision Grade/i);
