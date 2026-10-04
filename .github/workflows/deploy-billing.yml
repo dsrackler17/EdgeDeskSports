@@ -1,0 +1,140 @@
+# Deploy the billing hardening (docs/billing-hardening.md §9a), ONE STAGE AT A TIME.
+#
+# WHY IT EXISTS. The billing hardening (PR #485) is merged, and merged is not
+# deployed: the SQL, three Edge Functions and a pg_cron job only reach
+# production when somebody carries them there. Billing is the one place where
+# "carry it by hand and hope" is not good enough, so each stage here:
+#
+#   * re-checks what the stage before it promised, against PRODUCTION, and stops
+#     at the first thing that does not hold;
+#   * changes exactly one thing;
+#   * proves that thing, against production, before it reports success.
+#
+# MANUAL ON PURPOSE (workflow_dispatch), like every deploy workflow here. Run the
+# stages in this order; every stage that changes production asks you to type its
+# name into `confirm` first:
+#
+#   1 preflight                       read-only: Phases 2–4 report, duplicates, security,
+#                                     plus the role probe in a rolled-back transaction
+#   2 apply_sql_dry_run               the whole migration against production data, rolled back
+#   3 apply_sql                       snapshot → billing_hardening.sql → postflight A–I →
+#                                     access checks, ONE transaction, committed only if all pass
+#   4 deploy_sync_subscription        + Phase 6 probes
+#   5 deploy_stripe_webhook           + Phase 7 probes and an end-to-end trace of a real delivery
+#   6 deploy_create_checkout_session  + Phase 8 probes (set stripe_price_id to switch it ON)
+#   7 (Stripe dashboard + the real smoke test: docs/billing-hardening.md §9a, §12)
+#   8 apply_cron                      + watches the first sweeps; too many repairs = unscheduled
+#   - verify                          any time: every check again (+ subject_user_id converged?)
+#   - rollback_stripe_webhook · checkout_kill_switch · remove_sync_subscription · disable_cron
+#
+# PUBLIC LOGS. This repository is public, so its Actions logs are too. Nothing
+# printed here carries a secret, a full email, a full account id or a full
+# Stripe id; the full before-state lives in the database (schema billing_ops,
+# no client access). Probes act only as two dedicated probe accounts, never as
+# a customer (tools/billing/prod_probe.js says exactly what they leave behind).
+#
+# SECRETS — the ones the other deploy workflows already use:
+#   SB_DB_URL                                    apply / read SQL
+#   SB_URL, SB_SERVICE_ROLE                      probes (PostgREST, Auth admin)
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF  deploy functions, read versions, set STRIPE_PRICE_ID
+# The Stripe keys stay where they are: in the Edge Functions' own secrets.
+name: Deploy billing
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Stage to run (in order; each re-checks the one before it)'
+        type: choice
+        default: preflight
+        options:
+          - preflight
+          - apply_sql_dry_run
+          - apply_sql
+          - deploy_sync_subscription
+          - deploy_stripe_webhook
+          - deploy_create_checkout_session
+          - apply_cron
+          - verify
+          - rollback_stripe_webhook
+          - checkout_kill_switch
+          - remove_sync_subscription
+          - disable_cron
+      confirm:
+        description: 'Changes production? Type the stage name again (not needed for preflight, apply_sql_dry_run, verify)'
+        type: string
+        default: ''
+      stripe_price_id:
+        description: 'deploy_create_checkout_session: the LIVE price_… behind the Payment Link, to set as STRIPE_PRICE_ID (empty = leave as is). verify: the price to expect.'
+        type: string
+        default: ''
+      subject_user_id:
+        description: 'verify: an account id (uuid) to check for convergence — the smoke-test account'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-billing
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: A stage that changes production must be confirmed by name
+        env:
+          STAGE: ${{ inputs.stage }}
+          CONFIRM: ${{ inputs.confirm }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "$STAGE" in preflight|apply_sql_dry_run|verify) echo "read-only or rolled back: no confirmation needed";;
+            *) [ "$CONFIRM" = "$STAGE" ] || { echo "::error::'$STAGE' changes production: type '$STAGE' into confirm to run it"; exit 1; };;
+          esac
+          # every stage runs reviewed code only: production credentials never
+          # execute a branch's version of these files, not even read-only ones
+          [ "$REF_NAME" = "main" ] || { echo "::error::billing stages run only from main (this run is on $REF_NAME)"; exit 1; }
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # The deployment's own checks must pass against a throwaway PostgreSQL
+      # before any of them is trusted with production: the migration, the
+      # scenario suite over the shipped functions, the preflight / postflight /
+      # role probe, the probes themselves, and a full rehearsal of these stages.
+      - name: The billing suites and a rehearsal of every stage must pass first
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client jq >/dev/null 2>&1 || true
+          node tools/billing/inline_core.js --check
+          node tools/billing/billing_core.test.js
+          node tools/billing/stripe_webhook.test.js
+          node tools/billing/access_client.test.js
+          node tools/billing/admin_console.test.js
+          node tools/billing/billing_hardening_sql.test.js
+          node tools/billing/billing_flow.test.js
+          node tools/billing/billing_deploy_sql.test.js
+          node tools/billing/prod_probe.test.js
+          node tools/billing/deploy_stage.test.js
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Run the stage
+        env:
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          STRIPE_PRICE_ID_INPUT: ${{ inputs.stripe_price_id }}
+          SUBJECT_USER_ID: ${{ inputs.subject_user_id }}
+          STAGE: ${{ inputs.stage }}
+        run: bash tools/billing/deploy_stage.sh "$STAGE"

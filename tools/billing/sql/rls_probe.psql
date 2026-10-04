@@ -1,0 +1,194 @@
+-- ===========================================================================
+-- BEHAVIOURAL access checks, as the roles the browser actually gets.
+--
+-- The preflight and postflight read the catalogs: privileges, policies,
+-- search_path. This file DOES the things a hostile signed-in reader would try,
+-- as `authenticated` (with a real account's id in the JWT claims, exactly as
+-- PostgREST sets them) and as `anon`, and expects each to be refused:
+--
+--   read another account's subscriptions row      → no row
+--   insert / update / delete any subscriptions row → permission denied
+--   read stripe_events, billing_* records         → permission denied
+--   call any billing writer or resolver           → permission denied
+--   my_billing_access()                           → the caller's own decision only
+--   operator functions as a non-operator          → not authorized
+--
+-- Every write attempt is `... where false` or carries null arguments, so even a
+-- check that FAILS changes nothing — and the caller runs this inside a
+-- transaction it rolls back (or that only commits when this passed).
+--
+-- Prints PASS / FAIL / SKIP notices; raises at the end if anything FAILED.
+-- The logs are public: an account id is never printed (a query that names one
+-- is shown with <another account> in its place).
+-- Needs a database role that may SET ROLE authenticated / anon (Supabase's
+-- `postgres` can). Run by .github/workflows/deploy-billing.yml.
+-- ===========================================================================
+do $probe$
+declare
+  v_reader uuid; v_other uuid; v_id uuid; n bigint; r jsonb; q text; v_admin boolean;
+  -- every existence check happens HERE, as the caller: after SET ROLE even
+  -- to_regclass() on the private schema is (rightly) a permission error
+  installed boolean := to_regprocedure('public.my_billing_access()') is not null;
+  has_ops boolean := to_regclass('billing_ops.snapshots') is not null;
+  has_consents boolean := to_regclass('public.billing_consents') is not null;
+  has_by_email boolean := to_regprocedure('public.stripe_user_by_email(text)') is not null;
+  has_is_admin boolean := to_regprocedure('public.billing_is_admin()') is not null;
+  fails int := 0; passes int := 0; lines text[] := '{}';
+  refused_reader text[]; refused_anon text[];
+begin
+  if not pg_has_role(current_user, 'authenticated', 'member') or not pg_has_role(current_user, 'anon', 'member') then
+    raise notice 'SKIP  % may not SET ROLE authenticated / anon here; the catalog checks in the pre/postflight still apply', current_user;
+    return;
+  end if;
+
+  -- an account with a row, and a DIFFERENT, non-operator account to act as
+  select s.user_id into v_other from public.subscriptions s order by s.created_at limit 1;
+  -- the deployment's own probe accounts first (tools/billing/prod_probe.js),
+  -- so a real customer's id is used only before those exist
+  for v_id in select u.id from auth.users u where u.id is distinct from v_other
+               order by coalesce(u.raw_user_meta_data ->> 'billing_probe', '') = 'true' desc, u.created_at desc limit 50 loop
+    v_admin := false;
+    if has_is_admin then
+      perform set_config('request.jwt.claims', json_build_object('sub', v_id, 'role', 'authenticated')::text, true);
+      perform set_config('request.jwt.claim.sub', v_id::text, true);
+      execute 'select public.billing_is_admin()' into v_admin;
+    end if;
+    if not coalesce(v_admin, false) then v_reader := v_id; exit; end if;
+  end loop;
+  if v_reader is null or v_other is null then
+    raise notice 'SKIP  needs one account with a subscriptions row and another, non-operator account';
+    return;
+  end if;
+
+  -- ── as a signed-in reader ──────────────────────────────────────────────────
+  perform set_config('request.jwt.claims', json_build_object('sub', v_reader, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', v_reader::text, true);
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+  execute 'set local role authenticated';
+
+  begin
+    execute format('select count(*) from public.subscriptions where user_id = %L', v_other) into n;
+    if n = 0 then passes := passes + 1; lines := array_append(lines, 'PASS  a reader cannot see another account''s subscriptions row');
+    else fails := fails + 1; lines := array_append(lines, 'FAIL  a reader CAN see another account''s subscriptions row'); end if;
+  exception when insufficient_privilege then
+    passes := passes + 1; lines := array_append(lines, 'PASS  a reader cannot see another account''s subscriptions row (no privilege)');
+  end;
+  begin
+    execute 'select count(*) from public.subscriptions where user_id is distinct from auth.uid()' into n;
+    if n = 0 then passes := passes + 1; lines := array_append(lines, 'PASS  every subscriptions row a reader sees is their own');
+    else fails := fails + 1; lines := array_append(lines, 'FAIL  a reader sees ' || n || ' rows that are not theirs'); end if;
+  exception when insufficient_privilege then
+    passes := passes + 1; lines := array_append(lines, 'PASS  every subscriptions row a reader sees is their own (no privilege)');
+  end;
+  if has_consents then
+    begin
+      execute 'select count(*) from public.billing_consents where user_id is distinct from auth.uid()' into n;
+      if n = 0 then passes := passes + 1; lines := array_append(lines, 'PASS  a reader sees no other account''s billing consents');
+      else fails := fails + 1; lines := array_append(lines, 'FAIL  a reader sees ' || n || ' billing consents that are not theirs'); end if;
+    exception when insufficient_privilege then
+      passes := passes + 1; lines := array_append(lines, 'PASS  a reader sees no other account''s billing consents (no privilege)');
+    end;
+  end if;
+
+  refused_reader := array[
+    'update public.subscriptions set status = status where false',
+    'insert into public.subscriptions (user_id) select user_id from public.subscriptions where false',
+    'delete from public.subscriptions where false',
+    'select count(*) from public.stripe_events'];
+  if installed then
+    refused_reader := refused_reader || array[
+      format('select public.billing_access_for(%L::uuid, now())', v_other),
+      'select public.billing_apply_subscription_state(null::uuid, null::text, null::text, null::text, null::text, null::timestamptz, null::boolean, null::timestamptz, null::text)',
+      'select public.billing_link_customer(null::text, null::uuid, null::text)',
+      'select public.billing_resolve_user()',
+      'select public.billing_record_event(null::text, null::text, null::timestamptz, null::text, null::text, null::jsonb)',
+      'select public.billing_raise_alert(null::text, null::text, null::uuid, null::text, null::text, null::text, null::jsonb)',
+      'select public.billing_clear_alerts(null::uuid, null::text[], null::text)',
+      'select public.billing_sync_admit(null::uuid, null::text)',
+      'select public.billing_sweep_admit(999999)',
+      'select count(*) from public.billing_sweep_candidates(1)',
+      'select count(*) from public.billing_unresolved_events(1)',
+      format('select public.billing_user_report(%L::uuid)', v_other),
+      'select public.billing_admin_lookup(''probe'')',
+      'select public.billing_admin_overview()',
+      format('select public.billing_admin_link_customer(%L::uuid, ''cus_probe'')', v_other),
+      'select public.billing_admin_resolve_alert(0, ''probe'')',
+      'select count(*) from public.billing_customers',
+      'select count(*) from public.billing_checkout_sessions',
+      'select count(*) from public.billing_sync_log',
+      'select count(*) from public.billing_alerts',
+      'select count(*) from public.billing_sweep_state',
+      'select count(*) from public.billing_diagnostics',
+      'select count(*) from public.billing_open_alerts'];
+  end if;
+  if has_by_email then
+    refused_reader := array_append(refused_reader, 'select public.stripe_user_by_email(''probe@example.com'')');
+  end if;
+  if has_ops then
+    refused_reader := array_append(refused_reader, 'select count(*) from billing_ops.snapshots');
+  end if;
+  foreach q in array refused_reader loop
+    begin
+      execute q;
+      fails := fails + 1; lines := array_append(lines, ('FAIL  a reader RAN: ' || left(replace(q, v_other::text, '<another account>'), 110)));
+    exception when insufficient_privilege then
+      passes := passes + 1; lines := array_append(lines, ('PASS  refused to a reader: ' || left(replace(q, v_other::text, '<another account>'), 90)));
+    end;
+  end loop;
+
+  if installed then
+    begin
+      execute 'select public.my_billing_access()' into r;
+      if (r ->> 'user_id')::uuid = v_reader and coalesce((r ->> 'signed_in')::boolean, false) then
+        passes := passes + 1; lines := array_append(lines, 'PASS  my_billing_access() answers for the caller, and only the caller');
+      else
+        fails := fails + 1; lines := array_append(lines, ('FAIL  my_billing_access() answered for ' || coalesce(r ->> 'user_id', 'nobody')));
+      end if;
+    exception when others then
+      fails := fails + 1; lines := array_append(lines, ('FAIL  my_billing_access() errored for a reader: ' || sqlerrm));
+    end;
+  end if;
+  execute 'reset role';
+
+  -- ── as anon (no session at all) ───────────────────────────────────────────
+  perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
+  perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.jwt.claim.role', 'anon', true);
+  execute 'set local role anon';
+  begin
+    execute 'select count(*) from public.subscriptions' into n;
+    if n = 0 then passes := passes + 1; lines := array_append(lines, 'PASS  anon sees no subscriptions row');
+    else fails := fails + 1; lines := array_append(lines, ('FAIL  anon sees ' || n || ' subscriptions rows')); end if;
+  exception when insufficient_privilege then
+    passes := passes + 1; lines := array_append(lines, 'PASS  anon sees no subscriptions row (no privilege)');
+  end;
+  refused_anon := array['select count(*) from public.stripe_events',
+                        'update public.subscriptions set status = status where false'];
+  if installed then
+    refused_anon := refused_anon || array['select public.my_billing_access()', 'select public.billing_admin_overview()',
+                                          'select count(*) from public.billing_customers'];
+  end if;
+  foreach q in array refused_anon loop
+    begin
+      execute q;
+      fails := fails + 1; lines := array_append(lines, ('FAIL  anon RAN: ' || left(q, 110)));
+    exception when insufficient_privilege then
+      passes := passes + 1; lines := array_append(lines, ('PASS  refused to anon: ' || left(q, 90)));
+    end;
+  end loop;
+  execute 'reset role';
+  perform set_config('request.jwt.claims', '', true);
+  perform set_config('request.jwt.claim.sub', '', true);
+
+  foreach q in array lines loop raise notice '%', q; end loop;
+  raise notice 'rls_probe: % passed, % failed (reader %…, other %…)', passes, fails, left(v_reader::text, 8), left(v_other::text, 8);
+  if has_ops then
+    insert into billing_ops.check_runs (run_id, kind, n, item, verdict, detail)
+    select nextval('billing_ops.run_seq'), 'rls_probe', 0, 'behavioural access checks',
+           case when fails = 0 then 'PASS' else 'FAIL' end, passes || ' passed, ' || fails || ' failed';
+  end if;
+  if fails > 0 then
+    raise exception 'rls_probe: % access check(s) FAILED — see the FAIL lines above', fails;
+  end if;
+end
+$probe$;

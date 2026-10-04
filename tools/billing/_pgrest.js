@@ -4,7 +4,9 @@
 
    The billing Edge Functions talk to the database only through PostgREST
    (tables and /rpc) and to Supabase Auth only through /auth/v1/user and
-   /auth/v1/admin/users/<id>. This answers exactly those calls by running SQL
+   /auth/v1/admin/users/<id>; tools/billing/prod_probe.js also creates, lists
+   and signs in its probe accounts (/auth/v1/admin/users, /auth/v1/token) and
+   deletes a probe's comp row. This answers exactly those calls by running SQL
    against a throwaway cluster from tools/personal/_pg.js — so a scenario test
    drives the SHIPPED functions against the SHIPPED migration, with its real
    grants, RLS, row locks and security-definer functions, rather than against
@@ -16,8 +18,8 @@
      anything else (anon key)   -> anon
 
    Only the PostgREST features the functions use are implemented: select=,
-   eq./gt./lt./is.null filters, order=, limit=, on_conflict= with
-   merge-duplicates, PATCH with filters, and /rpc with named arguments.
+   eq./gt./lt./is.null/not.is.null filters, order=, limit=, on_conflict= with
+   merge-duplicates, PATCH and DELETE with filters, and /rpc with named arguments.
    =========================================================================== */
 const PG = require('../personal/_pg.js');
 const lit = PG.lit;
@@ -43,9 +45,10 @@ function typedFilters(params, types) {
   const where = [];
   for (const [k, v] of params) {
     if (['select', 'limit', 'order', 'on_conflict', 'offset'].indexOf(k) >= 0) continue;
+    const col = ident(k);
+    if (v === 'not.is.null') { where.push(col + ' is not null'); continue; }
     const m = /^(eq|neq|gt|gte|lt|lte|is)\.(.*)$/.exec(v);
     if (!m) throw new Error('unsupported filter ' + k + '=' + v);
-    const col = ident(k);
     if (m[1] === 'is') { where.push(col + (m[2] === 'null' ? ' is null' : ' is not null')); continue; }
     const op = { eq: '=', neq: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=' }[m[1]];
     const t = types[k] || 'text';
@@ -59,6 +62,7 @@ function make(db, opts) {
   const SERVICE = o.serviceKey || 'service-key';
   const ANON = o.anonKey || 'anon-key';
   const tokens = o.tokens || {};
+  const passwords = {};
   const calls = [];
   let failNext = {};               // { 'rpc/billing_apply_subscription_state': 2 }
   const colTypes = {};
@@ -155,6 +159,12 @@ function make(db, opts) {
         run(role, uid, fixed);
         return res(204, '');
       }
+      if (method === 'DELETE') {
+        const where = typedFilters(params, t);
+        if (!where.length) return res(400, { message: 'DELETE requires a filter' });
+        run(role, uid, 'delete from public.' + ident(table) + ' where ' + where.join(' and ') + ';');
+        return res(204, '');
+      }
       return res(405, { message: 'method' });
     } catch (e) {
       const msg = String(e.sqlMessage || e.message || e);
@@ -172,7 +182,40 @@ function make(db, opts) {
       if (!t) return res(401, { message: 'invalid token' });
       return res(200, { id: t.id, email: t.email, email_confirmed_at: t.confirmed === false ? null : '2026-01-01T00:00:00Z' });
     }
+    const method = (init && init.method) || 'GET';
+    const body = init && init.body ? JSON.parse(init.body) : {};
+    if (u.pathname === '/auth/v1/token' && method === 'POST') {
+      const row = JSON.parse(db.sql("select coalesce(json_agg(t), '[]'::json) from (select id, email, email_confirmed_at from auth.users where lower(email) = lower(" +
+        lit(String(body.email || '')) + ')) t;') || '[]')[0];
+      if (!row || !passwords[row.id] || passwords[row.id] !== body.password) return res(400, { error: 'invalid_grant' });
+      const token = 'tok_pw_' + Object.keys(tokens).length + '_' + Math.random().toString(16).slice(2, 10);
+      tokens[token] = { id: row.id, email: row.email, confirmed: !!row.email_confirmed_at };
+      return res(200, { access_token: token, token_type: 'bearer' });
+    }
+    if (u.pathname === '/auth/v1/admin/users') {
+      if (bearer !== SERVICE) return res(401, { message: 'service role required' });
+      if (method === 'GET') {
+        const per = +(u.searchParams.get('per_page') || 50), page = +(u.searchParams.get('page') || 1);
+        const out = db.sql("select coalesce(json_agg(t), '[]'::json) from (select id, email, email_confirmed_at from auth.users order by created_at, id limit " +
+          per + ' offset ' + ((page - 1) * per) + ') t;');
+        return res(200, { users: JSON.parse(out || '[]') });
+      }
+      if (method === 'POST') {
+        const exists = db.sql('select count(*) from auth.users where lower(email) = lower(' + lit(String(body.email || '')) + ');');
+        if (+exists > 0) return res(422, { msg: 'A user with this email address has already been registered' });
+        const id = db.sql('insert into auth.users (email, email_confirmed_at) values (' + lit(body.email) + ', ' +
+          (body.email_confirm ? 'now()' : 'null') + ') returning id;').split('\n')[0].trim();
+        if (body.password) passwords[id] = body.password;
+        return res(200, { id, email: body.email });
+      }
+    }
     const m = /^\/auth\/v1\/admin\/users\/([0-9a-f-]{36})$/.exec(u.pathname);
+    if (m && method === 'PUT') {
+      if (bearer !== SERVICE) return res(401, { message: 'service role required' });
+      if (body.password) passwords[m[1]] = body.password;
+      if (body.email_confirm) db.sql('update auth.users set email_confirmed_at = coalesce(email_confirmed_at, now()) where id = ' + lit(m[1]) + ';');
+      return res(200, { id: m[1] });
+    }
     if (m) {
       if (bearer !== SERVICE) return res(401, { message: 'service role required' });
       const out = db.sql("select coalesce(json_agg(t), '[]'::json) from (select id, email, email_confirmed_at from auth.users where id = " +

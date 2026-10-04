@@ -120,6 +120,24 @@ Tested against a real PostgreSQL by `tools/record/pnl_sql.test.js`; see `docs/pn
 
 Run the three files in that order (each under the paste limit; every report row `ok`), then `signal_pnl_backfill.sql` (the dry run). Tested against a real PostgreSQL by `tools/record/signal_pnl_sql.test.js`. See `docs/pnl/EDGE_PNL.md`.
 
+### `portfolio.sql` — the reader's own bets and prediction-market positions, on every platform
+
+The Portfolio's whole database in one file (pasted as `parts/portfolio.part1-of-*.sql` … the last part, or applied by the **Deploy Portfolio schema** workflow in one transaction).
+
+- **Tables:**
+  - `platform_accounts`;
+  - `portfolio_positions` (sportsbook wagers and prediction-market positions side by side, with different arithmetic);
+  - `portfolio_transactions` (fills; a contract position is rebuilt from them);
+  - `portfolio_imports` and `portfolio_import_rows` (CSV staging);
+  - `portfolio_sync_logs`;
+  - `portfolio_private.platform_credentials` (ciphertext only, in a schema PostgREST does not serve).
+- **Money is derived by trigger** (`portfolio_positions_derive`) from the inputs, with NUMERIC and one half-away-from-zero division rule. `lib/edgedesk_portfolio.js` mirrors it, and the SQL suite holds the two in parity.
+- **Row level security everywhere** (`user_id = auth.uid()`), composite `(id, user_id)` foreign keys, and the owner forced to the caller. A manual or CSV account can never read "Connected".
+- **Deduplication:** by platform id, else by a SHA-256 fingerprint of normalized fields (`docs/portfolio-architecture.md` § 7).
+- **Imports:** `portfolio_import_classify()` and `portfolio_import_commit()` (both security invoker) classify on the server and insert only what the reader confirmed.
+- **Re-running it on a live site cannot deadlock a reader's save.** It takes its tables with `NOWAIT` and retries without holding any.
+- **The report** has 15 rows. Tested against a real PostgreSQL by `tools/portfolio/portfolio_sql.test.js`, and in Chromium by `tools/portfolio/portfolio_ui.e2e.js`.
+
 ### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
 Everything personal used to live in one browser. This gives each reader rows on
 their account, under row level security on `auth.uid()`, and nothing takes a

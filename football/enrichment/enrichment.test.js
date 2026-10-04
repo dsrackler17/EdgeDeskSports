@@ -482,7 +482,18 @@ section('12 · the committed artifacts agree with each other');
   if (E && S) {
     const ids = new Set(S.games.map((g) => String(g.game_id)));
     const inE = Object.keys(E.games);
-    chk('every evidence package belongs to a slate game (or is a frozen pregame package)', inE.every((id) => ids.has(id)), inE.filter((id) => !ids.has(id)).slice(0, 5));
+    /* slate.json is rewritten by more jobs than this one (starter context
+       rolls it to the next week on Sunday), so the slate can move past a
+       game before the next enrichment refresh moves its package to the
+       frozen ledger. A package for a game that kicked off before the slate
+       was written is that lag, and build_enrichment.js freezes it on its
+       next run — which runs this suite first, so failing here deadlocked
+       the one job that repairs it. A package for a game still to come that
+       the slate does not hold is a real mismatch. */
+    const slateAt = Date.parse(S.generated_at);
+    const passed = (id) => isFinite(slateAt) && Date.parse(E.games[id].kickoff) <= slateAt;
+    const orphan = inE.filter((id) => !ids.has(id) && !passed(id));
+    chk('every evidence package belongs to a slate game (or is for a game the slate has already moved past)', !orphan.length, orphan.slice(0, 5));
     chk('every package carries the ten sections', inE.every((id) => { const pk = GE.forGame(E, id);
       return ['team_data', 'quarterback', 'availability', 'impact', 'player_quality', 'source_health', 'conflicts', 'missing', 'stale', 'market'].every((k) => k in pk); }));
     chk('no package claims a QB is CONFIRMED without Tier-1 evidence', inE.every((id) => ['home', 'away'].every((s) => {
