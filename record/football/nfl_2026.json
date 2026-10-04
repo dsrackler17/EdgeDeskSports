@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-04T15:11:28.745Z",
+ "updated_at": "2026-10-04T17:36:20.881Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -5109,20 +5109,109 @@
     "book": "consensus",
     "at": "2026-10-02T18:26:00.683Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": 4.5,
+    "total": 46.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -102,
+     "away": -118,
+     "over": -108,
+     "under": -112,
+     "home_ml": 190,
+     "away_ml": -230
+    }
+   },
+   "final": {
+    "home_score": 13,
+    "away_score": 30,
+    "source": "nflverse",
+    "at": "2026-10-04T17:36:20.881Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "home",
+     "gap": 1.68,
+     "result": "loss"
+    },
+    "total": {
+     "side": "over",
+     "gap": 3.92,
+     "result": "loss"
+    },
+    "su": {
+     "side": "away",
+     "result": "win"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "home",
+      "market": 4.5,
+      "close": 4.5,
+      "gap": 3.15,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 46.5,
+      "close": 46.5,
+      "gap": 3.65,
+      "pts": 0
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "home",
+      "market": 4.5,
+      "close": 4.5,
+      "gap": 1.68,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 47.5,
+      "close": 46.5,
+      "gap": 2.92,
+      "pts": -1
+     }
+    },
+    "error": {
+     "margin": -17,
+     "model_margin_err": 14.18,
+     "close_margin_err": 12.5,
+     "model_total_err": 7.42,
+     "close_total_err": 3.5
+    },
+    "brier": 0.1568,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "home",
+      "odds": -102,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "total": {
+      "side": "over",
+      "odds": -108,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "away",
+      "odds": -230,
+      "basis": "close",
+      "result": "win",
+      "units": 0.4348
+     },
+     "units": -1.5652,
+     "bets": 3
+    }
    }
   },
   "2026_04_TEN_BAL": {
@@ -5194,7 +5283,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5276,7 +5365,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5358,7 +5447,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5440,7 +5529,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5522,7 +5611,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5604,7 +5693,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5686,7 +5775,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
@@ -5768,7 +5857,7 @@
    "close": null,
    "final": null,
    "grade": {
-    "status": "PREGAME",
+    "status": "AWAITING_FINAL",
     "spread": null,
     "total": null,
     "su": null,
