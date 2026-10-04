@@ -7,16 +7,54 @@ The authenticated app is organised around the loop a reader actually runs — re
 - **The bar is five seats:** Research · Card · Portfolio · Process · More (was Research · Card · Props · Edges · AI · Record · More). On a desktop the same five stand as a left rail.
 - **Research** holds Football · Props · Edges · Other. *Other* opens the other sports (UFC, Baseball) and the research tools (Stats, Lab, Desk), and the seat names whichever is open. Football reads NFL · CFB · Players · Rankings · Rosters.
 - **AI is contextual:** "Ask EdgeDesk" in the Research header, on college game research ("Research Kansas at Texas Tech", "Why could this number be wrong?") and on the Card. The drawer and every receipt's Analyze button are unchanged; the drawer no longer appends a seat of its own.
-- **Portfolio** (new) is the reader's own activity: P&L, ROI, open exposure, current positions and recent activity first, then Open, Calendar, History and Accounts. It absorbed the Ledger and reads the Card's BET PLACED bets beside it. Accounts lists the real sources, imports a CSV from a sportsbook (nothing guessed: no result → open, no stake → unstaked, bad rows reported), and says plainly that EdgeDesk does not sync with sportsbooks yet. Empty, it says how to build it.
+- **Portfolio is a seat.** It is Portfolio Phase A's page (Overview · Open · History · Analytics · Accounts · Import, every platform, P&L first), no longer a More row. The old Ledger is no longer a page: its tracked prices, bets logged by hand, quick add and exposure, and the Card's BET PLACED bets, are one section under the book — *Tracked from EdgeDesk* — the positions graded against a closing line, which Process reads (`lib/edgedesk_positions.js`). `#portfolio/<tab>` links to a tab.
 - **Process** (new) reads the reader's graded history by one measure — did the price beat the close — with a process score, what's working, what's costing you, this week and a next focus, and the tables (timing, sport, market, price at entry, Card range, edge capture, decision journal) behind disclosure. Below 20 graded positions it shows what it is building and what unlocks next; a comparison needs 8 graded on both sides, a 10-point gap and z ≥ 1 (labelled *clear* only at 95%).
 - **Record is "Model performance"** — EdgeDesk's record, never the reader's — in More › Transparency. Its title says "not your bets"; Settings › About no longer calls it "your graded track record".
 - **More is sections:** Community & tools · Transparency · System · Account · Legal. News moved to System as the moat-alert feed, and the items naming a game's teams now show on that game's research. The Model & data health row no longer closes its own panel on the same tap.
 - **Tracking a price keeps the reader where they were** and says "Tracked in Portfolio · View" instead of jumping to another page.
-- **A new account starts at setup, once:** welcome (the five destinations) → bring your activity → your portfolio → your first read → Research. A deep link always wins; More › Account › Set up EdgeDesk runs it again.
-- **Every old link lands:** `#playerprops/…`, `#research/props|edges|…`, `#card`, `#receipt=…` (which now opens on a cold load), and new `#portfolio[/tab]`, `#process`, `#more`, plus `#ledger`, `#record`, `#pnl`, `#edges`, `#props`, `#settings`, `#news`, `#faults`, `#collective`. `show('ledger'|'pprops'|'edges'|'record'|'ai')` still work. A remembered `ledger` tab lands on Portfolio.
+- **A new account starts at setup, once:** welcome (the five destinations) → your portfolio (import a CSV or connect accounts, in Portfolio) → your first read → Research. It counts as done when shown; a deep link always wins; More › Account › Set up EdgeDesk runs it again.
+- **Every old link lands:** `#playerprops/…`, `#research/props|edges|…`, `#card`, `#portfolio`, `#receipt=…` (which now opens on a cold load), and new `#portfolio/<tab>`, `#process`, `#more`, plus `#ledger`, `#record`, `#pnl`, `#edges`, `#props`, `#settings`, `#news`, `#faults`, `#collective`. `show('ledger'|'pprops'|'edges'|'record'|'ai')` still work. A remembered `ledger` tab lands on Portfolio.
 - **Navigation evidence:** `primary_nav_research|card|portfolio|process|more` per seat tap and `secondary_nav_opened` (props.entity: `more:…`, `research:…`, `portfolio:…`, `process:…`, `card:…`, `ai:…`, `setup:…`), first-party through `ed_track` (one row per session per seat / entity) and to gtag per tap. **Re-apply `supabase/funnel.sql`** for the server to accept them.
 - **The disclaimer** keeps every element; the helpline is a tap-to-call link; it breaks only between elements and, on a phone, reads as one unit with the nav (≈30px, was 34px; one line from ~412px).
-- **Tests:** `tools/app/navigation.test.js` rewritten for five destinations (221); `tools/app/navigation.e2e.js` (new, 162, in CI) drives 390px and 1440px; `tools/app/portfolio_process.test.js` (new, 72, in CI); `tools/funnel/funnel_sql.test.js` +6 for the nav events; `sports_config`, `research_landing`, `props_ui.e2e` and `first_run.e2e` follow the new structure.
+- **Tests:** `tools/app/navigation.test.js` rewritten for five destinations; `tools/app/navigation.e2e.js` (new, in CI) drives 390px and 1440px; `tools/app/portfolio_process.test.js` (new, in CI); `tools/funnel/funnel_sql.test.js` +6 for the nav events; `sports_config`, `research_landing`, `props_ui.e2e`, `first_run.e2e` and the Portfolio UI's `app.html` wiring checks follow the new structure.
+## 2026-10-04 — the landing page sells research plus your own betting analytics
+
+The public page now answers, in five seconds: EdgeDesk is football research plus personal betting analytics, it helps you see whether your process is working, it costs $49.99 a month, and it sells no picks.
+
+- **The hero** reads "Research, not picks. / Bet with a process. Know what's working." It has one sentence, the trial as the primary button, "See how it works" beside it, the offer under both, and who it is for.
+  - Beside it, a sample week (P&L, ROI, process grade, open positions, what's working, what to watch, next focus). It is labelled **In development** and **Sample data** in its own bar, before any number.
+- **The narrative** follows the decision:
+  - results vs process: two illustrative tickets whose arithmetic the tests check;
+  - the loop: Research → Track → Measure → Learn → Improve, each step marked Live or In development;
+  - Process Coach and the Weekly Film Room, on sample data;
+  - history: a sample calendar, and the journal that is live today;
+  - beginner to advanced;
+  - the research terminal, still the one block with live data;
+  - value and pricing, trust, FAQ, and the close.
+- **Nothing unfinished is sold as live.**
+  - Process Coach, the Weekly Film Room, the calendar view, per-bet grades, prediction-market tracking and account connections are labelled wherever they appear.
+  - No sportsbook or exchange is shown as connected.
+  - The FAQ answers "Can I connect my account?" with "Not yet."
+  - There is no social proof beyond Stadium Rant's real, exactly worded credit.
+- **The plan card lists only live features:** eight lines (`lib/edgedesk_pricing.js` `FEATURES`, which the terminal's paywall also prints), down from twelve. The trial terms are the billing system's: a card, 7 days, charged on day 8.
+- **One call to action**, "Start free trial", in the nav, hero, pricing, close and a phone-only sticky bar.
+  - The bar appears once the hero's button scrolls away.
+  - It steps aside at pricing, at the close and under a dialog.
+  - It never shows for an account that already has access.
+- **Hero copy is ready for a test, without a test framework.**
+  - `HERO_COPY` holds variants a, b and c; the markup is variant a.
+  - `?hero=b` previews a variant. No visitor is assigned at random.
+  - Every GA event carries `hero_variant`.
+- **Analytics:**
+  - New GA events: `hero_cta_click`, `how_it_works_click`, `process_coach_view`, `pricing_cta_click`, `signup_started`, `signup_completed`, `checkout_started` and `trial_started`.
+  - The legacy names `hero_trial_click`, `pricing_trial_click` and `hero_how_click` are still sent beside them.
+  - The first-party funnel is unchanged and still runs visitor → `cta_clicked` → `signup_started` → `checkout_started` → `trial_started` → `subscription_started`. Its click and landing events now carry the hero variant.
+- **Removed:** the live board grid, the prop table, the workflow card, the price example, the six-card feature grid and the who-it's-for strip. The live research preview and its statistics moved to the research section. `#how`, `#today`, `#record`, `#pricing` and `#subscribe` all still land.
+- **Preserved unchanged:** auth, the renewal-terms consent, Stripe checkout and its return, attribution and partner credit, the comp check and the public-record panel. The one exception is the hero-button wiring for signed-in accounts.
+- **Tests:**
+  - `landing_positioning.test.js` (456) now checks the new positioning and the unfinished-feature labelling.
+  - `landing_interaction.test.js` (201) now covers the sticky bar, the hero config and the GA events.
+  - `tools/home/landing.e2e.js` (210, browser) covers 6 widths, the 375×548 first screen, the funnel and GA, the sticky bar, variants, and the live, stale, midweek and down data states.
 
 ## 2026-10-03 — share the Record: an image and a post for X or anywhere
 

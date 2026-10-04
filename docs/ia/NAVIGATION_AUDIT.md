@@ -32,7 +32,12 @@ Loop: Research → Decide (Card) → Track (Portfolio) → Review / Improve (Pro
   other:** the Ledger (`edgedesk_bets`, device only), the Card's BET PLACED
   (`edgedesk_bets_placed_v1` + write-only `public.user_bets`), and the research
   journal (`public.research_journal`, decisions including passes).
-* **There is no sportsbook connection or bet import anywhere.**
+* **There was no sportsbook connection or bet import** at the audit's base
+  commit. Portfolio Phase A (#491/#494) landed on main while this change was
+  in review: a server-backed book of every sportsbook bet and
+  prediction-market position, with CSV import and a connector contract
+  (`docs/portfolio-architecture.md`). It is now *the* Portfolio destination;
+  see "Reconciled with Portfolio Phase A" below.
 * **Process Coach does not exist yet.** The nearest real material: the journal's
   decision-quality analytics (`EDPersonal.analytics`, beat-close rate with a
   Wilson interval, CLV by league / market / reliability), the Ledger's CLV, and
@@ -54,7 +59,7 @@ Loop: Research → Decide (Card) → Track (Portfolio) → Review / Improve (Pro
 | AI | **REMOVE FROM NAVIGATION** (contextual) | "Ask EdgeDesk" in the Research header, on game research, on the Card | A technology, not a workflow. The drawer, its desk, its research runs and every in-receipt "Analyze" button are unchanged. |
 | Record | **MOVE TO MORE** (renamed) | More › Transparency › Model performance | It is EdgeDesk's record, not the reader's. Renamed so nobody reads it as their P&L. |
 | More | **KEEP PRIMARY** | More | Reorganised into sections. |
-| — | **NEW PRIMARY** | Portfolio | Absorbs the Ledger's bets, the Card's placed bets and the exposure block. |
+| — | **NEW PRIMARY** | Portfolio | Portfolio Phase A's book (was a More row), with the old Ledger and the Card's placed bets as one section under it. |
 | — | **NEW PRIMARY** | Process | Process profile over the reader's own graded history, with an honest "building" state. |
 
 ### Research sub-navigation (before: Desk · Football · UFC · Baseball · Stats · Lab)
@@ -85,7 +90,8 @@ Player Props terminal, which is what anyone following a "props" link wants.
 | Row | Classification | Where it goes |
 |---|---|---|
 | Collective | **MOVE TO MORE** (kept) | More › Community & tools |
-| Ledger | **MERGE** | Portfolio (bets → Open / History; log & quick add → Accounts; exposure → Open). The system line-move feed → Research › Edges › Market activity. |
+| Ledger | **MERGE** | Portfolio › *Tracked from EdgeDesk* (tracked prices, bets logged by hand, quick add, exposure, CLV). The system line-move feed → Research › Edges › Market activity. |
+| Portfolio (Phase A, More row) | **KEEP PRIMARY** (promoted) | Its own seat; More no longer lists it. |
 | News | **MOVE** + contextual | More › System › News & moat alerts (it is the structural-rule early-warning feed behind Faults), plus a contextual "Relevant news" section on college game research. The `news` pipeline is untouched. |
 | Model & data health | **KEEP** | More › System |
 | Faults | **KEEP** | More › System (and the header status control) |
@@ -109,17 +115,17 @@ Player Props terminal, which is what anyone following a "props" link wants.
 
 | Feature | Classification | Where |
 |---|---|---|
-| Ledger "Your bets" (`edgedesk_bets`) | **MERGE** | Portfolio › Open / History |
-| Card BET PLACED bets | **MERGE (read)** | Shown in Portfolio beside ledger bets; still recorded from the Card |
-| Ledger quick add + custom bet form | **MOVE** | Portfolio › Accounts ("Add activity") |
-| Exposure "Your book right now" | **MOVE** | Portfolio › Open |
-| Ledger desk summary | **MERGE** | Superseded by Portfolio › Overview |
+| Ledger "Your bets" (`edgedesk_bets`) | **MERGE** | Portfolio › Tracked from EdgeDesk (open and settled apart) |
+| Card BET PLACED bets | **MERGE (read)** | Portfolio › Tracked from EdgeDesk; still recorded from the Card |
+| Ledger quick add + custom bet form | **MOVE** | Portfolio › Tracked from EdgeDesk ("Track or log") |
+| Exposure "Your book right now" | **MOVE** | Portfolio › Tracked from EdgeDesk |
+| Ledger desk summary | **DELETE** (duplicate) | Its element; the book's Overview answers "am I up or down?" |
 | Market activity (`board_moves`) | **MOVE** | Research › Edges, collapsed |
 | Record P&L, Verified P&L, proof layer, football model record | **KEEP** | More › Model performance (unchanged content) |
 | Journal + Decision quality (My research drawer) | **KEEP** + link | Drawer unchanged; Process links to it as its deep "decision journal" section |
 | Watchlist (stars) / Saved research | **KEEP** + link | Linked from the Card ("Watching") |
 | Today's research run (3 buttons for one action) | **KEEP** | Unchanged — see concerns |
-| Bet import / sportsbook connection | **NEW (import only)** | Portfolio › Accounts: CSV import into the device ledger. No sportsbook sync is claimed. |
+| Bet import / sportsbook connection | **KEEP** (Phase A) | Portfolio › Import and › Accounts. No platform syncs yet, and the page says so. |
 | Header (logo, System status, bell, avatar) | **KEEP** | Compact; no navigation added to it |
 | Responsible-gambling bar | **KEEP** (compacted) | One line on phones; every element kept; helpline is now a tap-to-call link |
 
@@ -155,6 +161,29 @@ before still exists; every old link resolves (see the route map in the PR).
 8. **The Record share link `#receipt=<id>`** only opened when the landing tab was
    already Record, and boot overwrote it — a real deep link that did not work.
 
+## Reconciled with Portfolio Phase A
+
+Phase A arrived on main with a More row, a `#portfolio` link and the seven-seat
+bar untouched. This change keeps every line of its engine, importer, connector
+contract, SQL and page, and changes only where it sits and what surrounds it:
+
+* **Seat, not More row.** `show('portfolio')` → `pfOpen()` mounts the same
+  `EDPortfolioUI.show(#pfoHost)`; `#portfolio/<tab>` opens a tab
+  (overview · open · history · analytics · accounts · import).
+* **One Portfolio.** The old Ledger is no longer a page: its tracked prices
+  and the Card's placed bets are one folded section under the book, *Tracked
+  from EdgeDesk*. They are kept apart from the book on purpose: they are the
+  positions graded against a closing line, which Process reads; Phase A's
+  positions carry P&L but no closing line yet.
+* **The empty book says how to build one** — "Build your portfolio", Connect
+  accounts first, then Import a CSV or record by hand — instead of
+  "No positions yet".
+* **Setup's "your portfolio" step hands over to it**: Import a CSV → Portfolio
+  › Import; Connect accounts → Portfolio › Accounts.
+* The pre-merge prototype of a device-only Portfolio (its own CSV import,
+  overview and calendar) was dropped in favour of Phase A's; the position
+  normaliser Process needs became `lib/edgedesk_positions.js` (`EDPositions`).
+
 ## Old → new route map
 
 Every row is held by `tools/app/navigation.e2e.js` in a real browser.
@@ -166,7 +195,8 @@ Every row is held by `tools/app/navigation.e2e.js` in a real browser.
 | bottom-nav **AI** · `show('ai')` · `#ai` | the EdgeDesk Intelligence drawer, over whatever is open | unchanged |
 | bottom-nav **Record** · `show('record')` · `#record` · `#pnl` | More › Model performance | More |
 | `#receipt=<id>` (Record share link) | Model performance, receipt opened — now also on a cold load | More |
-| More › **Ledger** · `show('ledger')` · `#ledger` · remembered `lastTab:'ledger'` | Portfolio | Portfolio |
+| More › **Ledger** · `show('ledger')` · `#ledger` · remembered `lastTab:'ledger'` | Portfolio (`#portfolio/tracked` opens its section) | Portfolio |
+| More › **Portfolio** (Phase A) · `#portfolio` | Portfolio | Portfolio |
 | More › News · `show('news')` · `#news` | More › System › News & moat alerts | More |
 | `#research/props` | Research › Props (was Stats) | Research |
 | `#research/football|ufc|baseball|stats|lab|rdesk|cfb|tennis/…` | unchanged (tennis → Football, cfb → Football) | Research |
@@ -174,7 +204,7 @@ Every row is held by `tools/app/navigation.e2e.js` in a real browser.
 | `#settings` (newsletter link; was ignored) | Settings | More |
 | `#faults` · `#collective` · `#terms` | the same views | More |
 | `show('social')` · `show('discipline')` (hidden before this change) | Research › Edges | Research |
-| new: `#portfolio[/overview|open|calendar|history|accounts]` · `#process` · `#more` | those destinations | themselves |
+| new: `#portfolio/overview|open|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
 
 ## Reading the navigation evidence
 

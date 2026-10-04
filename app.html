@@ -2916,7 +2916,8 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
-<link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004a">
+<link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
+<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261004pf1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3107,38 +3108,33 @@ body.focus .dk-focusnote{display:block}
     </div><!-- /recDetail -->
   </section>
 
-  <!-- PORTFOLIO — what the reader actually did, and whether they are up or down.
-       It absorbed the Ledger (the reader's own bets, logged by hand, tracked from an
-       edge or imported) and reads the Card's BET PLACED records beside them. It is
-       NEVER EdgeDesk's model record: that is More → Model performance (#v-record).
-       Rendered by lib/edgedesk_workspace_ui.js over lib/edgedesk_portfolio.js; the
-       ledger's own ids (betlist, clvKpis, qaList, lg_form, #portfolio) kept their
-       renderers and moved into the tabs below. -->
+  <!-- PORTFOLIO — a primary destination: what the reader actually did, and
+       whether they are up or down. Never EdgeDesk's model record (that is More →
+       Model performance, #v-record).
+       The book is Portfolio Phase A (lib/edgedesk_portfolio_ui.js over the
+       lib/edgedesk_portfolio.js engine; supabase/portfolio.sql under row level
+       security; docs/portfolio-architecture.md): Overview · Open · History ·
+       Analytics · Accounts · Import, every platform, P&L first.
+       Under it, the old Ledger — no longer a page of its own — as one section:
+       the prices tracked from EdgeDesk and the Card's BET PLACED bets, the two
+       stores graded against a closing line, which Process reads
+       (lib/edgedesk_positions.js). The ledger's ids (betlist, clvKpis, qaList,
+       lg_form, #portfolio) kept their renderers. -->
   <section id="v-portfolio" class="view hide">
-    <div class="row-between"><h2 style="margin:0">Portfolio</h2><span class="spacer"></span><span class="freshness" id="pfFresh">&mdash;</span><button class="refreshbtn" title="Refresh" aria-label="Refresh portfolio" data-refresh="ledger">&#8635;</button></div>
-    <p class="ws-lede">Your activity: what you bet and whether you are up or down. EdgeDesk&rsquo;s own record is separate &mdash; <button type="button" class="pf-link" onclick="show('record')">Model performance</button>.</p>
-    <nav class="stseg ws-seg" id="pfSeg" aria-label="Portfolio sections"><button data-pf="overview" class="on" aria-current="page">Overview</button><button data-pf="open">Open</button><button data-pf="calendar">Calendar</button><button data-pf="history">History</button><button data-pf="accounts">Accounts</button></nav>
-    <div id="pfOverview" class="pf-pane"><div class="empty">Loading&hellip;</div></div>
-    <div id="pfOpen" class="pf-pane hide">
+    <div id="pfoHost"></div>
+    <p class="ws-lede pf-scope">Your own activity. EdgeDesk&rsquo;s record is separate &mdash; <button type="button" class="pf-link" onclick="show('record')">Model performance</button>.</p>
+    <details class="ws-tracked" id="pfTracked">
+      <summary><b>Tracked from EdgeDesk</b><span>prices you tracked from an edge, bets logged by hand and Card bets &mdash; graded against the closing line</span><i class="ws-n" id="pfTrackedN"></i></summary>
+      <div class="row-between" style="margin-top:4px"><span class="sidenote" style="margin:0">Graded against the close, and what Process reads. Tracked prices are saved on this device; Card bets on your account.</span><span class="spacer"></span><span class="freshness" id="pfFresh">&mdash;</span><button class="refreshbtn" title="Refresh" aria-label="Refresh tracked prices" data-refresh="ledger">&#8635;</button></div>
+      <div class="kpis" id="clvKpis"></div>
       <div id="portfolio" class="hide"></div>
-      <div class="pf-h">Logged positions</div>
+      <div class="pf-h">Open</div>
       <div id="betlist"></div>
       <div id="pfCardOpen"></div>
-    </div>
-    <div id="pfCalendar" class="pf-pane hide"></div>
-    <div id="pfHistory" class="pf-pane hide">
-      <div class="kpis" id="clvKpis"></div>
       <div class="pf-h">Settled</div>
       <div id="betlistDone"></div>
       <div id="pfCardDone"></div>
-    </div>
-    <div id="pfAccounts" class="pf-pane hide">
-      <div id="pfSources"></div>
-      <div class="pf-h">Import from your sportsbook</div>
-      <p class="sidenote">Export your bet history as a CSV from your book, then choose the file. Columns are matched by name: <b>date</b>, <b>selection</b> (or bet, pick), <b>odds</b> (American or decimal), and optionally <b>stake</b>, <b>result</b>, <b>sport</b>, <b>book</b>. Nothing is guessed: a row without a result stays open, a row without a stake stays unstaked. Saved on this device.</p>
-      <label class="btn ghost full pf-file">Choose a CSV file<input type="file" id="pfImportFile" accept=".csv,text/csv" hidden></label>
-      <div id="pfImportMsg" class="pf-note" role="status"></div>
-      <div class="pf-h">Log a bet by hand</div>
+      <div class="pf-h">Track or log</div>
     <button class="btn ghost full" id="lg_toggle">+ Log a bet</button>
     <div class="card hide" id="lg_form" style="margin-top:8px">
       <div class="filters">
@@ -3150,7 +3146,7 @@ body.focus .dk-focusnote{display:block}
       </div>
     </div>
       <div class="quickadd"><div class="qa-h">Track one of today&rsquo;s edges &mdash; one tap</div><div id="qaList"><div class="empty" style="padding:10px">Loading today&rsquo;s edges&hellip;</div></div></div>
-    </div>
+    </details>
   </section>
 
   <!-- PROCESS — what the reader's own history says about how they decide
@@ -3181,6 +3177,7 @@ body.focus .dk-focusnote{display:block}
        The Research Board answers "what games deserve attention?"; this page answers
        "what does the current price justify?": BET / LEAN / WATCH / PASS / NO DECISION. -->
   <section id="v-card" class="view hide"><div id="eddCardHost"></div></section>
+
 
 
   <!-- RESEARCH — single shell: one sub-nav rendered once, six module panels.
@@ -3913,15 +3910,16 @@ window.mcRefresh=function(){
      line convention; the football module still lazy-loads it for itself. -->
 <script src="/lib/research_core.js?v=20260925p"></script>
 <script src="/lib/edgedesk_personal.js?v=20260929e"></script>
-<!-- THE FIVE DESTINATIONS' new pages: Portfolio (the reader's own positions, P&L,
-     calendar, import), Process (what that history says, behind sample gates),
-     and the workspace controllers (setup, Card links, contextual "Ask EdgeDesk",
-     contextual news). Pure models first; tools/app/portfolio_process.test.js. -->
-<script src="/lib/edgedesk_portfolio.js?v=20261004a"></script>
-<script src="/lib/edgedesk_process.js?v=20261004a"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261004a"></script>
+<!-- THE FIVE DESTINATIONS' controllers: the positions EdgeDesk can grade against a
+     close (lib/edgedesk_positions.js), Process over them (lib/edgedesk_process.js,
+     behind sample gates), and the workspace wiring — Portfolio around the Phase A
+     page, setup, Card links, contextual "Ask EdgeDesk" and news.
+     tools/app/portfolio_process.test.js. -->
+<script src="/lib/edgedesk_positions.js?v=20261004b"></script>
+<script src="/lib/edgedesk_process.js?v=20261004b"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261004b"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
-<script src="/lib/edgedesk_pricing.js?v=20260930b"></script>
+<script src="/lib/edgedesk_pricing.js?v=20261004a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
      reconciliation the paywall asks for before it locks anybody out -->
 <script src="/lib/edgedesk_access.js?v=20261004a"></script>
@@ -3982,6 +3980,11 @@ window.mcRefresh=function(){
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
 <script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
+<!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
+<script src="/lib/edgedesk_portfolio.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_import.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_connectors.js?v=20261004pf1"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261004ia1"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5289,8 +5292,8 @@ window.edNavTrack=edNavTrack;
 function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED: AI is an overlay panel, not a view — it opens without changing the active tab*/if(v==='social'||v==='discipline')v='edges';/*ADDED: Pulse and Discipline hidden for now; a remembered lastTab lands on Edges*/
   if(v==='boards')v='faults';
   v=NAV_ALIAS[v]||v;
-  if(v==='research'){researchGo(RESEARCH_SUB);return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* research modules and legacy subview ids (old lastTab values) route into the shell */
-  if(!$('v-'+v)){researchGo(RESEARCH_SUB);return;}   /* a name with no view lands on Research, never on a blank page */
+  if(v==='research'){var _ls=prefs().lastResearchSub;researchGo(RESEARCH_MODULES[_ls]?_ls:'football');return;}if(RESEARCH_MODULES[v]){researchGo(v);return;}/* research modules and legacy subview ids (old lastTab values) route into the shell; the Research seat returns to the reader's last panel */
+  if(!$('v-'+v)){show('research');return;}   /* a name with no view lands on Research, never on a blank page */
   researchDeactivate(RESEARCH_SUB);   // leaving the research shell: abort in-flight loads, stop timers
   /* the shell's panels go down with it, so "is Edges on screen?" — which five
      call sites ask as $('v-edges') without .hide — stays true only while it is */
@@ -5325,7 +5328,7 @@ function navHashRoute(h){
   var m=h.match(/^#([a-z]+)(?:\/([a-z]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
   var t=NAV_HASH_MAP[m[1]];
   if(t==='portfolio'&&m[2]){try{if(window.pfSetTab)window.pfSetTab(m[2],true);}catch(_){}}
-  if(t==='ai'){if($('v-research').classList.contains('hide')&&$('v-card').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');
+  if(t==='ai'){if($('v-card').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');
     var op=function(){try{window.EDAI&&window.EDAI.open();}catch(_){}};if(document.readyState==='complete')op();else window.addEventListener('load',op);return true;}
   var tv=$('v-'+t);
   if(RESEARCH_MODULES[t]){if(RESEARCH_SUB!==t||$('v-research').classList.contains('hide'))researchGo(t);return true;}
@@ -5369,7 +5372,7 @@ var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
    them is open, carries its name ("UFC ▾"), so the lit seat always says where
    the reader is. */
 var RS_OTHER={ufc:'UFC',baseball:'Baseball',stats:'Stats',lab:'Lab',rdesk:'Desk'};
-var RS_OTHER_OPEN=false;
+var RS_OTHER_OPEN=false,RS_OTHER_FOLDED=false;
 function rsNavPaint(sub){
   var inOther=!!RS_OTHER[sub];
   var bars=document.querySelectorAll('.research-sub button,#rsOther button');
@@ -5377,13 +5380,14 @@ function rsNavPaint(sub){
     bars[k].classList.toggle('on',on);
     if(on&&d!=='other')bars[k].setAttribute('aria-current','page');else bars[k].removeAttribute('aria-current');}
   var lbl=$('rsOtherLbl');if(lbl)lbl.textContent=inOther?RS_OTHER[sub]:'Other';
-  var row=$('rsOther'),open=inOther||RS_OTHER_OPEN;
+  var row=$('rsOther'),open=(inOther&&!RS_OTHER_FOLDED)||RS_OTHER_OPEN;
   if(row)row.classList.toggle('hide',!open);
   var ob=$('rsOtherBtn');if(ob)ob.setAttribute('aria-expanded',open?'true':'false');
 }
 window.rsOtherToggle=function(){
   var row=$('rsOther');if(!row)return;
-  RS_OTHER_OPEN=row.classList.contains('hide');
+  var opening=row.classList.contains('hide');
+  RS_OTHER_OPEN=opening;RS_OTHER_FOLDED=!opening;
   rsNavPaint(RESEARCH_SUB);
   if(RS_OTHER_OPEN)edNavTrack('secondary','research:other');
 };
@@ -5409,6 +5413,7 @@ window.researchGo=function(sub){
   var panels=document.querySelectorAll('#v-research .rpanel');for(var p=0;p<panels.length;p++)panels[p].classList.toggle('hide',panels[p].id!=='v-'+sub);
   var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){b[j].classList.toggle('on',b[j].dataset.v==='research');if(b[j].dataset.v==='research')b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}
   if(!RS_OTHER[sub])RS_OTHER_OPEN=false;
+  RS_OTHER_FOLDED=false;
   rsNavPaint(sub);
   window.scrollTo(0,0);
   plStop();
@@ -5600,14 +5605,14 @@ researchRegister({id:'rdesk',label:'Desk',schema:'public',cadenceMs:null,
    refresh), Player Props through EDPropsUI.show(), which mounts once and keeps
    its own state and #playerprops/… hash. */
 researchRegister({id:'edges',label:'Edges',schema:'public',cadenceMs:null,
-  load:function(force,signal){try{if(!LOAD_EDGES_BUSY)loadEdges();}catch(_){}return Promise.resolve();},
-  render:function(){},hasData:function(){return false;},search:function(q){return [];},
+  load:function(force,signal){this._opened=true;try{if(!LOAD_EDGES_BUSY)loadEdges();}catch(_){}return Promise.resolve();},
+  render:function(){},hasData:function(){return !!this._opened;},search:function(q){return [];},
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 researchRegister({id:'pprops',label:'Props',schema:'public',cadenceMs:null,
-  load:function(force,signal){try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}return Promise.resolve();},
-  render:function(){},hasData:function(){return false;},search:function(q){return [];},
+  load:function(force,signal){this._opened=true;try{if(window.EDPropsUI)window.EDPropsUI.show($('ppHost'));}catch(_){}return Promise.resolve();},
+  render:function(){},hasData:function(){return !!this._opened;},search:function(q){return [];},
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
@@ -11230,7 +11235,7 @@ window.__qlog=function(i){var e=(window.QA_LIST||[])[i];if(!e)return;trackSignal
 function renderQuickAdd(){var host=$('qaList');if(!host)return;
   var src=(typeof EDGES!=='undefined'&&EDGES?EDGES:[]).filter(function(e){return e.best_dec&&e.selection;}).slice();
   src.sort(function(a,b){return b.edge-a.edge;});src=src.slice(0,6);window.QA_LIST=src;
-  if(!src.length){host.innerHTML='<div class="empty" style="padding:10px">No edges loaded yet. Open the Edges tab to pull today\u2019s board, then come back.</div>';return;}
+  if(!src.length){host.innerHTML='<div class="empty" style="padding:10px">No edges loaded yet. Open Research \u203a Edges to pull today\u2019s board, then come back.</div>';return;}
   host.innerHTML=src.map(function(e,i){var am=GE.decToAm(e.best_dec),od=GE.fmtPrice(e.best_dec);
     return'<button class="qarow" onclick="__qlog('+i+')"><div class="qa-l"><div class="qa-sel">'+selLabel(e)+'</div><div class="qa-meta">'+evSportLabel(e)+' \u00b7 '+e.best_book+' '+od+'</div></div><span class="qa-ev">+'+(e.edge*100).toFixed(1)+'%</span><span class="qa-plus">+</span></button>';
   }).join('');
@@ -11369,8 +11374,8 @@ function renderLedger(){renderQuickAdd();try{if(window.renderLedgerDesk)window.r
       liveHtml='<div class="liveclv '+lc+'"><span class="dot"></span>'+ltxt+'</div>';
     }
     card.innerHTML='<div class="bhead" onclick="__toggleBet(this)">'+
-      '<div class="bt"><span class="bsel">'+(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span><span class="rchev">\u203a</span></div>'+
-      '<div class="bmeta">'+(b.sport||'')+' \u00b7 '+(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+b.stake:'no stake')+'</div></div>'+liveHtml+
+      '<div class="bt"><span class="bsel">'+edEsc(b.sel||'\u2014')+'</span><span class="grow" style="flex:1"></span><span class="mono '+(beat[0]==='+'?'pos':beat==='\u2014'?'muted':'neg')+'">'+beat+'</span><span class="rchev">\u203a</span></div>'+
+      '<div class="bmeta">'+edEsc(b.sport||'')+' \u00b7 '+edEsc(b.book||'')+' \u00b7 '+od+' \u00b7 '+(b.stake?'$'+edEsc(b.stake):'no stake')+'</div></div>'+liveHtml+
       '<div class="brcpt">'+ledgerReceiptHTML(b)+'</div>'+
       '<div class="brow">'+statusHtml+'<span class="grow" style="flex:1"></span><button class="btn ghost sm" onclick="__del(\''+b.id+'\')" aria-label="Delete this bet">\u2715</button></div>';
     (b.result?done:list).appendChild(card);
@@ -19490,10 +19495,17 @@ function renderSetEdge(){
 
   out+=setCard('Startup',null,
     setRow('Default landing page','<select class="set-sel" onchange="__setPref(\'defaultTab\',this.value)">'+
-      [['research','Research'],['card','Card'],['portfolio','Portfolio'],['process','Process']].map(function(t){
-        /* a saved value from before the five destinations (edges, ledger, record…) reads as where it now lives */
-        var cur={pprops:'research',edges:'research',ledger:'portfolio',record:'research',collective:'research',news:'research',faults:'research'}[p.defaultTab]||p.defaultTab;
-        return '<option value="'+t[0]+'"'+(cur===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select>',
+      (function(){
+        /* the five destinations; a saved value from before them reads as where it
+           now lives (Props and Edges are Research, the Ledger is Portfolio) — and
+           one that is still honoured but no longer offered (Faults, Record…) is
+           shown as itself, so the setting never misreports what boot will do */
+        var cur={pprops:'research',edges:'research',ledger:'portfolio'}[p.defaultTab]||p.defaultTab;
+        var opts=[['research','Research'],['card','Card'],['portfolio','Portfolio'],['process','Process']];
+        if(cur&&!opts.some(function(o){return o[0]===cur;}))opts.push([cur,({record:'Model performance'}[cur]||cur.charAt(0).toUpperCase()+cur.slice(1))+' (earlier choice)']);
+        return opts;
+      })().map(function(t){
+        return '<option value="'+t[0]+'"'+(({pprops:'research',edges:'research',ledger:'portfolio'}[p.defaultTab]||p.defaultTab)===t[0]?' selected':'')+'>'+t[1]+'</option>';}).join('')+'</select>',
       'Research is the default. Props and Edges open inside Research; everything else is in More')+
     setRow('Remember last opened tab',setToggle('rememberTab',p.rememberTab),'Overrides the default landing page'));
 

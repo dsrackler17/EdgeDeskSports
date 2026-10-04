@@ -12,8 +12,9 @@
      2  every old route still lands somewhere real (#playerprops…, #research/…,
         #card, #receipt=…, #ledger, #record, show('pprops'|'edges'|'ledger'|
         'ai'|'record') …) and lights the seat that owns it;
-     3  Portfolio and Process never look broken when empty, and with a seeded
-        history show the reader's own numbers — never EdgeDesk's record;
+     3  Portfolio (the Phase A book, with what EdgeDesk tracked under it) and
+        Process never look broken when empty, and with a seeded history show
+        the reader's own numbers — never EdgeDesk's record;
      4  More is sections, not a drawer; Model performance is in it;
      5  a new account starts at setup, once; a deep link beats it;
      6  tracking a price keeps the reader where they were;
@@ -102,9 +103,11 @@ function seededLedger(now) {
       if (/supabase\.co/.test(u)) {
         if (/rpc\/ed_track/.test(u)) { try { const b = JSON.parse(req.postData() || '{}'); (b.p_events || []).forEach((e) => tracked.push(e)); } catch (e) { /* ignore */ } return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true,"recorded":1}' }); }
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
+        if (/rest\/v1\/(portfolio_|platform_accounts)/.test(u) && req.method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
         if (/rest\/v1\/news\?/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
           { title: 'Texas Tech names a new starting quarterback', url: 'https://example.com/a', source: 'wire', category: 'roster', relevant: false, matched_teams: ['Texas Tech'], published_at: '2026-10-03T12:00:00Z' },
-          { title: 'Sacramento State ineligible for the MAC title game', url: 'https://example.com/b', source: 'wire', category: 'eligibility', relevant: true, matched_teams: ['Sacramento State'], published_at: '2026-10-02T12:00:00Z' }]) });
+          { title: 'Sacramento State ineligible for the MAC title game', url: 'https://example.com/b', source: 'wire', category: 'eligibility', relevant: true, matched_teams: ['Sacramento State'], published_at: '2026-10-02T12:00:00Z' },
+          { title: 'Missouri State not eligible for the CUSA title game', url: 'https://example.com/c', source: 'wire', category: 'eligibility', relevant: true, matched_teams: ['Missouri State'], published_at: '2026-10-01T12:00:00Z' }]) });
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       }
       return route.fulfill({ status: 204, body: '' });
@@ -182,12 +185,16 @@ function seededLedger(now) {
       await page.click('.bottomnav button[data-v="portfolio"]');
       st = await state(page);
       chk(W + ': Portfolio is a destination', st.views.join() === 'v-portfolio' && st.seat.join() === 'portfolio' && st.hash === '#portfolio', st);
-      chk(W + ': an empty Portfolio says how to build it', /Build your portfolio/i.test(await page.textContent('#pfOverview')) && /Connect accounts/.test(await page.textContent('#pfOverview')));
-      chk(W + ': and never claims a sportsbook sync it does not have', /does not sync/.test(await page.textContent('#pfOverview')));
+      await page.waitForFunction(() => /Build your portfolio/.test((document.getElementById('pfoHost') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
+      const pfo = await page.textContent('#pfoHost');
+      chk(W + ': an empty Portfolio says how to build it', /Build your portfolio/.test(pfo) && /Connect accounts/.test(pfo) && /Import a CSV/.test(pfo), pfo.slice(0, 300));
+      chk(W + ': and claims no connection it does not have', !/\bConnected\b/.test(pfo));
+      chk(W + ': EdgeDesk\'s model record is named as separate', /EdgeDesk’s record is separate/.test(await page.textContent('#v-portfolio')));
+      chk(W + ': what EdgeDesk tracked sits under the book, folded', await page.evaluate(() => { const d = document.getElementById('pfTracked'); return !!d && !d.open && /Tracked from EdgeDesk/.test(d.textContent); }));
       await shot(page, 'portfolio-empty-' + W);
-      await page.click('#pfOverview [data-pf-go="accounts"]');
-      chk(W + ': Connect accounts lands on Accounts', await page.evaluate(() => !document.getElementById('pfAccounts').classList.contains('hide') && location.hash === '#portfolio/accounts'));
-      chk(W + ': Accounts lists the real sources and the import', /Logged on this device/.test(await page.textContent('#pfSources')) && !!(await page.$('#pfImportFile')));
+      await page.click('#pfoHost [data-act="tab"][data-v="accounts"]');
+      await page.waitForTimeout(200);
+      chk(W + ': Connect accounts lands on Accounts, and the link says so', await page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="accounts"]'); return !!t && t.getAttribute('aria-selected') === 'true' && location.hash === '#portfolio/accounts'; }));
       await shot(page, 'portfolio-accounts-' + W, true);
       await page.click('.bottomnav button[data-v="process"]');
       st = await state(page);
@@ -246,7 +253,28 @@ function seededLedger(now) {
           const ok = st.views.join() === r[1] && (!r[2] || st.panel.join() === r[2]) && st.seat.join() === r[3];
           chk('old route ' + r[0] + ' → ' + (r[2] || r[1]) + ' with ' + r[3] + ' lit', ok, st);
         }
-        chk('#portfolio/history opens the History tab', await (async () => { await page.goto(`http://127.0.0.1:${port}/app.html?h=1#portfolio/history`); await page.waitForFunction(() => typeof window.pfOpen === 'function'); await page.waitForTimeout(250); return page.evaluate(() => !document.getElementById('pfHistory').classList.contains('hide')); })());
+        chk('#portfolio/history opens the book\'s History tab', await (async () => { await page.goto(`http://127.0.0.1:${port}/app.html?h=1#portfolio/history`); await page.waitForFunction(() => typeof window.pfOpen === 'function'); await page.waitForTimeout(400); return page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="history"]'); return !!t && t.getAttribute('aria-selected') === 'true'; }); })());
+        chk('#portfolio/tracked opens what EdgeDesk tracked', await (async () => { await page.goto(`http://127.0.0.1:${port}/app.html?h=2#portfolio/tracked`); await page.waitForFunction(() => typeof window.pfOpen === 'function'); await page.waitForTimeout(400); return page.evaluate(() => document.getElementById('pfTracked').open && !document.getElementById('v-portfolio').classList.contains('hide')); })());
+        /* a cold #ai link opens the drawer over a board that is actually loading, not stuck
+           (the reader's last research panel, pinned here to Football) */
+        await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('edgedesk_prefs') || '{}'); p.lastResearchSub = 'football'; localStorage.setItem('edgedesk_prefs', JSON.stringify(p)); });
+        await page.goto(`http://127.0.0.1:${port}/app.html?h=3#ai`, { waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(800);
+        chk('a cold #ai link opens the drawer over Research › Football, activated', await page.evaluate(() => document.getElementById('edaiPanel').classList.contains('open') && !document.getElementById('v-football').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')));
+        await page.evaluate(() => window.EDAI && window.EDAI.close());
+        /* the Research seat returns to the reader's research, never to the shell's resting Desk */
+        await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('edgedesk_prefs') || '{}'); p.lastResearchSub = 'football'; localStorage.setItem('edgedesk_prefs', JSON.stringify(p)); });
+        await page.goto(`http://127.0.0.1:${port}/app.html?h=4#process`, { waitUntil: 'domcontentloaded' });
+        await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
+        await page.click('.bottomnav button[data-v="research"]');
+        st = await state(page);
+        chk('after booting elsewhere, the Research seat opens Football, not Desk', st.panel.join() === 'v-football', st);
+        /* "Other" folds away even while one of its modules is open */
+        await page.evaluate(() => window.researchGo('ufc'));
+        await page.click('#rsOtherBtn');
+        chk('"Other" folds while UFC is open, and says so', await page.evaluate(() => document.getElementById('rsOther').classList.contains('hide') && document.getElementById('rsOtherBtn').getAttribute('aria-expanded') === 'false'));
+        await page.click('#rsOtherBtn');
+        chk('and opens again', await page.evaluate(() => !document.getElementById('rsOther').classList.contains('hide')));
         /* the router's old names, called the way existing links call them */
         const CALLS = [['pprops', 'v-research', 'v-pprops', 'research'], ['edges', 'v-research', 'v-edges', 'research'], ['ledger', 'v-portfolio', null, 'portfolio'],
           ['record', 'v-record', null, 'more'], ['social', 'v-research', 'v-edges', 'research'], ['discipline', 'v-research', 'v-edges', 'research'],
@@ -269,6 +297,7 @@ function seededLedger(now) {
         const news = await page.evaluate(() => window.edNewsFor('Texas Tech', 'Kansas'));
         chk('a game\'s research carries the news that names its teams', /Texas Tech names a new starting quarterback/.test(news) && !/Sacramento State/.test(news), news.slice(0, 200));
         chk('and nothing when no item names them', (await page.evaluate(() => window.edNewsFor('Iowa', 'Iowa State'))) === '');
+        chk('the exact school only: Missouri never gets Missouri State\'s moat alert', (await page.evaluate(() => window.edNewsFor('Missouri', 'Kansas'))) === '');
         const ask = await page.evaluate(() => (typeof window.fbGxAsk === 'function') ? window.fbGxAsk({ g: { home_team: 'Texas Tech', away_team: 'Kansas' } }) : '');
         chk('game research offers Ask EdgeDesk about that game', /Research Kansas at Texas Tech/.test(ask), ask.slice(0, 200));
         await page.evaluate((h) => { const d = document.createElement('div'); d.id = '__askProbe'; d.innerHTML = h; document.body.appendChild(d); }, ask);
@@ -297,18 +326,12 @@ function seededLedger(now) {
       S = await open(vp, '#portfolio', { bets: seededLedger(now) });
       page = S.page;
       await page.waitForTimeout(500);
-      const ov = await page.textContent('#pfOverview');
-      chk(W + ': Portfolio leads with P&L and ROI', /Profit & loss/.test(ov) && /ROI/.test(ov) && /Open exposure/.test(ov), ov.slice(0, 200));
-      chk(W + ': the P&L is the reader\'s staked result', /\+\$/.test(ov));
-      chk(W + ': current positions list the open bet', /Texas Tech -3\.5/.test(ov));
+      await page.evaluate(() => { document.getElementById('pfTracked').open = true; });
+      await page.waitForTimeout(300);
+      chk(W + ': what EdgeDesk tracked lists the open price and the settled ones apart', await page.evaluate(() => document.querySelectorAll('#betlistDone .betcard').length === 30 && document.querySelectorAll('#betlist .betcard').length === 1));
+      chk(W + ': its summary counts them and their grades', /31 · 1 open · 23\/30 beat the close/.test(await page.textContent('#pfTrackedN')), await page.textContent('#pfTrackedN'));
       chk(W + ': no horizontal scroll on Portfolio', await noHScroll(page));
-      await shot(page, 'portfolio-' + W);
-      await page.click('#pfSeg button[data-pf="calendar"]');
-      chk(W + ': the calendar has settled days', await page.evaluate(() => document.querySelectorAll('#pfCalendar .pf-cal-c.on').length > 0));
-      chk(W + ': no horizontal scroll on the calendar', await noHScroll(page));
-      await shot(page, 'portfolio-calendar-' + W);
-      await page.click('#pfSeg button[data-pf="history"]');
-      chk(W + ': History lists the settled bets, Open does not', await page.evaluate(() => document.querySelectorAll('#betlistDone .betcard').length === 30 && document.querySelectorAll('#betlist .betcard').length === 1));
+      await shot(page, 'portfolio-tracked-' + W, true);
       await page.click('.bottomnav button[data-v="process"]');
       await page.waitForTimeout(300);
       const pr = await page.textContent('#processHost');
@@ -330,7 +353,7 @@ function seededLedger(now) {
       await shot(page, 'tracked-toast-' + W);
       await page.click('#edTrackedToast button');
       st = await state(page);
-      chk(W + ': "View" opens Portfolio › Open', st.views.join() === 'v-portfolio' && await page.evaluate(() => !document.getElementById('pfOpen').classList.contains('hide')), st);
+      chk(W + ': "View" opens Portfolio at what EdgeDesk tracked', st.views.join() === 'v-portfolio' && await page.evaluate(() => document.getElementById('pfTracked').open), st);
       await S.ctx.close();
 
       /* ------------------------------------------------ 5 a new account starts at setup */
@@ -341,12 +364,11 @@ function seededLedger(now) {
       chk(W + ': setup explains the five destinations', await page.evaluate(() => document.querySelectorAll('#setupHost .su-dest li').length === 5));
       await shot(page, 'setup-1-' + W);
       await page.click('#setupHost [data-su="next"]');
-      chk(W + ': step 2 is bringing your activity', /Connect or import/.test(await page.textContent('#setupHost')) && !!(await page.$('#suImportFile')));
+      chk(W + ': step 2 builds the portfolio: connect or import', /Connect or import/.test(await page.textContent('#setupHost')) && !!(await page.$('#setupHost [data-su="import"]')) && !!(await page.$('#setupHost [data-su="accounts"]')));
       await shot(page, 'setup-2-' + W);
       await page.click('#setupHost [data-su="next"]');
-      await page.click('#setupHost [data-su="next"]');
       chk(W + ': the first read never invents an insight', /Not enough history/.test(await page.textContent('#setupHost')));
-      await shot(page, 'setup-4-' + W);
+      await shot(page, 'setup-3-' + W);
       await page.click('#setupHost [data-su="enter"]');
       st = await state(page);
       chk(W + ': Enter EdgeDesk lands on Research', st.views.join() === 'v-research', st);
@@ -354,6 +376,23 @@ function seededLedger(now) {
       await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
       st = await state(page);
       chk(W + ': and setup runs once', st.views.join() !== 'v-setup', st);
+      await S.ctx.close();
+      /* leaving setup by any seat still counts as having seen it */
+      S = await open(vp, '', { created: Date.now() - 2 * DAY, setupDone: false });
+      page = S.page;
+      await page.click('.bottomnav button[data-v="card"]');
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(() => typeof window.show === 'function'); await page.waitForTimeout(250);
+      st = await state(page);
+      chk(W + ': setup left through a seat does not come back', st.views.join() !== 'v-setup', st);
+      await S.ctx.close();
+      S = await open(vp, '', { created: Date.now() - 2 * DAY, setupDone: false });
+      page = S.page;
+      await page.click('#setupHost [data-su="next"]');
+      await page.click('#setupHost [data-su="import"]');
+      await page.waitForTimeout(400);
+      st = await state(page);
+      chk(W + ': "Import a CSV" in setup opens the book\'s Import', st.views.join() === 'v-portfolio' && await page.evaluate(() => { const t = document.querySelector('#pfoHost .pfo-tab[data-v="import"]'); return !!t && t.getAttribute('aria-selected') === 'true'; }), st);
       await S.ctx.close();
       S = await open(vp, '#research/edges', { created: Date.now() - 2 * DAY, setupDone: false });
       st = await state(S.page);

@@ -40,6 +40,16 @@ Independent of all of the above, the CFB + NFL player-prop factory:
 8. `props_factory.part1-of-*.sql` … the last part, then `expose_schemas.sql`
    (unsplit) so PostgREST serves the `props` schema
 
+Independent of all of the above, the Portfolio (the reader's own bets and
+prediction-market positions; `docs/portfolio-architecture.md`):
+
+9. `portfolio.part1-of-*.sql` … the last part. Every report row
+   should read `ok`. Do **not** add `portfolio_private` to the exposed schemas:
+   it holds connector credentials and is meant to stay unreachable. Prefer the
+   *Deploy Portfolio schema* workflow, which applies the whole file in one
+   transaction. Regenerate with `npm run portfolio:parts`; the SQL suite fails
+   if these parts drift from `supabase/portfolio.sql`.
+
 The last part of each file prints that file's report. Every row of the
 `guarantee` column must read `ok` (for `cfb_lab`, every row of `status`).
 
@@ -65,6 +75,7 @@ These are generated. After editing any of the three source files, rebuild with:
     npm run sql:split -- supabase/fix_promote_deletes_cbb.sql supabase/parts 18000
     npm run sql:split -- supabase/cfb_lab.sql            supabase/parts 18000
     npm run sql:split -- supabase/cfb_weekly.sql         supabase/parts 18000
+    npm run portfolio:parts
 
 The part count changes as a file grows, so delete the old
 `<name>.part*-of-*.sql` for that file first.

@@ -102,9 +102,15 @@ has(APP, "(bs[i].getAttribute('data-fs')||order[i])===FB.sport", 'and the lit se
 has(APP, '<section id="v-portfolio" class="view hide">', 'Portfolio is a view');
 has(APP, '<section id="v-process" class="view hide">', 'Process is a view');
 lacks(APP, 'id="v-ledger"', 'the Ledger is no longer a page of its own');
-['betlist', 'betlistDone', 'clvKpis', 'qaList', 'lg_form', 'lg_toggle', 'portfolio', 'pfImportFile'].forEach(id =>
+/* the book is Portfolio Phase A's page (#pfoHost); the old Ledger is one section
+   under it, "Tracked from EdgeDesk" (#pfTracked), with every one of its ids */
+chk('Portfolio opens on the Phase A book, with what EdgeDesk tracked under it',
+    /<section id="v-portfolio" class="view hide">\s*<div id="pfoHost"><\/div>/.test(APP) && APP.indexOf('<details class="ws-tracked" id="pfTracked">') > APP.indexOf('id="pfoHost"'));
+['pfoHost', 'pfTracked', 'betlist', 'betlistDone', 'clvKpis', 'qaList', 'lg_form', 'lg_toggle', 'portfolio', 'pfCardOpen', 'pfCardDone'].forEach(id =>
   chk('Portfolio carries #' + id, APP.indexOf('id="' + id + '"') > APP.indexOf('<section id="v-portfolio"') && APP.indexOf('id="' + id + '"') < APP.indexOf('<section id="v-process"')));
 has(APP, "var NAV_ALIAS={ledger:'portfolio'", "show('ledger') lands on Portfolio");
+lacks(APP, "dest.push(moreItem(IC.portfolio,'Portfolio'", 'Portfolio is a seat, not also a More row');
+chk('and there is one Portfolio, not two', (APP.match(/id="v-portfolio"/g) || []).length === 1 && (APP.match(/id="pfoHost"/g) || []).length === 1);
 has(APP, '<details class="ws-mkt" id="edMarketAct"', "the Ledger's market line-move feed moved to Edges");
 chk('and its ids came with it', ['mktFeed', 'mktBanner', 'mktFresh'].every(id => APP.indexOf('id="' + id + '"') > APP.indexOf('<div id="v-edges"') && APP.indexOf('id="' + id + '"') < APP.indexOf('<div id="rsDossier"')));
 /* tracking a price keeps the reader where they were */

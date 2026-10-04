@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   PORTFOLIO and PROCESS — the reader's own history, held to what it can say.
+   TRACKED POSITIONS and PROCESS — the reader's own graded history, held to
+   what it can say. (Portfolio's book — every platform, P&L — is Portfolio
+   Phase A and has its own suites: npm run portfolio:test.)
 
-     Portfolio (lib/edgedesk_portfolio.js)
-       1  one position shape for every source (the device ledger, the Card's
-          BET PLACED), so a total never mixes units;
+     Positions (lib/edgedesk_positions.js)
+       1  one position shape for both graded stores (the device ledger, the
+          Card's BET PLACED), so a total never mixes units;
        2  dollars only from positions that carried a stake; a reader who never
-          enters stakes gets a flat-unit record, labelled as one;
-       3  open exposure, the calendar by local day, recent activity;
-       4  an import guesses nothing: no result → open, no stake → unstaked,
-          an unreadable row is reported with its reason, a re-import adds 0;
-       5  an empty portfolio says how to build it and never claims a sync.
+          enters stakes still has a flat-unit record;
+       3  every value that reaches HTML is escaped;
 
      Process (lib/edgedesk_process.js)
        6  below MIN_PROFILE graded positions: no score, no insight — a
@@ -25,7 +24,7 @@
 'use strict';
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
-const PF = require(path.join(ROOT, 'lib', 'edgedesk_portfolio.js'));
+const PF = require(path.join(ROOT, 'lib', 'edgedesk_positions.js'));
 const PC = require(path.join(ROOT, 'lib', 'edgedesk_process.js'));
 
 let pass = 0, fail = 0;
@@ -71,7 +70,7 @@ const iso = (ms) => new Date(ms).toISOString();
   chk('a grader that throws costs only the grade', PF.collect([], [{ bet_key: 'q', team: 'Q', odds: -110, placed_at: iso(NOW) }], () => { throw new Error('x'); }).length === 1);
 }
 
-/* ===================================================== 2-3 · overview, calendar */
+/* ===================================================== 2-3 · totals, rendering */
 {
   const L = [
     { id: 'w', ts: iso(NOW - 3 * DAY), commence: iso(NOW - 2 * DAY), sel: 'W', odds: 100, stake: 50, result: 'win' },
@@ -81,61 +80,20 @@ const iso = (ms) => new Date(ms).toISOString();
     { id: 'o', ts: iso(NOW - 3600e3), commence: iso(NOW + DAY), sel: 'O', odds: 150, stake: 40, result: null },
     { id: 'o2', ts: iso(NOW - 3600e3), commence: iso(NOW + 2 * DAY), sel: 'O2', odds: -110, stake: null, result: null }
   ];
-  const ov = PF.overview(PF.collect(L, [], null), NOW);
-  const t = ov.totals;
+  const t = PF.summary(PF.collect(L, [], null));
   eq('W-L-P counts every settled position', [t.w, t.l, t.p, t.settled, t.open], [2, 1, 1, 4, 2]);
   chk('dollar P&L counts only staked, non-push positions', near(t.pnl, -5) && near(t.staked, 105) && t.pnl_n === 2, t);
   chk('ROI is P&L over what was risked', near(t.roi, -5 / 105));
   chk('the flat-unit record counts every settled non-push position at 1u', t.unit_n === 3 && near(t.unit_pnl, 1 - 1 + 2), t);
   chk('open exposure is the open stakes and what they would win', near(t.open_staked, 40) && near(t.open_to_win, 60) && t.open_unstaked === 1, t);
-  chk('this week holds the positions settled in the last seven days', ov.week.settled === 3);
-  eq('current positions are the open ones, soonest game first', ov.open.map((p) => p.id), ['o', 'o2']);
-  chk('recent activity is newest first and capped', ov.activity.length <= 6 && ov.activity[0].at >= ov.activity[ov.activity.length - 1].at);
-  const empty = PF.overview([], NOW);
-  chk('an empty portfolio is marked empty', empty.empty === true);
-  const h = PF.overviewHTML(empty, {});
-  chk('and says how to build it', /Build your portfolio/.test(h) && /Connect accounts/.test(h) && /data-pf-go="accounts"/.test(h));
-  chk('and never claims a sportsbook sync it does not have', /does not sync with sportsbooks or prediction markets yet/.test(h));
-  const unst = PF.overviewHTML(PF.overview(PF.collect([{ id: 'a', ts: iso(NOW), sel: 'A', odds: 100, result: 'win' }], [], null), NOW), {});
-  chk('a reader with no stakes sees a flat-1u P&L, labelled as one', /flat 1u/.test(unst) && !/\$/.test(unst.replace(/\$0/g, '').replace(/data-[^ ]+/g, '')));
-  const d = new Date(NOW - 2 * DAY);
-  const cal = PF.calendar(PF.collect(L, [], null), d.getFullYear(), d.getMonth());
-  const cell = cal.cells.filter((c) => c && c.day === d.getDate())[0];
-  chk('the calendar puts a position on its game day', cell && cell.n === 3 && cell.w === 1 && cell.l === 1 && cell.p === 1, cell);
-  chk('and its dollars on that day', cell && near(cell.pnl, -5) && cell.has_dollars);
-  chk('the calendar is whole weeks', cal.cells.length % 7 === 0);
-  chk('an open position is never on the calendar', cal.n === 3 + (new Date(NOW - 9 * DAY).getMonth() === d.getMonth() ? 1 : 0));
-  const other = PF.calendar(PF.collect(L, [], null), 2020, 0);
-  chk('another month is empty', other.n === 0 && other.pnl === null);
-  chk('the calendar renders its month', /pf-cal-c/.test(PF.calendarHTML(cal)));
-}
-
-/* ===================================================== 4 · import */
-{
-  const csv = 'Date,Selection,Odds,Stake,Result,Sport,Book\n'
-    + '2026-09-01,"Bills -3, alt line",-110,$50,W,NFL,DraftKings\n'
-    + '2026-09-02,Jets ML,2.50,25,lost,NFL,FanDuel\n'
-    + '2026-09-03,Bad odds,abc,10,W,NFL,\n'
-    + '2026-09-04,Pending one,+120,,,NFL,\n'
-    + '2026-09-05,,-110,10,W,NFL,\n'
-    + '2026-09-06,Push one,-105,20,void,NFL,\n'
-    + '2026-09-01,"Bills -3, alt line",-110,$50,W,NFL,DraftKings\n';
-  const r = PF.parseCsv(csv, NOW);
-  eq('rows are read by header name, quoted commas kept', r.rows.map((x) => x.sel), ['Bills -3, alt line', 'Jets ML', 'Pending one', 'Push one']);
-  eq('American odds stay; decimal 2.50 becomes +150', r.rows.map((x) => x.odds), [-110, 150, 120, -105]);
-  eq('a $ and a comma in the stake are read; a blank stake stays unstaked', r.rows.map((x) => x.stake), [50, 25, null, 20]);
-  eq('results are mapped, never guessed (blank stays open; void is a push)', r.rows.map((x) => x.result), ['win', 'loss', null, 'push']);
-  chk('P&L is computed from the row, not trusted from a column', near(r.rows[0].pnl, 45.45, 0.01) && r.rows[1].pnl === -25 && r.rows[2].pnl === null && r.rows[3].pnl === 0);
-  chk('an unreadable row is reported with its reason', r.errors.length === 2 && /Row 4/.test(r.errors[0]) && /not American/.test(r.errors[0]) && /Row 6: no selection/.test(r.errors[1]), r.errors);
-  chk('a duplicate row in the same file is imported once', r.rows.length === 4);
-  chk('imported rows are marked, manual, and carry no CLV', r.rows.every((x) => x.imported && x.auto === false && x.closeFair === null && x.clv === undefined));
-  const m1 = PF.mergeImport([{ id: 'b1' }], r.rows);
-  const m2 = PF.mergeImport(m1.list, r.rows);
-  chk('a re-import of the same file adds nothing', m1.added === 4 && m2.added === 0 && m2.skipped === 4 && m2.list.length === 5);
-  chk('a file without selection or odds columns says which', PF.parseCsv('when,what\n1,2', NOW).errors.length === 2);
-  chk('a header-only file says so', /header row and at least one bet/.test(PF.parseCsv('Selection,Odds', NOW).errors[0]));
-  const p = PF.collect(r.rows, [], null);
-  chk('imported positions count for P&L but are never graded for Process', p.every((x) => x.beat_close === null) && PF.overview(p, NOW).totals.pnl_n === 2);
+  /* selections and books come from feeds or the reader's typing: escaped, always */
+  const x = PF.collect([{ id: 'x', ts: iso(NOW), sel: '<img src=x onerror=alert(1)>', book: '<b>DK</b>', sport: '"><script>', odds: -110, stake: 10, result: 'win' }], [], null)[0];
+  const h = PF.posRow(x, {});
+  chk('a row escapes the selection, the book and the sport', h.indexOf('<img') < 0 && h.indexOf('<b>DK') < 0 && h.indexOf('<script') < 0 && /&lt;img src=x/.test(h), h);
+  const k = PF.collect([], [{ bet_key: 'k', team: '<i>T</i>', line: -3, odds: -110, placed_at: iso(NOW), book: '<u>B</u>' }], () => null);
+  const kh = PF.cardListHTML(k, {}, 'From the <Card>');
+  chk('the Card list escapes its rows and its title', kh.indexOf('<i>T') < 0 && kh.indexOf('<u>B') < 0 && kh.indexOf('<Card>') < 0, kh);
+  chk('an empty Card list renders nothing', PF.cardListHTML([], {}, 'x') === '');
 }
 
 /* ===================================================== 6-8 · process */
@@ -159,9 +117,12 @@ function hist(n, opts) {
   chk('the building page says what it is building, with progress', /Building your process profile/.test(bh) && /19 of 20 positions graded/.test(bh) && /role="progressbar"/.test(bh));
   chk('the building page shows no score and no insight', !/class="pc-score"/.test(bh) && !/class="pc-ins/.test(bh));
   chk('it lists what unlocks next', /What unlocks/.test(bh) && /Edge capture/.test(bh) && /Process score, what’s working/.test(bh));
+  chk('and says which positions it grades — the tracked ones, not the Portfolio book', /Tracked from EdgeDesk/.test(bh) && /not graded here yet/.test(bh));
   chk('edge capture unlocks at MIN_EDGE, before the score', b.edge && b.edge.n === 19 && /Edge capture/.test(bh));
   chk('below MIN_EDGE there is no edge read either', PC.profile(hist(PC.MIN_EDGE - 1), { now: NOW }).edge === null);
 
+  const b17 = PC.profile(hist(17), { now: NOW });
+  chk('below the profile, comparisons are not marked unlocked (they are not shown)', b17.state === 'building' && b17.unlocks[2].done === false && !/<b>Unlocked<\/b><span>Timing/.test(PC.pageHTML(b17, {})));
   const r = PC.profile(hist(30), { now: NOW });
   chk('at the profile: ready, with a score and its interval', r.state === 'ready' && r.score && r.score.n === 30 && r.score.ci && r.score.ci.lo < r.score.rate && r.score.rate < r.score.ci.hi);
   chk('a real gap is named on both sides of the split', r.working.some((x) => x.family === 'timing' && x.key === 'early') && r.costing.some((x) => x.family === 'timing' && x.key === 'late'), [r.working, r.costing]);
@@ -193,5 +154,5 @@ function hist(n, opts) {
 
 console.log('');
 failures.forEach((f) => console.log('  FAIL  ' + f));
-console.log('\nportfolio + process: ' + pass + ' passed, ' + fail + ' failed');
+console.log('\ntracked positions + process: ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

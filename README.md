@@ -318,6 +318,32 @@ store. It is evidence, not the decision.
 - `npm run props:factory:test`, `props:factory:sql` — the data factory's suites;
   `props:factory:history`, `:backtest`, `:train`, `:project`, `:sync` — its stages
 
+## Portfolio — every bet and prediction-market position, one ledger
+*Portfolio* — a seat in the bottom bar (or `#portfolio`) — is the reader's own book across every
+sportsbook and prediction market they use, and it answers one question first:
+**am I up or down?** Below that are ROI, capital, open exposure and the record;
+sportsbook and prediction-market P&L apart and combined; P&L by platform; and
+the cumulative line.
+
+- **Tabs:** Overview, Open, History (search, filters, CSV export), Analytics
+  (7D / 30D / YTD / All; best and worst platform, sport and market type; by
+  where the idea came from) and Accounts.
+- **Getting positions in:** sportsbook bets and prediction-market positions are
+  entered by hand, or imported from a CSV that is classified on the server —
+  new, duplicate, needs review, invalid — before the reader confirms.
+- **Money:** every figure is NUMERIC, derived by a database trigger and held in
+  parity with `lib/edgedesk_portfolio.js`. Wagers and contracts follow
+  different rules: odds × stake, against fills at an average cost.
+- **No automatic sync yet**, and nothing says "Connected". The connector
+  contract for Phase B (Kalshi first) is in place.
+
+See [`docs/portfolio-architecture.md`](docs/portfolio-architecture.md) and
+[`docs/platform-support.md`](docs/platform-support.md).
+
+- `npm run portfolio:test` — the engine, the importer and the page
+- `npm run portfolio:sql` — `supabase/portfolio.sql` against a real PostgreSQL, as real readers
+- `npm run portfolio:e2e` — the page in Chromium against the real migration, desktop and a 390 px phone
+
 ## The personal research terminal
 A reader's own research now lives on their account: a **watchlist** (the star on
 every game card and on the Top 5), **research-condition alerts** under the bell

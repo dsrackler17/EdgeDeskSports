@@ -86,7 +86,14 @@ function scanText(rel, text, findings) {
       while ((m = re.exec(line))) {
         const val = m[g] || m[0];
         if (PLACEHOLDER.test(m[0]) || PLACEHOLDER.test(val)) continue;
-        findings.push({ file: rel, line: i + 1, kind, where, severity: TEST_FILE.test(rel) && FAKE.test(val) ? 'FIXTURE' : 'HIGH', fingerprint: fingerprint(val) });
+        /* A PEM header is a fixed string, so unlike every other kind it can
+           never carry a fake marker in the matched value itself — which made
+           any test of private-key redaction unclassifiable and permanently
+           HIGH. For that one kind the line it sits on is the evidence. A real
+           key committed to a test file sits on a line of its own, carries no
+           marker, and still reads HIGH; detection is unchanged. */
+        const marked = FAKE.test(val) || (kind === 'PRIVATE_KEY' && FAKE.test(line));
+        findings.push({ file: rel, line: i + 1, kind, where, severity: TEST_FILE.test(rel) && marked ? 'FIXTURE' : 'HIGH', fingerprint: fingerprint(val) });
       }
     });
   });
