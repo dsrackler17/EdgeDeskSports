@@ -171,6 +171,16 @@ insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_i
   ('custom_price_checked',    'client', 'entity_day',     37, true,  'The reader priced a line and odds of their own.'),
   ('research_saved',          'client', 'entity_day',     38, true,  'Research was saved or watched (watchlist, Card, prop watchlist).'),
   ('brief_copied',            'client', 'entity_day',     39, true,  'A research brief or card was copied or shared.'),
+  -- navigation evidence: which of the five destinations readers open, and where
+  -- they go from inside one (props.entity, e.g. 'more:collective',
+  -- 'research:props', 'portfolio:calendar', 'process:timing', 'ai:game').
+  -- One row per session per seat / per entity; the raw taps go to gtag.
+  ('primary_nav_research',    'client', 'session',        60, true,  'The Research seat in the primary navigation was tapped.'),
+  ('primary_nav_card',        'client', 'session',        60, true,  'The Card seat in the primary navigation was tapped.'),
+  ('primary_nav_portfolio',   'client', 'session',        60, true,  'The Portfolio seat in the primary navigation was tapped.'),
+  ('primary_nav_process',     'client', 'session',        60, true,  'The Process seat in the primary navigation was tapped.'),
+  ('primary_nav_more',        'client', 'session',        60, true,  'The More seat in the primary navigation was tapped.'),
+  ('secondary_nav_opened',    'client', 'session_entity', 61, true,  'A destination inside a primary one was opened (props.entity names it).'),
   ('second_session',          'server', 'once',           40, true,  'A terminal session in a different browser session from an earlier one.'),
   ('return_day_1',            'server', 'once',           41, true,  'Back in the terminal 1+ days after the account was created.'),
   ('return_day_3',            'server', 'once',           42, true,  'Back in the terminal 3+ days after the account was created.'),

@@ -54,7 +54,7 @@ None of these could hold dollar P&L across platforms and prediction markets with
 ## 2. The pieces
 
 ```
-app.html  #v-portfolio  (More → Portfolio, #portfolio, or the landing-page setting)
+app.html  #v-portfolio  (the Portfolio seat, #portfolio[/<tab>], or the landing-page setting)
    │
    ├── lib/edgedesk_portfolio_ui.js          the page: renderers + controller, PostgREST under the reader's token
    ├── lib/edgedesk_portfolio_connectors.js  the connector contract; manual + csv registered
@@ -450,7 +450,7 @@ The runner is a Supabase Edge Function plus pg_cron, the repository's existing p
    - Or paste `supabase/parts/portfolio.part1-of-8.sql` … `part8-of-8.sql` into the Supabase SQL editor, in order. The last part prints the report; all 15 rows should read `ok`.
 2. **Do not expose `portfolio_private`** in *Settings → API → Exposed schemas*.
 3. **Ship the front end:** merging deploys `app.html` and `lib/edgedesk_portfolio*.{js,css}` with the site (GitHub Pages). The script tags carry `?v=20261004pf1`; bump it when a file changes.
-4. **Check:** sign in, then *More → Portfolio* (or `/app.html#portfolio`) should show "No positions yet."
+4. **Check:** sign in, then the *Portfolio* seat (or `/app.html#portfolio`) should show "Build your portfolio."
 
 ## 13. Testing
 
@@ -459,7 +459,7 @@ The runner is a Supabase Edge Function plus pg_cron, the repository's existing p
 | `npm run portfolio:test` | **Calc (106):** decimals, every sportsbook result and price shape, parlays, YES/NO wins and losses, fees, multiple buys, partial and full sells, voids, scalar settlements, aggregation, periods, time zones and DST, validation, fingerprints. **Import (65):** CSV parsing, every cell reader, both adapters, cents detection, refusals, the connector contract, backoff, error classes, log redaction. **UI (66):** every tab rendered, filters, forms → rows, escaping, honest labels, copy guard, CSV export safety, `app.html` wiring. |
 | `npm run portfolio:sql` (167) | The migration applied twice; deadlock-free re-run under a concurrent save; hand-checked SQL money for both instruments; **parity with the JS engine on 30 hand cases + 280 seeded random positions**; SQL ≡ JS fingerprint material and rounding; duplicates (same bet across zones and spellings, occurrences, platform ids); RLS as B and anon; synced rows read-only; attribution ownership; the whole import pipeline (classify counts, review, forced duplicates, partial failure, batched and idempotent commit, fill grouping, re-import); account deletion cascades. |
 | `npm run portfolio:e2e` (39) | The page in Chromium against the real migration: empty book, form previews, record bet and contract, totals and split, open card, duplicate caught, edit, delete, CSV import with counts and confirmation, accounts never "Connected", analytics, isolation, no localStorage money, 390 px with no sideways scroll. |
-| `node tools/app/navigation.test.js` | The seven-seat bottom bar, More and deep links still hold. |
+| `node tools/app/navigation.test.js` | The five destinations (Portfolio is one), More and deep links still hold; `tools/app/navigation.e2e.js` drives them in a browser. |
 
 CI: `.github/workflows/portfolio-tests.yml` runs all of it on every relevant pull request. PostgreSQL and Chromium are both required there.
 

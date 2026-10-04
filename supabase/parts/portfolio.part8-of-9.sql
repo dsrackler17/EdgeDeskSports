@@ -1,4 +1,4 @@
--- portfolio -- part 7 of 8.
+-- portfolio -- part 8 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 

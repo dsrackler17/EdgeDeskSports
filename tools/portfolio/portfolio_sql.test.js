@@ -89,7 +89,7 @@ function wagerSql(o) {
     status: o.status || 'OPEN', reported_payout: o.reported_payout, fees: o.fees, placed_at: at, settled_at: o.settled_at,
     sport: o.sport || 'NFL', source: o.source || 'MANUAL', dedupe_occurrence: o.dedupe_occurrence, notes: o.notes,
     edge_source: o.edge_source, edge_ref_type: o.edge_ref_type, edge_ref_id: o.edge_ref_id, platform_account_id: o.platform_account_id,
-    external_position_id: o.external_position_id, line: o.line, user_id: o.user_id };
+    external_position_id: o.external_position_id, line: o.line, user_id: o.user_id, stake_type: o.stake_type };
   const keys = Object.keys(cols).filter((k) => cols[k] !== undefined && cols[k] !== null);
   return `insert into public.portfolio_positions (${keys.join(', ')}) values (${keys.map((k) => L(String(cols[k]))).join(', ')}) returning id;`;
 }
@@ -246,6 +246,7 @@ try {
     else c.odds_decimal = (1.01 + rnd() * 15).toFixed(pick([2, 3, 4]));
     if (status === 'CASHED_OUT' || status === 'SETTLED' || rnd() < 0.1) c.reported_payout = cents(0, 8000);
     if (status === 'OPEN') delete c.reported_payout;
+    if (rnd() < 0.25) c.stake_type = 'BONUS';                /* a bonus bet: no capital, winnings only */
     sbCases.push(c);
   }
   const sbIds = sbCases.map((c) => wager(A, c));
@@ -255,7 +256,9 @@ try {
     const a = canon(sbRows[sbIds[i]]), b = canon(E.derive(Object.assign({ platform_type: 'SPORTSBOOK' }, c)));
     COLS.forEach((k) => { if (a[k] !== b[k]) sbBad.push({ i, k, sql: a[k], js: b[k], c }); });
   });
-  chk('parity: 160 random wagers — the database and the browser agree on every derived figure', sbBad.length === 0, sbBad.slice(0, 3));
+  chk('parity: 160 random wagers, a quarter of them bonus bets — the database and the browser agree on every derived figure', sbBad.length === 0, sbBad.slice(0, 3));
+  chk('…and the random set really holds bonus bets, won and lost', sbCases.filter((c) => c.stake_type === 'BONUS' && c.status === 'WON').length > 0
+    && sbCases.filter((c) => c.stake_type === 'BONUS' && c.status === 'LOST').length > 0);
   const pmCases = [];
   for (let i = 0; i < 120; i++) {
     const fills = [], n = 1 + Math.floor(rnd() * 5);

@@ -3,19 +3,25 @@
    Tests for the EdgeDesk APP NAVIGATION and the system-health control.
 
    The product hierarchy is a claim the app makes with its own chrome, and
-   these hold it:
+   these hold it (docs/ia/NAVIGATION_AUDIT.md):
 
-     1  Research is first and is the default landing destination;
-     2  the EdgeDesk Card sits immediately beside it, so a reader goes from
-        the research straight to what it says to bet; Edges follows and
-        stays a separate destination;
-     3  Faults lost its seat in the bottom bar but lost NOTHING else — the
-        view, the route, the detectors and every way in still exist;
+     1  FIVE destinations, one per question a reader brings — Research ·
+        Card · Portfolio · Process · More — and no sixth one, including the
+        one the AI drawer used to append at runtime;
+     2  Props and Edges are Research panels, AI is contextual, the Ledger
+        merged into Portfolio, and Record is EdgeDesk's MODEL performance in
+        More — never the reader's own P&L;
+     3  every route the app ever shipped still lands somewhere real, and the
+        seat that owns it lights up;
      4  the header status control tells the truth about three different
         states, and never dresses a research warning as a failed system —
         as ONE compact "System" status with the database folded into it;
      5  a source that has not loaded reads "not loaded", never a clean zero;
-     6  More lists only destinations that exist.
+     6  More is sections, and lists only destinations that exist;
+     7  every seat tap and every secondary destination is recorded, so the
+        next navigation decision has evidence.
+
+   The browser half is tools/app/navigation.e2e.js.
 
    Run: node tools/app/navigation.test.js
    =========================================================================== */
@@ -39,7 +45,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 
 /* ======================================================================== */
-/* 1. THE BOTTOM NAV — ORDER, MEMBERSHIP, AND WHAT LEFT IT                  */
+/* 1. THE BOTTOM NAV — FIVE DESTINATIONS, NO SIXTH                          */
 /* ======================================================================== */
 const NAV_START = APP.indexOf('<nav class="bottomnav"');
 const NAV_END = APP.indexOf('</nav>', NAV_START);
@@ -50,93 +56,119 @@ const NAV = APP.slice(NAV_START, NAV_END);
 const live = NAV.replace(/<!--[\s\S]*?-->/g, '');
 const order = (live.match(/data-v="([a-z]+)"/g) || []).map(s => s.replace(/[^a-z]/g, '').replace(/^datav/, ''));
 
-eq('the navigation order is exactly the product hierarchy', order.join(','),
-   'research,card,pprops,edges,ai,record,more');
-eq('seven seats, not eight', order.length, 7);
-eq('Research is the left-most, primary destination', order[0], 'research');
-eq('the EdgeDesk Card sits immediately beside Research', order[1], 'card');
-eq('Player Props follows the Card', order[2], 'pprops');
-eq('Edges follows Player Props', order[3], 'edges');
-eq('More is last', order[order.length - 1], 'more');
-chk('Faults holds no seat in the bottom bar', order.indexOf('faults') < 0);
+eq('the navigation is exactly the five destinations, in order', order.join(','), 'research,card,portfolio,process,more');
+eq('five seats, not six', order.length, 5);
+['pprops', 'edges', 'ai', 'record', 'ledger', 'faults', 'collective', 'news'].forEach(v =>
+  chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0));
 chk('Research is the tab the markup rests on', /data-v="research" class="on"/.test(NAV));
 chk('and no second button claims the active class', (live.match(/class="on"/g) || []).length === 1);
-chk('Edges is still a destination of its own, not folded into Research',
-    order.indexOf('edges') >= 0 && APP.indexOf('<section id="v-edges"') >= 0);
-
-/* the Card moved OUT of More and into the bar: it opens its own view, lights
-   its own seat (not More's), keeps its #card deep link, and More no longer
-   lists it twice */
-has(APP, '<section id="v-card" class="view hide">', 'the Card view still exists');
-has(APP, 'data-v="card" aria-label="EdgeDesk Card"', 'and its seat is named for screen readers');
-lacks(APP, "card:'more'", 'the Card lights its own seat, not More');
-lacks(APP, "moreItem(IC.ledger,'EdgeDesk Card'", 'and More no longer lists it');
-has(APP, "if(v==='card'){try{if(window.EDDecisionUI)window.EDDecisionUI.showCard(", 'the router paints the Card');
-has(APP, "if((location.hash||'')==='#card')show('card');", 'and the #card deep link still lands on it');
-
-/* Collective, Ledger and News left the bar for More and lost nothing else:
-   each keeps its view, More lists it first and opens it, and More reads
-   active while it is open so a reader never loses their place */
-['collective', 'ledger', 'news'].forEach(v => {
-  chk(v + ' holds no seat in the bottom bar', order.indexOf(v) < 0);
-  has(APP, 'id="v-' + v + '"', 'the ' + v + ' view still exists');
-  has(APP, "show(\\'" + v + "\\')", 'and a More row opens it');
-});
-has(APP, "collective:'more',ledger:'more',news:'more'", 'and More reads active while one of them is open');
-chk('the destinations that left the bar come first in More',
-    APP.indexOf("'Collective','Independent model creators") < APP.indexOf("'Model & data health'"));
-lacks(live, 'nav-sec', 'no seat in the bar is half-hidden any more');
+['Research', 'EdgeDesk Card', 'Portfolio', 'Process', 'More'].forEach(l =>
+  has(live, 'aria-label="' + l + '"', 'the ' + l + ' seat is named for screen readers'));
 has(APP, "b[j].setAttribute('aria-current','page')", 'the active seat is announced, not only coloured');
+/* the AI drawer used to append its own seat whenever none was there */
+lacks(APP, "b.setAttribute('data-v','ai')", 'the AI drawer no longer appends a seat at runtime');
+has(APP, "if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}", "show('ai') still opens the drawer over whatever is on screen");
+has(APP, 'id="rsAskBtn" onclick="edAsk()"', 'Ask EdgeDesk sits in the Research header');
+has(APP, "fbGxSec(gid,'ask','Ask EdgeDesk',fbGxAsk(u)", 'and on game research');
+has(APP, "edNavTrack('primary',b.dataset.v);show(b.dataset.v);", 'a seat tap is recorded, then routed through show()');
 
 /* ======================================================================== */
-/* 2. RESEARCH IS THE DEFAULT LANDING EXPERIENCE                            */
+/* 2. WHERE EVERYTHING THAT LEFT THE BAR WENT                              */
+/* ======================================================================== */
+/* Props and Edges are Research panels, registered modules of the shell */
+has(APP, '<div id="v-pprops" class="rpanel hide"><div id="ppHost"></div></div>', 'Player Props is a Research panel');
+has(APP, '<div id="v-edges" class="rpanel hide">', 'Edges is a Research panel');
+lacks(APP, '<section id="v-edges"', 'Edges is no longer a view of its own');
+lacks(APP, '<section id="v-pprops"', 'nor is Player Props');
+has(APP, "researchRegister({id:'edges',", 'Edges is a registered research module');
+has(APP, "researchRegister({id:'pprops',", 'and so is Player Props');
+chk('both live inside the Research shell', APP.indexOf('<div id="v-pprops"') > APP.indexOf('<section id="v-research"') && APP.indexOf('<div id="v-edges"') > APP.indexOf('<section id="v-research"')
+    && APP.indexOf('<div id="v-edges"') < APP.indexOf('<div id="rsDossier"'));
+has(APP, "if(sub==='props')sub='pprops';", 'an old #research/props link lands on the Player Props terminal');
+has(APP, "if(sub==='pprops'){try{if(!/^#playerprops/.test(location.hash||''))", 'the shell never overwrites a #playerprops/… link');
+/* the Research sub-navigation: four seats, the rest one tap deeper */
+const SUB = (APP.match(/<nav class="stseg research-sub" aria-label="Research">[^\n]*?<\/nav>/) || [''])[0];
+eq('Research reads Football · Props · Edges · Other', JSON.stringify(SUB.match(/data-sub="[a-z]+"/g)),
+   JSON.stringify(['football', 'pprops', 'edges', 'other'].map(s => 'data-sub="' + s + '"')));
+const OTHER = (APP.match(/<div class="rs-oth-row hide" id="rsOther"[^\n]*?<\/div>/) || [''])[0];
+eq('Other holds the other sports, then the research tools', JSON.stringify(OTHER.match(/data-sub="[a-z]+"/g)),
+   JSON.stringify(['ufc', 'baseball', 'stats', 'lab', 'rdesk'].map(s => 'data-sub="' + s + '"')));
+has(APP, "var RS_OTHER={ufc:'UFC',baseball:'Baseball',stats:'Stats',lab:'Lab',rdesk:'Desk'};", 'and the fourth seat names whichever of them is open');
+/* Football: NFL and CFB first, rosters last, highlighted by name not position */
+eq('Football reads NFL · CFB · Players · Rankings · Rosters', JSON.stringify((APP.match(/<div class="stseg fb-seg" id="fbSeg"[^\n]*?<\/div>/) || [''])[0].match(/data-fs="[a-z0-9]+"/g)),
+   JSON.stringify(['nfl', 'p4', 'players', 'rankings', 'cfb'].map(s => 'data-fs="' + s + '"')));
+has(APP, "(bs[i].getAttribute('data-fs')||order[i])===FB.sport", 'and the lit segment is found by its data-fs');
+/* the Ledger merged into Portfolio; its ids moved with their renderers */
+has(APP, '<section id="v-portfolio" class="view hide">', 'Portfolio is a view');
+has(APP, '<section id="v-process" class="view hide">', 'Process is a view');
+lacks(APP, 'id="v-ledger"', 'the Ledger is no longer a page of its own');
+/* the book is Portfolio Phase A's page (#pfoHost); the old Ledger is one section
+   under it, "Tracked from EdgeDesk" (#pfTracked), with every one of its ids */
+chk('Portfolio opens on the Phase A book, with what EdgeDesk tracked under it',
+    /<section id="v-portfolio" class="view hide">\s*<div id="pfoHost"><\/div>/.test(APP) && APP.indexOf('<details class="ws-tracked" id="pfTracked">') > APP.indexOf('id="pfoHost"'));
+['pfoHost', 'pfTracked', 'betlist', 'betlistDone', 'clvKpis', 'qaList', 'lg_form', 'lg_toggle', 'portfolio', 'pfCardOpen', 'pfCardDone'].forEach(id =>
+  chk('Portfolio carries #' + id, APP.indexOf('id="' + id + '"') > APP.indexOf('<section id="v-portfolio"') && APP.indexOf('id="' + id + '"') < APP.indexOf('<section id="v-process"')));
+has(APP, "var NAV_ALIAS={ledger:'portfolio'", "show('ledger') lands on Portfolio");
+lacks(APP, "dest.push(moreItem(IC.portfolio,'Portfolio'", 'Portfolio is a seat, not also a More row');
+chk('and there is one Portfolio, not two', (APP.match(/id="v-portfolio"/g) || []).length === 1 && (APP.match(/id="pfoHost"/g) || []).length === 1);
+has(APP, '<details class="ws-mkt" id="edMarketAct"', "the Ledger's market line-move feed moved to Edges");
+chk('and its ids came with it', ['mktFeed', 'mktBanner', 'mktFresh'].every(id => APP.indexOf('id="' + id + '"') > APP.indexOf('<div id="v-edges"') && APP.indexOf('id="' + id + '"') < APP.indexOf('<div id="rsDossier"')));
+/* tracking a price keeps the reader where they were */
+lacks(APP, "saveBets(b);show('ledger');", 'tracking a price no longer navigates away');
+has(APP, 'window.edTracked(b[0])', 'it says where the price went instead');
+/* Record is EdgeDesk's model performance — never the reader's */
+has(APP, '<h2 style="margin:0">Model performance <span class="rec-scope">EdgeDesk&rsquo;s record &middot; not your bets', 'Record is titled as EdgeDesk\'s model performance, not the reader\'s');
+lacks(APP, "['Record','Your graded track record", 'and nothing describes it as the reader\'s record');
+has(APP, "EdgeDesk\\u2019s own graded record, in More. Its record, never yours.", 'Settings → About says whose record it is');
+chk('the P&L summary is still the first thing under the Model performance header',
+    /<div class="row-between"><h2 style="margin:0">Model performance[\s\S]{0,700}?<\/div>\s*(<!--[\s\S]*?-->\s*)*<div id="recPnlWrap"><\/div>/.test(APP));
+/* destinations with no seat light the seat that owns them */
+has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more'};", 'everything reached through More lights More');
+has(APP, "var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};", '"remember last tab" remembers destinations only');
+
+/* ======================================================================== */
+/* 3. DEFAULT LANDING, DEEP LINKS AND ROUTE SAFETY                          */
 /* ======================================================================== */
 has(APP, "defaultTab:'research'", 'the default landing page is Research');
 has(APP, "lastResearchSub:'football'", 'and the default research module is Football');
 has(APP, "lastTab:'research'", 'and a user with no memory yet is remembered as being there');
-chk('the Research shell is the view the markup paints first',
-    /<section id="v-research" class="view">/.test(APP));
-chk('and the Football panel inside it is the one on show',
-    /<div id="v-football" class="rpanel">/.test(APP));
-chk('and the Football sub-tab reads active',
-    /<button data-sub="football" class="on"/.test(APP));
-chk('Edges no longer paints first', /<section id="v-edges" class="view hide">/.test(APP));
-/* the boot must route EVERY remembered tab now that the resting state moved:
-   the old code skipped 'edges' because the markup already showed it */
-lacks(APP, "else if(_t&&_t!=='edges'&&(RESEARCH_MODULES[_t]", 'the boot no longer skips a remembered Edges');
+chk('the Research shell is the view the markup paints first', /<section id="v-research" class="view">/.test(APP));
+chk('and the Football panel inside it is the one on show', /<div id="v-football" class="rpanel">/.test(APP));
+chk('and the Football sub-tab reads active', /<button data-sub="football" class="on"/.test(APP));
+has(APP, "var _lt=NAV_ALIAS[_p.lastTab]||_p.lastTab;", 'a remembered tab from before the five destinations is read through the aliases');
 has(APP, "else if(_t&&(RESEARCH_MODULES[_t]||$('v-'+_t)))show(_t);", 'every remembered tab is routed explicitly');
 has(APP, "else researchGo(_p.lastResearchSub||'football');", 'and an unusable memory falls back to the default destination');
-has(APP, "if(_rh){", 'a deep link still beats the remembered tab');
-
-/* ======================================================================== */
-/* 3. DEEP LINKS AND ROUTE SAFETY                                           */
-/* ======================================================================== */
-/* nothing was renamed: every view id the app shipped with still exists */
-['v-edges','v-faults','v-record','v-ledger','v-news','v-research','v-terms','v-social',
- 'v-settings','v-discipline','v-football','v-cfb','v-ufc','v-stats','v-props','v-lab','v-rdesk']
-  .forEach(id => has(APP, 'id="' + id + '"', 'the ' + id + ' route still exists'));
+has(APP, "if(_rh){", 'a research deep link still beats the remembered tab');
+has(APP, "else if(navHashRoute(location.hash)){}", 'destination links (#portfolio, #process, #ledger, #receipt=…) are routed at boot');
+has(APP, "else if(typeof window.edSetupDue==='function'&&window.edSetupDue())show('setup');", 'a new account starts at setup');
+chk('and setup never beats a deep link', APP.indexOf("else if(navHashRoute(location.hash)){}") < APP.indexOf("window.edSetupDue())show('setup')")
+    && APP.indexOf("if((location.hash||'')==='#card')show('card');") < APP.indexOf("window.edSetupDue())show('setup')"));
+has(APP, "if(/^#receipt=/.test(h)){var rv=$('v-record');", 'a cold #receipt=… share link opens Model performance');
+['card', 'portfolio', 'process', 'more', 'ledger', 'record', 'pnl', 'edges', 'props', 'settings', 'faults', 'news', 'collective', 'terms'].forEach(h =>
+  chk('#' + h + ' is a link that lands', new RegExp('NAV_HASH_MAP=\\{[^}]*\\b' + h + ":'").test(APP)));
+has(APP, "if(/^#playerprops/.test(h)){if(RESEARCH_SUB!=='pprops'", '#playerprops links work inside a running app, not only at boot');
+/* nothing was renamed out of existence: every view id the app shipped with that
+   is still a page still exists, and the two new ones joined them */
+['v-edges','v-faults','v-record','v-research','v-terms','v-social','v-settings','v-discipline','v-football','v-cfb','v-ufc','v-stats','v-props','v-lab','v-rdesk','v-pprops','v-card','v-collective','v-news',
+ 'v-portfolio','v-process','v-setup']
+  .forEach(id => has(APP, 'id="' + id + '"', 'the ' + id + ' route exists'));
 has(APP, 'id="v-more"', 'and More is a view like any other');
-/* Tennis was retired from the product: its panel and tab are gone, and its old
-   routes (#research/tennis/…, #research/wta, a remembered sub) land on the
-   Research shell's default destination rather than a dead route */
+/* Tennis was retired from the product: its old routes land on the Research default */
 lacks(APP, 'id="v-tennis"', 'the Tennis panel is gone');
 lacks(APP, 'data-sub="tennis"', 'and so is its Research tab');
-chk('the Research sub-nav reads Desk | Football | UFC | Baseball | Stats | Lab',
-    JSON.stringify((APP.match(/<nav class="stseg research-sub" aria-label="Research sports">[^\n]*?<\/nav>/) || [''])[0].match(/data-sub="[a-z]+"/g))
-      === JSON.stringify(['rdesk','football','ufc','baseball','stats','lab'].map(s => 'data-sub="' + s + '"')));
 has(APP, "var RS_RETIRED=EDSPORTS.retiredModuleRoutes();", 'old tennis routes have a destination (lib/edgedesk_sports.js)');
 has(APP, "if(RS_RETIRED[sub])sub=RS_RETIRED[sub];", 'researchGo sends a retired module there');
 has(APP, "if(m&&RS_RETIRED[m[1]])return {sub:RS_RETIRED[m[1]],entity:null,retired:true};",
     'and a #research/tennis/… deep link resolves there instead of being ignored');
 has(APP, "^#research\\/([a-z]+)(?:\\/(.+))?$", 'the research hash grammar is unchanged');
 has(APP, "window.addEventListener('hashchange'", 'back and forward still route');
-/* Research is now stamped into the URL on every boot, so leaving the shell has
-   to unstamp it or every other destination is visited under a lying URL */
-has(APP, "if(/^#research\\//.test(location.hash||''))history.replaceState",
+has(APP, "if(/^#research\\//.test(_h)||/^#playerprops/.test(_h)||NAV_HASH_RE.test(_h))history.replaceState",
     'leaving the Research shell clears the research hash');
-chk('and it clears ONLY a research hash, never the record receipt link',
-    /\^#research\\\/[\s\S]{0,200}location\.pathname\+location\.search\)/.test(APP)
-    && APP.indexOf("'#receipt='") >= 0);
+chk('and it clears ONLY a research or destination hash, never the record receipt link',
+    APP.indexOf("'#receipt='") >= 0 && !/NAV_HASH_RE=\/[^/]*receipt/.test(APP));
+has(APP, "var _rp=document.querySelectorAll('#v-research .rpanel');for(var _k=0;_k<_rp.length;_k++)_rp[_k].classList.add('hide');",
+    'leaving Research hides its panels, so "is Edges on screen?" stays true only while it is');
+has(APP, "if(!$('v-portfolio').classList.contains('hide'))autoSettle()", 'the 60-second settle follows the bets to Portfolio');
 
 /* ======================================================================== */
 /* 4. FAULTS LOST A TAB AND NOTHING ELSE                                    */
@@ -254,25 +286,55 @@ chk('a failed health fetch leaves no health record', () =>
   C.sysHealthLoad(true).then(() => C.SH.health === null && !!C.SH.healthErr));
 
 /* ======================================================================== */
-/* 6. MORE LISTS ONLY WHAT EXISTS                                           */
+/* 6. MORE IS SECTIONS, AND LISTS ONLY WHAT EXISTS                          */
 /* ======================================================================== */
 has(APP, "if(v==='more')loadMore();", 'the router loads the More list');
-has(APP, "'Model & data health'", 'More offers model and data health');
-has(APP, "'sysHealthOpen()'", 'and it opens the same panel as the header control');
-has(APP, "if($('v-faults'))", 'Faults is listed only if the view exists');
-has(APP, "if(typeof window.hiwOpen==='function')", 'Methodology only if it exists');
-has(APP, 'RESEARCH_MODULES.lab', 'Data sources only if the Lab exists');
-has(APP, "if($('v-settings'))", 'Settings only if it exists');
+const MORE = APP.slice(APP.indexOf('function loadMore(){'), APP.indexOf('window.loadMore=loadMore;'));
+const groups = (MORE.match(/group\('([^']+)'/g) || []).map(g => g.slice(7, -1));
+eq('More is five sections, in order', groups.join('|'), 'Community &amp; tools|Transparency|System|Account|Legal');
+const rowIdx = (t) => MORE.indexOf("'" + t + "'");
+chk('Community & tools: Collective and Games', rowIdx('Collective') < MORE.indexOf("group('Transparency'") && MORE.indexOf("'EdgeDesk Games") < MORE.indexOf("group('Transparency'"));
+chk('Transparency: Model performance, Methodology, Data sources', ['Model performance', 'Methodology', 'Data sources'].every(t => rowIdx(t) > MORE.indexOf("group('Transparency'") && rowIdx(t) < MORE.indexOf("group('System'")));
+chk('System: Model & data health, Faults, News', ['Model & data health', 'Faults', 'News & moat alerts'].every(t => rowIdx(t) > MORE.indexOf("group('System'") && rowIdx(t) < MORE.indexOf("group('Account'")));
+chk('Account: Settings & account, Set up EdgeDesk', ['Settings & account', 'Set up EdgeDesk'].every(t => rowIdx(t) > MORE.indexOf("group('Account'") && rowIdx(t) < MORE.indexOf("group('Legal'")));
+chk('Legal: Terms & disclaimer', rowIdx('Terms & disclaimer') > MORE.indexOf("group('Legal'"));
+lacks(MORE, "'Ledger'", 'More lists no Ledger: it merged into Portfolio');
+has(MORE, "'sysHealthOpen()'", 'Model & data health opens the same panel as the header control');
+has(APP, '<button class="moreitem" onclick="event.stopPropagation();', 'and a row\'s tap no longer closes that panel in the same click');
+has(MORE, "$('v-faults')?", 'Faults is listed only if the view exists');
+has(MORE, "typeof window.hiwOpen==='function'?", 'Methodology only if it exists');
+has(MORE, 'RESEARCH_MODULES.lab', 'Data sources only if the Lab exists');
+has(MORE, "$('v-settings')?", 'Settings only if it exists');
 has(APP, "labOpen('provenance')", 'and Data sources reaches the real provenance tool');
-chk('no More row invents a page', !/moreItem\([^)]*'(show|open)\('(?!faults|terms)/.test(APP));
+has(MORE, 'tel:18004262537', 'More ends with the helpline, as a link');
+const moreCalls = MORE.split('\n').filter(l => /moreItem\(IC\./.test(l));
+chk('every More row is recorded as more:<id>', moreCalls.length >= 10 && moreCalls.every(l => /,'[a-z_]+'\)(:''|\]|,|\)|$)/.test(l.trim())), moreCalls.filter(l => !/,'[a-z_]+'\)(:''|\]|,|\)|$)/.test(l.trim())));
+has(APP, "var go=(id?'edNavTrack(\\'secondary\\',\\'more:'+id+'\\');':'')+call;", 'and the row itself sends it');
 
 /* ======================================================================== */
-/* 7. NOTHING THIS TASK WAS TOLD NOT TO TOUCH MOVED                         */
+/* 7. NAVIGATION EVIDENCE                                                   */
 /* ======================================================================== */
-['function loadEdges(', 'function loadRecord(', 'function loadMarket(', 'function loadCollective(',
- 'FL_DETECTORS', 'renderCalibration(', 'window.Discipline']
+const TRACK = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_track.js'), 'utf8');
+const FSQL = fs.readFileSync(path.join(ROOT, 'supabase', 'funnel.sql'), 'utf8');
+['primary_nav_research', 'primary_nav_card', 'primary_nav_portfolio', 'primary_nav_process', 'primary_nav_more', 'secondary_nav_opened'].forEach(n => {
+  has(TRACK, "'" + n + "'", n + ' is a name the tracker sends');
+  chk(n + ' is in funnel.sql\'s client registry', new RegExp("\\('" + n + "',\\s*'client'").test(FSQL));
+});
+has(APP, "var name=kind==='primary'?'primary_nav_'+dest:'secondary_nav_opened';", 'a seat tap is primary_nav_<seat>, everything else secondary_nav_opened');
+has(APP, "edNavTrack('secondary','research:'+b.dataset.sub)", 'Research tabs are recorded');
+
+/* ======================================================================== */
+/* 8. NOTHING THAT WORKS WAS DELETED                                        */
+/* ======================================================================== */
+['function loadEdges(', 'function loadRecord(', 'function loadMarket(', 'function loadCollective(', 'function loadNews(',
+ 'FL_DETECTORS', 'renderCalibration(', 'window.Discipline', 'function renderLedger(', 'function trackSignal(', 'function autoSettle(']
   .forEach(s => has(APP, s, 'untouched: ' + s));
 has(APP, "renderLedger();loadEdges();", 'the board still loads at boot, whatever the landing view is');
+/* the disclaimer keeps every element */
+const FOOT = (APP.match(/<div class="foot" id="edFoot"[^\n]*<\/div>/) || [''])[0];
+['Research and decision-support tool.', 'Decision support.', 'Signals can be wrong.', '21+', 'Bet responsibly', '1-800-GAMBLER', "show('terms')"]
+  .forEach(t => has(FOOT, t, 'the disclaimer keeps "' + t + '"'));
+has(FOOT, 'href="tel:18004262537"', 'and the helpline is a tap-to-call link');
 
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));

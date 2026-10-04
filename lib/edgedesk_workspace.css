@@ -1,0 +1,198 @@
+/* ===========================================================================
+   EdgeDesk WORKSPACE — styles for the five-destination navigation
+   (docs/ia/NAVIGATION_AUDIT.md): the Research seats, Portfolio, Process, setup,
+   the sectioned More, the desktop rail and the compact disclaimer line.
+   Same tokens, same type, same components as the rest of app.html — nothing
+   here introduces a new colour or a new font.
+   =========================================================================== */
+
+/* ---------- research: four seats, then "Other" -------------------------- */
+.stseg.research-sub button.rs-oth{display:inline-flex;align-items:center;justify-content:center;gap:3px}
+.rs-chev{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none;transition:transform .15s}
+.rs-oth[aria-expanded="true"] .rs-chev{transform:rotate(180deg)}
+.rs-oth-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-4px 0 12px}
+.rs-oth-row.hide{display:none}
+.rs-oth-row .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-right:-1px}
+.rs-oth-row .k:not(:first-child){margin-left:8px}
+.rs-oth-row button{background:var(--surface2);border:1px solid var(--border);color:var(--dim);border-radius:999px;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;min-height:34px;cursor:pointer}
+.rs-oth-row button:hover{color:var(--text)}
+.rs-oth-row button.on{color:var(--accent);border-color:rgba(47,167,154,.5);background:rgba(47,167,154,.12)}
+.rs-oth-row button:focus-visible,.stseg.research-sub button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+@media(max-width:479px){.stseg.research-sub button{flex:1 1 0;min-width:0}}
+/* the Player Props terminal is a wide workspace; the shell widens while it is open, as it does for the Lab */
+#v-research:has(#v-pprops:not(.hide)){max-width:1480px}
+.rs-tool.rs-ask{color:var(--accent)}
+
+/* ---------- Edges: market activity, folded in from the Ledger ------------- */
+.ws-mkt{margin-top:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:0 12px}
+.ws-mkt>summary{cursor:pointer;list-style:none;display:flex;align-items:baseline;gap:8px;padding:12px 0;flex-wrap:wrap}
+.ws-mkt>summary::-webkit-details-marker{display:none}
+.ws-mkt>summary b{font-size:13px;color:var(--text)}
+.ws-mkt>summary span{font-size:11px;color:var(--dim)}
+.ws-mkt>summary .freshness{margin-left:auto}
+.ws-mkt[open]{padding-bottom:12px}
+
+/* ---------- Model performance: whose record it is, in its title ---------- */
+.rec-scope{display:block;font-size:10.5px;letter-spacing:.02em;text-transform:none;color:var(--faint);font-weight:500;margin-top:3px}
+.rec-scope .pf-link{font-size:inherit}
+
+/* ---------- shared bits ---------------------------------------------------- */
+.ws-lede{color:var(--dim);font-size:13px;line-height:1.5;margin:-4px 0 12px}
+.pf-link{background:none;border:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.pf-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+.pf-ey{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.pf-t{font-size:16px;font-weight:700;color:var(--text);line-height:1.35;margin:6px 0 10px}
+.pf-note{font-size:11.5px;color:var(--dim);line-height:1.5;margin:10px 0 0}
+.pf-none{font-size:12.5px;color:var(--faint);padding:8px 0}
+.pf-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pf-acts .btn{width:auto;flex:1 1 auto;font-size:14px;padding:12px 16px}
+.up{color:var(--pos)}.dn{color:var(--neg)}
+
+/* ---------- Portfolio: the Phase A page, then what EdgeDesk tracked ------
+   The book itself is lib/edgedesk_portfolio.css (.pfo-*); these style the
+   scope line under it and the "Tracked from EdgeDesk" section (the old
+   Ledger), whose rows are lib/edgedesk_positions.js posRow(). */
+.pf-scope{margin:14px 0 12px;font-size:12px}
+.ws-tracked{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:0 12px;margin-top:4px}
+.ws-tracked>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;padding:13px 0;min-height:44px;box-sizing:border-box}
+.ws-tracked>summary::-webkit-details-marker{display:none}
+.ws-tracked>summary b{font-size:13.5px;color:var(--text)}
+.ws-tracked>summary span{font-size:11px;color:var(--faint);flex:1 1 220px}
+.ws-tracked>summary .ws-n{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-left:auto}
+.ws-tracked>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.ws-tracked[open]{padding-bottom:12px}
+.ws-tracked .quickadd{margin-top:14px}
+.pf-kpi{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:12px 14px;min-width:0}
+.pf-kpi .v{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-kpi .v.up{color:var(--pos)}.pf-kpi .v.dn{color:var(--neg)}
+.pf-kpi .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.pf-kpi .n{font-size:10.5px;color:var(--faint);margin-top:4px;line-height:1.35}
+.pf-h{display:flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:16px 0 8px}
+.pf-h span{font-family:'JetBrains Mono',monospace;color:var(--faint)}
+.pf-sec{margin:14px 0 0}
+.pf-pos{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:11px;margin-bottom:6px}
+.pf-pos-l{min-width:0;flex:1 1 auto}
+.pf-pos-l b{display:block;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-pos-l span{display:block;font-size:11px;color:var(--faint);margin-top:2px;line-height:1.4}
+.pf-res,.pf-live{flex:none;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--dim);text-align:right}
+.pf-res.up,.pf-live.up{color:var(--pos)}.pf-res.dn,.pf-live.dn{color:var(--neg)}
+
+/* ---------- Process ----------------------------------------------------- */
+.pc-score{display:flex;gap:14px;align-items:center;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:14px 16px;margin-bottom:6px}
+.pc-score-v{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:700;color:var(--accent);line-height:1;flex:none}
+.pc-score-t b{display:block;font-size:13px;color:var(--text)}
+.pc-score-t span{display:block;font-size:11.5px;color:var(--dim);line-height:1.45;margin-top:3px}
+.pc-sec{margin-top:16px}
+.pc-h{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700;margin:16px 0 8px}
+.pc-dd{margin-top:24px}
+.pc-ins{border:1px solid var(--border);border-left:3px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:6px}
+.pc-ins.working{border-left-color:var(--pos)}.pc-ins.costing{border-left-color:var(--neg)}
+.pc-ins>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:baseline;padding:11px 12px}
+.pc-ins>summary::-webkit-details-marker{display:none}
+.pc-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid var(--border);color:var(--dim)}
+.pc-tag.clear{color:var(--accent);border-color:rgba(47,167,154,.5)}
+.pc-txt{flex:1 1 220px;font-size:13px;color:var(--text);line-height:1.45}
+.pc-why-b{font-size:11px;color:var(--accent);margin-left:auto}
+.pc-why{font-size:12px;color:var(--dim);line-height:1.5;padding:0 12px 12px}
+.pc-week,.pc-focus-t{font-size:13px;color:var(--text);line-height:1.5}
+.pc-focus{border:1px solid rgba(47,167,154,.35);background:rgba(47,167,154,.06);border-radius:12px;padding:2px 14px 12px}
+.pc-deep{border:1px solid var(--border);border-radius:11px;background:var(--surface);margin-bottom:6px;padding:0 12px}
+.pc-deep>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;padding:12px 0;min-height:44px;box-sizing:border-box}
+.pc-deep>summary::-webkit-details-marker{display:none}
+.pc-deep>summary b{font-size:13px;color:var(--text)}
+.pc-deep>summary span{font-size:11px;color:var(--faint)}
+.pc-deep[open]{padding-bottom:12px}
+.pc-tbl{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.pc-tr{display:grid;grid-template-columns:minmax(0,2.2fr) .8fr 1fr 1fr;gap:6px;padding:8px 10px;font-size:12px;color:var(--text);border-top:1px solid var(--border)}
+.pc-tr:first-child{border-top:none}
+.pc-tr.h{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:700;background:var(--surface2)}
+.pc-tr span:not(:first-child){font-family:'JetBrains Mono',monospace;text-align:right}
+.pc-tr i{font-style:normal;font-size:9.5px;color:var(--warn);font-family:inherit}
+.pc-note{font-size:11px;color:var(--faint);line-height:1.5;margin-top:8px}
+.pc-build{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:16px}
+.pc-bar{height:8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);overflow:hidden;margin-top:4px}
+.pc-bar i{display:block;height:100%;background:var(--accent);border-radius:999px;min-width:2px}
+.pc-bar-l{font-size:11.5px;color:var(--dim);margin-top:6px}
+.pc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.pc-unl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pc-unl li{display:flex;gap:10px;align-items:baseline;font-size:12.5px;color:var(--dim);line-height:1.45}
+.pc-unl li b{flex:none;width:92px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint)}
+.pc-unl li.done b{color:var(--accent)}
+.pc-meth{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:16px}
+
+/* ---------- Card: what else is on the reader's list -------------------- */
+.ws-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+@media(min-width:760px){.ws-links{grid-template-columns:repeat(4,1fr)}}
+.ws-links-h{grid-column:1/-1;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.ws-links button{text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 12px;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;min-height:56px}
+.ws-links button span{display:block;font-size:11px;font-weight:400;color:var(--faint);margin-top:2px}
+.ws-links button:hover{border-color:var(--dim)}
+
+/* ---------- contextual news + Ask EdgeDesk on game research -------------- */
+.ws-news{display:flex;flex-direction:column;gap:6px}
+.ws-news-i{display:block;text-decoration:none;border:1px solid var(--border);border-radius:9px;padding:9px 11px;background:var(--surface2)}
+.ws-news-i.alert{border-color:rgba(217,154,43,.45)}
+.ws-news-i b{display:block;font-size:12.5px;color:var(--text);font-weight:600;line-height:1.4}
+.ws-news-i span{display:block;font-size:10.5px;color:var(--faint);margin-top:3px}
+.ws-ask{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:2px 0}
+
+/* ---------- "tracked in Portfolio" ------------------------------------- */
+.ws-toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 14px);z-index:9990;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px 10px 14px;font-size:13px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.ws-toast span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ws-toast button{flex:none;background:none;border:1px solid rgba(47,167,154,.5);color:var(--accent);border-radius:8px;font:inherit;font-weight:700;font-size:12px;padding:7px 12px;cursor:pointer;min-height:34px}
+
+/* ---------- More ------------------------------------------------------- */
+#moreList .morehd{margin-top:14px}
+#moreList .morehd:first-child{margin-top:0}
+.more-rg{font-size:11.5px;color:var(--dim);margin:16px 2px 0;line-height:1.5}
+.more-rg a{color:var(--accent)}
+
+/* ---------- Setup ------------------------------------------------------- */
+.su{max-width:560px;margin:0 auto}
+.su-steps{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.su-steps li{display:flex;flex-direction:column;gap:4px;font-size:10.5px;color:var(--faint);font-weight:600;min-width:0}
+.su-steps li span{display:block;height:4px;border-radius:999px;background:var(--surface2);font-size:0;overflow:hidden}
+.su-steps li.on{color:var(--text)}.su-steps li.on span,.su-steps li.done span{background:var(--accent)}
+.su-card{border:1px solid var(--border);border-radius:16px;background:var(--surface);padding:18px 16px}
+.su-t{font-size:20px;line-height:1.3;letter-spacing:0;text-transform:none;color:var(--text);font-weight:700;margin:6px 0 10px}
+.su-p{font-size:13.5px;color:var(--dim);line-height:1.55;margin:0 0 12px}
+.su-dest{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;counter-reset:su}
+.su-dest li{display:flex;gap:10px;align-items:baseline;border:1px solid var(--border);border-radius:10px;background:var(--surface2);padding:9px 11px}
+.su-dest li b{flex:none;width:76px;font-size:13px;color:var(--text)}
+.su-dest li span{font-size:12.5px;color:var(--dim);line-height:1.45}
+.su-foot{display:flex;justify-content:space-between;margin:12px 4px 0;font-size:13px}
+.su-legal{font-size:10.5px;color:var(--faint);text-align:center;margin-top:18px}
+.su-legal a{color:var(--accent)}
+
+/* ---------- the disclaimer line ------------------------------------------
+   Same words, same order, every element kept (decision support · signals can
+   be wrong · 21+ · bet responsibly · 1-800-GAMBLER). At a legible size that
+   line needs ~400px, so it is ONE line from ~412px phones up and two compact
+   lines below that (≈30px, was 34px) — never cut, never clipped, and --foot
+   follows its real height. On a phone it and the nav read as one bottom unit:
+   one surface, one top rule, instead of two stacked bars. */
+.foot .ft-tel{color:var(--accent);text-decoration:none;font-weight:600;white-space:nowrap}
+/* a line breaks only between elements, never inside "Signals can be wrong." */
+.foot .ft-n,.foot .footlink{white-space:nowrap}
+.foot .ft-tel:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+@media(max-width:479px){
+  .foot{padding:3px 6px;font-size:9.75px;line-height:1.2;letter-spacing:-.01em;background:color-mix(in srgb,var(--surface) 92%,transparent)}
+  .foot .sep{margin:0 2.5px}
+  .bottomnav{border-top-color:transparent}
+}
+
+/* ---------- desktop: the same five destinations, as a rail ---------------
+   Presentation differs, the hierarchy does not: the very same <nav> and its
+   five buttons, stood on the left edge. The disclaimer moves to the foot of
+   the window; nothing else changes place. */
+@media(min-width:1180px){
+  :root{--rail:200px;--nav:0px}
+  body{padding-left:var(--rail)}
+  .bottomnav{top:0;bottom:0;right:auto;width:var(--rail);flex-direction:column;justify-content:flex-start;gap:2px;padding:84px 10px 16px;border-top:none;border-right:1px solid var(--border);background:var(--surface)}
+  .bottomnav button{flex:none;width:100%;height:46px;flex-direction:row;justify-content:flex-start;gap:12px;padding:0 14px;font-size:13.5px;letter-spacing:0;border-radius:10px;text-align:left}
+  .bottomnav button::before{top:50%;left:0;transform:translateY(-50%);width:3px;height:0;border-radius:0 3px 3px 0}
+  .bottomnav button.on::before{width:3px;height:22px}
+  .bottomnav button.on{background:rgba(47,167,154,.1)}
+  .bottomnav button:hover{background:var(--surface2)}
+  .foot{left:var(--rail);bottom:0}
+}

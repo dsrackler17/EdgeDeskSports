@@ -60,7 +60,8 @@ chk('P&L by platform, every platform with a settled position', /DraftKings/.test
 chk('the cumulative chart is drawn', /<svg class="pfo-chart"/.test(h) && /<polyline/.test(h));
 chk('open positions are summarized with their unrealized mark, labelled as the reader\'s', /Marked to the prices you entered: \+\$7\.00/.test(t));
 const empty = strip(U.render.overview(Object.assign({}, S, { positions: [] })));
-chk('an empty book shows no figure at all — no sample data', /No positions yet/.test(empty) && !/\$\d/.test(empty), empty);
+chk('an empty book shows no figure at all — no sample data', /Build your portfolio/.test(empty) && !/\$\d/.test(empty), empty);
+chk('and says how to build one: connect accounts first, then import or record by hand', /Connect accounts\s+Import a CSV\s+Record a sportsbook bet/.test(empty), empty);
 
 /* ═══ OPEN ══════════════════════════════════════════════════════════════ */
 t = strip(U.render.open(S));
@@ -163,15 +164,19 @@ const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const order = ['edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_ui.js'].map((f) => APP.indexOf('<script src="/lib/' + f + '?v='));
 chk('app.html loads the engine, importer, contract and page, in that order', order.every((i) => i > 0) && order.every((i, k) => k === 0 || i > order[k - 1]), order);
 chk('and the stylesheet', /<link rel="stylesheet" href="\/lib\/edgedesk_portfolio\.css\?v=/.test(APP));
-chk('a #v-portfolio view with its own host (not the Ledger\'s id="portfolio")', APP.indexOf('<section id="v-portfolio" class="view hide"><div id="pfoHost"></div></section>') > 0 && (APP.match(/id="portfolio"/g) || []).length === 1);
-chk('the router paints it', APP.indexOf("if(v==='portfolio'){try{if(window.EDPortfolioUI)window.EDPortfolioUI.show($('pfoHost'));}catch(_){}}") > 0);
-chk('More reads active while it is open', APP.indexOf("news:'more',portfolio:'more'}") > 0);
-chk('#portfolio deep-links to it', APP.indexOf("else if((location.hash||'')==='#portfolio')show('portfolio');") > 0);
-chk('More lists it first among the destinations, only if the view exists', APP.indexOf("if($('v-portfolio'))dest.push(moreItem(IC.portfolio,'Portfolio'") > 0
-  && APP.indexOf("if($('v-portfolio'))dest.push") < APP.indexOf("if($('v-collective'))dest.push"));
-chk('a reader can make it their landing page', APP.indexOf("['research','pprops','portfolio','edges'") > 0);
+/* Since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md) Portfolio
+   is a SEAT of its own, not a More row: the same page in the same host, opened by
+   lib/edgedesk_workspace_ui.js pfOpen(), with the old Ledger's tracked prices as
+   one section under it. */
+const WS = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_workspace_ui.js'), 'utf8');
+chk('a #v-portfolio view with its own host (not the Ledger\'s id="portfolio")', /<section id="v-portfolio" class="view hide">\s*<div id="pfoHost"><\/div>/.test(APP) && (APP.match(/id="portfolio"/g) || []).length === 1 && (APP.match(/id="v-portfolio"/g) || []).length === 1);
+chk('the router paints it', APP.indexOf("if(v==='portfolio'){try{if(window.pfOpen)window.pfOpen();}catch(_){}}") > 0 && WS.indexOf('PFS.ctl = W.EDPortfolioUI.show(host)') > 0);
+chk('its own seat reads active while it is open', /var NAV_PRIMARY=\{[^}]*portfolio:1/.test(APP) && !/NAV_OWNER=\{[^}]*portfolio:/.test(APP));
+chk('#portfolio deep-links to it, and #portfolio/<tab> to a tab', /NAV_HASH_MAP=\{[^}]*portfolio:'portfolio'/.test(APP) && APP.indexOf("if(t==='portfolio'&&m[2]){try{if(window.pfSetTab)window.pfSetTab(m[2],true);}catch(_){}}") > 0);
+chk('More no longer lists it: it has a seat', APP.indexOf("dest.push(moreItem(IC.portfolio,'Portfolio'") < 0);
+chk('a reader can make it their landing page', APP.indexOf("['portfolio','Portfolio']") > 0);
 const nav = APP.slice(APP.indexOf('<nav class="bottomnav"'), APP.indexOf('</nav>', APP.indexOf('<nav class="bottomnav"'))).replace(/<!--[\s\S]*?-->/g, '');
-chk('the seven-seat bottom bar is untouched', (nav.match(/data-v="/g) || []).length === 7 && !/portfolio/.test(nav));
+chk('Portfolio is one of the five seats', (nav.match(/data-v="/g) || []).length === 5 && /data-v="portfolio"/.test(nav));
 chk('the CSS prefix does not collide with the Ledger\'s .pfl- panel', !/\.pfl-/.test(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_portfolio.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')));
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : '')));

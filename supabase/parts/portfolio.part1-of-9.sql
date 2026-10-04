@@ -1,4 +1,4 @@
--- portfolio -- part 1 of 8.
+-- portfolio -- part 1 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -246,31 +246,36 @@ create table if not exists public.platform_accounts (
   constraint platform_accounts_error check (last_error is null or length(last_error) <= 500),
   constraint platform_accounts_cursor check (sync_cursor is null or length(sync_cursor) <= 2000)
 );
+-- How an account's data arrives, apart from what kind of platform it is
+-- (platform_type is the SOURCE TYPE: SPORTSBOOK or PREDICTION_MARKET):
+--   ingestion_method  MANUAL · FILE_IMPORT · API_KEY · PUBLIC_WALLET · OAUTH · AUTHORIZED_API
+--   connection_tier   1 automatic authorization (OAUTH, AUTHORIZED_API) ·
+--                     2 assisted automatic (API_KEY, PUBLIC_WALLET) ·
+--                     3 easy import (FILE_IMPORT) · 4 manual (MANUAL)
+-- An account can be upgraded in place (QUICK IMPORT → AUTOMATIC) by the
+-- service role when a real integration exists: its history stays where it is.
+alter table public.platform_accounts add column if not exists ingestion_method text null;
+alter table public.platform_accounts add column if not exists connection_tier int null;
+alter table public.platform_accounts add column if not exists history_start_at timestamptz null;
+update public.platform_accounts set ingestion_method = case connection_type when 'MANUAL' then 'MANUAL' when 'CSV' then 'FILE_IMPORT'
+    when 'API' then 'API_KEY' when 'OAUTH' then 'OAUTH' else 'AUTHORIZED_API' end
+ where ingestion_method is null;
+update public.platform_accounts set connection_tier = case ingestion_method when 'OAUTH' then 1 when 'AUTHORIZED_API' then 1
+    when 'API_KEY' then 2 when 'PUBLIC_WALLET' then 2 when 'FILE_IMPORT' then 3 else 4 end
+ where connection_tier is null;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'platform_accounts_ingestion') then
+    alter table public.platform_accounts add constraint platform_accounts_ingestion check (
+      (connection_type = 'MANUAL' and ingestion_method = 'MANUAL' and connection_tier = 4)
+      or (connection_type = 'CSV' and ingestion_method = 'FILE_IMPORT' and connection_tier = 3)
+      or (connection_type = 'API' and ingestion_method in ('API_KEY', 'PUBLIC_WALLET') and connection_tier = 2)
+      or (connection_type = 'API' and ingestion_method = 'AUTHORIZED_API' and connection_tier = 1)
+      or (connection_type = 'OAUTH' and ingestion_method = 'OAUTH' and connection_tier = 1)
+      or (connection_type = 'AGGREGATOR' and ingestion_method = 'AUTHORIZED_API' and connection_tier = 1));
+  end if;
+end $$;
+
 comment on table public.platform_accounts is
   'The platforms a reader tracks and how. MANUAL and CSV accounts are created by readers; API, OAUTH and AGGREGATOR accounts only by the service role after a real connection. No credential is ever stored here.';
 create unique index if not exists platform_accounts_one_per_method
   on public.platform_accounts (user_id, platform, connection_type, coalesce(external_account_id, ''));
-
-create or replace function public.platform_accounts_guard() returns trigger
-language plpgsql as $$
-begin
-  if tg_op = 'INSERT' then
-    if auth.uid() is not null then new.user_id := auth.uid(); end if;
-    if new.connection_type = 'CSV' and new.status = 'MANUAL' then new.status := 'IMPORT_ONLY'; end if;
-    new.created_at := now();
-  else
-    new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at;
-    new.platform := old.platform; new.platform_type := old.platform_type; new.connection_type := old.connection_type;
-    if auth.uid() is not null then
-      new.external_account_id := old.external_account_id; new.status := old.status;
-      new.last_sync_at := old.last_sync_at; new.last_success_at := old.last_success_at; new.last_error := old.last_error;
-      new.sync_cursor := old.sync_cursor; new.metadata := old.metadata;
-    end if;
-  end if;
-  new.platform_label := btrim(new.platform_label);
-  new.updated_at := now();
-  return new;
-end $$;
-drop trigger if exists platform_accounts_guard_trg on public.platform_accounts;
-create trigger platform_accounts_guard_trg before insert or update on public.platform_accounts
-  for each row execute function public.platform_accounts_guard();

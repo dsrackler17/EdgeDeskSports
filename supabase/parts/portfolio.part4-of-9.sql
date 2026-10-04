@@ -1,60 +1,6 @@
--- portfolio -- part 3 of 8.
+-- portfolio -- part 4 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
-
-create unique index if not exists portfolio_transactions_external_once
-  on public.portfolio_transactions (user_id, platform, external_transaction_id) where external_transaction_id is not null;
-create unique index if not exists portfolio_transactions_fingerprint_once
-  on public.portfolio_transactions (user_id, fingerprint, dedupe_occurrence) where external_transaction_id is null and fingerprint is not null;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- 6. THE ARITHMETIC — every derived column, computed here and nowhere else
--- ─────────────────────────────────────────────────────────────────────────────
--- Is this a link being cleared because what it pointed at was deleted? A
--- foreign key's ON DELETE SET NULL runs as an UPDATE of the referencing row,
--- after the referenced row is gone; the triggers below that keep a link fixed
--- for life must let exactly that update through, or the row keeps naming a
--- record that no longer exists.
-create or replace function public.portfolio_link_released(p_old uuid, p_new uuid, p_kind text)
-returns boolean language sql stable as $$
-  select p_old is not null and p_new is null and case p_kind
-    when 'import' then not exists (select 1 from public.portfolio_imports i where i.id = p_old)
-    when 'account' then not exists (select 1 from public.platform_accounts a where a.id = p_old)
-    else false end
-$$;
-
-create or replace function public.portfolio_american_to_decimal(p_american int)
-returns numeric language sql immutable strict as $$
-  select case when p_american >= 100 then 1 + public.portfolio_div_round(p_american, 100, 6)
-              when p_american <= -100 then 1 + public.portfolio_div_round(100, abs(p_american), 6) end
-$$;
-
--- profit on a winning wager, to the cent, from the price as the source gave it
-create or replace function public.portfolio_wager_profit(p_stake numeric, p_american int, p_decimal numeric)
-returns numeric language sql immutable as $$
-  select case when p_stake is null then null
-              when p_american >= 100 then public.portfolio_div_round(p_stake * p_american, 100, 2)
-              when p_american <= -100 then public.portfolio_div_round(p_stake * 100, abs(p_american), 2)
-              when p_decimal > 1 then public.portfolio_div_round(p_stake * (p_decimal - 1), 1, 2) end
-$$;
-
--- Does the reader own the EdgeDesk record this position names? Runs as the
--- caller, so row level security on the named table applies as well.
-create or replace function public.portfolio_edge_ref_owned(p_user uuid, p_type text, p_id text)
-returns boolean language plpgsql stable as $$
-declare ok boolean := false;
-begin
-  if p_type = 'stake_recommendation' and to_regclass('public.stake_recommendations') is not null then
-    execute 'select exists (select 1 from public.stake_recommendations where recommendation_id = $1 and user_id = $2)' into ok using p_id, p_user;
-  elsif p_type = 'research_journal' and to_regclass('public.research_journal') is not null then
-    execute 'select exists (select 1 from public.research_journal where entry_id::text = $1 and user_id = $2)' into ok using p_id, p_user;
-  elsif p_type = 'card_opportunity' and to_regclass('public.card_opportunities') is not null then
-    execute 'select exists (select 1 from public.card_opportunities where id::text = $1 and user_id = $2)' into ok using p_id, p_user;
-  elsif p_type = 'user_bet' and to_regclass('public.user_bets') is not null then
-    execute 'select exists (select 1 from public.user_bets where id::text = $1 and user_id = $2)' into ok using p_id, p_user;
-  end if;
-  return coalesce(ok, false);
-end $$;
 
 create or replace function public.portfolio_positions_derive() returns trigger
 language plpgsql as $$
@@ -165,20 +111,21 @@ begin
       new.odds_decimal := public.portfolio_american_to_decimal(new.odds_american);
     end if;
     new.potential_profit := public.portfolio_wager_profit(new.stake, new.odds_american, new.odds_decimal);
-    new.potential_payout := trim_scale(new.stake + new.potential_profit);
-    new.cost_basis := new.stake;
+    /* a bonus bet risks no cash and pays only its winnings */
+    new.potential_payout := case when new.stake_type = 'BONUS' then new.potential_profit else trim_scale(new.stake + new.potential_profit) end;
+    new.cost_basis := case when new.stake_type = 'BONUS' then 0 else new.stake end;
     if new.status = 'OPEN' then
-      new.open_cost_basis := new.stake; new.gross_payout := null; new.profit_loss := null; new.realized_profit_loss := null;
+      new.open_cost_basis := new.cost_basis; new.gross_payout := null; new.profit_loss := null; new.realized_profit_loss := null;
       new.result := null; new.settled_at := null;
     else
       new.gross_payout := case new.status
         when 'WON' then coalesce(new.reported_payout, new.potential_payout)
         when 'LOST' then coalesce(new.reported_payout, 0)
-        when 'PUSH' then coalesce(new.reported_payout, new.stake)
-        when 'VOID' then coalesce(new.reported_payout, new.stake)
+        when 'PUSH' then coalesce(new.reported_payout, new.cost_basis)
+        when 'VOID' then coalesce(new.reported_payout, new.cost_basis)
         else new.reported_payout end;
       new.gross_payout := trim_scale(new.gross_payout);
-      new.profit_loss := trim_scale(new.gross_payout - new.stake - new.fees);
+      new.profit_loss := trim_scale(new.gross_payout - new.cost_basis - new.fees);
       new.realized_profit_loss := new.profit_loss;
       new.open_cost_basis := 0;
       new.result := case new.status when 'WON' then 'WIN' when 'LOST' then 'LOSS' when 'PUSH' then 'PUSH' when 'VOID' then 'VOID'
@@ -188,7 +135,7 @@ begin
     end if;
   else
     -- ── a contract position: rebuilt from its fills, average-cost method ──
-    new.odds_american := null; new.odds_decimal := null; new.stake := null;
+    new.odds_american := null; new.odds_decimal := null; new.stake := null; new.stake_type := 'CASH';
     select coalesce(sum(t.quantity) filter (where t.transaction_type = 'BUY' or (t.transaction_type = 'FILL' and t.side = 'BUY')), 0),
            coalesce(sum(t.amount)   filter (where t.transaction_type = 'BUY' or (t.transaction_type = 'FILL' and t.side = 'BUY')), 0),
            coalesce(sum(t.quantity) filter (where t.transaction_type = 'SELL' or (t.transaction_type = 'FILL' and t.side = 'SELL')), 0),
@@ -255,3 +202,41 @@ end $$;
 drop trigger if exists portfolio_positions_derive_trg on public.portfolio_positions;
 create trigger portfolio_positions_derive_trg before insert or update on public.portfolio_positions
   for each row execute function public.portfolio_positions_derive();
+
+-- Checked at COMMIT, so a position and its first fill can arrive in one
+-- transaction in either order: a contract position has at least one buy and
+-- never more contracts sold than bought.
+create or replace function public.portfolio_positions_check_fills() returns trigger
+language plpgsql as $$
+declare b numeric; s numeric;
+begin
+  if new.platform_type <> 'PREDICTION_MARKET' then return null; end if;
+  if not exists (select 1 from public.portfolio_positions where id = new.id) then return null; end if;
+  select coalesce(sum(quantity) filter (where transaction_type = 'BUY' or (transaction_type = 'FILL' and side = 'BUY')), 0),
+         coalesce(sum(quantity) filter (where transaction_type = 'SELL' or (transaction_type = 'FILL' and side = 'SELL')), 0)
+    into b, s from public.portfolio_transactions where position_id = new.id;
+  if b <= 0 then
+    raise exception 'portfolio: a prediction-market position needs at least one buy' using errcode = '23514';
+  end if;
+  if s > b then
+    raise exception 'portfolio: more contracts sold than bought' using errcode = '23514';
+  end if;
+  return null;
+end $$;
+drop trigger if exists portfolio_positions_fills_trg on public.portfolio_positions;
+create constraint trigger portfolio_positions_fills_trg after insert or update on public.portfolio_positions
+  deferrable initially deferred for each row execute function public.portfolio_positions_check_fills();
+
+-- a renamed market re-fingerprints its fills
+create or replace function public.portfolio_positions_after_update() returns trigger
+language plpgsql as $$
+begin
+  if new.platform_type = 'PREDICTION_MARKET'
+     and (new.platform, new.event_name, new.market_name, new.side) is distinct from (old.platform, old.event_name, old.market_name, old.side) then
+    update public.portfolio_transactions set updated_at = now() where position_id = new.id;
+  end if;
+  return null;
+end $$;
+drop trigger if exists portfolio_positions_after_update_trg on public.portfolio_positions;
+create trigger portfolio_positions_after_update_trg after update on public.portfolio_positions
+  for each row execute function public.portfolio_positions_after_update();
