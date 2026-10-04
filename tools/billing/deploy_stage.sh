@@ -29,9 +29,11 @@ mkdir -p "$OUT"
 SUMMARY="${GITHUB_STEP_SUMMARY:-$OUT/summary.md}"
 API="${SUPABASE_API:-https://api.supabase.com}/v1/projects/${SUPABASE_PROJECT_REF:-}"
 SLUGS='["sync_subscription","stripe_webhook","create_checkout_session"]'
-# the last stripe_webhook build before the hardening, and the commit it lives in
-ROLLBACK_COMMIT=2c12f48bb7d46fc119b89c10215517503ee23d37
-ROLLBACK_BUILD=stripe_webhook-2026-09-12-referral-1
+# Rollback restores the source production was ACTUALLY running, saved by
+# backup_fn into billing_ops.function_backups just before the deploy over it.
+# Production's webhook was pasted in by hand (build stripe_webhook-2026-09-12-
+# referral-2 is not in git), so a git commit is only the last-resort fallback.
+FALLBACK_COMMIT=2c12f48bb7d46fc119b89c10215517503ee23d37
 
 section() { echo; echo "════ $*"; printf '\n### %s\n\n' "$*" >> "$SUMMARY"; }
 note()    { echo "$*"; printf '%s\n\n' "$*" >> "$SUMMARY"; }
@@ -125,8 +127,36 @@ unschedule() {
   # nested, so a project without pg_cron never even parses the cron.job reference
   psql_run -c "do \$u\$ begin if to_regclass('cron.job') is not null then perform cron.unschedule(jobname) from cron.job where jobname = 'billing_reconcile_sweep'; end if; end \$u\$;" >/dev/null
 }
+# Save the source production is running BEFORE anything is deployed over it.
+# A function that is not deployed has nothing to save; one that is deployed and
+# cannot be saved is not deployed over (there would be no way back).
+backup_fn() {
+  local slug="$1" ver d f build sha tag
+  ver="$(jq -r --arg s "$slug" '.[] | select(.slug == $s) | .version' "$OUT/deployed.json" 2>/dev/null || true)"
+  if [ -z "$ver" ]; then note "$slug is not deployed yet: nothing to back up"; return 0; fi
+  d="$OUT/backup_$slug"; rm -rf "$d"; mkdir -p "$d/supabase"
+  supabase functions download "$slug" --project-ref "$SUPABASE_PROJECT_REF" --use-api --workdir "$d" >/dev/null 2>&1 \
+    || stop "could not download the deployed $slug (version $ver) — without a copy there is no rollback, so it is not being replaced"
+  f="$(find "$d" -path "*/functions/$slug/index.ts" | head -1)"
+  [ -n "$f" ] && [ -s "$f" ] || stop "the downloaded $slug has no index.ts"
+  build="$(sed -n "s/^const BUILD = '\([^']*\)';.*/\1/p" "$f" | head -1)"
+  sha="$(sha256sum "$f" | cut -c1-64)"
+  tag="src_$(od -An -N6 -tx1 /dev/urandom | tr -d ' \n')"
+  grep -qF "\$$tag\$" "$f" && stop "could not quote the $slug source safely"
+  { printf 'create table if not exists billing_ops.function_backups (id bigint generated always as identity primary key, saved_at timestamptz not null default now(), slug text not null, build text, version integer, sha256 text not null, source text not null);\n'
+    printf 'insert into billing_ops.function_backups (slug, build, version, sha256, source) values (%s, %s, %s, %s, $%s$' \
+      "'$slug'" "$([ -n "$build" ] && echo "'$build'" || echo null)" "${ver:-null}" "'$sha'" "$tag"
+    cat "$f"
+    printf '$%s$) returning id;\n' "$tag"
+  } > "$OUT/backup_$slug.sql"
+  psql_run -1 -f "$OUT/backup_$slug.sql" >/dev/null || stop "could not save the $slug backup"
+  local back; back="$(psql_run -c "select sha256 from billing_ops.function_backups where slug = '$slug' order by id desc limit 1" | tr -d ' ')"
+  [ "$back" = "$sha" ] || stop "the saved $slug backup does not match what was downloaded"
+  note "Saved the running $slug (version $ver, build \`${build:-unmarked}\`, sha256 ${sha:0:12}…) to billing_ops.function_backups — rollback restores exactly this"
+}
 deploy_fn() {
   section "Deploy $1"
+  backup_fn "$1"
   supabase functions deploy "$1" --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
   wait_build "$1" "$(expected_build "$1")"
   verify_jwt_off "$1"
@@ -230,13 +260,30 @@ case "$STAGE" in
                  union all select 'cron job', case when to_regclass('cron.job') is null then 'pg_cron not installed' when not has_table_privilege(to_regclass('cron.job'), 'select') then 'cron.job not readable' else coalesce((select x::text from unnest(xpath('//row/x/text()', query_to_xml('select jobname || '' '' || schedule || '' active '' || active::text as x from cron.job where jobname = ''billing_reconcile_sweep''', false, false, ''))) x limit 1), 'not scheduled') end" | tee >(fence)
     ;;
   rollback_stripe_webhook)
-    section "Roll stripe_webhook back to $ROLLBACK_BUILD"
-    git fetch --no-tags --depth=1 origin "$ROLLBACK_COMMIT"
-    git show "$ROLLBACK_COMMIT:supabase/functions/stripe_webhook/index.ts" > supabase/functions/stripe_webhook/index.ts
-    supabase functions deploy stripe_webhook --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt
-    wait_build stripe_webhook "$ROLLBACK_BUILD"
+    section "Roll stripe_webhook back to the build production was running before this deployment"
+    RB="$OUT/rollback"; rm -rf "$RB"; mkdir -p "$RB/supabase/functions/stripe_webhook"
+    HARDENED="$(expected_build stripe_webhook)"
+    # the newest saved copy that is not the hardened build itself
+    psql_run -c "select id from billing_ops.function_backups where slug = 'stripe_webhook' and build is distinct from '$HARDENED' order by id desc limit 1" \
+      > "$OUT/rb_id.txt" 2>/dev/null || true
+    RB_ID="$(tr -d ' \n' < "$OUT/rb_id.txt")"
+    if [ -n "$RB_ID" ]; then
+      psql "$SB_DB_URL" -X -A -t -v ON_ERROR_STOP=1 -c "select source from billing_ops.function_backups where id = $RB_ID" > "$RB/supabase/functions/stripe_webhook/index.ts"
+      want="$(psql_run -c "select sha256 from billing_ops.function_backups where id = $RB_ID" | tr -d ' ')"
+      # psql -A -t adds one trailing newline to the value it prints
+      head -c -1 "$RB/supabase/functions/stripe_webhook/index.ts" > "$RB/index.tmp" && mv "$RB/index.tmp" "$RB/supabase/functions/stripe_webhook/index.ts"
+      [ "$(sha256sum "$RB/supabase/functions/stripe_webhook/index.ts" | cut -c1-64)" = "$want" ] || stop "the restored source does not match its saved sha256"
+      note "Restoring backup #$RB_ID (the source production ran before the hardened build)"
+    else
+      note "WARN: no saved copy in billing_ops.function_backups — falling back to git $FALLBACK_COMMIT, which is NOT necessarily the build production ran"
+      git fetch --no-tags --depth=1 origin "$FALLBACK_COMMIT"
+      git show "$FALLBACK_COMMIT:supabase/functions/stripe_webhook/index.ts" > "$RB/supabase/functions/stripe_webhook/index.ts"
+    fi
+    RB_BUILD="$(sed -n "s/^const BUILD = '\([^']*\)';.*/\1/p" "$RB/supabase/functions/stripe_webhook/index.ts" | head -1)"
+    supabase functions deploy stripe_webhook --project-ref "$SUPABASE_PROJECT_REF" --no-verify-jwt --workdir "$RB"
+    wait_build stripe_webhook "$RB_BUILD"
     verify_jwt_off stripe_webhook
-    note "Rolled back. The old build works on the migrated schema (it upserts columns that still exist)."
+    note "Rolled back to \`$RB_BUILD\`. The old build works on the migrated schema (it upserts columns that still exist)."
     ;;
   checkout_kill_switch)
     section "Server-side checkout OFF: unset STRIPE_PRICE_ID"

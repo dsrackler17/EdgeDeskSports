@@ -43,7 +43,10 @@ begin
 
   -- an account with a row, and a DIFFERENT, non-operator account to act as
   select s.user_id into v_other from public.subscriptions s order by s.created_at limit 1;
-  for v_id in select u.id from auth.users u where u.id is distinct from v_other order by u.created_at desc limit 50 loop
+  -- the deployment's own probe accounts first (tools/billing/prod_probe.js),
+  -- so a real customer's id is used only before those exist
+  for v_id in select u.id from auth.users u where u.id is distinct from v_other
+               order by coalesce(u.raw_user_meta_data ->> 'billing_probe', '') = 'true' desc, u.created_at desc limit 50 loop
     v_admin := false;
     if has_is_admin then
       perform set_config('request.jwt.claims', json_build_object('sub', v_id, 'role', 'authenticated')::text, true);

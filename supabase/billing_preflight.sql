@@ -359,15 +359,18 @@ checks(n, section, item, verdict, detail) as (
                     where table_schema = 'public' and table_name = 'subscriptions'
                       and privilege_type in ('INSERT', 'UPDATE', 'DELETE')), 'none')
   union all
-  select 308, '3 security', 'community_is_entitled(uuid) answers for ANY account id to any signed-in reader',
+  select 308, '3 security', 'community_is_entitled(uuid) answers for ANY account id to any caller who may run it',
          case when to_regprocedure('public.community_is_entitled(uuid)') is not null
                    and has_function_privilege('authenticated', to_regprocedure('public.community_is_entitled(uuid)'), 'execute')
               then 'WARN' else 'PASS' end,
          case when to_regprocedure('public.community_is_entitled(uuid)') is null then 'not installed'
               when has_function_privilege('authenticated', to_regprocedure('public.community_is_entitled(uuid)'), 'execute')
-              then 'pre-existing (community_posts.sql): a reader who knows another account''s id can learn one boolean, ' ||
-                   'whether it has access. Not changed by this deployment (billing_hardening.sql keeps its grants). ' ||
-                   'Follow-up: answer only for auth.uid() unless the caller is the service role.'
+              then 'pre-existing (community_posts.sql): callable by signed-in readers' ||
+                   case when has_function_privilege('anon', to_regprocedure('public.community_is_entitled(uuid)'), 'execute')
+                        then ' AND by anonymous callers (anon)' else '' end ||
+                   '; whoever knows another account''s id can learn one boolean, whether it has access. ' ||
+                   'Not changed by this deployment (billing_hardening.sql keeps its grants). ' ||
+                   'Follow-up: answer only for auth.uid() unless the caller is the service role, and revoke it from anon.'
               else 'not callable by clients' end
 
   -- ── 4. integrity (Phase 3) ───────────────────────────────────────────────

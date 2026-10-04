@@ -435,7 +435,7 @@ that does not hold.
 | 2 | `apply_sql_dry_run` | nothing (rolled back) | the whole of stage 3 against production data | — |
 | 3 | `apply_sql` | `billing_ops` snapshot + `billing_hardening.sql`, **one transaction** | postflight A–I (`supabase/billing_postflight.sql`) and the role probe **inside** the transaction; it commits only if both pass | a FAIL rolls everything back; nothing is kept |
 | 4 | `deploy_sync_subscription` | the function | build served, `verify_jwt` off, Phase 6 probes 1–9 (`prod_probe.js sync`) | `remove_sync_subscription` |
-| 5 | `deploy_stripe_webhook` | the function | build served, signed-only (unsigned and forged → 400, not on the ledger), then traces the first real delivery event → ledger → account → writer → row → rule (waits 10 min; resend one from Stripe to speed it up) | `rollback_stripe_webhook` |
+| 5 | `deploy_stripe_webhook` | the function (after saving the running source to `billing_ops.function_backups`) | build served, signed-only (unsigned and forged → 400, not on the ledger), then traces the first real delivery event → ledger → account → writer → row → rule (waits 10 min; resend one from Stripe to speed it up) | `rollback_stripe_webhook` |
 | 6 | `deploy_create_checkout_session` | the function, and `STRIPE_PRICE_ID` if `stripe_price_id` is given | Phase 8 probes (`prod_probe.js checkout`), with the kill switch reported if no price is set | `checkout_kill_switch` |
 | 7 | — | Stripe dashboard (below), then the real smoke test (below) | `verify` with `subject_user_id` | |
 | 8 | `apply_cron` | the pg_cron job | a manual sync is on record; shows what the first sweep will look at; watches the first sweeps (25 min) and reports scanned / unchanged / repaired / revoked / errors / alerts | **any revocation, any error, or more repairs than max(3, 10% of paying rows) unschedules it again** and fails |
@@ -521,9 +521,17 @@ Stripe when done (a refund does not end access; cancel it to end access).
 ## 10. Rollback
 
 Each line has a workflow stage (§9a) that does it and verifies it: `checkout_kill_switch`,
-`rollback_stripe_webhook` (redeploys build `stripe_webhook-2026-09-12-referral-1`
-from commit `2c12f48`), `remove_sync_subscription`, `disable_cron`. The full
+`rollback_stripe_webhook`, `remove_sync_subscription`, `disable_cron`. The full
 pre-apply state of every `subscriptions` row is in `billing_ops.snapshots`.
+
+**The webhook rollback restores what production actually ran.** The preflight
+found production serving `stripe_webhook-2026-09-12-referral-2`, a build that was
+pasted into the dashboard and exists in no git commit. So before any function is
+deployed over, the stage downloads the running source (`supabase functions
+download --use-api`) into `billing_ops.function_backups` (private, with its
+sha256), and refuses to deploy if it cannot. `rollback_stripe_webhook` restores
+the newest saved copy byte for byte; only if none exists does it fall back to git
+commit `2c12f48` (`…-referral-1`), and it says so.
 
 | What | How | Effect |
 |---|---|---|
