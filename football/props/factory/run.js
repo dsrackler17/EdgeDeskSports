@@ -185,7 +185,8 @@ async function stageProject(wh, a) {
     const doc = X.build(scored, models.registry, board);
     const w = X.write(doc);
     if (fresh.length) { fs.mkdirSync(path.dirname(ledger), { recursive: true }); fs.appendFileSync(ledger, fresh.map((p) => JSON.stringify(p)).join('\n') + '\n'); }
-    log(lg + ': projected ' + scored.props.length + ' player-markets across ' + scored.games.length + ' games (' + fresh.length + ' new predictions); ' + doc.n + ' exported for the terminal' + (board ? '' : ' (no terminal board on file: every projection exported)') + ', ' + w);
+    log(lg + ': projected ' + scored.props.length + ' player-markets across ' + scored.games.length + ' games (' + fresh.length + ' new predictions); ' + doc.n + ' exported for the terminal' + (board ? '' : ' (no terminal board on file: every projection exported)')
+      + (doc.deferred_games ? ' (' + doc.deferred_games.length + ' latest games deferred to keep the file under ' + X.MAX_BYTES[lg] + ' bytes)' : '') + ', ' + w);
     res[lg] = scored;
   }
   return res;

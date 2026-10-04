@@ -74,13 +74,17 @@ jobs:
           restore-keys: |
             props-factory-
 
+      # project and weekly rewrite the committed projections, so their export
+      # suite runs on the new file before it is published (below): checked
+      # here, a bad committed file would fail every run before the run that
+      # replaces it (2026-10-04, an oversized NFL file)
       - name: Factory suites (kernel, leakage, identity, odds, export)
         run: |
           node football/props/factory/dist.test.js
           node football/props/factory/leakage.test.js
           node football/props/factory/identity.test.js
           node football/props/factory/odds.test.js
-          node football/props/factory/export.test.js
+          if [ "$MODE" != "project" ] && [ "$MODE" != "weekly" ]; then node football/props/factory/export.test.js; fi
 
       - name: Factory SQL contract against a real PostgreSQL
         if: ${{ env.MODE == 'test' || env.MODE == 'weekly' || env.MODE == 'apply_sql' }}
@@ -117,6 +121,10 @@ jobs:
       - name: Project upcoming games for the terminal
         if: ${{ env.MODE == 'project' || env.MODE == 'weekly' }}
         run: node --max-old-space-size=12288 football/props/factory/run.js project --offline $LEAGUE_ARG
+
+      - name: Export suite on the projections about to be published
+        if: ${{ env.MODE == 'project' || env.MODE == 'weekly' }}
+        run: node football/props/factory/export.test.js
 
       - name: Publish
         if: ${{ env.MODE == 'project' || env.MODE == 'weekly' }}

@@ -495,6 +495,34 @@ async function syncWith(db, doc, now, extra) {
     eq('rows that already share a shape still travel in one request', single.length, 1);
   }
 
+  /* ====================================================================== */
+  /* 13. THE GATE WAITS OUT A DATABASE BLIP                                   */
+  /* ====================================================================== */
+  /* UFC live failed its gate four times on 2026-10-03/04: PostgREST answered
+     503 PGRST002 (the database unreachable) past the client's ~3.5 s of
+     retries. The gate only reads; it now waits minutes, not seconds. */
+  {
+    const UD = require('./db.js');
+    const pgrst002 = { ok: false, status: 503, text: async () => JSON.stringify({ code: 'PGRST002', message: 'Could not query the database for the schema cache. Retrying.' }) };
+    const run = async (opts, failFor) => {
+      let calls = 0; const waits = [];
+      const c = UD.client({ url: 'https://example.invalid', key: 'k' }, async () => (++calls <= failFor ? pgrst002 : { ok: true, status: 200, text: async () => '[]' }),
+        Object.assign({ sleep: async (ms) => { waits.push(ms); } }, opts));
+      const r = await c.select('ufc', 'events', 'select=event_id').then(() => 'ok', (e) => e);
+      return { r, calls, waited: waits.reduce((a, b) => a + b, 0) };
+    };
+    const short = await run({}, 10);
+    chk('the default client still gives up in seconds (the poller keeps its own loop)', short.r instanceof Error && short.r.status === 503 && short.calls === 4 && short.waited === 3500, JSON.stringify(short));
+    const gate = await run(G.GATE_DB, 12);
+    chk('the gate rides out twelve PGRST002 answers and reads the cards', gate.r === 'ok' && gate.calls === 13, JSON.stringify(gate));
+    const down = await run(G.GATE_DB, 99);
+    chk('a database down for good still fails the gate, after minutes of waiting', down.r instanceof Error && down.calls === 13 && down.waited >= 180000 && down.waited <= 240000, JSON.stringify({ calls: down.calls, waited: down.waited }));
+    let refused = 0;
+    await UD.client({ url: 'https://example.invalid', key: 'k' }, async () => { refused++; return { ok: false, status: 401, text: async () => '{}' }; }, Object.assign({ sleep: async () => {} }, G.GATE_DB))
+      .select('ufc', 'events', 'select=event_id').catch(() => {});
+    eq('a refused credential is not retried, however patient the gate', refused, 1);
+  }
+
   const line = 'UFC pipeline | ' + pass + ' passed, ' + fail + ' failed';
   if (fail) { console.log('FAIL | ' + line); failures.forEach(f => console.log('  ✗ ' + f)); process.exit(1); }
   console.log('PASS | ' + line);

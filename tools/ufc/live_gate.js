@@ -27,6 +27,14 @@ const D = require('./db.js');
 const BEFORE_MS = 45 * 60 * 1000;
 const AFTER_MS = 9 * 3600 * 1000;
 
+/* A DATABASE BLIP IS NOT A FAILED GATE. While Postgres is unreachable
+   PostgREST answers 503 PGRST002 (or the request times out), and the
+   client's default ~3.5 s of retries ran out inside one on every failed gate
+   of 2026-10-03/04 (05:35, 11:10, 21:59, 00:28 UTC). The gate only reads, so
+   it waits: 12 retries, backoff doubling to a 30 s cap — about 3.5 min of
+   waiting, 5-8 min with the requests — before it fails (the job allows 12). */
+const GATE_DB = { retries: 12, backoffCapMs: 30000 };
+
 function parseArgs(argv) {
   const o = { event: null, now: null };
   for (let i = 0; i < argv.length; i++) {
@@ -64,7 +72,7 @@ async function main() {
   const nowMs = o.now ? Date.parse(o.now) : Date.now();
   const cfg = D.config();
   if (!cfg) { console.error('No service credential (EDGD_SB_SERVICE + EDGD_SB_URL).'); output({ found: 'false', event_id: '' }); process.exit(1); }
-  const db = D.client(cfg);
+  const db = D.client(cfg, null, GATE_DB);
   let chosen = null, reason = '';
   if (o.event) {
     const rows = await db.select('ufc', 'events', `select=event_id,name,scheduled_at,event_state&event_id=eq.${encodeURIComponent(o.event)}`);
@@ -84,5 +92,5 @@ async function main() {
   console.log('[ufc-gate] ' + reason);
 }
 
-module.exports = { pick, parseArgs, BEFORE_MS, AFTER_MS };
+module.exports = { pick, parseArgs, BEFORE_MS, AFTER_MS, GATE_DB };
 if (require.main === module) main().catch(e => { console.error('[ufc-gate] failed: ' + (e && e.stack || e)); output({ found: 'false', event_id: '' }); process.exit(1); });

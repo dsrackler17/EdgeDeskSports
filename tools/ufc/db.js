@@ -38,6 +38,8 @@ function client(cfg, fetchImpl, opts) {
   const f = fetchImpl || ((...a) => fetch(...a));
   const retries = opts.retries != null ? opts.retries : 3;
   const timeoutMs = opts.timeoutMs || 20000;
+  const backoffCapMs = opts.backoffCapMs || 8000;
+  const wait = opts.sleep || sleep;
   const stats = { requests: 0, failures: 0, writes: 0, lastLatencyMs: null };
 
   function headers(schema, extra) {
@@ -72,7 +74,7 @@ function client(cfg, fetchImpl, opts) {
         if (e && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429) throw e;
       } finally { if (timer) clearTimeout(timer); }
       stats.failures++;
-      if (attempt < retries) await sleep(Math.min(8000, 500 * Math.pow(2, attempt)));
+      if (attempt < retries) await wait(Math.min(backoffCapMs, 500 * Math.pow(2, attempt)));
     }
     throw lastErr;
   }
