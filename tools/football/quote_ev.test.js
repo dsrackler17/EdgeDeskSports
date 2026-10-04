@@ -315,7 +315,13 @@ section('8. the alternate ladder');
   /* the real tournament audit */
   const tour = require(path.join(ROOT, 'football', 'cfb_ev', 'artifacts', 'cfb_ev_calibration_v1', 'tournament.json'));
   const td = Q.tailDomain(tour.alternate_line_domain);
-  chk('tail domain from the CFB alternate-line audit is ±3 pts (±7 fails the slope band)', td.validated_within_pts === 3, td);
+  /* It was ±3 before the 2026-10-04 re-centring. The raw curve now keeps its
+     spikes on their margins, and the calibration anchor's location move
+     (lib/edgedesk_ev.js shiftedHome) displaces them by a game-dependent
+     amount. The +3 slope fell from 1.24 to 0.10, against a 95% CI about ±1.15
+     wide either way, so no alternate is inside a validated tail. */
+  chk('tail domain from the CFB alternate-line audit: +3 fails the slope band, so no alternate is validated (−3 passes; ±7 fail)',
+    td.validated_within_pts === 0 && td.audited.some((a) => a.offset === 3 && !a.pass) && td.audited.some((a) => a.offset === -3 && a.pass), td);
   chk('no audit, no validated domain', Q.tailDomain(null).validated_within_pts === 0);
   /* a non-monotone distribution is caught */
   const bad = Object.assign(model(), { home_cover: (t) => (Math.abs(t - 5.5) < 1e-9 ? { win: 0.3, push: 0, lose: 0.7 } : normalCover(1.3, 14)(t)) });
@@ -352,6 +358,9 @@ section('9. sanity guards');
   chk('a push on a half point is flagged', Q.priceQuote(pushHalf, q('away', 6.5, -110), ctx()).flags.some((f) => f.code === 'UNEXPECTED_PUSH'));
   const noPush = Object.assign(model(), { home_cover: (t) => ({ win: 0.45, push: 0, lose: 0.55 }) });
   chk('a whole-number line with no push is flagged', Q.priceQuote(noPush, q('away', 7, -110), ctx()).flags.some((f) => f.code === 'INTEGER_PUSH_MISSING'));
+  /* a college pick'em pushes only on a tie, which a college game cannot have */
+  chk('a college pick’em with no push is NOT a missing push', !Q.priceQuote(noPush, q('home', 0, -110), ctx()).flags.some((f) => f.code === 'INTEGER_PUSH_MISSING'));
+  chk('…while an NFL pick’em with no push is still a missing push (NFL games can tie)', Q.priceQuote(Object.assign({}, noPush, { sport: 'NFL' }), q('home', 0, -110), ctx()).flags.some((f) => f.code === 'INTEGER_PUSH_MISSING'));
   const clean = Q.priceQuote(M, q('away', 7, -110), ctx({ main_line_for_side: 7 }));
   chk('a coherent quote raises no arithmetic flag', !clean.flags.some((f) => /MISMATCH|INCONSISTENT|SIGN/.test(f.code)), clean.flags);
 }
@@ -415,28 +424,62 @@ section('12. parity with the other implementations');
     if (!near(d, 1 + DEC.americanToPayout(a), 1e-12)) bad++;
   }
   chk('EV matches research_core, edgedesk_ev and decision.js on 200 cases', bad === 0, bad);
-  /* the champion's conditioned curve: the shared function is the one build.js used */
+  /* the champion's conditioned curve. Re-centring REWEIGHTS the borrowed row
+     in place (2026-10-04): the row keeps its margins, so margin 0 (a tie a
+     college game cannot have) keeps no mass and the key numbers stay where
+     games end. Before, a whole-point shift carried the tie hole onto Temple -3
+     (UConn @ Temple, fair +6.2, row 3.0) while a tie got 6% of the mass. */
   const P = window.EDCfbP4Params, D = P.distributions, base = (P.volatility && P.volatility.sigma_base) || D.sigma_margin;
-  function original(fair, condMargin, sigma, sigmaBase) {              /* the pre-move build.js v1CoverConditioned, verbatim */
+  /* an INDEPENDENT reference: the same rule written plainly, theta by bisection */
+  function reference(fair, condMargin, sigma, sigmaBase) {
     const tab = D.margin_pmf_by_spread, rng = D.pmf_spread_range;
-    if (condMargin == null || !tab || !rng || condMargin < rng[0] || condMargin > rng[1]) return null;
+    if (condMargin == null || condMargin < rng[0] || condMargin > rng[1]) return null;
     let key = (Math.round(condMargin * 2) / 2).toFixed(1); if (key === '-0.0') key = '0.0';
     const pmf = tab[key] || tab[Math.round(condMargin).toFixed(1)]; if (!pmf) return null;
-    const es = Object.keys(pmf).map((k) => [parseInt(k, 10), pmf[k]]).sort((a, b) => a[0] - b[0]);
-    let em = 0, ew = 0; es.forEach((e) => { em += e[0] * e[1]; ew += e[1]; });
-    const shift = ew > 0 ? Math.round(fair - em / ew) : 0, stretch = (sigma && sigmaBase && sigmaBase > 0) ? sigma / sigmaBase : 1;
-    const pts = es.map((e) => { const m = e[0] + shift; let w = e[1]; if (Math.abs(stretch - 1) >= 0.02) { const z0 = (m - fair) / (sigmaBase || 1), z1 = (m - fair) / (sigma || 1); w = e[1] * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch; } return [m, w]; });
-    const tot = pts.reduce((s, x) => s + x[1], 0); if (!(tot > 0)) return null;
-    return (t) => { let win = 0, push = 0; pts.forEach((x) => { if (Math.abs(x[0] - t) < 1e-9) push += x[1]; else if (x[0] > t) win += x[1]; }); return { win: win / tot, push: push / tot, lose: 1 - (win + push) / tot }; };
+    const rows = Object.keys(tab).map((k) => { let s = 0, w = 0; Object.keys(tab[k]).forEach((m) => { s += +m * tab[k][m]; w += tab[k][m]; }); return s / w; });
+    const lo = Math.min.apply(null, rows), hi = Math.max.apply(null, rows);
+    const es = Object.keys(pmf).map((k) => [+k, pmf[k]]);
+    const mu = es.reduce((s, x) => s + x[0] * x[1], 0) / es.reduce((s, x) => s + x[1], 0);
+    const sd = Math.sqrt(es.reduce((s, x) => s + (x[0] - mu) * (x[0] - mu) * x[1], 0) / es.reduce((s, x) => s + x[1], 0));
+    const c = Math.min(hi, mu + sd, Math.max(lo, mu - sd, fair)), rest = fair - c, n = Math.floor(rest), f = rest - n;
+    const by = new Map(); const add = (m, w) => by.set(m, (by.get(m) || 0) + w);
+    es.forEach(([m, w]) => { add(m + n, w * (1 - f)); if (f > 0) add(m + n + 1, w * f); });
+    const st = sigma / sigmaBase;
+    const pts = [...by].map(([m, w]) => [m, (m === 0 ? 0 : w) * (Math.abs(st - 1) >= 0.02 ? Math.exp(-0.5 * (((m - fair) / sigma) ** 2 - ((m - fair) / sigmaBase) ** 2)) / st : 1)]);
+    const meanAt = (th) => { let a = 0, b = 0; pts.forEach(([m, w]) => { const e = w * Math.exp(th * (m - fair)); a += e; b += e * (m - fair); }); return b / a; };
+    let tl = -1, th = 1; for (let i = 0; i < 200; i++) { const mid = (tl + th) / 2; if (meanAt(mid) > 0) th = mid; else tl = mid; }
+    const fin = pts.map(([m, w]) => [m, w * Math.exp(((tl + th) / 2) * (m - fair))]), tot = fin.reduce((s, x) => s + x[1], 0);
+    return (t) => { let win = 0, push = 0; fin.forEach((x) => { if (Math.abs(x[0] - t) < 1e-9) push += x[1]; else if (x[0] > t) win += x[1]; }); return { win: win / tot, push: push / tot, lose: 1 - (win + push) / tot }; };
   }
-  let diff = 0, n = 0;
-  [[1.3, 6.5, 14.9], [-8.2, -10, 17], [21, 17.5, 12], [0.4, 0, base], [-3, 3, 20]].forEach(([f, c, s]) => {
-    const A = Q.cfbConditionedCover(D, f, c, s, base), B = original(f, c, s, base);
-    for (let t = -40; t <= 40; t += 0.5) { const a = A(t), b = B(t); n++; if (a.win !== b.win || a.push !== b.push || a.lose !== b.lose) diff++; }
+  const CASES = [[1.3, 6.5, 14.9], [-8.2, -10, 17], [21, 17.5, 12], [0.4, 0, base], [-3, 3, 20], [6.2, 3, 14.9], [26, 10, 14.84], [41.42, 45, 14.9], [52, 45, 16], [-44, -45, 15], [30, -2, 14.9]];
+  let worst = 0, n = 0;
+  CASES.forEach(([f, c, s]) => {
+    const A = Q.cfbConditionedCover(D, f, c, s, base), B = reference(f, c, s, base);
+    for (let t = -60; t <= 70; t += 0.5) { const a = A(t), b = B(t); n++; worst = Math.max(worst, Math.abs(a.win - b.win), Math.abs(a.push - b.push)); }
   });
-  chk('cfbConditionedCover is byte-identical to the pre-move build.js function (' + n + ' thresholds)', diff === 0, diff);
-  const c = Q.cfbConditionedCover(D, 1.3, 6.5, 14.9, base)(6.5), e = E1.dist.coverProbSpread(1.3, 6.5, 14.9, base);
-  chk('at the market margin it reproduces the engine’s own cover probability', near(c.win, e.win, 1e-12) && near(c.push, e.push, 1e-12));
+  chk('cfbConditionedCover matches an independent reference of the re-centring (' + n + ' thresholds, |Δ| < 1e-9)', worst < 1e-9, worst);
+  let bits = 0;
+  CASES.forEach(([f, c, s]) => { const a = Q.cfbConditionedCover(D, f, c, s, base)(c), e = E1.dist.coverProbSpread(f, c, s, base); if (a.win !== e.win || a.push !== e.push || a.lose !== e.lose) bits++; });
+  chk('at the market margin it reproduces the engine’s own cover probability, to the bit (' + CASES.length + ' games)', bits === 0, bits);
+  const block = (f) => { const s = fs.readFileSync(path.join(ROOT, f), 'utf8'), a = s.indexOf('  /* RE-CENTRING A BORROWED ROW'), b = s.indexOf('    return pts;\n  }\n', a); return a > 0 && b > a ? s.slice(a, b) : null; };
+  chk('the re-centring block is byte-identical in football/cfb_p4/engine.js and lib/edgedesk_quote_ev.js', block('football/cfb_p4/engine.js') !== null && block('football/cfb_p4/engine.js') === block('lib/edgedesk_quote_ev.js'));
+  /* the invariants the whole-point shift broke */
+  const UT = Q.cfbConditionedCover(D, 6.2, 3, 14.9, base);
+  chk('UConn @ Temple (fair +6.2, row 3.0): Temple −3 carries its push and a tie carries nothing', UT(3).push > 0.05 && UT(0).push === 0, [UT(3).push, UT(0).push]);
+  let tie = 0, hole = 0, spike = 0, meanOff = 0, grid = 0;
+  for (let c = -45; c <= 45; c += 2.5) for (let f = c - 12; f <= c + 12; f += 1.7) {
+    const hc = Q.cfbConditionedCover(D, f, c, 14.9, base); grid++;
+    if (hc(0).push !== 0) tie++;
+    for (let k = Math.round(f) - 10; k <= Math.round(f) + 10; k++) if (k !== 0 && !(hc(k).push > 0)) { hole++; break; }
+    let m = 0; for (let k = -90; k <= 110; k++) m += k * hc(k).push; if (Math.abs(m - f) > 1e-6) meanOff++;
+    if (Math.abs(f) < 12 && !(hc(3).push > hc(2).push && hc(3).push > hc(4).push && hc(-3).push > hc(-2).push && hc(-3).push > hc(-4).push && hc(7).push > hc(6).push && hc(7).push > hc(8).push)) spike++;
+  }
+  chk('no market, no fair margin gives a tie any mass (' + grid + ' games)', tie === 0, tie);
+  chk('every whole-number margin within 10 pts of the fair margin carries a push', hole === 0, hole);
+  chk('the mean lands exactly on the fair margin (no half-point rounding left over)', meanOff === 0, meanOff);
+  chk('the key numbers stay on 3 and 7 whatever the fair margin (no spike is carried to 4 or 8)', spike === 0, spike);
+  const jump = Math.abs(Q.cfbConditionedCover(D, 3.49, 3, 14.9, base)(3).win - Q.cfbConditionedCover(D, 3.51, 3, 14.9, base)(3).win);
+  chk('the curve is continuous in the fair margin: crossing x.5 no longer jumps a whole point', jump < 0.002, jump);
   /* the Read's curve lookup and this module agree on a side's probabilities */
   const cov = normalCover(2, 15), curve = RD.buildCurve(cov, -3, 30);
   let rdBad = 0;
@@ -548,19 +591,29 @@ section('14. audit 2026-09-30: the EV is priced from the displayed projection, a
      a stable roster, priced from the shipped college distribution at −110 */
   const C = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
   const PP = global.window.EDCfbP4Params;
+  /* (−10 is a key number: the push the shape now keeps on margin 10 is part
+     of the price, so a 7-pt gap there prices about +23% raw, not the +32% the
+     whole-point shift gave it by carrying the 10 spike onto 11) */
+  let pastFlat = 0;
   [7, 7.5, 9, 11].forEach((gap) => {
     const fair = 10 + gap, hc = Q.cfbConditionedCover(PP.distributions, fair, 10, 14.84, 14.633);
     const Gm = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: fair, home_cover: hc, tail: { validated_within_pts: 0 } },
       [q('home', -10, -110, { n_books: 6 }), q('away', 10, -110, { n_books: 6 })], ctx());
     const stv = C.researchStatus({ projected: true, market: 'FRESH', gap, verification: 'VERIFIED', confidence: 75, reliability: 85,
       fair_margin: fair, market_margin: 10, regime: null, implausible_ev: Gm.implausible_ev });
+    const big = Gm.best_ev_quote.expected_value > Q.IMPLAUSIBLE_RAW_EV;
+    if (big) pastFlat++;
     chk('a verified ' + gap + '-pt gap on a stable roster, every gate passed, at −110 (+' + (100 * Gm.best_ev_quote.expected_value).toFixed(0) + '% raw EV) reads VERIFIED MAJOR',
-      stv.key === 'VERIFIED_MAJOR' && Gm.implausible_ev === null && Gm.large_ev !== null, [stv.key, stv.rule, Gm.implausible_ev]);
+      stv.key === 'VERIFIED_MAJOR' && Gm.implausible_ev === null && (Gm.large_ev !== null) === big, [stv.key, stv.rule, Gm.implausible_ev, Gm.large_ev]);
   });
-  const G16 = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: 26, home_cover: Q.cfbConditionedCover(PP.distributions, 26, 10, 14.84, 14.633), tail: { validated_within_pts: 0 } },
+  chk('…including gaps priced past the old flat 25% line, which the σ-scaled bound leaves reachable', pastFlat >= 2, pastFlat);
+  /* a gap past z* widths of THIS game's distribution (its σ is read off the curve, as the bound reads it) */
+  const hc18 = Q.cfbConditionedCover(PP.distributions, 28, 10, 14.84, 14.633);
+  const G18 = Q.evaluateGame({ sport: 'CFB', available: true, model_version: 't', projection_timestamp: FRESH, fair_home_margin: 28, home_cover: hc18, tail: { validated_within_pts: 0 } },
     [q('home', -10, -110, { n_books: 6 }), q('away', 10, -110, { n_books: 6 })], ctx());
-  const s16 = C.researchStatus({ projected: true, market: 'FRESH', gap: 16, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: 26, market_margin: 10, implausible_ev: G16.implausible_ev });
-  chk('…and a 16-pt gap (past z* at this σ) is still INVESTIGATE "implausible EV, check data", even verified', s16.key === 'INVESTIGATE' && s16.rule === 'implausible_ev', [s16.key, s16.rule]);
+  const s18 = C.researchStatus({ projected: true, market: 'FRESH', gap: 18, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: 28, market_margin: 10, implausible_ev: G18.implausible_ev });
+  chk('…and an 18-pt gap (' + (18 / Q.distributionSpread(hc18)).toFixed(2) + ' widths, past z* ' + Q.PLAUSIBLE_Z.CFB + ') is still INVESTIGATE "implausible EV, check data", even verified',
+    18 / Q.distributionSpread(hc18) > Q.PLAUSIBLE_Z.CFB && s18.key === 'INVESTIGATE' && s18.rule === 'implausible_ev', [s18.key, s18.rule]);
   const nflFair = 10, G7 = Q.evaluateGame(nflM(nflFair), [sq('home', -3, -110), sq('away', 3, -110)], ctx({ game: SEA }));
   const s7 = C.researchStatus({ projected: true, market: 'FRESH', gap: 7, verification: 'VERIFIED', confidence: 75, reliability: 85, fair_margin: nflFair, market_margin: 3, implausible_ev: G7.implausible_ev });
   chk('NFL too: a verified 7-pt gap at −110 reads VERIFIED MAJOR', s7.key === 'VERIFIED_MAJOR' && G7.implausible_ev === null, [s7.key, G7.implausible_ev]);
@@ -595,8 +648,8 @@ section('15. one CFB distribution: the app’s ladder is the terminal’s curve,
   const L = app(41.42, 14.9, { spread_line: 52.5 }), T = B.v1Dist(41.42, 14.9, 52.5);
   chk('McNeese @ LSU (LSU −52.5, outside the ±45 table): the app’s distribution IS the terminal’s v1Dist curve, at every half point −70…+100', L.available && T.pmf_row === 45 && same(L.home_cover, T.cover));
   chk('… and it is monotone: P(M > t) and P(M ≥ t) never rise with t', firstRise(L.home_cover) === null, firstRise(L.home_cover));
-  const old = (t) => E1.dist.coverProbSpread(41.42, t, 14.9, base);
-  chk('… where the per-line engine call it replaces was not (P(M > 18.5) ' + old(18.5).win.toFixed(4) + ' > P(M > 18) ' + old(18).win.toFixed(4) + ')', old(18.5).win > old(18).win && firstRise(old) !== null);
+  const old = (t) => E1.dist.coverProbSpread(41.42, t, 14.9, base), rise = firstRise(old);
+  chk('… where the per-line engine call it replaces was not (it reads a different row at every threshold; first rise at ' + rise + ')', rise !== null);
   chk('… priced on the ladder the same: both sides at every alternate the terminal would price', [-60.5, -52.5, -45, -41.5, -28, -17.5].every((hl) => ['home', 'away'].every((s) => {
     const a = Q.sideProb(L.home_cover, s, s === 'home' ? hl : -hl), b = Q.sideProb(T.cover, s, s === 'home' ? hl : -hl); return a.win === b.win && a.push === b.push && a.loss === b.loss; })));
   chk('… and says it read the table’s edge, not the market', /table’s edge \(home margin \+45\.0, the row nearest the market at \+52\.5\)/.test(L.basis), L.basis);

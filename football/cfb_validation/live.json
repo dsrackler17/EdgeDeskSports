@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-04T21:07:33.874Z",
+ "generated_at": "2026-10-04T21:38:32.675Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -127,6 +127,16 @@
    "reason": "the pricing path changed: football/fbs/build_coverage.js -- coverage check 8 (FBS-vs-FCS stays on the slate) is proven against the feed instead of requiring one such game in the window; no projection, price or rating changes",
    "changed_files": [
     "football/fbs/build_coverage.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p5",
+   "effective_at": "2026-10-04T21:17:50.350Z",
+   "reason": "the pricing path changed: football/cfb_p4/engine.js -- coverProbSpread re-centres the market-conditioned margin PMF by reweighting it in place instead of shifting it a whole number of points, so a tie (margin 0) keeps no mass and the key-number spikes stay on their margins (UConn @ Temple 2026-10-04: the shift put the 'no ties' hole on Temple -3). The fair spread, win probability, sigma and ratings are unchanged; cover and push probabilities move (the mean now lands exactly on the fair spread)",
+   "changed_files": [
+    "football/cfb_p4/engine.js"
    ]
   }
  ],
@@ -1281,13 +1291,13 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-09-28T20:07:34.354Z",
+  "since": "2026-09-28T21:07:36.779Z",
   "changes": [
    {
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "539fd26ac36fa61d",
-    "to": "c49740a77621f4bb"
+    "to": "dbb650846e570ffc"
    },
    {
     "what": "research-gate code",
@@ -1304,7 +1314,7 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-09-28T19:37:23.763Z",
+    "from": "2026-09-28T20:39:34.986Z",
     "to": "2026-10-04T17:43:47.869Z"
    },
    {
@@ -1316,7 +1326,7 @@
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 15,
+    "from": 18,
     "to": 75
    }
   ],

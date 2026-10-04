@@ -131,7 +131,7 @@ function distributionAudit() {
     ['NFL', () => global.window.EDFootballParams.nfl, 'football/params.js nfl.margin_pmf_by_spread', 'football/pricing/lines_nfl.json',
       'football/engine.js coverProbSpread reads this table BY ITS MEDIAN (audit 2026-09-30 #4): the distribution a decision prices from is centred on EdgeDesk’s fair margin, and the drift reaches only its shape (which keys are mixed), never its centre.', false],
     ['CFB', () => global.window.EDCfbP4Params.distributions, 'football/cfb_p4/params.js distributions.margin_pmf_by_spread', 'football/pricing/lines_cfb.json',
-      'The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (the integer shift leaves up to ±0.5 pt).', false]
+      'The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (since 2026-10-04 exactly: the row is reweighted in place, so its mean lands on the fair margin and its tie hole and key numbers stay put).', false]
   ];
   TABLES.forEach(([L, getP, table, file, effect, centreUsed]) => {
     const P = getP(), J = readJson(path.join(ROOT, file));

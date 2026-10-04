@@ -196,7 +196,7 @@ const mnQuotes = [q('dk_main', 'draftkings', -6.5, -107, -113), q('dk_alt75', 'd
   /* the same case on a calibrated probability */
   const RC = RD.read(input({ fair: 1.3, center: 6.5, cover: V1.cover, quotes: mnQuotes, cal: Object.assign({}, VAL, { market_shrinkage: { w_model: 0.228, space: 'logit', w_ci95: [0.073, 0.383] } }) }));
   const altC = RC.alternates.rows.find((x) => x.option.line === 7.5);
-  chk('calibrated: the decision probability shrinks toward the de-vigged market (65% raw → about 54%)', RC.selected.calibrated && RC.selected.calibrated.decision_cover < 0.56 && RC.selected.raw_cover > 0.64, RC.selected.calibrated);
+  chk('calibrated: the decision probability shrinks toward the de-vigged market (63% raw → about 54%)', RC.selected.calibrated && RC.selected.calibrated.decision_cover < 0.56 && RC.selected.raw_cover > 0.62, RC.selected.calibrated);
   chk('calibrated: EV after the buffer uses the weight interval’s conservative end', RC.selected.buffered_ev < RC.selected.decision_ev);
   chk('calibrated: the +7.5 −178 alternate is still TOO EXPENSIVE', altC.verdict === 'TOO_EXPENSIVE');
   chk('calibrated: a small positive EV at +6.5 is not a clear (the buffer makes it PASS)', RC.selected.decision_ev > 0 && !RC.selected.clears && RC.timing_read === 'PASS', [RC.selected.decision_ev, RC.timing_read]);

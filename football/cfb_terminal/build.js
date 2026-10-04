@@ -159,8 +159,9 @@ function typicalMove() {
        margin, clamped the same way (the question a market at the fair
        number would ask; football/cfb_terminal/decisions.js conditions its
        closing distribution on its centre the same way).
-   Either way cfbConditionedCover builds it, re-centred by an integer shift
-   and stretched to this game's sigma exactly as an in-range market is, so
+   Either way cfbConditionedCover builds it, re-centred by reweighting the
+   row in place (no tie mass, key numbers on their own margins) and
+   stretched to this game's sigma exactly as an in-range market is, so
    every curve is monotone and lives on integer margins. The engine's own
    call remains only for a params file with no table. */
 /* the conditioned shape lives in lib/edgedesk_quote_ev.js (cfbConditionedCover),
