@@ -220,6 +220,22 @@ function serve(handler) {
       /* what the feed offered, and every reason a row is not on the board */
       feedRows: ((window.FB.p4.sched || {}).rows || []).length,
       dropped: window.FB.p4.slateDrop,
+      /* the matchup types the feed itself offers inside the board's window,
+         read from the raw rows (an hour in from each edge, so the clock
+         moving between the build and this read cannot matter) and counted
+         once per game */
+      offered: (function () {
+        const S = window.FB.p4, now = Date.now(), seen = {}, o = {};
+        const look = typeof window.FBP4_LOOKAHEAD_D === 'number' ? window.FBP4_LOOKAHEAD_D : 10;
+        ((S.sched || {}).rows || []).forEach(r => {
+          const t = Date.parse(r.start_date);
+          if (r.completed || !(t > now + 36e5 && t < now + look * 864e5 - 36e5)) return;
+          const m = window.EDFbs.classifyGame(r, S.uni);
+          if (!m.eligible || seen[m.id]) return;
+          seen[m.id] = true; o[m.matchup_type] = (o[m.matchup_type] || 0) + 1;
+        });
+        return o;
+      })(),
       visibleRows: document.querySelectorAll('[id^="p4gate-"]').length,
       /* a game that has kicked off stays on the slate (the desk and the
          briefs resolve it) but leaves the board (fbKickedOff) */
@@ -261,12 +277,17 @@ function serve(handler) {
   chk('and says so when games have kicked off', state.kickedNote === state.kickedOff > 0, state);
   chk('the slate carries Other FBS games', (state.groups.other || 0) > 0, state.groups);
   chk('the slate carries independents', (state.groups.independent || 0) > 0, state.groups);
-  /* FBS-vs-FCS games are NOT required to exist: they cluster in September,
-     and from October on the live window routinely holds none. That they are
-     never dropped is already proven above — every row the feed offered is on
-     the board or dropped for a named reason, and "FBS vs FCS" is not one. */
-  chk('the slate carries conference and non-conference games',
-    state.types.conference > 0 && state.types.non_conference > 0, state.types);
+  /* Every matchup type the feed offers is on the board, game for game.
+     No type is required to exist: FBS-vs-FCS games cluster in September and
+     from October the live window routinely holds none, and bowl season holds
+     no conference game at all. Held to what the raw feed offers inside the
+     board's window, a board that drops FCS, conference or non-conference
+     games still fails, and an empty stretch of the calendar for one type
+     does not. */
+  chk('the slate carries every matchup type the feed offers, game for game',
+    Object.keys(state.offered).length > 0
+      && ['conference', 'non_conference', 'fbs_fcs'].every(k => (state.types[k] || 0) >= (state.offered[k] || 0)),
+    { board: state.types, feed: state.offered });
   chk('games with no Power 4 participant are on the board',
     Object.keys(state.conf).some(c => state.p4.indexOf(c) < 0 && state.conf[c] > 0),
     { p4: state.p4, conf: state.conf });
