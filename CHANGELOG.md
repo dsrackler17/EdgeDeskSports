@@ -1,6 +1,43 @@
 # Changelog
 
+## 2026-10-04 — the landing page sells research plus your own betting analytics
 
+The public page now answers, in five seconds: EdgeDesk is football research plus personal betting analytics, it helps you see whether your process is working, it costs $49.99 a month, and it sells no picks.
+
+- **The hero** reads "Research, not picks. / Bet with a process. Know what's working." It has one sentence, the trial as the primary button, "See how it works" beside it, the offer under both, and who it is for.
+  - Beside it, a sample week (P&L, ROI, process grade, open positions, what's working, what to watch, next focus). It is labelled **In development** and **Sample data** in its own bar, before any number.
+- **The narrative** follows the decision:
+  - results vs process: two illustrative tickets whose arithmetic the tests check;
+  - the loop: Research → Track → Measure → Learn → Improve, each step marked Live or In development;
+  - Process Coach and the Weekly Film Room, on sample data;
+  - history: a sample calendar, and the journal that is live today;
+  - beginner to advanced;
+  - the research terminal, still the one block with live data;
+  - value and pricing, trust, FAQ, and the close.
+- **Nothing unfinished is sold as live.**
+  - Process Coach, the Weekly Film Room, the calendar view, per-bet grades, prediction-market tracking and account connections are labelled wherever they appear.
+  - No sportsbook or exchange is shown as connected.
+  - The FAQ answers "Can I connect my account?" with "Not yet."
+  - There is no social proof beyond Stadium Rant's real, exactly worded credit.
+- **The plan card lists only live features:** eight lines (`lib/edgedesk_pricing.js` `FEATURES`, which the terminal's paywall also prints), down from twelve. The trial terms are the billing system's: a card, 7 days, charged on day 8.
+- **One call to action**, "Start free trial", in the nav, hero, pricing, close and a phone-only sticky bar.
+  - The bar appears once the hero's button scrolls away.
+  - It steps aside at pricing, at the close and under a dialog.
+  - It never shows for an account that already has access.
+- **Hero copy is ready for a test, without a test framework.**
+  - `HERO_COPY` holds variants a, b and c; the markup is variant a.
+  - `?hero=b` previews a variant. No visitor is assigned at random.
+  - Every GA event carries `hero_variant`.
+- **Analytics:**
+  - New GA events: `hero_cta_click`, `how_it_works_click`, `process_coach_view`, `pricing_cta_click`, `signup_started`, `signup_completed`, `checkout_started` and `trial_started`.
+  - The legacy names `hero_trial_click`, `pricing_trial_click` and `hero_how_click` are still sent beside them.
+  - The first-party funnel is unchanged and still runs visitor → `cta_clicked` → `signup_started` → `checkout_started` → `trial_started` → `subscription_started`. Its click and landing events now carry the hero variant.
+- **Removed:** the live board grid, the prop table, the workflow card, the price example, the six-card feature grid and the who-it's-for strip. The live research preview and its statistics moved to the research section. `#how`, `#today`, `#record`, `#pricing` and `#subscribe` all still land.
+- **Preserved unchanged:** auth, the renewal-terms consent, Stripe checkout and its return, attribution and partner credit, the comp check and the public-record panel. The one exception is the hero-button wiring for signed-in accounts.
+- **Tests:**
+  - `landing_positioning.test.js` (456) now checks the new positioning and the unfinished-feature labelling.
+  - `landing_interaction.test.js` (201) now covers the sticky bar, the hero config and the GA events.
+  - `tools/home/landing.e2e.js` (210, browser) covers 6 widths, the 375×548 first screen, the funnel and GA, the sticky bar, variants, and the live, stale, midweek and down data states.
 
 ## 2026-10-03 — share the Record: an image and a post for X or anywhere
 
