@@ -85,8 +85,8 @@ on conflict (key) do nothing;
 -- statement is idempotent), so the revision is how a caller knows the
 -- database carries the functions it expects.
 insert into collective.fg2_config (key, value, note) values
-  ('install_revision', '2'::jsonb,
-   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh.')
+  ('install_revision', '3'::jsonb,
+   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh. 3: every UPDATE/DELETE qualified, so grade_game / fg2_refresh run through PostgREST (pg-safeupdate); fg2_compute_close''s scratch table is per transaction, so callers of different roles can share a pooled session.')
 on conflict (key) do update set value = excluded.value, note = excluded.note;
 
 create or replace function collective.fg2_cfg(p_key text) returns jsonb
@@ -1795,11 +1795,16 @@ begin
 
   -- (fg2_cand2: revision 2 added n_books; a session that ran revision 1
   -- keeps its old fg2_cand)
+  -- ON COMMIT DROP (revision 3): PostgREST reuses one backend session across
+  -- requests, and a temp table belongs to the role that created it. Kept for
+  -- the session, the one grade_game makes (security definer: the owner) is
+  -- refused to a later fg2_refresh, which runs as service_role ("permission
+  -- denied for table fg2_cand2"). Per transaction, every caller makes its own.
   if to_regclass('pg_temp.fg2_cand2') is null then
   create temp table fg2_cand2 (
     source text, source_snapshot_id text, source_event_id text, book text, market_type text, observed_at timestamptz,
     home numeric, link_method text, matched_game_id text, existing_game_id text, prio int, untimed_ok boolean,
-    book_rank int, n_books numeric, rejection text);
+    book_rank int, n_books numeric, rejection text) on commit drop;
   end if;
   truncate fg2_cand2;
   -- the game's snapshots: those stamped with it (or an alias of it), and
@@ -1824,6 +1829,13 @@ begin
     join collective.fg2_market_snapshots s2 on s2.source = ids.source and s2.source_snapshot_id = ids.source_snapshot_id
     left join collective.fg2_event_links l on l.source = s2.source and l.source_event_id = s2.source_event_id and l.status = 'linked';
 
+  -- Every candidate is classified once. The WHERE is required, not
+  -- decoration: Supabase loads pg-safeupdate for the sessions PostgREST
+  -- opens, and it refuses an UPDATE with no WHERE ("21000 UPDATE requires a
+  -- WHERE clause") -- so grade_game (and fg2_refresh / fg2_rebuild) failed
+  -- on every call through the API while running clean through psql.
+  -- Every row was inserted just above with rejection null, so this touches
+  -- exactly the rows the bare statement did.
   update fg2_cand2 set rejection = case
       when lower(coalesce(market_type, 'spread')) not in ('spread', 'spreads', 'spread:home', 'point_spread', 'handicap', 'ats') then 'NOT_SPREAD'
       when home is null then 'BAD_LINE'
@@ -1832,7 +1844,8 @@ begin
       when observed_at is not null and kick is null then 'NO_KICKOFF'
       when observed_at is not null and observed_at >= kick then 'AFTER_KICKOFF'
       when observed_at is not null and observed_at < kick - make_interval(secs => win * 60) then 'STALE'
-    end;
+    end
+   where rejection is null;
   select count(*) into total from fg2_cand2;
   select jsonb_build_object(
     'NOT_SPREAD', count(*) filter (where rejection = 'NOT_SPREAD'), 'BAD_LINE', count(*) filter (where rejection = 'BAD_LINE'),

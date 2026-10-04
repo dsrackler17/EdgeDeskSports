@@ -1155,6 +1155,18 @@ async function settleDirect(db, schema, game, final, close) {
 function isFg2Missing(e) {
   return /PGRST20\d|42P01|42883|Could not find|does not exist/i.test(String(e && e.message));
 }
+/* Supabase loads pg-safeupdate for the sessions PostgREST opens, and it
+   refuses any UPDATE/DELETE with no WHERE (21000), however deep in a
+   function it sits. psql never loads it, so a migration that installs clean
+   can still fail every API call: football-v2 before revision 3 did, on every
+   grade_game and fg2_refresh. Still a failure -- this only names the fix. */
+function safeUpdateHint(detail) {
+  return /"code":"21000"|requires a WHERE clause/.test(String(detail || ''))
+    ? '::error::the database refused an UPDATE/DELETE with no WHERE clause (pg-safeupdate, 21000); its football-v2 ' +
+      'functions predate revision 3: re-apply supabase/migrations/20260928120000_football_grading_v2.sql ' +
+      '(Football regrade workflow, apply_migration: true)'
+    : null;
+}
 function closeSnapshotsFor(entries, heldGames, nowIso) {
   const byId = new Map((heldGames || []).map(g => [String(g.game_id), g]));
   return (entries || []).filter(e => {
@@ -1732,6 +1744,7 @@ async function main() {
   } else if (!args.commit) {
     log(`\nDry run: ${batch.length} game(s) would settle. Nothing was written. Re-run with --commit.`);
   } else if (db) {
+    let hinted = false;
     for (const item of batch) {
       try {
         const r = await settleDirect(db, schema, item.game, item.meta, item.close);
@@ -1747,6 +1760,8 @@ async function main() {
           report.failed.push({ game_id: item.body.game_id, label: item.label,
             reason: 'grade_write_refused', detail: r.refused[0].detail, refused: r.refused.length });
           log(`    ! ${r.refused[0].detail}`);
+          const hint = !hinted && safeUpdateHint(r.refused[0].detail);
+          if (hint) { log(hint); hinted = true; }
         }
       } catch (e) {
         report.failed.push({ game_id: item.body.game_id, label: item.label, detail: e.message });
@@ -1893,6 +1908,8 @@ async function main() {
       } catch (e) {
         report.failed.push({ sport: sp.code, reason: 'fg2_refresh_failed', detail: String(e.message).slice(0, 300) });
         log(`  ! ${sp.code} ${sp.season}: the settlement refresh failed: ${e.message}`);
+        const hint = safeUpdateHint(e.message);
+        if (hint) log(hint);
       }
     }
   }
@@ -1903,7 +1920,7 @@ async function main() {
 }
 
 module.exports = {
-  closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, fg2Refresh, REFRESH_DAYS, describeRebuild, isFg2Missing,
+  closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, fg2Refresh, REFRESH_DAYS, describeRebuild, isFg2Missing, safeUpdateHint,
   oddsBoard, closeFromBoardRow, findBoardRow, closesFromBoard, backfillCloses, CLOSE_FIELDS,
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
   isPlaceholderResult, espnCompleted,
