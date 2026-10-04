@@ -364,13 +364,18 @@ end $$;
 -- Each position is its own sub-transaction: one that would break a rule
 -- (no buy, more sold than bought, an impossible price) is rejected and
 -- reported in the run — never silently dropped, never half-written.
+-- SELF-HEALING: a payload may name replace_prefixes (a market whose holding
+-- disagreed with the platform's at reconciliation). That market's synced
+-- buys and sells are replaced by the full history the payload re-fetched,
+-- and a side left with no buys is removed — the figure is rebuilt from the
+-- platform's own record, never edited to agree.
 create or replace function public.portfolio_svc_ingest(p_account uuid, p_run uuid, p_payload jsonb)
 returns jsonb language plpgsql set search_path = public, pg_temp as $$
 declare
   a record; p jsonb; f jsonb; pid uuid; was_new boolean; n int;
   pos_ins int := 0; pos_upd int := 0; tx_ins int := 0; tx_same int := 0; v_rejected int := 0;
   v_issues jsonb := coalesce(p_payload->'issues', '[]'::jsonb);
-  b numeric; s numeric; first_at timestamptz;
+  b numeric; s numeric; first_at timestamptz; pre text; healed int := 0;
 begin
   perform public.portfolio_svc_assert();
   select id, user_id, platform, platform_label, platform_type into a from public.platform_accounts where id = p_account;
@@ -405,6 +410,12 @@ begin
           settlement_price = case when excluded.resolution is not null then excluded.settlement_price else portfolio_positions.settlement_price end,
           settled_at = coalesce(excluded.settled_at, portfolio_positions.settled_at)
       returning id, (xmax = 0) into pid, was_new;
+      -- a market being rebuilt: its old buys and sells go, in this position's
+      -- own sub-transaction, so a rejected rebuild leaves them as they were
+      if exists (select 1 from jsonb_array_elements_text(coalesce(p_payload->'replace_prefixes', '[]'::jsonb)) r
+                  where length(r) >= 4 and left(p->>'external_position_id', length(r)) = r) then
+        delete from public.portfolio_transactions where position_id = pid and source = 'SYNC' and transaction_type in ('BUY', 'SELL', 'FILL');
+      end if;
       for f in select x from jsonb_array_elements(coalesce(p->'fills', '[]'::jsonb)) x loop
         insert into public.portfolio_transactions (user_id, platform_account_id, position_id, platform, external_transaction_id, transaction_type, side,
             quantity, price, fee, executed_at, source)
@@ -442,6 +453,14 @@ begin
       end if;
     end;
   end loop;
+  -- a rebuilt market: a side the platform's full history no longer has is
+  -- removed (its record was the error being repaired)
+  for pre in select jsonb_array_elements_text(coalesce(p_payload->'replace_prefixes', '[]'::jsonb)) loop
+    if length(pre) < 4 or left(pre, length(a.platform) + 1) <> a.platform || ':' then continue; end if;
+    delete from public.portfolio_positions p2 where p2.platform_account_id = a.id and p2.source = 'SYNC' and left(p2.external_position_id, length(pre)) = pre
+       and not exists (select 1 from jsonb_array_elements(coalesce(p_payload->'positions', '[]'::jsonb)) x where x->>'external_position_id' = p2.external_position_id);
+    healed := healed + 1;
+  end loop;
   if p_run is not null then
     update public.portfolio_sync_runs set positions_inserted = positions_inserted + pos_ins, positions_updated = positions_updated + pos_upd,
            transactions_inserted = transactions_inserted + tx_ins, transactions_unchanged = transactions_unchanged + tx_same,
@@ -451,7 +470,7 @@ begin
      where id = p_run and platform_account_id = p_account;
   end if;
   return jsonb_build_object('positions_inserted', pos_ins, 'positions_updated', pos_upd, 'transactions_inserted', tx_ins,
-    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues);
+    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed);
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
@@ -522,6 +541,66 @@ begin
     update public.platform_accounts set status = 'DISCONNECTED', next_sync_at = null, metadata = metadata - 'credential' where id = p_account;
   end if;
   return jsonb_build_object('credential_deleted', cred > 0, 'positions_deleted', pos);
+end $$;
+
+-- THE LIVE SMOKE TEST, recorded by tools/portfolio/connector_smoke.js. A
+-- stage can pass only after every stage before it has passed; the test can
+-- be PASSED only with all ten (the table's own check enforces it again).
+create or replace function public.portfolio_svc_smoke_begin(p_platform text, p_run_by text default null)
+returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare v text; tid uuid;
+begin
+  perform public.portfolio_svc_assert();
+  select connector_version into v from public.portfolio_platform_registry where platform_key = p_platform and automatic_method is not null;
+  if v is null then raise exception 'portfolio: % has no automatic connector to test', p_platform using errcode = '22023'; end if;
+  insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, run_by)
+  values (p_platform, v, 'PRODUCTION', left(p_run_by, 120)) returning id into tid;
+  return tid;
+end $$;
+create or replace function public.portfolio_svc_smoke_stage(p_test uuid, p_stage text, p_ok boolean, p_detail jsonb default '{}'::jsonb)
+returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare t record; idx int; prev text;
+begin
+  perform public.portfolio_svc_assert();
+  select * into t from portfolio_private.connector_smoke_tests where id = p_test for update;
+  if not found or t.status <> 'RUNNING' then raise exception 'portfolio: no running smoke test %', p_test using errcode = 'P0002'; end if;
+  idx := array_position(public.portfolio_smoke_stages(), p_stage);
+  if idx is null then raise exception 'portfolio: unknown stage %', p_stage using errcode = '22023'; end if;
+  if p_ok then
+    foreach prev in array (public.portfolio_smoke_stages())[1:idx - 1] loop
+      if not coalesce((t.stages -> prev ->> 'ok')::boolean, false) then
+        raise exception 'portfolio: % cannot pass before % has', p_stage, prev using errcode = '22023';
+      end if;
+    end loop;
+  end if;
+  update portfolio_private.connector_smoke_tests set stages = stages || jsonb_build_object(p_stage,
+      jsonb_build_object('ok', p_ok, 'at', now(), 'detail', coalesce(p_detail, '{}'::jsonb)))
+   where id = p_test;
+  return (select stages from portfolio_private.connector_smoke_tests where id = p_test);
+end $$;
+create or replace function public.portfolio_svc_smoke_finish(p_test uuid)
+returns text language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare st text;
+begin
+  perform public.portfolio_svc_assert();
+  update portfolio_private.connector_smoke_tests
+     set status = case when public.portfolio_smoke_all_ok(stages) and environment = 'PRODUCTION' then 'PASSED' else 'FAILED' end, finished_at = now()
+   where id = p_test and status = 'RUNNING' returning status into st;
+  return st;
+end $$;
+create or replace function public.portfolio_svc_smoke_status(p_test uuid)
+returns jsonb language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
+begin
+  perform public.portfolio_svc_assert();
+  return (select to_jsonb(t) from portfolio_private.connector_smoke_tests t where t.id = p_test);
+end $$;
+-- Forget an account's cursor, so its next sync re-reads the whole history
+-- (the smoke test's NO DUPLICATES stage; an operator's repair).
+create or replace function public.portfolio_svc_reset_cursor(p_account uuid)
+returns void language plpgsql set search_path = public, pg_temp as $$
+begin
+  perform public.portfolio_svc_assert();
+  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type = 'API';
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────

@@ -119,6 +119,20 @@ const stagesAll = () => JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((s)
     chk('a new connector version switches it off again', db.sql(`select automatic_enabled::text || ':' || coalesce(enabled_by_smoke_test::text, 'none') from public.portfolio_platform_registry where platform_key = 'kalshi';`) === 'false:none');
     db.applyFileAtomic(FILE);   /* back to the shipped version, off */
 
+    /* the smoke test, stage by stage, in order */
+    const st = one(db.service(`select public.portfolio_svc_smoke_begin('kalshi', 'operator');`));
+    chk('a smoke test begins for the shipped connector version', db.sql(`select connector_version || ':' || status from portfolio_private.connector_smoke_tests where id = ${L(st)};`) === 'kalshi_v1:RUNNING');
+    chk('a sportsbook has no connector to smoke-test', /no automatic connector/.test(db.mustFail(() => db.service(`select public.portfolio_svc_smoke_begin('fanduel');`)) || ''));
+    chk('a stage cannot pass before the stages ahead of it', /cannot pass before CONNECT/.test(db.mustFail(() => db.service(`select public.portfolio_svc_smoke_stage(${L(st)}, 'IMPORT', true);`)) || ''));
+    chk('a stage may be recorded as failed at any time', db.mustFail(() => db.service(`select public.portfolio_svc_smoke_stage(${L(st)}, 'SETTLEMENT', false, '{"why":"nothing settled yet"}');`)) === null);
+    K.SMOKE_STAGES.slice(0, 9).forEach((s) => db.service(`select public.portfolio_svc_smoke_stage(${L(st)}, ${L(s)}, true, '{}');`));
+    chk('nine passed stages finish as FAILED, never PASSED', one(db.service(`select public.portfolio_svc_smoke_finish(${L(st)});`)) === 'FAILED');
+    const st2 = one(db.service(`select public.portfolio_svc_smoke_begin('kalshi', 'operator');`));
+    K.SMOKE_STAGES.forEach((s) => db.service(`select public.portfolio_svc_smoke_stage(${L(st2)}, ${L(s)}, true, '{}');`));
+    chk('all ten, in order: PASSED', one(db.service(`select public.portfolio_svc_smoke_finish(${L(st2)});`)) === 'PASSED');
+    chk('…and its record reads back for the operator', JSON.parse(one(db.service(`select public.portfolio_svc_smoke_status(${L(st2)});`))).status === 'PASSED');
+    chk('a finished test takes no more stages', /no running smoke test/.test(db.mustFail(() => db.service(`select public.portfolio_svc_smoke_stage(${L(st2)}, 'CONNECT', true);`)) || ''));
+
     /* ═══ WHO MAY CALL WHAT ═════════════════════════════════════════════ */
     chk('a reader reads the registry', +one(db.as(A, `select count(*) from public.portfolio_platform_registry;`)) === 7);
     chk('anon reads nothing', /permission denied/.test(db.mustFail(() => db.anon(`select count(*) from public.portfolio_platform_registry;`)) || ''));

@@ -63,9 +63,18 @@ function make(db, opts) {
   const log = [];
   function run(uid, sql) {
     const text = '\\set VERBOSITY verbose\n' + sql;
-    return uid ? db.as(uid, text) : db.anon(text);
+    /* a token mapped to 'service_role' is the service key: no reader, RLS bypassed */
+    return uid === 'service_role' ? db.service(text) : uid ? db.as(uid, text) : db.anon(text);
   }
-  const sets = {};
+  const sets = {}, types = {};
+  function argTypes(fn) {
+    if (!(fn in types)) {
+      const out = db.sql(`select coalesce(json_object_agg(n, t), '{}') from (select unnest(p.proargnames[1:p.pronargs]) n, unnest(p.proargtypes::oid[]::regtype[]::text[]) t
+                            from pg_proc p where p.proname = ${lit(fn)} and p.pronamespace = 'public'::regnamespace) q;`);
+      types[fn] = JSON.parse(out || '{}');
+    }
+    return types[fn];
+  }
   function returnsSet(fn) {
     if (!(fn in sets)) sets[fn] = db.sql(`select coalesce(bool_or(proretset), false) from pg_proc where proname = ${lit(fn)} and pronamespace = 'public'::regnamespace;`) === 't';
     return sets[fn];
@@ -77,8 +86,15 @@ function make(db, opts) {
     try {
       const rpc = /^rpc\/([a-z_][a-z0-9_]*)$/.exec(rawPath);
       if (rpc) {
-        const args = Object.keys(body || {}).map((k) => ident(k) + ' => ' + (body[k] === null ? 'null'
-          : lit(typeof body[k] === 'object' ? JSON.stringify(body[k]) : String(body[k])))).join(', ');
+        /* a JSON array bound to an array parameter (text[]) becomes a Postgres
+           array, as PostgREST does; anything else object-shaped is JSON */
+        const types = argTypes(rpc[1]);
+        const value = (k, v) => {
+          if (v === null) return 'null';
+          if (Array.isArray(v) && /\[\]$/.test(types[k] || '')) return 'array[' + v.map((x) => lit(String(x))).join(', ') + ']::' + types[k];
+          return lit(typeof v === 'object' ? JSON.stringify(v) : String(v));
+        };
+        const args = Object.keys(body || {}).map((k) => ident(k) + ' => ' + value(k, body[k])).join(', ');
         /* a set-returning function answers with an array, as PostgREST does */
         const out = returnsSet(rpc[1])
           ? run(uid, `select coalesce(json_agg(t), '[]'::json) from public.${ident(rpc[1])}(${args}) t;`)

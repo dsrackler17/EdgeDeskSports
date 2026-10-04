@@ -97,6 +97,14 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/connect_sql.test.js
+      - name: The connectors end to end (fake Kalshi and Polymarket that check signatures → the shipped orchestration → the real migrations), all ten smoke stages
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/connect_sync.test.js
+      - name: supabase/functions/portfolio_connect/index.ts, the shipped file, in a stub Deno runtime
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/connect_function.test.js
 
   browser:
     runs-on: ubuntu-latest

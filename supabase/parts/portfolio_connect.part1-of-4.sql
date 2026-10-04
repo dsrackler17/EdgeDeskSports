@@ -1,4 +1,4 @@
--- portfolio_connect -- part 1 of 3.
+-- portfolio_connect -- part 1 of 4.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 

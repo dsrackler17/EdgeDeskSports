@@ -1,76 +1,15 @@
--- portfolio_connect -- part 3 of 3.
+-- portfolio_connect -- part 4 of 4.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
--- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
--- minutes. A credential the platform refused: ACTION_REQUIRED (the reader must
--- reconnect; no retry storm). Anything else: retried with backoff (5 min,
--- 10, 20 … capped at 6 hours), ERROR after five failures in a row.
-create or replace function public.portfolio_svc_run_finish(p_run uuid, p_status text, p_error_code text default null, p_error_message text default null,
-    p_cursor text default null, p_reconcile jsonb default null)
+-- Forget an account's cursor, so its next sync re-reads the whole history
+-- (the smoke test's NO DUPLICATES stage; an operator's repair).
+create or replace function public.portfolio_svc_reset_cursor(p_account uuid)
 returns void language plpgsql set search_path = public, pg_temp as $$
-declare r record; fails int;
 begin
   perform public.portfolio_svc_assert();
-  select * into r from public.portfolio_sync_runs where id = p_run for update;
-  if not found or r.status <> 'RUNNING' then return; end if;
-  update public.portfolio_sync_runs set status = p_status, finished_at = now(),
-         duration_ms = least(2147483647, (extract(epoch from (now() - started_at)) * 1000)::bigint)::int,
-         error_code = left(p_error_code, 40), error_message = left(p_error_message, 500), reconcile = p_reconcile
-   where id = p_run;
-  if p_status in ('SUCCEEDED', 'PARTIAL') then
-    update public.platform_accounts set status = 'CONNECTED', last_success_at = now(), last_error = null, consecutive_failures = 0,
-           sync_cursor = coalesce(left(p_cursor, 2000), sync_cursor), next_sync_at = now() + interval '30 minutes'
-     where id = r.platform_account_id and connection_type = 'API';
-  elsif p_error_code in ('BAD_CREDENTIAL', 'WRITE_SCOPE', 'SCOPE_UNKNOWN') then
-    update public.platform_accounts set status = 'ACTION_REQUIRED', last_error = left(p_error_message, 500), next_sync_at = null
-     where id = r.platform_account_id and connection_type = 'API';
-  else
-    update public.platform_accounts set consecutive_failures = consecutive_failures + 1 where id = r.platform_account_id returning consecutive_failures into fails;
-    -- connected only once something has synced: a first sync that failed is still SYNCING
-    update public.platform_accounts set status = case when fails >= 5 then 'ERROR' when last_success_at is null then 'SYNCING' else 'CONNECTED' end,
-           last_error = left(p_error_message, 500),
-           next_sync_at = now() + least(interval '6 hours', interval '5 minutes' * power(2, least(fails - 1, 10)))
-                                 + case when p_error_code = 'RATE_LIMITED' then interval '10 minutes' else interval '0' end
-     where id = r.platform_account_id and connection_type = 'API';
-  end if;
-end $$;
-
--- The accounts the scheduler should sync now: connected, due, not waiting on
--- the reader, and on a platform that is switched on.
-create or replace function public.portfolio_svc_due_accounts(p_limit int default 25)
-returns table (account_id uuid, user_id uuid, platform text, ingestion_method text, external_account_id text, sync_cursor text, has_run boolean)
-language plpgsql stable set search_path = public, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  return query select a.id, a.user_id, a.platform, a.ingestion_method, a.external_account_id, a.sync_cursor,
-         exists (select 1 from public.portfolio_sync_runs r where r.platform_account_id = a.id and r.status in ('SUCCEEDED', 'PARTIAL'))
-    from public.platform_accounts a join public.portfolio_platform_registry g on g.platform_key = a.platform and g.automatic_enabled
-   where a.connection_type = 'API' and a.status in ('CONNECTED', 'SYNCING', 'ERROR') and coalesce(a.next_sync_at, now()) <= now()
-     and not exists (select 1 from public.portfolio_sync_runs r where r.platform_account_id = a.id and r.status = 'RUNNING' and r.started_at > now() - interval '15 minutes')
-   order by a.next_sync_at nulls first limit greatest(1, least(p_limit, 200));
-end $$;
-
--- Disconnect: the credential is deleted (not merely flagged), the account
--- reads DISCONNECTED and syncs no more. History stays unless the reader asks
--- for it to go; then the synced positions and their transactions are deleted
--- with the account.
-create or replace function public.portfolio_svc_disconnect(p_account uuid, p_delete_history boolean default false)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare cred int; pos int := 0;
-begin
-  perform public.portfolio_svc_assert();
-  delete from portfolio_private.platform_credentials where platform_account_id = p_account;
-  get diagnostics cred = row_count;
-  if p_delete_history then
-    delete from public.portfolio_positions where platform_account_id = p_account and source = 'SYNC';
-    get diagnostics pos = row_count;
-    delete from public.platform_accounts where id = p_account;
-  else
-    update public.platform_accounts set status = 'DISCONNECTED', next_sync_at = null, metadata = metadata - 'credential' where id = p_account;
-  end if;
-  return jsonb_build_object('credential_deleted', cred > 0, 'positions_deleted', pos);
+  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type = 'API';
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────

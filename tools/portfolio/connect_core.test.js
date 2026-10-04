@@ -223,6 +223,10 @@ function pnl(p) {
   chk('the ingest payload carries only the normalized fields, the fills and fees, and the cursor',
     payload.positions.length === 2 && payload.cursor === 'c1' && payload.positions.every((p) => !('reported' in p) && Array.isArray(p.fills) && Array.isArray(p.fees)) && payload.version === K.VERSION);
 
+  /* ═══ the edge function carries this exact core ═════════════════════ */
+  chk('supabase/functions/portfolio_connect/index.ts carries the current core, verbatim (node tools/portfolio/inline_connect_core.js)',
+    require(path.join(ROOT, 'tools', 'portfolio', 'inline_connect_core.js')).inSync());
+
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 600) : '')));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'portfolio connect core — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail === 0 ? 0 : 1);

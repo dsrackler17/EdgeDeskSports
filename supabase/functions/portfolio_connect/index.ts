@@ -1,3 +1,83 @@
+// @ts-nocheck — plain JavaScript in a .ts file, as the billing functions are.
+// ============================================================
+//  FILE:    supabase/functions/portfolio_connect/index.ts
+//  TYPE:    Edge Function - Portfolio automatic connections (read-only)
+//  DEPLOY:  supabase functions deploy portfolio_connect --no-verify-jwt
+//           Every reader action verifies the caller's token against Supabase
+//           Auth here; the scheduler's sweep takes no identity (pg_cron sends
+//           no JWT — supabase/portfolio_sync_cron.sql) and only syncs accounts
+//           the database says are due, so a stray poke changes nothing.
+//  IMPORTS: NONE. One file; the connector core is copied in between its
+//           markers by tools/portfolio/inline_connect_core.js (edit
+//           lib/edgedesk_portfolio_connect_core.js;
+//           tools/portfolio/connect_core.test.js fails on drift).
+//
+//  SECRETS:
+//    SB_URL / SB_SERVICE_ROLE (or SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)
+//    SUPABASE_ANON_KEY                provided by Supabase; asks Auth who a
+//                                     token belongs to, runs reader RPCs AS
+//                                     the reader
+//    PORTFOLIO_CREDENTIAL_KEYS        JSON {"1": "<32 random bytes, base64>"}
+//                                     — the AES-256-GCM keys credentials are
+//                                     sealed with; keep old versions while
+//                                     anything is sealed under them
+//    PORTFOLIO_CREDENTIAL_KEY_VERSION the version new credentials are sealed
+//                                     under (rotation re-seals on next use)
+// ============================================================
+//
+// WHAT IT DOES — AND NOTHING ELSE. EdgeDesk is read-only: no order is ever
+// placed, cancelled or changed, no sportsbook is touched, no password is ever
+// asked for. Automatic connection exists only for a platform the database's
+// registry has switched on after a passing live smoke test
+// (supabase/portfolio_connect.sql); an operator may connect while running
+// that smoke test.
+//
+//   POST {action:'registry'}                         (signed in) what each
+//        platform offers right now: CONNECT, or IMPORT and why
+//   POST {action:'connect', platform:'kalshi', key_id, private_key}
+//   POST {action:'connect', platform:'polymarket', wallet}
+//                                                    (signed in) validate,
+//        seal, store, and run the first sync; the key is never echoed, logged
+//        or returned
+//   POST {action:'sync', account_id}                 (signed in, own account,
+//        at most once every two minutes)
+//   POST {action:'disconnect', account_id, delete_history}
+//                                                    (signed in) delete the
+//        credential; keep or delete the synced history
+//   POST {action:'sweep'}                            (pg_cron) sync what is due
+//   GET                                              health: build and what is
+//        configured, never a value
+
+const BUILD = 'portfolio_connect-2026-10-04-1';
+
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'authorization, apikey, content-type, x-client-info',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+};
+function json(body, status) {
+  return new Response(JSON.stringify(Object.assign({ build: BUILD }, body)), {
+    status: status || 200,
+    headers: Object.assign({ 'content-type': 'application/json', 'cache-control': 'no-store', 'x-edgedesk-build': BUILD }, CORS),
+  });
+}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function config() {
+  const env = (k) => Deno.env.get(k) || '';
+  let keys = {};
+  try { keys = JSON.parse(env('PORTFOLIO_CREDENTIAL_KEYS') || '{}') || {}; } catch (_) { keys = {}; }
+  return {
+    url: (env('SB_URL') || env('SUPABASE_URL')).replace(/\/+$/, ''),
+    serviceKey: env('SB_SERVICE_ROLE') || env('SUPABASE_SERVICE_ROLE_KEY'),
+    anonKey: env('SUPABASE_ANON_KEY') || env('SB_ANON_KEY'),
+    keyring: { current: env('PORTFOLIO_CREDENTIAL_KEY_VERSION') || '1', keys },
+  };
+}
+
+// ── BEGIN CONNECT CORE ──────────────────────────────────────────────────
+// Canonical source: lib/edgedesk_portfolio_connect_core.js, copied VERBATIM by
+// tools/portfolio/inline_connect_core.js. Edit the canonical file, then run it.
 /* ===========================================================================
    EDGEDESK PORTFOLIO — the connector core.
    docs/platform-connections.md · docs/portfolio-architecture.md § Connectors
@@ -826,3 +906,181 @@
     connectKalshi: connectKalshi, connectPolymarket: connectPolymarket, syncAccount: syncAccount, sweep: sweep, parseCursor: parseCursor
   };
 }));
+// ── END CONNECT CORE ────────────────────────────────────────────────────
+
+const K = globalThis.EDPortfolioConnect;
+
+function logLine(level, event, fields) {
+  try { console.log(JSON.stringify({ fn: 'portfolio_connect', build: BUILD, level, event, at: new Date().toISOString(), fields: K.redact(fields || {}) })); }
+  catch (_) { /* never let logging break a request */ }
+}
+
+async function fetchWithTimeout(url, init, ms) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms || 15000);
+  try { return await fetch(url, Object.assign({}, init || {}, { signal: ctl.signal })); }
+  finally { clearTimeout(t); }
+}
+
+// The database, as the service role (RLS bypassed — every function asserts it).
+function serviceRpc(c) {
+  return async function rpc(fn, args) {
+    const r = await fetchWithTimeout(c.url + '/rest/v1/rpc/' + fn, {
+      method: 'POST', headers: { apikey: c.serviceKey, authorization: 'Bearer ' + c.serviceKey, 'content-type': 'application/json' },
+      body: JSON.stringify(args || {}) }, 30000);
+    const text = await r.text();
+    if (!r.ok) { const e = new Error('rpc ' + fn + ' ' + r.status); e.status = r.status; e.body = text.slice(0, 300); throw e; }
+    return text ? JSON.parse(text) : null;
+  };
+}
+async function serviceSelect(c, path) {
+  const r = await fetchWithTimeout(c.url + '/rest/v1/' + path, { headers: { apikey: c.serviceKey, authorization: 'Bearer ' + c.serviceKey } }, 10000);
+  if (!r.ok) { const e = new Error('select ' + r.status); e.status = r.status; throw e; }
+  return r.json();
+}
+// An RPC run AS THE CALLER, so the database's own checks decide.
+async function rpcAsCaller(c, authz, fn, args) {
+  const r = await fetchWithTimeout(c.url + '/rest/v1/rpc/' + fn, {
+    method: 'POST', headers: { apikey: c.anonKey, authorization: authz, 'content-type': 'application/json' },
+    body: JSON.stringify(args || {}) }, 10000);
+  const text = await r.text();
+  if (!r.ok) { const e = new Error('rpc ' + fn + ' ' + r.status); e.status = r.status; e.body = text.slice(0, 300); throw e; }
+  return text ? JSON.parse(text) : null;
+}
+async function getUser(c, req) {
+  const authz = req.headers.get('authorization') || '';
+  if (!/^Bearer\s+\S+/i.test(authz)) return null;
+  try {
+    const r = await fetchWithTimeout(c.url + '/auth/v1/user', { headers: { apikey: c.anonKey, authorization: authz } }, 6000);
+    if (!r.ok) return null;
+    const u = await r.json().catch(() => null);
+    if (!u || typeof u.id !== 'string' || !UUID_RE.test(u.id)) return null;
+    return { id: u.id.toLowerCase(), authz };
+  } catch (_) { return null; }
+}
+function ctxFor(c, budgetMs) {
+  return { fetch: (url, init) => fetchWithTimeout(url, init, 15000), rpc: serviceRpc(c), now: () => Date.now(), budgetMs: budgetMs || 45000,
+    keyring: c.keyring, log: (event, fields) => logLine('info', event, fields) };
+}
+async function runtimeRegistry(c) {
+  const rows = await serviceSelect(c, 'portfolio_platform_registry?select=platform_key,automatic_enabled,connector_version,tos_review');
+  const by = {};
+  (rows || []).forEach((r) => { by[r.platform_key] = r; });
+  return by;
+}
+async function ownAccount(c, user, id) {
+  if (!UUID_RE.test(String(id || ''))) return null;
+  const rows = await serviceSelect(c, 'platform_accounts?select=id,user_id,platform,external_account_id,sync_cursor,connection_type,status&id=eq.' + encodeURIComponent(id));
+  const a = rows && rows[0];
+  if (!a || String(a.user_id).toLowerCase() !== user.id) return null;
+  return { account_id: a.id, user_id: a.user_id, platform: a.platform, external_account_id: a.external_account_id, sync_cursor: a.sync_cursor,
+    connection_type: a.connection_type, status: a.status };
+}
+function readerFailure(e) {
+  const code = e && e.code && K.ERRORS[e.code] ? e.code : (e && /not enabled/.test(String(e.body || '')) ? 'DISABLED' : 'UNKNOWN');
+  return K.readerError(code);
+}
+
+async function connect(c, user, body) {
+  const platform = String(body.platform || '');
+  if (['kalshi', 'polymarket'].indexOf(platform) < 0) return json({ ok: false, reason: 'not_automatic', message: K.NO_SPORTSBOOK_API }, 400);
+  const reg = (await runtimeRegistry(c))[platform] || {};
+  let smokeTestId = null;
+  if (!reg.automatic_enabled) {
+    /* only an operator running the live smoke test may connect a platform that is off */
+    let admin = false;
+    try { admin = await rpcAsCaller(c, user.authz, 'portfolio_is_admin', {}) === true; } catch (_) { admin = false; }
+    if (!admin || !UUID_RE.test(String(body.smoke_test || ''))) return json({ ok: false, reason: 'DISABLED', message: K.ERRORS.DISABLED }, 403);
+    smokeTestId = body.smoke_test;
+  }
+  const ctx = ctxFor(c, 45000);
+  let conn;
+  try {
+    if (platform === 'kalshi') {
+      if (String(body.private_key || '').length > 8192 || String(body.key_id || '').length > 100) return json({ ok: false, reason: 'BAD_CREDENTIAL', message: K.ERRORS.BAD_CREDENTIAL }, 400);
+      if (!Object.keys(c.keyring.keys || {}).length) return json({ ok: false, reason: 'not_configured', message: 'Automatic connection is not configured on this server.' }, 503);
+      conn = await K.connectKalshi(ctx, { userId: user.id, keyId: String(body.key_id || '').trim(), privateKey: String(body.private_key || ''), smokeTestId });
+    } else {
+      conn = await K.connectPolymarket(ctx, { userId: user.id, wallet: String(body.wallet || ''), smokeTestId });
+    }
+  } catch (e) {
+    const f = readerFailure(e);
+    logLine('warn', 'connect.refused', { platform, code: f.code });
+    return json({ ok: false, reason: f.code, message: f.message }, f.code === 'UNKNOWN' ? 500 : 400);
+  }
+  /* the first sync, now, inside this request's budget; the scheduler continues it if needed */
+  const account = await ownAccount(c, user, conn.account_id);
+  const sync = account ? await K.syncAccount(ctx, account, 'INITIAL') : null;
+  return json({ ok: true, account_id: conn.account_id, scopes: conn.scopes || null, wallet: conn.wallet || null,
+    sync: sync ? { status: sync.status, totals: sync.totals || null, error: sync.error || null } : null });
+}
+
+async function syncNow(c, user, body) {
+  const account = await ownAccount(c, user, body.account_id);
+  if (!account || account.connection_type !== 'API') return json({ ok: false, reason: 'no_account' }, 404);
+  if (account.status === 'DISCONNECTED') return json({ ok: false, reason: 'disconnected', message: 'Reconnect this account to sync it.' }, 409);
+  const recent = await serviceSelect(c, 'portfolio_sync_runs?select=started_at&platform_account_id=eq.' + encodeURIComponent(account.account_id) + '&order=started_at.desc&limit=1');
+  if (recent && recent[0] && Date.now() - Date.parse(recent[0].started_at) < 120000) {
+    return json({ ok: false, reason: 'too_soon', message: 'This account synced in the last two minutes.' }, 429);
+  }
+  const reg = (await runtimeRegistry(c))[account.platform] || {};
+  if (!reg.automatic_enabled) return json({ ok: false, reason: 'DISABLED', message: K.ERRORS.DISABLED }, 403);
+  const r = await K.syncAccount(ctxFor(c, 45000), account, 'MANUAL');
+  return json({ ok: r.status !== 'FAILED', status: r.status || 'SKIPPED', totals: r.totals || null, error: r.error || null, skipped: r.skipped || null });
+}
+
+async function disconnect(c, user, body) {
+  const account = await ownAccount(c, user, body.account_id);
+  if (!account) return json({ ok: false, reason: 'no_account' }, 404);
+  let out;
+  try { out = await rpcAsCaller(c, user.authz, 'portfolio_disconnect', { p_account: account.account_id, p_delete_history: body.delete_history === true }); }
+  catch (e) { return json({ ok: false, reason: 'failed', message: 'The account could not be disconnected. Nothing was changed.' }, 400); }
+  logLine('info', 'disconnect', { platform: account.platform, deleted_history: body.delete_history === true });
+  const revoke = account.platform === 'kalshi'
+    ? 'EdgeDesk deleted its copy of your key. To revoke the key itself, delete it in your Kalshi account\'s API key settings.'
+    : account.platform === 'polymarket' ? 'EdgeDesk no longer reads this wallet. A public address has nothing to revoke.' : null;
+  return json({ ok: true, credential_deleted: !!(out && out.credential_deleted), positions_deleted: (out && out.positions_deleted) || 0, revoke });
+}
+
+async function handle(req) {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+  const c = config();
+  if (req.method === 'GET') {
+    return json({ ok: true, service: 'portfolio_connect', core: K.VERSION,
+      configured: { database: !!(c.url && c.serviceKey), auth: !!c.anonKey, credential_keys: Object.keys(c.keyring.keys || {}).length,
+        current_key_version: c.keyring.keys && c.keyring.keys[c.keyring.current] ? c.keyring.current : null } });
+  }
+  if (req.method !== 'POST') return json({ ok: false, reason: 'method' }, 405);
+  if (!c.url || !c.serviceKey || !c.anonKey) return json({ ok: false, reason: 'not_configured' }, 503);
+  let body = {};
+  try { body = await req.json(); } catch (_) { body = {}; }
+  if (!body || typeof body !== 'object') body = {};
+  try {
+    if (body.action === 'sweep') {
+      const r = await K.sweep(ctxFor(c, 110000), 10);
+      logLine('info', 'sweep', r);
+      return json({ ok: true, due: r.due, done: r.done.length });
+    }
+    const user = await getUser(c, req);
+    if (!user) return json({ ok: false, reason: 'sign_in_required' }, 401);
+    if (body.action === 'registry') {
+      const rt = await runtimeRegistry(c);
+      return json({ ok: true, platforms: K.REGISTRY.map((p) => ({ key: p.key, label: p.label, source_type: p.source_type,
+        offer: K.connectionOffer(p.key, rt[p.key]), automatic: p.automatic ? { method: p.automatic.method, read_only: true,
+          what_the_reader_gives: p.automatic.what_the_reader_gives, verified_on: p.automatic.verified.on } : null,
+        import: p.import })) });
+    }
+    if (body.action === 'connect') return await connect(c, user, body);
+    if (body.action === 'sync') return await syncNow(c, user, body);
+    if (body.action === 'disconnect') return await disconnect(c, user, body);
+    return json({ ok: false, reason: 'unknown_action' }, 400);
+  } catch (e) {
+    logLine('error', 'failed', { action: body.action || null, error: String((e && e.message) || e).slice(0, 200) });
+    return json({ ok: false, reason: 'failed', message: K.ERRORS.UNKNOWN }, 500);
+  } finally {
+    /* nothing from the request body outlives it */
+    body = null;
+  }
+}
+
+if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function') Deno.serve(handle);
