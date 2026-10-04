@@ -1,0 +1,14 @@
+-- Phases 2–3: the preflight report, in a READ ONLY transaction (it cannot
+-- change anything even by mistake), then the behavioural role probe in a
+-- transaction that is always rolled back. Run from the repository root:
+--   psql "$SB_DB_URL" -X -A -t -F ' | ' -v ON_ERROR_STOP=1 -f tools/billing/sql/preflight.psql
+\set ON_ERROR_STOP on
+begin transaction read only;
+set local statement_timeout = '60s';
+\i supabase/billing_preflight.sql
+rollback;
+\echo '── behavioural access checks (rolled back)'
+begin;
+set local statement_timeout = '60s';
+\i tools/billing/sql/rls_probe.psql
+rollback;

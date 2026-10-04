@@ -18,7 +18,12 @@
        the Supabase account and whether its email is confirmed
        the subscription row, and whether it grants access right now (and why)
        what Stripe says LIVE: every subscription on every linked customer
-       the mismatch between the two, in words
+       the mismatch between the two, in words, and ONE verdict out of five:
+         ACCESS GRANTED — systems agree
+         ACCESS GRANTED — Stripe/DB mismatch
+         ACCESS DENIED — systems agree
+         ACCESS DENIED — billing unresolved
+         COMP ACCESS — not Stripe-managed
        the last Stripe event, every recent delivery, the last successful sync
        open alerts, unresolved deliveries that may be theirs, checkout sessions
 
@@ -69,6 +74,9 @@ th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;
 .verdict{font-size:15px;font-weight:800;padding:10px 12px;border-radius:10px;border:1px solid var(--border);margin-bottom:10px}
 .verdict.yes{color:var(--pos);border-color:rgba(118,189,62,.5)}
 .verdict.no{color:var(--neg);border-color:rgba(226,96,68,.5)}
+.verdict.warn{color:var(--warn);border-color:rgba(230,170,60,.55)}
+.verdict.dim{color:var(--dim)}
+.verdict small{display:block;font-size:12px;font-weight:500;margin-top:4px;color:var(--dim)}
 .mis{margin:6px 0 0 18px;font-size:12.5px;color:var(--warn);line-height:1.6}
 .kv{display:grid;grid-template-columns:minmax(150px,max-content) 1fr;gap:3px 14px;font-size:12.5px}
 .kv dt{color:var(--faint)}
@@ -111,6 +119,7 @@ th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;
     </div>
   </div>
 </div>
+<script src="/lib/edgedesk_access.js?v=20261004a"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
@@ -149,13 +158,51 @@ $('gGo').onclick = async function () {
   } catch (e) { say('gMsg', 'err', String(e.message || e)); }
 };
 
+/* ONE VERDICT OUT OF FIVE, so an account is read in one line. "Agree" is only
+   ever said when Stripe was actually asked; a lookup that could not reach Stripe
+   is never reported as agreement. Stripe's side is judged by the same rule the
+   database applies (EDAccess.grants, held equal to billing_row_grants_access). */
+function stripeGrants(best) {
+  if (!best) return false;
+  return window.EDAccess ? window.EDAccess.grants(best) : ['active', 'trialing'].indexOf(best.status) >= 0;
+}
+function classify(rep) {
+  var a = rep.access || {}, row = rep.row || null, live = rep.stripe_live || null;
+  var has = !!a.has_access, asked = !!(live && live.ok);
+  var stripeEnt = asked && stripeGrants(live.best);
+  var smis = rep.stripe_mismatches || [];
+  var alerts = (rep.alerts || []).length, unres = (rep.unresolved_maybe_theirs || []).length;
+  var backed = !!(row && row.stripe_subscription_id);
+  if (has && (a.is_comp || (a.is_comp_trial && !backed))) {
+    return { cls: 'yes', label: 'COMP ACCESS — not Stripe-managed',
+      why: (a.is_comp ? 'owner_comp: granted here, never expires' : 'comp_trial until ' + when(a.access_until)) +
+           (stripeEnt ? ' · Stripe ALSO has a live subscription (' + live.best.status + '): Repair from Stripe makes it Stripe-managed' : '') };
+  }
+  if (has) {
+    if (asked && stripeEnt && !smis.length && !alerts) return { cls: 'yes', label: 'ACCESS GRANTED — systems agree', why: 'Stripe: ' + live.best.status + ', EdgeDesk: ' + (a.reason || '') };
+    return { cls: 'warn', label: 'ACCESS GRANTED — Stripe/DB mismatch',
+      why: !asked ? 'Stripe could not be asked, so agreement is unproven' + (live && live.outcome ? ' (' + live.outcome + ')' : '')
+         : !stripeEnt ? 'EdgeDesk grants access; Stripe has ' + (live.best ? 'only a ' + live.best.status + ' subscription' : 'no subscription') + ' behind it'
+         : smis.length ? smis.join(' · ') : alerts + ' open alert(s)' };
+  }
+  if (asked && !stripeEnt && !unres && !alerts) {
+    return { cls: 'dim', label: 'ACCESS DENIED — systems agree',
+      why: (live.best ? 'Stripe: ' + live.best.status : 'Stripe has no subscription for this account') + ' · would be offered: ' + (a.offer || 'trial') };
+  }
+  return { cls: 'no', label: 'ACCESS DENIED — billing unresolved',
+    why: stripeEnt ? 'Stripe says ' + live.best.status + ' but EdgeDesk denies access — press Repair from Stripe'
+       : !asked ? 'Stripe could not be asked' + (live && live.outcome ? ' (' + live.outcome + ')' : '') + ' — look the customer up in Stripe'
+       : unres ? unres + ' unresolved deliveries may be theirs — find the cus_ in Stripe and Link customer'
+       : alerts + ' open alert(s) — read them below' };
+}
+
 function renderReport(rep) {
   var u = rep.user || {}, a = rep.access || {}, row = rep.row, live = rep.stripe_live || null;
-  var has = !!a.has_access;
   var mis = (rep.stripe_mismatches || []).concat(rep.mismatches || []);
+  var v = classify(rep);
   var out = '<div class="card" data-user="' + esc(u.id) + '">';
-  out += '<div class="verdict ' + (has ? 'yes' : 'no') + '">' + (has ? 'ACCESS GRANTED' : 'NO ACCESS') + ' · ' + esc(a.reason || '') +
-    (a.offer && !has ? ' · would be offered: ' + esc(a.offer) : '') + '</div>';
+  out += '<div class="verdict ' + v.cls + '" data-verdict="' + esc(v.label) + '">' + esc(v.label) + '<small>' + esc(v.why) +
+    ' · access now: ' + (a.has_access ? 'yes' : 'no') + ' (' + esc(a.reason || '—') + ')' + '</small></div>';
   if (mis.length) out += '<b style="font-size:12px">Mismatch</b><ul class="mis">' + mis.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul>';
   out += '<div class="grid2" style="margin-top:12px"><div><h3>Account</h3>' + kv([
     ['Supabase user id', u.id, 1], ['Email', u.email], ['Email confirmed', u.email_confirmed ? 'yes' : 'NO'], ['Signed up', when(u.created_at)],
@@ -229,7 +276,18 @@ $('results').addEventListener('click', async function (e) {
     var o = r.body || {};
     m.className = 'msg ' + (r.status === 200 && o.ok ? 'ok' : 'err');
     m.textContent = r.status === 200 ? ('Outcome: ' + o.outcome + (o.note ? ' — ' + o.note : '') + (o.ref ? ' (ref ' + o.ref + ')' : '')) : ('Failed: ' + (o.message || o.reason || r.status));
-    if (o.report) { var repl = document.createElement('div'); repl.innerHTML = renderReport(Object.assign({}, o.report, { stripe_live: { ok: true, customers: [], subscriptions: o.stripe || [], best: null } })); card.replaceWith(repl.firstChild); }
+    if (r.status === 200) {
+      /* re-read the whole picture, Stripe included, rather than guess it: the
+         card must never claim Stripe agrees when it was not asked */
+      var fresh = await fn({ action: 'admin_inspect', query: uid });
+      var rep2 = fresh.status === 200 && fresh.body && fresh.body.ok && fresh.body.reports && fresh.body.reports[0];
+      if (!rep2 && o.report) rep2 = Object.assign({}, o.report, { stripe_live: null });
+      if (rep2) {
+        var repl = document.createElement('div'); repl.innerHTML = renderReport(rep2);
+        var nm = repl.firstChild.querySelector('[data-msg]'); if (nm) { nm.className = m.className; nm.textContent = m.textContent; }
+        card.replaceWith(repl.firstChild);
+      }
+    }
   } finally { b.disabled = false; }
 });
 

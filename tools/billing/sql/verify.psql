@@ -1,0 +1,9 @@
+-- Re-verify at any later stage: the postflight (A–I) against the pre-apply
+-- snapshot, then the behavioural role probe. Commits only the check rows it
+-- writes to billing_ops.check_runs, and only if the probe passed.
+\set ON_ERROR_STOP on
+begin;
+set local statement_timeout = '60s';
+\i supabase/billing_postflight.sql
+\i tools/billing/sql/rls_probe.psql
+commit;
