@@ -1,0 +1,660 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401858478",
+  "game_id": "401858478",
+  "sport": "CFB",
+  "snapshot_id": "snap_10a276d37fde999c",
+  "audited_at": "2026-10-04T03:20:47.467Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at USC -6.7 with a fair total of 55.6, which makes USC the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 6.7,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 6.666362946414877,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Washington winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether USC is ahead on the scoreboard in a way that looks like USC -6.7 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it USC -6.7 where the market has USC -10.0 at captured consensus (stale) · 1 book · best at BetRivers — a 3.3 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 3.3,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 3.3,
+        "unit": "points",
+        "market_margin": 10,
+        "market_text": "USC -10.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between USC -10.0 and USC -6.7.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Playing at USC is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in USC’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": null,
+      "falsifier": "Washington winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "USC is the better football team by 1.4 points on opponent-adjusted results, with roughly 47% of it still inherited from last season — worth +1.4 of the EdgeDesk number, in USC’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 1.4,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": null,
+      "falsifier": "Washington winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours USC by 1.2 points: ball control vs front disruption — worth +1.2 of the EdgeDesk number, in USC’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 1.2,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": null,
+      "falsifier": "Washington winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Washington’s pass offense rates 61.6 (#20 of 136) against USC’s pass defense at 49.7 (#71 of 137). Washington’s unit stands higher among its own position group, by 51 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Washington pass offense handles USC pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Washington’s run offense rates 42.7 (#106 of 137) against USC’s run defense at 46.1 (#83 of 137). USC’s unit stands higher among its own position group, by 23 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Washington run offense handles USC run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "USC’s pass offense rates 68.3 (#6 of 136) against Washington’s pass defense at 56.3 (#40 of 137). USC’s unit stands higher among its own position group, by 34 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How USC pass offense handles Washington pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "USC’s run offense rates 49.1 (#74 of 137) against Washington’s run defense at 60.4 (#35 of 137). Washington’s unit stands higher among its own position group, by 39 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How USC run offense handles Washington run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Washington holds the largest measured edge in this matchup: Washington 60.2 (#7 of 137) vs USC 51.2 (#87 of 137) — 80 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "matchup",
+      "weight": 20,
+      "favours_side": "away",
+      "favours_team": "Washington",
+      "expected_signal": null,
+      "falsifier": "USC winning that category on the day.",
+      "watch": "Whether Washington’s edge in Linebackers shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Linebackers"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "USC holds the largest measured edge in this matchup: USC 60.0 (#2 of 137) vs Washington 54.2 (#37 of 137) — 35 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "pressure",
+      "weight": 8.8,
+      "favours_side": "home",
+      "favours_team": "USC",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Washington winning that category on the day.",
+      "watch": "Whether USC’s edge in Offensive line shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Offensive line"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: The market disagrees by 3.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on market disagreement.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at USC -6.7 with a fair total of 55.6, which makes USC the better team here by that margin on this field.",
+      "weight": 6.7,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 6.666362946414877,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 4,
+          "away": -4,
+          "diff": 4
+        }
+      ],
+      "observed_result": "USC Trojans won by 4 where EdgeDesk projected a 6.7-point edge.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the right side won and the margin landed in the neighbourhood of the projection"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it USC -6.7 where the market has USC -10.0 at captured consensus (stale) · 1 book · best at BetRivers — a 3.3 points disagreement.",
+      "weight": 3.3,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 3.3,
+        "unit": "points",
+        "market_margin": 10,
+        "market_text": "USC -10.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 4,
+          "away": -4,
+          "diff": 4
+        }
+      ],
+      "observed_result": "USC Trojans won by 4.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk preferred won, but did not clear the market number, so the market had the better estimate of the size"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at USC is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in USC’s favour.",
+      "weight": 4.1,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "USC is the better football team by 1.4 points on opponent-adjusted results, with roughly 47% of it still inherited from last season — worth +1.4 of the EdgeDesk number, in USC’s favour.",
+      "weight": 1.4,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours USC by 1.2 points: ball control vs front disruption — worth +1.2 of the EdgeDesk number, in USC’s favour.",
+      "weight": 1.2,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Washington’s pass offense rates 61.6 (#20 of 136) against USC’s pass defense at 49.7 (#71 of 137). Washington’s unit stands higher among its own position group, by 51 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Washington’s run offense rates 42.7 (#106 of 137) against USC’s run defense at 46.1 (#83 of 137). USC’s unit stands higher among its own position group, by 23 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "USC’s pass offense rates 68.3 (#6 of 136) against Washington’s pass defense at 56.3 (#40 of 137). USC’s unit stands higher among its own position group, by 34 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "USC’s run offense rates 49.1 (#74 of 137) against Washington’s run defense at 60.4 (#35 of 137). Washington’s unit stands higher among its own position group, by 39 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "matchup",
+      "claim": "Washington holds the largest measured edge in this matchup: Washington 60.2 (#7 of 137) vs USC 51.2 (#87 of 137) — 80 places on the national board.",
+      "weight": 20,
+      "favours_team": "Washington",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Linebackers"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "USC holds the largest measured edge in this matchup: USC 60.0 (#2 of 137) vs Washington 54.2 (#37 of 137) — 35 places on the national board.",
+      "weight": 8.8,
+      "favours_team": "USC",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": false,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks generated"
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": false,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks allowed"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no sacks generated"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: The market disagrees by 3.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 10
+    },
+    "graded": 2,
+    "total": 12,
+    "not_observable": 10,
+    "headline": "1 of 2 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401858478",
+    "sport": "CFB",
+    "snapshot_id": "snap_10a276d37fde999c",
+    "graded_at": "2026-10-04T03:20:47.467Z",
+    "final": {
+      "home_team": "USC Trojans",
+      "away_team": "Washington Huskies",
+      "home_score": 25,
+      "away_score": 21,
+      "margin": 4,
+      "total_points": 46,
+      "winner": "USC Trojans"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "away",
+      "team": "Washington",
+      "point": 10,
+      "line_text": "Washington +10",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
+      "market_home_margin": -10,
+      "model_home_margin": -6.7,
+      "gap": 3.3,
+      "why": "EdgeDesk’s own number sat 3.3 points toward Washington of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at BetRivers. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "under",
+      "line": 58,
+      "model_total": 55.5,
+      "gap": 2.5,
+      "why": "EdgeDesk’s fair total of 55.5 sat 2.5 points below the captured total of 58."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 6,
+        "side": "away",
+        "point": 10,
+        "team": "Washington",
+        "line_text": "Washington +10"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 46,
+        "line": 58,
+        "side": "under",
+        "by": 12,
+        "direction": "under"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "away",
+        "team": "Washington"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 6.7,
+      "actual_home_margin": 4,
+      "margin_error": 2.7,
+      "right_side": true,
+      "projected_total": 55.5,
+      "actual_total": 46,
+      "total_error": 9.5,
+      "projected_score": {
+        "away": 24,
+        "home": 31
+      },
+      "inside_published_range": true,
+      "range_text": "-15.3 → +26.7 (USC)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "1 non-offensive or return score",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
+      }
+    ],
+    "verdict": {
+      "key": "right_untested",
+      "line": "The number landed, in a game whose scoreline came largely from outside the matchup. That is a result, not a verification."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858478:unobservable",
+      "game_id": "401858478",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858478",
+      "snapshot_id": "snap_10a276d37fde999c",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "9 of the claims in this article rested on model, passing, rushing, matchup, pressure.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858478:market_better",
+      "game_id": "401858478",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858478",
+      "snapshot_id": "snap_10a276d37fde999c",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it USC -6.7 where the market has USC -10.0 at captured consensus (stale) · 1 book · best at BetRivers — a 3.3 points disagreement.",
+      "actual_result": "USC Trojans won by 4. the side EdgeDesk preferred won, but did not clear the market number, so the market had the better estimate of the size",
+      "lesson": "EdgeDesk was directionally with the market’s eventual answer but wrong about the size. The market’s number was closer.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Track disagreements of this size across the season. The question is not whether one landed; it is whether the class of them has any edge at all.",
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    }
+  ]
+}
