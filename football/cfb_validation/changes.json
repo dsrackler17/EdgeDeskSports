@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-04T03:01:46.904Z",
+ "generated_at": "2026-10-04T04:09:08.277Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-09-28T02:07:23.595Z",
+  "since": "2026-09-28T04:07:25.084Z",
   "changes": [
    {
     "what": "pricing code",
@@ -35,13 +35,13 @@
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 92,
-    "to": 80
+    "to": 82
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 65,
-    "to": 2
+    "from": 21,
+    "to": 12
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -122,11 +122,11 @@
    "game_id": "401858254",
    "game": "Florida State @ Louisville",
    "market_then": null,
-   "market_now": null,
+   "market_now": -7.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE HISTORY UNKNOWN"
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
@@ -149,15 +149,15 @@
    "game_id": "401856714",
    "game": "South Carolina @ Florida",
    "market_then": null,
-   "market_now": -14.5,
+   "market_now": -14,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-03T23:10:16.887Z",
+   "to_at": "2026-10-04T02:45:39.866Z",
    "old_fair": 7.66,
    "new_fair": 2.16,
    "change": -5.5,
@@ -181,11 +181,11 @@
    "game_id": "401858485",
    "game": "USC @ Penn State",
    "market_then": -1.5,
-   "market_now": 0,
-   "market_change": 1.5,
+   "market_now": 2.5,
+   "market_change": 4,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "EDGE MOSTLY PRICED IN"
+   "status_now": "INVESTIGATE",
+   "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
@@ -281,10 +281,10 @@
    "game_id": "401856716",
    "game": "Texas A&M @ Missouri",
    "market_then": null,
-   "market_now": -1.5,
+   "market_now": -3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -466,7 +466,7 @@
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-03T23:10:16.887Z",
+   "to_at": "2026-10-04T02:45:39.866Z",
    "old_fair": 35.22,
    "new_fair": 38.48,
    "change": 3.26,
@@ -486,11 +486,11 @@
    "game_id": "401858257",
    "game": "Stanford @ Notre Dame",
    "market_then": null,
-   "market_now": null,
+   "market_now": -35.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE HISTORY UNKNOWN"
+   "status_now": "INVESTIGATE",
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
@@ -794,11 +794,11 @@
    "game_id": "401858483",
    "game": "Maryland @ Ohio State",
    "market_then": null,
-   "market_now": null,
+   "market_now": -37.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PRICE HISTORY UNKNOWN"
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-28T23:51:45.169Z",
@@ -1422,7 +1422,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-03T17:26:51.942Z",
+   "to_at": "2026-10-04T02:45:39.866Z",
    "old_fair": -6.28,
    "new_fair": -5.91,
    "change": 0.37,
@@ -1442,10 +1442,10 @@
    "game_id": "401856715",
    "game": "LSU @ Kentucky",
    "market_then": null,
-   "market_now": 10,
+   "market_now": 9.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1502,36 +1502,6 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-09-27T17:07:13.246Z",
-   "to_at": "2026-10-04T02:45:39.866Z",
-   "old_fair": 7.27,
-   "new_fair": 7.32,
-   "change": 0.05,
-   "material": false,
-   "causes": [
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: Luke Weaver (PREVIOUS_GAME) → Luke Weaver (COMPETITION)"
-    },
-    {
-     "cause": "TERMS_NOT_RECORDED",
-     "detail": "the earlier snapshot carries no component split, so the move cannot be attributed by term"
-    }
-   ],
-   "game_id": "401864513",
-   "game": "San José State @ Hawai'i",
-   "market_then": -4.5,
-   "market_now": -3,
-   "market_change": 1.5,
-   "status_then": "RESEARCH",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
