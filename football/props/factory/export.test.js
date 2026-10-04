@@ -64,6 +64,21 @@ chk('a compact distribution keeps the factory\'s probability at every line (with
   for (let line = 0.5; line <= 9.5; line += 1) assert.ok(Math.abs(EDP.dist.probs(rec, line).over - EDP.dist.probs(cr, line).over) < 1e-4);
   assert.strictEqual(doc.rows['2026_05_KC_BUF|00-0030506|anytime_td'][1].p, 0.41);
 });
+chk('over its byte budget the export defers whole games from the latest kickoff back, and says which', () => {
+  const games = [['2026_05_KC_BUF', '2026-10-11T17:00:00.000Z'], ['2026_04_KC_LV', '2026-10-04T17:00:00.000Z'], ['2026_05_SF_SEA', '2026-10-12T00:20:00.000Z']];
+  const s = { league: 'NFL', season: 2026, generated_at: 'x', props: [] };
+  games.forEach(([g, k]) => ['receiving_yards', 'receptions', 'anytime_td'].forEach((m, i) => s.props.push(proj({ game_id: g, kickoff_utc: k, market_key: m, model_version: 'v' + i, dist: [yd, rec, td][i] }))));
+  const all = X.build(s, null, null, { maxBytes: 0 });
+  assert.strictEqual(all.n, 9); assert.ok(!all.deferred_games && !('over_budget' in all.skipped), 'no budget, nothing deferred');
+  const full = Buffer.byteLength(JSON.stringify(all));
+  const d = X.build(s, null, null, { maxBytes: full - 1 });
+  assert.deepStrictEqual(d.deferred_games, ['2026_05_SF_SEA']); assert.strictEqual(d.skipped.over_budget, 3); assert.strictEqual(d.n, 6);
+  assert.ok(Buffer.byteLength(JSON.stringify(d)) <= full - 1);
+  const one = X.build(s, null, null, { maxBytes: 10 });
+  assert.deepStrictEqual(Object.keys(one.rows).map((k) => k.split('|')[0]).filter((g, i, a) => a.indexOf(g) === i), ['2026_04_KC_LV'], 'the soonest game is always kept');
+  assert.deepStrictEqual(one.deferred_games, ['2026_05_KC_BUF', '2026_05_SF_SEA']);
+  assert.ok(X.MAX_BYTES.NFL < 1.5e6, 'the NFL budget sits under the committed-file limit below');
+});
 const PUB = path.join(__dirname, 'nfl', 'projections.json');
 if (fs.existsSync(PUB)) {
   chk('the committed NFL projections are valid and small', () => {

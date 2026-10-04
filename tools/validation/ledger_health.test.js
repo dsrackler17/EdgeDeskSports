@@ -123,7 +123,22 @@ section('model health: cached, current, honest');
      as a note, like the college table's, never silently dropped */
   chk('the distribution audit still reports the NFL table drift, as a note now that decisions read the table by its median', H.alerts.some((a) => a.code === 'DISTRIBUTION_CENTRE_DRIFT' && a.league === 'NFL' && a.severity === 'INFO' && /BY ITS MEDIAN/.test(a.text)));
   chk('the CFB drift is a note: its decision path re-centres the shape', H.alerts.some((a) => a.code === 'DISTRIBUTION_CENTRE_DRIFT' && a.league === 'CFB' && a.severity === 'INFO'));
-  chk('a losing published record is said out loud, not hidden', H.alerts.some((a) => a.code === 'MODEL_RECORD_BELOW_BREAK_EVEN'));
+  /* THE RULE, ON WHATEVER THE RECORD IS. This asserted that the alert fires,
+     which held only while the CFB record was losing (106-128-2 on 2026-10-03,
+     interval 39.0–51.7%); Saturday's results took it to 126-142-3, whose
+     interval (41.1–53.0%) reaches past the 52.4% break-even, and the alert
+     correctly stopped. A sport whose 200+ graded record has its whole interval
+     under −110 break-even is said out loud; no other sport is. */
+  const RC = require(path.join(ROOT, 'lib', 'research_core.js'));
+  const losing = Object.keys(H.live_model_record && H.live_model_record.sports || {}).filter((s) => {
+    const x = H.live_model_record.sports[s].ats, dec = x.w + x.l;
+    if (dec < 200) return false;
+    const w = RC.wilson(x.w, dec);
+    return !!w && w.hi < 110 / 210;
+  });
+  const said = H.alerts.filter((a) => a.code === 'MODEL_RECORD_BELOW_BREAK_EVEN');
+  chk('a losing published record is said out loud, not hidden — and only a losing one', said.length === losing.length
+    && losing.every((s) => said.some((a) => new RegExp('the ' + s.toUpperCase() + ' model record').test(a.text))), { losing, said: said.map((a) => a.text) });
   chk('every alert says it changes nothing', H.alerts.every((a) => /not an automatic change|excluded from nothing automatically/.test(a.note || '')));
   chk('no leakage in the live ledger', !H.alerts.some((a) => a.code === 'LEAKAGE'));
 }

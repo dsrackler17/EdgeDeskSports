@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-03T21:29:39.080Z",
+ "generated_at": "2026-10-04T02:45:39.866Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,34 +119,34 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 106,
+  "total": 81,
   "by_group": {
-   "p4": 53,
-   "independent": 3,
-   "other": 56
+   "other": 46,
+   "p4": 37,
+   "independent": 2
   },
   "by_matchup": {
-   "conference": 96,
-   "non_conference": 7,
-   "fbs_fcs": 3
+   "conference": 74,
+   "fbs_fcs": 2,
+   "non_conference": 5
   },
   "by_conference": {
-   "sec": 14,
-   "big12": 12,
-   "acc": 13,
-   "independents": 3,
-   "bigten": 14,
-   "mac": 13,
-   "mwc": 9,
-   "american": 12,
-   "sunbelt": 12,
    "pac12": 7,
-   "cusa": 4
+   "american": 11,
+   "sec": 9,
+   "big12": 10,
+   "sunbelt": 10,
+   "acc": 8,
+   "bigten": 10,
+   "mwc": 6,
+   "cusa": 6,
+   "mac": 7,
+   "independents": 2
   }
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 342,
+ "absorbed_games": 364,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025,
@@ -168,8 +168,29 @@
    "artifact_team_game_rows": 1191,
    "games_absorbed_with_stats": 342,
    "team_rows_absorbed": 568,
-   "final_games_without_play_stats": 0,
-   "missing_game_ids": [],
+   "final_games_without_play_stats": 22,
+   "missing_game_ids": [
+    "401856707",
+    "401856819",
+    "401856822",
+    "401858246",
+    "401858252",
+    "401858479",
+    "401856705",
+    "401866432",
+    "401866431",
+    "401856708",
+    "401856710",
+    "401858248",
+    "401858253",
+    "401858473",
+    "401862793",
+    "401864515",
+    "401866430",
+    "401866433",
+    "401866434",
+    "401866477"
+   ],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -195,30 +216,30 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 106
+  "PREDICTED": 81
  },
  "weather": {
-  "requested": 101,
-  "answered": 101,
-  "dome": 4,
+  "requested": 78,
+  "answered": 78,
+  "dome": 2,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "101 of 101 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "78 of 78 outdoor game(s) got a forecast; 2 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 106
+  "NO_MARKET": 81
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
   "games_in_artifact": 602,
-  "completed_games_replayed": 342,
+  "completed_games_replayed": 364,
   "completed_games_with_both_team_efficiency": 226,
-  "missing_count": 116,
+  "missing_count": 138,
   "problem": null
  },
  "checks": [
@@ -279,12 +300,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 53,
-    "total": 106,
+    "non_power_games": 44,
+    "total": 81,
     "example": [
-     "Western Michigan @ Buffalo",
-     "Toledo @ Ball State",
-     "Samford @ UAB"
+     "Oregon State @ Colorado State",
+     "Texas Southern @ Florida Atlantic",
+     "UTSA @ Rice"
     ]
    }
   },
@@ -299,7 +320,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 96,
+    "conference_games": 74,
     "wrong": 0
    }
   },
@@ -307,7 +328,7 @@
    "name": "FBS-vs-FCS games stay on the slate and are never graded as a normal projection",
    "ok": true,
    "detail": {
-    "fbs_fcs_games": 3,
+    "fbs_fcs_games": 2,
     "graded": []
    }
   },
@@ -331,8 +352,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 106,
-    "audit_total": 106
+    "slate": 81,
+    "audit_total": 81
    }
   },
   {
@@ -362,13 +383,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
@@ -412,11 +433,11 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 116,
+   "count": 138,
    "detail": [
     {
-     "game_id": "401866409",
-     "game": "UAlbany @ Buffalo",
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
      "home": true,
      "away": false
     },
@@ -433,8 +454,8 @@
      "away": false
     },
     {
-     "game_id": "401856767",
-     "game": "Bethune-Cookman @ UCF",
+     "game_id": "401866409",
+     "game": "UAlbany @ Buffalo",
      "home": true,
      "away": false
     },
@@ -494,13 +515,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {

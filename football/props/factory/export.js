@@ -17,6 +17,14 @@
    Compact: a count keeps its probability mass function, a yardage up to 29
    CDF knots taken on its own curve (every 5% of probability, denser in the tails), a yes/no its probability; plus the model version, its
    walk-forward tier and evidence, and the three features that moved it most.
+
+   Small by construction: a league with a byte budget (MAX_BYTES) keeps its
+   soonest kickoffs and defers whole games from the latest kickoff back until
+   the file fits; a deferred game is projected by a later run as it draws
+   near. The 192-hour window spans two NFL weeks from Saturday on, and the
+   2026-10-03 21:46 run published 1.57 MB against the 1.5 MB the export suite
+   allows — every run after it failed that suite before it could rewrite the
+   file.
    =========================================================================== */
 'use strict';
 const path = require('path');
@@ -25,6 +33,8 @@ const { writeIfChanged } = require('../../../tools/football/write_if_changed.js'
 
 const SCHEMA = 'edgedesk_props_factory_projections_v1';
 const OUT = path.join(__dirname);
+/* bytes on disk, under the 1.5 MB export.test.js holds the committed NFL file to */
+const MAX_BYTES = { NFL: 1.45e6 };
 /* factory market → terminal market (lib/edgedesk_props.js MARKETS); the two
    factory combos the terminal does not list are not exported */
 const TO_TERMINAL = {
@@ -62,13 +72,15 @@ function compactDist(d) {
 /* scored: score.js output; registry: models/registry.json; terminalBoard:
    the terminal's current board for the league (optional) — when present,
    only players it shows are exported */
-function build(scored, registry, terminalBoard) {
+function build(scored, registry, terminalBoard, opts) {
+  opts = opts || {};
   const league = scored.league;
   const onBoard = terminalBoard && Array.isArray(terminalBoard.props) ? new Set(terminalBoard.props.filter((x) => x.p).map((x) => x.g + '|' + x.p)) : null;
   const reg = new Map(((registry && registry.models) || []).map((m) => [m.model_version, m]));
-  const models = [], mi = new Map(), rows = {};
+  const models = [], mi = new Map(), rows = {}, kickoff = new Map();
   let skippedId = 0, skippedBoard = 0, skippedMarket = 0;
   scored.props.forEach((p) => {
+    if (p.kickoff_utc && !kickoff.has(p.game_id)) kickoff.set(p.game_id, p.kickoff_utc);
     const tm = TO_TERMINAL[p.market_key]; if (!tm) { skippedMarket++; return; }
     const pid = terminalPid(league, p); if (!pid) { skippedId++; return; }
     if (onBoard && !onBoard.has(p.game_id + '|' + pid)) { skippedBoard++; return; }
@@ -79,7 +91,7 @@ function build(scored, registry, terminalBoard) {
     }
     rows[p.game_id + '|' + pid + '|' + tm] = [mi.get(p.model_version), compactDist(p.dist), r(p.mean, 2), r(p.median, 2), r(p.p10, 1), r(p.p90, 1), p.as_of, p.drivers || []];
   });
-  return {
+  const doc = {
     schema: SCHEMA, league, season: scored.season, generated_at: scored.generated_at, as_of: scored.generated_at,
     feature_version: scored.props.length ? scored.props[0].feature_version : null,
     rule: 'The factory\'s walk-forward-validated distributions (football/props/factory), keyed by the terminal\'s own game, player and market ids. Evidence beside the terminal\'s engine; it never sets a price and does not change a decision.',
@@ -87,7 +99,31 @@ function build(scored, registry, terminalBoard) {
     model_cols: ['model_version', 'outcome_tier', 'walk_forward_mae_skill', 'walk_forward_pit_dev', 'folds'],
     models, n: Object.keys(rows).length, skipped: { no_terminal_id: skippedId, not_on_board: skippedBoard, market_not_listed: skippedMarket }, rows
   };
+  return fit(doc, opts.maxBytes !== undefined ? opts.maxBytes : MAX_BYTES[league], kickoff);
+}
+
+/* the byte budget: whole games deferred from the latest kickoff back (a game
+   with no kickoff on record goes first) until the file fits; the soonest game
+   is always kept. Deferred games are named in the file. */
+function fit(doc, maxBytes, kickoff) {
+  const bytes = () => Buffer.byteLength(JSON.stringify(doc));
+  if (!maxBytes || bytes() <= maxBytes) return doc;
+  const byGame = new Map();
+  Object.keys(doc.rows).forEach((k) => { const g = k.split('|')[0]; if (!byGame.has(g)) byGame.set(g, []); byGame.get(g).push(k); });
+  const at = (g) => { const t = Date.parse(kickoff && kickoff.get(g)); return isFinite(t) ? t : Infinity; };
+  const latestFirst = Array.from(byGame.keys()).sort((a, b) => at(b) - at(a) || (a < b ? 1 : a > b ? -1 : 0));
+  const deferred = [];
+  let dropped = 0;
+  for (let i = 0; i < latestFirst.length - 1 && bytes() > maxBytes; i++) {
+    const g = latestFirst[i];
+    byGame.get(g).forEach((k) => { delete doc.rows[k]; dropped++; });
+    deferred.push(g);
+    doc.n = Object.keys(doc.rows).length;
+    doc.skipped.over_budget = dropped;
+    doc.deferred_games = deferred.slice().reverse();
+  }
+  return doc;
 }
 function write(doc) { return writeIfChanged(path.join(OUT, doc.league.toLowerCase(), 'projections.json'), doc); }
 
-module.exports = { SCHEMA, TO_TERMINAL, build, write, compactDist, terminalPid };
+module.exports = { SCHEMA, TO_TERMINAL, MAX_BYTES, build, fit, write, compactDist, terminalPid };

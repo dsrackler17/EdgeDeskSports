@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-03T20:38:08.936Z",
+ "generated_at": "2026-10-03T23:25:21.044Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -125,39 +125,39 @@
   "current_model_version": "edgedesk_cfb_p4_v1.0.0",
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
-  "live_games": 19,
-  "live_snapshots_tracked": 486,
-  "model_mae": 14.396,
-  "market_moved_toward_edgedesk_pct": 52.6,
-  "average_clv": 0.421,
-  "calibration_error": 0.2083,
+  "live_games": 33,
+  "live_snapshots_tracked": 498,
+  "model_mae": 14.983,
+  "market_moved_toward_edgedesk_pct": 48.5,
+  "average_clv": 0.076,
+  "calibration_error": 0.0974,
   "interval_coverage_80": null,
   "verified_major_n": 0,
   "qualified_bet_n": 0,
-  "state": "EARLY — 19 settled games; read nothing into it yet"
+  "state": "EARLY — 33 settled games; read nothing into it yet"
  },
  "views": [
   {
    "id": "SINCE_UPGRADE",
    "label": "SINCE CURRENT MODEL VERSION",
    "note": "LIVE official (T24) snapshots of edgedesk_cfb_p4_v1.0.0 taken at or after the freeze (2026-09-28T00:00:00.000Z) under the frozen pricing fingerprint. The only view that judges the current version.",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 33,
+   "n_settled": 33,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
-    "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "n": 33,
+    "mae": 14.983,
+    "rmse": 19.042,
+    "median_ae": 10.66,
+    "p90_ae": 33.946,
+    "p95_ae": 35.3,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 4.627,
+    "favorite_bias": 5.402,
+    "winner_accuracy": 0.8182,
+    "brier": 0.15511,
+    "log_loss": 0.48167,
+    "calibration_error": 0.0974,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -165,27 +165,27 @@
      "n": 0,
      "verdict_80": "insufficient sample"
     },
-    "label": "small sample"
+    "label": "provisional"
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 33,
+    "opening_market_mae": 15.485,
+    "edgedesk_mae_vs_open_set": 14.983,
+    "edgedesk_closer_than_opener_pct": 45.5,
+    "n_open": 33,
+    "closing_market_mae": 15.015,
+    "edgedesk_mae_vs_close_set": 14.983,
+    "edgedesk_closer_than_close_pct": 48.5,
+    "n_close": 33,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -1.539,
+     1.378
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48.5,
+    "average_clv_points": 0.076,
+    "positive_clv_pct": 42.4,
+    "n_clv": 33,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -209,20 +209,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 24,
+     "wins": 13,
+     "losses": 10,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.5652,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 1.577,
+     "risked": 24,
+     "roi": 0.0657,
+     "max_drawdown": 4.091,
+     "clv_n": 24,
+     "clv_mean": 0.021,
+     "clv_median": 0,
+     "positive_clv_pct": 0.4167,
      "price_assumed_share": 0
     }
    }
@@ -231,23 +231,23 @@
    "id": "CURRENT_CHAMPION",
    "label": "CURRENT CHAMPION ONLY",
    "note": "every LIVE official snapshot of the champion, before and after the freeze",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 33,
+   "n_settled": 33,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
-    "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "n": 33,
+    "mae": 14.983,
+    "rmse": 19.042,
+    "median_ae": 10.66,
+    "p90_ae": 33.946,
+    "p95_ae": 35.3,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 4.627,
+    "favorite_bias": 5.402,
+    "winner_accuracy": 0.8182,
+    "brier": 0.15511,
+    "log_loss": 0.48167,
+    "calibration_error": 0.0974,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -255,27 +255,27 @@
      "n": 0,
      "verdict_80": "insufficient sample"
     },
-    "label": "small sample"
+    "label": "provisional"
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 33,
+    "opening_market_mae": 15.485,
+    "edgedesk_mae_vs_open_set": 14.983,
+    "edgedesk_closer_than_opener_pct": 45.5,
+    "n_open": 33,
+    "closing_market_mae": 15.015,
+    "edgedesk_mae_vs_close_set": 14.983,
+    "edgedesk_closer_than_close_pct": 48.5,
+    "n_close": 33,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -1.539,
+     1.378
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48.5,
+    "average_clv_points": 0.076,
+    "positive_clv_pct": 42.4,
+    "n_clv": 33,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -299,20 +299,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 24,
+     "wins": 13,
+     "losses": 10,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.5652,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 1.577,
+     "risked": 24,
+     "roi": 0.0657,
+     "max_drawdown": 4.091,
+     "clv_n": 24,
+     "clv_mean": 0.021,
+     "clv_median": 0,
+     "positive_clv_pct": 0.4167,
      "price_assumed_share": 0
     }
    }
@@ -321,23 +321,23 @@
    "id": "CURRENT_SEASON",
    "label": "CURRENT SEASON (2026)",
    "note": "LIVE official snapshots this season",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 33,
+   "n_settled": 33,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
-    "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "n": 33,
+    "mae": 14.983,
+    "rmse": 19.042,
+    "median_ae": 10.66,
+    "p90_ae": 33.946,
+    "p95_ae": 35.3,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 4.627,
+    "favorite_bias": 5.402,
+    "winner_accuracy": 0.8182,
+    "brier": 0.15511,
+    "log_loss": 0.48167,
+    "calibration_error": 0.0974,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -345,27 +345,27 @@
      "n": 0,
      "verdict_80": "insufficient sample"
     },
-    "label": "small sample"
+    "label": "provisional"
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 33,
+    "opening_market_mae": 15.485,
+    "edgedesk_mae_vs_open_set": 14.983,
+    "edgedesk_closer_than_opener_pct": 45.5,
+    "n_open": 33,
+    "closing_market_mae": 15.015,
+    "edgedesk_mae_vs_close_set": 14.983,
+    "edgedesk_closer_than_close_pct": 48.5,
+    "n_close": 33,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -1.539,
+     1.378
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48.5,
+    "average_clv_points": 0.076,
+    "positive_clv_pct": 42.4,
+    "n_clv": 33,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -389,20 +389,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 24,
+     "wins": 13,
+     "losses": 10,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.5652,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 1.577,
+     "risked": 24,
+     "roi": 0.0657,
+     "max_drawdown": 4.091,
+     "clv_n": 24,
+     "clv_mean": 0.021,
+     "clv_median": 0,
+     "positive_clv_pct": 0.4167,
      "price_assumed_share": 0
     }
    }
@@ -411,23 +411,23 @@
    "id": "LAST_25",
    "label": "LAST 25 GAMES",
    "note": "the last 25 settled games since the freeze",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 25,
+   "n_settled": 25,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
+    "n": 25,
+    "mae": 13.344,
+    "rmse": 17.572,
     "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "p90_ae": 30.866,
+    "p95_ae": 34.77,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 5.892,
+    "favorite_bias": 1.578,
+    "winner_accuracy": 0.8,
+    "brier": 0.16035,
+    "log_loss": 0.49442,
+    "calibration_error": 0.089,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -439,23 +439,23 @@
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 25,
+    "opening_market_mae": 14.2,
+    "edgedesk_mae_vs_open_set": 13.344,
+    "edgedesk_closer_than_opener_pct": 52,
+    "n_open": 25,
+    "closing_market_mae": 13.8,
+    "edgedesk_mae_vs_close_set": 13.344,
+    "edgedesk_closer_than_close_pct": 56,
+    "n_close": 25,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -2.372,
+     1.211
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48,
+    "average_clv_points": -0.08,
+    "positive_clv_pct": 36,
+    "n_clv": 25,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -479,20 +479,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 19,
+     "wins": 12,
+     "losses": 6,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.6667,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 4.73,
+     "risked": 19,
+     "roi": 0.2489,
+     "max_drawdown": 4.091,
+     "clv_n": 19,
+     "clv_mean": -0.105,
+     "clv_median": 0,
+     "positive_clv_pct": 0.3684,
      "price_assumed_share": 0
     }
    }
@@ -501,23 +501,23 @@
    "id": "LAST_50",
    "label": "LAST 50 GAMES",
    "note": "the last 50 settled games since the freeze",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 33,
+   "n_settled": 33,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
-    "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "n": 33,
+    "mae": 14.983,
+    "rmse": 19.042,
+    "median_ae": 10.66,
+    "p90_ae": 33.946,
+    "p95_ae": 35.3,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 4.627,
+    "favorite_bias": 5.402,
+    "winner_accuracy": 0.8182,
+    "brier": 0.15511,
+    "log_loss": 0.48167,
+    "calibration_error": 0.0974,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -525,27 +525,27 @@
      "n": 0,
      "verdict_80": "insufficient sample"
     },
-    "label": "small sample"
+    "label": "provisional"
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 33,
+    "opening_market_mae": 15.485,
+    "edgedesk_mae_vs_open_set": 14.983,
+    "edgedesk_closer_than_opener_pct": 45.5,
+    "n_open": 33,
+    "closing_market_mae": 15.015,
+    "edgedesk_mae_vs_close_set": 14.983,
+    "edgedesk_closer_than_close_pct": 48.5,
+    "n_close": 33,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -1.539,
+     1.378
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48.5,
+    "average_clv_points": 0.076,
+    "positive_clv_pct": 42.4,
+    "n_clv": 33,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -569,20 +569,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 24,
+     "wins": 13,
+     "losses": 10,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.5652,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 1.577,
+     "risked": 24,
+     "roi": 0.0657,
+     "max_drawdown": 4.091,
+     "clv_n": 24,
+     "clv_mean": 0.021,
+     "clv_median": 0,
+     "positive_clv_pct": 0.4167,
      "price_assumed_share": 0
     }
    }
@@ -591,23 +591,23 @@
    "id": "LAST_100",
    "label": "LAST 100 GAMES",
    "note": "the last 100 settled games since the freeze",
-   "n_rows": 19,
-   "n_settled": 19,
+   "n_rows": 33,
+   "n_settled": 33,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 19,
-    "mae": 14.396,
-    "rmse": 18.34,
-    "median_ae": 8.75,
-    "p90_ae": 34.426,
-    "p95_ae": 35.581,
+    "n": 33,
+    "mae": 14.983,
+    "rmse": 19.042,
+    "median_ae": 10.66,
+    "p90_ae": 33.946,
+    "p95_ae": 35.3,
     "worst_ae": 36.76,
-    "bias": 3.553,
-    "favorite_bias": 8.439,
-    "winner_accuracy": 0.8421,
-    "brier": 0.12813,
-    "log_loss": 0.41199,
-    "calibration_error": 0.2083,
+    "bias": 4.627,
+    "favorite_bias": 5.402,
+    "winner_accuracy": 0.8182,
+    "brier": 0.15511,
+    "log_loss": 0.48167,
+    "calibration_error": 0.0974,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -615,27 +615,27 @@
      "n": 0,
      "verdict_80": "insufficient sample"
     },
-    "label": "small sample"
+    "label": "provisional"
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 19,
-    "opening_market_mae": 14.5,
-    "edgedesk_mae_vs_open_set": 14.396,
-    "edgedesk_closer_than_opener_pct": 42.1,
-    "n_open": 19,
-    "closing_market_mae": 13.921,
-    "edgedesk_mae_vs_close_set": 14.396,
-    "edgedesk_closer_than_close_pct": 42.1,
-    "n_close": 19,
+    "n": 33,
+    "opening_market_mae": 15.485,
+    "edgedesk_mae_vs_open_set": 14.983,
+    "edgedesk_closer_than_opener_pct": 45.5,
+    "n_open": 33,
+    "closing_market_mae": 15.015,
+    "edgedesk_mae_vs_close_set": 14.983,
+    "edgedesk_closer_than_close_pct": 48.5,
+    "n_close": 33,
     "error_vs_close_ci": [
-     -0.977,
-     1.923
+     -1.539,
+     1.378
     ],
-    "market_moved_toward_edgedesk_pct": 52.6,
-    "average_clv_points": 0.421,
-    "positive_clv_pct": 63.2,
-    "n_clv": 19,
+    "market_moved_toward_edgedesk_pct": 48.5,
+    "average_clv_points": 0.076,
+    "positive_clv_pct": 42.4,
+    "n_clv": 33,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -659,20 +659,20 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 14,
-     "wins": 8,
-     "losses": 5,
+     "decisions": 24,
+     "wins": 13,
+     "losses": 10,
      "pushes": 1,
-     "ats_pct": 0.6154,
+     "ats_pct": 0.5652,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": 2.14,
-     "risked": 14,
-     "roi": 0.1529,
-     "max_drawdown": 3.153,
-     "clv_n": 14,
-     "clv_mean": 0.357,
-     "clv_median": 0.5,
-     "positive_clv_pct": 0.6429,
+     "units": 1.577,
+     "risked": 24,
+     "roi": 0.0657,
+     "max_drawdown": 4.091,
+     "clv_n": 24,
+     "clv_mean": 0.021,
+     "clv_median": 0,
+     "positive_clv_pct": 0.4167,
      "price_assumed_share": 0
     }
    }
@@ -771,23 +771,23 @@
    "id": "ALL_HISTORICAL",
    "label": "ALL HISTORICAL",
    "note": "everything on file for the champion: legacy reconstructed, pre-freeze LIVE and LIVE official. Mixed epochs, shown only beside the separated views.",
-   "n_rows": 250,
-   "n_settled": 250,
+   "n_rows": 264,
+   "n_settled": 264,
    "football_model": {
     "what": "how far the pure fair margin landed from the final margin, and whether the stated probabilities and ranges were honest",
-    "n": 250,
-    "mae": 13.061,
-    "rmse": 16.443,
-    "median_ae": 10.96,
-    "p90_ae": 25.233,
-    "p95_ae": 32.636,
+    "n": 264,
+    "mae": 13.206,
+    "rmse": 16.648,
+    "median_ae": 11.025,
+    "p90_ae": 26.822,
+    "p95_ae": 33.017,
     "worst_ae": 53.69,
-    "bias": 1.073,
-    "favorite_bias": 1.705,
-    "winner_accuracy": 0.824,
-    "brier": 0.13832,
-    "log_loss": 0.42407,
-    "calibration_error": 0.0521,
+    "bias": 1.338,
+    "favorite_bias": 1.682,
+    "winner_accuracy": 0.822,
+    "brier": 0.1445,
+    "log_loss": 0.44167,
+    "calibration_error": 0.0429,
     "interval_coverage": {
      "p50": null,
      "p80": null,
@@ -799,23 +799,23 @@
    },
    "market_intelligence": {
     "what": "the market, read after the projection: which number landed closer, and whether the market moved to EdgeDesk",
-    "n": 250,
-    "opening_market_mae": 12.217,
-    "edgedesk_mae_vs_open_set": 13.823,
-    "edgedesk_closer_than_opener_pct": 35.6,
-    "n_open": 90,
-    "closing_market_mae": 11.036,
-    "edgedesk_mae_vs_close_set": 13.061,
-    "edgedesk_closer_than_close_pct": 38,
-    "n_close": 250,
+    "n": 264,
+    "opening_market_mae": 12.837,
+    "edgedesk_mae_vs_open_set": 14.087,
+    "edgedesk_closer_than_opener_pct": 37.5,
+    "n_open": 104,
+    "closing_market_mae": 11.326,
+    "edgedesk_mae_vs_close_set": 13.206,
+    "edgedesk_closer_than_close_pct": 39,
+    "n_close": 264,
     "error_vs_close_ci": [
-     1.199,
-     2.886
+     1.108,
+     2.682
     ],
-    "market_moved_toward_edgedesk_pct": 37.8,
-    "average_clv_points": 0.289,
-    "positive_clv_pct": 44.4,
-    "n_clv": 45,
+    "market_moved_toward_edgedesk_pct": 38.5,
+    "average_clv_points": 0.127,
+    "positive_clv_pct": 37.3,
+    "n_clv": 59,
     "clv_basis": "points the closing line moved toward EdgeDesk’s side from the market at the snapshot (move_since_snapshot)"
    },
    "betting_decisions": {
@@ -839,21 +839,21 @@
      "price_assumed_share": null
     },
     "research_positions_hypothetical": {
-     "decisions": 28,
-     "wins": 11,
-     "losses": 15,
+     "decisions": 38,
+     "wins": 16,
+     "losses": 20,
      "pushes": 2,
-     "ats_pct": 0.4231,
+     "ats_pct": 0.4444,
      "label": "HYPOTHETICAL — research leans graded at an assumed −110, not wagers and not a record",
-     "units": -5.133,
-     "risked": 28,
-     "roi": -0.1833,
+     "units": -5.695,
+     "risked": 38,
+     "roi": -0.1499,
      "max_drawdown": 10.425,
-     "clv_n": 28,
-     "clv_mean": 0.304,
-     "clv_median": 0.25,
-     "positive_clv_pct": 0.5,
-     "price_assumed_share": 0.5
+     "clv_n": 38,
+     "clv_mean": 0.105,
+     "clv_median": 0,
+     "positive_clv_pct": 0.3947,
+     "price_assumed_share": 0.3684
     }
    }
   }
@@ -866,22 +866,22 @@
   "epoch_note": "LIVE official snapshots of the frozen champion",
   "this_week": {
    "model_quality": {
-    "games_graded": 19,
-    "mae": 14.396,
-    "median_error": 8.75,
+    "games_graded": 33,
+    "mae": 14.983,
+    "median_error": 10.66,
     "worst_error": 36.76,
     "interval_coverage_80": null,
-    "calibration_error": 0.2083
+    "calibration_error": 0.0974
    },
    "market_quality": {
-    "early_disagreements": 14,
-    "market_moved_toward_pct": 52.6,
-    "average_clv": 0.421
+    "early_disagreements": 24,
+    "market_moved_toward_pct": 48.5,
+    "average_clv": 0.076
    },
    "decisions": {
     "BET": 0,
     "WAIT": 0,
-    "PASS": 19,
+    "PASS": 33,
     "qualified_wagers": 0,
     "ats": "—",
     "units": null,
@@ -890,22 +890,22 @@
   },
   "rolling_4_weeks": {
    "model_quality": {
-    "games_graded": 19,
-    "mae": 14.396,
-    "median_error": 8.75,
+    "games_graded": 33,
+    "mae": 14.983,
+    "median_error": 10.66,
     "worst_error": 36.76,
     "interval_coverage_80": null,
-    "calibration_error": 0.2083
+    "calibration_error": 0.0974
    },
    "market_quality": {
-    "early_disagreements": 14,
-    "market_moved_toward_pct": 52.6,
-    "average_clv": 0.421
+    "early_disagreements": 24,
+    "market_moved_toward_pct": 48.5,
+    "average_clv": 0.076
    },
    "decisions": {
     "BET": 0,
     "WAIT": 0,
-    "PASS": 19,
+    "PASS": 33,
     "qualified_wagers": 0,
     "ats": "—",
     "units": null,
@@ -914,22 +914,22 @@
   },
   "season_to_date": {
    "model_quality": {
-    "games_graded": 19,
-    "mae": 14.396,
-    "median_error": 8.75,
+    "games_graded": 33,
+    "mae": 14.983,
+    "median_error": 10.66,
     "worst_error": 36.76,
     "interval_coverage_80": null,
-    "calibration_error": 0.2083
+    "calibration_error": 0.0974
    },
    "market_quality": {
-    "early_disagreements": 14,
-    "market_moved_toward_pct": 52.6,
-    "average_clv": 0.421
+    "early_disagreements": 24,
+    "market_moved_toward_pct": 48.5,
+    "average_clv": 0.076
    },
    "decisions": {
     "BET": 0,
     "WAIT": 0,
-    "PASS": 19,
+    "PASS": 33,
     "qualified_wagers": 0,
     "ats": "—",
     "units": null,
@@ -938,22 +938,22 @@
   },
   "current_model_version": {
    "model_quality": {
-    "games_graded": 19,
-    "mae": 14.396,
-    "median_error": 8.75,
+    "games_graded": 33,
+    "mae": 14.983,
+    "median_error": 10.66,
     "worst_error": 36.76,
     "interval_coverage_80": null,
-    "calibration_error": 0.2083
+    "calibration_error": 0.0974
    },
    "market_quality": {
-    "early_disagreements": 14,
-    "market_moved_toward_pct": 52.6,
-    "average_clv": 0.421
+    "early_disagreements": 24,
+    "market_moved_toward_pct": 48.5,
+    "average_clv": 0.076
    },
    "decisions": {
     "BET": 0,
     "WAIT": 0,
-    "PASS": 19,
+    "PASS": 33,
     "qualified_wagers": 0,
     "ats": "—",
     "units": null,
@@ -962,16 +962,16 @@
   },
   "research_gates": {
    "verified": 0,
-   "investigate": 10,
+   "investigate": 11,
    "data_faults": 0,
    "not_run": 0,
-   "raw_7plus": 10,
-   "favorite_flips": 2,
+   "raw_7plus": 11,
+   "favorite_flips": 3,
    "downgraded": null
   },
   "report": {
-   "text": "EDGEDESK CFB WEEK 5 (2026)\n\nGames: 19\nMargin MAE: 14.396 (median 8.75, worst 36.76)\nMarket movement toward early EdgeDesk: 52.6%\nAverage CLV: 0.421 pts\nVerified major: 0\nInvestigate: 10\nBET decisions: 0 (betting disabled by policy)\nRecord: —\nPrimary concern: Sample: 19 games graded — one week says little. Read the rolling and season lines.\nResearch trigger: NONE — NO STRUCTURAL MODEL ISSUE DETECTED\n\nRolling 4 weeks: MAE 14.396 on 19 games · Season: MAE 14.396 on 19 · Current version: 19 games graded.\nOne week is never the verdict. No model change follows from this report; research triggers open candidates, promotions need walk-forward evidence.",
-   "primary_concern": "Sample: 19 games graded — one week says little. Read the rolling and season lines.",
+   "text": "EDGEDESK CFB WEEK 5 (2026)\n\nGames: 33\nMargin MAE: 14.983 (median 10.66, worst 36.76)\nMarket movement toward early EdgeDesk: 48.5%\nAverage CLV: 0.076 pts\nVerified major: 0\nInvestigate: 11\nBET decisions: 0 (betting disabled by policy)\nRecord: —\nPrimary concern: None beyond ordinary weekly noise.\nResearch trigger: NONE — NO STRUCTURAL MODEL ISSUE DETECTED\n\nRolling 4 weeks: MAE 14.983 on 33 games · Season: MAE 14.983 on 33 · Current version: 33 games graded.\nOne week is never the verdict. No model change follows from this report; research triggers open candidates, promotions need walk-forward evidence.",
+   "primary_concern": "None beyond ordinary weekly noise.",
    "research_trigger": "NONE",
    "state": "NO STRUCTURAL MODEL ISSUE DETECTED"
   }
@@ -983,14 +983,14 @@
     "question": "Is MAE persistently elevated when the quarterback is uncertain or changed?",
     "threshold": "MAE gap > 2 SE, n ≥ 30 in each group",
     "min_n": 30,
-    "n": 1,
-    "value": 6.53,
+    "n": 3,
+    "value": -1.53,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
-     "uncertain_n": 1,
-     "settled_n": 18,
-     "mae_uncertain": 20.58,
-     "mae_settled": 14.05
+     "uncertain_n": 3,
+     "settled_n": 30,
+     "mae_uncertain": 13.59,
+     "mae_settled": 15.12
     },
     "source": "LIVE"
    },
@@ -999,12 +999,12 @@
     "question": "Does EdgeDesk persistently over-project its favourite?",
     "threshold": "|mean favourite over-projection| > 2 SE, n ≥ 100",
     "min_n": 100,
-    "n": 19,
-    "value": -8.44,
+    "n": 33,
+    "value": -5.4,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
-     "mean": -8.44,
-     "se": 3.84
+     "mean": -5.4,
+     "se": 3.23
     },
     "source": "LIVE"
    },
@@ -1013,7 +1013,7 @@
     "question": "Is there a conference-specific residual bias?",
     "threshold": "a home conference with n ≥ 30 and |mean residual| > 2 SE",
     "min_n": 30,
-    "n": 4,
+    "n": 6,
     "value": 0,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
@@ -1051,11 +1051,11 @@
     "question": "Has probability calibration or interval coverage drifted?",
     "threshold": "last-100 win ECE > 0.06, or 80% coverage outside 75–85%",
     "min_n": 50,
-    "n": 19,
-    "value": 0.2083,
+    "n": 33,
+    "value": 0.0974,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
-     "ece": 0.2083,
+     "ece": 0.0974,
      "coverage_80": null
     },
     "source": "LIVE"
@@ -1065,12 +1065,12 @@
     "question": "Has closing-line value deteriorated?",
     "threshold": "last-50 mean CLV < 0 by more than 2 SE, n ≥ 50",
     "min_n": 50,
-    "n": 19,
-    "value": 0.421,
+    "n": 33,
+    "value": 0.076,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
-     "mean": 0.421,
-     "se": 0.172
+     "mean": 0.076,
+     "se": 0.154
     },
     "source": "LIVE"
    },
@@ -1109,12 +1109,12 @@
     "question": "Is the live MAE above the holdout reference?",
     "threshold": "last-50 MAE > reference + 2 SE (reference 12.6017)",
     "min_n": 50,
-    "n": 19,
-    "value": 14.396,
+    "n": 33,
+    "value": 14.983,
     "status": "INSUFFICIENT_SAMPLE",
     "evidence": {
      "reference": 12.6017,
-     "se": 2.678
+     "se": 2.077
     },
     "source": "LIVE"
    }
@@ -1139,15 +1139,15 @@
   "plan_id": "next100_edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T01:12:00.000Z",
   "target": 100,
-  "settled": 19,
-  "progress_pct": 19,
+  "settled": 33,
+  "progress_pct": 33,
   "ready": false,
   "measured": {
-   "margin_mae": 14.396,
-   "calibration_error": 0.2083,
+   "margin_mae": 14.983,
+   "calibration_error": 0.0974,
    "interval_coverage_80": null,
-   "market_moved_toward_pct": 52.6,
-   "average_clv": 0.421,
+   "market_moved_toward_pct": 48.5,
+   "average_clv": 0.076,
    "qualified_wagers": 0
   },
   "baselines": {
@@ -1242,7 +1242,7 @@
    }
   ],
   "comparison": null,
-  "note": "Building: 19 of 100 settled official games since the freeze. No comparison is printed before 100."
+  "note": "Building: 33 of 100 settled official games since the freeze. No comparison is printed before 100."
  },
  "weekly_files": [
   {
@@ -1284,19 +1284,19 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T00:53:47.573Z",
-    "to": "2026-10-03T19:59:31.673Z"
+    "to": "2026-10-03T23:10:16.887Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 92,
-    "to": 89
+    "to": 78
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 74,
-    "to": 10
+    "to": 14
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
