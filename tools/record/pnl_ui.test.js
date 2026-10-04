@@ -647,10 +647,20 @@ async function main() {
             chk(W + 'px real: the props pending ledger says the leans are tracked, one tap away', (await text(page, '#pnlPub [data-r="lrows"] .pnl-lcount')).indexOf(propPending.toLocaleString('en-US') + ' player-prop lean') >= 0 && !!(await page.$('#pnlPub [data-leans-on]')));
             await page.evaluate(() => document.querySelector('#pnlPub [data-leans-on]').click());
             await page.waitForTimeout(200);
+            /* the college leans are looked for where they are: pending through
+               the week, verified once Saturday settles them. The pending count
+               above is every prop lean, so on a Sunday it is all NFL and a
+               "CFB" search of the pending list is empty by construction. */
+            const cfbIn = (sts) => cfbLeans.some((x) => sts.indexOf(PNL.rowState(x)) >= 0);
+            const cfbStatus = cfbIn(['PENDING']) ? 'pending' : cfbIn(['VERIFIED', 'VOID']) ? 'verified' : null;
+            if (cfbStatus === 'verified') {
+              await page.evaluate((st) => document.querySelector('#pnlPub [data-lstatus="' + st + '"]').click(), cfbStatus);
+              await page.waitForTimeout(200);
+            }
             await page.fill('#pnlPub [data-lq]', 'CFB');
             await page.waitForTimeout(300);
             const listed = await page.$$eval('#pnlPub [data-r="lrows"] tr.pnl-lr td[data-l="Sport"]', (els) => els.map((e) => e.textContent));
-            chk(W + 'px real: including leans lists the college props', await page.$eval('#pnlPub [data-leans]', (c) => c.checked) && listed.length > 0 && listed.every((t) => /CFB/.test(t) && /Lean/.test(t)), listed.slice(0, 3));
+            if (cfbStatus) chk(W + 'px real: including leans lists the college props', await page.$eval('#pnlPub [data-leans]', (c) => c.checked) && listed.length > 0 && listed.every((t) => /CFB/.test(t) && /Lean/.test(t)), listed.slice(0, 3));
             await page.fill('#pnlPub [data-lq]', '');
             await page.waitForTimeout(300);
             await page.evaluate(() => { const c = document.querySelector('#pnlPub [data-leans]'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); });
