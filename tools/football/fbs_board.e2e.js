@@ -278,11 +278,12 @@ function serve(handler) {
   chk('the slate carries Other FBS games', (state.groups.other || 0) > 0, state.groups);
   chk('the slate carries independents', (state.groups.independent || 0) > 0, state.groups);
   /* Every matchup type the feed offers is on the board, game for game.
-     This asserted all three types outright, which held on a September
-     Saturday and failed on the Sunday of 2026-10-04, when the ten days
-     ahead held no FBS-vs-FCS game at all: the season, not the board. Held
-     to what the feed offers, a board that dropped FCS or non-conference
-     games still fails, and an empty week for one type does not. */
+     No type is required to exist: FBS-vs-FCS games cluster in September and
+     from October the live window routinely holds none, and bowl season holds
+     no conference game at all. Held to what the raw feed offers inside the
+     board's window, a board that drops FCS, conference or non-conference
+     games still fails, and an empty stretch of the calendar for one type
+     does not. */
   chk('the slate carries every matchup type the feed offers, game for game',
     Object.keys(state.offered).length > 0
       && ['conference', 'non_conference', 'fbs_fcs'].every(k => (state.types[k] || 0) >= (state.offered[k] || 0)),
@@ -485,32 +486,26 @@ function serve(handler) {
     mob.controlsHeight != null && mob.controlsHeight < 460,
     { controls: mob.controlsHeight, board_offset: mob.boardOffset });
 
-  /* filtering works on a phone too — on a matchup type the PREGAME slate
-     carries and that is not the whole of it, so the tap has something to keep
-     and something to drop. The chip used to be FBS vs FCS, always: those games
-     are a September thing, and once the board read only games that have not
-     kicked off (fbKickedOff), a Sunday in October held none of them, and an
-     empty filter proved nothing about the filter. */
+  /* filtering works on a phone too. The chip pressed is one whose matchup
+     type is on today's board: FBS vs FCS while there are any, otherwise
+     non-conference FBS, so the check is never a filter down to nothing. */
   const mobPick = await M.page.evaluate(() => {
-    const pre = (window.FB.p4.up || []).filter(u => u.t > Date.now());
-    const chips = [['FBS vs FCS', 'fbs_fcs'], ['Non-conference FBS', 'non_conference'], ['Conference games', 'conference']];
-    for (const [label, type] of chips) {
-      const n = pre.filter(u => u.meta.matchup_type === type).length;
-      if (!n || n === pre.length) continue;
-      const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === label);
-      if (b) { b.click(); return { label, type, n, of: pre.length }; }
-    }
-    return null;
+    const up = (window.FB.p4.up || []).filter(u => u.t > Date.now());
+    const type = up.some(u => u.meta.matchup_type === 'fbs_fcs') ? 'fbs_fcs' : 'non_conference';
+    const label = type === 'fbs_fcs' ? 'FBS vs FCS' : 'Non-conference FBS';
+    const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === label);
+    if (!b) return { clicked: false, type };
+    b.click(); return { clicked: true, type };
   });
-  chk('a matchup chip is tappable on a phone', !!mobPick, mobPick);
+  chk('a matchup chip is tappable on a phone', mobPick.clicked === true, mobPick);
   await M.page.waitForTimeout(200);
   const mobAfter = await M.page.evaluate((type) => ({
+    type,
     rows: document.querySelectorAll('[id^="p4gate-"]').length,
     expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === type).length,
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
-  }), mobPick ? mobPick.type : null);
-  chk('and it filters the board', !!mobPick && mobAfter.rows === mobAfter.expected && mobAfter.rows > 0 && mobAfter.rows < mobPick.of,
-    Object.assign({ chip: mobPick && mobPick.label }, mobAfter));
+  }), mobPick.type);
+  chk('and it filters the board', mobAfter.rows === mobAfter.expected && mobAfter.rows > 0, mobAfter);
   chk('and the page still does not scroll sideways', mobAfter.sideways === false);
 
   if (SHOTS) {

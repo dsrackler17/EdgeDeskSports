@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-04T10:17:05.215Z",
+ "generated_at": "2026-10-04T15:07:31.820Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -117,6 +117,16 @@
    "reason": "the research path changed (auto-detected by football/cfb_validation/build.js): lib/cfb_terminal.js",
    "changed_files": [
     "lib/cfb_terminal.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p4",
+   "effective_at": "2026-10-04T13:26:09.436Z",
+   "reason": "the pricing path changed: football/fbs/build_coverage.js -- coverage check 8 (FBS-vs-FCS stays on the slate) is proven against the feed instead of requiring one such game in the window; no projection, price or rating changes",
+   "changed_files": [
+    "football/fbs/build_coverage.js"
    ]
   }
  ],
@@ -1271,13 +1281,13 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-09-28T10:07:25.387Z",
+  "since": "2026-09-28T14:07:36.501Z",
   "changes": [
    {
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "539fd26ac36fa61d",
-    "to": "ace1bbe0c6d64b38"
+    "to": "c49740a77621f4bb"
    },
    {
     "what": "research-gate code",
@@ -1295,19 +1305,19 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-09-28T05:39:41.960Z",
-    "to": "2026-10-04T02:45:39.866Z"
+    "to": "2026-10-04T13:59:17.151Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 92,
-    "to": 82
+    "to": 87
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 10,
-    "to": 12
+    "from": 45,
+    "to": 38
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"

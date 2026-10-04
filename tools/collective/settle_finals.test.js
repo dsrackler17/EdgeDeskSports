@@ -507,6 +507,21 @@ DRIVES.push((async () => {
       const o2 = await S.settleDirect(d2, pschema, unsettled, TCU_FINAL, null);
       return o2.game_written === true && o2.refused.length === 1 && /grade_game\(g1\)/.test(o2.refused[0].detail) && /PGRST202/.test(o2.refused[0].detail);
     })());
+  /* production, 2026-10-04: pg-safeupdate refused grade_game's bare UPDATE on
+     every football game. Still a refused grade (the run fails), now with its fix named. */
+  const su = await (async () => {
+    const f3 = async (url, opts) => {
+      if (String(url).indexOf('/rpc/grade_game') >= 0) return { ok: false, status: 400, text: async () =>
+        JSON.stringify({ code: '21000', details: null, hint: null, message: 'UPDATE requires a WHERE clause' }) };
+      return prodFetch(url, opts);
+    };
+    return S.settleDirect(S.dbClient({ url: 'https://x.supabase.co', key: 'svc' }, f3), pschema, unsettled, TCU_FINAL, null);
+  })();
+  const suHint = S.safeUpdateHint(su.refused[0] && su.refused[0].detail);
+  chk('PRODUCTION SHAPE  a grade_game refused by pg-safeupdate (21000) is a refused grade, and the hint names the migration to re-apply',
+    su.game_written === true && su.refused.length === 1 && /21000/.test(su.refused[0].detail) &&
+    /^::error::/.test(suHint || '') && /20260928120000_football_grading_v2\.sql/.test(suHint) && /apply_migration: true/.test(suHint) &&
+    S.safeUpdateHint('RPC grade_game -> 404: {"code":"PGRST202"}') === null, { su, suHint });
   let noTable = null;
   try { await S.settleDirect(pdb, { games: pschema.games, game_detail: pschema.game_detail, projections: [] }, unsettled, TCU_FINAL, null); }
   catch (e) { noTable = e.message; }

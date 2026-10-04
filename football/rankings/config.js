@@ -629,7 +629,13 @@
        like-for-like one, reports the numbers anyway, and downgrades itself
        from a build failure to a warning. */
     comparable_weight_shift: 0.05,
-    comparable_basis: 'if the mean change in w_performance between the two boards is more than this, the boards were mixed differently and the stability bounds are not measuring week-to-week stability any more. The diagnostic still runs and still publishes every number; it stops being allowed to fail the build.',
+    comparable_basis: 'if the mean change in w_performance between the two boards — over the teams whose weight moved — is more than this, the boards were mixed differently and the stability bounds are not measuring week-to-week stability any more. The diagnostic still runs and still publishes every number; it stops being allowed to fail the build.',
+    /* OVER THE TEAMS THAT WERE RE-MIXED. A team whose game has not landed yet
+       shows a weight shift of zero, so a board-wide mean made a half-landed
+       Saturday look more like-for-like than the finished one and the verdict
+       on the same two weeks changed with the hour the build ran (2026 week 5:
+       0.017 at 21:27, refused overnight, 0.058 once the slate was in). */
+    remixed_basis: 'the mean change in w_performance over the teams that gained current-season evidence between the two boards. A bye, or a game the feeds have not published yet, leaves a team’s weight exactly where it was; averaging those zeros in would make a partly-landed week look like a like-for-like comparison while its re-mixed teams pass the ones that have not played. This is the number the comparable_weight_shift bound is tested on; the board-wide mean is still published as mean_prior_weight_shift.',
     /* AND WHEN THE POOL ITSELF TURNED OVER. Re-ranking the common set removes
        the arithmetic of a longer list, but it cannot make a small self-selected
        slice representative: the teams ranked on both boards are the most

@@ -46,8 +46,12 @@ const I = require(path.join(ROOT, 'lib', 'football_identity.js'));
 const MIGRATION = path.join(ROOT, 'supabase', 'migrations', '20260928120000_football_grading_v2.sql');
 /* The migration is re-applied in place, so fg2_config.install_revision says
    which functions the database carries. Revision 2 made the snapshot import
-   window-bounded and index-driven; a revision-1 database times out. */
-const REQUIRED_REVISION = 2;
+   window-bounded and index-driven; a revision-1 database times out.
+   Revision 3 qualified the one bare UPDATE (fg2_compute_close), which
+   Supabase's pg-safeupdate refuses on every call through the API: below 3,
+   grade_game and the hourly fg2_refresh fail with 21000 "UPDATE requires a
+   WHERE clause" even though this tool's psql path still runs. */
+const REQUIRED_REVISION = 3;
 
 const CLASS_TEXT = {
   A: 'valid captured close already linked to the game',

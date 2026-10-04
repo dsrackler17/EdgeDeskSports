@@ -10,15 +10,16 @@
    result the way the product does:
 
      the webhook   the DEPLOYED supabase/functions/stripe_webhook/index.ts,
-                   whole — signature check, ledger, ordering guard, the Stripe
-                   read-back on checkout — under a tiny Deno shim, against an
-                   in-memory PostgREST and a fake Stripe API
+                   whole — signature check, ledger, live reconciliation with
+                   Stripe — under a Deno shim (tools/billing/_harness.js),
+                   against the REAL billing SQL on a throwaway PostgreSQL and a
+                   fake Stripe whose state moves first, as Stripe's does
      the paywall   pgEntitled() and the Settings card, lifted out of app.html
      the offer     lib/edgedesk_pricing.js
 
    The new-user path: subscription.created arrives before the checkout and is
    kept unresolved → checkout.session.completed names the account, the
-   function asks Stripe for the subscription (7-day trial, $49.99/month) →
+   function asks Stripe for its subscriptions (7-day trial, $49.99/month) →
    trialing, entitled, "Trial ends <the trial's own end>" → day 8,
    invoice.payment_succeeded and subscription.updated → active, "Next billing
    date" → a failed renewal → past_due, still entitled while Stripe retries →
@@ -27,104 +28,48 @@
    And the existing subscriber, still on $79.99 until they are moved in Stripe:
    exactly as entitled, and moved without a moment's loss of access.
 
-   No network, no database, no key. Run: node tools/billing/subscriber_lifecycle.test.js
+   Needs PostgreSQL (skips loudly without it). No network, no key.
+   Run: node tools/billing/subscriber_lifecycle.test.js
    =========================================================================== */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const crypto = require('crypto');
 
 let pass = 0, fail = 0;
 const failures = [];
 function chk(name, cond, detail) { if (cond) pass++; else { fail++; failures.push(name + (detail ? ' — ' + detail : '')); } }
 
 const ROOT = path.join(__dirname, '..', '..');
-const HOOK = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'stripe_webhook', 'index.ts'), 'utf8');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const X = require(path.join(ROOT, 'lib', 'edgedesk_pricing.js'));
 
-/* ── an in-memory PostgREST, just the calls the webhook makes ───────────── */
-function makeDb() {
-  const T = { stripe_events: [], subscriptions: [], referral_codes: [] };
-  const KEY = { stripe_events: 'id', subscriptions: 'user_id' };
-  const filt = (rows, qs) => {
-    let out = rows;
-    for (const [k, v] of qs) {
-      if (['select', 'limit', 'on_conflict'].indexOf(k) >= 0) continue;
-      if (v.indexOf('eq.') === 0) out = out.filter((r) => String(r[k]) === decodeURIComponent(v.slice(3)));
-      else if (v === 'is.null') out = out.filter((r) => r[k] == null);
-    }
-    return out;
-  };
-  async function handle(url, init) {
-    const u = new URL(url);
-    const table = u.pathname.replace(/^\/rest\/v1\//, '');
-    const qs = [...u.searchParams.entries()];
-    const method = (init && init.method) || 'GET';
-    const ok = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
-    if (table === 'rpc/stripe_user_by_email') return ok(null);
-    if (!T[table]) return { ok: false, status: 404, text: async () => 'no table ' + table, json: async () => ({}) };
-    if (method === 'GET') {
-      const rows = filt(T[table], qs);
-      const lim = +(u.searchParams.get('limit') || rows.length);
-      return ok(rows.slice(0, lim).map((r) => Object.assign({}, r)));
-    }
-    if (method === 'POST') {
-      const k = KEY[table];
-      for (const row of JSON.parse(init.body)) {
-        const cur = T[table].find((r) => r[k] === row[k]);
-        if (cur) Object.assign(cur, row); else T[table].push(Object.assign({}, row));
-      }
-      return ok(null);
-    }
-    if (method === 'PATCH') {
-      filt(T[table], qs).forEach((r) => Object.assign(r, JSON.parse(init.body)));
-      return ok(null);
-    }
-    return { ok: false, status: 405, text: async () => '', json: async () => ({}) };
-  }
-  return { T, handle };
-}
+/* ── the deployed webhook, against the real SQL and a fake Stripe ────────── */
+const H = require('./_harness.js');
+const PG = require('../personal/_pg.js');
+const W = H.world('lifecycle');
+if (W.skip) { console.log('SKIP | subscriber lifecycle | ' + W.skip); process.exit(0); }
+const S = W.stripe;
+chk('the deployed webhook loads and serves a handler', typeof W.fns.stripe_webhook === 'function');
 
-/* ── a fake Stripe API: the one read the webhook makes after a checkout ── */
-const STRIPE_SUBS = {};
-async function stripeApi(url) {
-  const m = /\/v1\/subscriptions\/([^/?]+)/.exec(url);
-  if (m && STRIPE_SUBS[m[1]]) return { ok: true, status: 200, json: async () => STRIPE_SUBS[m[1]] };
-  return { ok: false, status: 404, json: async () => ({}) };
-}
-
-/* ── the deployed webhook, whole, under a Deno shim ─────────────────────── */
-const SECRET = 'whsec_lifecycle_test';
-const ENV = { STRIPE_WEBHOOK_SECRET: SECRET, SB_URL: 'https://db.test', SB_SERVICE_ROLE: 'service', STRIPE_SECRET_KEY: 'rk_live_test' };
-const DB = makeDb();
-let handler = null;
-const quiet = { log() {}, warn() {}, error() {} };
-new Function('Deno', 'crypto', 'TextEncoder', 'fetch', 'console', HOOK)(
-  { env: { get: (k) => ENV[k] }, serve: (h) => { handler = h; } },
-  crypto.webcrypto, TextEncoder,
-  (url, init) => (String(url).indexOf('https://api.stripe.com/') === 0 ? stripeApi(url) : DB.handle(url, init)),
-  quiet);
-chk('the deployed webhook loads and serves a handler', typeof handler === 'function');
-
-let clock = Math.floor(Date.now() / 1000) - 3600;
 let delivered = 0;
-async function deliver(type, object) {
-  clock += 60; delivered++;
-  const body = JSON.stringify({ id: 'evt_' + crypto.randomBytes(6).toString('hex'), object: 'event', type,
-    created: clock, livemode: true, data: { object } });
-  const t = Math.floor(Date.now() / 1000);
-  const sig = crypto.createHmac('sha256', SECRET).update(t + '.' + body).digest('hex');
-  const res = await handler({ method: 'POST', text: async () => body,
-    headers: { get: (h) => (h.toLowerCase() === 'stripe-signature' ? 't=' + t + ',v1=' + sig : null) } });
-  return { status: res.status, body: await res.json() };
+async function deliver(type, object, opts) {
+  const e = S.ev(type, JSON.parse(JSON.stringify(object)));
+  if (opts && opts.createdDelta) e.created += opts.createdDelta;
+  delivered++;
+  const r = await W.deliver(e);
+  return { status: r.status, body: r.body };
 }
-const sub = (id, o) => Object.assign({ id, object: 'subscription', customer: 'cus_' + id, status: 'active',
-  cancel_at_period_end: false, current_period_end: clock + 30 * 86400,
-  items: { object: 'list', data: [{ price: { id: 'price_4999', unit_amount: 4999, currency: 'usd', recurring: { interval: 'month', interval_count: 1 } } }] } }, o || {});
-const withPrice = (s, cents, id) => Object.assign(s, { items: { object: 'list', data: [{ price: { id, unit_amount: cents, currency: 'usd', recurring: { interval: 'month', interval_count: 1 } } }] } });
-const row = (uid) => DB.T.subscriptions.find((r) => r.user_id === uid) || null;
+const clock = () => S.now();
+/* Stripe's own state moves FIRST; the event describes it */
+const set = (id, fields) => Object.assign(S.S.subscriptions[id], fields || {});
+const withPrice = (id, cents, priceId) => {
+  S.S.prices[priceId] = S.S.prices[priceId] || { id: priceId, object: 'price', active: true, type: 'recurring', currency: 'usd',
+    unit_amount: cents, recurring: { interval: 'month', interval_count: 1 } };
+  S.S.subscriptions[id].items = { object: 'list', data: [{ id: 'si_' + priceId, price: S.S.prices[priceId] }] };
+  return S.S.subscriptions[id];
+};
+const row = (uid) => W.row(uid);
 
 /* ── the paywall and the Settings card, lifted out of app.html ──────────── */
 function region(src, from, to) { const a = src.indexOf(from), b = src.indexOf(to, a + from.length); return a >= 0 && b > a ? src.slice(a, b) : ''; }
@@ -147,23 +92,30 @@ const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 'long'
   /* ====================================================================== */
   /* A NEW SUBSCRIBER, AT $49.99                                            */
   /* ====================================================================== */
-  const U = 'aaaaaaaa-0000-4000-8000-000000000001';
-  const trialEnd = clock + 7 * 86400 + 600;
-  STRIPE_SUBS.sub_new = sub('sub_new', { customer: 'cus_new', status: 'trialing', current_period_end: trialEnd, trial_end: trialEnd });
+  /* A Payment Link checkout: the URL carried the account id, Stripe made a
+     fresh customer and put nothing on the subscription. This is the path that
+     used to depend on the checkout delivery arriving. */
+  const U = W.user('new@x.co').id;
+  const pl = S.paymentLinkSession({ client_reference_id: U });
+  /* paid with Apple Pay's relay address, so nothing but the checkout names them */
+  const done = S.complete(pl.id, { wallet: 'apple_pay', email: 'q8x@privaterelay.appleid.com' });
+  const subNew = done.subscription.id, cusNew = done.customer.id;
+  const trialEnd = done.subscription.trial_end;
 
   /* Stripe routinely sends the subscription before the checkout that names it */
-  let r = await deliver('customer.subscription.created', STRIPE_SUBS.sub_new);
+  let r = await deliver('customer.subscription.created', S.S.subscriptions[subNew]);
   chk('subscription.created before the checkout: answered 200 and kept, unresolved', r.status === 200 && r.body.unresolved === true, JSON.stringify(r.body));
   chk('and no access is granted to anybody on the strength of it', row(U) === null);
-  chk('the ledger kept it against its subscription id', DB.T.stripe_events.some((e) => e.subscription_id === 'sub_new' && e.type === 'customer.subscription.created'));
+  chk('the ledger kept it against its subscription id', W.q("select 1 from public.stripe_events where subscription_id = " + PG.lit(subNew) + " and type = 'customer.subscription.created'").length === 1);
 
-  r = await deliver('checkout.session.completed', { id: 'cs_1', object: 'checkout.session', client_reference_id: U,
-    customer: 'cus_new', subscription: 'sub_new', mode: 'subscription', customer_details: { email: 'new@x.co' } });
+  r = await deliver('checkout.session.completed', S.S.sessions[pl.id]);
   chk('the checkout lands: 200, applied, by client_reference_id', r.status === 200 && r.body.applied === true && r.body.how === 'client_reference_id', JSON.stringify(r.body));
   let s = row(U);
   chk('the function asked Stripe and wrote the real status: trialing', s && s.status === 'trialing', JSON.stringify(s));
-  chk('with the trial\'s own end as the period end — nothing invented', s && s.current_period_end === new Date(trialEnd * 1000).toISOString());
+  chk('with the trial\'s own end as the period end — nothing invented', s && Date.parse(s.current_period_end) === trialEnd * 1000);
+  chk('the earlier subscription.created is resolved retroactively', W.q("select resolved from public.stripe_events where subscription_id = " + PG.lit(subNew) + " and type = 'customer.subscription.created'")[0].resolved === true);
   chk('the new trial is entitled: the terminal opens', entitled(s));
+  chk('and the database\'s one rule agrees with the paywall', W.access(U).has_access === entitled(s));
   let h = card(s);
   chk('Settings: EdgeDesk Full Access, a 7-day free trial, then $49.99/month',
     /Plan=EdgeDesk Full Access/.test(h) && /7-day free trial/.test(h) && /Then \$49\.99\/month/.test(h), h);
@@ -171,10 +123,11 @@ const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 'long'
     h.indexOf('Trial ends=' + day(s.current_period_end)) >= 0 && /Your first charge of \$49\.99/.test(h), h);
 
   /* day 8: Stripe charges and moves the subscription to active */
-  const period2 = clock + 37 * 86400;
-  r = await deliver('invoice.payment_succeeded', { id: 'in_1', object: 'invoice', customer: 'cus_new', subscription: 'sub_new', amount_paid: 4999, currency: 'usd', customer_email: 'new@x.co' });
+  const period2 = clock() + 37 * 86400;
+  set(subNew, { status: 'active', trial_end: null, current_period_end: period2 });
+  r = await deliver('invoice.payment_succeeded', { id: 'in_1', object: 'invoice', customer: cusNew, subscription: subNew, amount_paid: 4999, currency: 'usd', customer_email: 'new@x.co' });
   chk('the first invoice is recorded and handled', r.status === 200 && r.body.ok === true, JSON.stringify(r.body));
-  r = await deliver('customer.subscription.updated', sub('sub_new', { customer: 'cus_new', status: 'active', current_period_end: period2 }));
+  r = await deliver('customer.subscription.updated', S.S.subscriptions[subNew]);
   s = row(U);
   chk('day 8: active, entitled', s.status === 'active' && entitled(s), JSON.stringify(s));
   h = card(s);
@@ -182,71 +135,89 @@ const day = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 'long'
     /Price=\$49\.99 \/ month/.test(h) && h.indexOf('Next billing date=' + day(new Date(period2 * 1000).toISOString())) >= 0, h);
 
   /* a failed renewal: Stripe retries, access holds, the card says so */
-  await deliver('invoice.payment_failed', { id: 'in_2', object: 'invoice', customer: 'cus_new', subscription: 'sub_new', amount_due: 4999, currency: 'usd' });
-  await deliver('customer.subscription.updated', sub('sub_new', { customer: 'cus_new', status: 'past_due', current_period_end: period2 }));
+  set(subNew, { status: 'past_due' });
+  await deliver('invoice.payment_failed', { id: 'in_2', object: 'invoice', customer: cusNew, subscription: subNew, amount_due: 4999, currency: 'usd' });
+  await deliver('customer.subscription.updated', S.S.subscriptions[subNew]);
   s = row(U);
   chk('a failed payment: past_due, still entitled while Stripe retries', s.status === 'past_due' && entitled(s));
   chk('and Settings says the payment failed', /Payment failed/.test(card(s)));
-  await deliver('customer.subscription.updated', sub('sub_new', { customer: 'cus_new', status: 'active', current_period_end: period2 }));
+  set(subNew, { status: 'active' });
+  await deliver('customer.subscription.updated', S.S.subscriptions[subNew]);
   chk('the retry clears: active again', row(U).status === 'active');
 
   /* cancellation */
-  await deliver('customer.subscription.updated', sub('sub_new', { customer: 'cus_new', status: 'active', current_period_end: period2, cancel_at_period_end: true }));
+  set(subNew, { cancel_at_period_end: true });
+  await deliver('customer.subscription.updated', S.S.subscriptions[subNew]);
   s = row(U);
   h = card(s);
   chk('cancelled at period end: still entitled to the end of what was paid for', entitled(s));
   chk('and Settings says when access ends, with no further charge', /Access ends=/.test(h) && /no further charges/.test(h) && !/You will be charged/.test(h), h);
-  await deliver('customer.subscription.deleted', sub('sub_new', { customer: 'cus_new', status: 'canceled', current_period_end: period2 }));
+  const stale = JSON.parse(JSON.stringify(S.S.subscriptions[subNew]));
+  set(subNew, { status: 'canceled' });
+  await deliver('customer.subscription.deleted', S.S.subscriptions[subNew]);
   s = row(U);
   chk('subscription.deleted: canceled, and the terminal locks', s.status === 'canceled' && !entitled(s));
 
   /* a stale event delivered late cannot reopen it */
-  clock -= 10 * 86400;
-  r = await deliver('customer.subscription.updated', sub('sub_new', { customer: 'cus_new', status: 'active', current_period_end: period2 }));
-  clock += 10 * 86400 + 600;
-  chk('a late, older "active" cannot resurrect the cancelled subscription', row(U).status === 'canceled' && r.body.applied === false, JSON.stringify(r.body));
+  r = await deliver('customer.subscription.updated', Object.assign(stale, { status: 'active' }), { createdDelta: -10 * 86400 });
+  chk('a late, older "active" cannot resurrect the cancelled subscription', row(U).status === 'canceled' && r.body.changed === false, JSON.stringify(r.body));
 
   /* ====================================================================== */
   /* THE EXISTING SUBSCRIBER, STILL ON $79.99 UNTIL MOVED IN STRIPE         */
   /* ====================================================================== */
-  const E = 'bbbbbbbb-0000-4000-8000-000000000002';
-  const endE = clock + 20 * 86400;
-  DB.T.subscriptions.push({ user_id: E, status: 'active', stripe_customer_id: 'cus_old', stripe_subscription_id: 'sub_old' });
-  r = await deliver('customer.subscription.updated', withPrice(sub('sub_old', { customer: 'cus_old', status: 'active', current_period_end: endE }), 7999, 'price_7999'));
+  const E = W.user('old@x.co').id;
+  const endE = clock() + 20 * 86400;
+  const cusOld = S.customer('old@x.co', {});
+  const subOld = S.subscription(cusOld.id, 'price_4999', { status: 'active', current_period_end: endE });
+  withPrice(subOld.id, 7999, 'price_7999');
+  /* a row from before the webhook could name anybody: typed in, ids and all */
+  W.db.sql('insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id) values (' +
+    PG.lit(E) + ", 'active', " + PG.lit(cusOld.id) + ', ' + PG.lit(subOld.id) + ');');
+  r = await deliver('customer.subscription.updated', S.S.subscriptions[subOld.id]);
   s = row(E);
   chk('an event carrying the old $79.99 price is applied like any other', r.body.applied === true && s.status === 'active', JSON.stringify(r.body));
   chk('and the subscriber on the old price is entitled', entitled(s));
-  chk('the webhook writes no price onto the row, so no price can ever gate it', s.price_id === undefined);
+  chk('the row records the Stripe price it is billed at — a Stripe id, never a comp sentinel, so no price can gate it',
+    s.price_id === 'price_7999' && ['owner_comp', 'comp_trial'].indexOf(s.price_id) < 0 && W.access(E).has_access);
   chk('Settings shows them what Stripe will actually charge until they are moved',
     /You will be charged \$79\.99 on this date/.test(card(s, { unit_amount: 7999, currency: 'usd', billing_interval: 'month', interval_count: 1 })));
 
   /* moved in Stripe to the $49.99 price */
-  r = await deliver('customer.subscription.updated', withPrice(sub('sub_old', { customer: 'cus_old', status: 'active', current_period_end: endE }), 4999, 'price_4999'));
+  withPrice(subOld.id, 4999, 'price_4999');
+  r = await deliver('customer.subscription.updated', S.S.subscriptions[subOld.id]);
   s = row(E);
-  chk('moved to $49.99: still active, still entitled, not a moment\'s gap', r.body.applied === true && s.status === 'active' && entitled(s));
+  chk('moved to $49.99: still active, still entitled, not a moment\'s gap', r.body.applied === true && s.status === 'active' && entitled(s) && s.price_id === 'price_4999');
   chk('and Settings follows Stripe to $49.99',
     /You will be charged \$49\.99 on this date/.test(card(s, { unit_amount: 4999, currency: 'usd', billing_interval: 'month', interval_count: 1 })));
 
   /* and a price nobody sells any more (a historical one) is still just a subscription */
-  const H = 'cccccccc-0000-4000-8000-000000000003';
-  DB.T.subscriptions.push({ user_id: H, status: 'active', stripe_customer_id: 'cus_hist', stripe_subscription_id: 'sub_hist' });
-  await deliver('customer.subscription.updated', withPrice(sub('sub_hist', { customer: 'cus_hist', status: 'active', current_period_end: endE }), 1499, 'price_1499'));
-  chk('a subscriber on a long-retired price keeps access too', entitled(row(H)));
+  const Hh = W.user('hist@x.co').id;
+  const cusH = S.customer('hist@x.co', {});
+  const subH = S.subscription(cusH.id, 'price_4999', { status: 'active', current_period_end: endE });
+  withPrice(subH.id, 1499, 'price_1499');
+  W.db.sql('insert into public.subscriptions (user_id, status, stripe_customer_id, stripe_subscription_id) values (' +
+    PG.lit(Hh) + ", 'active', " + PG.lit(cusH.id) + ', ' + PG.lit(subH.id) + ');');
+  await deliver('customer.subscription.updated', S.S.subscriptions[subH.id]);
+  chk('a subscriber on a long-retired price keeps access too', entitled(row(Hh)));
 
   /* an expired trial: Stripe ends it, the terminal locks, the paywall offers $49.99 */
-  const T2 = 'dddddddd-0000-4000-8000-000000000004';
-  STRIPE_SUBS.sub_t2 = sub('sub_t2', { customer: 'cus_t2', status: 'trialing', current_period_end: clock + 86400 });
-  await deliver('checkout.session.completed', { id: 'cs_2', object: 'checkout.session', client_reference_id: T2, customer: 'cus_t2', subscription: 'sub_t2' });
+  const T2 = W.user('t2@x.co').id;
+  const pl2 = S.paymentLinkSession({ client_reference_id: T2 });
+  const done2 = S.complete(pl2.id, {});
+  await deliver('checkout.session.completed', S.S.sessions[pl2.id]);
   chk('a second trial starts entitled', entitled(row(T2)));
-  await deliver('customer.subscription.deleted', sub('sub_t2', { customer: 'cus_t2', status: 'canceled', current_period_end: clock + 86400 }));
+  set(done2.subscription.id, { status: 'canceled' });
+  await deliver('customer.subscription.deleted', S.S.subscriptions[done2.subscription.id]);
   chk('an ended trial locks', !entitled(row(T2)));
   chk('and its Settings card claims no coming charge', !/You will be charged|first charge/.test(card(row(T2))));
 
   /* every delivery above was acknowledged; none was dropped */
-  chk('every delivery is on the ledger, once', DB.T.stripe_events.length === delivered, DB.T.stripe_events.length + ' of ' + delivered);
-  chk('none failed', DB.T.stripe_events.every((e) => e.note !== 'not a handled event type'));
+  chk('every delivery is on the ledger, once', W.q('select count(*)::int n from public.stripe_events')[0].n === delivered,
+    W.q('select count(*)::int n from public.stripe_events')[0].n + ' of ' + delivered);
+  chk('none failed', W.q('select count(*)::int n from public.stripe_events where last_error is not null')[0].n === 0);
+  W.stop();
 
   failures.forEach((f) => console.log('FAIL  ' + f));
   console.log((fail ? '' : 'ALL GREEN ') + 'subscriber lifecycle: ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch((e) => { console.error(e); try { W.stop(); } catch (_) { /* already down */ } process.exit(1); });

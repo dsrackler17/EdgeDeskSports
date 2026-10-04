@@ -7,6 +7,20 @@ consequences are all one consequence: somebody paid Stripe, no row was written,
 the paywall refused them, and they left. Five of the hand-made rows have since
 gone stale and are refusing real people entry today.
 
+> **2026-10 — billing hardening.** A customer entered a card and the site never
+> opened: no row, because the one delivery that could name the account never
+> resolved and nothing ever asked Stripe again. This function now reconciles
+> every delivery **live** against Stripe (every subscription on every customer
+> the account has), resolves accounts by `metadata.supabase_user_id` first,
+> raises anything it cannot name as an alert, and writes only through
+> `billing_apply_subscription_state` (`supabase/billing_hardening.sql`). It is
+> one of three billing functions now — `create_checkout_session` makes the
+> checkout server-side with the account on the session, the subscription and
+> the customer, and `sync_subscription` is the reconciliation the success page,
+> the paywall, *Refresh access*, the operator console and a 10-minute schedule
+> call. The whole design, the failure matrix, deployment order, rollback and
+> verification queries are in **`docs/billing-hardening.md`**.
+
 Everything below is done once, in order. Steps 1–4 take about ten minutes.
 
 ---
@@ -23,6 +37,12 @@ Paste into the SQL editor and run, **in this order**:
 3. `supabase/referral_codes.sql` — the discount codes, the attribution columns
    on `subscriptions` and the report. Rows 1–13 should say `ok`. It refuses to
    install before the other two, by name.
+4. `supabase/billing_hardening.sql` — **required by this build**: the one access
+   rule, the one writer, the resolver, the ledger RPC, the customer map, the
+   sync log, alerts and diagnostics. Rows 6 and 8 may say `CHECK THIS` on real
+   data (a Stripe id on two accounts); that is a decision for a human, and the
+   rest still installs. After `sync_subscription` is deployed, also run
+   `supabase/billing_reconcile_cron.sql` (the 10-minute sweep).
 
 Row 9 of the second report is the one to read carefully. It counts rows that
 are marked `active` with a `current_period_end` in the past — accounts the
@@ -47,7 +67,12 @@ Project Settings → Edge Functions → Secrets:
 | `SB_URL` | `https://iattxbkbufslbauoumga.supabase.co` |
 | `SB_SERVICE_ROLE` | the `service_role` key (Project Settings → API) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…`, from step 4 — add it after creating the endpoint |
-| `STRIPE_SECRET_KEY` | `sk_live_…` — read-only use: after a checkout the function asks Stripe for the subscription's real status, and turns a `promo_…` id into the code the customer typed |
+| `STRIPE_SECRET_KEY` | `sk_live_…`, or a restricted `rk_live_…` with **read** on Customers, Subscriptions, Checkout Sessions and Promotion Codes. Every delivery is answered by asking Stripe for the account's subscriptions; it also names a customer an event could not, and turns a `promo_…` id into the code the customer typed |
+| `STRIPE_MODE` | optional: `live` (default) or `test` — the mode of the endpoint the **primary** secret belongs to. A delivery whose `livemode` disagrees with the secret that signed it is refused (400, so Stripe keeps it) |
+
+`SB_URL` / `SB_SERVICE_ROLE` fall back to the `SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` every function is given, so a function recreated in
+the dashboard keeps working even if the custom names were not re-added.
 
 Two more exist **only while a dry run is running** (§9). Unset is the normal
 state and the live path is identical without them:
@@ -58,10 +83,12 @@ state and the live path is identical without them:
 | `STRIPE_SECRET_KEY_TEST` | `sk_test_…` — a test id looked up with a live key is a 404, which reads exactly like a code that does not exist |
 
 `STRIPE_SECRET_KEY` is not optional in practice. A `checkout.session.completed`
-carries no status, and this function refuses to invent one — so without the key
-a paying customer is written in with `status = null`, which `pgEntitled()` reads
-as not entitled. They pay and are locked out by the very row recording it. That
-happened on the first real checkout this webhook received.
+carries no status, and this function refuses to invent one. With the key
+configured but Stripe unreachable, a checkout is answered **500** so Stripe
+redelivers it once Stripe can be asked; a subscription event falls back to its
+own body under the strict ordering rule. Without the key, a paying customer is
+written in with `status = null` — locked out by the very row recording it, which
+is what happened on the first real checkout this webhook received.
 
 `SB_SERVICE_ROLE` is what lets the function write `subscriptions` at all; RLS
 blocks every client role from writing it, on purpose. **This key must never
@@ -72,13 +99,21 @@ appear in any file the browser loads.**
 Stripe Dashboard → Developers → Webhooks → **Add endpoint**
 
 * **URL** `https://iattxbkbufslbauoumga.supabase.co/functions/v1/stripe_webhook`
-* **Events to send** — exactly these six:
+* **Events to send** — these six are required:
   * `checkout.session.completed`
   * `customer.subscription.created`
   * `customer.subscription.updated`
   * `customer.subscription.deleted`
   * `invoice.payment_succeeded`
   * `invoice.payment_failed`
+
+  and these are understood when sent (each makes convergence faster or tells a
+  human something; none is required):
+  `invoice.paid`, `checkout.session.expired`,
+  `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+  `customer.subscription.paused`, `customer.subscription.resumed`,
+  `charge.dispute.created` (raised as an alert only — a dispute never changes
+  access by itself).
 
 Stripe then shows a **signing secret** (`whsec_…`). Put it in
 `STRIPE_WEBHOOK_SECRET` and redeploy the function so it picks the secret up.
@@ -94,12 +129,21 @@ place either is written — Stripe Dashboard → Payment links → the link →
 **After payment** → *Redirect customers to a URL*:
 
 ```
-https://edgedesksports.com/?checkout=success
+https://edgedesksports.com/?checkout=success&session_id={CHECKOUT_SESSION_ID}
 ```
 
-`handleCheckoutReturn()` in `index.html` watches for `checkout=success` and
-polls until the webhook lands, then opens the terminal. It waits about forty
-seconds and never claims failure if the webhook is slow.
+(Stripe fills in `{CHECKOUT_SESSION_ID}`. Checkouts made by
+`create_checkout_session` already come back this way; the Payment Link is now
+only the fallback for when that function is not deployed or not configured.)
+
+`handleCheckoutReturn()` in `index.html` says *"Payment received. Finalizing your
+EdgeDesk access…"*, reads the access decision and asks `sync_subscription` to
+reconcile with Stripe — using the session id, but only if that session is the
+signed-in account's — with growing gaps for about half a minute. It never grants
+access from the redirect itself. If access still cannot be confirmed it says the
+payment is safe, shows an `EDS-XXXXXX` reference, and tells the customer **not**
+to create another account or pay again; the webhook and the sweep keep working
+after the page gives up.
 
 Also confirm **Settings → Business → Public business name**. The checkout page
 currently reads **"Submarine Catalyst"**, which is not a name any EdgeDesk
@@ -129,15 +173,15 @@ select user_id, status, current_period_end, last_event_id
 from public.subscriptions where status is null;
 ```
 
-Any row there is somebody who reached checkout and cannot get in. It means
-`STRIPE_SECRET_KEY` was missing when their checkout arrived. Set it, then make
-any no-op edit to their subscription in Stripe — that fires a **fresh**
-`customer.subscription.updated` and the row corrects itself.
+Any row there is somebody who reached checkout and cannot get in. Set
+`STRIPE_SECRET_KEY` if it is missing, then open `/admin/billing/`, search the
+customer, and press **Repair from Stripe** — or simply wait for the 10-minute
+sweep, which picks up rows with no status on its own.
 
-**Do not "resend" the original event to fix this.** A resend keeps the event's
-original timestamp, and the ordering guard will correctly refuse it as older
-than what the row already reflects. A new edit makes a new event with a new
-timestamp; that is the one that lands.
+**Resending an old event now works too.** The ordering guard still refuses an
+event *body* older than what the row reflects — but with a key configured every
+delivery is answered by asking Stripe for the account's current state, so a
+resend is just a prompt to look again.
 
 Then do a real one: sign up with an address you have never used, take the trial,
 and watch a row appear in `public.subscriptions` with `last_event_id` set. Any
@@ -145,10 +189,13 @@ row where `last_event_id` is null was written by hand, not by Stripe.
 
 ## 7 · Repairing the five locked-out rows
 
-Once deliveries are landing, let Stripe answer rather than guessing. For each
-affected customer, Stripe → Customers → their subscription → **resend** the
-current `customer.subscription.updated` (or make any no-op edit, which sends
-one). The real status and period end land here and the row corrects itself.
+Once deliveries are landing, let Stripe answer rather than guessing:
+`/admin/billing/` → search each customer → **Repair from Stripe** (or wait for
+the sweep: a Stripe-backed row whose period ended with no renewal recorded is
+re-checked automatically). A row that grants access with **no** Stripe
+subscription behind it is never revoked by Stripe — it raises a
+`db_active_stripe_inactive` alert instead, because only a human knows whether it
+was a comp.
 
 If Stripe has no subscription for one of them, they were never a customer and
 the row should be deleted. That is a decision about money, so a human makes it —
@@ -260,7 +307,7 @@ Every response carries `build` and an `x-edgedesk-build` header, **including the
 
 ```bash
 curl -s https://iattxbkbufslbauoumga.supabase.co/functions/v1/stripe_webhook
-{"build":"stripe_webhook-2026-09-12-referral-1","error":"POST only"}
+{"build":"stripe_webhook-2026-10-04-hardening-1","error":"POST only"}
 ```
 
 The dashboard deploy path is delete the function → create it again under the
@@ -401,18 +448,26 @@ never says which, because telling a forger why they failed is free help.
 
 **A retry is not a second write.** Events are keyed on Stripe's own id.
 
-**An old delivery cannot resurrect a cancelled subscription.** Every row records
-the Stripe timestamp last applied, and an older event is stored and ignored.
+**An old delivery cannot resurrect a cancelled subscription.** A delivery is
+answered with Stripe's state *now*; when Stripe cannot be asked, the event body
+is applied only if it is newer than everything the row reflects — decided in
+`billing_apply_subscription_state` under a row lock, not in a read-then-write.
 
-**An unknown customer is not an error.** It is answered `200`, kept unresolved,
-and reconciled by the next event that names them. Look at
-`public.stripe_events_unresolved`; empty is healthy, anything in it is money the
-product cannot see.
+**A cancelled duplicate cannot lock out the subscription in use.** The row
+describes the best of every subscription the account has; two live ones raise a
+`duplicate_active_subscriptions` alert.
 
-**It never invents a user.** Identification is `client_reference_id`, then a
-known customer mapping, then an exact email match **on a confirmed account
-only**. An unconfirmed address proves nothing — anyone can sign up as somebody
-else's email — and matching one would hand over their subscription.
+**An unknown customer is not an error — and not forgotten.** It is answered
+`200`, kept, raised in `billing_alerts`, and resolved **retroactively** the moment
+its customer is linked to an account (a later checkout, *Refresh access*, the
+sweep, or support). Look at `public.billing_open_alerts`; empty is healthy.
+
+**It never invents a user.** Identification is `metadata.supabase_user_id`, then
+`client_reference_id`, then our own checkout-session record, then a linked
+customer or subscription, then an exact email match **on a confirmed account
+only** — and, still unresolved, the Stripe customer's own metadata and email. An
+id that names no account is rejected rather than written (a foreign-key failure
+used to be a three-day retry loop). An unconfirmed address proves nothing.
 
 **A lost payment is louder than a failed one.** A missing service role or a
 failed `subscriptions` write answers `500` so Stripe retries; only genuinely
@@ -423,7 +478,11 @@ behind it names no partner. The first attribution wins, enforced in the filter
 of the write rather than by a read before it. And recording it can never fail
 the delivery that carries the money.
 
-Held by `tools/billing/stripe_webhook.test.js` (100 assertions, run against the
+Held by `tools/billing/billing_flow.test.js` (every scenario in
+`docs/billing-hardening.md` §3, this function and its two siblings run whole
+against the real SQL and a fake Stripe), `tools/billing/billing_hardening_sql.test.js`,
+`tools/billing/billing_core.test.js` (the inlined core is byte-identical in all
+three functions), `tools/billing/stripe_webhook.test.js` (run against the
 deployed file itself with no second copy to drift), by
 `tools/billing/comp_entitlement.test.js`, and by
 `tools/app/billing_sql.test.js` against a real PostgreSQL — which applies

@@ -1055,6 +1055,40 @@ figure. Run it **after** `billing.sql` and `stripe_webhook.sql`; rows 1–4
 should say `ok`. Applied twice and attacked on a real PostgreSQL by
 `tools/app/billing_sql.test.js` with `tools/app/sql/subscription_price.test.sql`.
 
+### `billing_hardening.sql` — one access rule, one writer, and reconciliation
+A customer entered a card and the site never opened: the account existed and
+`subscriptions` had no row. Nothing could have repaired it — the webhook could
+name a customer only from the one delivery carrying the account id, nothing ever
+asked Stripe again, and the access rule existed in six copies, two of which
+disagreed. This file is the database half of the fix
+(`docs/billing-hardening.md` is the whole of it):
+
+* `billing_row_grants_access()` — **the** rule (active/trialing to period end,
+  owner_comp always, past_due for 21 days, everything else no).
+  `community_is_entitled()` is redefined to defer to it where installed.
+* `my_billing_access()` — the decision for the caller, which both pages ask
+  (through `lib/edgedesk_access.js`), with the `offer` (trial / resubscribe /
+  fix_payment) and whether the row may simply be behind Stripe (`should_sync`).
+* `billing_apply_subscription_state()` — the **only** writer of Stripe state:
+  one row lock; an older state never overwrites a newer one; owner_comp never
+  written; Stripe only revokes what Stripe granted; a cancelled duplicate never
+  locks out the live subscription; a subscription on another account is refused.
+* `billing_resolve_user()`, `billing_link_customer()` (never remaps; resolves
+  earlier deliveries retroactively), `billing_record_event()` (attempts counted).
+* `billing_customers`, `billing_checkout_sessions`, `billing_sync_log`,
+  `billing_alerts`, `billing_sweep_state` — service role only.
+* `billing_admin_lookup()` / `billing_admin_overview()` / `billing_user_report()`,
+  the views `billing_diagnostics` and `billing_open_alerts`, and `/admin/billing/`.
+
+Additive and idempotent; no existing `subscriptions` value is rewritten. The
+unique index on `stripe_subscription_id` is created only if the data already
+allows it — otherwise report row 6 names the ids for a human. Run **after**
+`billing.sql` and `stripe_webhook.sql`. Applied twice over production-shaped
+data and attacked by `tools/billing/billing_hardening_sql.test.js`; driven end to
+end with the three functions by `tools/billing/billing_flow.test.js`
+(`npm run billing:sql`). `billing_reconcile_cron.sql` schedules the 10-minute
+sweep once `sync_subscription` is deployed.
+
 ### `comp_trial.sql` — a free trial for one account, that closes itself
 Hands a named account the terminal without sending it through Stripe, and has
 that access **end on a date** rather than on somebody remembering to close it.

@@ -45,9 +45,15 @@ changed=replaceOne(
   'no-absorb warning'
 )||changed;
 
+// The final text skips the note while fbPricesDown() holds a failed read for
+// NFL: the outage banner already says the prices could not be loaded, and
+// "not available yet" beside it would claim the books have no line.
 changed=replaceOne(
-  "      if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');",
-  "      if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');",
+  [
+    "      if(!Object.keys(sig).length)S.notes.push('No captured NFL quotes in this window (offseason, or capture has not priced NFL yet); nflverse reference numbers shown where published are a consensus close, not a bettable price.');",
+    "      if(!Object.keys(sig).length)S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');"
+  ],
+  "      if(!Object.keys(sig).length&&!fbPricesDown('americanfootball_nfl'))S.notes.push('Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number.');",
   'NFL live-price notice'
 )||changed;
 
