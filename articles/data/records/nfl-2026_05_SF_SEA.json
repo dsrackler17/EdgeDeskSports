@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "San Francisco 49ers vs. Seattle Seahawks: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "San Francisco 49ers vs. Seattle Seahawks 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices San Francisco 49ers at Seattle Seahawks at Seattle Seahawks -4.6 with a 45.9 fair total. Seattle Seahawks wins 67% of simulations. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices San Francisco 49ers at Seattle Seahawks at Seattle Seahawks -4.6 with a 45.9 fair total. Seattle Seahawks wins 67% of simulations. Model status STALE MARKET. Research, not picks.",
   "excerpt": "San Francisco 49ers carries the stronger EdgeDesk offensive profile (#2 in EPA per play), while Seattle Seahawks owns the more favourable defensive matchup (#2 in EPA allowed per play). EdgeDesk’s independent projection makes it Seattle Seahawks -4.6 with…",
   "home_team": "Seattle Seahawks",
   "away_team": "San Francisco 49ers",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-11T20:25:00.000Z",
   "game_when_label": "2026-10-11 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-04T18:36:54.598Z",
-  "generated_at": "2026-10-04T18:36:54.598Z",
+  "updated_at": "2026-10-04T23:55:46.887Z",
+  "generated_at": "2026-10-04T23:55:46.887Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "STALE MARKET",
+  "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.6-point gap is context only and the game is excluded from research ranking.",
   "confidence": null,
   "priced": true,
   "fair_spread_text": "Seattle Seahawks -4.6",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 49 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 58 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -115,11 +115,11 @@
         "note": "Quoted from the perspective of Seattle Seahawks, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 49 absorbed 2026 games.",
-      "sample_games": 49,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 58 absorbed 2026 games.",
+      "sample_games": 58,
       "seeded": true,
-      "status": "NO MARKET",
-      "status_note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "STALE MARKET",
+      "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.6-point gap is context only and the game is excluded from research ranking.",
       "engine": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
       "validation": "UNPROVEN — this model does NOT beat the closing line out of sample. Research only; nothing here is graded as a bet."
     },
@@ -238,8 +238,8 @@
               "a": {
                 "v": "+0.069",
                 "n": 0.06933542008032358,
-                "rank": "#11 of 32",
-                "rank_n": 11,
+                "rank": "#10 of 32",
+                "rank_n": 10,
                 "note": null
               },
               "h": {
@@ -252,7 +252,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.1133760828868622,
-                "rank_gap": 10
+                "rank_gap": 9
               }
             },
             {
@@ -262,8 +262,8 @@
               "a": {
                 "v": "+3.00",
                 "n": 2.9985000283745924,
-                "rank": "#7 of 32",
-                "rank_n": 7,
+                "rank": "#6 of 32",
+                "rank_n": 6,
                 "note": null
               },
               "h": {
@@ -276,7 +276,7 @@
               "edge": {
                 "side": "h",
                 "gap": 0.6127305935735108,
-                "rank_gap": 3
+                "rank_gap": 2
               }
             },
             {
@@ -1090,7 +1090,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 49 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 58 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1169,16 +1169,25 @@
       "note": "Unknown is never scored as zero-and-forgotten. Where the model has no input it contributes no points, and the gap is carried here instead of being filled in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Seattle Seahawks -4.6",
+      "market": "Seattle Seahawks -3.0",
+      "difference": "1.6 points",
       "total_model": "45.9",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is simply no external price to compare EdgeDesk’s independent projection with yet. Everything above stands unchanged; a missing price removes the comparison and nothing else."
+      "total_market": "46.5",
+      "total_difference": "0.6 points",
+      "book": "nflverse reference",
+      "capture_age": null,
+      "stale": false,
+      "classification": "STALE MARKET",
+      "classification_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.6-point gap is context only and the game is excluded from research ranking.",
+      "reference": "These are nflverse consensus reference numbers, not a live bettable quote.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet — and out of sample this model does not beat the close."
     },
     "headline": "EdgeDesk projects Seattle Seahawks 25, San Francisco 49ers 21.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook spread has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "STALE MARKET",
+      "note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.6-point gap is context only and the game is excluded from research ranking.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1200,13 +1209,13 @@
       "rows": [
         {
           "k": "Net EPA per play",
-          "a": "+0.069  #11 of 32",
+          "a": "+0.069  #10 of 32",
           "h": "+0.183  #1 of 32",
           "note": "offence EPA per play minus defence EPA allowed per play — the engine’s own net_epa half"
         },
         {
           "k": "Points scored",
-          "a": "+3.00  #7 of 32",
+          "a": "+3.00  #6 of 32",
           "h": "+3.61  #4 of 32",
           "note": null
         },
@@ -1304,17 +1313,16 @@
     },
     "notes": [
       "EdgeDesk’s line is Seattle Seahawks -4.6 with a fair total of 45.9, before any book is consulted.",
-      "Seattle Seahawks wins 67% of the time in EdgeDesk’s distribution, San Francisco 49ers 33%.",
-      "No sportsbook number is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that."
+      "Seattle Seahawks wins 67% of the time in EdgeDesk’s distribution, San Francisco 49ers 33%."
     ],
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 49 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 58 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-04T18:36:54.598Z"
+    "at": "2026-10-04T23:55:46.887Z"
   }
 }
