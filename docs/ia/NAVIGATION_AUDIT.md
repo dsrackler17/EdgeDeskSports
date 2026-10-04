@@ -154,3 +154,52 @@ before still exists; every old link resolves (see the route map in the PR).
    header).
 8. **The Record share link `#receipt=<id>`** only opened when the landing tab was
    already Record, and boot overwrote it — a real deep link that did not work.
+
+## Old → new route map
+
+Every row is held by `tools/app/navigation.e2e.js` in a real browser.
+
+| Old link or call | Lands on | Seat lit |
+|---|---|---|
+| bottom-nav **Props** · `show('pprops')` · `#playerprops[/…]` · `#props` | Research › Props (`#playerprops/…` kept, owned by the terminal) | Research |
+| bottom-nav **Edges** · `show('edges')` · `#edges` · `#research/edges` | Research › Edges | Research |
+| bottom-nav **AI** · `show('ai')` · `#ai` | the EdgeDesk Intelligence drawer, over whatever is open | unchanged |
+| bottom-nav **Record** · `show('record')` · `#record` · `#pnl` | More › Model performance | More |
+| `#receipt=<id>` (Record share link) | Model performance, receipt opened — now also on a cold load | More |
+| More › **Ledger** · `show('ledger')` · `#ledger` · remembered `lastTab:'ledger'` | Portfolio | Portfolio |
+| More › News · `show('news')` · `#news` | More › System › News & moat alerts | More |
+| `#research/props` | Research › Props (was Stats) | Research |
+| `#research/football|ufc|baseball|stats|lab|rdesk|cfb|tennis/…` | unchanged (tennis → Football, cfb → Football) | Research |
+| `#card` | Card | Card |
+| `#settings` (newsletter link; was ignored) | Settings | More |
+| `#faults` · `#collective` · `#terms` | the same views | More |
+| `show('social')` · `show('discipline')` (hidden before this change) | Research › Edges | Research |
+| new: `#portfolio[/overview|open|calendar|history|accounts]` · `#process` · `#more` | those destinations | themselves |
+
+## Reading the navigation evidence
+
+Every seat tap is `primary_nav_<seat>`; everything reached from inside a
+destination is `secondary_nav_opened` with `event_properties->>'entity'`
+naming it (`more:collective`, `research:props`, `portfolio:calendar`,
+`process:timing`, `card:watch`, `ai:game`, `setup:skip` …). The server keeps
+one row per session per seat (per entity for secondary), so counts read as
+"sessions that reached it". gtag receives every tap for raw frequency.
+
+```sql
+-- share of signed-in terminal sessions that reached each destination, last 30 days
+with s as (
+  select distinct session_id from public.user_events
+  where event_name = 'terminal_opened' and created_at > now() - interval '30 days'
+)
+select coalesce(e.event_properties->>'entity', e.event_name) as destination,
+       count(distinct e.session_id) as sessions,
+       round(100.0 * count(distinct e.session_id) / nullif((select count(*) from s), 0), 1) as pct_of_sessions
+from public.user_events e
+where e.session_id in (select session_id from s)
+  and (e.event_name like 'primary_nav_%' or e.event_name = 'secondary_nav_opened')
+group by 1 order by sessions desc;
+```
+
+A destination that almost no session reaches is a candidate to remove; a
+secondary one that most sessions reach is a candidate for more room. Neither
+is decided by this query alone — it is the evidence the decision needs.

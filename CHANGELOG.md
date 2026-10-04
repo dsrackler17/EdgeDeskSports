@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-04 — five destinations: Research, Card, Portfolio, Process, More
+
+The authenticated app is organised around the loop a reader actually runs — research → decide → track → review → improve — instead of giving every feature a seat. Audit and route map: `docs/ia/NAVIGATION_AUDIT.md`.
+
+- **The bar is five seats:** Research · Card · Portfolio · Process · More (was Research · Card · Props · Edges · AI · Record · More). On a desktop the same five stand as a left rail.
+- **Research** holds Football · Props · Edges · Other. *Other* opens the other sports (UFC, Baseball) and the research tools (Stats, Lab, Desk), and the seat names whichever is open. Football reads NFL · CFB · Players · Rankings · Rosters.
+- **AI is contextual:** "Ask EdgeDesk" in the Research header, on college game research ("Research Kansas at Texas Tech", "Why could this number be wrong?") and on the Card. The drawer and every receipt's Analyze button are unchanged; the drawer no longer appends a seat of its own.
+- **Portfolio** (new) is the reader's own activity: P&L, ROI, open exposure, current positions and recent activity first, then Open, Calendar, History and Accounts. It absorbed the Ledger and reads the Card's BET PLACED bets beside it. Accounts lists the real sources, imports a CSV from a sportsbook (nothing guessed: no result → open, no stake → unstaked, bad rows reported), and says plainly that EdgeDesk does not sync with sportsbooks yet. Empty, it says how to build it.
+- **Process** (new) reads the reader's graded history by one measure — did the price beat the close — with a process score, what's working, what's costing you, this week and a next focus, and the tables (timing, sport, market, price at entry, Card range, edge capture, decision journal) behind disclosure. Below 20 graded positions it shows what it is building and what unlocks next; a comparison needs 8 graded on both sides, a 10-point gap and z ≥ 1 (labelled *clear* only at 95%).
+- **Record is "Model performance"** — EdgeDesk's record, never the reader's — in More › Transparency. Its title says "not your bets"; Settings › About no longer calls it "your graded track record".
+- **More is sections:** Community & tools · Transparency · System · Account · Legal. News moved to System as the moat-alert feed, and the items naming a game's teams now show on that game's research. The Model & data health row no longer closes its own panel on the same tap.
+- **Tracking a price keeps the reader where they were** and says "Tracked in Portfolio · View" instead of jumping to another page.
+- **A new account starts at setup, once:** welcome (the five destinations) → bring your activity → your portfolio → your first read → Research. A deep link always wins; More › Account › Set up EdgeDesk runs it again.
+- **Every old link lands:** `#playerprops/…`, `#research/props|edges|…`, `#card`, `#receipt=…` (which now opens on a cold load), and new `#portfolio[/tab]`, `#process`, `#more`, plus `#ledger`, `#record`, `#pnl`, `#edges`, `#props`, `#settings`, `#news`, `#faults`, `#collective`. `show('ledger'|'pprops'|'edges'|'record'|'ai')` still work. A remembered `ledger` tab lands on Portfolio.
+- **Navigation evidence:** `primary_nav_research|card|portfolio|process|more` per seat tap and `secondary_nav_opened` (props.entity: `more:…`, `research:…`, `portfolio:…`, `process:…`, `card:…`, `ai:…`, `setup:…`), first-party through `ed_track` (one row per session per seat / entity) and to gtag per tap. **Re-apply `supabase/funnel.sql`** for the server to accept them.
+- **The disclaimer** keeps every element; the helpline is a tap-to-call link; it breaks only between elements and, on a phone, reads as one unit with the nav (≈30px, was 34px; one line from ~412px).
+- **Tests:** `tools/app/navigation.test.js` rewritten for five destinations (221); `tools/app/navigation.e2e.js` (new, 162, in CI) drives 390px and 1440px; `tools/app/portfolio_process.test.js` (new, 72, in CI); `tools/funnel/funnel_sql.test.js` +6 for the nav events; `sports_config`, `research_landing`, `props_ui.e2e` and `first_run.e2e` follow the new structure.
+
 ## 2026-10-03 — share the Record: an image and a post for X or anywhere
 
 - **A Share button on the Record**, on the public page and the app. It shares the view on screen: the tab (All, CFB, NFL, Player Props), the period, the market and the stake basis.

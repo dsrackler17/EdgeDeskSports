@@ -278,6 +278,23 @@ try {
   err = db.mustFail(() => db.as(U.a, `select public.lifecycle_due(5);`));
   chk('a reader cannot claim emails', !!err && /permission denied/.test(err));
 
+  /* ══ 11. navigation evidence (docs/ia/NAVIGATION_AUDIT.md) ═══════════════
+     A seat tap is one row per session per seat; a destination reached from
+     inside one is one row per session per entity; a signed-out page records
+     neither. Last in the suite, so no count above it moves. */
+  r = track(U.d, [{ event: 'primary_nav_portfolio' }, { event: 'primary_nav_portfolio' }, { event: 'primary_nav_process' },
+    { event: 'secondary_nav_opened', props: { entity: 'more:model_performance' } }, { event: 'secondary_nav_opened', props: { entity: 'more:model_performance' } },
+    { event: 'secondary_nav_opened', props: { entity: 'research:props' } }], null, 'sess_navnav0001');
+  chk('the five seats and secondary destinations are client events the registry accepts', r.ok === true && r.recorded === 4, r);
+  chk('a seat tapped twice in a session is one row', count(`user_id = '${U.d}' and event_name = 'primary_nav_portfolio'`) === 1);
+  chk('each secondary destination is its own row, once a session', count(`user_id = '${U.d}' and event_name = 'secondary_nav_opened'`) === 2
+    && count(`user_id = '${U.d}' and event_name = 'secondary_nav_opened' and event_properties->>'entity' = 'research:props'`) === 1);
+  track(U.d, [{ event: 'primary_nav_portfolio' }], null, 'sess_navnav0002');
+  chk('a new session counts the seat again', count(`user_id = '${U.d}' and event_name = 'primary_nav_portfolio'`) === 2);
+  r = track(null, [{ event: 'primary_nav_research' }], 'abcdefabcdefabcdefabcdef0099', 'sess_navnav0003');
+  chk('a signed-out page records no navigation', r.recorded === 0 && count(`event_name = 'primary_nav_research'`) === 0, r);
+  chk('all six names are registered as client events', +db.sql(`select count(*) from public.user_event_kinds where source = 'client' and event_name in ('primary_nav_research','primary_nav_card','primary_nav_portfolio','primary_nav_process','primary_nav_more','secondary_nav_opened');`) === 6);
+
   if (process.argv.indexOf('--write-fixture') >= 0) {
     /* the admin page's browser test renders the real report and summary */
     const fx = { note: 'tools/funnel/funnel_sql.test.js --write-fixture: funnel_admin_report(30) and lifecycle_admin_summary() over this suite\'s accounts',

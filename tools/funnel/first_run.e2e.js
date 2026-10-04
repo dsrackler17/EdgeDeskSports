@@ -198,6 +198,10 @@ function makeDb(createdAt) {
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400,
           user: { id: a.uid, email: 'reader@edgedesk.test', created_at: a.created } }));
         localStorage.setItem('edgedesk_visitor', 'visitorabcdefghijklmnop');
+        /* a new account's very first screen is setup (welcome → activity →
+           portfolio → first read), held by tools/app/navigation.e2e.js; this
+           suite starts where setup hands over: Research, with the panel */
+        localStorage.setItem('edgedesk_setup_v1', String(Date.now()));
       } catch (e) { /* private mode */ }
     }, { uid: UID, created });
     await ctx.route('**/*', async (route) => {

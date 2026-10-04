@@ -190,15 +190,20 @@
 .su-legal a{color:var(--accent)}
 
 /* ---------- the disclaimer line ------------------------------------------
-   One line on a phone instead of two: same words, same order, every element
-   kept (decision support · signals can be wrong · 21+ · bet responsibly ·
-   1-800-GAMBLER). Tighter separators buy the width; it still wraps rather
-   than clips if type is scaled up, and --foot follows its real height. */
+   Same words, same order, every element kept (decision support · signals can
+   be wrong · 21+ · bet responsibly · 1-800-GAMBLER). At a legible size that
+   line needs ~400px, so it is ONE line from ~412px phones up and two compact
+   lines below that (≈30px, was 34px) — never cut, never clipped, and --foot
+   follows its real height. On a phone it and the nav read as one bottom unit:
+   one surface, one top rule, instead of two stacked bars. */
 .foot .ft-tel{color:var(--accent);text-decoration:none;font-weight:600;white-space:nowrap}
+/* a line breaks only between elements, never inside "Signals can be wrong." */
+.foot .ft-n,.foot .footlink{white-space:nowrap}
 .foot .ft-tel:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
 @media(max-width:479px){
-  .foot{padding:4px 6px;font-size:9.75px;letter-spacing:-.01em;text-wrap:wrap}
-  .foot .sep{margin:0 3px}
+  .foot{padding:3px 6px;font-size:9.75px;line-height:1.2;letter-spacing:-.01em;background:color-mix(in srgb,var(--surface) 92%,transparent)}
+  .foot .sep{margin:0 2.5px}
+  .bottomnav{border-top-color:transparent}
 }
 
 /* ---------- desktop: the same five destinations, as a rail ---------------

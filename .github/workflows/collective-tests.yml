@@ -109,6 +109,14 @@ on:
       # through the suite that can actually execute something.
       - '.github/workflows/football-weekly-build.yml'
       - '.github/workflows/starter-context.yml'
+      # the five-destination navigation: Portfolio, Process and their controllers,
+      # and the suites that hold them (docs/ia/NAVIGATION_AUDIT.md)
+      - 'lib/edgedesk_portfolio.js'
+      - 'lib/edgedesk_process.js'
+      - 'lib/edgedesk_workspace_ui.js'
+      - 'lib/edgedesk_workspace.css'
+      - 'lib/edgedesk_track.js'
+      - 'tools/app/**'
   pull_request:
     paths:
       - 'app.html'
@@ -206,6 +214,14 @@ on:
       # through the suite that can actually execute something.
       - '.github/workflows/football-weekly-build.yml'
       - '.github/workflows/starter-context.yml'
+      # the five-destination navigation: Portfolio, Process and their controllers,
+      # and the suites that hold them (docs/ia/NAVIGATION_AUDIT.md)
+      - 'lib/edgedesk_portfolio.js'
+      - 'lib/edgedesk_process.js'
+      - 'lib/edgedesk_workspace_ui.js'
+      - 'lib/edgedesk_workspace.css'
+      - 'lib/edgedesk_track.js'
+      - 'tools/app/**'
   workflow_dispatch:
 
 permissions:
@@ -453,10 +469,16 @@ jobs:
       - name: The brief layer can actually reach the football module
         run: node tools/football/brief_wiring.test.js
 
-      # The product hierarchy the chrome claims: Research first and default,
-      # Edges beside it, Faults reachable without a tab of its own.
+      # The product hierarchy the chrome claims: five destinations — Research,
+      # Card, Portfolio, Process, More — every old route still landing, and
+      # EdgeDesk's model record never shown as the reader's own.
       - name: The navigation says what the product is
         run: node tools/app/navigation.test.js
+
+      # The reader's own history, held to what it can say: Portfolio guesses
+      # nothing on import, Process says nothing below its sample gates.
+      - name: Portfolio and Process say only what the history carries
+        run: node tools/app/portfolio_process.test.js
 
       # One list of which sports EdgeDesk offers (lib/edgedesk_sports.js):
       # every host carries it, and nothing offers or buys a retired sport.
@@ -556,6 +578,12 @@ jobs:
 
       - name: The FBS board renders and filters at desktop and mobile widths
         run: node tools/football/fbs_board.e2e.js
+
+      # The five destinations in a real browser at 390 px and 1440 px: no sixth
+      # seat at runtime, no clipped label, every old route landing, Portfolio
+      # and Process honest when empty, setup once for a new account.
+      - name: The five destinations hold at phone and desktop widths
+        run: node tools/app/navigation.e2e.js
 
       # The Desk answers in a real browser: four sections, ONE primary market,
       # the rest behind a disclosure, no engine vocabulary on screen, and the

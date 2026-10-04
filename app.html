@@ -3150,7 +3150,6 @@ body.focus .dk-focusnote{display:block}
       </div>
     </div>
       <div class="quickadd"><div class="qa-h">Track one of today&rsquo;s edges &mdash; one tap</div><div id="qaList"><div class="empty" style="padding:10px">Loading today&rsquo;s edges&hellip;</div></div></div>
-      <div id="ledgerDesk" class="desk hide"></div>
     </div>
   </section>
 
@@ -3435,7 +3434,7 @@ body.focus .dk-focusnote{display:block}
 <!-- first-run welcome + "How EdgeDesk works" sequence: overlays, rendered by desk-js -->
 <div id="welHost" class="wel" role="dialog" aria-modal="true" aria-label="Welcome to EdgeDesk"></div>
 <div id="hiwHost" class="hiw" role="dialog" aria-modal="true" aria-label="How EdgeDesk works" onclick="if(event.target===this)hiwClose()"></div>
-<div class="foot" id="edFoot" role="contentinfo"><button type="button" class="footlink" onclick="show('terms')" aria-label="Research and decision-support tool. Read the terms and disclaimer."><span class="ft-l">Research and decision-support tool.</span><span class="ft-s">Decision support.</span></button> Signals can be wrong.<span class="sep">·</span>21+<span class="sep">·</span>Bet responsibly<span class="sep">·</span><a class="ft-tel" href="tel:18004262537" aria-label="Problem gambling helpline, 1-800-GAMBLER">1-800-GAMBLER</a></div>
+<div class="foot" id="edFoot" role="contentinfo"><button type="button" class="footlink" onclick="show('terms')" aria-label="Research and decision-support tool. Read the terms and disclaimer."><span class="ft-l">Research and decision-support tool.</span><span class="ft-s">Decision support.</span></button> <span class="ft-n">Signals can be wrong.</span><span class="sep">·</span><span class="ft-n">21+</span><span class="sep">·</span><span class="ft-n">Bet responsibly</span><span class="sep">·</span><a class="ft-tel" href="tel:18004262537" aria-label="Problem gambling helpline, 1-800-GAMBLER">1-800-GAMBLER</a></div>
 <script>
 /* the disclaimer's real height becomes --foot, so page padding and overlay
    padding track it through wrapping, font scaling and rotation */
@@ -5263,7 +5262,7 @@ var NAV_ALIAS={ledger:'portfolio',bets:'portfolio',records:'record',performance:
 var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};
 /* views with no seat light the seat that owns them, so a reader never loses
    their place: everything reached through More reads as More */
-var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',setup:'more'};
+var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more'};
 /* views that carry their own #hash, so a destination can be linked to */
 var NAV_HASH_RE=/^#(card|portfolio|process|more)(\/[a-z]+)?$/;
 function navPaint(on){var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}}
@@ -56330,6 +56329,7 @@ function fbGxAsk(u){
     +'<button type="button" class="pf-link" onclick="edAsk(\''+q('Why could EdgeDesk be wrong about '+a+' at '+h+'?')+'\',\'game\')">Why could this number be wrong? ›</button>'
     +'</div>';
 }
+window.fbGxAsk=fbGxAsk;   /* tools/app/navigation.e2e.js renders it the way a card does */
 function fbGxPropsSec(u){
   var gid=String(u.g.game_id);
   return fbGxSec(gid,'props','Player prop research',fbPropsBody('cfb',gid,u.t),true,'EdgeDesk’s player-prop projections and any priced leads');
