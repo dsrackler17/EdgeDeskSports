@@ -214,7 +214,9 @@ do $$
 declare f record;
 begin
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-            where s.nspname = 'public' and (p.proname like 'portfolio\_%' or p.proname = 'platform_accounts_guard') loop
+            where s.nspname = 'public' and (p.proname like 'portfolio\_%' or p.proname = 'platform_accounts_guard')
+              -- a connector's service-only entry points (portfolio_connect.sql) stay the service role's
+              and p.proname not like 'portfolio\_svc\_%' loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('revoke all on function %s from anon', f.sig);
     execute format('grant execute on function %s to authenticated, service_role', f.sig);

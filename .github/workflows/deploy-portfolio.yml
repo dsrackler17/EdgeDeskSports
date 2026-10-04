@@ -17,7 +17,11 @@
 #      and ends in a report; a row that reads CHECK THIS fails the run;
 #   3. the same for supabase/portfolio_journal.sql (its own suite first:
 #      tools/portfolio/journal_sql.test.js), in its own transaction, so a
-#      problem in the journal layer never rolls back the positions layer.
+#      problem in the journal layer never rolls back the positions layer;
+#   4. the same for supabase/portfolio_connect.sql (tools/portfolio/
+#      connect_sql.test.js): the platform registry, sync runs and the
+#      service-only ingest. It switches NO connector on — that takes a
+#      passing live smoke test (tools/portfolio/connector_smoke.js).
 #   Nothing else is written: Phase A has no data to sync.
 #
 # AFTER IT: Supabase serves the public schema already, so the page works as
@@ -57,6 +61,7 @@ jobs:
           sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
           node tools/portfolio/portfolio_sql.test.js
           node tools/portfolio/journal_sql.test.js
+          node tools/portfolio/connect_sql.test.js
 
       - name: Check the credential exists before claiming anything
         env:
@@ -88,3 +93,15 @@ jobs:
           fi
           echo "$out" | tail -14
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio_journal.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/portfolio_connect.sql (one transaction)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/portfolio_connect.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/portfolio_connect.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -10
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio_connect.sql: a report row says CHECK THIS"; exit 1; fi
