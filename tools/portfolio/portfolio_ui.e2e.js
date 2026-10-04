@@ -21,6 +21,20 @@
      sees accounts labelled "Manual tracking" / "CSV import", never
      "Connected";
      never sees another reader's position;
+     sees the Decision Grade after P&L and ROI — "Not graded yet" until a
+     price to judge the decision by exists — and a WHY for it;
+     records a bet with its decision (planned, model probability, thesis)
+     and sees BEFORE YOU ENTER context that never says BET or DON'T BET;
+     reads the calendar by day (entered / events / settled), opens a day and
+     records a closing price in the journal, which is then locked — and the
+     database refuses a rewrite; the grade follows the price, not the result;
+     sees an imported bet marked "Historical import · No pre-entry journal";
+     walks the journal's year → month → week → day folders;
+     uses the Process Coach: the report, no invented leak, a rule adopted and
+     retired, an experiment started, the Film Room;
+     filters the one combined book to prediction markets;
+     never makes the page download a lifetime of positions;
+     still sees P&L when the summary is unavailable;
    at 1280 px and at a 390 px phone, with no sideways scroll, no page error,
    and nothing financial written to localStorage.
 
@@ -71,6 +85,7 @@ const CSV = [
   const db = PG.start('pfui');
   if (db.skip) skip(db.skip);
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio.sql'));
+  db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_journal.sql'));
   db.sql(`insert into auth.users (id, email) values ('${A}', 'a@example.com'), ('${B}', 'b@example.com');`);
   /* reader B's book, which reader A must never see */
   db.as(B, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, odds_american, stake, status, placed_at)
@@ -85,7 +100,8 @@ const CSV = [
   }
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
-  async function open(viewport) {
+  async function open(viewport, opts) {
+    opts = opts || {};
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 700 });
     await ctx.addInitScript((uid) => {
       try {
@@ -97,6 +113,9 @@ const CSV = [
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       const m = /supabase\.co\/rest\/v1\/([^?]+)\??(.*)$/.exec(url);
+      if (m && opts.failRpc && opts.failRpc.test(decodeURIComponent(m[1]))) {
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
+      }
       if (m && /^(rpc\/portfolio_|portfolio_|platform_accounts)/.test(decodeURIComponent(m[1]))) {
         let body = null; try { body = req.postData() ? JSON.parse(req.postData()) : null; } catch (_) { body = null; }
         const token = String(req.headers().authorization || '').replace(/^Bearer\s+/i, '');
@@ -246,6 +265,141 @@ const CSV = [
     chk('imported history keeps its own dates: settled at the placed time, not today',
       db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and source = 'CSV' and settled_at = placed_at and settled_at < '2026-09-30';`) === '2');
 
+    /* ═══ the Decision Grade, the journal, the calendar, the coach ═══════ */
+    await tab(page, 'overview');
+    await waitText(page, /Decision Grade/i);
+    t = await text(page);
+    chk('the Overview leads with P&L and ROI, then the Decision Grade', t.search(/Total P&L/i) >= 0 && t.search(/ROI/) < t.search(/Decision Grade/i), t.slice(0, 400));
+    chk('with no price to judge a decision by, no letter is invented', /Not graded yet/.test(t));
+    chk('What\'s working / What\'s not, claiming nothing the data cannot carry', /What's not/i.test(t) && /NO RELIABLE LEAK DETECTED/.test(t), t.slice(t.search(/What's working/i), t.search(/What's working/i) + 300));
+    await page.click('#pfoHost [data-act="why"][data-id="grade"]');
+    await page.waitForSelector('.pfo-sheet:not([hidden]) .pfo-why-dl');
+    const why = await page.$eval('.pfo-sheet', (e) => e.innerText);
+    chk('WHY explains the grade: its components and weights, missing data, its limits', /Closing line value 30%/.test(why) && /Missing data/i.test(why) && /Limitations/i.test(why), why.slice(0, 300));
+    await page.click('.pfo-sheet [data-act="why-close"]');
+
+    /* a bet recorded with its decision, and the context before entering it */
+    const later = await page.evaluate(() => { const d = new Date(Date.now() + 3 * 864e5), p = (n) => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); });
+    await page.click('#pfoHost [data-act="add"]');
+    await page.click('.pfo-sheet [data-act="new-wager"]');
+    await fill(page, { platform: 'draftkings', sport: 'NFL', event_name: 'Ravens @ Steelers', position_type: 'MONEYLINE', selection: 'Ravens', odds: '-120', stake: '60', event_start_at: later });
+    await fill(page, { planned: 'true' });
+    await page.fill('.pfo-sheet [name="model_probability_j"]', '0.58');
+    await page.fill('.pfo-sheet [name="thesis"]', 'Injury news moved the line toward Baltimore; my number is -140.');
+    await page.waitForSelector('.pfo-sheet .pfo-prebet', { timeout: 15000 });
+    await page.waitForFunction(() => /expected value/.test((document.querySelector('.pfo-sheet .pfo-prebet') || {}).innerText || ''), null, { timeout: 15000 });
+    const pre = await page.$eval('.pfo-sheet .pfo-prebet', (e) => e.innerText);
+    chk('BEFORE YOU ENTER gives context from the reader\'s own record: the model\'s EV at this price, the timing', /Before you enter/i.test(pre) && /expected value of \+6\.3%/.test(pre) && /the decision is yours/i.test(pre), pre);
+    chk('and never says BET, DON\'T BET, LOCK or GUARANTEED', !/\b(BET|DON'T BET|LOCK|GUARANTEED)\b/.test(pre));
+    await shot(page, 'desktop-prebet');
+    await page.click('.pfo-sheet [data-act="save"]');
+    await waitText(page, /Recorded\./);
+    const jr = db.sql(`select j.planned::text || '|' || j.thesis || '|' || j.model_probability::text || '|' || (j.decision_recorded_at < p.event_start_at)::text
+                         from public.portfolio_journal_entries j join public.portfolio_positions p on p.id = j.position_id where p.user_id = '${A}' and p.event_name = 'Ravens @ Steelers';`);
+    chk('the decision is recorded with the position, before the event', /^true\|Injury news moved the line.*\|0\.58\d*\|true$/.test(jr), jr);
+
+    /* the calendar, a day, and a closing price in the journal */
+    await tab(page, 'calendar');
+    await page.waitForSelector('#pfoHost .pfo-cal-nav b');
+    for (let i = 0; i < 36; i++) {
+      const head = await page.$eval('#pfoHost .pfo-cal-nav b', (e) => e.innerText);
+      if (/September 2026/.test(head)) break;
+      const [mo, yr] = head.split(' '), cur = +yr * 12 + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(mo);
+      await page.click(`#pfoHost [data-act="cal-move"][data-v="${cur > 2026 * 12 + 8 ? -1 : 1}"]`);
+      await page.waitForFunction((h) => document.querySelector('#pfoHost .pfo-cal-nav b').innerText !== h, head);
+    }
+    await page.waitForSelector('#pfoHost .pfo-cal-d.on');
+    const cell = await page.$eval('#pfoHost [data-act="cal-day"][data-v="2026-09-07"]', (e) => e.innerText);
+    chk('a calendar day carries what was entered and the P&L that settled: −$100.00 + $60.00 = −$40.00', /2 in/.test(cell) && /−\$40\.00/.test(cell), cell);
+    await page.click('#pfoHost [data-act="cal-day"][data-v="2026-09-07"]');
+    await waitText(page, /Settled this day/i);
+    t = await text(page);
+    chk('the day lists what was entered and what settled', /Entered this day/i.test(t) && /Settled this day/i.test(t) && /Chiefs -2\.5/.test(t) && /Jets/.test(t), t.slice(t.search(/Entered this day/i), t.search(/Entered this day/i) + 400));
+    chk('an imported bet says there is no pre-entry journal, and invents none', /Historical import · No pre-entry journal available\./.test(t));
+    await page.click('#pfoHost [data-act="cal-basis"][data-v="settled"]');
+    chk('the calendar reads by settlement day on request', /P&L that settled that day/.test(await text(page)));
+    await shot(page, 'desktop-calendar');
+    await page.click('#pfoHost .pfo-jcard:has-text("Chiefs -2.5") [data-act="journal"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="journal"] [name="closing_odds_american"]');
+    await page.fill('.pfo-sheet [name="closing_odds_american"]', '-130');
+    await page.selectOption('.pfo-sheet [name="would_repeat"]', 'YES');
+    await page.click('.pfo-sheet [data-act="journal-save"]');
+    await waitText(page, /Journal saved/);
+    const chiefs = db.sql(`select id from public.portfolio_positions where user_id = '${A}' and event_name = 'Chiefs @ Bills';`);
+    const jc = db.sql(`select closing_odds_american::text || '|' || closing_source || '|' || would_repeat from public.portfolio_journal_entries where position_id = '${chiefs}';`);
+    chk('a closing price is recorded once, as the reader\'s own entry', jc === '-130|USER|YES', jc);
+    await page.waitForSelector('#pfoHost .pfo-jcard:has-text("Chiefs -2.5") [data-act="journal"]');
+    await page.click('#pfoHost .pfo-jcard:has-text("Chiefs -2.5") [data-act="journal"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="journal"] .pfo-locked');
+    chk('and is then shown locked, never rewritten', /never rewritten/.test(await page.$eval('.pfo-sheet', (e) => e.innerText)) && !(await page.$('.pfo-sheet [name="closing_odds_american"]')));
+    const rw = rest.handle('PATCH', 'portfolio_journal_entries', 'position_id=eq.' + chiefs, { closing_odds_american: -105 }, '', 'e2e');
+    chk('the database refuses a rewrite, whatever a page sends', rw.status === 403 && /never rewritten/.test(rw.body.message), rw);
+    await page.click('.pfo-sheet [data-act="close"]');
+    await tab(page, 'overview');
+    await waitText(page, /process score/i);
+    t = await text(page);
+    chk('a lost bet taken at a better price than the close grades well: the grade follows the price, not the result', /\b1 of \d+ positions graded/.test(t) && /\bA\+/.test(t), t.slice(t.search(/Decision Grade/i), t.search(/Decision Grade/i) + 300));
+
+    /* the journal's folders */
+    await tab(page, 'journal');
+    await page.waitForSelector('#pfoHost details[data-r="year"][data-v="2026"]');
+    await page.click('#pfoHost details[data-r="year"][data-v="2026"] > summary');
+    await page.waitForSelector('#pfoHost details[data-r="fold"][data-v="m:2026-9"]');
+    await page.click('#pfoHost details[data-r="fold"][data-v="m:2026-9"] > summary');
+    await page.click('#pfoHost details[data-r="fold"][data-v="m:2026-9"] details[data-r="fold"] > summary');
+    await page.click('#pfoHost details[data-r="fold"][data-v="m:2026-9"] [data-act="journal-day"]');
+    await page.waitForSelector('#pfoHost .pfo-jcard');
+    chk('the journal files by year → month → week → day, and the folders stay open while a day is read',
+      await page.$eval('#pfoHost details[data-r="fold"][data-v="m:2026-9"]', (e) => e.open) && /(Entered|Settled) this day/i.test(await text(page)));
+    await shot(page, 'desktop-journal');
+
+    /* the Process Coach */
+    await tab(page, 'coach');
+    await waitText(page, /Process vs outcome/i);
+    t = await text(page);
+    chk('the Process Report: the grade, process against outcome — the lost Chiefs bet is a good loss', /Process vs outcome/i.test(t) && /1\s*good loss/.test(t), t.slice(0, 600));
+    await page.click('#pfoHost [data-act="coach"][data-v="leaks"]');
+    await waitText(page, /NO RELIABLE LEAK DETECTED/);
+    chk('Leaks: with this little data, no leak is claimed', true);
+    for (const sub of ['strengths', 'timing', 'edge']) {
+      await page.click(`#pfoHost [data-act="coach"][data-v="${sub}"]`);
+      await page.waitForTimeout(250);
+    }
+    chk('Strengths, Timing and Edge Capture render', !/Loading your process/.test(await text(page)) && /Edge capture/i.test(await text(page)));
+    await page.click('#pfoHost [data-act="coach"][data-v="rules"]');
+    await page.waitForSelector('#pfoHost form[data-form="rule"]');
+    await page.selectOption('#pfoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
+    await page.fill('#pfoHost form[data-form="rule"] [name="a"]', '2');
+    await page.click('#pfoHost [data-act="rule-add"]');
+    await waitText(page, /No position larger than 2 units/);
+    chk('a rule is adopted from now on', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and kind = 'MAX_STAKE_UNITS' and active_until is null and active_from > now() - interval '5 minutes';`) === '1');
+    await page.click('#pfoHost [data-act="rule-retire"]');
+    await waitText(page, /retired \d{4}-/);
+    chk('and retired, keeping its history', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and active_until is not null;`) === '1');
+    await page.click('#pfoHost [data-act="coach"][data-v="experiments"]');
+    await page.waitForSelector('#pfoHost form[data-form="experiment"]');
+    await page.fill('#pfoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
+    await page.click('#pfoHost [data-act="exp-add"]');
+    await waitText(page, /Not enough positions yet/);
+    chk('an experiment starts, and says it needs data rather than guessing', db.sql(`select count(*) from public.portfolio_experiments where user_id = '${A}' and status = 'ACTIVE';`) === '1');
+    await page.click('#pfoHost [data-act="coach"][data-v="film"]');
+    await waitText(page, /Weekly Film Room/i);
+    chk('the Film Room opens on a week, best and weakest decisions apart from results', /Best decisions/i.test(await text(page)) && /Won on a poor decision/i.test(await text(page)));
+    await shot(page, 'desktop-coach');
+
+    /* one combined book, filtered on request */
+    await tab(page, 'overview');
+    await page.click('#pfoHost [data-act="platform"][data-v="type:PREDICTION_MARKET"]');
+    await page.waitForFunction(() => { const b = document.querySelector('#pfoHost .pfo-big'); return b && /\+\$38\.50/.test(b.innerText); }, null, { timeout: 15000 });
+    t = await text(page);
+    const byPlat = t.slice(t.search(/P&L by platform/i));
+    chk('filtered to prediction markets, the total is Kalshi\'s alone', /Kalshi/.test(byPlat) && !/DraftKings|BetMGM/.test(byPlat), byPlat.slice(0, 200));
+    await page.click('#pfoHost [data-act="platform"][data-v=""]');
+    await page.waitForFunction(() => { const b = document.querySelector('#pfoHost .pfo-big'); return b && !/\+\$38\.50/.test(b.innerText); }, null, { timeout: 15000 });
+    const reads = rest.log.filter((l) => l.method === 'GET' && l.path === 'portfolio_positions');
+    chk('the page never downloads a lifetime: positions are read open-only, or the latest 1,000 settled',
+      reads.length > 0 && reads.every((l) => /status=eq\.OPEN/.test(l.query) || (/status=neq\.OPEN/.test(l.query) && /limit=1000\b/.test(l.query))), reads.map((l) => l.query.slice(-80)));
+
     /* accounts, analytics, isolation */
     await tab(page, 'accounts');
     t = await text(page);
@@ -258,8 +412,9 @@ const CSV = [
     await page.click('#pfoHost [data-act="period"][data-v="7D"]');
     chk('and filters by period', await page.$eval('#pfoHost [data-act="period"][data-v="7D"]', (e) => e.getAttribute('aria-pressed') === 'true'));
     await shot(page, 'desktop-analytics');
-    for (const v of ['overview', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
+      await page.waitForTimeout(300);
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
@@ -271,8 +426,9 @@ const CSV = [
     /* ═══ PHONE: 390 px ════════════════════════════════════════════════ */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
     await waitText(page, /Total P&L/i);
-    for (const v of ['overview', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
+      await page.waitForTimeout(400);
       await noSideways(page, '390px ' + v);
       await shot(page, 'phone-' + v);
     }
@@ -290,6 +446,14 @@ const CSV = [
     await noSideways(page, '390px form');
     await shot(page, 'phone-form');
     chk('no page errors on the phone', errors.length === 0, errors);
+    await ctx.close();
+
+    /* ═══ the summary unavailable: the page still answers ════════════════ */
+    ({ ctx, page, errors } = await open({ width: 1024, height: 800 }, { failRpc: /^rpc\/portfolio_(summary|cells)$/ }));
+    await waitText(page, /could not be loaded/);
+    t = await text(page);
+    chk('without the server summary, P&L still shows from the positions on the page, and says so', /Total P&L/i.test(t) && /could not be loaded/.test(t) && /\$\d/.test(t), t.slice(0, 400));
+    chk('no page errors without the summary', errors.length === 0, errors);
     await ctx.close();
   } catch (e) {
     try {

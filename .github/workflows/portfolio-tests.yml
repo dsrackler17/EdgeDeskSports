@@ -64,6 +64,8 @@ jobs:
         run: node tools/portfolio/process.test.js
       - name: The page in Node, and its wiring in app.html
         run: node tools/portfolio/portfolio_ui.test.js
+      - name: The Decision Grade, Calendar, Journal, Coach and pre-bet views in Node
+        run: node tools/portfolio/journal_ui.test.js
       - name: The app's navigation still holds (seven seats, More, deep links)
         run: node tools/app/navigation.test.js
 
@@ -97,7 +99,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: The Portfolio page in Chromium against the real migration
+      - name: The Portfolio page in Chromium against the real migrations (portfolio.sql and portfolio_journal.sql)
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/portfolio_ui.e2e.js

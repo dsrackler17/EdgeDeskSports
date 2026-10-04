@@ -1,4 +1,6 @@
-# Deploy the Portfolio database: supabase/portfolio.sql.
+# Deploy the Portfolio database: supabase/portfolio.sql, then
+# supabase/portfolio_journal.sql (the journal, the Decision Grade, the
+# calendar and the Process Coach, which need the first file's tables).
 #
 # MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
 # decision a person makes. What this removes is the copy-paste of eight
@@ -12,7 +14,10 @@
 #   2. applies supabase/portfolio.sql in ONE transaction with ON_ERROR_STOP —
 #      the file is idempotent and additive, takes its tables without waiting
 #      while holding any (so a reader saving a position cannot deadlock it),
-#      and ends in a report; a row that reads CHECK THIS fails the run.
+#      and ends in a report; a row that reads CHECK THIS fails the run;
+#   3. the same for supabase/portfolio_journal.sql (its own suite first:
+#      tools/portfolio/journal_sql.test.js), in its own transaction, so a
+#      problem in the journal layer never rolls back the positions layer.
 #   Nothing else is written: Phase A has no data to sync.
 #
 # AFTER IT: Supabase serves the public schema already, so the page works as
@@ -51,6 +56,7 @@ jobs:
         run: |
           sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
           node tools/portfolio/portfolio_sql.test.js
+          node tools/portfolio/journal_sql.test.js
 
       - name: Check the credential exists before claiming anything
         env:
@@ -70,3 +76,15 @@ jobs:
           fi
           echo "$out" | tail -16
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/portfolio_journal.sql (one transaction)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/portfolio_journal.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/portfolio_journal.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -14
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio_journal.sql: a report row says CHECK THIS"; exit 1; fi
