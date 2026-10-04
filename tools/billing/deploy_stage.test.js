@@ -40,13 +40,18 @@ if (W.skip) { console.log('NOTE | ' + W.skip + ' — skipped'); process.exit(0);
 const ROOT = PG.ROOT;
 
 /* ── the stand-in for Supabase ─────────────────────────────────────────────── */
-const deployed = {};          // name -> { handler, version, at }
+const deployed = {};          // name -> { handler, version, at, src }
 const secrets = { STRIPE_SECRET_KEY: 1, STRIPE_WEBHOOK_SECRET: 1, SB_URL: 1, SB_SERVICE_ROLE: 1 };
 let fnEnv = Object.assign({}, W.env, { STRIPE_PRICE_ID: '' });   // the price is not set until the stage sets it
-function deploy(name) {
+// like the real CLI: from the repository, or from --workdir <dir>/supabase/functions/<name>
+function deploy(name, workdir, srcText) {
   const prev = deployed[name];
-  deployed[name] = { handler: H.loadFunction(name, fnEnv, W.route, W.logs), version: prev ? prev.version + 1 : 1, at: new Date().toISOString() };
+  const src = srcText != null ? srcText
+    : fs.readFileSync(path.join(workdir || ROOT, 'supabase', 'functions', name, 'index.ts'), 'utf8');
+  deployed[name] = { handler: H.loadFunction(name, fnEnv, W.route, W.logs, src), version: prev ? prev.version + 1 : 1,
+                     at: new Date().toISOString(), src };
 }
+const argOf = (a, flag) => { const i = a.indexOf(flag); return i >= 0 ? a[i + 1] : null; };
 async function readBody(req) { const chunks = []; for await (const c of req) chunks.push(c); return Buffer.concat(chunks).toString('utf8'); }
 const server = http.createServer(async (req, res) => {
   try {
@@ -60,14 +65,20 @@ const server = http.createServer(async (req, res) => {
     };
     if (url.pathname === '/__cli') {
       const a = body.trim().split(/\s+/);
-      if (a[0] === 'functions' && a[1] === 'deploy') deploy(a[2]);
+      if (a[0] === 'functions' && a[1] === 'deploy') deploy(a[2], argOf(a, '--workdir'));
+      else if (a[0] === 'functions' && a[1] === 'download') {
+        if (!deployed[a[2]] || !argOf(a, '--workdir')) { res.writeHead(404); res.end('not deployed'); return; }
+        const dir = path.join(argOf(a, '--workdir'), 'supabase', 'functions', a[2]);
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'index.ts'), deployed[a[2]].src);
+      }
       else if (a[0] === 'functions' && a[1] === 'delete') delete deployed[a[2]];
       else if (a[0] === 'secrets' && a[1] === 'set') {
         const [k, v] = a[2].split('='); secrets[k] = 1; fnEnv[k] = v;
-        if (deployed.create_checkout_session) deployed.create_checkout_session.handler = H.loadFunction('create_checkout_session', fnEnv, W.route, W.logs);
+        if (deployed.create_checkout_session) deployed.create_checkout_session.handler = H.loadFunction('create_checkout_session', fnEnv, W.route, W.logs, deployed.create_checkout_session.src);
       } else if (a[0] === 'secrets' && a[1] === 'unset') {
         delete secrets[a[2]]; fnEnv[a[2]] = '';
-        if (deployed.create_checkout_session) deployed.create_checkout_session.handler = H.loadFunction('create_checkout_session', fnEnv, W.route, W.logs);
+        if (deployed.create_checkout_session) deployed.create_checkout_session.handler = H.loadFunction('create_checkout_session', fnEnv, W.route, W.logs, deployed.create_checkout_session.src);
       } else { res.writeHead(400); res.end('unknown cli ' + body); return; }
       res.writeHead(200); res.end('ok'); return;
     }
@@ -152,6 +163,10 @@ const leaks = (text) => {
     const COLS = ['status', 'price_id', 'current_period_end', 'cancel_at_period_end', 'stripe_customer_id', 'stripe_subscription_id', 'updated_at'];
     const billingOf = (uid) => { const r0 = W.row(uid); return JSON.stringify(r0 && COLS.map((c) => r0[c])); };
     const connorRow = billingOf(connor.id);
+    // what production runs today: a webhook pasted in by hand, a build no git commit holds
+    const HAND = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'stripe_webhook', 'index.ts'), 'utf8')
+      .replace(/^const BUILD = '[^']*';/m, "const BUILD = 'stripe_webhook-2026-09-12-referral-2';") + '\n// pasted by hand\n';
+    deploy('stripe_webhook', null, HAND);
 
     let r = await stage('preflight');
     chk('preflight: passes on clean production-shaped data', r.code === 0 && /Preflight: no FAIL/.test(r.summary), r.out);
@@ -178,7 +193,7 @@ const leaks = (text) => {
     chk('apply_sql: the snapshot records the deployed function versions (none yet) and the access count', snap.label === 'pre-apply' && Array.isArray(snap.deployed) && snap.g === '3', snap);
 
     r = await stage('deploy_stripe_webhook');
-    chk('the webhook cannot be deployed before sync_subscription', r.code !== 0 && !deployed.stripe_webhook, r.out.slice(-600));
+    chk('the webhook cannot be deployed before sync_subscription (production keeps its own build)', r.code !== 0 && deployed.stripe_webhook.src === HAND, r.out.slice(-600));
 
     r = await stage('deploy_sync_subscription');
     chk('deploy_sync_subscription: deployed, serving this build, verify_jwt off, every Phase 6 probe green', r.code === 0 && deployed.sync_subscription &&
@@ -188,6 +203,20 @@ const leaks = (text) => {
     r = await stage('deploy_stripe_webhook');
     chk('deploy_stripe_webhook: deployed and verified; no delivery yet is a WARN with the resend instruction', r.code === 0 && deployed.stripe_webhook &&
       /── webhook: 5 PASS/.test(r.out) && /resend a recent event/.test(r.out), r.out.slice(-1500));
+    const bk = JSON.parse(W.db.sql("select row_to_json(t) from (select slug, build, version, sha256, source from billing_ops.function_backups order by id desc limit 1) t;"));
+    chk('deploy_stripe_webhook: the hand-pasted build production was running was saved first, byte for byte',
+      bk.slug === 'stripe_webhook' && bk.build === 'stripe_webhook-2026-09-12-referral-2' && bk.source === HAND &&
+      bk.sha256 === require('crypto').createHash('sha256').update(HAND).digest('hex') && /Saved the running stripe_webhook/.test(r.summary), { build: bk.build, same: bk.source === HAND });
+    chk('deploy_stripe_webhook: the backup is private (no client role can read it)',
+      W.db.mustFail(() => W.db.as(owner.id, 'select count(*) from billing_ops.function_backups;')) !== null);
+
+    r = await stage('rollback_stripe_webhook');
+    chk('rollback_stripe_webhook: restores EXACTLY what production ran before (from the backup, not git)', r.code === 0 &&
+      deployed.stripe_webhook.src === HAND && /Restoring backup #/.test(r.summary) && /stripe_webhook-2026-09-12-referral-2/.test(r.summary), r.out.slice(-1500));
+    r = await stage('deploy_stripe_webhook');
+    chk('and the hardened build goes back on, verified (its backup is the hand-pasted build again, not itself)', r.code === 0 &&
+      deployed.stripe_webhook.src !== HAND && W.db.sql("select build from billing_ops.function_backups order by id desc limit 1;") === 'stripe_webhook-2026-09-12-referral-2', r.out.slice(-1200));
+    chk('the repository\'s own webhook file was never touched by the rollback', fs.readFileSync(path.join(ROOT, 'supabase', 'functions', 'stripe_webhook', 'index.ts'), 'utf8') !== HAND);
 
     r = await stage('deploy_create_checkout_session', { STRIPE_PRICE_ID_INPUT: 'price_4999' });
     chk('deploy_create_checkout_session: price set, deployed, every Phase 8 probe green', r.code === 0 && deployed.create_checkout_session &&

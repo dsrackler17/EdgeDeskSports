@@ -53,9 +53,24 @@ create table if not exists billing_ops.check_runs (
   detail  text
 );
 create index if not exists check_runs_by_run on billing_ops.check_runs (run_id, n);
+-- The SOURCE of an Edge Function as production was running it, saved by
+-- tools/billing/deploy_stage.sh immediately before it deploys over it. This is
+-- what rollback_stripe_webhook restores: production's webhook was pasted in by
+-- hand and is not a build that exists anywhere in git.
+create table if not exists billing_ops.function_backups (
+  id        bigint      generated always as identity primary key,
+  saved_at  timestamptz not null default now(),
+  slug      text        not null,
+  build     text,
+  version   integer,
+  sha256    text        not null,
+  source    text        not null
+);
+create index if not exists function_backups_by_slug on billing_ops.function_backups (slug, id desc);
 create sequence if not exists billing_ops.run_seq;
 alter table billing_ops.snapshots  enable row level security;
 alter table billing_ops.check_runs enable row level security;
+alter table billing_ops.function_backups enable row level security;
 revoke all on all tables in schema billing_ops from public;
 revoke all on all sequences in schema billing_ops from public;
 do $r$

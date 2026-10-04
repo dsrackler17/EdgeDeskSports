@@ -25,8 +25,10 @@ const ROOT = PG.ROOT;
 const DB_URL = 'https://db.test';
 const SECRET = 'whsec_scenario_secret';
 
-function loadFunction(name, env, fetchImpl, logs) {
-  const src = fs.readFileSync(path.join(ROOT, 'supabase', 'functions', name, 'index.ts'), 'utf8');
+// srcOverride: run some OTHER source as this function (a deploy-stage test
+// loading what a stand-in CLI deployed from a --workdir, or a production build)
+function loadFunction(name, env, fetchImpl, logs, srcOverride) {
+  const src = srcOverride != null ? srcOverride : fs.readFileSync(path.join(ROOT, 'supabase', 'functions', name, 'index.ts'), 'utf8');
   let handler = null;
   const Deno = { env: { get: (k) => (env[k] == null ? undefined : env[k]) }, serve: (h) => { handler = h; } };
   const cap = (level) => (...a) => logs.push({ fn: name, level, line: a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ') });
