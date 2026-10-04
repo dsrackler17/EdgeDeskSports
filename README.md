@@ -319,7 +319,7 @@ store. It is evidence, not the decision.
   `props:factory:history`, `:backtest`, `:train`, `:project`, `:sync` — its stages
 
 ## Portfolio — every bet and prediction-market position, one ledger
-*More → Portfolio* (or `#portfolio`) is the reader's own book across every
+*Portfolio* — a seat in the bottom bar (or `#portfolio`) — is the reader's own book across every
 sportsbook and prediction market they use, and it answers one question first:
 **am I up or down?** Below that are ROI, capital, open exposure and the record;
 sportsbook and prediction-market P&L apart and combined; P&L by platform; and

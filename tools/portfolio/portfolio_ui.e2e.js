@@ -9,7 +9,7 @@
    form → request → trigger → stored figure → page.
 
    A reader, starting from nothing:
-     opens #portfolio and sees an empty book (no sample data);
+     opens #portfolio and sees an empty book that says how to build one (no sample data);
      records a sportsbook bet that won and sees +$90.91;
      records a prediction-market position that resolved YES and sees the
      total, the sportsbook / prediction split and both platforms;
@@ -142,10 +142,11 @@ const CSV = [
   try {
     /* ═══ DESKTOP: the whole journey ════════════════════════════════════ */
     let { ctx, page, errors } = await open({ width: 1280, height: 900 });
-    await waitText(page, /No positions yet/);
-    chk('a new reader sees an empty book, and no sample data', /No positions yet/.test(await text(page)) && !/\$/.test(await page.$eval('#pfoHost [data-r="body"]', (e) => e.innerText)));
-    chk('Portfolio is a destination in More', await page.evaluate(() => { try { window.loadMore(); } catch (e) {} return /Portfolio/.test((document.getElementById('moreList') || {}).innerHTML || ''); }));
-    chk('and More reads active while it is open', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="more"]'); return !!b && b.classList.contains('on'); }));
+    await waitText(page, /Build your portfolio/);
+    chk('a new reader sees an empty book, and no sample data', /Build your portfolio/.test(await text(page)) && !/\$/.test(await page.$eval('#pfoHost [data-r="body"]', (e) => e.innerText)));
+    /* a seat of its own since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md) */
+    chk('Portfolio is a primary destination', await page.evaluate(() => !!document.querySelector('.bottomnav button[data-v="portfolio"]')));
+    chk('and its own seat reads active while it is open', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="portfolio"]'); return !!b && b.classList.contains('on'); }));
     await shot(page, 'desktop-empty');
 
     /* a winning sportsbook bet */
@@ -158,7 +159,10 @@ const CSV = [
     chk('the form previews the payout and profit before saving ($100 at -110 wins $90.91)', /to win \$90\.91/.test(preview) && /payout \$190\.91/.test(preview) && /\+\$90\.91/.test(preview), preview);
     await shot(page, 'desktop-form');
     await page.click('.pfo-sheet [data-act="save"]');
-    await waitText(page, /\+\$90\.91/);
+    /* wait for the OVERVIEW to carry the figure, not the whole host: the form
+       sheet's own preview already reads +$90.91, so waiting on #pfoHost could
+       finish before the save landed and read the empty book */
+    await page.waitForFunction(() => { const b = document.querySelector('#pfoHost [data-r="body"]'); return !!b && /Total P&L/i.test(b.innerText) && /\+\$90\.91/.test(b.innerText); }, null, { timeout: 15000 });
     let t = await text(page);
     chk('the overview answers first: +$90.91', /Total P&L/i.test(t) && /\+\$90\.91/.test(t), t.slice(0, 300));
 

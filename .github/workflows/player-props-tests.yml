@@ -85,7 +85,7 @@ jobs:
         env:
           PLAYER_PROPS_SQL_REQUIRED: '1'
         run: node tools/opportunity/card_sql.test.js
-      - name: The navigation still holds with the Props seat
+      - name: The navigation still holds with Props inside Research
         run: node tools/app/navigation.test.js
       - name: Playwright and Chromium
         run: |

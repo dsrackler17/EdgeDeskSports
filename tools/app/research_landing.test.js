@@ -289,7 +289,10 @@ lacks(SRC, 'supabase', 'the landing reads no database');
 /* ======================================================================== */
 /* 6. THE PRODUCT STRUCTURE IS NOT MERGED                                   */
 /* ======================================================================== */
-['v-edges', 'v-record', 'v-ledger', 'v-faults', 'v-research']
+/* the Ledger was merged into Portfolio on purpose by the five-destination
+   navigation (docs/ia/NAVIGATION_AUDIT.md); Edges is a Research panel with its
+   own route; nothing here was folded into the landing */
+['v-edges', 'v-record', 'v-portfolio', 'v-faults', 'v-research']
   .forEach(id => has(APP, 'id="' + id + '"', id + ' is still its own destination'));
 chk('"Model disagreements" leaves Research for Edges rather than copying it',
   /if\(which==='edges'\)\{[\s\S]{0,120}?show\('edges'\)/.test(APP));

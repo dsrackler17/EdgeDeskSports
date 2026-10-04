@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-04 — five destinations: Research, Card, Portfolio, Process, More
+
+The authenticated app is organised around the loop a reader actually runs — research → decide → track → review → improve — instead of giving every feature a seat. Audit and route map: `docs/ia/NAVIGATION_AUDIT.md`.
+
+- **The bar is five seats:** Research · Card · Portfolio · Process · More (was Research · Card · Props · Edges · AI · Record · More). On a desktop the same five stand as a left rail.
+- **Research** holds Football · Props · Edges · Other. *Other* opens the other sports (UFC, Baseball) and the research tools (Stats, Lab, Desk), and the seat names whichever is open. Football reads NFL · CFB · Players · Rankings · Rosters.
+- **AI is contextual:** "Ask EdgeDesk" in the Research header, on college game research ("Research Kansas at Texas Tech", "Why could this number be wrong?") and on the Card. The drawer and every receipt's Analyze button are unchanged; the drawer no longer appends a seat of its own.
+- **Portfolio is a seat.** It is Portfolio Phase A's page (Overview · Open · History · Analytics · Accounts · Import, every platform, P&L first), no longer a More row. The old Ledger is no longer a page: its tracked prices, bets logged by hand, quick add and exposure, and the Card's BET PLACED bets, are one section under the book — *Tracked from EdgeDesk* — the positions graded against a closing line, which Process reads (`lib/edgedesk_positions.js`). `#portfolio/<tab>` links to a tab.
+- **Process** (new) reads the reader's graded history by one measure — did the price beat the close — with a process score, what's working, what's costing you, this week and a next focus, and the tables (timing, sport, market, price at entry, Card range, edge capture, decision journal) behind disclosure. Below 20 graded positions it shows what it is building and what unlocks next; a comparison needs 8 graded on both sides, a 10-point gap and z ≥ 1 (labelled *clear* only at 95%).
+- **Record is "Model performance"** — EdgeDesk's record, never the reader's — in More › Transparency. Its title says "not your bets"; Settings › About no longer calls it "your graded track record".
+- **More is sections:** Community & tools · Transparency · System · Account · Legal. News moved to System as the moat-alert feed, and the items naming a game's teams now show on that game's research. The Model & data health row no longer closes its own panel on the same tap.
+- **Tracking a price keeps the reader where they were** and says "Tracked in Portfolio · View" instead of jumping to another page.
+- **A new account starts at setup, once:** welcome (the five destinations) → your portfolio (import a CSV or connect accounts, in Portfolio) → your first read → Research. It counts as done when shown; a deep link always wins; More › Account › Set up EdgeDesk runs it again.
+- **Every old link lands:** `#playerprops/…`, `#research/props|edges|…`, `#card`, `#portfolio`, `#receipt=…` (which now opens on a cold load), and new `#portfolio/<tab>`, `#process`, `#more`, plus `#ledger`, `#record`, `#pnl`, `#edges`, `#props`, `#settings`, `#news`, `#faults`, `#collective`. `show('ledger'|'pprops'|'edges'|'record'|'ai')` still work. A remembered `ledger` tab lands on Portfolio.
+- **Navigation evidence:** `primary_nav_research|card|portfolio|process|more` per seat tap and `secondary_nav_opened` (props.entity: `more:…`, `research:…`, `portfolio:…`, `process:…`, `card:…`, `ai:…`, `setup:…`), first-party through `ed_track` (one row per session per seat / entity) and to gtag per tap. **Re-apply `supabase/funnel.sql`** for the server to accept them.
+- **The disclaimer** keeps every element; the helpline is a tap-to-call link; it breaks only between elements and, on a phone, reads as one unit with the nav (≈30px, was 34px; one line from ~412px).
+- **Tests:** `tools/app/navigation.test.js` rewritten for five destinations; `tools/app/navigation.e2e.js` (new, in CI) drives 390px and 1440px; `tools/app/portfolio_process.test.js` (new, in CI); `tools/funnel/funnel_sql.test.js` +6 for the nav events; `sports_config`, `research_landing`, `props_ui.e2e`, `first_run.e2e` and the Portfolio UI's `app.html` wiring checks follow the new structure.
 ## 2026-10-04 — the landing page sells research plus your own betting analytics
 
 The public page now answers, in five seconds: EdgeDesk is football research plus personal betting analytics, it helps you see whether your process is working, it costs $49.99 a month, and it sells no picks.

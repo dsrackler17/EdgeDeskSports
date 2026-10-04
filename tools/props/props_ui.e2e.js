@@ -9,7 +9,7 @@
    build runs. The page's clock is pinned ten minutes after the capture. It
    proves:
 
-     - the Props seat opens #v-pprops; the terminal paints the board, the
+     - Research › Props opens #v-pprops; the terminal paints the board, the
        capture strip and the probability source; no horizontal scroll
      - market tabs list only categories that carry data
      - filters (EV, side, price), search ("rushing yards", a team), sort
@@ -166,10 +166,13 @@ async function buildFixture() {
     /* ---------------------------------------------------------- desktop */
     console.log('desktop');
     let { ctx, page, errors } = await open({ width: 1440, height: 900 }, '');
-    await page.waitForSelector('.bottomnav button[data-v="pprops"]');
-    await page.click('.bottomnav button[data-v="pprops"]');
+    /* Props is a Research panel since the five-destination navigation
+       (docs/ia/NAVIGATION_AUDIT.md): Research › Props, with Research lit */
+    await page.waitForSelector('.research-sub button[data-sub="pprops"]');
+    await page.click('.research-sub button[data-sub="pprops"]');
     await page.waitForSelector('.pp-row', { timeout: 15000 });
-    chk('the Props seat opens the Player Props view', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && document.querySelector('.bottomnav button[data-v="pprops"]').classList.contains('on')));
+    chk('Research › Props opens the Player Props panel', await page.evaluate(() => !document.getElementById('v-pprops').classList.contains('hide') && !document.getElementById('v-research').classList.contains('hide')
+      && document.querySelector('.research-sub button[data-sub="pprops"]').classList.contains('on') && document.querySelector('.bottomnav button[data-v="research"]').classList.contains('on')));
     chk('the terminal paints its header and the capture strip', await page.evaluate(() => /PLAYER PROPS/.test(document.querySelector('.pp-title').textContent) && /Sportsbook prices: current · updated \d+ min ago · \d+ books/.test(document.querySelector('.pp-strip').textContent) && !/current prices/.test(document.querySelector('.pp-strip').textContent)));
     chk('the header says the page keeps itself current (no refresh needed to see new prices)', await page.evaluate(() => /auto-updating/.test(document.querySelector('.pp-live').textContent)));
     chk('healthy: no banner at all (nothing to explain)', await page.evaluate(() => !document.querySelector('.pp-banner') && !document.querySelector('.pp-warnbox')));
