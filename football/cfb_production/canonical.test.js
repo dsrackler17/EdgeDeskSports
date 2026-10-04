@@ -286,6 +286,12 @@ const AS_OF = '2026-09-28T12:00:00.000Z';
   const build = (rows, slate) => PR.build({ now, files: { 'football/cfb_v2/current.json': { model_version: 'edgedesk_cfb_v2.1.0', generated_at: now, rows },
     'football/fbs/slate.json': slate || { games: [] }, 'football/cfb_production/manifest.json': JSON.parse(read('football/cfb_production/manifest.json')) }, predictions: [], decisions: [] });
   const g = (rep, id) => rep.games.find((x) => x.game_id === String(id));
+  /* Both chaos fixtures come from the goldens. r2 was previously read from the
+     live football/cfb_v2/current.json, so every CFB build rewrote it and the
+     section passed or failed on whichever priced row happened to sit first
+     that day. Its definition was then lost in a merge, which left section 8
+     referencing an undefined r2 and the whole suite unable to run. */
+  const r2 = Object.assign({}, Object.values(G.rows).find((r) => r.priced !== false && r.game_id !== base.game_id), { kickoff: base.kickoff });
   const ok = build([base, r2]);
   chk('chaos: a clean slate resolves every game at level 1 or 2', ok.games.length === 2 && ok.games.every((x) => x.resolved.level === 1 || x.resolved.level === 2));
   const garbage = build([Object.assign({}, base, { sigma: NaN, ens_pred: 'x' }), r2]);
