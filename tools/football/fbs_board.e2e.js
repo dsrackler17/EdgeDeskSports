@@ -461,20 +461,32 @@ function serve(handler) {
     mob.controlsHeight != null && mob.controlsHeight < 460,
     { controls: mob.controlsHeight, board_offset: mob.boardOffset });
 
-  /* filtering works on a phone too */
-  const mobClicked = await M.page.evaluate(() => {
-    const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === 'FBS vs FCS');
-    if (!b) return false;
-    b.click(); return true;
+  /* filtering works on a phone too — on a matchup type the PREGAME slate
+     carries and that is not the whole of it, so the tap has something to keep
+     and something to drop. The chip used to be FBS vs FCS, always: those games
+     are a September thing, and once the board read only games that have not
+     kicked off (fbKickedOff), a Sunday in October held none of them, and an
+     empty filter proved nothing about the filter. */
+  const mobPick = await M.page.evaluate(() => {
+    const pre = (window.FB.p4.up || []).filter(u => u.t > Date.now());
+    const chips = [['FBS vs FCS', 'fbs_fcs'], ['Non-conference FBS', 'non_conference'], ['Conference games', 'conference']];
+    for (const [label, type] of chips) {
+      const n = pre.filter(u => u.meta.matchup_type === type).length;
+      if (!n || n === pre.length) continue;
+      const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === label);
+      if (b) { b.click(); return { label, type, n, of: pre.length }; }
+    }
+    return null;
   });
-  chk('a matchup chip is tappable on a phone', mobClicked === true);
+  chk('a matchup chip is tappable on a phone', !!mobPick, mobPick);
   await M.page.waitForTimeout(200);
-  const mobAfter = await M.page.evaluate(() => ({
+  const mobAfter = await M.page.evaluate((type) => ({
     rows: document.querySelectorAll('[id^="p4gate-"]').length,
-    expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === 'fbs_fcs').length,
+    expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === type).length,
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
-  }));
-  chk('and it filters the board', mobAfter.rows === mobAfter.expected && mobAfter.rows > 0, mobAfter);
+  }), mobPick ? mobPick.type : null);
+  chk('and it filters the board', !!mobPick && mobAfter.rows === mobAfter.expected && mobAfter.rows > 0 && mobAfter.rows < mobPick.of,
+    Object.assign({ chip: mobPick && mobPick.label }, mobAfter));
   chk('and the page still does not scroll sideways', mobAfter.sideways === false);
 
   if (SHOTS) {
