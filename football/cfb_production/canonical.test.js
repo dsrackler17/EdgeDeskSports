@@ -278,7 +278,11 @@ const AS_OF = '2026-09-28T12:00:00.000Z';
 {
   const kick = Date.parse(base.kickoff);
   const now = new Date(kick - 30 * 3600000).toISOString();
-  const r2 = Object.assign({}, cur.rows.find((r) => r.priced !== false && r.game_id !== base.game_id), { kickoff: base.kickoff });
+  /* Both sides of the chaos slate come from the goldens. r2 used to be taken
+     from the live football/cfb_v2/current.json, so every CFB build rewrote it
+     and the section passed or failed on whichever row happened to sit first
+     that day — a frozen fixture paired with a regenerated artifact. */
+  const r2 = Object.assign({}, Object.values(G.rows).find((r) => r.priced !== false && r.game_id !== base.game_id), { kickoff: base.kickoff });
   const build = (rows, slate) => PR.build({ now, files: { 'football/cfb_v2/current.json': { model_version: 'edgedesk_cfb_v2.1.0', generated_at: now, rows },
     'football/fbs/slate.json': slate || { games: [] }, 'football/cfb_production/manifest.json': JSON.parse(read('football/cfb_production/manifest.json')) }, predictions: [], decisions: [] });
   const g = (rep, id) => rep.games.find((x) => x.game_id === String(id));
