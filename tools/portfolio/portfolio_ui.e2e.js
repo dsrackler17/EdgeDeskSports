@@ -159,7 +159,10 @@ const CSV = [
     chk('the form previews the payout and profit before saving ($100 at -110 wins $90.91)', /to win \$90\.91/.test(preview) && /payout \$190\.91/.test(preview) && /\+\$90\.91/.test(preview), preview);
     await shot(page, 'desktop-form');
     await page.click('.pfo-sheet [data-act="save"]');
-    await waitText(page, /\+\$90\.91/);
+    /* wait for the OVERVIEW to carry the figure, not the whole host: the form
+       sheet's own preview already reads +$90.91, so waiting on #pfoHost could
+       finish before the save landed and read the empty book */
+    await page.waitForFunction(() => { const b = document.querySelector('#pfoHost [data-r="body"]'); return !!b && /Total P&L/i.test(b.innerText) && /\+\$90\.91/.test(b.innerText); }, null, { timeout: 15000 });
     let t = await text(page);
     chk('the overview answers first: +$90.91', /Total P&L/i.test(t) && /\+\$90\.91/.test(t), t.slice(0, 300));
 
