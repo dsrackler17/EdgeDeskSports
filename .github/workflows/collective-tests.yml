@@ -765,6 +765,19 @@ jobs:
       - name: The settlement in the database is the same grader, and rebuilds idempotently
         run: node tools/collective/football_grading_sql.test.js
 
+      # The NFL model's two creator-facing SQL tools, run for real. The
+      # exporter's output is handed to the uploader's OWN parser, pulled out
+      # of collective/index.html, because the two files never reference each
+      # other and the CSV between them is the only place they have to agree:
+      # a pick string the exporter writes happily and the uploader refuses
+      # produces an empty board and no error anywhere.
+      - name: model_to_csv.sql round-trips through the uploader's parser
+        run: node tools/collective/model_to_csv_sql.test.js
+      # The preflight has to survive a database missing the very tables it is
+      # checking for, because that is precisely when a creator runs it.
+      - name: nfl_preflight.sql answers on every database shape
+        run: node tools/collective/nfl_preflight_sql.test.js
+
       # The deployed edge function, imported under Node's native type stripping
       # with a Deno shim and a mocked network: old callers, the additive
       # presentation contract, and the deterministic card surviving AI failure.
