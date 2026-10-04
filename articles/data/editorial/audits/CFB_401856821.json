@@ -4,7 +4,7 @@
   "game_id": "401856821",
   "sport": "CFB",
   "snapshot_id": "snap_cebfd823a019cec1",
-  "audited_at": "2026-10-04T03:20:47.467Z",
+  "audited_at": "2026-10-04T05:10:28.750Z",
   "theses": [
     {
       "schema": "edgedesk_thesis_v1",
@@ -440,7 +440,7 @@
     "game_id": "401856821",
     "sport": "CFB",
     "snapshot_id": "snap_cebfd823a019cec1",
-    "graded_at": "2026-10-04T03:20:47.467Z",
+    "graded_at": "2026-10-04T05:10:28.750Z",
     "final": {
       "home_team": "Colorado Buffaloes",
       "away_team": "Texas Tech Red Raiders",
@@ -538,6 +538,12 @@
         "severity": "medium",
         "label": "A 22-point margin",
         "text": "Once a game is this far apart both teams stop playing the game they were rated on — the leader runs clock, the trailer throws — so late-game rates describe the situation rather than either team."
+      },
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "1 non-offensive or return score",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
       }
     ],
     "verdict": {
@@ -569,7 +575,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-04T03:20:47.467Z"
+      "created_at": "2026-10-04T05:10:28.750Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -593,7 +599,7 @@
       "suggested_investigation": "Was the play count or the points per drive the miss? Both are in this game’s result record.",
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-04T03:20:47.467Z"
+      "created_at": "2026-10-04T05:10:28.750Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -617,7 +623,7 @@
       "suggested_investigation": null,
       "bet_result": "WIN",
       "process_grade": "UNTESTED",
-      "created_at": "2026-10-04T03:20:47.467Z"
+      "created_at": "2026-10-04T05:10:28.750Z"
     }
   ]
 }

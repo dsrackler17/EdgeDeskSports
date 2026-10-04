@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-04T04:09:08.277Z",
- "board_generated_at": "2026-10-04T04:09:07.398Z",
+ "generated_at": "2026-10-04T05:07:40.403Z",
+ "board_generated_at": "2026-10-04T05:07:39.172Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -74,6 +74,72 @@
    "requirements": null,
    "consistent": true,
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856718",
+   "game": "Ole Miss @ Vanderbilt",
+   "kickoff": "2026-10-10T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Vanderbilt -0.8",
+   "market": "Ole Miss -10.5",
+   "books": 1,
+   "gap": 11.31,
+   "gap_class": "MAJOR",
+   "favorite_flip": true,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T19:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (FirstBank Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 0.4 rating pts (limit 10)"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Vanderbilt: Jared Curtis (previous game) · PASS: Ole Miss: Trinidad Chambliss (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Vanderbilt: availability sources checked, nothing filed · PASS: Ole Miss: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "FAIL",
+     "detail": "FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 9.9"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
   },
   {
    "game_id": "401856716",
