@@ -48,7 +48,8 @@ permissions:
 jobs:
   gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # the gate waits out a short database outage (tools/ufc/live_gate.js GATE_DB)
+    timeout-minutes: 12
     concurrency:
       group: ufc-live-gate
       cancel-in-progress: false
