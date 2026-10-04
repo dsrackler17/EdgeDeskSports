@@ -1,6 +1,42 @@
--- portfolio -- part 2 of 8.
+-- portfolio -- part 2 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+create or replace function public.platform_accounts_guard() returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    if auth.uid() is not null then new.user_id := auth.uid(); end if;
+    if new.connection_type = 'CSV' and new.status = 'MANUAL' then new.status := 'IMPORT_ONLY'; end if;
+    new.created_at := now();
+  else
+    new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at;
+    new.platform := old.platform; new.platform_type := old.platform_type;
+    if auth.uid() is not null then
+      new.connection_type := old.connection_type; new.ingestion_method := old.ingestion_method; new.connection_tier := old.connection_tier;
+      new.external_account_id := old.external_account_id; new.status := old.status;
+      new.last_sync_at := old.last_sync_at; new.last_success_at := old.last_success_at; new.last_error := old.last_error;
+      new.sync_cursor := old.sync_cursor; new.metadata := old.metadata; new.history_start_at := old.history_start_at;
+    end if;
+  end if;
+  /* how the data arrives follows from the connection, unless a connector
+     names a finer method (an API connection by key, by public wallet, or by
+     an authorized partner) */
+  if auth.uid() is not null or new.ingestion_method is null
+     or (tg_op = 'UPDATE' and new.connection_type is distinct from old.connection_type and new.ingestion_method is not distinct from old.ingestion_method) then
+    new.ingestion_method := case new.connection_type when 'MANUAL' then 'MANUAL' when 'CSV' then 'FILE_IMPORT'
+      when 'OAUTH' then 'OAUTH' when 'AGGREGATOR' then 'AUTHORIZED_API'
+      else case when new.ingestion_method in ('API_KEY', 'PUBLIC_WALLET', 'AUTHORIZED_API') then new.ingestion_method else 'API_KEY' end end;
+  end if;
+  new.connection_tier := case new.ingestion_method when 'OAUTH' then 1 when 'AUTHORIZED_API' then 1 when 'API_KEY' then 2
+    when 'PUBLIC_WALLET' then 2 when 'FILE_IMPORT' then 3 else 4 end;
+  new.platform_label := btrim(new.platform_label);
+  new.updated_at := now();
+  return new;
+end $$;
+drop trigger if exists platform_accounts_guard_trg on public.platform_accounts;
+create trigger platform_accounts_guard_trg before insert or update on public.platform_accounts
+  for each row execute function public.platform_accounts_guard();
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. IMPORTS (before positions, which name the import that created them)
@@ -174,6 +210,22 @@ create table if not exists public.portfolio_positions (
     and (model_probability is null or (model_probability > 0 and model_probability < 1)) and coalesce(length(edge_ref_id), 0) <= 120),
   constraint portfolio_positions_occurrence check (dedupe_occurrence between 1 and 50)
 );
+-- A bonus bet (site credit) risks no cash and, as books pay them, returns
+-- only the winnings: its cost basis is 0, a win pays the profit, a loss or a
+-- void returns nothing. Everything is in one currency per position (USD
+-- today); amounts are never converted.
+alter table public.portfolio_positions add column if not exists stake_type text not null default 'CASH';
+alter table public.portfolio_positions add column if not exists currency text not null default 'USD';
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_positions_stake_type') then
+    alter table public.portfolio_positions add constraint portfolio_positions_stake_type
+      check (stake_type in ('CASH', 'BONUS') and (stake_type = 'CASH' or platform_type = 'SPORTSBOOK'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_positions_currency') then
+    alter table public.portfolio_positions add constraint portfolio_positions_currency check (currency ~ '^[A-Z]{3}$');
+  end if;
+end $$;
+
 comment on table public.portfolio_positions is
   'One normalized row per wager or prediction-market position. Every money column after the inputs is derived by trigger (portfolio_positions_derive); a prediction-market position''s contracts, cost and fees come from its rows in portfolio_transactions.';
 comment on column public.portfolio_positions.reported_payout is
@@ -190,59 +242,3 @@ create unique index if not exists portfolio_positions_external_once
   on public.portfolio_positions (user_id, platform, external_position_id) where external_position_id is not null;
 create unique index if not exists portfolio_positions_fingerprint_once
   on public.portfolio_positions (user_id, fingerprint, dedupe_occurrence) where external_position_id is null and fingerprint is not null;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- 5. TRANSACTIONS / FILLS
--- ─────────────────────────────────────────────────────────────────────────────
-create table if not exists public.portfolio_transactions (
-  id                      uuid        primary key default gen_random_uuid(),
-  user_id                 uuid        not null default auth.uid() references auth.users(id) on delete cascade,
-  platform_account_id     uuid        null,
-  position_id             uuid        null,
-  platform                text        not null,
-  external_transaction_id text        null,
-  transaction_type        text        not null,
-  side                    text        null,
-  quantity                numeric     null,
-  price                   numeric     null,
-  amount                  numeric     null,
-  fee                     numeric     not null default 0,
-  executed_at             timestamptz not null default now(),
-  source                  text        not null default 'MANUAL',
-  import_id               uuid        null,
-  notes                   text        null,
-  raw_payload             jsonb       null,
-  fingerprint             text        null,
-  dedupe_occurrence       int         not null default 1,
-  created_at              timestamptz not null default now(),
-  updated_at              timestamptz not null default now(),
-  constraint portfolio_transactions_id_owner unique (id, user_id),
-  constraint portfolio_transactions_position_fk foreign key (position_id, user_id)
-    references public.portfolio_positions (id, user_id) on delete cascade,
-  constraint portfolio_transactions_account_fk foreign key (platform_account_id, user_id)
-    references public.platform_accounts (id, user_id) on delete set null (platform_account_id),
-  constraint portfolio_transactions_import_fk foreign key (import_id, user_id)
-    references public.portfolio_imports (id, user_id) on delete set null (import_id),
-  constraint portfolio_transactions_platform_key check (platform ~ '^[a-z0-9][a-z0-9_]{1,47}$'),
-  constraint portfolio_transactions_type check (transaction_type in ('BET', 'BUY', 'SELL', 'FILL', 'CASHOUT', 'SETTLEMENT',
-    'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE')),
-  constraint portfolio_transactions_side check (side is null or side in ('BUY', 'SELL')),
-  constraint portfolio_transactions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK')),
-  -- a trade is a quantity of contracts at a price between $0 and $1
-  constraint portfolio_transactions_trade check (transaction_type not in ('BUY', 'SELL', 'FILL')
-    or (position_id is not null and quantity > 0 and quantity <= 1000000000 and quantity = round(quantity, 6)
-        and price between 0 and 1 and price = round(price, 6)
-        and (transaction_type <> 'FILL' or side is not null)
-        and (transaction_type <> 'BUY' or side = 'BUY') and (transaction_type <> 'SELL' or side = 'SELL'))),
-  constraint portfolio_transactions_cash check (transaction_type not in ('DEPOSIT', 'WITHDRAWAL') or (position_id is null and amount > 0)),
-  constraint portfolio_transactions_money check ((amount is null or (amount >= 0 and amount <= 1000000000 and amount = round(amount, 6)))
-    and fee >= 0 and fee <= 10000000 and fee = round(fee, 6)),
-  constraint portfolio_transactions_text check (coalesce(length(external_transaction_id), 0) <= 200 and coalesce(length(notes), 0) <= 1000
-    and (raw_payload is null or pg_column_size(raw_payload) <= 32768)),
-  constraint portfolio_transactions_occurrence check (dedupe_occurrence between 1 and 50)
-);
-comment on table public.portfolio_transactions is
-  'Fills, sells, settlements and cash moves. BUY / SELL / FILL rows drive a prediction-market position''s contracts, cost and fees; a position is rebuilt from them on every change.';
-create index if not exists portfolio_transactions_position on public.portfolio_transactions (position_id, executed_at);
-create index if not exists portfolio_transactions_user on public.portfolio_transactions (user_id, executed_at desc);
-create index if not exists portfolio_transactions_fp_lookup on public.portfolio_transactions (user_id, fingerprint);

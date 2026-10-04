@@ -1,13 +1,6 @@
--- portfolio -- part 5 of 8.
+-- portfolio -- part 6 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
-
--- a row goes in when it is NEW and the reader did not skip it, or when the
--- reader explicitly chose to import it; an INVALID row never goes in
-create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
-returns boolean language sql immutable as $$
-  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
-$$;
 
 -- Classifies every row not yet imported, in a handful of set-based statements
 -- (a 5,000-row file in well under a second): the server's own checks, the
