@@ -1,44 +1,6 @@
--- portfolio -- part 4 of 8.
+-- portfolio -- part 5 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
-
--- Checked at COMMIT, so a position and its first fill can arrive in one
--- transaction in either order: a contract position has at least one buy and
--- never more contracts sold than bought.
-create or replace function public.portfolio_positions_check_fills() returns trigger
-language plpgsql as $$
-declare b numeric; s numeric;
-begin
-  if new.platform_type <> 'PREDICTION_MARKET' then return null; end if;
-  if not exists (select 1 from public.portfolio_positions where id = new.id) then return null; end if;
-  select coalesce(sum(quantity) filter (where transaction_type = 'BUY' or (transaction_type = 'FILL' and side = 'BUY')), 0),
-         coalesce(sum(quantity) filter (where transaction_type = 'SELL' or (transaction_type = 'FILL' and side = 'SELL')), 0)
-    into b, s from public.portfolio_transactions where position_id = new.id;
-  if b <= 0 then
-    raise exception 'portfolio: a prediction-market position needs at least one buy' using errcode = '23514';
-  end if;
-  if s > b then
-    raise exception 'portfolio: more contracts sold than bought' using errcode = '23514';
-  end if;
-  return null;
-end $$;
-drop trigger if exists portfolio_positions_fills_trg on public.portfolio_positions;
-create constraint trigger portfolio_positions_fills_trg after insert or update on public.portfolio_positions
-  deferrable initially deferred for each row execute function public.portfolio_positions_check_fills();
-
--- a renamed market re-fingerprints its fills
-create or replace function public.portfolio_positions_after_update() returns trigger
-language plpgsql as $$
-begin
-  if new.platform_type = 'PREDICTION_MARKET'
-     and (new.platform, new.event_name, new.market_name, new.side) is distinct from (old.platform, old.event_name, old.market_name, old.side) then
-    update public.portfolio_transactions set updated_at = now() where position_id = new.id;
-  end if;
-  return null;
-end $$;
-drop trigger if exists portfolio_positions_after_update_trg on public.portfolio_positions;
-create trigger portfolio_positions_after_update_trg after update on public.portfolio_positions
-  for each row execute function public.portfolio_positions_after_update();
 
 create or replace function public.portfolio_transactions_prepare() returns trigger
 language plpgsql as $$
@@ -277,3 +239,10 @@ begin
   end if;
   return out;
 end $$;
+
+-- a row goes in when it is NEW and the reader did not skip it, or when the
+-- reader explicitly chose to import it; an INVALID row never goes in
+create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
+returns boolean language sql immutable as $$
+  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
+$$;

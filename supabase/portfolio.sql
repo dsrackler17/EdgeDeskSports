@@ -242,6 +242,35 @@ create table if not exists public.platform_accounts (
   constraint platform_accounts_error check (last_error is null or length(last_error) <= 500),
   constraint platform_accounts_cursor check (sync_cursor is null or length(sync_cursor) <= 2000)
 );
+-- How an account's data arrives, apart from what kind of platform it is
+-- (platform_type is the SOURCE TYPE: SPORTSBOOK or PREDICTION_MARKET):
+--   ingestion_method  MANUAL · FILE_IMPORT · API_KEY · PUBLIC_WALLET · OAUTH · AUTHORIZED_API
+--   connection_tier   1 automatic authorization (OAUTH, AUTHORIZED_API) ·
+--                     2 assisted automatic (API_KEY, PUBLIC_WALLET) ·
+--                     3 easy import (FILE_IMPORT) · 4 manual (MANUAL)
+-- An account can be upgraded in place (QUICK IMPORT → AUTOMATIC) by the
+-- service role when a real integration exists: its history stays where it is.
+alter table public.platform_accounts add column if not exists ingestion_method text null;
+alter table public.platform_accounts add column if not exists connection_tier int null;
+alter table public.platform_accounts add column if not exists history_start_at timestamptz null;
+update public.platform_accounts set ingestion_method = case connection_type when 'MANUAL' then 'MANUAL' when 'CSV' then 'FILE_IMPORT'
+    when 'API' then 'API_KEY' when 'OAUTH' then 'OAUTH' else 'AUTHORIZED_API' end
+ where ingestion_method is null;
+update public.platform_accounts set connection_tier = case ingestion_method when 'OAUTH' then 1 when 'AUTHORIZED_API' then 1
+    when 'API_KEY' then 2 when 'PUBLIC_WALLET' then 2 when 'FILE_IMPORT' then 3 else 4 end
+ where connection_tier is null;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'platform_accounts_ingestion') then
+    alter table public.platform_accounts add constraint platform_accounts_ingestion check (
+      (connection_type = 'MANUAL' and ingestion_method = 'MANUAL' and connection_tier = 4)
+      or (connection_type = 'CSV' and ingestion_method = 'FILE_IMPORT' and connection_tier = 3)
+      or (connection_type = 'API' and ingestion_method in ('API_KEY', 'PUBLIC_WALLET') and connection_tier = 2)
+      or (connection_type = 'API' and ingestion_method = 'AUTHORIZED_API' and connection_tier = 1)
+      or (connection_type = 'OAUTH' and ingestion_method = 'OAUTH' and connection_tier = 1)
+      or (connection_type = 'AGGREGATOR' and ingestion_method = 'AUTHORIZED_API' and connection_tier = 1));
+  end if;
+end $$;
+
 comment on table public.platform_accounts is
   'The platforms a reader tracks and how. MANUAL and CSV accounts are created by readers; API, OAUTH and AGGREGATOR accounts only by the service role after a real connection. No credential is ever stored here.';
 create unique index if not exists platform_accounts_one_per_method
@@ -256,13 +285,25 @@ begin
     new.created_at := now();
   else
     new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at;
-    new.platform := old.platform; new.platform_type := old.platform_type; new.connection_type := old.connection_type;
+    new.platform := old.platform; new.platform_type := old.platform_type;
     if auth.uid() is not null then
+      new.connection_type := old.connection_type; new.ingestion_method := old.ingestion_method; new.connection_tier := old.connection_tier;
       new.external_account_id := old.external_account_id; new.status := old.status;
       new.last_sync_at := old.last_sync_at; new.last_success_at := old.last_success_at; new.last_error := old.last_error;
-      new.sync_cursor := old.sync_cursor; new.metadata := old.metadata;
+      new.sync_cursor := old.sync_cursor; new.metadata := old.metadata; new.history_start_at := old.history_start_at;
     end if;
   end if;
+  /* how the data arrives follows from the connection, unless a connector
+     names a finer method (an API connection by key, by public wallet, or by
+     an authorized partner) */
+  if auth.uid() is not null or new.ingestion_method is null
+     or (tg_op = 'UPDATE' and new.connection_type is distinct from old.connection_type and new.ingestion_method is not distinct from old.ingestion_method) then
+    new.ingestion_method := case new.connection_type when 'MANUAL' then 'MANUAL' when 'CSV' then 'FILE_IMPORT'
+      when 'OAUTH' then 'OAUTH' when 'AGGREGATOR' then 'AUTHORIZED_API'
+      else case when new.ingestion_method in ('API_KEY', 'PUBLIC_WALLET', 'AUTHORIZED_API') then new.ingestion_method else 'API_KEY' end end;
+  end if;
+  new.connection_tier := case new.ingestion_method when 'OAUTH' then 1 when 'AUTHORIZED_API' then 1 when 'API_KEY' then 2
+    when 'PUBLIC_WALLET' then 2 when 'FILE_IMPORT' then 3 else 4 end;
   new.platform_label := btrim(new.platform_label);
   new.updated_at := now();
   return new;
@@ -443,6 +484,22 @@ create table if not exists public.portfolio_positions (
     and (model_probability is null or (model_probability > 0 and model_probability < 1)) and coalesce(length(edge_ref_id), 0) <= 120),
   constraint portfolio_positions_occurrence check (dedupe_occurrence between 1 and 50)
 );
+-- A bonus bet (site credit) risks no cash and, as books pay them, returns
+-- only the winnings: its cost basis is 0, a win pays the profit, a loss or a
+-- void returns nothing. Everything is in one currency per position (USD
+-- today); amounts are never converted.
+alter table public.portfolio_positions add column if not exists stake_type text not null default 'CASH';
+alter table public.portfolio_positions add column if not exists currency text not null default 'USD';
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_positions_stake_type') then
+    alter table public.portfolio_positions add constraint portfolio_positions_stake_type
+      check (stake_type in ('CASH', 'BONUS') and (stake_type = 'CASH' or platform_type = 'SPORTSBOOK'));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_positions_currency') then
+    alter table public.portfolio_positions add constraint portfolio_positions_currency check (currency ~ '^[A-Z]{3}$');
+  end if;
+end $$;
+
 comment on table public.portfolio_positions is
   'One normalized row per wager or prediction-market position. Every money column after the inputs is derived by trigger (portfolio_positions_derive); a prediction-market position''s contracts, cost and fees come from its rows in portfolio_transactions.';
 comment on column public.portfolio_positions.reported_payout is
@@ -494,7 +551,7 @@ create table if not exists public.portfolio_transactions (
     references public.portfolio_imports (id, user_id) on delete set null (import_id),
   constraint portfolio_transactions_platform_key check (platform ~ '^[a-z0-9][a-z0-9_]{1,47}$'),
   constraint portfolio_transactions_type check (transaction_type in ('BET', 'BUY', 'SELL', 'FILL', 'CASHOUT', 'SETTLEMENT',
-    'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE')),
+    'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE', 'ADJUSTMENT')),
   constraint portfolio_transactions_side check (side is null or side in ('BUY', 'SELL')),
   constraint portfolio_transactions_source check (source in ('MANUAL', 'CSV', 'SYNC', 'EDGEDESK')),
   -- a trade is a quantity of contracts at a price between $0 and $1
@@ -510,6 +567,17 @@ create table if not exists public.portfolio_transactions (
     and (raw_payload is null or pg_column_size(raw_payload) <= 32768)),
   constraint portfolio_transactions_occurrence check (dedupe_occurrence between 1 and 50)
 );
+-- An existing database keeps its original type check; widen it to the
+-- current list (adds ADJUSTMENT: a correction the platform itself made).
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'portfolio_transactions_type'
+              and pg_get_constraintdef(oid) not like '%ADJUSTMENT%') then
+    alter table public.portfolio_transactions drop constraint portfolio_transactions_type;
+    alter table public.portfolio_transactions add constraint portfolio_transactions_type check (transaction_type in ('BET', 'BUY', 'SELL',
+      'FILL', 'CASHOUT', 'SETTLEMENT', 'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE', 'ADJUSTMENT'));
+  end if;
+end $$;
+
 comment on table public.portfolio_transactions is
   'Fills, sells, settlements and cash moves. BUY / SELL / FILL rows drive a prediction-market position''s contracts, cost and fees; a position is rebuilt from them on every change.';
 create index if not exists portfolio_transactions_position on public.portfolio_transactions (position_id, executed_at);
@@ -678,20 +746,21 @@ begin
       new.odds_decimal := public.portfolio_american_to_decimal(new.odds_american);
     end if;
     new.potential_profit := public.portfolio_wager_profit(new.stake, new.odds_american, new.odds_decimal);
-    new.potential_payout := trim_scale(new.stake + new.potential_profit);
-    new.cost_basis := new.stake;
+    /* a bonus bet risks no cash and pays only its winnings */
+    new.potential_payout := case when new.stake_type = 'BONUS' then new.potential_profit else trim_scale(new.stake + new.potential_profit) end;
+    new.cost_basis := case when new.stake_type = 'BONUS' then 0 else new.stake end;
     if new.status = 'OPEN' then
-      new.open_cost_basis := new.stake; new.gross_payout := null; new.profit_loss := null; new.realized_profit_loss := null;
+      new.open_cost_basis := new.cost_basis; new.gross_payout := null; new.profit_loss := null; new.realized_profit_loss := null;
       new.result := null; new.settled_at := null;
     else
       new.gross_payout := case new.status
         when 'WON' then coalesce(new.reported_payout, new.potential_payout)
         when 'LOST' then coalesce(new.reported_payout, 0)
-        when 'PUSH' then coalesce(new.reported_payout, new.stake)
-        when 'VOID' then coalesce(new.reported_payout, new.stake)
+        when 'PUSH' then coalesce(new.reported_payout, new.cost_basis)
+        when 'VOID' then coalesce(new.reported_payout, new.cost_basis)
         else new.reported_payout end;
       new.gross_payout := trim_scale(new.gross_payout);
-      new.profit_loss := trim_scale(new.gross_payout - new.stake - new.fees);
+      new.profit_loss := trim_scale(new.gross_payout - new.cost_basis - new.fees);
       new.realized_profit_loss := new.profit_loss;
       new.open_cost_basis := 0;
       new.result := case new.status when 'WON' then 'WIN' when 'LOST' then 'LOSS' when 'PUSH' then 'PUSH' when 'VOID' then 'VOID'
@@ -701,7 +770,7 @@ begin
     end if;
   else
     -- ── a contract position: rebuilt from its fills, average-cost method ──
-    new.odds_american := null; new.odds_decimal := null; new.stake := null;
+    new.odds_american := null; new.odds_decimal := null; new.stake := null; new.stake_type := 'CASH';
     select coalesce(sum(t.quantity) filter (where t.transaction_type = 'BUY' or (t.transaction_type = 'FILL' and t.side = 'BUY')), 0),
            coalesce(sum(t.amount)   filter (where t.transaction_type = 'BUY' or (t.transaction_type = 'FILL' and t.side = 'BUY')), 0),
            coalesce(sum(t.quantity) filter (where t.transaction_type = 'SELL' or (t.transaction_type = 'FILL' and t.side = 'SELL')), 0),

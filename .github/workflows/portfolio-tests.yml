@@ -25,7 +25,9 @@ on:
       - 'tools/games/sql/supabase_shim.sql'
       - 'tools/sql/split_sql.js'
       - 'supabase/portfolio.sql'
+      - 'supabase/portfolio_journal.sql'
       - 'supabase/parts/portfolio.part*.sql'
+      - 'supabase/parts/portfolio_journal.part*.sql'
       - 'app.html'
       - 'package.json'
       - '.github/workflows/portfolio-tests.yml'
@@ -35,6 +37,7 @@ on:
       - 'lib/edgedesk_portfolio*.js'
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
+      - 'supabase/portfolio_journal.sql'
   workflow_dispatch:
 
 permissions:
@@ -57,6 +60,8 @@ jobs:
         run: node tools/portfolio/portfolio_calc.test.js
       - name: The CSV importer and the connector contract
         run: node tools/portfolio/portfolio_import.test.js
+      - name: The Decision Grade and the Process Coach (statistics, evidence levels, banned words)
+        run: node tools/portfolio/process.test.js
       - name: The page in Node, and its wiring in app.html
         run: node tools/portfolio/portfolio_ui.test.js
       - name: The app's navigation still holds (seven seats, More, deep links)
@@ -75,6 +80,10 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/portfolio_sql.test.js
+      - name: supabase/portfolio_journal.sql — the journal, the grade, the calendar and the cache, as real readers
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/journal_sql.test.js
 
   browser:
     runs-on: ubuntu-latest
