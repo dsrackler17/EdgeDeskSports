@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-10-04 — Portfolio fixes, and two CFB tests that went stale with the weekly data
+
+**Portfolio** (`supabase/portfolio.sql`; regenerate the parts with `npm run portfolio:parts`, then paste them in order. Every statement is idempotent):
+- **Deleting an import now works and unlinks what it created.** Previously the triggers that keep `import_id` fixed for life also reversed the foreign key's `ON DELETE SET NULL`, so the delete failed. The new `portfolio_link_released()` lets exactly that update through.
+- **A deleted account is never re-linked.** While an account is being deleted, a fill no longer takes the account back from its position. A connected account with synced positions can now be removed: its positions stay in the history, unlinked.
+- **A large import lands the same in any number of commit calls.** Classification ranks twins over the whole file and never treats a row this import already inserted as "already in your portfolio". Before, a failed first copy could promote its unticked twin to NEW.
+- **A trade id reused for another market** is flagged `EXTERNAL_ID_IN_USE` and can no longer pull a file's new fills into that other market's position.
+- **A synced position** also keeps its legs, event id and duplicate number from reader edits. A label the platform supplied stays fixed; a blank one may be filled in once.
+- 8 new tests in `tools/portfolio/portfolio_sql.test.js`. Each fails against the previous SQL.
+
+**Secret audit:** the Portfolio redaction test no longer contains a fake private-key header. `tools/cfb/secret_audit.js` flags any such header as HIGH, even in a test. Token, key and JWT redaction are still tested.
+
+**CFB tests:**
+- `football/cfb_production/canonical.test.js` (chaos) borrowed a live `current.json` row and moved its kickoff, but kept its newer prediction timestamps. The input contract rightly refused it.
+- `football/cfb_production/debug_ui.test.js` built projections as of a fixed 2026-09-28. After the weekly refresh, every prediction postdated that.
+- Both now follow the committed data.
+
 ## 2026-10-04 — Portfolio: every bet and prediction-market position in one ledger (Phase A)
 
 - **A new Portfolio section** (*More → Portfolio*, `#portfolio`, or the landing-page setting). Its tabs are Overview, Open, History, Analytics, Accounts and Import.

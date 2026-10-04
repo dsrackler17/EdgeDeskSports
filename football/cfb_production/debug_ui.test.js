@@ -48,7 +48,7 @@ const E = ctx.window.EDDEBUG;
 chk('EDDEBUG exposes render, listView, gameView, stageBody', E && ['render', 'listView', 'gameView', 'stageBody'].every((k) => typeof E[k] === 'function'));
 
 /* ---- the real files -------------------------------------------------------- */
-const NOW = '2026-09-28T12:00:00.000Z';
+
 const P = PR.build({ now: NOW });
 const T = JSON.parse(JSON.stringify(P.traces));
 const Pj = JSON.parse(JSON.stringify(P));
