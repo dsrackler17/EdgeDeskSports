@@ -528,6 +528,47 @@
       })(),
       'a model that likes the home team by 10 on a 3-point line must show a '
       + 'higher cover probability than one that agrees with the line');
+    /* Re-centring must not move the margins (2026-10-04). A college game
+       cannot end level, so no table row holds mass at margin 0; a whole-point
+       shift carried that hole onto the shift (UConn @ Temple: fair +6.2, row
+       3.0 mean 2.9, shift +3, so Temple -3 had no push and a tie had 6%) and
+       carried the 3 and 7 spikes onto 6 and 10. */
+    chk('no table row holds mass at margin 0 (a college game cannot end level)',
+      (function () {
+        var t = P.distributions.margin_pmf_by_spread, k;
+        for (k in t) if (t.hasOwnProperty(k) && t[k]['0'] > 0) return false;
+        return true;
+      })());
+    chk('re-centring keeps a tie at zero and a push on every whole number near the line',
+      (function () {
+        /* inside the table's range: past it the engine falls back to the
+           pooled residual, which the terminal never prices from (it reads
+           the table's edge row: lib/edgedesk_quote_ev.js cfbPmfRow) */
+        var sb = P.volatility.sigma_base, rng = P.distributions.pmf_spread_range, l, f, k, c;
+        for (l = -44; l <= 44; l += 4) for (f = l - 10; f <= l + 10; f += 2.3) {
+          for (k = Math.max(rng[0], Math.round(l) - 7); k <= Math.min(rng[1], Math.round(l) + 7); k++) {
+            c = E.dist.coverProbSpread(f, k, 14.9, sb);
+            if (!c || (k === 0 ? c.push !== 0 : !(c.push > 0))) return false;
+          }
+        }
+        return true;
+      })(),
+      'a whole-number line with no push is refused downstream as corrupted odds');
+    chk('UConn @ Temple (fair +6.2 on a 3-point line): the push sits on 3, not on a tie',
+      (function () {
+        var sb = P.volatility.sigma_base, c = E.dist.coverProbSpread(6.2, 3, 14.9, sb);
+        return c && c.push > 0.05 && E.dist.coverProbSpread(6.2, 0, 14.9, sb).push === 0;
+      })());
+    chk('a key-number line out-pushes its neighbours wherever the projection sits',
+      (function () {
+        /* the shift moved the 3 spike to 3 + shift: at fair +6.2 the push at 3
+           was 0 and the push at 6 was the 3 spike */
+        var sb = P.volatility.sigma_base, f, p = function (k) { return E.dist.coverProbSpread(f, k, 14.9, sb).push; };
+        for (f = -10; f <= 14; f += 0.5) {
+          if (!(p(3) > p(2) && p(3) > p(4) && p(-3) > p(-2) && p(-3) > p(-4) && p(7) > p(6) && p(7) > p(8))) return false;
+        }
+        return true;
+      })());
 
     /* ================================================================
        Stale and thin inputs have to say so.

@@ -32,7 +32,19 @@
    Usage
      node football/cfb_ev/dataset.js --replay DIR/out/disagreement_replay.jsonl \
           --data DIR            # DIR holds betting/cfb_line_odds.csv.gz and sched/
+     node football/cfb_ev/dataset.js --rederive "reason"
+                                # recompute the probability columns of the
+                                # COMMITTED rows from their own recorded inputs
    Writes football/cfb_ev/data/cfb_ev_calibration_rows_v1.csv.gz and its manifest.
+
+   --rederive is for a change to the champion's DISTRIBUTION alone (the
+   2026-10-04 re-centring, football/cfb_p4/engine.js cfbRecentre). Every row
+   already records what the curve is built from — fair_margin, sigma,
+   cond_margin, market_home_line — so p_win / p_push / p_loss / p_cover are
+   recomputed through the same production path, and nothing else moves: not a
+   fair margin, a sigma, a market, an outcome or a row. It needs no CFBD cache.
+   The inputs are stored to 3 decimals; through the pre-change code they
+   reproduce the committed probabilities to 1e-5.
    The raw inputs are public (sportsdataverse/cfbfastR-data); the replay is
    reproduced with:
      node football/cfb_p4/research/disagreement_eff.js --data DIR 2014 … 2025
@@ -193,5 +205,41 @@ function main() {
   console.log(JSON.stringify({ rows: rows.length, counts: counts, dropped: dropped }, null, 1));
 }
 
-if (require.main === module) main();
+function splitCsvLine(l) {
+  const out = []; let cell = '', q = false;
+  for (let i = 0; i < l.length; i++) { const ch = l[i]; if (q) { if (ch === '"' && l[i + 1] === '"') { cell += '"'; i++; } else if (ch === '"') q = false; else cell += ch; } else if (ch === '"') q = true; else if (ch === ',') { out.push(cell); cell = ''; } else cell += ch; }
+  out.push(cell); return out;
+}
+function rederive(reason) {
+  if (!reason || reason === true) { console.error('--rederive "reason"'); process.exit(2); }
+  const before = zlib.gunzipSync(fs.readFileSync(OUT)).toString('utf8');
+  const lines = before.split('\n').filter(Boolean), head = splitCsvLine(lines[0]), ix = {};
+  head.forEach((h, j) => { ix[h] = j; });
+  const cell = (v) => { if (v == null) return ''; const t = String(v); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  let moved = 0, worst = 0;
+  const body = lines.slice(1).map((l) => {
+    const c = splitCsvLine(l);
+    const fair = num(c[ix.fair_margin]), sigma = num(c[ix.sigma]), cond = num(c[ix.cond_margin]), line = num(c[ix.market_home_line]);
+    const cv = curveFor(fair, sigma, cond), p = cv.curve ? RD.sideProb(cv.curve, 'home', line) : null;
+    if (!p) throw new Error('no curve for game ' + c[ix.game_id] + ' (' + c[ix.checkpoint] + ')');
+    const was = num(c[ix.p_cover]);
+    c[ix.p_win] = r(p.win); c[ix.p_push] = r(p.push); c[ix.p_loss] = r(p.loss); c[ix.p_cover] = r(p.cover);
+    c[ix.pmf_conditioned] = cv.conditioned ? 1 : 0;
+    if (was !== c[ix.p_cover]) moved++;
+    worst = Math.max(worst, Math.abs(was - c[ix.p_cover]));
+    return c.map(cell).join(',');
+  });
+  const csv = head.join(',') + '\n' + body.join('\n') + '\n';
+  fs.writeFileSync(OUT, zlib.gzipSync(Buffer.from(csv, 'utf8'), { level: 9 }));
+  const man = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
+  man.rederived = (man.rederived || []).concat([{ at: new Date().toISOString(), reason: reason,
+    from_csv_sha256: man.csv_sha256, to_csv_sha256: sha(Buffer.from(csv, 'utf8')),
+    columns: ['p_win', 'p_push', 'p_loss', 'p_cover', 'pmf_conditioned'], unchanged: 'every row, fair margin, sigma, market and outcome',
+    rows: body.length, p_cover_changed: moved, max_abs_p_cover_change: r(worst) }]);
+  man.csv_sha256 = sha(Buffer.from(csv, 'utf8'));
+  fs.writeFileSync(MANIFEST, JSON.stringify(man, null, 1) + '\n');
+  console.log(JSON.stringify(man.rederived[man.rederived.length - 1], null, 1));
+}
+
+if (require.main === module) { if (process.argv.indexOf('--rederive') > 0) rederive(arg('rederive')); else main(); }
 module.exports = { curveFor };

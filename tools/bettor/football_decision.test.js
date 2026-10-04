@@ -668,6 +668,41 @@ chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH /
    the table, or the fair margin with no market: football/cfb_terminal/build.js
    v1Dist), so no game may be incoherent. */
 chk('real CFB: no replayed game has an incoherent curve (McNeese @ LSU reaches a decision)', cfbReal.filter((x) => x.incoherent).length === 0, cfbReal.filter((x) => x.incoherent).map((x) => x.o.game_id));
+/* THE "NO TIES" REGRESSION. A college game cannot end level, so every row of
+   the champion's margin table holds no mass at margin 0. The champion used to
+   re-centre a row by shifting it a whole number of points, and the hole moved
+   with it: on 2026-10-04 UConn @ Temple (fair +6.2, row 3.0 mean 2.9, shift +3)
+   put it on home margin +3 — DraftKings' Temple −3 — while a tie got 6% of the
+   mass, quote EV flagged INTEGER_PUSH_MISSING and the engine refused the price
+   as CORRUPTED ODDS. The row is now reweighted in place (football/cfb_p4/
+   engine.js cfbRecentre). Read off every STORED curve itself: no tie mass, and
+   a push on every whole-number margin within two touchdowns of the line. */
+const tieHoleOf = (c, at0) => {
+  if (!c || !Array.isArray(c.push)) return 'no curve';
+  const at = (k) => { const i = Math.round((k - c.lo) / c.step); return i >= 0 && i < c.push.length ? c.push[i] : null; };
+  if (at(0) !== null && at(0) > 0) return 'a tie carries ' + at(0);
+  for (let k = Math.round(at0) - 14; k <= Math.round(at0) + 14; k++) if (k !== 0 && at(k) !== null && !(at(k) > 0)) return 'no push at ' + k;
+  return null;
+};
+/* margins -6..+6 on half points: the shape a +4 shift left behind — mass on
+   every whole margin but +4, a tie at 0, nothing on a half */
+const holeMass = { '-6': 0.02, '-5': 0.02, '-4': 0.02, '-3': 0.03, '-2': 0.02, '-1': 0.02, 0: 0.06, 1: 0.02, 2: 0.02, 3: 0.05, 4: 0, 5: 0.02, 6: 0.02 };
+const curveOf = (m) => ({ lo: -6, step: 0.5, push: Array.from({ length: 25 }, (_, i) => (i % 2 ? 0 : m[-6 + i / 2])) });
+chk('the "no ties" reader catches the shifted hole, a lone tie and a lone hole, and passes a clean curve',
+  /tie/.test(tieHoleOf(curveOf(holeMass), 2))
+  && /tie/.test(tieHoleOf(curveOf(Object.assign({}, holeMass, { 4: 0.025 })), 2))
+  && /no push at 4/.test(tieHoleOf(curveOf(Object.assign({}, holeMass, { 0: 0 })), 2))
+  && tieHoleOf(curveOf(Object.assign({}, holeMass, { 0: 0, 4: 0.025 })), 2) === null);
+const tieHoles = Object.values(GAMES.games).filter((o) => o.read_inputs && o.read_inputs.curve && o.read_inputs.model && o.read_inputs.model.available)
+  .map((o) => { const ri = o.read_inputs, at0 = ri.curve.conditioned_on_market_margin != null ? ri.curve.conditioned_on_market_margin : ri.model.home_margin; return [o.game_id, tieHoleOf(ri.curve, at0)]; })
+  .filter((x) => x[1] !== null);
+chk('real CFB: no stored curve gives a tie any mass, and every whole-number margin within 14 of the line carries a push', tieHoles.length === 0, tieHoles);
+const pushless = [];
+Object.values(GAMES.games).forEach((o) => ['home', 'away'].forEach((s) => ((o.quote_ev && o.quote_ev[s] && o.quote_ev[s].quotes) || []).forEach((x) => {
+  if (Number.isInteger(x.line) && x.line !== 0 && typeof x.model_push_probability === 'number' && !(x.model_push_probability > 0)) pushless.push(o.game_id + ' ' + x.label);
+})));
+chk('real CFB: every priced whole-number quote on the board carries a push (no INTEGER_PUSH_MISSING from the champion)', pushless.length === 0, pushless);
+chk('real CFB: no replayed decision is refused for a missing push', cfbReal.every((x) => !(x.d.blockers || []).some((b) => /integer_push_missing/i.test(b.text || ''))), cfbReal.filter((x) => (x.d.blockers || []).some((b) => /integer_push_missing/i.test(b.text || ''))).map((x) => x.o.game_id));
 chk('real CFB: Syracuse @ UConn, flagged by the orientation invariant, gets no decision (left flagged, never priced)', (() => {
   const x = cfbReal.find((y) => y.o.game && y.o.game.home === 'UConn' && y.o.game.away === 'Syracuse');
   return !x || (x.orient && x.d.decision === 'NO_DECISION');

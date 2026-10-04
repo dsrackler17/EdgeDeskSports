@@ -256,6 +256,90 @@
     return out;
   }
 
+  /* RE-CENTRING A BORROWED ROW WITHOUT MOVING ITS MARGINS (2026-10-04).
+     A college game cannot end level, so every row of margin_pmf_by_spread
+     holds no mass at margin 0, and its spikes sit at the ABSOLUTE margins
+     games end on (3, 7, 10, 14). The row used to be re-centred by shifting
+     every entry a whole number of points, which carried the "no ties" hole
+     and the spikes with it: UConn @ Temple (fair +6.2, row 3.0 mean 2.9,
+     shift +3) put the hole on home margin +3, DraftKings' Temple -3, while a
+     tie got 6% of the mass. football/engine.js stopped shifting for the same
+     reason in the 2026-09-30 audit (#4).
+
+     The row is now re-centred by REWEIGHTING it in place: every margin keeps
+     its own entry and the weights are tilted by exp(theta * margin), theta
+     solved so the mean lands exactly on the fair margin (no half-point
+     rounding left over). That is the move that re-centres a key-number
+     pattern times a normal envelope without touching the pattern, and it is
+     the same operation the volatility stretch below already is (a ratio of
+     normal densities on the same grid). A reweighting can only move mass the
+     row holds, so it goes no further than the row's own standard deviation
+     from the row's mean, and no further than the table itself is centred
+     (its row means span about -35.7 to +37.6). Past that — a gap of more than
+     one standard deviation (under 1% of games) or a fair margin beyond every
+     row (FBS-FCS mismatches) — the rest of the move is a mixture of the two
+     neighbouring whole-point moves, the one place a spike moves, as
+     football/engine.js does past its table. Margin 0 is held at zero
+     throughout.
+     This block is byte-identical in football/cfb_p4/engine.js and
+     lib/edgedesk_quote_ev.js; tools/football/quote_ev.test.js pins it. */
+  var CFB_CENTRES = { tab: null, lo: 0, hi: 0 };
+  function cfbCentreRange(tab) {
+    if (CFB_CENTRES.tab === tab) return CFB_CENTRES;
+    var lo = Infinity, hi = -Infinity, k, es, s, w, i;
+    for (k in tab) if (has(tab, k)) {
+      es = pmfEntries(tab[k]); s = 0; w = 0;
+      for (i = 0; i < es.length; i++) { s += es[i][0] * es[i][1]; w += es[i][1]; }
+      if (w > 0) { lo = Math.min(lo, s / w); hi = Math.max(hi, s / w); }
+    }
+    CFB_CENTRES = { tab: tab, lo: lo, hi: hi };
+    return CFB_CENTRES;
+  }
+  /* [[margin, weight], ...] (unnormalised), centred on `fair` and stretched
+     from sigmaBase to sigma; null for an empty row */
+  function cfbRecentre(es, fair, sigma, sigmaBase, range) {
+    var stretch = (isNum(sigma) && sigma > 0 && isNum(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
+    var mu = 0, va = 0, tot = 0, by = {}, pts = [], i, k, m, w, z0, z1;
+    for (i = 0; i < es.length; i++) { mu += es[i][0] * es[i][1]; tot += es[i][1]; }
+    if (!(tot > 0)) return null;
+    mu /= tot;
+    for (i = 0; i < es.length; i++) va += (es[i][0] - mu) * (es[i][0] - mu) * es[i][1];
+    var sd = Math.sqrt(va / tot);
+    /* the part of the move the reweighting carries, and the rest */
+    var c = Math.min(Math.min(range.hi, mu + sd), Math.max(Math.max(range.lo, mu - sd), fair));
+    var rest = fair - c, lo = Math.floor(rest), f = rest - lo;
+    for (i = 0; i < es.length; i++) {
+      k = es[i][0] + lo;
+      by[k] = (by[k] || 0) + es[i][1] * (1 - f);
+      if (f > 0) by[k + 1] = (by[k + 1] || 0) + es[i][1] * f;
+    }
+    for (k in by) if (has(by, k)) pts.push([parseInt(k, 10), by[k]]);
+    pts.sort(function (a, b) { return a[0] - b[0]; });
+    for (i = 0; i < pts.length; i++) {
+      m = pts[i][0];
+      w = m === 0 ? 0 : pts[i][1];                          /* a college game cannot end level */
+      if (Math.abs(stretch - 1) >= 0.02) {
+        z0 = (m - fair) / sigmaBase; z1 = (m - fair) / sigma;
+        w = w * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch;
+      }
+      pts[i][1] = w;
+    }
+    /* theta: the mean of w * exp(theta * (m - fair)) is fair (safeguarded Newton) */
+    var th = 0, tlo = -1, thi = 1, a, b, d2, d, e, nt;
+    for (k = 0; k < 100; k++) {
+      a = 0; b = 0; d2 = 0;
+      for (i = 0; i < pts.length; i++) { d = pts[i][0] - fair; e = pts[i][1] * Math.exp(th * d); a += e; b += e * d; d2 += e * d * d; }
+      if (!(a > 0) || Math.abs(b) <= 1e-12 * a) break;
+      if (b > 0) thi = th; else tlo = th;
+      nt = d2 > 0 ? th - b / d2 : (tlo + thi) / 2;
+      if (!(nt > tlo && nt < thi)) nt = (tlo + thi) / 2;
+      if (nt === th) break;
+      th = nt;
+    }
+    for (i = 0; i < pts.length; i++) pts[i][1] = pts[i][1] * Math.exp(th * (pts[i][0] - fair));
+    return pts;
+  }
+
   var dist = {
     /* Win probability from the fair spread AND this game's own sigma. Two
        games with the same projected margin do NOT have the same win
@@ -287,9 +371,10 @@
        step the engine publishes two contradictory answers to the same
        question: at a fair spread of -14 the win probability said 17.4% while
        the cover probability at pick'em said 22.4%, because the kernel used to
-       build the table shrinks every bucket's conditional mean toward zero. The
-       grid is shifted by a whole number of points so integer margins stay
-       integral and the key numbers survive the move.
+       build the table shrinks every bucket's conditional mean toward zero.
+       The re-centring reweights the row in place (cfbRecentre above), so
+       margin 0 keeps no mass and the key numbers stay on the margins games
+       actually end on.
 
        When this game's sigma differs from the table's baseline the PMF is
        stretched about the projection, so a high-volatility game does not
@@ -299,45 +384,27 @@
       var D = P.distributions;
       if (!D || !isNum(fairSpread) || !isNum(line)) return null;
       var tab = D.margin_pmf_by_spread, rng = D.pmf_spread_range;
-      var stretch = (isNum(sigma) && isNum(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
-      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, m, shift;
+      var stretch = (isNum(sigma) && sigma > 0 && isNum(sigmaBase) && sigmaBase > 0) ? sigma / sigmaBase : 1;
+      var win = 0, push = 0, tot = 0, i, es, key, pmf, need, pts;
       if (tab && rng && line >= rng[0] && line <= rng[1]) {
         key = (Math.round(line * 2) / 2).toFixed(1);
         if (key === '-0.0') key = '0.0';
         pmf = tab[key] || tab[Math.round(line).toFixed(1)];
         if (pmf) {
           es = pmfEntries(pmf);
-          /* re-centre the borrowed shape on THIS model's mean */
-          var em = 0, ew = 0;
-          for (i = 0; i < es.length; i++) { em += es[i][0] * es[i][1]; ew += es[i][1]; }
-          shift = ew > 0 ? Math.round(fairSpread - em / ew) : 0;
-          for (i = 0; i < es.length; i++) {
-            /* stretch about the projection, keeping integer margins integral
-               so key numbers survive: only the WEIGHTS move, never the grid */
-            m = es[i][0] + shift;
-            tot += es[i][1];
-            if (Math.abs(m - line) < 1e-9) push += es[i][1];
-            else if (m > line) win += es[i][1];
-          }
-          if (tot > 0.5 && Math.abs(stretch - 1) < 0.02) {
-            return { win: win / tot, push: push / tot,
-              lose: 1 - (win + push) / tot, basis: 'margin_pmf_by_spread' };
-          }
-          if (tot > 0.5) {
-            /* volatility-adjusted: reweight the same grid by the ratio of
-               normal densities at the game sigma vs the table baseline */
-            var w2 = 0, p2 = 0, t2 = 0, z0, z1, wgt;
-            for (i = 0; i < es.length; i++) {
-              m = es[i][0] + shift;
-              z0 = (m - fairSpread) / (sigmaBase || 1);
-              z1 = (m - fairSpread) / (sigma || 1);
-              wgt = es[i][1] * Math.exp(-0.5 * (z1 * z1 - z0 * z0)) / stretch;
-              t2 += wgt;
-              if (Math.abs(m - line) < 1e-9) p2 += wgt;
-              else if (m > line) w2 += wgt;
+          for (i = 0; i < es.length; i++) tot += es[i][1];
+          /* re-centre the borrowed shape on THIS model's mean, stretched to
+             this game's sigma: only the WEIGHTS move, never the margins */
+          pts = tot > 0.5 ? cfbRecentre(es, fairSpread, sigma, sigmaBase, cfbCentreRange(tab)) : null;
+          if (pts) {
+            tot = 0;
+            for (i = 0; i < pts.length; i++) {
+              tot += pts[i][1];
+              if (Math.abs(pts[i][0] - line) < 1e-9) push += pts[i][1];
+              else if (pts[i][0] > line) win += pts[i][1];
             }
-            if (t2 > 0) return { win: w2 / t2, push: p2 / t2,
-              lose: 1 - (w2 + p2) / t2, basis: 'margin_pmf_by_spread_vol_adj' };
+            if (tot > 0) return { win: win / tot, push: push / tot, lose: 1 - (win + push) / tot,
+              basis: Math.abs(stretch - 1) < 0.02 ? 'margin_pmf_by_spread' : 'margin_pmf_by_spread_vol_adj' };
           }
         }
       }

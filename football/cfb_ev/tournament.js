@@ -240,7 +240,7 @@ function audits(all) {
     verdict: null };
   dist.verdict = dist.integer_lines.push_log_loss_pmf < dist.integer_lines.push_log_loss_normal
     ? 'At integer market lines the production PMF predicts pushes better than a continuous-normal shortcut (push log loss ' + dist.integer_lines.push_log_loss_pmf + ' vs ' + dist.integer_lines.push_log_loss_normal + ').'
-    : 'At integer MARKET lines the production curve (the empirical PMF re-centred on EdgeDesk’s fair margin by an integer shift) predicts pushes WORSE than a continuous-normal shortcut (push log loss ' + dist.integer_lines.push_log_loss_pmf + ' vs ' + dist.integer_lines.push_log_loss_normal + '): the re-centring moves the key-number spikes off the market’s numbers. Neither is adequate there; see the anchored audit.';
+    : 'At integer MARKET lines the production curve (the empirical PMF re-centred on EdgeDesk’s fair margin) predicts pushes WORSE than a continuous-normal shortcut (push log loss ' + dist.integer_lines.push_log_loss_pmf + ' vs ' + dist.integer_lines.push_log_loss_normal + '): its key-number mass does not sit where the market’s numbers are. Neither is adequate there; see the anchored audit.';
   /* key numbers: empirical |margin| frequency vs the PMF's mean predicted mass (the curve at each integer) */
   const ks = [1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 14, 17, 21], acc = {}; ks.forEach((k) => { acc[k] = { pred: 0, obs: 0 }; });
   close.forEach((x) => {
@@ -343,10 +343,19 @@ function anchoredAudit(all, t) {
 function keyVerdict(au) {
   const A = au.anchored, P = A.push.all_integer_lines, k3 = A.key_numbers.filter((k) => k.abs_margin === 3)[0], k7 = A.key_numbers.filter((k) => k.abs_margin === 7)[0];
   const covered = P.wilson95 && P.predicted_anchored >= P.wilson95[0] && P.predicted_anchored <= P.wilson95[1];
+  /* where the key-number mass is lost: the raw curve (the champion re-centres its
+     market-conditioned PMF by reweighting it in place since 2026-10-04, so its
+     spikes stay on the margins games end on) or the calibration anchor, which
+     carries that curve to the calibrated probability by a location move */
+  const raw3 = (au.key_numbers.filter((k) => k.abs_margin === 3)[0] || {}).pmf_mean_mass, raw7 = (au.key_numbers.filter((k) => k.abs_margin === 7)[0] || {}).pmf_mean_mass;
+  const anchorLoses = raw3 > k3.anchored_mean_mass && raw7 > k7.anchored_mean_mass;
+  const cause = anchorLoses
+    ? ' Cause: the raw curve keeps its spikes on the key numbers (raw mass ' + (100 * raw3).toFixed(1) + '% at 3, ' + (100 * raw7).toFixed(1) + '% at 7: football/cfb_p4/engine.js cfbRecentre re-centres the market-conditioned PMF by reweighting it in place), but the calibration anchor re-centres that curve on the calibrated probability by a location move (a mixture of integer moves, lib/edgedesk_ev.js shiftedHome), which carries the spikes off the key numbers again.'
+    : ' Cause: the champion’s market-conditioned PMF, as re-centred (football/cfb_p4/engine.js cfbRecentre), carries less mass on the key numbers than games show (raw mass ' + (100 * raw3).toFixed(1) + '% at 3, ' + (100 * raw7).toFixed(1) + '% at 7).';
   return { validated: !!covered, primary: [3, 7],
     finding: 'At integer market lines the anchored distribution predicts a ' + (100 * P.predicted_anchored).toFixed(1) + '% push rate (raw ' + (100 * P.predicted_raw).toFixed(1) + '%) against ' + (100 * P.observed).toFixed(1)
       + '% observed (95% ' + (100 * P.wilson95[0]).toFixed(1) + '–' + (100 * P.wilson95[1]).toFixed(1) + '%); |margin| = 3 is ' + (100 * k3.empirical).toFixed(1) + '% of 2022-2025 FBS games but carries ' + (100 * k3.anchored_mean_mass).toFixed(1)
-      + '% of the anchored mass, 7 is ' + (100 * k7.empirical).toFixed(1) + '% vs ' + (100 * k7.anchored_mean_mass).toFixed(1) + '%. Cause: the champion re-centres its market-conditioned PMF on its own mean by an integer shift (football/cfb_p4/engine.js coverProbSpread), which moves the spikes off the key numbers.',
+      + '% of the anchored mass, 7 is ' + (100 * k7.empirical).toFixed(1) + '% vs ' + (100 * k7.anchored_mean_mass).toFixed(1) + '%.' + cause,
     consequence: covered ? null : 'Key-number mass is NOT VALIDATED: an alternate line that crosses 3 or 7 relative to the market line is never actionable, and the juice panel prints the empirical share beside the model mass. A main-line EV at an integer number moves by about 0.1 pt of EV per 2 pp of push error at −110, so main lines are not blocked. No manual key-number bonus is added.' };
 }
 
