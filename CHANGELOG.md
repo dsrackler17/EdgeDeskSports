@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-04 — Portfolio Calendar: month arrows no longer blank it; whole amounts on a phone; the month's settled line
+
+Three fixes to the Calendar that #504 added.
+
+- **Month arrows keep the calendar on screen.**
+  - **Before:** each arrow tap replaced the whole calendar with "Loading the calendar…" until the server answered. The heading and the arrows disappeared under the reader's finger, and tapping through months jumped the page.
+  - **Now:** the new month's heading, arrows and grid stay up, marked busy and labelled "Loading October 2026…", until its days arrive.
+  - **The e2e.** The same gap made `tools/portfolio/portfolio_ui.e2e.js` fail intermittently: its loop read the heading while it was briefly missing. The e2e now answers the calendar request after 400 ms, as a phone's network would. With that delay the old code fails every time and the new code passes.
+- **A phone shows every day's P&L whole.**
+  - **Before:** at 390 px a cell cut "−$100.00" down to "−$10…", which reads as a different number.
+  - **Now:** on screens up to 420 px a cell shows a short figure (−$100, +$1.2k, rounded with exact decimals). The cell's screen-reader label, the wider-screen cell and the day panel keep the exact amount.
+- **The month's settled line.** Under the heading, the Calendar now shows the month's settled P&L, the number of positions, the win-loss-push record and the up and down days.
+  - It is built from the same `portfolio_calendar()` rows the grid draws, summed with exact decimals, and counts only the month on screen.
+  - A month with nothing settled says so.
+- **Tests.**
+  - `tools/portfolio/journal_ui.test.js`: 67 checks. Covers the busy grid, the month line, short and exact amounts, and the phone rule.
+  - `tools/portfolio/portfolio_ui.e2e.js`: 78 checks against PostgreSQL. Covers the mid-load state, the month line against the database's own `portfolio_calendar()` sums, and the 390 px September with no clipped figure and no sideways scroll.
+
 ## 2026-10-04 — Portfolio: the journal, the Decision Grade, the calendar and the Process Coach
 
 Portfolio now judges each decision by its price, timing, sizing and your own rules — never by whether it won — and files your history by day.

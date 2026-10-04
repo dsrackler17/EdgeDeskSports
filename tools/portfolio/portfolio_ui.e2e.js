@@ -49,6 +49,8 @@ const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const REST = require('./_pgrest.js');
 
 const ROOT = PG.ROOT;
+const E = require(path.join(ROOT, 'lib', 'edgedesk_portfolio.js'));
+const J = require(path.join(ROOT, 'lib', 'edgedesk_portfolio_journal_ui.js'));
 const REQUIRED = process.env.PORTFOLIO_UI_REQUIRED === '1';
 const SHOTS = (function () { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; }());
 const A = '00000000-0000-0000-0000-0000000000a1';
@@ -120,6 +122,9 @@ const CSV = [
         let body = null; try { body = req.postData() ? JSON.parse(req.postData()) : null; } catch (_) { body = null; }
         const token = String(req.headers().authorization || '').replace(/^Bearer\s+/i, '');
         const out = rest.handle(req.method(), decodeURIComponent(m[1]), m[2] || '', body, req.headers().prefer || '', token);
+        /* a phone's network: the calendar answers after a beat, so the page is
+           seen in the state it is in while a month loads */
+        if (/^rpc\/portfolio_calendar$/.test(decodeURIComponent(m[1]))) await new Promise((r) => setTimeout(r, 400));
         return route.fulfill({ status: out.status, contentType: 'application/json', body: out.body == null ? '' : JSON.stringify(out.body) });
       }
       if (/supabase\.co/.test(url)) {
@@ -347,6 +352,25 @@ const CSV = [
     await page.click('#pfoHost [data-act="cal-basis"][data-v="settled"]');
     chk('the calendar reads by settlement day on request', /P&L that settled that day/.test(await text(page)));
     await shot(page, 'desktop-calendar');
+    /* a month arrow keeps the calendar on screen while the next month loads */
+    await page.click('#pfoHost [data-act="cal-move"][data-v="1"]');
+    const mid = await page.evaluate(() => ({ head: (document.querySelector('#pfoHost .pfo-cal-nav b') || {}).innerText || null,
+      arrows: document.querySelectorAll('#pfoHost [data-act="cal-move"]').length, grid: !!document.querySelector('#pfoHost .pfo-cal[aria-busy="true"]'),
+      note: /Loading October 2026…/.test(document.getElementById('pfoHost').innerText) }));
+    chk('a month arrow keeps the heading, the arrows and the grid while the month loads', mid.head === 'October 2026' && mid.arrows === 2 && mid.grid && mid.note, mid);
+    await page.waitForSelector('#pfoHost .pfo-cal:not([aria-busy])');
+    await page.click('#pfoHost [data-act="cal-move"][data-v="-1"]');
+    await page.waitForSelector('#pfoHost .pfo-cal:not([aria-busy])');
+    {
+      const tz = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+      const sep = db.as(A, `select coalesce(sum(pnl), 0)::text || '|' || coalesce(sum(settled), 0)::text from public.portfolio_calendar('2026-09-01', '2026-10-01', '${tz}');`).split('|');
+      const sumText = (await page.$eval('#pfoHost .pfo-cal-sum', (e) => e.innerText)).replace(/\s+/g, ' ');
+      chk('the month line is what the database settled in September', /Settled in September/i.test(sumText)
+        && sumText.indexOf(E.money(sep[0], { sign: true })) >= 0 && sumText.indexOf(sep[1] + ' position') >= 0, [sep, sumText]);
+    }
+    /* back to the day the journal step below works from */
+    await page.click('#pfoHost [data-act="cal-day"][data-v="2026-09-07"]');
+    await waitText(page, /Settled this day/i);
     await page.click('#pfoHost .pfo-jcard:has-text("Chiefs -2.5") [data-act="journal"]');
     await page.waitForSelector('.pfo-sheet form[data-form="journal"] [name="closing_odds_american"]');
     await page.fill('.pfo-sheet [name="closing_odds_american"]', '-130');
@@ -460,6 +484,25 @@ const CSV = [
       await noSideways(page, '390px ' + v);
       await shot(page, 'phone-' + v);
     }
+    /* a phone's month: every day's P&L legible, none cut to "−$10…" */
+    await tab(page, 'calendar');
+    await page.waitForSelector('#pfoHost .pfo-cal-nav b');
+    for (let i = 0; i < 36; i++) {
+      const head = await page.$eval('#pfoHost .pfo-cal-nav b', (e) => e.innerText);
+      if (/September 2026/.test(head)) break;
+      const [mo, yr] = head.split(' '), cur = +yr * 12 + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].indexOf(mo);
+      await page.click(`#pfoHost [data-act="cal-move"][data-v="${cur > 2026 * 12 + 8 ? -1 : 1}"]`);
+      await page.waitForSelector('#pfoHost .pfo-cal:not([aria-busy])');
+    }
+    await page.click('#pfoHost [data-act="cal-basis"][data-v="settled"]');
+    const cells = await page.evaluate(() => [].slice.call(document.querySelectorAll('#pfoHost .pfo-cal .pfo-cal-s')).map((s) => {
+      const shown = [].slice.call(s.children).filter((c) => getComputedStyle(c).display !== 'none')[0];
+      return { text: shown ? shown.textContent : '', fits: s.scrollWidth <= s.clientWidth + 0.5, cell: s.closest('[data-v]').getAttribute('data-v'), label: s.closest('[data-v]').getAttribute('aria-label') };
+    }));
+    chk('390px: every settled day shows its P&L whole, none clipped', cells.length > 0 && cells.every((c) => c.fits && !/…/.test(c.text)), cells);
+    chk('390px: the short figure is the exact one, rounded (the label keeps it exact)', cells.every((c) => { const m = /P&L ([^,]+)$/.exec(c.label); return m && J.compactMoney(m[1].replace('−', '-').replace(/[$,+]/g, '')) === c.text; }), cells);
+    await noSideways(page, '390px calendar, September');
+    await shot(page, 'phone-calendar-september');
     await tab(page, 'history');
     chk('390px: history is cards, not a wide table', await page.evaluate(() => {
       const c = document.querySelector('#pfoHost .pfo-hist-cards'), tb = document.querySelector('#pfoHost .pfo-hist-table');
