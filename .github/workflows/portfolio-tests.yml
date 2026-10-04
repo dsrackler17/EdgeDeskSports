@@ -1,0 +1,94 @@
+# EdgeDesk Portfolio — the checks that gate every change to the reader's own
+# betting and prediction-market ledger.
+#
+#   suites      the calculation engine (exact decimals, sportsbook and
+#               prediction-market P&L, aggregation), the CSV importer and the
+#               connector contract, and the page rendered in Node — offline.
+#   migration   supabase/portfolio.sql applied TWICE to a throwaway PostgreSQL
+#               on the runner, attacked as another reader, as anon and as the
+#               service role; every derived figure held in parity with the
+#               browser's engine; the import pipeline end to end.
+#   browser     app.html in Chromium (1280 px and a 390 px phone) against that
+#               real migration through a PostgREST stand-in.
+#
+# Nothing here deploys or writes anywhere. Deploying is
+# .github/workflows/deploy-portfolio.yml, run by hand.
+name: Portfolio tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_portfolio*.js'
+      - 'lib/edgedesk_portfolio.css'
+      - 'tools/portfolio/**'
+      - 'tools/personal/_pg.js'
+      - 'tools/games/sql/supabase_shim.sql'
+      - 'tools/sql/split_sql.js'
+      - 'supabase/portfolio.sql'
+      - 'supabase/parts/portfolio.part*.sql'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/portfolio-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_portfolio*.js'
+      - 'tools/portfolio/**'
+      - 'supabase/portfolio.sql'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The calculation engine (exact money, both instruments, the whole book)
+        run: node tools/portfolio/portfolio_calc.test.js
+      - name: The CSV importer and the connector contract
+        run: node tools/portfolio/portfolio_import.test.js
+      - name: The page in Node, and its wiring in app.html
+        run: node tools/portfolio/portfolio_ui.test.js
+      - name: The app's navigation still holds (seven seats, More, deep links)
+        run: node tools/app/navigation.test.js
+
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; the suite starts its own throwaway cluster.
+      - name: supabase/portfolio.sql against a real PostgreSQL, as real readers
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/portfolio_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The Portfolio page in Chromium against the real migration
+        env:
+          PORTFOLIO_UI_REQUIRED: '1'
+        run: node tools/portfolio/portfolio_ui.e2e.js

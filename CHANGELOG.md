@@ -1,5 +1,48 @@
 # Changelog
 
+## 2026-10-04 — Portfolio: every bet and prediction-market position in one ledger (Phase A)
+
+- **A new Portfolio section** (*More → Portfolio*, `#portfolio`, or the landing-page setting). Its tabs are Overview, Open, History, Analytics, Accounts and Import.
+  - **Overview** leads with **Total P&L**, then ROI, capital deployed, open exposure and the record.
+  - Then sportsbook and prediction-market P&L, apart.
+  - Then P&L by platform and the cumulative line.
+- **Manual entry:**
+  - **Sportsbook bets:** platform, sport, league, event, market type, selection, line, American or decimal odds, stake, dates, and status (open / won / lost / push / void / cashed out / settled at another payout).
+  - **Prediction-market positions:** platform, question, market, YES / NO or an outcome, contracts, entry price, fees, and open / resolved / sold.
+  - The P&L is previewed with the same arithmetic the database stores.
+  - Positions can be edited and deleted.
+  - A duplicate is caught, with an explicit "it is a separate bet" override.
+- **CSV import** (`lib/edgedesk_portfolio_import.js`):
+  - **Adapters:** generic sportsbook (one row per bet) and generic prediction market (one row per trade, grouped into positions).
+  - **Preparation:** parsed in the browser, columns mapped, time zone and date order chosen.
+  - **Classification:** done on the server — detected / new / duplicates / needs review / invalid.
+  - **Confirmation:** nothing is inserted until the reader confirms. One bad row fails alone, and re-importing a file adds nothing twice.
+- **The database** (`supabase/portfolio.sql`, also as paste-sized parts):
+  - the tables: accounts, positions, fills, imports, import rows, sync logs, and an unexposed credentials table;
+  - NUMERIC money derived by trigger;
+  - RLS on `auth.uid() = user_id` with composite foreign keys;
+  - deduplication by platform id, else a SHA-256 fingerprint;
+  - an operator health view with no customer data;
+  - a guard against deadlocking a live save on re-run.
+- **The engine** (`lib/edgedesk_portfolio.js`):
+  - exact BigInt decimals;
+  - sportsbook and prediction-market rules (average cost, partial sells, fees, YES / NO / void / scalar resolution);
+  - parlay pricing;
+  - aggregation and periods;
+  - the fingerprint material, byte for byte the database's.
+- **Connector contract** (`lib/edgedesk_portfolio_connectors.js`): `connect`, `disconnect`, `healthCheck`, `sync`, `fetchPositions`, `fetchTransactions` and `normalize`, plus backoff, failure classes and log redaction. Only manual and CSV are registered; **no platform syncs automatically yet** (`docs/platform-support.md`).
+- **EdgeDesk attribution:**
+  - a position can say whether the idea came from EdgeDesk research, the reader's own read, or another source;
+  - it can link to the reader's own sizing recommendation or journal entry;
+  - the database refuses links to anyone else's records;
+  - nothing is inferred from a matching event.
+- **Tests:**
+  - `npm run portfolio:test` — calc 106, import 65, UI 66.
+  - `npm run portfolio:sql` — 167 against a real PostgreSQL, including parity on 280 random positions.
+  - `npm run portfolio:e2e` — 39 in Chromium against the real migration.
+  - The CI workflow is *Portfolio tests*. Deploy with *Deploy Portfolio schema*.
+- **Docs:** [`docs/portfolio-architecture.md`](docs/portfolio-architecture.md) and [`docs/platform-support.md`](docs/platform-support.md).
+
 ## 2026-10-03 — share the Record: an image and a post for X or anywhere
 
 - **A Share button on the Record**, on the public page and the app. It shares the view on screen: the tab (All, CFB, NFL, Player Props), the period, the market and the stake basis.
