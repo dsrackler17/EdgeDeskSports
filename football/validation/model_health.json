@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-04T21:07:30.862Z",
+ "as_of": "2026-10-04T21:38:29.284Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "31c8c40fb6248bb6",
+ "inputs_key": "4bbdcbe47b53aa4c",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 1043,
+   "rows": 1049,
    "mode": "LIVE",
-   "sha1": "405e435b76c1"
+   "sha1": "624d7e5e230e"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "9fed2a90d2e0"
+   "sha1": "dfc37b7e7629"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "1043 decision snapshots issued before kickoff; 63 settled"
+   "note": "1049 decision snapshots issued before kickoff; 63 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 1043,
+  "issued_snapshots": 1049,
   "issued_by_decision": {
    "NO_DECISION": 544,
-   "PASS": 482,
-   "WATCH": 17
+   "PASS": 485,
+   "WATCH": 20
   },
   "graded_rows": 65,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -15772,24 +15772,24 @@
      },
      {
       "closing_expected_margin": -3.5,
-      "n": 276,
+      "n": 277,
       "learned_mean": -3.02,
       "actual_mean": -4.32,
       "gap": 1.3
      },
      {
       "closing_expected_margin": -3,
-      "n": 502,
+      "n": 503,
       "learned_mean": -2.58,
       "actual_mean": -3.02,
       "gap": 0.44
      },
      {
       "closing_expected_margin": -2.5,
-      "n": 241,
+      "n": 242,
       "learned_mean": -2.12,
-      "actual_mean": -1.15,
-      "gap": -0.98
+      "actual_mean": -1.09,
+      "gap": -1.03
      },
      {
       "closing_expected_margin": -2,
@@ -15835,24 +15835,24 @@
      },
      {
       "closing_expected_margin": 2.5,
-      "n": 296,
+      "n": 297,
       "learned_mean": 2.72,
-      "actual_mean": 0.76,
-      "gap": 1.97
+      "actual_mean": 0.74,
+      "gap": 1.99
      },
      {
       "closing_expected_margin": 3,
-      "n": 659,
+      "n": 660,
       "learned_mean": 3.12,
-      "actual_mean": 2.52,
-      "gap": 0.6
+      "actual_mean": 2.51,
+      "gap": 0.61
      },
      {
       "closing_expected_margin": 3.5,
-      "n": 414,
+      "n": 415,
       "learned_mean": 3.5,
-      "actual_mean": 4.29,
-      "gap": -0.79
+      "actual_mean": 4.31,
+      "gap": -0.81
      },
      {
       "closing_expected_margin": 4,
@@ -15898,10 +15898,10 @@
      },
      {
       "closing_expected_margin": 7,
-      "n": 336,
+      "n": 337,
       "learned_mean": 6.25,
-      "actual_mean": 8.87,
-      "gap": -2.62
+      "actual_mean": 8.84,
+      "gap": -2.59
      },
      {
       "closing_expected_margin": 7.5,
@@ -15989,7 +15989,7 @@
     "source": "football/cfb_p4/params.js distributions.margin_pmf_by_spread vs football/pricing/lines_cfb.json",
     "kernel_bandwidth": 6,
     "conditioning": "market closing spread (cfbfastR-data betting archive)",
-    "effect": "The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (the integer shift leaves up to ±0.5 pt).",
+    "effect": "The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (since 2026-10-04 exactly: the row is reweighted in place, so its mean lands on the fair margin and its tie hole and key numbers stay put).",
     "centre_used_by_decisions": false,
     "rows": [
      {
@@ -16549,7 +16549,7 @@
     "code": "DISTRIBUTION_CENTRE_DRIFT",
     "severity": "INFO",
     "league": "CFB",
-    "text": "NOTE: CFB learned margin distribution is off-centre at 43 of 77 closing numbers (worst: at -7.5 its mean is -6.24 while 160 games closing there averaged -12.66), consistent with kernel smoothing (bandwidth 6). The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (the integer shift leaves up to ±0.5 pt).",
+    "text": "NOTE: CFB learned margin distribution is off-centre at 43 of 77 closing numbers (worst: at -7.5 its mean is -6.24 while 160 games closing there averaged -12.66), consistent with kernel smoothing (bandwidth 6). The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (since 2026-10-04 exactly: the row is reweighted in place, so its mean lands on the fair margin and its tie hole and key numbers stay put).",
     "note": "This is a research alert, not an automatic change."
    }
   ]
@@ -16568,43 +16568,43 @@
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15111
+     "mass": 0.15121
     },
     {
      "margin": 7,
-     "mass": 0.09036
+     "mass": 0.09026
     },
     {
      "margin": 6,
-     "mass": 0.05992
+     "mass": 0.05999
     },
     {
      "margin": 10,
-     "mass": 0.05487
+     "mass": 0.05481
     },
     {
      "margin": 4,
-     "mass": 0.04887
+     "mass": 0.04909
     },
     {
      "margin": 14,
-     "mass": 0.04887
+     "mass": 0.04881
     },
     {
      "margin": 1,
-     "mass": 0.0415
+     "mass": 0.04145
     },
     {
      "margin": 2,
-     "mass": 0.04068
+     "mass": 0.04063
     },
     {
      "margin": 8,
-     "mass": 0.0374
+     "mass": 0.03736
     },
     {
      "margin": 17,
-     "mass": 0.03604
+     "mass": 0.036
     }
    ],
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
@@ -16665,7 +16665,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7326,
+   "NFL": 7334,
    "CFB": 11502
   }
  },
@@ -16760,7 +16760,7 @@
    "code": "DISTRIBUTION_CENTRE_DRIFT",
    "severity": "INFO",
    "league": "CFB",
-   "text": "NOTE: CFB learned margin distribution is off-centre at 43 of 77 closing numbers (worst: at -7.5 its mean is -6.24 while 160 games closing there averaged -12.66), consistent with kernel smoothing (bandwidth 6). The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (the integer shift leaves up to ±0.5 pt).",
+   "text": "NOTE: CFB learned margin distribution is off-centre at 43 of 77 closing numbers (worst: at -7.5 its mean is -6.24 while 160 games closing there averaged -12.66), consistent with kernel smoothing (bandwidth 6). The CFB decision path re-centres this shape on EdgeDesk’s fair margin (EDQuoteEV.cfbConditionedCover), so the drift reaches its shape, not its centre (since 2026-10-04 exactly: the row is reweighted in place, so its mean lands on the fair margin and its tie hole and key numbers stay put).",
    "note": "This is a research alert, not an automatic change."
   }
  ]

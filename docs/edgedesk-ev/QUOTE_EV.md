@@ -185,16 +185,24 @@ Alternates never inherit the main-line decision.
 - **Tail safeguard.** The EV tournament's `alternate_line_domain` audits the
   calibrated slope at ±3 and ±7 pts from the market line. The slopes are:
 
-  | Offset | Slope |
-  |---|---|
-  | −7 | 0.4432 (fail) |
-  | −3 | 0.8875 |
-  | +3 | 1.2386 |
-  | +7 | 0.6702 |
+  | Offset | Slope until 2026-10-04 | Slope since |
+  |---|---|---|
+  | −7 | 0.4432 (fail) | 0.4201 (fail) |
+  | −3 | 0.8875 | 0.7008 |
+  | +3 | 1.2386 | 0.0997 (fail) |
+  | +7 | 0.6702 | 0.3804 (fail) |
 
-  Inside the 0.6–1.6 band the validated domain is **±3 pts**. Beyond it, a
-  quote is `LOW CONFIDENCE / TAIL CALIBRATION NOT VALIDATED` and cannot be
-  SAFEST +EV. The NFL has no audit, so every NFL alternate is NOT_VALIDATED.
+  The validated domain is the largest offset at which every audited offset,
+  on both sides, sits inside the 0.6–1.6 band. That was **±3 pts** until
+  2026-10-04 and is **0** since. On 2026-10-04 the champion stopped shifting
+  its margin table (its spikes now stay on their margins). The calibration
+  anchor still carries the curve to the calibrated probability by a location
+  move, which displaces those spikes. Each slope's 95% interval is about
+  ±1.15 wide, so the ±3 pass was itself marginal.
+
+  Outside the domain a quote is `LOW CONFIDENCE / TAIL CALIBRATION NOT
+  VALIDATED` and cannot be SAFEST +EV. The NFL has no audit, so every NFL
+  alternate is NOT_VALIDATED.
 - **Alternate totals** are not captured and not priced (no validated totals
   probability).
 

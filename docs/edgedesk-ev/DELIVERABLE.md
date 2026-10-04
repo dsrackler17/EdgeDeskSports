@@ -37,7 +37,7 @@ screenshots are in [`demo/`](demo/).
 
 | Area | What exists | Where |
 |---|---|---|
-| Pure predictive distribution | The V1 champion's `margin_pmf_by_spread`: an empirical margin PMF conditioned on the closing spread (bandwidth 6, fitted 2006–2021) and re-centred on the model mean by an integer shift | `football/cfb_p4/engine.js` (`coverProbSpread`) |
+| Pure predictive distribution | The V1 champion's `margin_pmf_by_spread`: an empirical margin PMF conditioned on the closing spread (bandwidth 6, fitted 2006–2021) and re-centred on the model mean by reweighting the row in place (an integer shift until 2026-10-04) | `football/cfb_p4/engine.js` (`coverProbSpread`) |
 | Stored probability curve | `read_inputs.curve`: win[] and push[] by home line, step 0.5, 1e-6 precision, built by the production path | `football/cfb_terminal/build.js` → `lib/edgedesk_read.js buildCurve` |
 | Fair spread / total / win probability | `model_home_margin`, `fair_total`, `home_win_prob` | `football/fbs/slate.json` (champion `edgedesk_cfb_p4_v1.0.0`) |
 | Simulation outputs | None. The champion is analytical (a PMF), not simulated | — |
@@ -554,7 +554,8 @@ Moving to PRODUCTION needs the next-100 evaluation plus a person's promotion, re
 
 ## 50. Remaining research backlog
 
-1. Fix the V1 PMF re-centring (mixture shift instead of integer shift) so key-number mass and pushes are right. Then re-audit, re-run the tournament, and cut a new calibrator version.
+1. ~~Fix the V1 PMF re-centring so key-number mass and pushes are right. Then re-audit, re-run the tournament, and cut a new calibrator version.~~ **Done 2026-10-04**, with two departures. The re-centring reweights the row in place rather than mixing shifts, which keeps every spike and the tie hole on its own margin. And the re-fit promoted the same methods, so it is a recorded PATCH of `cfb_ev_calibration_v1` rather than a new version. A new version would have stopped the next-100 count, which keys on the calibrator version. See PREREG.md, post-registration change 3.
+   - Still open: the calibration anchor (`lib/edgedesk_ev.js` `shiftedHome`) carries the curve to the calibrated probability by a location move, which moves the spikes again. The anchored push rate at integer lines is 2.9% against 5.3% observed, so key-number mass stays NOT VALIDATED.
 2. Fix the incoherent no-market curve fallback in the terminal build.
 3. Schedule the alternate-spread capture (it needs an Odds API budget decision) and add more priced books.
 4. Validate a moneyline calibrator. The Platt / rolling Platt challengers were close.

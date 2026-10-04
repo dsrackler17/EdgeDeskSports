@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-04 — CFB champion: re-centring no longer moves the "no ties" hole or the key numbers
+
+- **The defect.** A college game cannot end level, so every row of the champion's `margin_pmf_by_spread` holds no mass at margin 0. `football/cfb_p4/engine.js` `coverProbSpread` and `lib/edgedesk_quote_ev.js` `cfbConditionedCover` re-centred a row by shifting it a whole number of points. The hole and the 3 / 7 / 10 / 14 spikes moved with it.
+  - UConn @ Temple (fair +6.2, row 3.0, shift +3) had no push at Temple −3, so quote EV flagged `INTEGER_PUSH_MISSING` and the engine refused the price as CORRUPTED ODDS. Meanwhile a tie carried 6% of the mass.
+  - Across the 2015–2026 calibration rows (closes, openers and ±3 / ±7 alternates), 423 of 12,043 whole-number lines had no push (96 of them at ±3), and 374 of 411 pick'ems carried tie mass.
+- **The fix** (`cfbRecentre`, byte-identical in both files). The row is reweighted in place by exp(θ·margin), with θ solved so the mean lands exactly on the fair margin. Every margin keeps its own entry.
+  - The reweighting reaches one standard deviation of the row, and no further than the table's row means span. Past that, the rest of the move is a mixture of two whole-point moves (as `football/engine.js` does past its table). Margin 0 is held at zero throughout.
+  - A college pick'em (line 0) with no push is no longer a "missing push".
+- **What moved.** The fair spread, win probability, sigma and ratings are unchanged. Cover and push probabilities move:
+  - Raw cover at the 2022–2025 closes moves 1.8 pp on average (p99 6.5 pp). The model's side gives back 0.3–0.9 pp, most at 5–12-point gaps.
+  - Mean push at integer lines goes from 2.4% to 3.2% (observed 4.9%). At 3 it goes from 2.6% to 6.2%, at 7 from 2.4% to 5.3%.
+  - Raw cover log loss improves on every window (OOS close 0.7340 → 0.7313).
+  - The PMF now predicts pushes better than a normal shortcut (push log loss 0.192 vs 0.203). Before, it was worse (0.237).
+- **Re-validation.** The calibration rows were re-derived from their own inputs (`football/cfb_ev/dataset.js --rederive`) and the tournament re-run. It promoted the same methods: close temperature, T = 10⁶ (unchanged); open temperature, T 40.89 → 36.81; moneyline identity.
+  - The new hash is recorded as a PATCH in `football/cfb_ev/versions.jsonl`, so the next-100 count continues. The pricing path's PATCH is `edgedesk_cfb_r1+p5`.
+  - Disclosed in PREREG.md, post-registration change 3.
+- **Two consequences to know.**
+  - The calibration anchor (`lib/edgedesk_ev.js` `shiftedHome`, frozen) still carries the curve to the calibrated probability by a location move, which displaces the spikes the raw curve now keeps. The alternate-line audit's +3 slope fell below the 0.6–1.6 band, so the validated alternate domain goes from ±3 to 0.
+  - Three games on today's board drop below the flat 25% raw-EV bound and leave INVESTIGATE (two to WORTH RESEARCHING, one to MARKET FAULT).
+- **The temporary hold is gone.** `tools/bettor/football_decision.test.js` no longer lets the shifted-hole signature (`tieHoleHold`) through. Its self-check idea is kept in the new regression.
+- **Tests.** Every suite runs green with these checks added:
+  - no stored curve gives a tie any mass, and every whole-number line on the board carries a push (`tools/bettor/football_decision.test.js`, with a self-check that catches the old shifted hole);
+  - the key numbers stay on 3 and 7 (`football/cfb_p4/tests.js`);
+  - the mean is exact, and the two functions agree to the bit (`tools/football/quote_ev.test.js`).
+
 ## 2026-10-04 — the landing page sells research plus your own betting analytics
 
 The public page now answers, in five seconds: EdgeDesk is football research plus personal betting analytics, it helps you see whether your process is working, it costs $49.99 a month, and it sells no picks.

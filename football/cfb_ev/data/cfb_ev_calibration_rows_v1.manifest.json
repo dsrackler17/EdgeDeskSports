@@ -23,7 +23,7 @@
   "opener_fault": 8,
   "no_curve": 0
  },
- "csv_sha256": "26eb6a9a52d4a441a1f132cb05b6d8bd9348cbfe489c51596a004ed83c062124",
+ "csv_sha256": "f1bfa7140fc15f5f19cdc40ca0963ea8b9c784005af604bdf688c65cda2f7045",
  "model_version": "edgedesk_cfb_p4_v1.0.0",
  "probability_path": "football/cfb_terminal/build.js v1Dist -> lib/edgedesk_read.js buildCurve -> sideProb (the game page path)",
  "fair_source": "football/cfb_p4/research/disagreement_replay.js (cold, Tuesday 12:00 UTC freeze, market never an input) for 2015-2025; record/football/cfb_2026.json (published picks) for 2026",
@@ -42,5 +42,24 @@
   "replay": "disagreement_replay.jsonl",
   "archive": "betting/cfb_line_odds.csv.gz (sportsdataverse/cfbfastR-data)",
   "swapped_archive_games_dropped": 11
- }
+ },
+ "rederived": [
+  {
+   "at": "2026-10-04T21:13:45.651Z",
+   "reason": "the champion re-centres its market-conditioned margin PMF by reweighting it in place instead of a whole-point shift (football/cfb_p4/engine.js cfbRecentre, 2026-10-04): the shift moved the table's 'no ties' hole and its key-number spikes; 75 rows with a market past the table's +/-45 also take the 2026-10-02 edge-row read (lib/edgedesk_quote_ev.js cfbPmfRow) the production path has used since",
+   "from_csv_sha256": "26eb6a9a52d4a441a1f132cb05b6d8bd9348cbfe489c51596a004ed83c062124",
+   "to_csv_sha256": "f1bfa7140fc15f5f19cdc40ca0963ea8b9c784005af604bdf688c65cda2f7045",
+   "columns": [
+    "p_win",
+    "p_push",
+    "p_loss",
+    "p_cover",
+    "pmf_conditioned"
+   ],
+   "unchanged": "every row, fair margin, sigma, market and outcome",
+   "rows": 27870,
+   "p_cover_changed": 27869,
+   "max_abs_p_cover_change": 0.089023
+  }
+ ]
 }

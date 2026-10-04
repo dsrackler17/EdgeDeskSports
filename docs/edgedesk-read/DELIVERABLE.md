@@ -360,6 +360,11 @@ Also: the queue with the Read filters ([png](demo/r_queue.png)), the Read record
    - That is the production distribution, and the Read does not alter it. It
      shows both numbers on every KEY NUMBER CROSSED line.
    - Fixing it belongs to the champion's model owners, not to this product layer.
+   - **Resolved 2026-10-04.** The champion now re-centres by reweighting the
+     row in place (`football/cfb_p4/engine.js` `cfbRecentre`), so the spikes
+     stay on 3, 7, 10 and 14 and a tie keeps no mass. Across 2022–2025 FBS
+     closes, the mean mass on |margin| = 7 went from 3.6% to 8.0% (8.8% of
+     games end there).
 3. **One priced book.** Consensus, line shopping, "my books" and the book
    selector work for any number of books, but the ledger holds DraftKings only.
    Books arrive when the Odds API pull into the Lab carries them.

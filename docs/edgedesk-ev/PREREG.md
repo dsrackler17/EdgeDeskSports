@@ -143,3 +143,43 @@ candidate, a metric or the promotion rule.
    when the observed push rate at integer market lines lies outside what the
    distribution predicts, key-number mass is NOT VALIDATED, and alternates
    that cross 3 or 7 are never actionable.
+3. **The champion's distribution was corrected; the rows were re-derived (2026-10-04).**
+   This change came after the holdout was read. It moved no threshold,
+   candidate, metric, fold or promotion rule.
+   - The champion re-centred its market-conditioned margin PMF by shifting it
+     a whole number of points. That carried the table's "no ties" hole and its
+     key-number spikes off their margins: on 2026-10-04 UConn @ Temple had no
+     push at Temple −3 while a tie carried 6% of the mass.
+     `football/cfb_p4/engine.js` now reweights the row in place (`cfbRecentre`).
+   - The raw probabilities in the dataset therefore changed.
+     `football/cfb_ev/dataset.js --rederive` recomputed `p_win`, `p_push`,
+     `p_loss` and `p_cover` for every committed row from that row's own
+     recorded inputs, through the production path. No row, fair margin, sigma,
+     market or outcome moved, and no CFBD cache was needed.
+   - Through the pre-change code the same inputs reproduce the committed
+     probabilities to 1e-5 for the 27,795 rows inside the table. The 75 rows
+     with a market past ±45 also take the edge-row read the production path
+     has used since 2026-10-02.
+   - The walk-forward tournament was re-run unchanged. It promotes the same
+     methods: close temperature with T = 10⁶ (unchanged), open temperature
+     with T 40.89 → 36.81, moneyline identity (unchanged).
+   - The 2026 holdout was **not** re-read by the tournament. Its recorded
+     verdict (close: CONFIRMED) is carried, as the tournament carries it on
+     every rebuild. With T = 10⁶ the calibrated close probability is 0.5
+     whatever the raw input. The verdict would turn only if the raw curve beat
+     that coin flip on the holdout by a clear margin.
+   - Disclosure: when the re-centring methods were compared, a diagnostic
+     printed the raw cover log loss on every window, the holdout rows
+     included. On the re-derived rows the holdout's is 0.7568 under the shift
+     and 0.7522 under the reweighting, both well above the 0.6931 coin flip.
+     The method was chosen on the 2015–2025 rows, where the reweighting
+     scores better on every window:
+     - OOS close: 0.7340 → 0.7313
+     - OOS open: 0.7231 → 0.7203
+     - OOS alternates (close ± 3, ± 7): 0.6830 → 0.6802
+     - in-sample close: 0.7295 → 0.7267
+     - in-sample open: 0.7209 → 0.7183
+   - The artifact keeps its version (`cfb_ev_calibration_v1`). Its new hash is
+     recorded as a PATCH in `football/cfb_ev/versions.jsonl`, so the
+     prospective next-100 count continues. Bumping the version would have
+     stopped that count, because it keys on the calibrator version.
