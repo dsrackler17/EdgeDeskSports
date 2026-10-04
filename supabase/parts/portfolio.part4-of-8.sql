@@ -2,12 +2,51 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- Checked at COMMIT, so a position and its first fill can arrive in one
+-- transaction in either order: a contract position has at least one buy and
+-- never more contracts sold than bought.
+create or replace function public.portfolio_positions_check_fills() returns trigger
+language plpgsql as $$
+declare b numeric; s numeric;
+begin
+  if new.platform_type <> 'PREDICTION_MARKET' then return null; end if;
+  if not exists (select 1 from public.portfolio_positions where id = new.id) then return null; end if;
+  select coalesce(sum(quantity) filter (where transaction_type = 'BUY' or (transaction_type = 'FILL' and side = 'BUY')), 0),
+         coalesce(sum(quantity) filter (where transaction_type = 'SELL' or (transaction_type = 'FILL' and side = 'SELL')), 0)
+    into b, s from public.portfolio_transactions where position_id = new.id;
+  if b <= 0 then
+    raise exception 'portfolio: a prediction-market position needs at least one buy' using errcode = '23514';
+  end if;
+  if s > b then
+    raise exception 'portfolio: more contracts sold than bought' using errcode = '23514';
+  end if;
+  return null;
+end $$;
+drop trigger if exists portfolio_positions_fills_trg on public.portfolio_positions;
+create constraint trigger portfolio_positions_fills_trg after insert or update on public.portfolio_positions
+  deferrable initially deferred for each row execute function public.portfolio_positions_check_fills();
+
+-- a renamed market re-fingerprints its fills
+create or replace function public.portfolio_positions_after_update() returns trigger
+language plpgsql as $$
+begin
+  if new.platform_type = 'PREDICTION_MARKET'
+     and (new.platform, new.event_name, new.market_name, new.side) is distinct from (old.platform, old.event_name, old.market_name, old.side) then
+    update public.portfolio_transactions set updated_at = now() where position_id = new.id;
+  end if;
+  return null;
+end $$;
+drop trigger if exists portfolio_positions_after_update_trg on public.portfolio_positions;
+create trigger portfolio_positions_after_update_trg after update on public.portfolio_positions
+  for each row execute function public.portfolio_positions_after_update();
+
 create or replace function public.portfolio_transactions_prepare() returns trigger
 language plpgsql as $$
 declare
   reader boolean := auth.uid() is not null;
   pos record;
   action text;
+  old_account uuid := case when tg_op = 'UPDATE' then old.platform_account_id end;
 begin
   if tg_op = 'INSERT' then
     if reader then new.user_id := auth.uid(); end if;
@@ -17,11 +56,14 @@ begin
     end if;
   else
     new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at; new.source := old.source;
-    new.import_id := old.import_id; new.position_id := old.position_id;
+    new.position_id := old.position_id;
+    if not public.portfolio_link_released(old.import_id, new.import_id, 'import') then new.import_id := old.import_id; end if;
     if reader then
       new.external_transaction_id := old.external_transaction_id; new.raw_payload := old.raw_payload;
-      if old.source = 'SYNC' and (new.quantity, new.price, new.fee, new.executed_at, new.transaction_type, new.side, new.amount)
-           is distinct from (old.quantity, old.price, old.fee, old.executed_at, old.transaction_type, old.side, old.amount) then
+      if old.source = 'SYNC' and ((new.quantity, new.price, new.fee, new.executed_at, new.transaction_type, new.side, new.amount, new.dedupe_occurrence)
+           is distinct from (old.quantity, old.price, old.fee, old.executed_at, old.transaction_type, old.side, old.amount, old.dedupe_occurrence)
+         or (new.platform_account_id is distinct from old.platform_account_id
+             and not public.portfolio_link_released(old.platform_account_id, new.platform_account_id, 'account'))) then
         raise exception 'portfolio: a synced transaction is read-only' using errcode = '42501';
       end if;
     end if;
@@ -47,7 +89,13 @@ begin
       raise exception 'portfolio: buys and sells belong to prediction-market positions' using errcode = '23514';
     end if;
     new.platform := pos.platform;
-    new.platform_account_id := coalesce(new.platform_account_id, pos.platform_account_id);
+    /* the position's account, if it still exists: while an account is being
+       deleted its rows are unlinked one table at a time, and a fill must not
+       be re-pointed at the account that is going away */
+    if new.platform_account_id is null and not public.portfolio_link_released(old_account, null, 'account') then
+      select a.id into new.platform_account_id from public.platform_accounts a
+       where a.id = pos.platform_account_id and a.user_id = new.user_id;
+    end if;
   end if;
   new.platform := lower(btrim(new.platform));
 
@@ -229,10 +277,3 @@ begin
   end if;
   return out;
 end $$;
-
--- a row goes in when it is NEW and the reader did not skip it, or when the
--- reader explicitly chose to import it; an INVALID row never goes in
-create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
-returns boolean language sql immutable as $$
-  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
-$$;

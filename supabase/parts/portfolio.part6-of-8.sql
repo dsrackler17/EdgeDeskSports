@@ -108,8 +108,12 @@ begin
     begin
       select ir.normalized into first from public.portfolio_import_rows ir where ir.import_id = p_import and ir.row_number = g.first_row;
       v_pos := null;
+      /* a fill this market already holds names its position — only if that
+         position IS this market: a platform id reused by another market
+         (EXTERNAL_ID_IN_USE) must not pull these fills into it */
       select t.position_id into v_pos from public.portfolio_import_rows ir
         join public.portfolio_transactions t on t.id = ir.duplicate_of
+        join public.portfolio_positions p on p.id = t.position_id and p.contract_key = g.group_key
        where ir.import_id = p_import and ir.group_key = g.group_key and ir.duplicate_of is not null limit 1;
       if v_pos is null then
         select p.id into v_pos from public.portfolio_positions p

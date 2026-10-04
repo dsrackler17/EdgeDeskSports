@@ -358,6 +358,8 @@ file ──(browser: parse, detect, map, normalize, issues)──▶ portfolio_i
 | Contract position | `pf1|contract|platform|normText(event)|normText(market)|normText(side)|minute(first buy)` |
 | Fill | `pf1|fill|platform|normText(event)|normText(market)|normText(side)|BUY or SELL|qty|price|minute(executed_at)` |
 
+- **Within one import:** a file is matched only against what the reader already had, never against rows an earlier commit call of the same import inserted. Those rows are the file's own, and are ranked among their twins by row number over the whole file, including rows already imported or failed. So a file classifies and lands identically whether it is committed in one call or in a thousand.
+- **A platform id already in use on a different record** (its fingerprint differs) is still a duplicate, because the platform says so. But the row carries the warning `EXTERNAL_ID_IN_USE`, since some exports renumber their rows each time. New fills in that file join a position only if it is the same market (`contract_key`). An id reused by another market never pulls them in.
 - **What the fingerprint does not depend on:** event text alone, notes, the status (a bet that has since settled is the same bet), or the time zone the file was written in.
 - **What never collides:** the same event text with a different pick, price, stake or minute.
 - **Parity:** the SQL and JS material match byte for byte over a test corpus that includes accents, curly quotes, emoji and tabs.

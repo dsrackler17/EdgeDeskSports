@@ -523,6 +523,19 @@ create unique index if not exists portfolio_transactions_fingerprint_once
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 6. THE ARITHMETIC — every derived column, computed here and nowhere else
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Is this a link being cleared because what it pointed at was deleted? A
+-- foreign key's ON DELETE SET NULL runs as an UPDATE of the referencing row,
+-- after the referenced row is gone; the triggers below that keep a link fixed
+-- for life must let exactly that update through, or the row keeps naming a
+-- record that no longer exists.
+create or replace function public.portfolio_link_released(p_old uuid, p_new uuid, p_kind text)
+returns boolean language sql stable as $$
+  select p_old is not null and p_new is null and case p_kind
+    when 'import' then not exists (select 1 from public.portfolio_imports i where i.id = p_old)
+    when 'account' then not exists (select 1 from public.platform_accounts a where a.id = p_old)
+    else false end
+$$;
+
 create or replace function public.portfolio_american_to_decimal(p_american int)
 returns numeric language sql immutable strict as $$
   select case when p_american >= 100 then 1 + public.portfolio_div_round(p_american, 100, 6)
@@ -573,15 +586,27 @@ begin
     end if;
   else
     new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at;
-    new.source := old.source; new.import_id := old.import_id; new.platform_type := old.platform_type;
+    new.source := old.source; new.platform_type := old.platform_type;
+    /* the import that created a position is fixed for life, except that
+       deleting the import itself clears the link (its ON DELETE SET NULL);
+       restoring it there would leave the position naming an import that no
+       longer exists */
+    if not public.portfolio_link_released(old.import_id, new.import_id, 'import') then new.import_id := old.import_id; end if;
     if reader then
       new.external_position_id := old.external_position_id; new.raw_payload := old.raw_payload;
-      if old.source = 'SYNC' and (new.platform, new.event_name, new.market_name, new.selection, new.side, new.line, new.odds_american,
+      /* a synced position is the platform's record: the reader keeps notes,
+         attribution and the labels the platform left blank, nothing else */
+      if old.source = 'SYNC' and ((new.platform, new.event_name, new.market_name, new.selection, new.side, new.line, new.odds_american,
           new.odds_decimal, new.stake, new.reported_payout, new.fees, new.status, new.placed_at, new.settled_at, new.resolution,
-          new.settlement_price, new.current_price, new.position_type, new.platform_account_id)
+          new.settlement_price, new.current_price, new.position_type, new.legs, new.event_id, new.dedupe_occurrence)
          is distinct from (old.platform, old.event_name, old.market_name, old.selection, old.side, old.line, old.odds_american,
           old.odds_decimal, old.stake, old.reported_payout, old.fees, old.status, old.placed_at, old.settled_at, old.resolution,
-          old.settlement_price, old.current_price, old.position_type, old.platform_account_id) then
+          old.settlement_price, old.current_price, old.position_type, old.legs, old.event_id, old.dedupe_occurrence)
+         or (new.platform_account_id is distinct from old.platform_account_id
+             and not public.portfolio_link_released(old.platform_account_id, new.platform_account_id, 'account'))
+         or (old.sport is not null and new.sport is distinct from old.sport)
+         or (old.league is not null and new.league is distinct from old.league)
+         or (old.event_start_at is not null and new.event_start_at is distinct from old.event_start_at)) then
         raise exception 'portfolio: a synced position is read-only except its notes and attribution' using errcode = '42501';
       end if;
     end if;
@@ -788,6 +813,7 @@ declare
   reader boolean := auth.uid() is not null;
   pos record;
   action text;
+  old_account uuid := case when tg_op = 'UPDATE' then old.platform_account_id end;
 begin
   if tg_op = 'INSERT' then
     if reader then new.user_id := auth.uid(); end if;
@@ -797,11 +823,14 @@ begin
     end if;
   else
     new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at; new.source := old.source;
-    new.import_id := old.import_id; new.position_id := old.position_id;
+    new.position_id := old.position_id;
+    if not public.portfolio_link_released(old.import_id, new.import_id, 'import') then new.import_id := old.import_id; end if;
     if reader then
       new.external_transaction_id := old.external_transaction_id; new.raw_payload := old.raw_payload;
-      if old.source = 'SYNC' and (new.quantity, new.price, new.fee, new.executed_at, new.transaction_type, new.side, new.amount)
-           is distinct from (old.quantity, old.price, old.fee, old.executed_at, old.transaction_type, old.side, old.amount) then
+      if old.source = 'SYNC' and ((new.quantity, new.price, new.fee, new.executed_at, new.transaction_type, new.side, new.amount, new.dedupe_occurrence)
+           is distinct from (old.quantity, old.price, old.fee, old.executed_at, old.transaction_type, old.side, old.amount, old.dedupe_occurrence)
+         or (new.platform_account_id is distinct from old.platform_account_id
+             and not public.portfolio_link_released(old.platform_account_id, new.platform_account_id, 'account'))) then
         raise exception 'portfolio: a synced transaction is read-only' using errcode = '42501';
       end if;
     end if;
@@ -827,7 +856,13 @@ begin
       raise exception 'portfolio: buys and sells belong to prediction-market positions' using errcode = '23514';
     end if;
     new.platform := pos.platform;
-    new.platform_account_id := coalesce(new.platform_account_id, pos.platform_account_id);
+    /* the position's account, if it still exists: while an account is being
+       deleted its rows are unlinked one table at a time, and a fill must not
+       be re-pointed at the account that is going away */
+    if new.platform_account_id is null and not public.portfolio_link_released(old_account, null, 'account') then
+      select a.id into new.platform_account_id from public.platform_accounts a
+       where a.id = pos.platform_account_id and a.user_id = new.user_id;
+    end if;
   end if;
   new.platform := lower(btrim(new.platform));
 
@@ -1059,37 +1094,53 @@ begin
             from public.portfolio_import_rows ir where ir.import_id = p_import and ir.outcome is null) x
    where r.id = x.id;
 
-  /* 2. what the reader already has: platform id first … */
-  update public.portfolio_import_rows r set duplicate_of = p.id
+  /* 2. what the reader already has — never what an earlier batch of THIS
+     import inserted: those are the file's own rows, and step 3 ranks them, so
+     a file classifies the same in one commit call or in twenty.
+     Platform id first (and a platform id already used by a record with
+     different details is called out: some exports number their rows afresh
+     each time) … */
+  update public.portfolio_import_rows r set duplicate_of = p.id,
+         issues = r.issues || case when p.fingerprint is distinct from r.fingerprint then jsonb_build_array(jsonb_build_object(
+           'level', 'warning', 'code', 'EXTERNAL_ID_IN_USE', 'server', 'true',
+           'message', 'This id is already in your portfolio on a different bet (' || left(p.event_name, 80) || '). If the file''s ids restart with every export, import it without the id column.'))
+           else '[]'::jsonb end
     from public.portfolio_positions p
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'wager'
-     and p.user_id = imp.user_id and p.platform = r.normalized->>'platform'
+     and p.user_id = imp.user_id and p.platform = r.normalized->>'platform' and p.import_id is distinct from p_import
      and p.external_position_id = nullif(btrim(r.normalized->>'external_position_id'), '');
-  update public.portfolio_import_rows r set duplicate_of = t.id
+  update public.portfolio_import_rows r set duplicate_of = t.id,
+         issues = r.issues || case when t.fingerprint is distinct from r.fingerprint then jsonb_build_array(jsonb_build_object(
+           'level', 'warning', 'code', 'EXTERNAL_ID_IN_USE', 'server', 'true',
+           'message', 'This id is already in your portfolio on a different trade. If the file''s ids restart with every export, import it without the id column.'))
+           else '[]'::jsonb end
     from public.portfolio_transactions t
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'fill'
-     and t.user_id = imp.user_id and t.platform = r.normalized->>'platform'
+     and t.user_id = imp.user_id and t.platform = r.normalized->>'platform' and t.import_id is distinct from p_import
      and t.external_transaction_id = nullif(btrim(r.normalized->>'external_transaction_id'), '');
   /* … then the fingerprint */
   update public.portfolio_import_rows r
      set duplicate_of = (select p.id from public.portfolio_positions p
-                          where p.user_id = imp.user_id and p.fingerprint = r.fingerprint
+                          where p.user_id = imp.user_id and p.fingerprint = r.fingerprint and p.import_id is distinct from p_import
                             and (nullif(btrim(r.normalized->>'external_position_id'), '') is null or p.external_position_id is null)
                           order by p.dedupe_occurrence limit 1)
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'wager' and r.duplicate_of is null and r.fingerprint is not null;
   update public.portfolio_import_rows r
      set duplicate_of = (select t.id from public.portfolio_transactions t
-                          where t.user_id = imp.user_id and t.fingerprint = r.fingerprint
+                          where t.user_id = imp.user_id and t.fingerprint = r.fingerprint and t.import_id is distinct from p_import
                             and (nullif(btrim(r.normalized->>'external_transaction_id'), '') is null or t.external_transaction_id is null)
                           order by t.dedupe_occurrence limit 1)
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'fill' and r.duplicate_of is null and r.fingerprint is not null;
 
-  /* 3. the classification, with duplicates earlier in the same file found by window */
+  /* 3. the classification, with duplicates earlier in the same file found by
+     window — over the WHOLE file, rows an earlier batch already imported or
+     failed included, so a row's place among its twins never changes between
+     commit calls (a failed first copy does not promote its unticked twin) */
   with valid as (
     select ir.id, ir.row_number, ir.fingerprint, ir.normalized->>'platform' as plat,
            nullif(btrim(coalesce(ir.normalized->>'external_position_id', ir.normalized->>'external_transaction_id', '')), '') as ext
       from public.portfolio_import_rows ir
-     where ir.import_id = p_import and ir.outcome is null
+     where ir.import_id = p_import and coalesce(ir.outcome, '') <> 'SKIPPED'
        and not exists (select 1 from jsonb_array_elements(ir.issues) e where e->>'level' = 'error')),
   ranked as (
     select id, ext, row_number() over (partition by plat, ext order by row_number) as n_ext,
@@ -1223,8 +1274,12 @@ begin
     begin
       select ir.normalized into first from public.portfolio_import_rows ir where ir.import_id = p_import and ir.row_number = g.first_row;
       v_pos := null;
+      /* a fill this market already holds names its position — only if that
+         position IS this market: a platform id reused by another market
+         (EXTERNAL_ID_IN_USE) must not pull these fills into it */
       select t.position_id into v_pos from public.portfolio_import_rows ir
         join public.portfolio_transactions t on t.id = ir.duplicate_of
+        join public.portfolio_positions p on p.id = t.position_id and p.contract_key = g.group_key
        where ir.import_id = p_import and ir.group_key = g.group_key and ir.duplicate_of is not null limit 1;
       if v_pos is null then
         select p.id into v_pos from public.portfolio_positions p
