@@ -1,32 +1,43 @@
 # Changelog
 
-## 2026-10-04 — Portfolio: a Calendar of your own P&L, day by day
+## 2026-10-04 — Portfolio Calendar: month arrows no longer blank it; whole amounts on a phone; the month's settled line
 
-Portfolio has a **Calendar** tab between Open and History. `#portfolio/calendar` now opens it; until now that link fell back to History.
+Three fixes to the Calendar that #504 added.
 
-- **What a day shows.** The calendar answers three different questions and never mixes them, the same three that `public.portfolio_calendar()` keeps apart:
-  - what **settled** that day: the day's P&L, on the day the cumulative line already counts it;
-  - which **events started** that day, and what is still at risk on the ones that are open;
-  - what was **placed** that day, and what it cost.
-- **Days are local.** Each day is the reader's own calendar day, in their time zone; a 9 pm UTC settlement is the next day in Tokyo.
-- **A month at a glance.**
-  - The month's settled total, record and ROI, and how many days were up or down.
-  - The best and worst day, shown only when there are two days to compare, as everywhere else on the page.
-  - A seven-column grid where each day shows its P&L in short form (+$45, −$1.2k). The cell's screen-reader label, the day panel and History give the exact amount.
-  - Filters for sportsbook or prediction market, and for platform. An empty month offers the nearest months that have activity.
-- **A day.**
-  - Tapping a day lists each of its positions once, with what happened to it that day ("Placed 1:00 PM · Settled 9:00 PM").
-  - "See this day's settled positions in History" opens History filtered to that date. The link follows the tab.
-- **Exact amounts.** The figures are EDPortfolio arithmetic over the stored columns, with the same exact decimals as the rest of the page. The new `EDPortfolio.calendar()` is checked against the cumulative series and against a period summary of the same month. The e2e checks the page's month and day totals against the database's own sums in the reader's zone.
-- **On the page.**
-  - The Overview's cumulative line has a "Day by day" link to the calendar.
-  - At 390 px the month is seven columns with no clipped amount and no sideways scroll. Every day is at least 40 × 50 px.
-  - Focus stays on the control you used when the page repaints.
+- **Month arrows keep the calendar on screen.**
+  - **Before:** each arrow tap replaced the whole calendar with "Loading the calendar…" until the server answered. The heading and the arrows disappeared under the reader's finger, and tapping through months jumped the page.
+  - **Now:** the new month's heading, arrows and grid stay up, marked busy and labelled "Loading October 2026…", until its days arrive.
+  - **The e2e.** The same gap made `tools/portfolio/portfolio_ui.e2e.js` fail intermittently: its loop read the heading while it was briefly missing. The e2e now answers the calendar request after 400 ms, as a phone's network would. With that delay the old code fails every time and the new code passes.
+- **A phone shows every day's P&L whole.**
+  - **Before:** at 390 px a cell cut "−$100.00" down to "−$10…", which reads as a different number.
+  - **Now:** on screens up to 420 px a cell shows a short figure (−$100, +$1.2k, rounded with exact decimals). The cell's screen-reader label, the wider-screen cell and the day panel keep the exact amount.
+- **The month's settled line.** Under the heading, the Calendar now shows the month's settled P&L, the number of positions, the win-loss-push record and the up and down days.
+  - It is built from the same `portfolio_calendar()` rows the grid draws, summed with exact decimals, and counts only the month on screen.
+  - A month with nothing settled says so.
 - **Tests.**
-  - `tools/portfolio/portfolio_calc.test.js`: 122 checks.
-  - `tools/portfolio/portfolio_ui.test.js`: 91 checks.
-  - `tools/portfolio/portfolio_ui.e2e.js`: 51 checks, against PostgreSQL.
-  - `tools/app/navigation.e2e.js`: 167 checks, including `#portfolio/calendar`.
+  - `tools/portfolio/journal_ui.test.js`: 67 checks. Covers the busy grid, the month line, short and exact amounts, and the phone rule.
+  - `tools/portfolio/portfolio_ui.e2e.js`: 78 checks against PostgreSQL. Covers the mid-load state, the month line against the database's own `portfolio_calendar()` sums, and the 390 px September with no clipped figure and no sideways scroll.
+
+## 2026-10-04 — Portfolio: the journal, the Decision Grade, the calendar and the Process Coach
+
+Portfolio now judges each decision by its price, timing, sizing and your own rules — never by whether it won — and files your history by day.
+
+- **The Overview** reads Total P&L (by settlement date), ROI, the **Decision Grade**, then **What's working / What's not**.
+  - Every figure comes from the server (`supabase/portfolio_journal.sql`). The page no longer downloads a lifetime of positions: it reads your open positions and the latest 1,000 settled ones for History.
+  - With no price to judge a decision by, the grade reads "Not graded yet". No letter is invented.
+  - Every finding carries a **WHY** (data used, sample, period, comparison, calculation, confidence, limits) and lists its positions.
+  - With too little data it says **NO RELIABLE LEAK DETECTED**, and how many more positions would let groups be tested.
+- **One combined book**, with a filter for all platforms, sportsbooks, prediction markets or one platform.
+- **Calendar** by month, week or day, read by the day you **entered**, the **event** day or the day it **settled**, in your time zone. A day lists what was entered, the events and what settled.
+- **Journal** in year → month → week → day folders.
+  - Each position's decision (planned, model probability, thesis, research and opening prices, tags) and close are recorded once and then shown locked. The database refuses a rewrite.
+  - Your review (would you make it again, Mistake / Strength Library, a sentence) stays editable.
+  - An imported bet says "Historical import · No pre-entry journal available." and nothing is invented for it.
+- **Process Coach**: Process Report (grade, process vs outcome, variance, last 30 days vs the 30 before), Leaks, Strengths, Timing, Edge Capture, Rules, Experiments and the Weekly Film Room.
+- **Before you enter**: recording a bet shows context from your own last 12 months, the model's expected value at your price, your size against your caps, and any of your rules it would break. It never says BET, DON'T BET, LOCK or GUARANTEED.
+- **New bets** record the stake type (cash or bonus bet), when the event starts (kept apart from when you placed it) and, optionally, the decision.
+- **Deploy**: the manual Portfolio deploy now tests and applies `supabase/portfolio_journal.sql` after `supabase/portfolio.sql`, each in its own transaction.
+- **Tests**: `tools/portfolio/journal_ui.test.js` (60), the journal SQL suite (73), and the browser journey (69, now through the grade, calendar, journal, coach and pre-bet panel at 1280 px and 390 px).
 
 ## 2026-10-04 — CFB champion: re-centring no longer moves the "no ties" hole or the key numbers
 

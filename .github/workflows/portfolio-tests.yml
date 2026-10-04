@@ -26,8 +26,11 @@ on:
       - 'tools/sql/split_sql.js'
       - 'supabase/portfolio.sql'
       - 'supabase/portfolio_journal.sql'
+      - 'supabase/portfolio_connect.sql'
       - 'supabase/parts/portfolio.part*.sql'
       - 'supabase/parts/portfolio_journal.part*.sql'
+      - 'supabase/parts/portfolio_connect.part*.sql'
+      - 'supabase/functions/portfolio_connect/**'
       - 'app.html'
       - 'package.json'
       - '.github/workflows/portfolio-tests.yml'
@@ -38,6 +41,8 @@ on:
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
       - 'supabase/portfolio_journal.sql'
+      - 'supabase/portfolio_connect.sql'
+      - 'supabase/functions/portfolio_connect/**'
   workflow_dispatch:
 
 permissions:
@@ -64,6 +69,10 @@ jobs:
         run: node tools/portfolio/process.test.js
       - name: The page in Node, and its wiring in app.html
         run: node tools/portfolio/portfolio_ui.test.js
+      - name: The Decision Grade, Calendar, Journal, Coach and pre-bet views in Node
+        run: node tools/portfolio/journal_ui.test.js
+      - name: The connector core (registry, contract, vault, Kalshi signing and netting, Polymarket, reconciliation)
+        run: node tools/portfolio/connect_core.test.js
       - name: The app's navigation still holds (seven seats, More, deep links)
         run: node tools/app/navigation.test.js
 
@@ -84,6 +93,18 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/journal_sql.test.js
+      - name: supabase/portfolio_connect.sql — the registry switch, the service-only ingest and the vault, as the service role and as readers
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/connect_sql.test.js
+      - name: The connectors end to end (fake Kalshi and Polymarket that check signatures → the shipped orchestration → the real migrations), all ten smoke stages
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/connect_sync.test.js
+      - name: supabase/functions/portfolio_connect/index.ts, the shipped file, in a stub Deno runtime
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/connect_function.test.js
 
   browser:
     runs-on: ubuntu-latest
@@ -97,7 +118,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: The Portfolio page in Chromium against the real migration
+      - name: The Portfolio page in Chromium against the real migrations (portfolio.sql and portfolio_journal.sql)
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/portfolio_ui.e2e.js

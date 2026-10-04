@@ -183,12 +183,6 @@ contract, SQL and page, and changes only where it sits and what surrounds it:
 * The pre-merge prototype of a device-only Portfolio (its own CSV import,
   overview and calendar) was dropped in favour of Phase A's; the position
   normaliser Process needs became `lib/edgedesk_positions.js` (`EDPositions`).
-* **Calendar** is now a tab of Phase A's page (Overview · Open · Calendar ·
-  History · …), so `#portfolio/calendar` opens it instead of falling back to
-  History. Each day shows what *settled* on it (the P&L) in the reader's time
-  zone. The events that started and the positions placed that day are shown
-  separately, the same three questions `public.portfolio_calendar()` keeps
-  apart. A day leads to History filtered to the positions that settled on it.
 
 ## Old → new route map
 
@@ -210,7 +204,7 @@ Every row is held by `tools/app/navigation.e2e.js` in a real browser.
 | `#settings` (newsletter link; was ignored) | Settings | More |
 | `#faults` · `#collective` · `#terms` | the same views | More |
 | `show('social')` · `show('discipline')` (hidden before this change) | Research › Edges | Research |
-| new: `#portfolio/overview|open|calendar|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
+| new: `#portfolio/overview|open|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
 
 ## Reading the navigation evidence
 
