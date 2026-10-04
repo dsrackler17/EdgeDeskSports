@@ -59,6 +59,54 @@ logic inside one function for no benefit.
 5. Rollback: delete/stop writing rows with this `model_version`. Historical
    rows keep their frozen `model_version` — never overwritten.
 
+## The shorter server path: feed `model_predict`, copy nothing
+
+The route above still works, but it is not the only one, and it is no longer
+the shortest. Read from the deployed sources of `capture`, `model_predict`,
+`model_conf_odds`, `close` and `settle`:
+
+* `model_predict` **already contains a complete `nfl_game_v1` module.** It is
+  built and dormant, not missing. It reads `public.nfl_team_features` keyed by
+  `team_norm`, requires `off_epa_play`, `def_epa_play` and `plays_per_game`,
+  and writes `model_predictions` through the same ignore-duplicates CLV
+  baseline every other sport uses. Nothing in it needs editing — its bundle is
+  generated, so hand edits are lost on the next rebuild anyway.
+* `model_conf_odds` is the **CFB conference Monte Carlo** writing `model_odds`.
+  It is a different job from per-game NFL prediction.
+
+So the only thing standing between the trained engine and server-side NFL rows
+is that `nfl_team_features` is empty. Two files in this change fill it:
+
+| file | what it is |
+|---|---|
+| `football/sql/010_nfl_team_features.sql` | the table, idempotent, RLS on with no policies (service-role only) |
+| `supabase/functions/ingest_nfl_features/index.ts` | the feeder, house style: `BUILD` string, `CRON_SECRET`, `?dry=1`, a sanity gate that refuses an implausible batch |
+
+The feeder fetches public nflverse data (keyless, no odds quota) and writes 32
+rows of opponent-adjusted EPA levels from the same trained recursion as
+`football/engine.js`, parity-tested against it at 1e-5. It introduces no new
+secret and touches no deployed function.
+
+Deploy order: run `010`, create the function with Verify JWT OFF, prove it with
+`?dry=1&secret=…` (computes everything, writes nothing), run it once live, then
+check `model_predict?dry=1&sport=NFL` flips `data_quality.status` off
+`insufficient_data`. `collective/sql/027_schedule_nfl_features.sql` schedules
+the daily refresh and reads the existing cron conventions before writing one.
+
+Rollback: stop the job. `nfl_game_v1` returns to `insufficient_data` and writes
+nothing; historical `model_predictions` rows keep their frozen `model_version`.
+
+## Operational SQL (`collective/sql/`)
+
+Runbooks written against the live schema while getting Week 1 onto the wall,
+kept because each one documents a real failure and its fix. Every file leads
+with read-only steps; the ones that write go through the sanctioned
+maintenance path rather than around the append-only guard on
+`collective.projections`. `SUBMIT_GATE_NOTE.md` records why
+`ingest_submission`'s spread/probability check rejected correct submissions —
+fed the closing market's own spread and moneyline, it contradicts the market on
+6 of 16 games — and gives the one-line replacement.
+
 ## Frontend integration (this change, live now)
 
 * New **Football** research module (research shell, `#research/football`):
