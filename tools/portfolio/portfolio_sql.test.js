@@ -468,6 +468,40 @@ try {
   c = json(db.as(A, `select public.portfolio_import_commit(${L(imp6)});`));
   chk('a market that sells more than it bought fails alone; the rest imports', c.failed === 2 && c.imported === 1
     && db.sql(`select count(*) from public.portfolio_positions where event_name = 'Oversold';`) === '0', c);
+
+  /* ═══ INCREMENTAL SPORTSBOOK IMPORT: updates, bonus bets, parlays, remembered layout ═══ */
+  const hist1 = ['Bet ID,Placed,Event,Selection,Odds,Stake,Status,Payout,Free Bet',
+    'MG-1,2026-09-14 13:00,Chiefs @ Bills,Chiefs ML,+150,40,Open,,',
+    'MG-2,2026-09-14 14:00,Bucs @ Saints,Saints ML,+200,25,Won,50,Yes',
+    'MG-3,2026-09-15 13:00,Colts @ Titans,Colts ML,+130,10,Won,23,',
+    'MG-3,2026-09-15 13:00,Lakers @ Celtics,Lakers +4.5,,,,,'].join('\n');
+  const s1 = I.stage(hist1, { platform: 'betmgm', timezone: 'UTC' });
+  const impU1 = stageImport(A, s1, `update public.portfolio_imports set header_signature = ${L(s1.signature)}, platform = 'betmgm' where id = $IMP;`);
+  c = json(db.as(A, `select public.portfolio_import_commit(${L(impU1)});`));
+  chk('the first export: an open bet, a bonus bet and a two-leg parlay go in', c.imported === 3 && c.updated === 0, c);
+  chk('the bonus bet is stored as BONUS and its P&L is its winnings (+$50 on a $25 free bet)',
+    db.sql(`select stake_type || ':' || profit_loss::text || ':' || cost_basis::text from public.portfolio_positions where external_position_id = 'MG-2';`) === 'BONUS:50:0');
+  chk('the parlay is one position with its legs', db.sql(`select position_type || ':' || jsonb_array_length(legs) || ':' || selection from public.portfolio_positions where external_position_id = 'MG-3';`)
+    === 'PARLAY:2:Colts ML + Lakers +4.5');
+  const hist2 = hist1.replace('MG-1,2026-09-14 13:00,Chiefs @ Bills,Chiefs ML,+150,40,Open,,', 'MG-1,2026-09-14 13:00,Chiefs @ Bills,Chiefs ML,+150,40,Won,100,')
+    + '\nMG-4,2026-09-16 13:00,Rams @ 49ers,Over 44.5,-110,22,Lost,0,';
+  const s2 = I.stage(hist2, { platform: 'betmgm', timezone: 'UTC' });
+  const impU2 = stageImport(A, s2, `update public.portfolio_imports set header_signature = ${L(s2.signature)}, platform = 'betmgm' where id = $IMP;`);
+  c = json(db.as(A, `select public.portfolio_import_classify(${L(impU2)});`));
+  chk('the newer export: the open bet that settled is an UPDATE, not a duplicate; the rest are duplicates; the new bet is new',
+    c.update === 1 && c.new === 1 && c.duplicate === 2, c);
+  c = json(db.as(A, `select public.portfolio_import_commit(${L(impU2)});`));
+  chk('commit updates the stored bet in place and adds the new one', c.updated === 1 && c.imported === 1
+    && db.sql(`select status || ':' || profit_loss::text || ':' || count(*) over () from public.portfolio_positions where external_position_id = 'MG-1' and user_id = ${L(A)};`) === 'WON:60:1', c);
+  chk('the import records how many it updated, and the log says so', db.sql(`select rows_updated from public.portfolio_imports where id = ${L(impU2)};`) === '1'
+    && db.sql(`select records_updated from public.portfolio_sync_logs where import_id = ${L(impU2)};`) === '1');
+  const impU3 = stageImport(A, I.stage(hist2, { platform: 'betmgm', timezone: 'UTC' }));
+  c = json(db.as(A, `select public.portfolio_import_commit(${L(impU3)});`));
+  chk('the same newer export again: nothing changes (no update without a change)', c.updated === 0 && c.imported === 0 && c.duplicate === 4, c);
+  const remembered = json(one(db.as(A, `select row_to_json(x) from (select importer, platform, column_map from public.portfolio_imports
+      where header_signature = ${L(s1.signature)} and status = 'COMMITTED' order by committed_at desc limit 1) x;`)));
+  chk('the layout is remembered: the next file with the same columns is read the same way', remembered && remembered.platform === 'betmgm' && remembered.importer === 'generic_sportsbook_v1');
+  chk('…and another reader never sees it', one(db.as(B, `select count(*) from public.portfolio_imports where header_signature = ${L(s1.signature)};`)) === '0');
   /* a file larger than one call: the page loops; nothing is lost or doubled between calls */
   const many = ['Date,Book,Event,Selection,Odds,Stake,Result'].concat(Array.from({ length: 9 }, (_, i) => `2026-08-0${i + 1} 12:00,Hard Rock Bet,Batch game ${i},Pick ${i},-110,10,Won`));
   many.push(many[1]);                                                  /* an in-file duplicate of the first */

@@ -91,6 +91,17 @@ begin
   new.updated_at := now();
   return new;
 end $$;
+-- An import remembers its file's columns (the header names, normalized and
+-- sorted — never a cell of data), so the reader's next file with the same
+-- columns is read the same way without asking again.
+alter table public.portfolio_imports add column if not exists rows_updated int not null default 0;
+alter table public.portfolio_imports add column if not exists header_signature text null;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_imports_signature') then
+    alter table public.portfolio_imports add constraint portfolio_imports_signature check (header_signature is null or length(header_signature) <= 2000);
+  end if;
+end $$;
+create index if not exists portfolio_imports_signature_idx on public.portfolio_imports (user_id, header_signature, committed_at desc) where header_signature is not null;
 drop trigger if exists portfolio_imports_guard_trg on public.portfolio_imports;
 create trigger portfolio_imports_guard_trg before insert or update on public.portfolio_imports
   for each row execute function public.portfolio_imports_guard();

@@ -154,13 +154,27 @@ create table if not exists public.portfolio_import_rows (
     references public.portfolio_imports (id, user_id) on delete cascade,
   constraint portfolio_import_rows_once unique (import_id, row_number),
   constraint portfolio_import_rows_number check (row_number between 1 and 20000),
-  constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID')),
+  constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'UPDATE', 'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID')),
   constraint portfolio_import_rows_decision check (decision is null or decision in ('IMPORT', 'SKIP')),
-  constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'SKIPPED', 'FAILED')),
+  constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'UPDATED', 'SKIPPED', 'FAILED')),
   constraint portfolio_import_rows_json check (jsonb_typeof(raw) = 'object' and pg_column_size(raw) <= 16384
     and (normalized is null or (jsonb_typeof(normalized) = 'object' and pg_column_size(normalized) <= 16384))
     and jsonb_typeof(issues) = 'array' and coalesce(length(outcome_message), 0) <= 300)
 );
+-- An existing database keeps its original checks; widen them to the current
+-- lists (UPDATE / UPDATED: a bet already imported whose settlement the newer
+-- file changes — an incremental import updates it instead of skipping it).
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'portfolio_import_rows_class' and pg_get_constraintdef(oid) not like '%UPDATE%') then
+    alter table public.portfolio_import_rows drop constraint portfolio_import_rows_class;
+    alter table public.portfolio_import_rows add constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'UPDATE',
+      'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID'));
+  end if;
+  if exists (select 1 from pg_constraint where conname = 'portfolio_import_rows_outcome' and pg_get_constraintdef(oid) not like '%UPDATED%') then
+    alter table public.portfolio_import_rows drop constraint portfolio_import_rows_outcome;
+    alter table public.portfolio_import_rows add constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'UPDATED', 'SKIPPED', 'FAILED'));
+  end if;
+end $$;
 create index if not exists portfolio_import_rows_user on public.portfolio_import_rows (user_id);
 create index if not exists portfolio_import_rows_group on public.portfolio_import_rows (import_id, group_key) where group_key is not null;
 
@@ -226,6 +240,10 @@ begin
     if coalesce(upper(n->>'status'), 'OPEN') not in ('OPEN', 'WON', 'LOST', 'PUSH', 'VOID', 'CASHED_OUT', 'SETTLED') then
       out := out || jsonb_build_object('level', 'error', 'code', 'BAD_STATUS');
     end if;
+    if coalesce(upper(n->>'stake_type'), 'CASH') not in ('CASH', 'BONUS') then out := out || jsonb_build_object('level', 'error', 'code', 'BAD_STAKE_TYPE'); end if;
+    if n ? 'legs' and (jsonb_typeof(n->'legs') <> 'array' or jsonb_array_length(n->'legs') > 30) then
+      out := out || jsonb_build_object('level', 'error', 'code', 'BAD_LEGS');
+    end if;
   elsif n->>'kind' = 'fill' then
     if coalesce(btrim(n->>'side'), '') = '' then out := out || jsonb_build_object('level', 'error', 'code', 'MISSING_SIDE'); end if;
     if coalesce(upper(n->>'action'), '') not in ('BUY', 'SELL') then out := out || jsonb_build_object('level', 'error', 'code', 'BAD_ACTION'); end if;
@@ -240,9 +258,10 @@ begin
   return out;
 end $$;
 
--- a row goes in when it is NEW and the reader did not skip it, or when the
--- reader explicitly chose to import it; an INVALID row never goes in
+-- a row goes in when it is NEW (or an UPDATE of a bet already imported) and
+-- the reader did not skip it, or when the reader explicitly chose to import
+-- it; an INVALID row never goes in
 create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
 returns boolean language sql immutable as $$
-  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
+  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class in ('NEW', 'UPDATE') then 'IMPORT' else 'SKIP' end) = 'IMPORT'
 $$;

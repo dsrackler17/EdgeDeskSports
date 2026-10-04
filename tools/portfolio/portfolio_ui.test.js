@@ -11,7 +11,7 @@
      - no account is ever called "Connected" unless the server connected it;
      - the copy carries no tout or loss-chasing language;
      - the CSV export cannot smuggle a spreadsheet formula;
-     - app.html loads the four files in order, owns a #v-portfolio view, routes
+     - app.html loads the six files in order, owns a #v-portfolio view, routes
        to it, lists it in More, and leaves the seven-seat bar alone.
 
    Run: node tools/portfolio/portfolio_ui.test.js
@@ -146,8 +146,9 @@ chk('friendly errors: the database\'s own sentence, without its prefix', U.frien
 chk('friendly errors: a missing migration says which file', /portfolio\.sql/.test(U.friendly({ status: 404, pg: null }).text));
 
 /* ═══ COPY: factual, never a nudge ══════════════════════════════════════ */
-const SRC = ['edgedesk_portfolio_ui.js', 'edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js']
-  .map((f) => fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8')).join('\n');
+/* the coach's own list of banned words is the one place they may appear */
+const SRC = ['edgedesk_portfolio_ui.js', 'edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_process.js', 'edgedesk_portfolio_journal_ui.js']
+  .map((f) => fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8')).join('\n').replace(/var BANNED_WORDS = \[[\s\S]*?\];/, '');
 const strings = (SRC.replace(/\/\*[\s\S]*?\*\//g, '').match(/'(?:[^'\\\n]|\\.)*'/g) || []).join('\n');
 const TOUT = /\b(bet this|locks?|lock of|guaranteed?|smash|must[- ]bet|can'?t lose|best bets?|winning plays?|free money|sure thing|hammer|win it back|chase|get even|recoup|bounce back|deposit (now|more)|reload bonus|boost your|hot streak|on fire|due for|don'?t miss)\b/i;
 const hit = strings.split('\n').filter((l) => TOUT.test(l));
@@ -161,8 +162,9 @@ chk('no password or credential field exists in the page', !/type="password"|name
 
 /* ═══ APP WIRING ════════════════════════════════════════════════════════ */
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
-const order = ['edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_ui.js'].map((f) => APP.indexOf('<script src="/lib/' + f + '?v='));
-chk('app.html loads the engine, importer, contract and page, in that order', order.every((i) => i > 0) && order.every((i, k) => k === 0 || i > order[k - 1]), order);
+const order = ['edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_process.js', 'edgedesk_portfolio_journal_ui.js', 'edgedesk_portfolio_ui.js']
+  .map((f) => APP.indexOf('<script src="/lib/' + f + '?v='));
+chk('app.html loads the engine, importer, contract, process engine, journal views and page, in that order', order.every((i) => i > 0) && order.every((i, k) => k === 0 || i > order[k - 1]), order);
 chk('and the stylesheet', /<link rel="stylesheet" href="\/lib\/edgedesk_portfolio\.css\?v=/.test(APP));
 /* Since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md) Portfolio
    is a SEAT of its own, not a More row: the same page in the same host, opened by

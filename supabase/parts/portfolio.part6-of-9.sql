@@ -99,6 +99,16 @@ begin
   infile as (select id from ranked where (ext is not null and n_ext > 1) or (ext is null and n_fp > 1))
   update public.portfolio_import_rows r set classification = case
       when exists (select 1 from jsonb_array_elements(r.issues) e where e->>'level' = 'error') then 'INVALID'
+      -- the same imported bet (same platform id, same details) whose result
+      -- the newer file changes: an UPDATE, not a duplicate
+      when r.duplicate_of is not null and r.normalized->>'kind' = 'wager' and exists (
+             select 1 from public.portfolio_positions p
+              where p.id = r.duplicate_of and p.source = 'CSV' and p.fingerprint is not distinct from r.fingerprint
+                and nullif(btrim(r.normalized->>'external_position_id'), '') is not null
+                and (p.status, coalesce(p.reported_payout, -1), coalesce(p.fees, 0))
+                    is distinct from (coalesce(upper(nullif(r.normalized->>'status', '')), 'OPEN'),
+                                      coalesce(public.portfolio_try_numeric(r.normalized->>'reported_payout'), case when p.reported_payout is null then -1 else p.reported_payout end),
+                                      coalesce(public.portfolio_try_numeric(r.normalized->>'fees'), p.fees, 0))) then 'UPDATE'
       when r.duplicate_of is not null then 'DUPLICATE'
       when r.id in (select id from infile) then 'DUPLICATE_IN_FILE'
       when exists (select 1 from jsonb_array_elements(r.issues) e where e->>'level' = 'warning') then 'NEEDS_REVIEW'
@@ -106,14 +116,16 @@ begin
    where r.import_id = p_import and r.outcome is null;
 
   update public.portfolio_imports i set status = 'CLASSIFIED', classified_at = coalesce(i.classified_at, now()),
-         rows_total = c.total, rows_new = c.n_new, rows_duplicate = c.n_dup, rows_review = c.n_review, rows_invalid = c.n_invalid
+         rows_total = c.total, rows_new = c.n_new, rows_duplicate = c.n_dup, rows_review = c.n_review, rows_invalid = c.n_invalid,
+         rows_updated = c.n_upd
     from (select count(*) as total,
                  count(*) filter (where classification = 'NEW') as n_new,
+                 count(*) filter (where classification = 'UPDATE') as n_upd,
                  count(*) filter (where classification in ('DUPLICATE', 'DUPLICATE_IN_FILE')) as n_dup,
                  count(*) filter (where classification = 'NEEDS_REVIEW') as n_review,
                  count(*) filter (where classification = 'INVALID') as n_invalid
             from public.portfolio_import_rows where import_id = p_import) c
    where i.id = p_import;
-  return (select jsonb_build_object('status', status, 'total', rows_total, 'new', rows_new, 'duplicate', rows_duplicate,
+  return (select jsonb_build_object('status', status, 'total', rows_total, 'new', rows_new, 'update', rows_updated, 'duplicate', rows_duplicate,
                  'review', rows_review, 'invalid', rows_invalid) from public.portfolio_imports where id = p_import);
 end $$;

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-04 — Portfolio: the journal, the Decision Grade, the calendar and the Process Coach
+
+Portfolio now judges each decision by its price, timing, sizing and your own rules — never by whether it won — and files your history by day.
+
+- **The Overview** reads Total P&L (by settlement date), ROI, the **Decision Grade**, then **What's working / What's not**.
+  - Every figure comes from the server (`supabase/portfolio_journal.sql`). The page no longer downloads a lifetime of positions: it reads your open positions and the latest 1,000 settled ones for History.
+  - With no price to judge a decision by, the grade reads "Not graded yet". No letter is invented.
+  - Every finding carries a **WHY** (data used, sample, period, comparison, calculation, confidence, limits) and lists its positions.
+  - With too little data it says **NO RELIABLE LEAK DETECTED**, and how many more positions would let groups be tested.
+- **One combined book**, with a filter for all platforms, sportsbooks, prediction markets or one platform.
+- **Calendar** by month, week or day, read by the day you **entered**, the **event** day or the day it **settled**, in your time zone. A day lists what was entered, the events and what settled.
+- **Journal** in year → month → week → day folders.
+  - Each position's decision (planned, model probability, thesis, research and opening prices, tags) and close are recorded once and then shown locked. The database refuses a rewrite.
+  - Your review (would you make it again, Mistake / Strength Library, a sentence) stays editable.
+  - An imported bet says "Historical import · No pre-entry journal available." and nothing is invented for it.
+- **Process Coach**: Process Report (grade, process vs outcome, variance, last 30 days vs the 30 before), Leaks, Strengths, Timing, Edge Capture, Rules, Experiments and the Weekly Film Room.
+- **Before you enter**: recording a bet shows context from your own last 12 months, the model's expected value at your price, your size against your caps, and any of your rules it would break. It never says BET, DON'T BET, LOCK or GUARANTEED.
+- **New bets** record the stake type (cash or bonus bet), when the event starts (kept apart from when you placed it) and, optionally, the decision.
+- **Deploy**: the manual Portfolio deploy now tests and applies `supabase/portfolio_journal.sql` after `supabase/portfolio.sql`, each in its own transaction.
+- **Tests**: `tools/portfolio/journal_ui.test.js` (60), the journal SQL suite (73), and the browser journey (69, now through the grade, calendar, journal, coach and pre-bet panel at 1280 px and 390 px).
+
 ## 2026-10-04 — CFB champion: re-centring no longer moves the "no ties" hole or the key numbers
 
 - **The defect.** A college game cannot end level, so every row of the champion's `margin_pmf_by_spread` holds no mass at margin 0. `football/cfb_p4/engine.js` `coverProbSpread` and `lib/edgedesk_quote_ev.js` `cfbConditionedCover` re-centred a row by shifting it a whole number of points. The hole and the 3 / 7 / 10 / 14 spikes moved with it.

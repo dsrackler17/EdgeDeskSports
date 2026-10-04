@@ -365,6 +365,17 @@ begin
   new.updated_at := now();
   return new;
 end $$;
+-- An import remembers its file's columns (the header names, normalized and
+-- sorted — never a cell of data), so the reader's next file with the same
+-- columns is read the same way without asking again.
+alter table public.portfolio_imports add column if not exists rows_updated int not null default 0;
+alter table public.portfolio_imports add column if not exists header_signature text null;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'portfolio_imports_signature') then
+    alter table public.portfolio_imports add constraint portfolio_imports_signature check (header_signature is null or length(header_signature) <= 2000);
+  end if;
+end $$;
+create index if not exists portfolio_imports_signature_idx on public.portfolio_imports (user_id, header_signature, committed_at desc) where header_signature is not null;
 drop trigger if exists portfolio_imports_guard_trg on public.portfolio_imports;
 create trigger portfolio_imports_guard_trg before insert or update on public.portfolio_imports
   for each row execute function public.portfolio_imports_guard();
@@ -1028,13 +1039,27 @@ create table if not exists public.portfolio_import_rows (
     references public.portfolio_imports (id, user_id) on delete cascade,
   constraint portfolio_import_rows_once unique (import_id, row_number),
   constraint portfolio_import_rows_number check (row_number between 1 and 20000),
-  constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID')),
+  constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'UPDATE', 'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID')),
   constraint portfolio_import_rows_decision check (decision is null or decision in ('IMPORT', 'SKIP')),
-  constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'SKIPPED', 'FAILED')),
+  constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'UPDATED', 'SKIPPED', 'FAILED')),
   constraint portfolio_import_rows_json check (jsonb_typeof(raw) = 'object' and pg_column_size(raw) <= 16384
     and (normalized is null or (jsonb_typeof(normalized) = 'object' and pg_column_size(normalized) <= 16384))
     and jsonb_typeof(issues) = 'array' and coalesce(length(outcome_message), 0) <= 300)
 );
+-- An existing database keeps its original checks; widen them to the current
+-- lists (UPDATE / UPDATED: a bet already imported whose settlement the newer
+-- file changes — an incremental import updates it instead of skipping it).
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'portfolio_import_rows_class' and pg_get_constraintdef(oid) not like '%UPDATE%') then
+    alter table public.portfolio_import_rows drop constraint portfolio_import_rows_class;
+    alter table public.portfolio_import_rows add constraint portfolio_import_rows_class check (classification in ('PENDING', 'NEW', 'UPDATE',
+      'DUPLICATE', 'DUPLICATE_IN_FILE', 'NEEDS_REVIEW', 'INVALID'));
+  end if;
+  if exists (select 1 from pg_constraint where conname = 'portfolio_import_rows_outcome' and pg_get_constraintdef(oid) not like '%UPDATED%') then
+    alter table public.portfolio_import_rows drop constraint portfolio_import_rows_outcome;
+    alter table public.portfolio_import_rows add constraint portfolio_import_rows_outcome check (outcome is null or outcome in ('IMPORTED', 'UPDATED', 'SKIPPED', 'FAILED'));
+  end if;
+end $$;
 create index if not exists portfolio_import_rows_user on public.portfolio_import_rows (user_id);
 create index if not exists portfolio_import_rows_group on public.portfolio_import_rows (import_id, group_key) where group_key is not null;
 
@@ -1100,6 +1125,10 @@ begin
     if coalesce(upper(n->>'status'), 'OPEN') not in ('OPEN', 'WON', 'LOST', 'PUSH', 'VOID', 'CASHED_OUT', 'SETTLED') then
       out := out || jsonb_build_object('level', 'error', 'code', 'BAD_STATUS');
     end if;
+    if coalesce(upper(n->>'stake_type'), 'CASH') not in ('CASH', 'BONUS') then out := out || jsonb_build_object('level', 'error', 'code', 'BAD_STAKE_TYPE'); end if;
+    if n ? 'legs' and (jsonb_typeof(n->'legs') <> 'array' or jsonb_array_length(n->'legs') > 30) then
+      out := out || jsonb_build_object('level', 'error', 'code', 'BAD_LEGS');
+    end if;
   elsif n->>'kind' = 'fill' then
     if coalesce(btrim(n->>'side'), '') = '' then out := out || jsonb_build_object('level', 'error', 'code', 'MISSING_SIDE'); end if;
     if coalesce(upper(n->>'action'), '') not in ('BUY', 'SELL') then out := out || jsonb_build_object('level', 'error', 'code', 'BAD_ACTION'); end if;
@@ -1114,11 +1143,12 @@ begin
   return out;
 end $$;
 
--- a row goes in when it is NEW and the reader did not skip it, or when the
--- reader explicitly chose to import it; an INVALID row never goes in
+-- a row goes in when it is NEW (or an UPDATE of a bet already imported) and
+-- the reader did not skip it, or when the reader explicitly chose to import
+-- it; an INVALID row never goes in
 create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
 returns boolean language sql immutable as $$
-  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
+  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class in ('NEW', 'UPDATE') then 'IMPORT' else 'SKIP' end) = 'IMPORT'
 $$;
 
 -- Classifies every row not yet imported, in a handful of set-based statements
@@ -1218,6 +1248,16 @@ begin
   infile as (select id from ranked where (ext is not null and n_ext > 1) or (ext is null and n_fp > 1))
   update public.portfolio_import_rows r set classification = case
       when exists (select 1 from jsonb_array_elements(r.issues) e where e->>'level' = 'error') then 'INVALID'
+      -- the same imported bet (same platform id, same details) whose result
+      -- the newer file changes: an UPDATE, not a duplicate
+      when r.duplicate_of is not null and r.normalized->>'kind' = 'wager' and exists (
+             select 1 from public.portfolio_positions p
+              where p.id = r.duplicate_of and p.source = 'CSV' and p.fingerprint is not distinct from r.fingerprint
+                and nullif(btrim(r.normalized->>'external_position_id'), '') is not null
+                and (p.status, coalesce(p.reported_payout, -1), coalesce(p.fees, 0))
+                    is distinct from (coalesce(upper(nullif(r.normalized->>'status', '')), 'OPEN'),
+                                      coalesce(public.portfolio_try_numeric(r.normalized->>'reported_payout'), case when p.reported_payout is null then -1 else p.reported_payout end),
+                                      coalesce(public.portfolio_try_numeric(r.normalized->>'fees'), p.fees, 0))) then 'UPDATE'
       when r.duplicate_of is not null then 'DUPLICATE'
       when r.id in (select id from infile) then 'DUPLICATE_IN_FILE'
       when exists (select 1 from jsonb_array_elements(r.issues) e where e->>'level' = 'warning') then 'NEEDS_REVIEW'
@@ -1225,15 +1265,17 @@ begin
    where r.import_id = p_import and r.outcome is null;
 
   update public.portfolio_imports i set status = 'CLASSIFIED', classified_at = coalesce(i.classified_at, now()),
-         rows_total = c.total, rows_new = c.n_new, rows_duplicate = c.n_dup, rows_review = c.n_review, rows_invalid = c.n_invalid
+         rows_total = c.total, rows_new = c.n_new, rows_duplicate = c.n_dup, rows_review = c.n_review, rows_invalid = c.n_invalid,
+         rows_updated = c.n_upd
     from (select count(*) as total,
                  count(*) filter (where classification = 'NEW') as n_new,
+                 count(*) filter (where classification = 'UPDATE') as n_upd,
                  count(*) filter (where classification in ('DUPLICATE', 'DUPLICATE_IN_FILE')) as n_dup,
                  count(*) filter (where classification = 'NEEDS_REVIEW') as n_review,
                  count(*) filter (where classification = 'INVALID') as n_invalid
             from public.portfolio_import_rows where import_id = p_import) c
    where i.id = p_import;
-  return (select jsonb_build_object('status', status, 'total', rows_total, 'new', rows_new, 'duplicate', rows_duplicate,
+  return (select jsonb_build_object('status', status, 'total', rows_total, 'new', rows_new, 'update', rows_updated, 'duplicate', rows_duplicate,
                  'review', rows_review, 'invalid', rows_invalid) from public.portfolio_imports where id = p_import);
 end $$;
 
@@ -1261,26 +1303,48 @@ begin
   if not found then raise exception 'portfolio: no such import' using errcode = 'P0002'; end if;
   if imp.status = 'COMMITTED' then
     return jsonb_build_object('status', imp.status, 'remaining', 0, 'total', imp.rows_total, 'new', imp.rows_new, 'duplicate', imp.rows_duplicate,
-      'review', imp.rows_review, 'invalid', imp.rows_invalid, 'imported', imp.rows_imported, 'skipped', imp.rows_skipped, 'failed', imp.rows_failed);
+      'review', imp.rows_review, 'invalid', imp.rows_invalid, 'imported', imp.rows_imported, 'skipped', imp.rows_skipped, 'failed', imp.rows_failed,
+      'updated', imp.rows_updated);
   end if;
   perform public.portfolio_import_classify(p_import);
   update public.portfolio_imports set commit_started_at = coalesce(commit_started_at, clock_timestamp()) where id = p_import
   returning * into imp;
   select a.platform into acct_platform from public.platform_accounts a where a.id = imp.platform_account_id;
 
+  /* ── updates: a bet already imported, settled or corrected since ── */
+  for r in select ir.* from public.portfolio_import_rows ir
+            where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager' and ir.classification = 'UPDATE'
+              and public.portfolio_import_row_wanted(ir.classification, ir.decision)
+            order by ir.row_number limit lim loop
+    begin
+      n := r.normalized;
+      update public.portfolio_positions p
+         set status = coalesce(upper(nullif(n->>'status', '')), 'OPEN'), reported_payout = (nullif(n->>'reported_payout', ''))::numeric,
+             settled_at = (nullif(n->>'settled_at', ''))::timestamptz, fees = coalesce((nullif(n->>'fees', ''))::numeric, p.fees),
+             raw_payload = jsonb_build_object('csv', r.raw, 'import_row', r.id, 'updated_by_import', imp.id)
+       where p.id = r.duplicate_of and p.user_id = imp.user_id and p.source = 'CSV';
+      get diagnostics v_n = row_count;
+      if v_n = 0 then raise exception 'portfolio: the bet to update is no longer there' using errcode = 'P0002'; end if;
+      update public.portfolio_import_rows set outcome = 'UPDATED', outcome_message = null, position_id = r.duplicate_of where id = r.id;
+    exception when others then
+      update public.portfolio_import_rows set outcome = 'FAILED', outcome_message = left(sqlerrm, 300) where id = r.id;
+    end;
+    v_done := v_done + 1;
+  end loop;
+
   /* ── wagers: one statement per batch ── */
   begin
     with batch as (
       select ir.*, row_number() over (partition by ir.fingerprint order by ir.row_number) as rn
         from public.portfolio_import_rows ir
-       where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager'
+       where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager' and ir.classification <> 'UPDATE'
          and public.portfolio_import_row_wanted(ir.classification, ir.decision)
        order by ir.row_number limit lim),
     ins as (
       insert into public.portfolio_positions (platform_account_id, platform, platform_label, platform_type, external_position_id,
           position_type, sport, league, event_name, event_id, event_start_at, market_name, selection, side, line,
           odds_american, odds_decimal, stake, reported_payout, fees, status, placed_at, settled_at, source, import_id, notes,
-          raw_payload, dedupe_occurrence)
+          raw_payload, dedupe_occurrence, stake_type, legs)
       select case when acct_platform = b.normalized->>'platform' then imp.platform_account_id end, b.normalized->>'platform',
           b.normalized->>'platform_label', 'SPORTSBOOK', nullif(b.normalized->>'external_position_id', ''),
           coalesce(nullif(b.normalized->>'position_type', ''), 'OTHER'), b.normalized->>'sport', b.normalized->>'league',
@@ -1293,7 +1357,9 @@ begin
           b.normalized->>'notes', jsonb_build_object('csv', b.raw, 'import_row', b.id),
           case when nullif(b.normalized->>'external_position_id', '') is not null then 1
                else coalesce((select max(p.dedupe_occurrence) from public.portfolio_positions p
-                               where p.user_id = imp.user_id and p.fingerprint = b.fingerprint and p.external_position_id is null), 0) + b.rn::int end
+                               where p.user_id = imp.user_id and p.fingerprint = b.fingerprint and p.external_position_id is null), 0) + b.rn::int end,
+          case when upper(b.normalized->>'stake_type') = 'BONUS' then 'BONUS' else 'CASH' end,
+          case when jsonb_typeof(b.normalized->'legs') = 'array' then b.normalized->'legs' end
         from batch b
       returning id, (raw_payload->>'import_row')::bigint as row_id)
     update public.portfolio_import_rows ir set outcome = 'IMPORTED', outcome_message = null, position_id = ins.id
@@ -1303,7 +1369,7 @@ begin
   exception when others then
     /* one row refused: redo this batch row by row, and record only the failures */
     for r in select ir.* from public.portfolio_import_rows ir
-              where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager'
+              where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager' and ir.classification <> 'UPDATE'
                 and public.portfolio_import_row_wanted(ir.classification, ir.decision)
               order by ir.row_number limit lim loop
       begin
@@ -1311,7 +1377,7 @@ begin
         insert into public.portfolio_positions (platform_account_id, platform, platform_label, platform_type, external_position_id,
             position_type, sport, league, event_name, event_id, event_start_at, market_name, selection, side, line,
             odds_american, odds_decimal, stake, reported_payout, fees, status, placed_at, settled_at, source, import_id, notes,
-            raw_payload, dedupe_occurrence)
+            raw_payload, dedupe_occurrence, stake_type, legs)
         values (case when acct_platform = n->>'platform' then imp.platform_account_id end, n->>'platform', n->>'platform_label',
             'SPORTSBOOK', nullif(n->>'external_position_id', ''), coalesce(nullif(n->>'position_type', ''), 'OTHER'),
             n->>'sport', n->>'league', n->>'event_name', n->>'event_id', (nullif(n->>'event_start_at', ''))::timestamptz,
@@ -1322,7 +1388,9 @@ begin
             (nullif(n->>'settled_at', ''))::timestamptz, 'CSV', imp.id, n->>'notes', jsonb_build_object('csv', r.raw, 'import_row', r.id),
             case when nullif(n->>'external_position_id', '') is not null then 1
                  else 1 + coalesce((select max(p.dedupe_occurrence) from public.portfolio_positions p
-                                     where p.user_id = imp.user_id and p.fingerprint = r.fingerprint and p.external_position_id is null), 0) end)
+                                     where p.user_id = imp.user_id and p.fingerprint = r.fingerprint and p.external_position_id is null), 0) end,
+            case when upper(n->>'stake_type') = 'BONUS' then 'BONUS' else 'CASH' end,
+            case when jsonb_typeof(n->'legs') = 'array' then n->'legs' end)
         returning id into v_pos;
         update public.portfolio_import_rows set outcome = 'IMPORTED', outcome_message = null, position_id = v_pos where id = r.id;
       exception when others then
@@ -1423,14 +1491,16 @@ begin
    where ir.import_id = p_import and ir.outcome is null and public.portfolio_import_row_wanted(ir.classification, ir.decision);
   if v_remaining > 0 then
     return jsonb_build_object('status', 'IMPORTING', 'remaining', v_remaining,
-      'imported', (select count(*) from public.portfolio_import_rows where import_id = p_import and outcome = 'IMPORTED'));
+      'imported', (select count(*) from public.portfolio_import_rows where import_id = p_import and outcome = 'IMPORTED'),
+      'updated', (select count(*) from public.portfolio_import_rows where import_id = p_import and outcome = 'UPDATED'));
   end if;
 
   /* everything wanted is in: the rest was not wanted */
   update public.portfolio_import_rows set outcome = 'SKIPPED', outcome_message = null where import_id = p_import and outcome is null;
   update public.portfolio_imports i set status = 'COMMITTED', committed_at = now(),
-         rows_imported = c.n_ok, rows_skipped = c.n_skip, rows_failed = c.n_fail
+         rows_imported = c.n_ok, rows_skipped = c.n_skip, rows_failed = c.n_fail, rows_updated = c.n_upd
     from (select count(*) filter (where outcome = 'IMPORTED') as n_ok, count(*) filter (where outcome = 'SKIPPED') as n_skip,
+                 count(*) filter (where outcome = 'UPDATED') as n_upd,
                  count(*) filter (where outcome = 'FAILED') as n_fail
             from public.portfolio_import_rows where import_id = p_import) c
    where i.id = p_import
@@ -1439,13 +1509,13 @@ begin
       records_fetched, records_inserted, records_updated, duplicates_ignored, errors_count, error_code)
   values (imp.user_id, imp.platform_account_id, imp.platform, 'CSV_IMPORT', imp.id,
       case when imp.rows_failed = 0 then 'SUCCESS' when imp.rows_imported > 0 then 'PARTIAL' else 'FAILED' end,
-      coalesce(imp.commit_started_at, clock_timestamp()), clock_timestamp(), imp.rows_total, imp.rows_imported, 0,
+      coalesce(imp.commit_started_at, clock_timestamp()), clock_timestamp(), imp.rows_total, imp.rows_imported, imp.rows_updated,
       (select count(*) from public.portfolio_import_rows where import_id = p_import and outcome = 'SKIPPED'
           and classification in ('DUPLICATE', 'DUPLICATE_IN_FILE')),
       imp.rows_failed, case when imp.rows_failed > 0 then 'ROWS_FAILED' end);
   return jsonb_build_object('status', imp.status, 'remaining', 0, 'total', imp.rows_total, 'new', imp.rows_new, 'duplicate', imp.rows_duplicate,
     'review', imp.rows_review, 'invalid', imp.rows_invalid, 'imported', imp.rows_imported, 'skipped', imp.rows_skipped,
-    'failed', imp.rows_failed);
+    'failed', imp.rows_failed, 'updated', imp.rows_updated);
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -1660,7 +1730,9 @@ do $$
 declare f record;
 begin
   for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-            where s.nspname = 'public' and (p.proname like 'portfolio\_%' or p.proname = 'platform_accounts_guard') loop
+            where s.nspname = 'public' and (p.proname like 'portfolio\_%' or p.proname = 'platform_accounts_guard')
+              -- a connector's service-only entry points (portfolio_connect.sql) stay the service role's
+              and p.proname not like 'portfolio\_svc\_%' loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('revoke all on function %s from anon', f.sig);
     execute format('grant execute on function %s to authenticated, service_role', f.sig);

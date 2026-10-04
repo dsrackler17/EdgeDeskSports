@@ -153,6 +153,51 @@ const leak = C.safeLogMessage('request failed: Authorization: Bearer abc.def-ghi
    this fixture as a key (the convention football/cfb_production/security.test.js uses) */
 chk('a log line never carries a token, key or private key', !/abc\.def|sk_live_123|9f9f|eyJhbGci|BEGIN RSA/.test(leak) && /\[redacted\]/.test(leak), leak);
 
+/* ═══ SPORTSBOOK IMPORT: platform, bonus bets, parlay legs, estimate ═══ */
+chk('every platform profile is marked unverified, and none asserts a column layout', I.PROFILES.length === 7 && I.PROFILES.every((p) => p.verified === false && !p.columns && !p.headers));
+chk('a bonus bet is read from its own column, or named in the status or bet type — never guessed from a small stake',
+  [I.readStakeType('Yes'), I.readStakeType('Free Bet'), I.readStakeType('cash'), I.readStakeType(null, 'Won (Free Bet)'), I.readStakeType(null, 'Moneyline'), I.readStakeType('maybe')].join()
+  === 'BONUS,BONUS,CASH,BONUS,,UNKNOWN');
+const BOOK = ['Bet ID,Placed,Event,Selection,Odds,Stake,Status,Payout,Free Bet',
+  'D1,2026-09-07 13:00,Chiefs @ Bills,Chiefs ML,+150,40,Won,100,',
+  'D2,2026-09-07 14:00,Jets @ Giants,Jets ML,-110,22,Lost,0,',
+  'D3,2026-09-08 13:00,Rams @ 49ers,Over 44.5,-110,50,Push,50,',
+  'D4,2026-09-08 14:00,Bears @ Packers,Bears +3.5,-105,20,Void,20,',
+  'D5,2026-09-09 13:00,Lions @ Vikings,Lions ML,+120,30,Cashed Out,41.10,',
+  'D6,2026-09-09 15:00,Bucs @ Saints,Saints ML,+200,25,Won,50,Yes',
+  'D7,2026-09-10 13:00,Colts @ Titans,Colts ML,+130,10,Won,23,',
+  'D7,2026-09-10 13:00,Colts @ Titans,Colts ML,+130,10,Won,23,',
+  'P1,2026-09-11 13:00,Chiefs @ Bills,Chiefs ML,+260,10,Won,36,',
+  'P1,2026-09-11 13:00,Lakers @ Celtics,Lakers +4.5,,,,,'].join('\n');
+let st2 = I.stage(BOOK, { fileName: 'draftkings_history_2026.csv', timezone: 'America/New_York' });
+const byId = (id) => st2.rows.find((r) => r.normalized.external_position_id === id);
+chk('the platform is detected from the file\'s name, and the format is flagged as unchecked', st2.platform === 'draftkings' && st2.platformHow === 'FILE_NAME'
+  && st2.rows.every((r) => r.normalized.platform === 'draftkings') && st2.fileIssues.some((x) => x.code === 'PROFILE_UNVERIFIED' && /real DraftKings export/.test(x.message)), [st2.platform, st2.platformHow, st2.fileIssues]);
+chk('win, loss, push, void and cash-out read as such', ['D1', 'D2', 'D3', 'D4', 'D5'].map((id) => byId(id).normalized.status).join() === 'WON,LOST,PUSH,VOID,CASHED_OUT');
+const bonus = byId('D6');
+chk('a bonus bet: BONUS, and its payout of winnings only is NOT flagged as a mismatch', bonus.normalized.stake_type === 'BONUS' && codes(bonus).includes('info:BONUS_BET') && !codes(bonus).includes('warning:PAYOUT_MISMATCH'), codes(bonus));
+chk('a bonus bet\'s P&L is its winnings: +$50 on a $25 free bet at +200', E.derive(bonus.normalized).profit_loss === '50');
+chk('the same bet listed twice stays two rows (a duplicate for the server to call), not a parlay', st2.rows.filter((r) => r.normalized.external_position_id === 'D7').length === 2);
+const par = byId('P1');
+chk('a parlay exported one leg per row becomes ONE position with its legs', par.normalized.position_type === 'PARLAY' && par.normalized.legs.length === 2
+  && par.normalized.selection === 'Chiefs ML + Lakers +4.5' && par.normalized.stake === '10' && par.normalized.status === 'WON' && par.legRows.length === 1
+  && codes(par).includes('info:LEGS_GROUPED') && st2.mergedRows === 1, par.normalized);
+chk('times without a zone are read in the zone chosen: 13:00 New York is 17:00 UTC', byId('D1').normalized.placed_at === '2026-09-07T17:00:00.000Z');
+const est = I.estimate(st2.rows.filter((r) => !r.issues.some((x) => x.level === 'error')));
+/* D1 +60, D2 −22, D3 0, D4 0, D5 +11.10, D6 +50 (bonus), D7 +13 ×2, P1 +26 */
+chk('the estimate before import: P&L over the settled rows, by the engine\'s own arithmetic', est.settled === 9 && est.pnl === '151.1' && est.bonus === 1, est);
+chk('the header signature is the sorted, normalized column names — and no cell of data', I.headerSignature(['Stake', 'Bet ID', 'Free Bet']) === 'betid|freebet|stake'
+  && I.headerSignature(['Free Bet', 'Stake', 'Bet ID']) === I.headerSignature(['Stake', 'Bet ID', 'Free Bet']) && st2.signature.indexOf('chiefs') < 0);
+st2 = I.stage(BOOK.replace('Bet ID,', 'Book,Bet ID,').split('\n').map((l, i) => (i ? 'FanDuel,' : '') + l).join('\n').replace('Book,Bet ID', 'Book,Bet ID'), { fileName: 'draftkings.csv' });
+chk('a platform column every row agrees on outranks the file name', st2.platform === 'fanduel' && st2.platformHow === 'COLUMN', [st2.platform, st2.platformHow]);
+chk('the reader\'s choice outranks both', I.stage(BOOK, { fileName: 'draftkings.csv', platform: 'betmgm' }).platform === 'betmgm');
+st2 = I.stage(BOOK, { fileName: 'export (3).csv' });
+chk('a file EdgeDesk cannot place asks the reader, and names no platform it guessed', st2.platform === null && st2.platformHow === 'ASK' && st2.rows.every((r) => codes(r).includes('error:BAD_PLATFORM')));
+chk('the same event on two platforms is two positions (each row keeps its own platform)', (() => {
+  const two = I.stage('Book,Bet ID,Placed,Event,Selection,Odds,Stake,Status\nDraftKings,A1,2026-09-07 13:00,Chiefs @ Bills,Chiefs ML,+150,10,Open\nFanDuel,B1,2026-09-07 13:05,Chiefs @ Bills,Chiefs ML,+145,10,Open', {});
+  return two.platformHow === 'MIXED' && two.rows.map((r) => r.normalized.platform).join() === 'draftkings,fanduel';
+})());
+
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'portfolio import — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);
