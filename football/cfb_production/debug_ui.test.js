@@ -48,7 +48,11 @@ const E = ctx.window.EDDEBUG;
 chk('EDDEBUG exposes render, listView, gameView, stageBody', E && ['render', 'listView', 'gameView', 'stageBody'].every((k) => typeof E[k] === 'function'));
 
 /* ---- the real files -------------------------------------------------------- */
-const NOW = '2026-09-28T12:00:00.000Z';
+/* "now" is the moment the committed slate was generated, not a fixed date:
+   football/cfb_v2/current.json is rebuilt by every weekly run, and a fixed
+   date drifts behind it until the build's look-ahead window holds almost
+   none of its games (2026-10-04: 3 of 60 as of 2026-09-28) */
+const NOW = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_v2', 'current.json'), 'utf8')).generated_at;
 const P = PR.build({ now: NOW });
 const T = JSON.parse(JSON.stringify(P.traces));
 const Pj = JSON.parse(JSON.stringify(P));
