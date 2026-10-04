@@ -278,9 +278,7 @@ const AS_OF = '2026-09-28T12:00:00.000Z';
 {
   const kick = Date.parse(base.kickoff);
   const now = new Date(kick - 30 * 3600000).toISOString();
-  /* the second game is borrowed from the live current.json and moved onto the
-     fixture's kickoff; its timestamps move with it, or a week's refresh makes
-     them later than that kickoff and the input contract rightly refuses it */
+
   const r2 = Object.assign({}, cur.rows.find((r) => r.priced !== false && r.game_id !== base.game_id),
     { kickoff: base.kickoff, prediction_ts: base.prediction_ts, feature_ts: base.feature_ts });
   const build = (rows, slate) => PR.build({ now, files: { 'football/cfb_v2/current.json': { model_version: 'edgedesk_cfb_v2.1.0', generated_at: now, rows },
