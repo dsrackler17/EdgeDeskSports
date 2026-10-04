@@ -261,8 +261,12 @@ function serve(handler) {
   chk('and says so when games have kicked off', state.kickedNote === state.kickedOff > 0, state);
   chk('the slate carries Other FBS games', (state.groups.other || 0) > 0, state.groups);
   chk('the slate carries independents', (state.groups.independent || 0) > 0, state.groups);
-  chk('the slate carries conference, non-conference and FBS-vs-FCS games',
-    state.types.conference > 0 && state.types.non_conference > 0 && state.types.fbs_fcs > 0, state.types);
+  /* FBS-vs-FCS games are NOT required to exist: they cluster in September,
+     and from October on the live window routinely holds none. That they are
+     never dropped is already proven above — every row the feed offered is on
+     the board or dropped for a named reason, and "FBS vs FCS" is not one. */
+  chk('the slate carries conference and non-conference games',
+    state.types.conference > 0 && state.types.non_conference > 0, state.types);
   chk('games with no Power 4 participant are on the board',
     Object.keys(state.conf).some(c => state.p4.indexOf(c) < 0 && state.conf[c] > 0),
     { p4: state.p4, conf: state.conf });
@@ -461,19 +465,25 @@ function serve(handler) {
     mob.controlsHeight != null && mob.controlsHeight < 460,
     { controls: mob.controlsHeight, board_offset: mob.boardOffset });
 
-  /* filtering works on a phone too */
-  const mobClicked = await M.page.evaluate(() => {
-    const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === 'FBS vs FCS');
-    if (!b) return false;
-    b.click(); return true;
+  /* filtering works on a phone too. The chip pressed is one whose matchup
+     type is on today's board: FBS vs FCS while there are any, otherwise
+     non-conference FBS, so the check is never a filter down to nothing. */
+  const mobPick = await M.page.evaluate(() => {
+    const up = (window.FB.p4.up || []).filter(u => u.t > Date.now());
+    const type = up.some(u => u.meta.matchup_type === 'fbs_fcs') ? 'fbs_fcs' : 'non_conference';
+    const label = type === 'fbs_fcs' ? 'FBS vs FCS' : 'Non-conference FBS';
+    const b = Array.from(document.querySelectorAll('#fbBody .fbs-chip')).find(x => x.textContent.trim() === label);
+    if (!b) return { clicked: false, type };
+    b.click(); return { clicked: true, type };
   });
-  chk('a matchup chip is tappable on a phone', mobClicked === true);
+  chk('a matchup chip is tappable on a phone', mobPick.clicked === true, mobPick);
   await M.page.waitForTimeout(200);
-  const mobAfter = await M.page.evaluate(() => ({
+  const mobAfter = await M.page.evaluate((type) => ({
+    type,
     rows: document.querySelectorAll('[id^="p4gate-"]').length,
-    expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === 'fbs_fcs').length,
+    expected: (window.FB.p4.up || []).filter(u => u.t > Date.now() && u.meta.matchup_type === type).length,
     sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
-  }));
+  }), mobPick.type);
   chk('and it filters the board', mobAfter.rows === mobAfter.expected && mobAfter.rows > 0, mobAfter);
   chk('and the page still does not scroll sideways', mobAfter.sideways === false);
 

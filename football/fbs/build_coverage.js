@@ -615,17 +615,37 @@ async function main() {
   run(report, 'every conference game has exactly one shared, non-independent conference',
     { conference_games: confGames.length, wrong: confBad.length }, confBad.length === 0);
 
-  /* 8 — FBS-vs-FCS stays visible and stays thin */
+  /* 8 — FBS-vs-FCS stays visible and stays thin.
+         "Stays on the slate" is proven against the SOURCE, not by demanding
+         that one exist: FCS opponents cluster in September, and from October
+         on a ten-day window routinely holds none. Requiring at least one
+         failed the build every hour of a normal October week with nothing
+         wrong. So: every FBS-vs-FCS game the feed carries inside the window
+         must be on the slate, and none of them may be graded. Zero in the
+         feed and zero on the slate is a pass. */
   const fcsGames = slate.filter(it => it.meta.matchup_type === 'fbs_fcs');
+  const fcsSourceIds = {};
+  for (const r of target) {
+    if (r.completed) continue;
+    const t = Date.parse(r.start_date);
+    if (!isFinite(t) || t < built.window.from || t > built.window.to) continue;
+    const m = FBS.classifyGame(r, universe);
+    if (m.matchup_type === 'fbs_fcs') fcsSourceIds[m.id] = true;
+  }
+  const fcsOnSlate = {};
+  for (const it of fcsGames) fcsOnSlate[it.meta.id] = true;
+  const fcsDropped = Object.keys(fcsSourceIds).filter(id => !fcsOnSlate[id]);
   const fcsGraded = fcsGames.filter(it => {
     const p = projected[it.meta.id];
     return p && p.status === 'PREDICTED' && p.edge && p.edge.spread
       && p.edge.spread.recommendation !== 'PASS_LOW_CONFIDENCE'
       && p.edge.spread.recommendation !== 'NO_MARKET';
   });
+  report.slate.fbs_fcs_in_source = Object.keys(fcsSourceIds).length;
   run(report, 'FBS-vs-FCS games stay on the slate and are never graded as a normal projection',
-    { fbs_fcs_games: fcsGames.length, graded: fcsGraded.map(it => `${it.meta.away.name} @ ${it.meta.home.name}`) },
-    fcsGames.length > 0 && fcsGraded.length === 0);
+    { fbs_fcs_games: fcsGames.length, fbs_fcs_in_source: report.slate.fbs_fcs_in_source,
+      dropped: fcsDropped.slice(0, 6), graded: fcsGraded.map(it => `${it.meta.away.name} @ ${it.meta.home.name}`) },
+    fcsDropped.length === 0 && fcsGraded.length === 0);
 
   /* 9 — a missing quote is NO MARKET, never a zero line. Proven on the
          engine's own contract: with no market supplied there is no gap and
