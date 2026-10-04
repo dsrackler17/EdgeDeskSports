@@ -10,6 +10,8 @@
 - **A synced position** also keeps its legs, event id and duplicate number from reader edits. A label the platform supplied stays fixed; a blank one may be filled in once.
 - 8 new tests in `tools/portfolio/portfolio_sql.test.js`. Each fails against the previous SQL.
 
+**Secret audit:** the Portfolio redaction test no longer contains a fake private-key header. `tools/cfb/secret_audit.js` flags any such header as HIGH, even in a test. Token, key and JWT redaction are still tested.
+
 **CFB tests:**
 - `football/cfb_production/canonical.test.js` (chaos) borrowed a live `current.json` row and moved its kickoff, but kept its newer prediction timestamps. The input contract rightly refused it.
 - `football/cfb_production/debug_ui.test.js` built projections as of a fixed 2026-09-28. After the weekly refresh, every prediction postdated that.
