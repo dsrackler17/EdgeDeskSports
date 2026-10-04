@@ -1,6 +1,6 @@
 {
  "attribution": "each row is graded under the model_version that produced it (its own, else its snapshot file's); never relabelled (audit F-02)",
- "bias": -7.798599999999999,
+ "bias": -1.2345714285714287,
  "by_model_version": {
   "edgedesk_cfb_v2.0.0": {
    "bias": -0.448646511627907,
@@ -13,47 +13,52 @@
    }
   },
   "edgedesk_cfb_v2.1.0": {
-   "bias": -7.798599999999999,
-   "fcs_not_priced_games": 0,
-   "games_scored": 5,
-   "mae": 13.229,
-   "major_miss_share": 0.2,
+   "bias": -1.2345714285714287,
+   "fcs_not_priced_games": 3,
+   "games_scored": 56,
+   "mae": 13.588892857142858,
+   "major_miss_share": 0.19642857142857142,
    "sources": {
-    "FROZEN": 5
+    "FROZEN": 56
    }
   }
  },
  "by_week": [
   {
-   "bias": -7.799,
-   "mae": 13.229,
-   "n": 5,
+   "bias": -1.235,
+   "mae": 13.589,
+   "n": 56,
    "week": 5
   }
  ],
  "expected_major_miss_share_if_calibrated": 0.134,
  "fcs_not_priced": {
-  "bias": null,
-  "games": 0,
-  "mae": null,
+  "bias": -9.369333333333332,
+  "games": 3,
+  "mae": 9.369333333333332,
   "note": "FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured"
  },
- "games_scored": 5,
- "generated_at": "2026-10-03T14:59:53Z",
+ "games_scored": 56,
+ "generated_at": "2026-10-04T15:19:42Z",
  "graded_with": {
   "finality_rule": "cfb_v2_finality_v2",
   "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)"
  },
- "mae": 13.229,
- "major_miss_share": 0.2,
+ "mae": 13.588892857142858,
+ "major_miss_share": 0.19642857142857142,
  "miss_classes": {
-  "explosive_variance": 1
+  "explosive_variance": 2,
+  "garbage_time": 2,
+  "market_news_unavailable": 1,
+  "ordinary_variance": 4,
+  "qb_injury_miss": 1,
+  "turnover_variance": 1
  },
  "model_version": "edgedesk_cfb_v2.1.0",
  "policy": "monitoring only: no parameter changes between scheduled offseason retrains",
  "scope": "priced games (FBS-vs-FBS) of edgedesk_cfb_v2.1.0 only; rows of other versions are in by_model_version",
  "season": 2026,
  "sources": {
-  "FROZEN": 5
+  "FROZEN": 56
  }
 }
