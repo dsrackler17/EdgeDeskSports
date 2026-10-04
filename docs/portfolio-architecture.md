@@ -9,7 +9,7 @@
 - the shared calculation engine;
 - manual entry for sportsbook bets and prediction-market positions;
 - CSV import with server-side duplicate detection;
-- the Portfolio page (Overview · Open · History · Analytics · Accounts · Import);
+- the Portfolio page (Overview · Open · Calendar · History · Analytics · Accounts · Import);
 - the connector contract that future integrations implement.
 
 **Nothing connects automatically yet**, and nothing on the page says otherwise. See [`platform-support.md`](platform-support.md).

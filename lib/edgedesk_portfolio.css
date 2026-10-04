@@ -125,6 +125,50 @@
 .pfo-hcard .s{font-size:12px;color:var(--f-dim);overflow-wrap:anywhere}
 .pfo-hcard .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
 
+/* ---- calendar: a month of days, each its settled P&L --------------------- */
+.pfo-cal-sec{padding:12px 10px}
+@media(min-width:620px){.pfo-cal-sec{padding:14px}}
+.pfo-cal-nav{display:flex;align-items:center;gap:6px;margin:0 0 10px}
+.pfo-cal-m{margin:0 auto 0 4px;font-size:17px;font-weight:800;letter-spacing:-.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pfo-cal-nav .pfo-cal-arw{min-width:40px;min-height:40px;font-size:20px;line-height:1;padding:4px 10px}
+.pfo-cal-tot{margin:0 4px 12px}
+.pfo-cal-big{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-top:2px;overflow-wrap:anywhere}
+.pfo-cal-sub{font-size:13px;color:var(--f-dim);margin-top:4px;line-height:1.45}
+.pfo-cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+@media(min-width:620px){.pfo-cal{gap:6px}}
+.pfo-cal-wd{font-size:11px;font-weight:700;color:var(--f-dim);text-align:center;letter-spacing:.06em;text-transform:uppercase;padding:2px 0 4px}
+.pfo-cal-wd i{font-style:normal}
+@media(max-width:619px){.pfo-cal-wd i{display:none}}
+.pfo-cal-d{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;min-height:54px;min-width:0;padding:6px 1px 4px;border-radius:8px;border:1px solid transparent;background:var(--f-s2);color:var(--f-tx);font:inherit;overflow:hidden}
+@media(min-width:620px){.pfo-cal-d{min-height:74px;padding:8px 4px}}
+button.pfo-cal-d{cursor:pointer}
+.pfo-cal-d.none{background:transparent;border-color:var(--f-bd)}
+.pfo-cal-d.none .n{color:var(--f-faint);font-weight:500}
+.pfo-cal-d .n{font-size:11.5px;font-weight:600;color:var(--f-dim);line-height:1.1}
+.pfo-cal-d .a{font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap;letter-spacing:-.03em}
+@media(min-width:620px){.pfo-cal-d .a{font-size:13.5px;letter-spacing:-.01em}}
+.pfo-cal-d .o{font-size:9.5px;font-weight:700;color:var(--f-warn);text-transform:uppercase;line-height:1.1;white-space:nowrap}
+.pfo-cal-d .dot{width:5px;height:5px;border-radius:50%;background:var(--f-dim);margin-top:5px}
+.pfo-cal-d.up .a{color:var(--f-pos)}.pfo-cal-d.down .a{color:var(--f-neg)}
+.pfo-cal-d.up.l1{background:rgba(118,189,62,.10)}.pfo-cal-d.up.l2{background:rgba(118,189,62,.19)}.pfo-cal-d.up.l3{background:rgba(118,189,62,.30)}
+.pfo-cal-d.down.l1{background:rgba(226,96,68,.10)}.pfo-cal-d.down.l2{background:rgba(226,96,68,.19)}.pfo-cal-d.down.l3{background:rgba(226,96,68,.30)}
+.pfo-cal-d.today{border-color:var(--f-acc)}
+.pfo-cal-d.today .n{color:var(--f-acc)}
+.pfo-cal-d.sel{border-color:var(--f-tx);box-shadow:inset 0 0 0 1px var(--f-tx)}
+.pfo-cal-d:focus-visible{outline:2px solid var(--f-acc);outline-offset:1px}
+.pfo-cal-key{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--f-dim);margin:10px 4px 0}
+.pfo-cal-key i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.pfo-cal-key i.up{background:rgba(118,189,62,.55)}.pfo-cal-key i.down{background:rgba(226,96,68,.55)}
+.pfo-cal-key i.dot{width:5px;height:5px;border-radius:50%;background:var(--f-dim);vertical-align:1px}
+.pfo-cal-key b{color:var(--f-warn);font-size:9.5px;text-transform:uppercase;margin-right:4px}
+.pfo-cal-bw{margin:12px 4px 0;padding-top:12px;border-top:1px solid var(--f-bd)}
+.pfo-cal-bw .pfo-v{font-size:16px}
+.pfo-link{background:none;border:none;padding:0;color:var(--f-tx);font:inherit;text-decoration:underline;text-decoration-color:var(--f-dim);text-underline-offset:3px;cursor:pointer}
+.pfo-cal-facts{margin:0;line-height:1.7}
+.pfo-cal-list{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+@media(min-width:720px){.pfo-cal-list{grid-template-columns:1fr 1fr}}
+.pfo-cal-did{grid-column:1/-1;color:var(--f-faint)}
+
 /* ---- analytics ----------------------------------------------------------- */
 .pfo-grid3{display:grid;grid-template-columns:1fr;gap:0}
 .pfo-cmp{width:100%;border-collapse:collapse;font-size:13.5px}

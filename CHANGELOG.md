@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-04 — Portfolio: a Calendar of your own P&L, day by day
+
+Portfolio has a **Calendar** tab between Open and History. `#portfolio/calendar` now opens it; until now that link fell back to History.
+
+- **What a day shows.** The calendar answers three different questions and never mixes them, the same three that `public.portfolio_calendar()` keeps apart:
+  - what **settled** that day: the day's P&L, on the day the cumulative line already counts it;
+  - which **events started** that day, and what is still at risk on the ones that are open;
+  - what was **placed** that day, and what it cost.
+- **Days are local.** Each day is the reader's own calendar day, in their time zone; a 9 pm UTC settlement is the next day in Tokyo.
+- **A month at a glance.**
+  - The month's settled total, record and ROI, and how many days were up or down.
+  - The best and worst day, shown only when there are two days to compare, as everywhere else on the page.
+  - A seven-column grid where each day shows its P&L in short form (+$45, −$1.2k). The cell's screen-reader label, the day panel and History give the exact amount.
+  - Filters for sportsbook or prediction market, and for platform. An empty month offers the nearest months that have activity.
+- **A day.**
+  - Tapping a day lists each of its positions once, with what happened to it that day ("Placed 1:00 PM · Settled 9:00 PM").
+  - "See this day's settled positions in History" opens History filtered to that date. The link follows the tab.
+- **Exact amounts.** The figures are EDPortfolio arithmetic over the stored columns, with the same exact decimals as the rest of the page. The new `EDPortfolio.calendar()` is checked against the cumulative series and against a period summary of the same month. The e2e checks the page's month and day totals against the database's own sums in the reader's zone.
+- **On the page.**
+  - The Overview's cumulative line has a "Day by day" link to the calendar.
+  - At 390 px the month is seven columns with no clipped amount and no sideways scroll. Every day is at least 40 × 50 px.
+  - Focus stays on the control you used when the page repaints.
+- **Tests.**
+  - `tools/portfolio/portfolio_calc.test.js`: 122 checks.
+  - `tools/portfolio/portfolio_ui.test.js`: 91 checks.
+  - `tools/portfolio/portfolio_ui.e2e.js`: 51 checks, against PostgreSQL.
+  - `tools/app/navigation.e2e.js`: 167 checks, including `#portfolio/calendar`.
+
 ## 2026-10-04 — CFB champion: re-centring no longer moves the "no ties" hole or the key numbers
 
 - **The defect.** A college game cannot end level, so every row of the champion's `margin_pmf_by_spread` holds no mass at margin 0. `football/cfb_p4/engine.js` `coverProbSpread` and `lib/edgedesk_quote_ev.js` `cfbConditionedCover` re-centred a row by shifting it a whole number of points. The hole and the 3 / 7 / 10 / 14 spikes moved with it.

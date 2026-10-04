@@ -87,6 +87,39 @@ chk('filter by source', q({ source: 'CSV' }).length === 0 && q({ source: 'MANUAL
 chk('filter by date (settled date, inclusive)', JSON.stringify(q({ from: '2026-09-08', to: '2026-09-08' })) === JSON.stringify(['Jets ML']));
 chk('"All" includes the open positions', q({ state: '' }).length === 5);
 
+/* ═══ CALENDAR ══════════════════════════════════════════════════════════ */
+const SRC_UI = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_portfolio_ui.js'), 'utf8');
+chk('Calendar is a tab, between Open and History', /\['open', 'Open'\], \['calendar', 'Calendar'\], \['history', 'History'\]/.test(SRC_UI));
+h = U.render.calendar(S); t = strip(h);
+chk('the calendar opens on the reader\'s current month', /October 2026/.test(t) && /Nothing settled in October 2026\./.test(t), t.slice(0, 300));
+chk('a day with only placements is marked, and says so', /data-v="2026-10-01"[^>]*aria-label="Thursday, October 1, 1 placed"/.test(h) && /data-v="2026-10-03"[^>]*aria-label="Saturday, October 3, 1 placed"/.test(h), h.match(/aria-label="[^"]*October 3[^"]*"/));
+chk('today is marked', /class="pfo-cal-d today none"><span class="n">4</.test(h) || /class="pfo-cal-d today[^"]*"[^>]*aria-label="[^"]*today/.test(h));
+chk('no "This month" button on this month', !/data-dir="today"/.test(h));
+const SEP = Object.assign({}, S, { cal: { month: '2026-09', day: '', kind: 'ALL', platform: '' } });
+h = U.render.calendar(SEP); t = strip(h);
+chk('the month total is settled P&L: 90.91 − 200 + 59.75', /Settled in September\s*−\$49\.34\s*3 settled · 2-1-0/.test(t), t.slice(0, 400));
+chk('days up and down', /2 up \/ 1 down days/.test(t));
+chk('the grid starts on the right weekday: 1 Sep 2026 is a Tuesday', (h.match(/pfo-cal-pad/g) || []).length === 2 && (h.match(/class="pfo-cal-d/g) || []).length === 30);
+chk('each settled day shows its P&L, compact, in its tone', /data-v="2026-09-07"[^>]*>.*?\+\$91</.test(h) && /class="pfo-cal-d down l3" data-act="cal-day" data-v="2026-09-08"/.test(h) && /−\$200</.test(h));
+chk('and its exact P&L in words for a screen reader', /aria-label="Monday, September 7, \+\$90\.91 on 1 settled, 2 placed"/.test(h), h.match(/aria-label="Monday, September 7[^"]*"/));
+chk('best and worst day', /Best day Sep 7 \+\$90\.91/.test(t) && /Worst day Sep 8 −\$200\.00/.test(t));
+chk('month navigation both ways, and back to this month', /data-dir="prev" data-v="2026-08"/.test(h) && /data-dir="next" data-v="2026-10"/.test(h) && /data-dir="today" data-v="2026-10"/.test(h));
+t = strip(U.render.calendar(Object.assign({}, SEP, { cal: Object.assign({}, SEP.cal, { day: '2026-09-07' }) })));
+chk('a day opens its own panel: what settled, what was placed', /Monday, September 7/.test(t) && /1 settled for \+\$90\.91 \(1-0-0/.test(t) && /2 placed for \$300\.00/.test(t), t.slice(t.indexOf('Monday, September 7'), t.indexOf('Monday, September 7') + 300));
+chk('each position once, with what happened that day', (t.match(/Chiefs -2\.5 /g) || []).length === 1 && /Placed 5:00 PM · Settled 9:00 PM/.test(t) && /Jets ML\s*Settled Sep 8, 2026/.test(t));
+chk('and a way to the same positions in History', /See this day’s settled positions in History/.test(t));
+chk('a kind narrows the month', /Settled in September\s*\+\$59\.75/.test(strip(U.render.calendar(Object.assign({}, SEP, { cal: Object.assign({}, SEP.cal, { kind: 'PREDICTION_MARKET' }) })))));
+chk('a platform narrows it too', /Settled in September\s*−\$200\.00/.test(strip(U.render.calendar(Object.assign({}, SEP, { cal: Object.assign({}, SEP.cal, { platform: 'fanduel' }) })))));
+t = strip(U.render.calendar(Object.assign({}, S, { cal: { month: '2026-03', day: '', kind: 'ALL', platform: '' } })));
+chk('an empty month offers the nearest months with activity', /Nothing settled in March 2026\./.test(t) && /September 2026 ›/.test(t) && !/‹ [A-Z]/.test(t));
+chk('an empty book builds one instead', /Build your portfolio/.test(strip(U.render.calendar(Object.assign({}, S, { positions: [] })))));
+chk('days are the reader\'s own: a 9pm-UTC settlement is the same day in Los Angeles, the next in Tokyo',
+  /data-v="2026-09-08"[^>]*aria-label="[^"]*−\$200\.00/.test(U.render.calendar(Object.assign({}, SEP, { tz: 'America/Los_Angeles' })))
+  && /data-v="2026-09-09"[^>]*aria-label="[^"]*−\$200\.00/.test(U.render.calendar(Object.assign({}, SEP, { tz: 'Asia/Tokyo' }))));
+chk('compact amounts: cents under a dollar, dollars, then thousands', JSON.stringify(['0', '0.4', '45.2', '-999.4', '999.6', '1234.5', '-12345', '999960', '-0.001'].map(U.compactMoney))
+  === JSON.stringify(['$0', '+$0.40', '+$45', '−$999', '+$1k', '+$1.2k', '−$12k', '+$1M', '<$0.01']));
+chk('months roll over the year', U.shiftMonth('2026-01', -1) === '2025-12' && U.shiftMonth('2026-12', 1) === '2027-01');
+
 /* ═══ ANALYTICS ═════════════════════════════════════════════════════════ */
 t = strip(U.render.analytics(S));
 chk('analytics compares sportsbook, prediction market and combined', /Sportsbook Prediction Combined/.test(t) && /P&L −\$109\.09 \+\$59\.75 −\$49\.34/.test(t), t.slice(0, 700));
@@ -135,6 +168,7 @@ chk('a datetime-local value round-trips in the browser\'s own zone', U.isoToLoca
 const evil = '<img src=x onerror=alert(1)>"\'';
 const hostile = [pos({ event_name: evil, selection: evil, platform_label: evil, notes: evil, status: 'OPEN' })];
 const all = ['overview', 'open', 'history', 'analytics'].map((k) => U.render[k](Object.assign({}, S, { positions: hostile, histFilter: Object.assign(U.defaults().histFilter, { state: '' }) }))).join('')
+  + U.render.calendar(Object.assign({}, S, { positions: hostile.map((p) => Object.assign({}, p, { event_start_at: '2026-09-07T23:00:00Z' })), cal: { month: '2026-09', day: '2026-09-07', kind: 'ALL', platform: '' } }))
   + U.render.accounts(Object.assign({}, S, { accounts: [{ id: evil, platform: 'x', platform_label: evil, display_name: evil, platform_type: 'SPORTSBOOK', connection_type: 'MANUAL', status: 'MANUAL', positions: 0 }] }));
 chk('nothing a reader typed becomes markup', !/<img/.test(all) && /&lt;img/.test(all));
 chk('nor breaks out of an attribute', !/data-id="<img/.test(all) && !/"'/.test(all.replace(/&quot;|&#39;/g, '')));
@@ -152,7 +186,7 @@ const strings = (SRC.replace(/\/\*[\s\S]*?\*\//g, '').match(/'(?:[^'\\\n]|\\.)*'
 const TOUT = /\b(bet this|locks?|lock of|guaranteed?|smash|must[- ]bet|can'?t lose|best bets?|winning plays?|free money|sure thing|hammer|win it back|chase|get even|recoup|bounce back|deposit (now|more)|reload bonus|boost your|hot streak|on fire|due for|don'?t miss)\b/i;
 const hit = strings.split('\n').filter((l) => TOUT.test(l));
 chk('no tout, urgency or loss-chasing language anywhere in Portfolio copy', hit.length === 0, hit.slice(0, 5));
-const rendered = [U.render.overview(S), U.render.open(S), U.render.history(S), U.render.analytics(S), U.render.accounts(Object.assign({}, S, { accounts: accts })), U.render.import(S),
+const rendered = [U.render.overview(S), U.render.open(S), U.render.calendar(S), U.render.calendar(Object.assign({}, SEP, { cal: Object.assign({}, SEP.cal, { day: '2026-09-07' }) })), U.render.history(S), U.render.analytics(S), U.render.accounts(Object.assign({}, S, { accounts: accts })), U.render.import(S),
   U.render.wagerForm({}, {}), U.render.predictionForm({}, {})].map(strip).join(' ');
 chk('…nor in anything the page renders', !TOUT.test(rendered), (rendered.match(TOUT) || [])[0]);
 chk('up and down are described the same way: "Up $x" / "Down $x"', /"Up"|'Up'/.test(SRC) && /'Down'/.test(SRC) && !/congrat|celebrat|🎉|🔥/i.test(SRC));
@@ -173,6 +207,8 @@ chk('a #v-portfolio view with its own host (not the Ledger\'s id="portfolio")', 
 chk('the router paints it', APP.indexOf("if(v==='portfolio'){try{if(window.pfOpen)window.pfOpen();}catch(_){}}") > 0 && WS.indexOf('PFS.ctl = W.EDPortfolioUI.show(host)') > 0);
 chk('its own seat reads active while it is open', /var NAV_PRIMARY=\{[^}]*portfolio:1/.test(APP) && !/NAV_OWNER=\{[^}]*portfolio:/.test(APP));
 chk('#portfolio deep-links to it, and #portfolio/<tab> to a tab', /NAV_HASH_MAP=\{[^}]*portfolio:'portfolio'/.test(APP) && APP.indexOf("if(t==='portfolio'&&m[2]){try{if(window.pfSetTab)window.pfSetTab(m[2],true);}catch(_){}}") > 0);
+chk('#portfolio/calendar is the Calendar tab, no longer an alias for History', /var PFO_TABS = \[[^\]]*'calendar'/.test(WS) && !/calendar: 'history'/.test(WS));
+chk('a tab the page opens itself keeps the link in step', /host\.dispatchEvent\(new root\.CustomEvent\('pfo-tab'/.test(SRC_UI) && /addEventListener\('pfo-tab'/.test(WS));
 chk('More no longer lists it: it has a seat', APP.indexOf("dest.push(moreItem(IC.portfolio,'Portfolio'") < 0);
 chk('a reader can make it their landing page', APP.indexOf("['portfolio','Portfolio']") > 0);
 const nav = APP.slice(APP.indexOf('<nav class="bottomnav"'), APP.indexOf('</nav>', APP.indexOf('<nav class="bottomnav"'))).replace(/<!--[\s\S]*?-->/g, '');

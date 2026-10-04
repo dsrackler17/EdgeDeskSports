@@ -18,6 +18,8 @@
      edits a bet to lost and the total follows; deletes one;
      imports a CSV — detected / new / duplicate / review / invalid — and
      confirms;
+     opens the Calendar, finds a month and a day whose P&L is what the
+     database settled in the reader's zone, and follows the day to History;
      sees accounts labelled "Manual tracking" / "CSV import", never
      "Connected";
      never sees another reader's position;
@@ -35,6 +37,7 @@ const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const REST = require('./_pgrest.js');
 
 const ROOT = PG.ROOT;
+const E = require(path.join(ROOT, 'lib', 'edgedesk_portfolio.js'));
 const REQUIRED = process.env.PORTFOLIO_UI_REQUIRED === '1';
 const SHOTS = (function () { const i = process.argv.indexOf('--shots'); return i > 0 ? process.argv[i + 1] : null; }());
 const A = '00000000-0000-0000-0000-0000000000a1';
@@ -246,6 +249,37 @@ const CSV = [
     chk('imported history keeps its own dates: settled at the placed time, not today',
       db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and source = 'CSV' and settled_at = placed_at and settled_at < '2026-09-30';`) === '2');
 
+    /* the calendar: a month and a day, each the database's own sum in the
+       reader's zone, and the day's way into History */
+    await tab(page, 'calendar');
+    chk('the Calendar tab is linkable: #portfolio/calendar', await page.evaluate(() => location.hash) === '#portfolio/calendar');
+    const tz = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone);
+    for (let i = 0; i < 36; i++) {
+      const m = await page.$eval('#pfoHost .pfo-cal-m', (e) => e.textContent);
+      if (m === 'September 2026') break;
+      const later = Date.parse(m + ' 1') > Date.parse('2026-09-01T12:00:00Z');
+      await page.click(`#pfoHost [data-act="cal-month"][data-dir="${later ? 'prev' : 'next'}"]`);
+    }
+    const settledSum = (from, to) => db.sql(`select coalesce(sum(profit_loss), 0)::text from public.portfolio_positions where user_id = '${A}' and status <> 'OPEN'
+      and (settled_at at time zone '${tz}') >= '${from}' and (settled_at at time zone '${tz}') < '${to}';`);
+    const sepPnl = settledSum('2026-09-01', '2026-10-01'), dayPnl = settledSum('2026-09-07', '2026-09-08');
+    t = await text(page);
+    chk('September\'s total is what the database settled in September, in the reader\'s zone', new RegExp('Settled in September\\s*' + E.money(sepPnl, { sign: true }).replace(/[$+.]/g, '\\$&'), 'i').test(t), [sepPnl, t.slice(0, 300)]);
+    chk('focus stays on the month arrow after a repaint', await page.evaluate(() => !!document.activeElement && document.activeElement.getAttribute('data-act') === 'cal-month'));
+    await page.click('#pfoHost .pfo-cal [data-act="cal-day"][data-v="2026-09-07"]');
+    await page.waitForSelector('#pfoHost [data-r="cal-day"]');
+    const day = await page.$eval('#pfoHost [data-r="cal-day"]', (e) => e.innerText);
+    chk('a day opens with its settled P&L, from the database', day.indexOf(E.money(dayPnl, { sign: true })) >= 0 && /Jets/.test(day), [dayPnl, day.slice(0, 400)]);
+    chk('the day is marked as chosen', await page.$eval('#pfoHost .pfo-cal [data-v="2026-09-07"]', (e) => e.getAttribute('aria-pressed') === 'true'));
+    await shot(page, 'desktop-calendar');
+    await page.click('#pfoHost [data-act="cal-history"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="history"][aria-selected="true"]');
+    chk('"See in History" opens History, and the link follows', await page.evaluate(() => location.hash) === '#portfolio/history');
+    const dayRows = +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and status <> 'OPEN' and (settled_at at time zone '${tz}')::date = '2026-09-07';`);
+    t = (await text(page)).replace(/\s+/g, ' ');
+    chk('History holds exactly that day\'s settled positions', new RegExp('\\b' + dayRows + ' positions? · settled P&L ' + E.money(dayPnl, { sign: true }).replace(/[$+.]/g, '\\$&')).test(t)
+      && await page.$eval('#pfoHost [name="from"]', (e) => e.value) === '2026-09-07' && await page.$eval('#pfoHost [name="to"]', (e) => e.value) === '2026-09-07', t.slice(0, 400));
+
     /* accounts, analytics, isolation */
     await tab(page, 'accounts');
     t = await text(page);
@@ -258,7 +292,7 @@ const CSV = [
     await page.click('#pfoHost [data-act="period"][data-v="7D"]');
     chk('and filters by period', await page.$eval('#pfoHost [data-act="period"][data-v="7D"]', (e) => e.getAttribute('aria-pressed') === 'true'));
     await shot(page, 'desktop-analytics');
-    for (const v of ['overview', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'open', 'calendar', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
@@ -271,11 +305,30 @@ const CSV = [
     /* ═══ PHONE: 390 px ════════════════════════════════════════════════ */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
     await waitText(page, /Total P&L/i);
-    for (const v of ['overview', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'open', 'calendar', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       await noSideways(page, '390px ' + v);
       await shot(page, 'phone-' + v);
     }
+    await tab(page, 'calendar');
+    for (let i = 0; i < 36 && (await page.$eval('#pfoHost .pfo-cal-m', (e) => e.textContent)) !== 'September 2026'; i++) {
+      const later = Date.parse((await page.$eval('#pfoHost .pfo-cal-m', (e) => e.textContent)) + ' 1') > Date.parse('2026-09-01T12:00:00Z');
+      await page.click(`#pfoHost [data-act="cal-month"][data-dir="${later ? 'prev' : 'next'}"]`);
+    }
+    const fit = await page.evaluate(() => {
+      const g = document.querySelector('#pfoHost .pfo-cal'), cells = [].slice.call(g.querySelectorAll('.pfo-cal-d'));
+      const clipped = [].slice.call(g.querySelectorAll('.pfo-cal-d .a, .pfo-cal-d .o')).filter((a) => a.scrollWidth > a.parentNode.clientWidth + 0.5).map((a) => a.textContent);
+      const r = cells.map((c) => c.getBoundingClientRect());
+      return { cols: new Set(r.map((b) => Math.round(b.left))).size, minW: Math.min.apply(null, r.map((b) => b.width)), minH: Math.min.apply(null, r.map((b) => b.height)),
+        inside: g.scrollWidth <= g.clientWidth + 1, clipped, amounts: g.querySelectorAll('.pfo-cal-d .a').length };
+    });
+    chk('390px: the month is seven columns, every day on screen', fit.cols === 7 && fit.inside && fit.amounts > 0, fit);
+    chk('390px: no day\'s amount is clipped', fit.clipped.length === 0, fit.clipped);
+    chk('390px: a day is big enough to tap (≥ 40 × 50)', fit.minW >= 40 && fit.minH >= 50, fit);
+    await page.click('#pfoHost .pfo-cal [data-act="cal-day"][data-v="2026-09-07"]');
+    await page.waitForSelector('#pfoHost [data-r="cal-day"]');
+    await noSideways(page, '390px calendar day');
+    await shot(page, 'phone-calendar-day');
     await tab(page, 'history');
     chk('390px: history is cards, not a wide table', await page.evaluate(() => {
       const c = document.querySelector('#pfoHost .pfo-hist-cards'), tb = document.querySelector('#pfoHost .pfo-hist-table');

@@ -176,6 +176,30 @@ eq('open exposure is always now, whatever the period', s7.openExposure, '48');
 eq('an empty book', [E.summarize([], {}).pnl, E.summarize([], {}).roi, E.summarize([], {}).winRate], ['0', null, null]);
 eq('timezones: an 11pm-Eastern settlement is that day in New York, the next in UTC',
   [E.series([row({ settled_at: '2026-09-02T03:00:00Z' })], { tz: 'America/New_York' })[0].date, E.series([row({ settled_at: '2026-09-02T03:00:00Z' })], { tz: 'UTC' })[0].date], ['2026-09-01', '2026-09-02']);
+/* the calendar: settled, event and placed days kept apart */
+const calBook = book.map((p, i) => Object.assign({ id: 'p' + i }, p));
+calBook[4].event_start_at = '2026-09-05T00:30:00Z';             /* the open DK bet: 8:30pm Sep 4 in New York */
+calBook[1].event_start_at = '2026-09-02T17:00:00Z';             /* the lost DK bet's game */
+const cal = E.calendar(calBook, { tz: 'UTC' });
+eq('calendar: one day per local date with any activity', cal.days.map((x) => x.date), ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05']);
+eq('calendar: each day\'s settled P&L sums to the cumulative line', cal.days.filter((x) => x.settled).map((x) => [x.date, x.pnl]), s.series.map((x) => [x.date, x.pnl]));
+eq('calendar: the month total is the book\'s settled P&L', [cal.pnl, cal.settled, E.recordText(cal.record)], [s.pnl, 5, '3-1-1']);
+eq('calendar: placements land on the day placed, with their cost', [cal.days[0].placed, cal.days[0].staked], [7, '461']);
+eq('calendar: an event day carries what is still open on it', [cal.days[4].events, cal.days[4].open, cal.days[4].exposure, cal.days[4].settled], [1, 1, '40', 0]);
+eq('calendar: a settled position\'s event day is an event, not exposure', [cal.days[1].events, cal.days[1].open, cal.days[1].exposure], [1, 0, '0']);
+eq('calendar: up, down and even days', [cal.up, cal.down, cal.even], [3, 1, 0]);
+eq('calendar: best and worst day', [cal.best.date, cal.best.pnl, cal.worst.date, cal.worst.pnl], ['2026-09-01', '90.91', '2026-09-02', '-100']);
+const calNY = E.calendar(calBook, { tz: 'America/New_York', month: '2026-09' });
+chk('calendar: days are local — the 00:30Z event is Sep 4 in New York', calNY.days.some((x) => x.date === '2026-09-04' && x.open === 1) && !calNY.days.some((x) => x.date === '2026-09-05'));
+eq('calendar: a month holds only its own days', E.calendar(calBook, { tz: 'UTC', month: '2026-08' }).days, []);
+eq('calendar: every month with activity is listed, whatever month is asked for', E.calendar(calBook, { tz: 'UTC', month: '2026-01' }).months, ['2026-09']);
+const calPM = E.calendar(calBook, { tz: 'UTC', kind: 'PREDICTION_MARKET' });
+eq('calendar: by kind', [calPM.pnl, calPM.settled, calPM.days.filter((x) => x.settled).map((x) => x.date)], ['38.5', 1, ['2026-09-04']]);
+eq('calendar: by platform', E.calendar(calBook, { tz: 'UTC', platform: 'fanduel' }).pnl, '75');
+eq('calendar: one settled day has no best or worst to compare', [calPM.best, calPM.worst], [null, null]);
+const sep = { from: E.zonedToUtc(2026, 9, 1, 0, 0, 0, 'America/New_York'), to: E.zonedToUtc(2026, 10, 1, 0, 0, 0, 'America/New_York'), tz: 'America/New_York' };
+eq('calendar: a month\'s total is the same as a period summary over that month', calNY.pnl, E.summarize(calBook, sep).pnl);
+eq('calendar: an empty book', [E.calendar([], { month: '2026-09' }).pnl, E.calendar([], {}).days, E.calendar([], {}).best], ['0', [], null]);
 const ytd = E.periodRange('YTD', Date.parse('2026-10-04T12:00:00Z'), 'America/Chicago');
 eq('YTD starts at midnight on 1 January in the reader\'s zone', new Date(ytd.from).toISOString(), '2026-01-01T06:00:00.000Z');
 eq('7D and 30D are rolling', [E.periodRange('7D', 1e12).from, E.periodRange('30D', 1e12).from, E.periodRange('ALL', 1e12).from], [1e12 - 7 * 864e5, 1e12 - 30 * 864e5, null]);
