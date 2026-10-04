@@ -594,7 +594,7 @@ Object.keys(GAMES.games).forEach((gid) => {
   /* a stored curve that breaks probability — P(margin > t) rising with t —
      read off the curve itself, not off the build's own DISTRIBUTION_SANITY flag */
   const incoherent = ri.curve.win.some((w, i) => i > 0 && w > ri.curve.win[i - 1] + 1e-9);
-  cfbReal.push({ o, d, orient, incoherent });
+  cfbReal.push({ o, d, orient, incoherent, line: anchorLine });
 });
 chk('real CFB: replayed every game with captured two-sided prices', cfbReal.length > 0, cfbReal.length);
 /* A CALIBRATED probability that crosses the line is held at NO DECISION by
@@ -621,9 +621,44 @@ chk('the FCS guard hold is told apart from any other data fault', guardHold({ o:
   && !guardHold({ o: { game: { fcs: false } }, d: { decision: 'NO_DECISION', blockers: [gb] } })
   && !guardHold({ o: { game: { fcs: true } }, d: { decision: 'NO_DECISION', blockers: [{ code: 'DATA_FAULT', text: 'inverted spread' }] } })
   && !guardHold({ o: { game: { fcs: true } }, d: { decision: 'NO_DECISION', blockers: [gb, { code: 'STALE_MARKET', text: 'stale' }] } }));
-chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, any a calibrated line-crossing holds at NO DECISION, and any FCS mismatch the guard bound holds at DATA FAULT',
+/* THE CHAMPION'S "NO TIES" HOLE, a KNOWN MODEL DEFECT held at NO DECISION.
+   A college game cannot end level, so every row of the CFB champion's
+   margin_pmf_by_spread holds no mass at margin 0. football/cfb_p4/engine.js
+   coverProbSpread and lib/edgedesk_quote_ev.js cfbConditionedCover re-centre
+   a row by shifting it a whole number of points, and the hole moves with it:
+   on 2026-10-04 UConn @ Temple (fair +6.2, row mean 2.9, shift +3) put it on
+   home margin +3 — DraftKings' Temple -3 — while a tie got real mass. The
+   quote then has no push probability, quote EV flags INTEGER_PUSH_MISSING,
+   and the engine refuses the price: the right answer on that distribution.
+   The fix is the model's (stop the whole-point shift, as football/engine.js
+   did in the 2026-09-30 audit, then re-validate); until it lands, ONLY this
+   signature is held here — every blocker integer_push_missing, the quoted
+   whole-number margin with no push while margin 0 (a tie) has some. Any other
+   corrupted price, or this flag on a curve without the shifted hole, still
+   fails. */
+const tieHoleHold = (x) => {
+  const c = x.o && x.o.read_inputs && x.o.read_inputs.curve, m = -x.line;
+  if (!c || !Array.isArray(c.push) || !Number.isInteger(m) || x.d.decision !== 'NO_DECISION' || !(x.d.blockers || []).length) return false;
+  if (!x.d.blockers.every((b) => b.code === 'CORRUPTED_ODDS' && /integer_push_missing/.test(b.text))) return false;
+  const at = (k) => { const i = Math.round((k - c.lo) / c.step); return i >= 0 && i < c.push.length ? c.push[i] : null; };
+  return at(m) === 0 && at(0) > 0;
+};
+/* margins -6..+6 on half points: mass on every whole margin but +4 (the hole a
+   +4 shift leaves), a tie at 0 that a college game cannot have, nothing on a half */
+const holeMass = { '-6': 0.02, '-5': 0.02, '-4': 0.02, '-3': 0.03, '-2': 0.02, '-1': 0.02, 0: 0.06, 1: 0.02, 2: 0.02, 3: 0.05, 4: 0, 5: 0.02, 6: 0.02 };
+const holeCurve = { lo: -6, step: 0.5, push: Array.from({ length: 25 }, (_, i) => (i % 2 ? 0 : holeMass[-6 + i / 2])) };
+const ib = { code: 'CORRUPTED_ODDS', text: 'every priced quote failed an arithmetic integrity check (integer_push_missing)' };
+const hx = (o) => Object.assign({ o: { read_inputs: { curve: holeCurve } }, line: -4, d: { decision: 'NO_DECISION', blockers: [ib] } }, o);
+chk('the "no ties" hold is told apart from any other corrupted price', tieHoleHold(hx({}))
+  && !tieHoleHold(hx({ line: -3 }))                                                    /* push on file at that margin */
+  && !tieHoleHold(hx({ o: { read_inputs: { curve: Object.assign({}, holeCurve, { push: holeCurve.push.map((v, i) => (i === 12 ? 0 : v)) }) } } }))  /* no tie mass at margin 0: not the shifted hole */
+  && !tieHoleHold(hx({ line: -4.5 }))                                                  /* a half-point line has no push to miss */
+  && !tieHoleHold(hx({ d: { decision: 'NO_DECISION', blockers: [{ code: 'CORRUPTED_ODDS', text: 'no quote carries a valid sportsbook price' }] } }))
+  && !tieHoleHold(hx({ d: { decision: 'NO_DECISION', blockers: [ib, { code: 'STALE_QUOTE', text: 'stale' }] } }))
+  && !tieHoleHold(hx({ d: { decision: 'PASS', blockers: [] } })));
+chk('real CFB: every replayed game is EVALUABLE and reaches BET / LEAN / WATCH / PASS — except one the orientation invariant holds at DATA FAULT, any a calibrated line-crossing holds at NO DECISION, any FCS mismatch the guard bound holds at DATA FAULT, and any whole-number line the champion\'s shifted "no ties" hole leaves without a push',
   cfbReal.every((x) => x.orient ? (x.d.decision === 'NO_DECISION' && String(x.d.blocker_codes).indexOf('DATA_FAULT') >= 0)
-    : (guardHold(x) || calHold(x.d) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
+    : (guardHold(x) || calHold(x.d) || tieHoleHold(x) || (x.d.evaluation_status === 'EVALUABLE' && ['BET', 'LEAN', 'WATCH', 'PASS'].indexOf(x.d.decision) >= 0))),
   cfbReal.filter((x) => x.d.decision === 'NO_DECISION').map((x) => x.o.game_id + ':' + x.d.blocker_codes + (x.orient ? ' (orientation)' : '') + (x.incoherent ? ' (incoherent curve)' : '')));
 /* No stored curve breaks probability. On 2026-10-02 McNeese @ LSU (LSU −52.5,
    outside the ±45 range the margin PMF table is conditioned on) was built from
