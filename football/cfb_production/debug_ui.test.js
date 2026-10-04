@@ -48,7 +48,10 @@ const E = ctx.window.EDDEBUG;
 chk('EDDEBUG exposes render, listView, gameView, stageBody', E && ['render', 'listView', 'gameView', 'stageBody'].every((k) => typeof E[k] === 'function'));
 
 /* ---- the real files -------------------------------------------------------- */
-
+/* as of the moment the committed current.json was built: a fixed date goes
+   stale when the weekly refresh moves every prediction past it, and a game
+   predicted after "now" rightly does not exist yet */
+const NOW = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'cfb_v2', 'current.json'), 'utf8')).generated_at || '2026-09-28T12:00:00.000Z';
 const P = PR.build({ now: NOW });
 const T = JSON.parse(JSON.stringify(P.traces));
 const Pj = JSON.parse(JSON.stringify(P));
