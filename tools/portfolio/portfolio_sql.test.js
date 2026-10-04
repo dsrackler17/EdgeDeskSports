@@ -71,6 +71,8 @@ if (db.skip) {
 const A = '00000000-0000-0000-0000-00000000000a';
 const B = '00000000-0000-0000-0000-00000000000b';
 const ADMIN = '00000000-0000-0000-0000-0000000000ad';
+const C1 = '00000000-0000-0000-0000-0000000000c1';   /* two fresh readers for the batch-size comparison */
+const C2 = '00000000-0000-0000-0000-0000000000c2';
 const COLS = E.DERIVED;
 const one = (s) => s.split('\n')[0];
 const json = (s) => JSON.parse(s || 'null');
@@ -112,7 +114,7 @@ try {
   chk('and the report has its fifteen rows', (out.match(/\|ok$/gm) || []).length === 15, out.slice(-800));
   out = db.applyFileAtomic(FILE);
   chk('and applies a second time without error, still all ok', !/CHECK THIS/.test(out));
-  db.sql(`insert into auth.users (id, email) values (${L(A)}, 'a@example.com'), (${L(B)}, 'b@example.com'), (${L(ADMIN)}, 'op@example.com');`);
+  db.sql(`insert into auth.users (id, email) values (${L(A)}, 'a@example.com'), (${L(B)}, 'b@example.com'), (${L(ADMIN)}, 'op@example.com'), (${L(C1)}, 'c1@example.com'), (${L(C2)}, 'c2@example.com');`);
 
   /* re-running it on a live site: a reader saving a position holds positions
      and then reads accounts. Run as the SQL editor runs it, it must deadlock
@@ -352,6 +354,12 @@ try {
   const syncedId = db.sql(`select id from public.portfolio_positions where external_position_id = 'DK-777';`);
   chk('a synced position is read-only to its reader', db.mustFail(() => db.as(A, `update public.portfolio_positions set stake = 1 where id = ${L(syncedId)};`)) !== null);
   chk('except its notes', db.mustFail(() => db.as(A, `update public.portfolio_positions set notes = 'note' where id = ${L(syncedId)};`)) === null);
+  chk('…never the record\'s identity: its legs, event id or duplicate number',
+    ['event_id = \'x\'', 'dedupe_occurrence = 9', 'legs = \'[]\''].every((set) => db.mustFail(() => db.as(A, `update public.portfolio_positions set ${set} where id = ${L(syncedId)};`)) !== null));
+  chk('…nor a label the platform supplied', db.mustFail(() => db.as(A, `update public.portfolio_positions set sport = 'NBA' where id = ${L(syncedId)};`)) !== null);
+  chk('…but it may fill in one the platform left blank, once',
+    db.mustFail(() => db.as(A, `update public.portfolio_positions set league = 'NFL', event_start_at = '2026-08-02T17:00:00Z' where id = ${L(syncedId)};`)) === null
+    && db.mustFail(() => db.as(A, `update public.portfolio_positions set event_start_at = '2026-08-03T17:00:00Z' where id = ${L(syncedId)};`)) !== null);
   db.as(A, `delete from public.portfolio_positions where id = ${L(syncedId)};`);
   chk('and a reader cannot delete it', db.sql(`select count(*) from public.portfolio_positions where id = ${L(syncedId)};`) === '1');
   chk('a reader cannot write a connector\'s sync log', db.mustFail(() => db.as(A, `insert into public.portfolio_sync_logs (platform, sync_kind, status) values ('kalshi', 'API_SYNC', 'SUCCESS');`)) !== null);
@@ -468,6 +476,47 @@ try {
     && rb.imported === 9 && rb.skipped === 1 && db.sql(`select count(*) from public.portfolio_positions where import_id = ${L(impB)};`) === '9', { calls, rb });
   chk('…and its rows keep the classification they were shown (imported rows are not re-flagged as duplicates of themselves)',
     db.sql(`select string_agg(distinct classification, ',' order by classification) from public.portfolio_import_rows where import_id = ${L(impB)} and outcome = 'IMPORTED';`) === 'NEW');
+  /* the same file classifies and lands the same whatever the batch size: a
+     failed first copy never promotes its unticked twin, and a twin of a row an
+     earlier batch imported stays an in-file duplicate */
+  const twins = ['Date,Book,Event,Selection,Odds,Stake,Result',
+    '2026-07-01 12:00,BetMGM,Twin game,Twin pick,-150,30,Cashed out',      /* NEW, refused by the database (no payout) */
+    '2026-07-01 12:00,BetMGM,Twin game,Twin pick,-150,30,Cashed out',      /* its twin, not ticked */
+    '2026-07-02 12:00,BetMGM,Other game,Other pick,-110,10,Won',
+    '2026-07-03 12:00,BetMGM,Third game,Third pick,-110,10,Won',
+    '2026-07-03 12:00,BetMGM,Third game,Third pick,-110,10,Won'].join('\n');  /* twin of a row that imports */
+  const landed = (uid, max) => {
+    const st = I.stage(twins, {});
+    st.rows.forEach((r) => { r.issues = r.issues.filter((x) => x.code !== 'PAYOUT_NEEDED'); });
+    const imp = stageImport(uid, st);
+    let res, n = 0;
+    do { res = json(db.as(uid, `select public.portfolio_import_commit(${L(imp)}, ${max});`)); n++; } while (res.status !== 'COMMITTED' && n < 10);
+    return { calls: n, res, rows: json(db.as(uid, `select json_agg(classification || ':' || outcome order by row_number) from public.portfolio_import_rows where import_id = ${L(imp)};`)) };
+  };
+  const whole = landed(C1, 1000), oneByOne = landed(C2, 1);
+  chk('one row a call lands exactly what one call lands, row for row',
+    oneByOne.calls > 2 && JSON.stringify(oneByOne.rows) === JSON.stringify(whole.rows)
+    && JSON.stringify(whole.rows) === JSON.stringify(['NEW:FAILED', 'DUPLICATE_IN_FILE:SKIPPED', 'NEW:IMPORTED', 'NEW:IMPORTED', 'DUPLICATE_IN_FILE:SKIPPED'])
+    && ['imported', 'skipped', 'failed', 'duplicate', 'new'].every((k) => oneByOne.res[k] === whole.res[k]), { whole, oneByOne });
+
+  /* a trade id the file reuses for a different market is called out, and
+     never pulls that file's fills into the other market's position */
+  const reuse = 'Date,Platform,Question,Side,Action,Contracts,Price,Trade ID\n2026-09-06T12:00:00Z,Kalshi,Will the Jets win?,Yes,Buy,10,40,T1\n2026-09-06T13:00:00Z,Kalshi,Will the Jets win?,Yes,Buy,5,42,J2';
+  const impR = stageImport(A, I.stage(reuse, {}));
+  c = json(db.as(A, `select public.portfolio_import_commit(${L(impR)});`));
+  const jets = json(db.as(A, `select json_build_object('issues', (select issues from public.portfolio_import_rows where import_id = ${L(impR)} and row_number = 1),
+    'market', (select p.event_name from public.portfolio_transactions t join public.portfolio_positions p on p.id = t.position_id where t.external_transaction_id = 'J2'),
+    'chiefs', (select count(*) from public.portfolio_transactions t join public.portfolio_positions p on p.id = t.position_id where p.event_name = 'Will the Chiefs win?' and p.user_id = ${L(A)}));`));
+  chk('a trade id already used by another market is flagged, and the new fills join their own market', c.imported === 1 && jets.market === 'Will the Jets win?'
+    && jets.chiefs === 3 && JSON.stringify(jets.issues).includes('EXTERNAL_ID_IN_USE'), { c, jets });
+
+  /* deleting an import unlinks what it created: no row may name an import that is gone */
+  db.as(A, `delete from public.portfolio_imports where id = ${L(imp3)};`);
+  chk('deleting an import keeps its positions and fills, unlinked — none names the deleted import',
+    db.sql(`select (select count(*) from public.portfolio_positions p where p.import_id is not null and not exists (select 1 from public.portfolio_imports i where i.id = p.import_id))
+      + (select count(*) from public.portfolio_transactions t where t.import_id is not null and not exists (select 1 from public.portfolio_imports i where i.id = t.import_id));`) === '0'
+    && db.sql(`select count(*) from public.portfolio_positions where event_name = 'Will the Chiefs win?' and user_id = ${L(A)} and import_id is null;`) === '1');
+
   chk('reader B cannot classify or commit A\'s import', db.mustFail(() => db.as(B, `select public.portfolio_import_commit(${L(imp6)});`)) !== null);
   chk('reader B cannot stage rows into A\'s import', db.mustFail(() => db.as(B, `insert into public.portfolio_import_rows (import_id, row_number, raw) values (${L(imp6)}, 99, '{}');`)) !== null);
   chk('reader B sees none of A\'s imports, rows or logs', +countAs(B, 'public.portfolio_imports') === 0 && +countAs(B, 'public.portfolio_import_rows') === 0 && +countAs(B, 'public.portfolio_sync_logs') === 0);
@@ -484,6 +533,19 @@ try {
   db.as(A, `delete from public.platform_accounts where id = ${L(moveAcct)};`);
   chk('removing an account keeps its positions in the history', db.sql(`select count(*) from public.portfolio_positions where platform = 'betrivers' and user_id = ${L(A)} and platform_account_id is null;`) === '1');
   chk('and does not silently re-open the account', db.sql(`select count(*) from public.platform_accounts where platform = 'betrivers' and user_id = ${L(A)};`) === '0');
+  const kalshiAcct = db.as(A, `select id from public.platform_accounts where platform = 'kalshi' and user_id = ${L(A)};`);
+  db.as(A, `delete from public.platform_accounts where id = ${L(kalshiAcct)};`);
+  db.service(`insert into public.platform_accounts (id, user_id, platform, platform_label, platform_type, connection_type, status, external_account_id)
+              values ('22222222-2222-2222-2222-222222222222', ${L(A)}, 'fanduel', 'FanDuel', 'SPORTSBOOK', 'API', 'CONNECTED', 'acct-2');`);
+  db.service(wagerSql({ user_id: A, platform: 'fanduel', platform_label: 'FanDuel', stake: '15', odds_american: '110', source: 'SYNC', external_position_id: 'FD-SYNC-1',
+    platform_account_id: '22222222-2222-2222-2222-222222222222', selection: 'Synced FanDuel pick' }));
+  chk('a reader may remove a connected account; its synced positions stay in the history, unlinked',
+    db.mustFail(() => db.as(A, `delete from public.platform_accounts where id = '22222222-2222-2222-2222-222222222222';`)) === null
+    && db.sql(`select count(*) from public.portfolio_positions where external_position_id = 'FD-SYNC-1' and platform_account_id is null;`) === '1');
+  chk('no position or fill names an account that was removed',
+    db.sql(`select (select count(*) from public.portfolio_positions p where p.platform_account_id is not null and not exists (select 1 from public.platform_accounts a where a.id = p.platform_account_id))
+      + (select count(*) from public.portfolio_transactions t where t.platform_account_id is not null and not exists (select 1 from public.platform_accounts a where a.id = t.platform_account_id));`) === '0'
+    && +db.sql(`select count(*) from public.portfolio_transactions where platform = 'kalshi' and user_id = ${L(A)} and platform_account_id is null;`) > 0);
 
   /* ═══ A DELETED ACCOUNT TAKES EVERYTHING WITH IT ══════════════════════ */
   db.service(`insert into portfolio_private.platform_credentials (platform_account_id, user_id, credential_kind, ciphertext, nonce, key_version)

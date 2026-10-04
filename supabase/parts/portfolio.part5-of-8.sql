@@ -2,6 +2,13 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- a row goes in when it is NEW and the reader did not skip it, or when the
+-- reader explicitly chose to import it; an INVALID row never goes in
+create or replace function public.portfolio_import_row_wanted(p_class text, p_decision text)
+returns boolean language sql immutable as $$
+  select p_class <> 'INVALID' and coalesce(p_decision, case when p_class = 'NEW' then 'IMPORT' else 'SKIP' end) = 'IMPORT'
+$$;
+
 -- Classifies every row not yet imported, in a handful of set-based statements
 -- (a 5,000-row file in well under a second): the server's own checks, the
 -- fingerprint and market of each row, duplicates of what the reader already
@@ -44,37 +51,53 @@ begin
             from public.portfolio_import_rows ir where ir.import_id = p_import and ir.outcome is null) x
    where r.id = x.id;
 
-  /* 2. what the reader already has: platform id first … */
-  update public.portfolio_import_rows r set duplicate_of = p.id
+  /* 2. what the reader already has — never what an earlier batch of THIS
+     import inserted: those are the file's own rows, and step 3 ranks them, so
+     a file classifies the same in one commit call or in twenty.
+     Platform id first (and a platform id already used by a record with
+     different details is called out: some exports number their rows afresh
+     each time) … */
+  update public.portfolio_import_rows r set duplicate_of = p.id,
+         issues = r.issues || case when p.fingerprint is distinct from r.fingerprint then jsonb_build_array(jsonb_build_object(
+           'level', 'warning', 'code', 'EXTERNAL_ID_IN_USE', 'server', 'true',
+           'message', 'This id is already in your portfolio on a different bet (' || left(p.event_name, 80) || '). If the file''s ids restart with every export, import it without the id column.'))
+           else '[]'::jsonb end
     from public.portfolio_positions p
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'wager'
-     and p.user_id = imp.user_id and p.platform = r.normalized->>'platform'
+     and p.user_id = imp.user_id and p.platform = r.normalized->>'platform' and p.import_id is distinct from p_import
      and p.external_position_id = nullif(btrim(r.normalized->>'external_position_id'), '');
-  update public.portfolio_import_rows r set duplicate_of = t.id
+  update public.portfolio_import_rows r set duplicate_of = t.id,
+         issues = r.issues || case when t.fingerprint is distinct from r.fingerprint then jsonb_build_array(jsonb_build_object(
+           'level', 'warning', 'code', 'EXTERNAL_ID_IN_USE', 'server', 'true',
+           'message', 'This id is already in your portfolio on a different trade. If the file''s ids restart with every export, import it without the id column.'))
+           else '[]'::jsonb end
     from public.portfolio_transactions t
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'fill'
-     and t.user_id = imp.user_id and t.platform = r.normalized->>'platform'
+     and t.user_id = imp.user_id and t.platform = r.normalized->>'platform' and t.import_id is distinct from p_import
      and t.external_transaction_id = nullif(btrim(r.normalized->>'external_transaction_id'), '');
   /* … then the fingerprint */
   update public.portfolio_import_rows r
      set duplicate_of = (select p.id from public.portfolio_positions p
-                          where p.user_id = imp.user_id and p.fingerprint = r.fingerprint
+                          where p.user_id = imp.user_id and p.fingerprint = r.fingerprint and p.import_id is distinct from p_import
                             and (nullif(btrim(r.normalized->>'external_position_id'), '') is null or p.external_position_id is null)
                           order by p.dedupe_occurrence limit 1)
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'wager' and r.duplicate_of is null and r.fingerprint is not null;
   update public.portfolio_import_rows r
      set duplicate_of = (select t.id from public.portfolio_transactions t
-                          where t.user_id = imp.user_id and t.fingerprint = r.fingerprint
+                          where t.user_id = imp.user_id and t.fingerprint = r.fingerprint and t.import_id is distinct from p_import
                             and (nullif(btrim(r.normalized->>'external_transaction_id'), '') is null or t.external_transaction_id is null)
                           order by t.dedupe_occurrence limit 1)
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'fill' and r.duplicate_of is null and r.fingerprint is not null;
 
-  /* 3. the classification, with duplicates earlier in the same file found by window */
+  /* 3. the classification, with duplicates earlier in the same file found by
+     window — over the WHOLE file, rows an earlier batch already imported or
+     failed included, so a row's place among its twins never changes between
+     commit calls (a failed first copy does not promote its unticked twin) */
   with valid as (
     select ir.id, ir.row_number, ir.fingerprint, ir.normalized->>'platform' as plat,
            nullif(btrim(coalesce(ir.normalized->>'external_position_id', ir.normalized->>'external_transaction_id', '')), '') as ext
       from public.portfolio_import_rows ir
-     where ir.import_id = p_import and ir.outcome is null
+     where ir.import_id = p_import and coalesce(ir.outcome, '') <> 'SKIPPED'
        and not exists (select 1 from jsonb_array_elements(ir.issues) e where e->>'level' = 'error')),
   ranked as (
     select id, ext, row_number() over (partition by plat, ext order by row_number) as n_ext,

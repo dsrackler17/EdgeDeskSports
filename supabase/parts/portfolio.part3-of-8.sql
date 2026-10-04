@@ -10,6 +10,19 @@ create unique index if not exists portfolio_transactions_fingerprint_once
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 6. THE ARITHMETIC — every derived column, computed here and nowhere else
 -- ─────────────────────────────────────────────────────────────────────────────
+-- Is this a link being cleared because what it pointed at was deleted? A
+-- foreign key's ON DELETE SET NULL runs as an UPDATE of the referencing row,
+-- after the referenced row is gone; the triggers below that keep a link fixed
+-- for life must let exactly that update through, or the row keeps naming a
+-- record that no longer exists.
+create or replace function public.portfolio_link_released(p_old uuid, p_new uuid, p_kind text)
+returns boolean language sql stable as $$
+  select p_old is not null and p_new is null and case p_kind
+    when 'import' then not exists (select 1 from public.portfolio_imports i where i.id = p_old)
+    when 'account' then not exists (select 1 from public.platform_accounts a where a.id = p_old)
+    else false end
+$$;
+
 create or replace function public.portfolio_american_to_decimal(p_american int)
 returns numeric language sql immutable strict as $$
   select case when p_american >= 100 then 1 + public.portfolio_div_round(p_american, 100, 6)
@@ -60,15 +73,27 @@ begin
     end if;
   else
     new.id := old.id; new.user_id := old.user_id; new.created_at := old.created_at;
-    new.source := old.source; new.import_id := old.import_id; new.platform_type := old.platform_type;
+    new.source := old.source; new.platform_type := old.platform_type;
+    /* the import that created a position is fixed for life, except that
+       deleting the import itself clears the link (its ON DELETE SET NULL);
+       restoring it there would leave the position naming an import that no
+       longer exists */
+    if not public.portfolio_link_released(old.import_id, new.import_id, 'import') then new.import_id := old.import_id; end if;
     if reader then
       new.external_position_id := old.external_position_id; new.raw_payload := old.raw_payload;
-      if old.source = 'SYNC' and (new.platform, new.event_name, new.market_name, new.selection, new.side, new.line, new.odds_american,
+      /* a synced position is the platform's record: the reader keeps notes,
+         attribution and the labels the platform left blank, nothing else */
+      if old.source = 'SYNC' and ((new.platform, new.event_name, new.market_name, new.selection, new.side, new.line, new.odds_american,
           new.odds_decimal, new.stake, new.reported_payout, new.fees, new.status, new.placed_at, new.settled_at, new.resolution,
-          new.settlement_price, new.current_price, new.position_type, new.platform_account_id)
+          new.settlement_price, new.current_price, new.position_type, new.legs, new.event_id, new.dedupe_occurrence)
          is distinct from (old.platform, old.event_name, old.market_name, old.selection, old.side, old.line, old.odds_american,
           old.odds_decimal, old.stake, old.reported_payout, old.fees, old.status, old.placed_at, old.settled_at, old.resolution,
-          old.settlement_price, old.current_price, old.position_type, old.platform_account_id) then
+          old.settlement_price, old.current_price, old.position_type, old.legs, old.event_id, old.dedupe_occurrence)
+         or (new.platform_account_id is distinct from old.platform_account_id
+             and not public.portfolio_link_released(old.platform_account_id, new.platform_account_id, 'account'))
+         or (old.sport is not null and new.sport is distinct from old.sport)
+         or (old.league is not null and new.league is distinct from old.league)
+         or (old.event_start_at is not null and new.event_start_at is distinct from old.event_start_at)) then
         raise exception 'portfolio: a synced position is read-only except its notes and attribution' using errcode = '42501';
       end if;
     end if;
@@ -230,41 +255,3 @@ end $$;
 drop trigger if exists portfolio_positions_derive_trg on public.portfolio_positions;
 create trigger portfolio_positions_derive_trg before insert or update on public.portfolio_positions
   for each row execute function public.portfolio_positions_derive();
-
--- Checked at COMMIT, so a position and its first fill can arrive in one
--- transaction in either order: a contract position has at least one buy and
--- never more contracts sold than bought.
-create or replace function public.portfolio_positions_check_fills() returns trigger
-language plpgsql as $$
-declare b numeric; s numeric;
-begin
-  if new.platform_type <> 'PREDICTION_MARKET' then return null; end if;
-  if not exists (select 1 from public.portfolio_positions where id = new.id) then return null; end if;
-  select coalesce(sum(quantity) filter (where transaction_type = 'BUY' or (transaction_type = 'FILL' and side = 'BUY')), 0),
-         coalesce(sum(quantity) filter (where transaction_type = 'SELL' or (transaction_type = 'FILL' and side = 'SELL')), 0)
-    into b, s from public.portfolio_transactions where position_id = new.id;
-  if b <= 0 then
-    raise exception 'portfolio: a prediction-market position needs at least one buy' using errcode = '23514';
-  end if;
-  if s > b then
-    raise exception 'portfolio: more contracts sold than bought' using errcode = '23514';
-  end if;
-  return null;
-end $$;
-drop trigger if exists portfolio_positions_fills_trg on public.portfolio_positions;
-create constraint trigger portfolio_positions_fills_trg after insert or update on public.portfolio_positions
-  deferrable initially deferred for each row execute function public.portfolio_positions_check_fills();
-
--- a renamed market re-fingerprints its fills
-create or replace function public.portfolio_positions_after_update() returns trigger
-language plpgsql as $$
-begin
-  if new.platform_type = 'PREDICTION_MARKET'
-     and (new.platform, new.event_name, new.market_name, new.side) is distinct from (old.platform, old.event_name, old.market_name, old.side) then
-    update public.portfolio_transactions set updated_at = now() where position_id = new.id;
-  end if;
-  return null;
-end $$;
-drop trigger if exists portfolio_positions_after_update_trg on public.portfolio_positions;
-create trigger portfolio_positions_after_update_trg after update on public.portfolio_positions
-  for each row execute function public.portfolio_positions_after_update();
