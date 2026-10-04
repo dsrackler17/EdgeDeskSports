@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /* ===========================================================================
-   THE LANDING PAGE, IN A REAL BROWSER, AT SIX WIDTHS AND THREE STATES.
+   THE LANDING PAGE, IN A REAL BROWSER, AT SIX WIDTHS AND FIVE DATA STATES.
 
-   index.html exactly as it ships, served locally; the two live reads it makes
-   are answered from committed data:
+   index.html exactly as it ships, served locally; the two live reads its
+   research preview makes are answered from committed data:
      * public_home_board()        tools/home/fixtures/public_home_board.json
                                   (the real SQL's answer over the committed
                                   slate, written by home_sql.test.js)
@@ -17,36 +17,32 @@
    means live NOW and "stale" means stale NOW.
 
    LIVE    at 320 · 375 · 390 · 430 · 768 · 1280:
-             nothing wider than the screen (the page clips overflow-x, so a
-             scrollWidth check would pass a broken layout — every element's
-             box is measured instead); both hero calls to action above the
-             fold and at least 44 px tall; the stats ("worth researching" a
-             clear minority of the slate), the preview (two RESEARCH/WATCH game
-             markets and one player prop — on a phone the prop second, so the
-             first two cards are both pillars; the prop the published board's
-             research-grade one), the board and the prop table filled from
-             the data; the pricing example the current college game EV; no
-             "0" headline; no tout words; the price
-             and trial from lib/edgedesk_pricing.js; the hero copy 14 px on a
-             phone and as it was on desktop; a visitor's second hero button
-             is "See how it works"
-   FUNNEL  landing_view on load; cta_clicked for the hero; the live board and
-           pricing seen when scrolled to — each once, in batched ed_track calls
-   NOTHING QUALIFIES  the same board with no research-grade prop (props.items
-           {}, as a prop run can publish it): the preview's prop is a game's
-           own, shown in full with its book and capture; the prop table lists
-           only the games' props; no research-grade prop count beyond what is
-           listed
-   MIDWEEK first kickoff 60 h out, game markets 4 h old, prop prices 2 h
-           old — on the capture's schedule: the board, the preview and the
-           prop table are filled, nothing reads DATA INCOMPLETE, no age is
-           red, and no EV is printed on a price past 90 minutes
-   STALE   every capture a day old: no captured price is listed as current —
-           no RESEARCH, no DATA INCOMPLETE, no EV; what stays is an NFL
-           consensus reference (it has no capture time) and it says so, and the
-           prop table says its prices refresh on schedule
-   DOWN    both reads fail: the example card says "Example", the stats hide,
-           the board says it could not be reached — nothing pretends to be live
+             nothing wider than the screen (every element's box is measured,
+             since the page clips overflow-x); the hero says "Research, not
+             picks" and "Bet with a process. Know what's working."; both hero
+             actions above the fold, at least 44 px tall, the first one the
+             trial and the second "See how it works" to #how; the sample week
+             beside it labelled In development and Sample data; the research
+             preview (two RESEARCH/WATCH game markets and one player prop — on
+             a phone the prop second) and its stats filled from the data; no
+             tout words; the price and trial from lib/edgedesk_pricing.js
+   FIRST SCREEN  375×548, a first visit inside an in-app browser: the
+           eyebrow, the headline, the sentence, both actions, the price and
+           the top of the product preview — with its In development label —
+           before any scroll
+   FUNNEL  landing_view on load; cta_clicked for each hero action, once;
+           the live research preview and pricing seen when scrolled to —
+           each once; the GA names the reports read (hero_cta_click with its
+           legacy hero_trial_click, how_it_works_click, process_coach_view,
+           pricing_view, signup_started) with the hero variant on each
+   STICKY  on a phone the sticky call to action appears once the hero's
+           buttons scroll away, steps aside at pricing and under an open
+           dialog; never on a desktop
+   VARIANT ?hero=c shows that headline and every GA event says so
+   NOTHING QUALIFIES / MIDWEEK / STALE / DOWN  the research preview tells
+           the truth about the data it has: no RESEARCH on a stale price, no
+           EV past the execution window, an example that says so when the
+           reads fail, and no stat it could not read
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
 
@@ -165,7 +161,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     await page.goto('http://127.0.0.1:' + site.port + '/' + (opts.search || ''), { waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => {
       const b = document.getElementById('lpPrevBody');
-      return b && !b.classList.contains('loading') && !/Reading the current/.test(document.getElementById('lpPropRows').textContent);
+      return b && !b.classList.contains('loading');
     }, null, { timeout: 20000 });
     return { ctx, page, events, errors };
   }
@@ -192,152 +188,190 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     && ['RESEARCH', 'WATCH', 'PASS'].includes(P.chip) && /[+\u2212]\d{3,} [A-Z][A-Za-z .]+ · captured \d+ (min|h) ago/.test(P.text);
   const propOf = (players, P) => players.some((n) => P.head.indexOf(n + ' · ') === 0);
 
+  /* the page's own refusals are allowed to name what it refuses */
+  const REFUSALS = /no picks, no locks, no guaranteed winners|No locks\. No guarantees\.|Does EdgeDesk guarantee I.ll make money\?|does not guarantee profit|not picks|never a pick|not a pick/gi;
+  /* GA events the page pushed (gtag writes to dataLayer whether or not the
+     tag itself loaded — here it never does) */
+  const gaEvents = (page) => page.evaluate(() => (window.dataLayer || []).filter((a) => a && a[0] === 'event').map((a) => ({ name: a[1], params: a[2] || {} })));
+
   const WIDTHS = [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 390, height: 844 }, { width: 430, height: 932 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }];
   for (const vp of WIDTHS) {
     const w = vp.width;
     let S;
-    try { S = await open(vp, 'live'); } catch (e) { chk(w + ': the landing page renders its live board', false, String(e.message).slice(0, 300)); continue; }
+    try { S = await open(vp, 'live'); } catch (e) { chk(w + ': the landing page renders its live research preview', false, String(e.message).slice(0, 300)); continue; }
     const { page } = S;
     const r = await page.evaluate(() => {
       const box = (id) => { const el = document.getElementById(id); if (!el) return null; const b = el.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, h: b.height, w: b.width }; };
       const stats = [...document.querySelectorAll('#lpStats li[data-k]')].filter((li) => !li.hidden).map((li) => li.querySelector('b').textContent.trim());
-      const prev = [...document.querySelectorAll('#lpPrevBody .opp')];
-      const chips = [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim());
       const card = (el) => ({ chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
         kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
-        where: (el.querySelector('.opp-hd .w') || {}).textContent || '', text: el.innerText, box: el.getBoundingClientRect().right });
+        where: (el.querySelector('.opp-hd .w') || {}).textContent || '', text: el.innerText });
       const worth = document.querySelector('#lpStats li[data-k="research"]');
-      const sub = getComputedStyle(document.querySelector('.hero .sub')), hs = document.getElementById('heroStart');
+      const hs = document.getElementById('heroStart'), hc = document.getElementById('heroCta');
+      const dash = document.querySelector('.hero .dash');
       return {
-        subFont: sub.fontSize, subLine: sub.lineHeight, second: { text: hs.textContent.trim(), href: hs.getAttribute('href') },
+        second: { text: hs.textContent.trim(), href: hs.getAttribute('href') }, primary: hc.textContent.replace(/\s+/g, ' ').trim(),
         kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
         games: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="game"]')].map(card),
         props: [...document.querySelectorAll('#lpPrevBody .opp[data-kind="prop"]')].map(card),
         worth: worth.hidden ? null : worth.textContent.replace(/\s+/g, ' ').trim(),
         analyzed: (() => { const li = document.querySelector('#lpStats li[data-k="games_analyzed"]'); return li.hidden ? null : +li.querySelector('b').textContent.replace(/,/g, ''); })(),
         h1: document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim(),
-        eyebrow: (document.querySelector('header .ey, header .eyebrow') || {}).textContent || '',
-        board: box('heroBoard'), start: box('heroStart'), vh: window.innerHeight,
-        stats, prevCount: prev.length, chips, prevTag: document.getElementById('lpPrevTag').textContent,
-        boardCards: document.querySelectorAll('#lpBoard .opp, #lpBoard .gcard, #lpBoard > *').length,
-        tilesShown: !document.getElementById('lpTiles').hidden,
-        propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
-        propStatus: [...document.querySelectorAll('#lpPropRows .st')].map((s) => s.textContent.trim()),
+        eyebrow: (document.querySelector('header .ey') || {}).textContent || '',
+        dashBar: dash ? dash.querySelector('.panel-bar').innerText : '', dashFoot: dash ? dash.querySelector('.panel-foot').innerText : '',
+        cta: box('heroCta'), start: box('heroStart'), vh: window.innerHeight,
+        stats, chips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()), prevTag: document.getElementById('lpPrevTag').textContent,
         text: document.body.innerText,
-        boardText: document.getElementById('lpBoard').innerText, nflOnBoard: /NFL ·/.test(document.getElementById('lpBoard').innerText),
-        priceEx: document.getElementById('lpPriceEx').innerText,
+        mbar: !document.getElementById('mbar').hidden,
         priceText: [...document.querySelectorAll('#pricing [data-ed-price="price"]')].map((x) => x.textContent.trim()),
         trialText: [...document.querySelectorAll('[data-ed-price="trial"]')].map((x) => x.textContent.trim())
       };
     });
-    chk(w + ': the headline', /Find where the model and the market disagree/.test(r.h1), r.h1);
-    chk(w + ': both hero calls to action above the fold', r.board && r.start && r.board.bottom <= r.vh && r.start.bottom <= r.vh, [r.board, r.start, r.vh]);
-    chk(w + ': and at least 44 px tall', r.board.h >= 44 && r.start.h >= 44, [r.board.h, r.start.h]);
+    chk(w + ': the eyebrow is "Research, not picks."', /Research, not picks\./i.test(r.eyebrow), r.eyebrow);
+    chk(w + ': the headline', r.h1 === 'Bet with a process. Know what’s working.', r.h1);
+    chk(w + ': both hero calls to action above the fold', r.cta && r.start && r.cta.bottom <= r.vh && r.start.bottom <= r.vh, [r.cta, r.start, r.vh]);
+    chk(w + ': and at least 44 px tall', r.cta.h >= 44 && r.start.h >= 44, [r.cta.h, r.start.h]);
+    chk(w + ': the first is the free trial, the second "See how it works" to #how', /^Start free trial/.test(r.primary) && r.second.text === 'See how it works' && r.second.href === '#how', [r.primary, r.second]);
+    chk(w + ': the sample week says it is in development and sample data, in its own chrome', /In development/i.test(r.dashBar) && /Sample data/i.test(r.dashBar) && /not a real account/.test(r.dashFoot), [r.dashBar, r.dashFoot]);
     chk(w + ': live stats shown, none of them a zero', r.stats.length >= 2 && r.stats.every((s) => s && s !== '0'), r.stats);
     /* a phone shows one of each pillar first; wider screens keep the column's order */
     const order = w <= 560 ? 'game,prop,game' : 'game,game,prop';
-    chk(w + ': the preview is live: two game markets and one player prop, ' + order, /^Live/.test(r.prevTag) && r.prevCount === 3 && r.kinds.join() === order, [r.prevTag, r.kinds]);
-    chk(w + ': a visitor\'s second hero button is "See how it works", to the workflow', r.second.text === 'See how it works' && r.second.href === '#workflow', r.second);
-    chk(w + ': the hero copy is 14 px on 20 px lines on a phone (13.5 under 360), as it was above', w <= 560
-      ? (r.subFont === (w < 360 ? '13.5px' : '14px') && Math.abs(parseFloat(r.subLine) - parseFloat(r.subFont) * 1.43) < 0.1)
-      : (w === 1280 ? r.subFont === '18.5px' && r.subLine === '28.675px' : r.subFont !== '14px'), [r.subFont, r.subLine]);
+    chk(w + ': the research preview is live: two game markets and one player prop, ' + order, /^Live/.test(r.prevTag) && r.kinds.join() === order, [r.prevTag, r.kinds]);
     chk(w + ': the game markets are RESEARCH / WATCH, each with its market, EdgeDesk number, difference and book',
       r.games.every((g) => (g.chip === 'RESEARCH' || g.chip === 'WATCH') && g.kicker === 'Game market' && g.cells.length === 3 && g.cells.every((v) => v !== '—') && /captured/.test(g.text)), r.games.map((g) => [g.chip, g.cells]));
     const P = r.props[0] || { head: '', cells: [], text: '' };
     chk(w + ': the player prop shows player and prop type, line, projection, difference, status, book and capture', propCardFull(P), P);
-    /* the board's research-grade props sort ahead of the games' own WATCHes */
     chk(w + ': the player prop is the published board\'s, research-grade on a current price', P.chip === 'RESEARCH' && propOf(BOARD_PLAYERS, P) && /captured \d+ min ago/.test(P.text), P);
     chk(w + ': the player prop names its game, with no stray separator', / @ /.test(P.where) && !/^\s*·/.test(P.where), P.where);
-    chk(w + ': the pricing example is the current college game EV', /Right now:/.test(r.priceEx) && /calibrated EdgeDesk EV/.test(r.priceEx), r.priceEx.slice(-300));
     chk(w + ': the preview never labels a card DATA INCOMPLETE', r.chips.length === 3 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
-    chk(w + ': the hero count reads "worth researching" and stays a clear minority of the games analyzed',
+    chk(w + ': the count reads "worth researching" and stays a clear minority of the games analyzed',
       r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
-    chk(w + ': the board and its tiles are filled', r.boardCards > 0 && r.tilesShown);
-    chk(w + ': the prop table has rows of eight cells', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
-    chk(w + ': prop statuses are the four public words', r.propStatus.every((s) => ['RESEARCH', 'WATCH', 'PASS', 'DATA INCOMPLETE'].includes(s)), r.propStatus);
-    /* the page's own refusals ("no locks, no guaranteed winners", "does not
-       guarantee profit", the FAQ's "Does EdgeDesk guarantee…? No") are allowed */
-    const refusals = /no picks, no locks, no guaranteed winners|does not guarantee profit|Does EdgeDesk guarantee winning bets\?|not picks|never a pick|not a pick/gi;
-    chk(w + ': no tout language anywhere', !BANNED.test(r.text.replace(refusals, '')), (r.text.replace(refusals, '').match(BANNED) || [])[0]);
-    chk(w + ': an NFL consensus market says it is not a captured quote', !r.nflOnBoard || /consensus reference, not a captured quote/.test(r.boardText), r.boardText.slice(0, 200));
+    chk(w + ': no tout language anywhere', !BANNED.test(r.text.replace(REFUSALS, '')), (r.text.replace(REFUSALS, '').match(BANNED) || [])[0]);
     chk(w + ': the price is the configured one', r.priceText.length > 0 && r.priceText.every((t) => t === X.PRICE_DISPLAY), r.priceText);
     chk(w + ': the trial is the configured one', r.trialText.length > 0 && r.trialText.every((t) => t === X.TRIAL_LABEL), r.trialText.slice(0, 4));
+    chk(w + ': the sticky call to action is not shown at the top of the page', !r.mbar);
     const ov = await overflowing(page);
     chk(w + ': nothing is wider than the screen', ov.length === 0, ov);
     chk(w + ': no script errors', S.errors.length === 0, S.errors);
     if (SHOTS) await page.screenshot({ path: path.join(SHOTS, 'landing-' + w + '.png'), fullPage: true });
 
     if (w === 390) {
-      /* the funnel, once: load → scroll the board and pricing into view → hero click */
-      await page.evaluate(() => document.getElementById('today').scrollIntoView({ block: 'start', behavior: 'instant' }));
+      /* THE STICKY CALL TO ACTION: past the hero it appears; at pricing it
+         steps aside; under an open dialog it is gone */
+      const bar = () => page.evaluate(() => !document.getElementById('mbar').hidden);
+      await page.evaluate(() => document.getElementById('how').scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await page.waitForTimeout(300);
+      chk('sticky: shown on a phone once the hero\'s buttons have scrolled away', await bar());
+      await page.evaluate(() => document.getElementById('pricing').scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await page.waitForTimeout(300);
+      chk('sticky: steps aside while the pricing card is on screen', !(await bar()));
+      await page.evaluate(() => document.getElementById('history').scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await page.waitForTimeout(300);
+      chk('sticky: back after pricing scrolls away', await bar());
+      await page.click('#mbar .btn');
+      await page.waitForSelector('#authModal.on', { timeout: 5000 });
+      await page.waitForTimeout(200);
+      chk('sticky: opens the trial flow, and is gone under the dialog', !(await bar()));
+      await page.evaluate(() => { closeAuth(); });
+
+      /* the funnel, once each: load → research preview, coach and pricing
+         seen → each hero action pressed (twice: still counted once) */
+      await page.evaluate(() => document.getElementById('coach').scrollIntoView({ block: 'start', behavior: 'instant' }));
+      await page.waitForTimeout(400);
+      await page.evaluate(() => document.getElementById('lpPreview').scrollIntoView({ block: 'start', behavior: 'instant' }));
       await page.waitForTimeout(400);
       await page.evaluate(() => document.getElementById('pricing').scrollIntoView({ block: 'start', behavior: 'instant' }));
       await page.waitForTimeout(400);
-      await page.evaluate(() => document.getElementById('today').scrollIntoView({ block: 'start', behavior: 'instant' }));
-      await page.waitForTimeout(300);
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-      await page.click('#heroBoard');
-      await page.click('#heroBoard');
+      await page.click('#heroStart');
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.click('#heroStart');
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.click('#heroCta');
+      await page.waitForSelector('#authModal.on', { timeout: 5000 });
       await page.waitForTimeout(1800);
       const names = S.events.map((e) => e.event);
       const count = (n) => names.filter((x) => x === n).length;
+      const ctas = (c) => S.events.filter((e) => e.event === 'cta_clicked' && e.props && e.props.cta === c).length;
       chk('funnel: landing_view once', count('landing_view') === 1, names);
-      chk('funnel: the live board seen once', count('landing_live_board_view') === 1, names);
+      chk('funnel: the live research preview seen once', count('landing_live_board_view') === 1, names);
       chk('funnel: pricing seen once', count('pricing_view') === 1, names);
-      chk('funnel: the hero click once, naming its CTA', S.events.filter((e) => e.event === 'cta_clicked' && e.props && e.props.cta === 'hero_board').length === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: "See how it works" once, however often it is pressed', ctas('hero_how') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: the hero trial click, naming its CTA', ctas('hero_trial') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: the sticky trial click, naming its CTA', ctas('sticky_trial') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: the sign-up form opening is signup_started', count('signup_started') >= 1, names);
       chk('funnel: every event carries the path, never a query string or an address', S.events.every((e) => e.page_path === '/' && !/[?@]/.test(JSON.stringify(e))), S.events[0]);
+      const ga = await gaEvents(page), gn = ga.map((x) => x.name);
+      ['landing_page_view', 'hero_cta_click', 'hero_trial_click', 'how_it_works_click', 'hero_how_click', 'process_coach_view', 'pricing_view', 'signup_started', 'sticky_cta_click']
+        .forEach((n) => chk('GA: ' + n + ' is sent', gn.indexOf(n) >= 0, gn));
+      chk('GA: the page\'s own events carry the hero variant', ga.filter((x) => /_click$|_view$/.test(x.name)).every((x) => x.params.hero_variant === 'a'), ga.slice(0, 4));
+      chk('GA: nothing personal is sent', !/@|password|access_token/.test(JSON.stringify(ga)), ga);
     }
     await S.ctx.close();
   }
 
   /* A FIRST VISIT FROM A SOCIAL LINK: an iPhone SE inside X's in-app browser
-     leaves about 548 px of page. Before any scroll the hero must say what
-     EdgeDesk is, what it does, that it covers player props, what it costs,
-     where to tap, and — from the freshness tile, not a claim — that it is live. */
+     leaves about 548 px of page. Before any scroll the page must say what
+     EdgeDesk is, what it does, what it costs, where to tap, and show the top
+     of the product — labelled for what it is. */
   {
     const S = await open({ width: 375, height: 548 }, 'live', { search: '?utm_source=x&utm_medium=social' });
     const r = await S.page.evaluate(() => {
-      const H = window.innerHeight, upd = document.querySelector('#lpStats li.upd');
+      const H = window.innerHeight;
       const bottom = (el) => (el && !el.hidden ? Math.round(el.getBoundingClientRect().bottom) : null);
-      const sub = document.querySelector('.hero .sub');
-      return { H, what: bottom(document.querySelector('.hero h1')), does: bottom(sub), props: /player props/.test(sub.textContent),
+      const top = (el) => (el ? Math.round(el.getBoundingClientRect().top) : null);
+      const bar = document.querySelector('.hero .dash .panel-bar');
+      return { H, ey: bottom(document.querySelector('.hero .ey')), what: bottom(document.querySelector('.hero h1')), does: bottom(document.querySelector('.hero .sub')),
         cost: bottom(document.querySelector('.hero .microcta')), price: document.querySelector('.hero .microcta').textContent,
-        tap: bottom(document.getElementById('heroBoard')), live: bottom(upd), liveText: upd ? upd.textContent.replace(/\s+/g, ' ').trim() : '',
-        next: bottom(document.getElementById('heroStart')), nextText: document.getElementById('heroStart').textContent.trim(),
-        second: (() => { const el = document.querySelectorAll('#lpPrevBody .opp[data-kind]')[1]; return el ? { kind: el.getAttribute('data-kind'), top: Math.round(el.getBoundingClientRect().top), text: el.innerText } : null; })() };
+        tap: bottom(document.getElementById('heroCta')), next: bottom(document.getElementById('heroStart')),
+        dashTop: top(bar), dashBar: bottom(bar), label: bar ? bar.innerText : '' };
     });
     const above = (b) => b !== null && b <= r.H;
-    chk('first visit, 375×548: what EdgeDesk is (eyebrow and headline) above the fold', above(r.what), r);
-    chk('first visit: what it does, player props named, above the fold', above(r.does) && r.props, r);
+    chk('first visit, 375×548: "Research, not picks." and the headline above the fold', above(r.ey) && above(r.what), r);
+    chk('first visit: what it does, above the fold', above(r.does), r);
     chk('first visit: the price and trial above the fold', above(r.cost) && /\$49\.99/.test(r.price) && /7 days free/.test(r.price), r);
-    chk('first visit: the primary call to action above the fold', above(r.tap), r);
-    chk('first visit: the live freshness tile above the fold', above(r.live) && /^Updated \d+ min ago$/.test(r.liveText), r);
-    chk('first visit: "See how it works" above the fold, beside the board', above(r.next) && r.nextText === 'See how it works', r);
-    /* the research module's second card is a live player prop, so a short
-       scroll past the first game market shows both pillars */
-    chk('first visit: the preview\'s second card is a live player prop', r.second && r.second.kind === 'prop' && /Player prop/i.test(r.second.text) && /captured \d+ (min|h) ago/.test(r.second.text), r.second);
+    chk('first visit: both calls to action above the fold', above(r.tap) && above(r.next), r);
+    chk('first visit: the top of the product preview shows, with its In development label', r.dashTop !== null && r.dashTop < r.H && above(r.dashBar) && /In development/i.test(r.label), r);
     chk('first visit: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
 
-  /* utm first-touch */
+  /* utm first-touch, and a desktop never shows the sticky bar */
   {
     const S = await open({ width: 390, height: 844 }, 'live', { search: '?utm_source=Reddit&utm_medium=social&utm_campaign=wk5&email=x@y.z' });
     await S.page.waitForTimeout(1800);
     const lv = S.events.find((e) => e.event === 'landing_view');
     chk('utm: landing_view carries the cleaned campaign, never the rest of the query', lv && lv.utm_source === 'reddit' && lv.utm_medium === 'social' && lv.utm_campaign === 'wk5' && !/x@y|email/.test(JSON.stringify(S.events)), lv);
     await S.ctx.close();
+    const D = await open({ width: 1280, height: 900 }, 'live');
+    await D.page.evaluate(() => document.getElementById('how').scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await D.page.waitForTimeout(300);
+    chk('sticky: never on a desktop', await D.page.evaluate(() => getComputedStyle(document.getElementById('mbar')).display === 'none'));
+    await D.ctx.close();
+  }
+
+  /* A HERO VARIANT, previewed: one predefined headline, and the GA events say
+     which one the reader saw */
+  {
+    const S = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=c' });
+    await S.page.click('#heroStart');
+    const h1 = await S.page.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim());
+    const ga = await gaEvents(S.page);
+    chk('variant c: its headline is shown', h1 === 'Research the bet. Track the result. Improve the process.', h1);
+    chk('variant c: the GA events carry it', ga.filter((x) => x.name === 'how_it_works_click').every((x) => x.params.hero_variant === 'c') && ga.some((x) => x.name === 'how_it_works_click'), ga);
+    await S.ctx.close();
+    const U = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=<b>x</b>' });
+    chk('an unknown variant leaves the page as it ships', (await U.page.evaluate(() => document.querySelector('h1').textContent)) === 'Bet with a process. Know what’s working.');
+    await U.ctx.close();
   }
 
   /* NOTHING QUALIFIES: the published board holds no research-grade prop, as a
-     prop run can leave it. The prop slot is a game's own prop, in full; the
-     board invents none and counts none it does not list. */
+     prop run can leave it. The prop slot is a game's own prop, in full. */
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     const w = vp.width;
     const S = await open(vp, 'none');
     const r = await S.page.evaluate(() => {
       const el = document.querySelector('#lpPrevBody .opp[data-kind="prop"]');
-      const tile = document.querySelector('#lpTiles [data-k="prop_research"]');
       const worth = document.querySelector('#lpStats li[data-k="research"]');
       return {
         prevTag: document.getElementById('lpPrevTag').textContent,
@@ -345,10 +379,6 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
         prop: el ? { chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
           kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
           where: (el.querySelector('.opp-hd .w') || {}).textContent || '', text: el.innerText } : null,
-        propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
-        tablePlayers: [...document.querySelectorAll('#lpPropRows td.pl')].map((td) => td.firstChild.textContent.trim()),
-        tableResearch: [...document.querySelectorAll('#lpPropRows .st')].filter((s) => s.textContent.trim() === 'RESEARCH').length,
-        propResearch: tile.hidden ? null : +tile.querySelector('.n').textContent.replace(/,/g, ''),
         worth: worth.hidden ? null : worth.textContent.replace(/\s+/g, ' ').trim(),
         analyzed: (() => { const li = document.querySelector('#lpStats li[data-k="games_analyzed"]'); return li.hidden ? null : +li.querySelector('b').textContent.replace(/,/g, ''); })()
       };
@@ -358,9 +388,6 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk(w + ' nothing qualifies: the preview is still live, two game markets and one player prop, ' + order, /^Live/.test(r.prevTag) && r.kinds.join() === order, [r.prevTag, r.kinds]);
     chk(w + ' nothing qualifies: the player prop shows player and prop type, line, projection, difference, status, book and capture', propCardFull(P), P);
     chk(w + ' nothing qualifies: and it is a game\'s own prop, naming its game', propOf(GAME_PLAYERS, P) && / @ /.test(P.where) && !/^\s*·/.test(P.where), [P.head, P.where]);
-    chk(w + ' nothing qualifies: the prop table lists only the games\' own props, eight cells a row',
-      r.propRows.length > 0 && r.propRows.every((n) => n === 8) && r.tablePlayers.every((n) => GAME_PLAYERS.indexOf(n) >= 0), [r.propRows, r.tablePlayers]);
-    chk(w + ' nothing qualifies: no research-grade prop count beyond the RESEARCH props listed', r.propResearch === null || r.propResearch <= r.tableResearch, [r.propResearch, r.tableResearch]);
     chk(w + ' nothing qualifies: "worth researching" stays a clear minority of the games analyzed',
       r.worth === null || (/^\d+ worth researching$/.test(r.worth) && r.analyzed && +r.worth.split(' ')[0] <= r.analyzed / 3), [r.worth, r.analyzed]);
     const ov = await overflowing(S.page);
@@ -374,28 +401,18 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     const S = await open(vp, 'midweek');
     const r = await S.page.evaluate(() => ({
-      chips: [...document.querySelectorAll('#lpPrevBody .st, #lpBoard .st, #lpPropRows .st, #lpConnBody .st')].map((s) => s.textContent.trim()),
-      prevChips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()),
+      chips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()),
       kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
       propCard: (document.querySelector('#lpPrevBody .opp[data-kind="prop"]') || { innerText: '' }).innerText,
-      boardCards: document.querySelectorAll('#lpBoard > *').length,
-      propRows: [...document.querySelectorAll('#lpPropRows tr')].map((tr) => tr.children.length),
-      ev: [...document.querySelectorAll('#lpPropRows td[data-l="EdgeDesk EV"]')].map((t) => t.textContent.trim()),
-      red: document.querySelectorAll('#lpPrevBody .age.stale, #lpBoard .age.stale, #lpPropRows .age.stale, #lpConnBody .age.stale').length,
-      text: ['lpPrevBody', 'lpBoard', 'lpPropRows'].map((id) => document.getElementById(id).innerText).join('\n'),
-      propTag: document.getElementById('lpPropTag').textContent
+      red: document.querySelectorAll('#lpPrevBody .age.stale').length,
+      text: document.getElementById('lpPrevBody').innerText
     }));
-    chk(vp.width + ' midweek: nothing on the page reads DATA INCOMPLETE', r.chips.length > 0 && r.chips.indexOf('DATA INCOMPLETE') < 0 && !/DATA INCOMPLETE/.test(r.text), r.chips);
+    chk(vp.width + ' midweek: nothing in the preview reads DATA INCOMPLETE', r.chips.length > 0 && r.chips.indexOf('DATA INCOMPLETE') < 0 && !/DATA INCOMPLETE/.test(r.text), r.chips);
     chk(vp.width + ' midweek: no age is printed in red', r.red === 0, r.red);
     chk(vp.width + ' midweek: no stale-price warnings in the copy', !/not a current price|is stale|execution window/i.test(r.text), (r.text.match(/not a current price|is stale|execution window/i) || [])[0]);
-    chk(vp.width + ' midweek: the preview holds RESEARCH / WATCH games', r.prevChips.length >= 2 && r.prevChips.every((c) => c === 'RESEARCH' || c === 'WATCH'), r.prevChips);
+    chk(vp.width + ' midweek: the preview holds RESEARCH / WATCH games', r.chips.filter((c, i) => r.kinds[i] === 'game').every((c) => c === 'RESEARCH' || c === 'WATCH'), r.chips);
     chk(vp.width + ' midweek: a prop priced on schedule still takes the prop slot, with its age and no EV', r.kinds.join() === (vp.width <= 560 ? 'game,prop,game' : 'game,game,prop') && /captured \d+ h ago/.test(r.propCard) && !/EdgeDesk EV/.test(r.propCard), [r.kinds, r.propCard]);
-    chk(vp.width + ' midweek: the board is filled', r.boardCards > 0, r.boardCards);
-    chk(vp.width + ' midweek: the prop table is filled, eight cells a row', r.propRows.length > 0 && r.propRows.every((n) => n === 8), r.propRows);
-    chk(vp.width + ' midweek: no EV on a price past 90 minutes, and it says why', r.ev.length > 0 && r.ev.every((t) => /^—/.test(t)) && r.ev.some((t) => /on a fresh price/.test(t)), r.ev);
-    chk(vp.width + ' midweek: the prop table is not called live', r.propTag !== 'Live' && /^Priced /.test(r.propTag), r.propTag);
     chk(vp.width + ' midweek: no script errors', S.errors.length === 0, S.errors);
-    if (SHOTS) await S.page.screenshot({ path: path.join(SHOTS, 'landing-midweek-' + vp.width + '.png'), fullPage: false });
     await S.ctx.close();
   }
 
@@ -403,29 +420,21 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
   for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
     const S = await open(vp, 'stale');
     const r = await S.page.evaluate(() => ({
-      chips: [...document.querySelectorAll('#lpPrevBody .st, #lpBoard .st, #lpPropRows .st')].map((s) => s.textContent.trim()),
-      ev: [...document.querySelectorAll('#lpPropRows td[data-l="EdgeDesk EV"]')].map((t) => t.textContent.trim()),
-      rows: document.getElementById('lpPropRows').innerText, propTag: document.getElementById('lpPropTag').textContent,
-      cards: [...document.querySelectorAll('#lpBoard > article')].map((a) => a.innerText),
+      chips: [...document.querySelectorAll('#lpPrevBody .st')].map((s) => s.textContent.trim()),
       prevText: document.getElementById('lpPrevBody').innerText,
       kinds: [...document.querySelectorAll('#lpPrevBody .opp[data-kind]')].map((el) => el.getAttribute('data-kind')),
-      priceEx: document.getElementById('lpPriceEx').innerText,
       prevTag: document.getElementById('lpPrevTag').textContent, prevLive: document.getElementById('lpPrevTag').classList.contains('live'),
       upd: (() => { const li = document.querySelector('#lpStats li[data-k="updated"]'); return { old: li.classList.contains('old'), text: li.textContent }; })(),
       research: (() => { const li = document.querySelector('#lpStats li[data-k="research"]'); return li.hidden ? null : li.querySelector('b').textContent; })()
     }));
     chk(vp.width + ' stale: the preview is not called live', !r.prevLive && /^(Last update|Example)/.test(r.prevTag), r.prevTag);
     chk(vp.width + ' stale: "Last update", not a green "Updated"', r.upd.old && /^Last update/.test(r.upd.text), r.upd);
-    chk(vp.width + ' stale: the research-grade headline does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);
+    chk(vp.width + ' stale: the research-grade count does not count the games it downgraded', r.research === null || +r.research.replace(/,/g, '') < 4, r.research);
     chk(vp.width + ' stale: no RESEARCH on a stale price, and no wall of DATA INCOMPLETE', r.chips.indexOf('RESEARCH') < 0 && r.chips.indexOf('DATA INCOMPLETE') < 0, r.chips);
     chk(vp.width + ' stale: no prop on a stale price; a third game takes its slot', /Example/.test(r.prevTag) || r.kinds.join() === 'game,game,game', r.kinds);
-    chk(vp.width + ' stale: every game still listed is a consensus reference, and says so',
-      r.cards.every((t) => /consensus reference, not a captured quote/.test(t)) && (/Example/.test(r.prevTag) || /consensus reference, not a captured quote/.test(r.prevText)), r.cards.map((t) => t.slice(0, 60)));
-    chk(vp.width + ' stale: the prop table says its prices refresh on schedule', /refresh on a schedule/.test(r.rows) && r.propTag !== 'Live', [r.rows.slice(0, 80), r.propTag]);
-    chk(vp.width + ' stale: no EV printed', r.ev.length === 0, r.ev);
-    chk(vp.width + ' stale: no "right now" EV example from a stale quote', !/Right now:/.test(r.priceEx));
+    chk(vp.width + ' stale: a game still listed is a consensus reference, and says so', /Example/.test(r.prevTag) || /consensus reference, not a captured quote/.test(r.prevText), r.prevText.slice(0, 200));
+    chk(vp.width + ' stale: no EV printed', !/EdgeDesk EV/.test(r.prevText), r.prevText.slice(0, 200));
     chk(vp.width + ' stale: no script errors', S.errors.length === 0, S.errors);
-    if (SHOTS) await S.page.screenshot({ path: path.join(SHOTS, 'landing-stale-' + vp.width + '.png'), fullPage: false });
     await S.ctx.close();
   }
 
@@ -436,14 +445,12 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     const r = await S.page.evaluate(() => ({
       tag: document.getElementById('lpPrevTag').textContent, ill: document.getElementById('lpPrevBody').classList.contains('ill'),
       stats: [...document.querySelectorAll('#lpStats li[data-k]')].filter((li) => !li.hidden).length,
-      empty: !document.getElementById('lpBoardEmpty').hidden && document.getElementById('lpBoardEmpty').textContent,
-      tiles: document.getElementById('lpTiles').hidden, rows: document.getElementById('lpPropRows').textContent,
+      foot: document.getElementById('lpPrevFoot').textContent,
       example: (document.querySelector('.prev-ill') || { innerText: '' }).innerText
     }));
     chk(vp.width + ' down: the preview is an example and says so', r.tag === 'Example' && r.ill && /not live/i.test(r.example), [r.tag, r.ill, r.example.slice(0, 80)]);
-    chk(vp.width + ' down: no stat is shown', r.stats === 0 && r.tiles === true, r.stats);
-    chk(vp.width + ' down: the board says it could not be reached', /couldn.t be reached/.test(r.empty || ''), r.empty);
-    chk(vp.width + ' down: the prop table says so too', /could not be read/.test(r.rows), r.rows);
+    chk(vp.width + ' down: and says it could not be reached', /couldn.t be reached/.test(r.foot), r.foot);
+    chk(vp.width + ' down: no stat is shown', r.stats === 0, r.stats);
     chk(vp.width + ' down: no event claims a live board was seen', S.events.every((e) => e.event !== 'landing_live_board_view'));
     chk(vp.width + ' down: no script errors', S.errors.length === 0, S.errors);
     const ov = await overflowing(S.page);
@@ -451,7 +458,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     await S.ctx.close();
   }
 
-  /* the methodology page the long explanations moved to */
+  /* the methodology page the long explanations live on */
   for (const vp of [{ width: 375, height: 812 }, { width: 1280, height: 900 }]) {
     const S = await open(vp, 'live').catch(() => null);
     if (!S) continue;

@@ -1,64 +1,6 @@
 # Changelog
 
-## 2026-10-04 — Portfolio fixes, and two CFB tests that went stale with the weekly data
 
-**Portfolio** (`supabase/portfolio.sql`; regenerate the parts with `npm run portfolio:parts`, then paste them in order. Every statement is idempotent):
-- **Deleting an import now works and unlinks what it created.** Previously the triggers that keep `import_id` fixed for life also reversed the foreign key's `ON DELETE SET NULL`, so the delete failed. The new `portfolio_link_released()` lets exactly that update through.
-- **A deleted account is never re-linked.** While an account is being deleted, a fill no longer takes the account back from its position. A connected account with synced positions can now be removed: its positions stay in the history, unlinked.
-- **A large import lands the same in any number of commit calls.** Classification ranks twins over the whole file and never treats a row this import already inserted as "already in your portfolio". Before, a failed first copy could promote its unticked twin to NEW.
-- **A trade id reused for another market** is flagged `EXTERNAL_ID_IN_USE` and can no longer pull a file's new fills into that other market's position.
-- **A synced position** also keeps its legs, event id and duplicate number from reader edits. A label the platform supplied stays fixed; a blank one may be filled in once.
-- 8 new tests in `tools/portfolio/portfolio_sql.test.js`. Each fails against the previous SQL.
-
-**Secret audit:** the Portfolio redaction test no longer contains a fake private-key header. `tools/cfb/secret_audit.js` flags any such header as HIGH, even in a test. Token, key and JWT redaction are still tested.
-
-**CFB tests:**
-- `football/cfb_production/canonical.test.js` (chaos) borrowed a live `current.json` row and moved its kickoff, but kept its newer prediction timestamps. The input contract rightly refused it.
-- `football/cfb_production/debug_ui.test.js` built projections as of a fixed 2026-09-28. After the weekly refresh, every prediction postdated that.
-- Both now follow the committed data.
-
-## 2026-10-04 — Portfolio: every bet and prediction-market position in one ledger (Phase A)
-
-- **A new Portfolio section** (*More → Portfolio*, `#portfolio`, or the landing-page setting). Its tabs are Overview, Open, History, Analytics, Accounts and Import.
-  - **Overview** leads with **Total P&L**, then ROI, capital deployed, open exposure and the record.
-  - Then sportsbook and prediction-market P&L, apart.
-  - Then P&L by platform and the cumulative line.
-- **Manual entry:**
-  - **Sportsbook bets:** platform, sport, league, event, market type, selection, line, American or decimal odds, stake, dates, and status (open / won / lost / push / void / cashed out / settled at another payout).
-  - **Prediction-market positions:** platform, question, market, YES / NO or an outcome, contracts, entry price, fees, and open / resolved / sold.
-  - The P&L is previewed with the same arithmetic the database stores.
-  - Positions can be edited and deleted.
-  - A duplicate is caught, with an explicit "it is a separate bet" override.
-- **CSV import** (`lib/edgedesk_portfolio_import.js`):
-  - **Adapters:** generic sportsbook (one row per bet) and generic prediction market (one row per trade, grouped into positions).
-  - **Preparation:** parsed in the browser, columns mapped, time zone and date order chosen.
-  - **Classification:** done on the server — detected / new / duplicates / needs review / invalid.
-  - **Confirmation:** nothing is inserted until the reader confirms. One bad row fails alone, and re-importing a file adds nothing twice.
-- **The database** (`supabase/portfolio.sql`, also as paste-sized parts):
-  - the tables: accounts, positions, fills, imports, import rows, sync logs, and an unexposed credentials table;
-  - NUMERIC money derived by trigger;
-  - RLS on `auth.uid() = user_id` with composite foreign keys;
-  - deduplication by platform id, else a SHA-256 fingerprint;
-  - an operator health view with no customer data;
-  - a guard against deadlocking a live save on re-run.
-- **The engine** (`lib/edgedesk_portfolio.js`):
-  - exact BigInt decimals;
-  - sportsbook and prediction-market rules (average cost, partial sells, fees, YES / NO / void / scalar resolution);
-  - parlay pricing;
-  - aggregation and periods;
-  - the fingerprint material, byte for byte the database's.
-- **Connector contract** (`lib/edgedesk_portfolio_connectors.js`): `connect`, `disconnect`, `healthCheck`, `sync`, `fetchPositions`, `fetchTransactions` and `normalize`, plus backoff, failure classes and log redaction. Only manual and CSV are registered; **no platform syncs automatically yet** (`docs/platform-support.md`).
-- **EdgeDesk attribution:**
-  - a position can say whether the idea came from EdgeDesk research, the reader's own read, or another source;
-  - it can link to the reader's own sizing recommendation or journal entry;
-  - the database refuses links to anyone else's records;
-  - nothing is inferred from a matching event.
-- **Tests:**
-  - `npm run portfolio:test` — calc 106, import 65, UI 66.
-  - `npm run portfolio:sql` — 167 against a real PostgreSQL, including parity on 280 random positions.
-  - `npm run portfolio:e2e` — 39 in Chromium against the real migration.
-  - The CI workflow is *Portfolio tests*. Deploy with *Deploy Portfolio schema*.
-- **Docs:** [`docs/portfolio-architecture.md`](docs/portfolio-architecture.md) and [`docs/platform-support.md`](docs/platform-support.md).
 
 ## 2026-10-03 — share the Record: an image and a post for X or anywhere
 
