@@ -21,8 +21,8 @@
   "game_time": "2026-10-13T23:00:00.000Z",
   "game_when_label": "2026-10-13 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-03T23:45:40.918Z",
-  "generated_at": "2026-10-03T23:45:40.918Z",
+  "updated_at": "2026-10-04T05:42:10.726Z",
+  "generated_at": "2026-10-04T05:42:10.726Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1674,19 +1674,38 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "NO_HISTORY",
-        "label": "NO HISTORY",
-        "text": "No earlier EdgeDesk number is stored for this game, so movement cannot be measured yet."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the first published number."
       },
       "stability": {
-        "tier": null,
-        "label": null,
-        "text": "Unavailable: no earlier EdgeDesk number is stored for this game"
+        "tier": "HIGH",
+        "label": "High",
+        "text": "the stored numbers span 0.0 pts across 2 readings"
       },
-      "published": [],
-      "revisions": null,
-      "change_since_published": null,
-      "what_changed": null,
+      "published": [
+        {
+          "at": "2026-10-03T23:10:16.887Z",
+          "source": "first published",
+          "home_margin": -0.75,
+          "text": "Delaware -0.75"
+        }
+      ],
+      "revisions": 0,
+      "change_since_published": {
+        "comparable": true,
+        "points": 0,
+        "toward_team": "Middle Tennessee",
+        "since_at": "2026-10-03T23:10:16.887Z",
+        "text": "unchanged since the first published number"
+      },
+      "what_changed": {
+        "available": true,
+        "summary": "EdgeDesk’s number has not moved since the first published number.",
+        "attribution_text": null,
+        "market": null,
+        "model_version": null
+      },
       "parity": {
         "ok": true,
         "gaps": []
@@ -1863,6 +1882,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-03T23:45:40.918Z"
+    "at": "2026-10-04T05:42:10.726Z"
   }
 }
