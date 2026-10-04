@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-04T08:40:22.582Z",
+ "generated_at": "2026-10-04T09:01:49.921Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -13,8 +13,8 @@
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 4000,
-  "bets": 199,
+  "rows": 4011,
+  "bets": 200,
   "verified_bets": 24,
   "priced_decisions": 99,
   "graded_decisions": 921,
@@ -40,7 +40,7 @@
      "graded": 921,
      "priced": 99,
      "record_only": 822,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -116,7 +116,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -144,7 +144,7 @@
      "graded": 921,
      "priced": 99,
      "record_only": 822,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -220,7 +220,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -660,7 +660,7 @@
      "graded": 24,
      "priced": 24,
      "record_only": 0,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -725,7 +725,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -753,7 +753,7 @@
      "graded": 24,
      "priced": 24,
      "record_only": 0,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -818,7 +818,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -1107,42 +1107,37 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 4000,
-  "PENDING": 2069,
+  "total": 4011,
+  "PENDING": 2080,
   "VERIFIED": 1045,
   "RECORD_ONLY": 822,
   "VOID": 64,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 2069,
+  "total": 2080,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 1553
-   },
-   {
-    "key": "IN_PROGRESS",
-    "label": "Game in progress",
-    "n": 16
+    "n": 1564
    },
    {
     "key": "AWAITING_SETTLEMENT",
     "label": "Game finished, awaiting the settlement run",
-    "n": 4
+    "n": 5
    },
    {
     "key": "MISSING_FINAL",
     "label": "Missing final",
-    "n": 496
+    "n": 511
    }
   ]
  },
  "record": {
   "what": "Every graded model pick and BET, priced or not, as wins, losses and pushes. Never units.",
   "all": {
-   "tracked": 1096,
+   "tracked": 1097,
    "graded": 921,
    "wins": 549,
    "losses": 367,
@@ -1151,7 +1146,7 @@
    "win_rate_pct": 59.9345,
    "verified": 99,
    "record_only": 822,
-   "pending": 175,
+   "pending": 176,
    "voids": 0,
    "invalid": 0,
    "first_game": "2026-09-11",
@@ -1215,7 +1210,7 @@
      "key": "College Football"
     },
     {
-     "tracked": 199,
+     "tracked": 200,
      "graded": 24,
      "wins": 9,
      "losses": 15,
@@ -1224,7 +1219,7 @@
      "win_rate_pct": 37.5,
      "verified": 24,
      "record_only": 0,
-     "pending": 175,
+     "pending": 176,
      "voids": 0,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1313,7 +1308,7 @@
      "key": "Moneyline"
     },
     {
-     "tracked": 199,
+     "tracked": 200,
      "graded": 24,
      "wins": 9,
      "losses": 15,
@@ -1322,7 +1317,7 @@
      "win_rate_pct": 37.5,
      "verified": 24,
      "record_only": 0,
-     "pending": 175,
+     "pending": 176,
      "voids": 0,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1387,7 +1382,7 @@
      "key": "edgedesk_football_v1.0.0"
     },
     {
-     "tracked": 199,
+     "tracked": 200,
      "graded": 24,
      "wins": 9,
      "losses": 15,
@@ -1396,7 +1391,7 @@
      "win_rate_pct": 37.5,
      "verified": 24,
      "record_only": 0,
-     "pending": 175,
+     "pending": 176,
      "voids": 0,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1557,7 +1552,7 @@
      "key": "NFL · Week 03"
     },
     {
-     "tracked": 202,
+     "tracked": 203,
      "graded": 27,
      "wins": 11,
      "losses": 16,
@@ -1566,7 +1561,7 @@
      "win_rate_pct": 40.7407,
      "verified": 24,
      "record_only": 3,
-     "pending": 175,
+     "pending": 176,
      "voids": 0,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1583,7 +1578,7 @@
    ],
    "grade": [
     {
-     "tracked": 199,
+     "tracked": 200,
      "graded": 24,
      "wins": 9,
      "losses": 15,
@@ -1592,7 +1587,7 @@
      "win_rate_pct": 37.5,
      "verified": 24,
      "record_only": 0,
-     "pending": 175,
+     "pending": 176,
      "voids": 0,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1714,7 +1709,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-04T08:40:22.582Z",
+  "as_of": "2026-10-04T09:01:49.921Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -1803,7 +1798,7 @@
      "graded": 921,
      "priced": 99,
      "record_only": 822,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -1879,7 +1874,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -2805,7 +2800,7 @@
       {
        "key": "Player Props",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -2943,7 +2938,7 @@
       {
        "key": "Player Props",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -3013,7 +3008,7 @@
       {
        "key": "2026-10",
        "n": 99,
-       "rows": 376,
+       "rows": 377,
        "wins": 59,
        "losses": 40,
        "pushes": 0,
@@ -3049,7 +3044,7 @@
       {
        "key": "Captured with the decision",
        "n": 24,
-       "rows": 1021,
+       "rows": 1022,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -3255,7 +3250,7 @@
       {
        "key": "Rush Attempts",
        "n": 4,
-       "rows": 46,
+       "rows": 47,
        "wins": 0,
        "losses": 4,
        "pushes": 0,
@@ -3393,7 +3388,7 @@
       {
        "key": "Rushing",
        "n": 7,
-       "rows": 85,
+       "rows": 86,
        "wins": 3,
        "losses": 4,
        "pushes": 0,
@@ -3497,7 +3492,7 @@
       {
        "key": "Under",
        "n": 20,
-       "rows": 162,
+       "rows": 163,
        "wins": 8,
        "losses": 12,
        "pushes": 0,
@@ -3839,7 +3834,7 @@
       {
        "key": "ESPN BET",
        "n": 4,
-       "rows": 32,
+       "rows": 33,
        "wins": 1,
        "losses": 3,
        "pushes": 0,
@@ -4113,7 +4108,7 @@
       {
        "key": "7%+",
        "n": 10,
-       "rows": 143,
+       "rows": 144,
        "wins": 5,
        "losses": 5,
        "pushes": 0,
@@ -4149,7 +4144,7 @@
       {
        "key": "0.25u",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -4355,7 +4350,7 @@
       {
        "key": "−104 to +100",
        "n": 7,
-       "rows": 28,
+       "rows": 29,
        "wins": 7,
        "losses": 0,
        "pushes": 0,
@@ -4663,7 +4658,7 @@
       {
        "key": "NFL · Week 04",
        "n": 24,
-       "rows": 202,
+       "rows": 203,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -4767,7 +4762,7 @@
       {
        "key": "edgedesk_props_model_v1",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -4803,7 +4798,7 @@
       {
        "key": "Bet",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -4837,7 +4832,7 @@
       {
        "key": "Lean",
        "n": 883,
-       "rows": 2824,
+       "rows": 2834,
        "wins": 458,
        "losses": 425,
        "pushes": 0,
@@ -5371,7 +5366,7 @@
      "graded": 921,
      "priced": 99,
      "record_only": 822,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -5447,7 +5442,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -6373,7 +6368,7 @@
       {
        "key": "Player Props",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -6511,7 +6506,7 @@
       {
        "key": "Player Props",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -6581,7 +6576,7 @@
       {
        "key": "2026-10",
        "n": 99,
-       "rows": 376,
+       "rows": 377,
        "wins": 59,
        "losses": 40,
        "pushes": 0,
@@ -6617,7 +6612,7 @@
       {
        "key": "Captured with the decision",
        "n": 24,
-       "rows": 1021,
+       "rows": 1022,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -6823,7 +6818,7 @@
       {
        "key": "Rush Attempts",
        "n": 4,
-       "rows": 46,
+       "rows": 47,
        "wins": 0,
        "losses": 4,
        "pushes": 0,
@@ -6961,7 +6956,7 @@
       {
        "key": "Rushing",
        "n": 7,
-       "rows": 85,
+       "rows": 86,
        "wins": 3,
        "losses": 4,
        "pushes": 0,
@@ -7065,7 +7060,7 @@
       {
        "key": "Under",
        "n": 20,
-       "rows": 162,
+       "rows": 163,
        "wins": 8,
        "losses": 12,
        "pushes": 0,
@@ -7407,7 +7402,7 @@
       {
        "key": "ESPN BET",
        "n": 4,
-       "rows": 32,
+       "rows": 33,
        "wins": 1,
        "losses": 3,
        "pushes": 0,
@@ -7681,7 +7676,7 @@
       {
        "key": "7%+",
        "n": 10,
-       "rows": 143,
+       "rows": 144,
        "wins": 5,
        "losses": 5,
        "pushes": 0,
@@ -7717,7 +7712,7 @@
       {
        "key": "0.25u",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -7923,7 +7918,7 @@
       {
        "key": "−104 to +100",
        "n": 7,
-       "rows": 28,
+       "rows": 29,
        "wins": 7,
        "losses": 0,
        "pushes": 0,
@@ -8231,7 +8226,7 @@
       {
        "key": "NFL · Week 04",
        "n": 24,
-       "rows": 202,
+       "rows": 203,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -8335,7 +8330,7 @@
       {
        "key": "edgedesk_props_model_v1",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -8371,7 +8366,7 @@
       {
        "key": "Bet",
        "n": 24,
-       "rows": 199,
+       "rows": 200,
        "wins": 9,
        "losses": 15,
        "pushes": 0,
@@ -8405,7 +8400,7 @@
       {
        "key": "Lean",
        "n": 883,
-       "rows": 2824,
+       "rows": 2834,
        "wins": 458,
        "losses": 425,
        "pushes": 0,
@@ -8871,9 +8866,9 @@
     }
    },
    "data_quality": {
-    "total": 4000,
+    "total": 4011,
     "verified": 1045,
-    "pending": 2069,
+    "pending": 2080,
     "voids": 64,
     "missing_entry_odds": 822,
     "simulated_price": 0,
@@ -11175,7 +11170,7 @@
      "graded": 24,
      "priced": 24,
      "record_only": 0,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -11240,7 +11235,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -11603,7 +11598,7 @@
      "graded": 24,
      "priced": 24,
      "record_only": 0,
-     "pending_priced": 175,
+     "pending_priced": 176,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -11668,7 +11663,7 @@
        "win_rate_pct": 37.5,
        "graded": 24,
        "record_only": 0,
-       "pending_priced": 175,
+       "pending_priced": 176,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -11963,9 +11958,9 @@
     }
    },
    "data_quality": {
-    "total": 3023,
+    "total": 3034,
     "verified": 907,
-    "pending": 2052,
+    "pending": 2063,
     "voids": 64,
     "missing_entry_odds": 0,
     "simulated_price": 0,
@@ -13678,7 +13673,7 @@
    "source": "player_props",
    "league": "NFL",
    "file": "football/props/nfl/2026/evaluations.jsonl",
-   "rows": 1694,
+   "rows": 1705,
    "results_file": "football/props/nfl/2026/results.jsonl",
    "results": 439
   },
