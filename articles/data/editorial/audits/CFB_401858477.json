@@ -1,0 +1,660 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401858477",
+  "game_id": "401858477",
+  "sport": "CFB",
+  "snapshot_id": "snap_74c3ec75f5e8ea81",
+  "audited_at": "2026-10-04T03:20:47.467Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Rutgers +19.3 with a fair total of 56.0, which makes Indiana the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 19.3,
+      "favours_side": "away",
+      "favours_team": "Indiana",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 19.328795672325935,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Rutgers winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Indiana is ahead on the scoreboard in a way that looks like Rutgers +19.3 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Rutgers +19.3 where the market has Rutgers +24.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 4.7 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 4.7,
+      "favours_side": "away",
+      "favours_team": "Indiana",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 4.7,
+        "unit": "points",
+        "market_margin": 24,
+        "market_text": "Rutgers +24.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Rutgers +24.0 and Rutgers +19.3.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Indiana is the better football team by 21.7 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -21.7 of the EdgeDesk number, in Indiana’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 21.7,
+      "favours_side": "away",
+      "favours_team": "Indiana",
+      "expected_signal": null,
+      "falsifier": "Rutgers winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Playing at Rutgers is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Rutgers’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Rutgers",
+      "expected_signal": null,
+      "falsifier": "Indiana winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Indiana by 1.7 points: ball control vs front disruption — worth -1.7 of the EdgeDesk number, in Indiana’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 1.7,
+      "favours_side": "away",
+      "favours_team": "Indiana",
+      "expected_signal": null,
+      "falsifier": "Rutgers winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Indiana’s pass offense rates 58.8 (#26 of 136) against Rutgers’s pass defense at 49.7 (#70 of 137). Indiana’s unit stands higher among its own position group, by 44 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Indiana pass offense handles Rutgers pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Indiana’s run offense rates 54.8 (#44 of 137) against Rutgers’s run defense at 28.6 (#133 of 137). Indiana’s unit stands higher among its own position group, by 89 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Indiana run offense handles Rutgers run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Rutgers’s pass offense rates 57.8 (#31 of 136) against Indiana’s pass defense at 59.1 (#25 of 137). Indiana’s unit stands higher among its own position group, by 6 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Rutgers pass offense handles Indiana pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Rutgers’s run offense rates 53.6 (#50 of 137) against Indiana’s run defense at 72.9 (#7 of 137). Indiana’s unit stands higher among its own position group, by 43 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Rutgers run offense handles Indiana run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Indiana holds the largest measured edge in this matchup: Indiana 66.1 (#1 of 137) vs Rutgers 43.8 (#137 of 137) — 136 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "pressure",
+      "weight": 34,
+      "favours_side": "away",
+      "favours_team": "Indiana",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Rutgers winning that category on the day.",
+      "watch": "Whether Indiana’s edge in Defensive line shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Defensive line"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Rutgers holds the largest measured edge in this matchup: Rutgers 50.7 (#41 of 130) vs Indiana 49.3 (#84 of 130) — 43 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "special_teams",
+      "weight": 10.8,
+      "favours_side": "home",
+      "favours_team": "Rutgers",
+      "expected_signal": null,
+      "falsifier": "Indiana winning that category on the day.",
+      "watch": "Whether Rutgers’s edge in Special teams shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: The market disagrees by 4.7 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on market disagreement.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Rutgers +19.3 with a fair total of 56.0, which makes Indiana the better team here by that margin on this field.",
+      "weight": 19.3,
+      "favours_team": "Indiana",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 19.328795672325935,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -32,
+          "away": 32,
+          "diff": 32
+        }
+      ],
+      "observed_result": "Indiana Hoosiers won by 32 where EdgeDesk projected a 19.3-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Rutgers +19.3 where the market has Rutgers +24.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 4.7 points disagreement.",
+      "weight": 4.7,
+      "favours_team": "Indiana",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 4.7,
+        "unit": "points",
+        "market_margin": 24,
+        "market_text": "Rutgers +24.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -32,
+          "away": 32,
+          "diff": 32
+        }
+      ],
+      "observed_result": "Indiana Hoosiers won by 32.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Indiana Hoosiers beat a margin of 24"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Indiana is the better football team by 21.7 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -21.7 of the EdgeDesk number, in Indiana’s favour.",
+      "weight": 21.7,
+      "favours_team": "Indiana",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Rutgers is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Rutgers’s favour.",
+      "weight": 4.1,
+      "favours_team": "Rutgers",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours Indiana by 1.7 points: ball control vs front disruption — worth -1.7 of the EdgeDesk number, in Indiana’s favour.",
+      "weight": 1.7,
+      "favours_team": "Indiana",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Indiana’s pass offense rates 58.8 (#26 of 136) against Rutgers’s pass defense at 49.7 (#70 of 137). Indiana’s unit stands higher among its own position group, by 44 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Indiana’s run offense rates 54.8 (#44 of 137) against Rutgers’s run defense at 28.6 (#133 of 137). Indiana’s unit stands higher among its own position group, by 89 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Rutgers’s pass offense rates 57.8 (#31 of 136) against Indiana’s pass defense at 59.1 (#25 of 137). Indiana’s unit stands higher among its own position group, by 6 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Rutgers’s run offense rates 53.6 (#50 of 137) against Indiana’s run defense at 72.9 (#7 of 137). Indiana’s unit stands higher among its own position group, by 43 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "Indiana holds the largest measured edge in this matchup: Indiana 66.1 (#1 of 137) vs Rutgers 43.8 (#137 of 137) — 136 places on the national board.",
+      "weight": 34,
+      "favours_team": "Indiana",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": false,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks generated"
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": false,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "why": "the box score for this game published no sacks allowed"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no sacks generated"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "special_teams",
+      "claim": "Rutgers holds the largest measured edge in this matchup: Rutgers 50.7 (#41 of 130) vs Indiana 49.3 (#84 of 130) — 43 places on the national board.",
+      "weight": 10.8,
+      "favours_team": "Rutgers",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: The market disagrees by 4.7 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 10
+    },
+    "graded": 2,
+    "total": 12,
+    "not_observable": 10,
+    "headline": "1 of 2 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401858477",
+    "sport": "CFB",
+    "snapshot_id": "snap_74c3ec75f5e8ea81",
+    "graded_at": "2026-10-04T03:20:47.467Z",
+    "final": {
+      "home_team": "Rutgers Scarlet Knights",
+      "away_team": "Indiana Hoosiers",
+      "home_score": 15,
+      "away_score": 47,
+      "margin": 32,
+      "total_points": 62,
+      "winner": "Indiana Hoosiers"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Rutgers",
+      "point": 24,
+      "line_text": "Rutgers +24",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
+      "market_home_margin": 24,
+      "model_home_margin": 19.3,
+      "gap": 4.7,
+      "why": "EdgeDesk’s own number sat 4.7 points toward Rutgers of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at Pinnacle. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 56,
+      "model_total": 56.4,
+      "gap": 0.4,
+      "why": "EdgeDesk’s fair total of 56.4 sat 0.4 points above the captured total of 56."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -8,
+        "side": "home",
+        "point": 24,
+        "team": "Rutgers",
+        "line_text": "Rutgers +24"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 62,
+        "line": 56,
+        "side": "over",
+        "by": 6,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "home",
+        "team": "Rutgers"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": -19.3,
+      "actual_home_margin": -32,
+      "margin_error": 12.7,
+      "right_side": true,
+      "projected_total": 56.4,
+      "actual_total": 62,
+      "total_error": 5.6,
+      "projected_score": {
+        "away": 38,
+        "home": 19
+      },
+      "inside_published_range": true,
+      "range_text": "-41.3 → +0.7 (Rutgers)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "blowout",
+        "severity": "medium",
+        "label": "A 32-point margin",
+        "text": "Once a game is this far apart both teams stop playing the game they were rated on — the leader runs clock, the trailer throws — so late-game rates describe the situation rather than either team."
+      }
+    ],
+    "verdict": {
+      "key": "wrong_untested",
+      "line": "The number did not land, in a game the statistics cannot grade the reasoning on. It goes in the record and teaches little."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858477:unobservable",
+      "game_id": "401858477",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858477",
+      "snapshot_id": "snap_74c3ec75f5e8ea81",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "9 of the claims in this article rested on model, passing, rushing, pressure, special_teams.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "LOSS",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858477:disagreement_landed",
+      "game_id": "401858477",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858477",
+      "snapshot_id": "snap_74c3ec75f5e8ea81",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Rutgers +19.3 where the market has Rutgers +24.0 at captured consensus (stale) · 1 book · best at Pinnacle — a 4.7 points disagreement.",
+      "actual_result": "Indiana Hoosiers won by 32. the result landed on EdgeDesk’s side of the market number: Indiana Hoosiers beat a margin of 24",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    }
+  ]
+}

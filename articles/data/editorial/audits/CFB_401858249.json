@@ -1,0 +1,707 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401858249",
+  "game_id": "401858249",
+  "sport": "CFB",
+  "snapshot_id": "snap_4b87c0dea29f8945",
+  "audited_at": "2026-10-04T03:20:47.467Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Clemson +14.8 with a fair total of 50.3, which makes Miami the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 14.8,
+      "favours_side": "away",
+      "favours_team": "Miami",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.807680022657701,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Clemson winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Miami is ahead on the scoreboard in a way that looks like Clemson +14.8 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Clemson +14.8 where the market has Clemson +16.5 at captured consensus (stale) · 1 book · best at FanDuel — a 1.7 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 1.7,
+      "favours_side": "away",
+      "favours_team": "Miami",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 16.5,
+        "market_text": "Clemson +16.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Clemson +16.5 and Clemson +14.8.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Miami is the better football team by 13.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -13.6 of the EdgeDesk number, in Miami’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 13.6,
+      "favours_side": "away",
+      "favours_team": "Miami",
+      "expected_signal": null,
+      "falsifier": "Clemson winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Miami by 5.3 points: ball control vs front disruption — worth -5.3 of the EdgeDesk number, in Miami’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 5.3,
+      "favours_side": "away",
+      "favours_team": "Miami",
+      "expected_signal": null,
+      "falsifier": "Clemson winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Playing at Clemson is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Clemson’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Clemson",
+      "expected_signal": null,
+      "falsifier": "Miami winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Miami’s pass offense rates 71.4 (#1 of 136) against Clemson’s pass defense at 62.8 (#13 of 137). Miami’s unit stands higher among its own position group, by 12 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Miami pass offense handles Clemson pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Miami’s run offense rates 56.4 (#35 of 137) against Clemson’s run defense at 43.6 (#93 of 137). Miami’s unit stands higher among its own position group, by 58 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Miami run offense handles Clemson run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Clemson’s pass offense rates 42.8 (#106 of 136) against Miami’s pass defense at 55.1 (#42 of 137). Miami’s unit stands higher among its own position group, by 64 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Clemson pass offense handles Miami pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Clemson’s run offense rates 46.3 (#86 of 137) against Miami’s run defense at 66.3 (#18 of 137). Miami’s unit stands higher among its own position group, by 68 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Clemson run offense handles Miami run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Miami holds the largest measured edge in this matchup: Miami 65.2 (#2 of 137) vs Clemson 53.6 (#125 of 137) — 123 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "QB",
+      "weight": 30.8,
+      "favours_side": "away",
+      "favours_team": "Miami",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Clemson winning that category on the day.",
+      "watch": "Whether Miami’s edge in QB room shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes QB room"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Clemson holds the largest measured edge in this matchup: Clemson 53.9 (#38 of 137) vs Miami 53.6 (#70 of 137) — 32 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "continuity",
+      "weight": 8,
+      "favours_side": "home",
+      "favours_team": "Clemson",
+      "expected_signal": null,
+      "falsifier": "Miami winning that category on the day.",
+      "watch": "Whether Clemson’s edge in Depth shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Depth"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on sample.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Clemson +14.8 with a fair total of 50.3, which makes Miami the better team here by that margin on this field.",
+      "weight": 14.8,
+      "favours_team": "Miami",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 14.807680022657701,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -28,
+          "away": 28,
+          "diff": 28
+        }
+      ],
+      "observed_result": "Miami Hurricanes won by 28 where EdgeDesk projected a 14.8-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Clemson +14.8 where the market has Clemson +16.5 at captured consensus (stale) · 1 book · best at FanDuel — a 1.7 points disagreement.",
+      "weight": 1.7,
+      "favours_team": "Miami",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 16.5,
+        "market_text": "Clemson +16.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -28,
+          "away": 28,
+          "diff": 28
+        }
+      ],
+      "observed_result": "Miami Hurricanes won by 28.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Miami Hurricanes beat a margin of 16.5"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Miami is the better football team by 13.6 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -13.6 of the EdgeDesk number, in Miami’s favour.",
+      "weight": 13.6,
+      "favours_team": "Miami",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours Miami by 5.3 points: ball control vs front disruption — worth -5.3 of the EdgeDesk number, in Miami’s favour.",
+      "weight": 5.3,
+      "favours_team": "Miami",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Clemson is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Clemson’s favour.",
+      "weight": 4.1,
+      "favours_team": "Clemson",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Miami’s pass offense rates 71.4 (#1 of 136) against Clemson’s pass defense at 62.8 (#13 of 137). Miami’s unit stands higher among its own position group, by 12 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Miami’s run offense rates 56.4 (#35 of 137) against Clemson’s run defense at 43.6 (#93 of 137). Miami’s unit stands higher among its own position group, by 58 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Clemson’s pass offense rates 42.8 (#106 of 136) against Miami’s pass defense at 55.1 (#42 of 137). Miami’s unit stands higher among its own position group, by 64 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Clemson’s run offense rates 46.3 (#86 of 137) against Miami’s run defense at 66.3 (#18 of 137). Miami’s unit stands higher among its own position group, by 68 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "QB",
+      "claim": "Miami holds the largest measured edge in this matchup: Miami 65.2 (#2 of 137) vs Clemson 53.6 (#125 of 137) — 123 places on the national board.",
+      "weight": 30.8,
+      "favours_team": "Miami",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 6.705,
+          "away": 8.407,
+          "diff": -1.7,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.202,
+          "at_size": true
+        },
+        {
+          "metric": "completion_pct",
+          "available": false,
+          "label": "completion percentage",
+          "unit": "%",
+          "why": "the box score for this game published no completion percentage"
+        }
+      ],
+      "observed_result": "Miami Hurricanes 8.41 yards per pass attempt against Clemson Tigers 6.71.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "continuity",
+      "claim": "Clemson holds the largest measured edge in this matchup: Clemson 53.9 (#38 of 137) vs Miami 53.6 (#70 of 137) — 32 places on the national board.",
+      "weight": 8,
+      "favours_team": "Clemson",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Depth"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 2,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 9
+    },
+    "graded": 3,
+    "total": 12,
+    "not_observable": 9,
+    "headline": "2 of 3 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401858249",
+    "sport": "CFB",
+    "snapshot_id": "snap_4b87c0dea29f8945",
+    "graded_at": "2026-10-04T03:20:47.467Z",
+    "final": {
+      "home_team": "Clemson Tigers",
+      "away_team": "Miami Hurricanes",
+      "home_score": 13,
+      "away_score": 41,
+      "margin": 28,
+      "total_points": 54,
+      "winner": "Miami Hurricanes"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Clemson",
+      "point": 16.5,
+      "line_text": "Clemson +16.5",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
+      "market_home_margin": 16.5,
+      "model_home_margin": 14.8,
+      "gap": 1.7,
+      "why": "EdgeDesk’s own number sat 1.7 points toward Clemson of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at FanDuel. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 48,
+      "model_total": 50.3,
+      "gap": 2.3,
+      "why": "EdgeDesk’s fair total of 50.3 sat 2.3 points above the captured total of 48."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -11.5,
+        "side": "home",
+        "point": 16.5,
+        "team": "Clemson",
+        "line_text": "Clemson +16.5"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 54,
+        "line": 48,
+        "side": "over",
+        "by": 6,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "home",
+        "team": "Clemson"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": -14.8,
+      "actual_home_margin": -28,
+      "margin_error": 13.2,
+      "right_side": true,
+      "projected_total": 50.3,
+      "actual_total": 54,
+      "total_error": 3.7,
+      "projected_score": {
+        "away": 33,
+        "home": 18
+      },
+      "inside_published_range": true,
+      "range_text": "-36.8 → +5.2 (Clemson)"
+    },
+    "process": {
+      "grade": "SOUND",
+      "reasons": [
+        "1 of 1 gradeable claims held up and none was contradicted. The game was decided by the things EdgeDesk said would decide it.",
+        "EdgeDesk projected a away margin of 14.8 and the game finished 28 the away way — 13.2 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 1,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 1,
+      "high_variance": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "SOUND",
+    "variance_markers": [
+      {
+        "key": "turnover_edge",
+        "severity": "medium",
+        "label": "A two-turnover edge",
+        "text": "Miami Hurricanes won the turnover battle by two, which is worth roughly a touchdown of scoreboard on average and is largely noise game to game."
+      },
+      {
+        "key": "blowout",
+        "severity": "medium",
+        "label": "A 28-point margin",
+        "text": "Once a game is this far apart both teams stop playing the game they were rated on — the leader runs clock, the trailer throws — so late-game rates describe the situation rather than either team."
+      },
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "2 non-offensive or return scores",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
+      }
+    ],
+    "verdict": {
+      "key": "wrong_for_the_right_reason",
+      "line": "The number did not land and the reasoning did. That is the case a bettor should be least upset about: the read was defensible and the distribution went the other way. Nothing here needs changing yet."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858249:unobservable",
+      "game_id": "401858249",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858249",
+      "snapshot_id": "snap_4b87c0dea29f8945",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "8 of the claims in this article rested on model, passing, rushing, continuity.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "LOSS",
+      "process_grade": "SOUND",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858249:lost_right",
+      "game_id": "401858249",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858249",
+      "snapshot_id": "snap_4b87c0dea29f8945",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "variance",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "The number implied Clemson +16.5.",
+      "actual_result": "It graded a loss, and the reasoning held up: 1 of 1 gradeable claims held up and none was contradicted. The game was decided by the things EdgeDesk said would decide it.",
+      "lesson": "A losing number on a read the game supported. This is the result type that should change the least. Over-correcting on it is how a defensible process gets thrown away for a distribution doing what distributions do.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "SOUND",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401858249:disagreement_landed",
+      "game_id": "401858249",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-cfb-401858249",
+      "snapshot_id": "snap_4b87c0dea29f8945",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Clemson +14.8 where the market has Clemson +16.5 at captured consensus (stale) · 1 book · best at FanDuel — a 1.7 points disagreement.",
+      "actual_result": "Miami Hurricanes won by 28. the result landed on EdgeDesk’s side of the market number: Miami Hurricanes beat a margin of 16.5",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "LOSS",
+      "process_grade": "SOUND",
+      "created_at": "2026-10-04T03:20:47.467Z"
+    }
+  ]
+}
