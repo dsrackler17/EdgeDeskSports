@@ -464,9 +464,13 @@ if (fs.existsSync(COV)) {
     const byConf = c.slate.by_conference || {};
     return Object.keys(byConf).some(id => p4.indexOf(id) < 0 && byConf[id] > 0);
   });
+  /* FBS-vs-FCS games are on the slate whenever the feed has any in the
+     window. From October on a ten-day window often holds none, and an
+     empty slate row is then the right answer, not a missing one. */
+  const fcsOnSlate = c.slate.by_matchup.fbs_fcs || 0;
+  const fcsOk = c.slate.fbs_fcs_in_source == null ? fcsOnSlate > 0 : fcsOnSlate === c.slate.fbs_fcs_in_source;
   chk('the real slate carries conference, non-conference and FBS-vs-FCS games',
-    c.slate.by_matchup.conference > 0 && c.slate.by_matchup.non_conference > 0
-    && c.slate.by_matchup.fbs_fcs > 0, c.slate.by_matchup);
+    c.slate.by_matchup.conference > 0 && c.slate.by_matchup.non_conference > 0 && fcsOk, c.slate);
   chk('no FBS program in the real universe is missing a conference',
     c.missing_conference.length === 0, c.missing_conference);
   chk('no team in the real universe is unmapped', c.unmapped_teams.length === 0, c.unmapped_teams);

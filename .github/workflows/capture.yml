@@ -158,10 +158,20 @@ jobs:
           # The response is a report, not a log line. Print the parts that say
           # whether the run did its job; the whole body is large and most of it
           # is the policy echoed back.
-          node -e '
+          # A body with no `ok` is NOT capture's report: it is the platform
+          # answering for a function that never finished (a 504 / 546 wall-clock
+          # or WORKER_LIMIT error once the database stalls). Picking capture's
+          # keys out of it printed one blank line and exit 1, and the run said
+          # nothing about why, so print the status and the body as they came.
+          echo "capture answered HTTP $CODE"
+          CODE="$CODE" node -e '
             const fs = require("fs");
             let j; try { j = JSON.parse(fs.readFileSync("/tmp/capture.json", "utf8")); }
             catch { console.log("capture did not return JSON:"); console.log(fs.readFileSync("/tmp/capture.json","utf8").slice(0,800)); process.exit(1); }
+            if (j === null || typeof j !== "object" || j.ok === undefined) {
+              console.log("::error::capture did not return its report (HTTP " + process.env.CODE + "); the platform answered instead: " + JSON.stringify(j).slice(0, 600));
+              process.exit(1);
+            }
             const pick = (o, ks) => ks.filter(k => o[k] !== undefined).map(k => k + ": " + JSON.stringify(o[k])).join("\n");
             console.log(pick(j, ["ok","status","build","error","reason","cadence","sports","priced",
                                  "new_signals","refreshed","sports_skipped_no_near_events",
