@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-04T22:30:23.000Z",
+ "generated_at": "2026-10-04T23:07:28.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,57 +46,44 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 502,
-    "latest_snapshot_at": "2026-10-04T02:59:35.000Z",
+    "snapshots": 503,
+    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
     "upcoming_games": 60,
-    "avg_confidence_upcoming": 75
+    "avg_confidence_upcoming": 75.2
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 701,
-    "latest_snapshot_at": "2026-10-04T15:29:47.000Z",
+    "snapshots": 702,
+    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
     "upcoming_games": 60,
-    "avg_confidence_upcoming": 74
+    "avg_confidence_upcoming": 74.2
    },
    {
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 701,
-    "latest_snapshot_at": "2026-10-04T15:29:47.000Z",
+    "snapshots": 702,
+    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
     "upcoming_games": 60,
-    "avg_confidence_upcoming": 73.9
+    "avg_confidence_upcoming": 74.2
    }
   ],
   "data_quality": {
    "games": 60,
    "counts": {
-    "GREEN": 1,
-    "YELLOW": 59,
+    "GREEN": 2,
+    "YELLOW": 58,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 59,
+     "YELLOW": 58,
      "RED": 0
     }
    },
    "not_green": [
-    {
-     "game_id": "401871051",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-07T23:00:00.000Z",
-     "matchup": "Jacksonville State @ Kennesaw State"
-    },
     {
      "game_id": "401871066",
      "status": "YELLOW",
@@ -853,16 +840,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-04T22:30:23.000Z",
-    "quotes_total": 7633,
+    "last_quote_at": "2026-10-04T23:07:28.000Z",
+    "quotes_total": 7649,
     "last_result_at": "2026-10-04T10:12:51.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 2414,
-   "live_predictions": 1904,
-   "quotes": 7633,
+   "predictions": 2417,
+   "live_predictions": 1907,
+   "quotes": 7649,
    "lines": 1896,
    "results": 341,
    "evaluations": 2229,
@@ -964,51 +951,53 @@
    "home": "Kennesaw State",
    "away": "Jacksonville State",
    "market": {
-    "current": null,
-    "open": null,
-    "books": 0,
-    "as_of": null,
-    "sources": [],
-    "stale": true
+    "current": 3,
+    "open": 2.5,
+    "books": 1,
+    "as_of": "2026-10-04T21:07:21.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T01:07:17.000Z",
+     "prediction_ts": "2026-10-04T23:07:28.000Z",
      "margin": -1.95,
      "fair": "Jacksonville State -2.0",
      "p_home": 0.4477,
      "sigma": 14.832,
-     "conf": 75,
-     "dq": "YELLOW",
+     "conf": 87,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "HOME",
+     "gap": 1.05,
+     "line": 3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T11:07:23.000Z",
-     "margin": -5.66,
-     "fair": "Jacksonville State -5.5",
-     "p_home": 0.3579,
-     "sigma": 15.66,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "prediction_ts": "2026-10-04T23:07:28.000Z",
+     "margin": -5.21,
+     "fair": "Jacksonville State -5.0",
+     "p_home": 0.3686,
+     "sigma": 15.637,
+     "conf": 90,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -2.21,
+     "line": -3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1017,21 +1006,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T11:07:23.000Z",
-     "margin": -5.86,
-     "fair": "Jacksonville State -6.0",
-     "p_home": 0.3545,
-     "sigma": 15.822,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "prediction_ts": "2026-10-04T23:07:28.000Z",
+     "margin": -5.57,
+     "fair": "Jacksonville State -5.5",
+     "p_home": 0.3614,
+     "sigma": 15.813,
+     "conf": 84,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "AWAY",
+     "gap": -2.57,
+     "line": -3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10207,8 +10196,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 60,
-  "games_with_verdict": 60,
+  "games_with_market": 61,
+  "games_with_verdict": 61,
   "raw_major_disagreements": 11,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10217,7 +10206,7 @@
   "data_fault": 0,
   "market_fault": 11,
   "verification_not_run": 0,
-  "average_raw_gap": 4.291,
+  "average_raw_gap": 4.238,
   "average_raw_gap_7plus": 10.793,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
