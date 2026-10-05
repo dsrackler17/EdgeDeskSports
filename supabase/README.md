@@ -203,6 +203,20 @@ the shared research state). Admin reports (`growth_admin_*`) check the partner
 program's operator list. Report rows 1-9 should say `ok`. Tested by
 `tools/personal/growth_sql.test.js`; see `docs/growth-upgrade.md`.
 
+### `growth_outbound.sql` — the owner-only outbound prospecting engine
+Run after `affiliates.sql` and `growth.sql` (the guard says so).
+
+- **Private schema.** Everything lives in `growth_outbound`, which PostgREST does not serve and no client role can use.
+- **Owners.** Access is limited to `growth_outbound.owners`, an explicit list of accounts. Each owner must also be in `affiliate_admins` (a cascading FK), but being an affiliate admin grants nothing here.
+- **Doors only.** Every read and write goes through a `public.growth_outbound_*` door whose first statement is the owner check.
+- **Table triggers enforce three rules:**
+  - only an owner approves a draft, for the content they reviewed;
+  - a send row can exist only for such a draft, to the approved recipient (only the test inbox in test mode), once, under the daily cap, and only while the compliance configuration is complete;
+  - suppressions and the activity log are append-only.
+- **Defaults:** test mode on, automation off, cap 20.
+
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-14 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`; see `docs/growth-outbound.md`.
+
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,
 `affiliates.sql` and `growth.sql` (the guard says so). `user_event_kinds` (the

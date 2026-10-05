@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-10-05 — Growth console: the owner-only outbound layer (outbound engine, phase 2)
+
+**normal user < affiliate_admin < outbound owner.**
+
+**`supabase/growth_outbound.sql`** adds:
+- a private schema `growth_outbound`, which PostgREST does not serve and no client role can use;
+- an explicit owner list, `growth_outbound.owners`. It is a subset of `affiliate_admins`: removal there cascades, and re-adding restores nothing. It is never granted by affiliate-admin status, and the existing consoles are untouched;
+- default-deny RLS with a restrictive policy on every table;
+- `public.growth_outbound_*` doors whose first statement is the owner check;
+- table triggers that hold whatever writes the row:
+  - **no self-enrollment:** an owner row cannot arrive through the API, even via a definer function;
+  - **approval** is only by the signed-in owner, for the exact content and recipient they reviewed;
+  - **sends:** a row exists only for an approved draft by a current owner, to the approved recipient. In test mode it goes only to the test inbox. It happens once per draft and once per address per step, under the cap, and only with complete compliance configuration;
+  - **history:** append-only, never deleted.
+
+**Tables and settings:**
+- prospects, evidence, drafts, sends, suppressions, activity and settings;
+- defaults: test mode on, automation off, cap 20;
+- the sender and the call to action are pinned to edgedesksports.com;
+- raising the cap or leaving test mode requires a confirmation flag.
+
+**Bootstrap** is `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. It says why it refused, including an address pasted with its `< >`.
+
+**`/admin/growth/` gains an Outbound tab** for owners only. It shows:
+- TEST MODE in the header and on the tab;
+- send blockers in words;
+- today's counts, with "sent automatically" always 0;
+- prospects with emails, suppressions, settings (with confirmations) and the activity log.
+
+An affiliate admin who is not an owner sees no tab, and the page asks only `growth_outbound_is_owner()`. The header also regains its side gutter on phones.
+
+**`tools/growth/outbound_auth.js`** is the owner check every privileged outbound Edge Function will run: GoTrue, then the database asked as the caller, failing closed.
+
+**Tests:**
+- `outbound_sql.test.js` (194, catalogue-driven, mutation-checked);
+- `outbound_auth.test.js` (37);
+- `outbound_console.e2e.js` (33).
+
+All Phase 1 suites still pass. Runbook: `docs/growth-outbound.md`.
+
 ## 2026-10-05 — Newsletter: the anon key can no longer suppress an arbitrary address
 
 **Security fix.** `newsletter_suppress(email, reason)` was a `SECURITY DEFINER` function with no `revoke`, so PUBLIC could execute it. That meant anyone holding the anon key embedded in every page could mark any address a `complaint`. A complaint is never downgraded, so the address would never receive the newsletter again, and `lifecycle_due()` would stop its trial emails too. This was verified on a throwaway cluster before the fix.

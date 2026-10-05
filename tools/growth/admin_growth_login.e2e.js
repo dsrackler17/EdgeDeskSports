@@ -121,7 +121,9 @@ const DATA_RPCS = ['growth_admin_activation', 'growth_admin_funnel', 'growth_adm
   const text = (page, sel) => page.evaluate((s) => (document.querySelector(s) || {}).textContent || '', sel);
   const stored = (page) => page.evaluate((k) => localStorage.getItem(k), SKEY);
   const settle = (page) => page.waitForTimeout(400);
-  const dataAns = (name) => name === 'growth_admin_activation' ? [200, ACTIVATION] : name === 'growth_admin_funnel' ? [200, FUNNEL] : name === 'growth_admin_samples' ? [200, SAMPLES] : null;
+  /* these operators are affiliate admins, not outbound owners (tools/growth/outbound_console.e2e.js covers the owner) */
+  const dataAns = (name) => name === 'growth_admin_activation' ? [200, ACTIVATION] : name === 'growth_admin_funnel' ? [200, FUNNEL] : name === 'growth_admin_samples' ? [200, SAMPLES]
+    : name === 'growth_outbound_is_owner' ? [200, false] : [404, { code: 'PGRST202', message: 'no such function' }];
 
   /* ── 1. the reported case: an hour-old session, refresh works ───────────── */
   {
