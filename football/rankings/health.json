@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-05T15:03:54.513Z",
+ "generated_at": "2026-10-05T18:50:43.351Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,7 +14,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "d1c3dc180061ee5c"
+  "digest": "49e217434bc45f53"
  },
  "season": 2026,
  "week": 5,
@@ -275,10 +275,10 @@
    "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "App State",
-   "key": "appstate",
-   "games_played": 4,
-   "games_in_the_play_table": 4,
+   "team": "UTSA",
+   "key": "utsa",
+   "games_played": 5,
+   "games_in_the_play_table": 5,
    "box_only_games": 0,
    "missing": [
     "special_teams"
@@ -286,10 +286,10 @@
    "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
   },
   {
-   "team": "UTSA",
-   "key": "utsa",
-   "games_played": 5,
-   "games_in_the_play_table": 5,
+   "team": "App State",
+   "key": "appstate",
+   "games_played": 4,
+   "games_in_the_play_table": 4,
    "box_only_games": 0,
    "missing": [
     "special_teams"
@@ -333,7 +333,7 @@
  "ingestion": {
   "completed_games_in_schedule": 390,
   "last_completed_kickoff": "2026-10-04T03:59:00.000Z",
-  "team_games_read": 1429,
+  "team_games_read": 1431,
   "teams_with_a_performance_rating": 138,
   "special_teams_team_games_joined": 776,
   "special_teams_coverage_joined": 734,
@@ -350,7 +350,7 @@
    "games": [],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 1429,
+  "team_games_read": 1431,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -402,12 +402,12 @@
    "week_ordinal": 5,
    "week_label": "Week 5",
    "season_type": "regular",
-   "generated_at": "2026-10-05T15:03:54.513Z",
+   "generated_at": "2026-10-05T18:50:43.351Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-05T15:03:54.513Z",
+ "last_rankings_build": "2026-10-05T18:50:43.351Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
