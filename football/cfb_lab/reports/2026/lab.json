@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-04T23:07:28.000Z",
+ "generated_at": "2026-10-05T00:07:23.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 503,
-    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
+    "snapshots": 505,
+    "latest_snapshot_at": "2026-10-05T00:07:23.000Z",
     "upcoming_games": 60,
-    "avg_confidence_upcoming": 75.2
+    "avg_confidence_upcoming": 75.3
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 702,
-    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
+    "snapshots": 704,
+    "latest_snapshot_at": "2026-10-05T00:07:23.000Z",
     "upcoming_games": 60,
     "avg_confidence_upcoming": 74.2
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 702,
-    "latest_snapshot_at": "2026-10-04T23:07:28.000Z",
+    "snapshots": 704,
+    "latest_snapshot_at": "2026-10-05T00:07:23.000Z",
     "upcoming_games": 60,
     "avg_confidence_upcoming": 74.2
    }
@@ -73,30 +73,17 @@
   "data_quality": {
    "games": 60,
    "counts": {
-    "GREEN": 2,
-    "YELLOW": 58,
+    "GREEN": 3,
+    "YELLOW": 57,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 58,
+     "YELLOW": 57,
      "RED": 0
     }
    },
    "not_green": [
-    {
-     "game_id": "401871066",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-07T23:30:00.000Z",
-     "matchup": "New Mexico State @ Florida International"
-    },
     {
      "game_id": "401870766",
      "status": "YELLOW",
@@ -840,16 +827,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-04T23:07:28.000Z",
-    "quotes_total": 7649,
+    "last_quote_at": "2026-10-05T00:07:23.000Z",
+    "quotes_total": 7667,
     "last_result_at": "2026-10-04T10:12:51.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 2417,
-   "live_predictions": 1907,
-   "quotes": 7649,
+   "predictions": 2423,
+   "live_predictions": 1913,
+   "quotes": 7667,
    "lines": 1896,
    "results": 341,
    "evaluations": 2229,
@@ -864,10 +851,10 @@
    "home": "Troy",
    "away": "Southern Miss",
    "market": {
-    "current": -10,
+    "current": -10.5,
     "open": -8.5,
     "books": 1,
-    "as_of": "2026-10-04T15:29:47.000Z",
+    "as_of": "2026-10-04T21:07:21.000Z",
     "sources": [
      "espn"
     ],
@@ -876,10 +863,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T72",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-04T02:59:35.000Z",
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
      "margin": 9.72,
      "fair": "Troy -9.5",
      "p_home": 0.7438,
@@ -888,18 +875,18 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": "HOME",
-     "gap": 0.22,
-     "line": -9.5,
+     "side": "AWAY",
+     "gap": -0.78,
+     "line": 10.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-04T15:29:47.000Z",
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
      "margin": 9.34,
      "fair": "Troy -9.5",
      "p_home": 0.7247,
@@ -909,8 +896,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.66,
-     "line": 10,
+     "gap": -1.16,
+     "line": 10.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -920,10 +907,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-04T15:29:47.000Z",
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
      "margin": 9.26,
      "fair": "Troy -9.5",
      "p_home": 0.7225,
@@ -933,8 +920,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.74,
-     "line": 10,
+     "gap": -1.24,
+     "line": 10.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1036,77 +1023,81 @@
    "home": "Florida International",
    "away": "New Mexico State",
    "market": {
-    "current": null,
-    "open": null,
-    "books": 0,
-    "as_of": null,
-    "sources": [],
-    "stale": true
+    "current": -5.5,
+    "open": -3.5,
+    "books": 1,
+    "as_of": "2026-10-04T21:07:21.000Z",
+    "sources": [
+     "espn"
+    ],
+    "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T01:07:17.000Z",
-     "margin": 8.81,
-     "fair": "Florida International -9.0",
-     "p_home": 0.7236,
-     "sigma": 14.842,
-     "conf": 75,
-     "dq": "YELLOW",
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
+     "margin": 5.83,
+     "fair": "Florida International -6.0",
+     "p_home": 0.6529,
+     "sigma": 14.829,
+     "conf": 83,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "HOME",
+     "gap": 0.33,
+     "line": -5.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T11:07:23.000Z",
-     "margin": 11.81,
-     "fair": "Florida International -12.0",
-     "p_home": 0.7738,
-     "sigma": 15.819,
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
+     "margin": 10.08,
+     "fair": "Florida International -10.0",
+     "p_home": 0.7393,
+     "sigma": 15.828,
      "conf": 75,
-     "dq": "YELLOW",
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "HOME",
+     "gap": 4.58,
+     "line": -5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-28T11:07:23.000Z",
-     "margin": 11.95,
-     "fair": "Florida International -12.0",
-     "p_home": 0.7789,
-     "sigma": 15.647,
+     "prediction_ts": "2026-10-05T00:07:23.000Z",
+     "margin": 9.9,
+     "fair": "Florida International -10.0",
+     "p_home": 0.7368,
+     "sigma": 15.726,
      "conf": 75,
-     "dq": "YELLOW",
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "HOME",
+     "gap": 4.4,
+     "line": -5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
       "MARKET_DEGRADED"
      ]
     }
@@ -10196,8 +10187,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 61,
-  "games_with_verdict": 61,
+  "games_with_market": 62,
+  "games_with_verdict": 62,
   "raw_major_disagreements": 11,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10206,7 +10197,7 @@
   "data_fault": 0,
   "market_fault": 11,
   "verification_not_run": 0,
-  "average_raw_gap": 4.238,
+  "average_raw_gap": 4.184,
   "average_raw_gap_7plus": 10.793,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
