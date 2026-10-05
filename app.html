@@ -4279,10 +4279,25 @@ async function edToken(){
    than "read failed". That sentence is unactionable — a rotated key, a paused
    project, an unapplied migration and an expired login all produce it and all need
    different fixes. The last failure is kept here so the panel can name the cause. */
-var ED_DB={ok:false,at:0,failAt:0,status:null,code:null,detail:null,where:null};
+var ED_DB={ok:false,at:0,failAt:0,status:null,code:null,detail:null,where:null,view:null};
 function edNoteDbOk(){ED_DB.ok=true;ED_DB.at=Date.now();}
+/* A BUG IN THE PAGE IS NOT A DATABASE OUTAGE. Every loader draws inside the same
+   try as its reads, so a TypeError thrown while RENDERING the record arrived here
+   with no status and was reported as "the database could not be reached at all".
+   A read's own failure carries an HTTP status, or the edDb mark sbFetch/sbCount put
+   on a transport failure; a ReferenceError, or a TypeError that is not fetch's own
+   network error, is the page's fault. Names, not instanceof: errors cross realms. */
+function edIsCodeError(er){
+  if(!er||er.edDb||er.status!=null)return false;
+  var n=er.name||'';
+  if(n==='ReferenceError'||n==='SyntaxError'||n==='RangeError')return true;
+  return n==='TypeError'&&!/fetch|network|load failed/i.test(String(er.message||''));
+}
+/* Returns whether the failure was the database's, so a loader can tell the reader
+   which of the two it was. */
 function edNoteDbError(er,where){
-  if(er&&er.name==='AbortError')return;            // a superseded load is not a failure
+  if(er&&er.name==='AbortError')return false;      // a superseded load is not a failure
+  if(edIsCodeError(er)){try{console.error('EdgeDesk: '+(where||'a view')+' failed in the page, not the database',er);}catch(_){}return false;}
   ED_DB.ok=false;ED_DB.failAt=Date.now();
   ED_DB.status=(er&&er.status)||null;
   if(where)ED_DB.where=String(where).split('?')[0];
@@ -4290,6 +4305,7 @@ function edNoteDbError(er,where){
   try{var j=JSON.parse(b);code=j.code||null;detail=j.message||j.hint||null;}
   catch(_){detail=b?String(b).slice(0,180):null;}
   ED_DB.code=code;ED_DB.detail=detail;
+  return true;
 }
 /* One plain sentence naming the cause, for the System health panel. */
 function edDbReason(){
@@ -4302,9 +4318,34 @@ function edDbReason(){
   if(s===401||s===403)return 'the database refused the key (HTTP '+s+')'+w;
   if(s===404)return 'that table is not exposed to the API (HTTP 404)'+w;
   if(s===406)return 'that schema is not in the API\u2019s exposed list (HTTP 406)'+w;
-  if(s==null)return 'the database could not be reached at all \u2014 network, DNS, or a paused project'+w;
+  /* No status means no response reached the page: the device is offline, the
+     connection dropped (a sleeping laptop), or a gateway timed out without the CORS
+     headers that would have let the browser read its status. */
+  if(s==null&&typeof navigator!=='undefined'&&navigator.onLine===false)return 'this device is offline \u2014 reads resume when it reconnects'+w;
+  if(s==null)return 'the database could not be reached \u2014 the connection dropped, a gateway timed out, or the project is paused'+w;
+  if(c==='57014')return 'a query ran past the database\u2019s time limit (statement timeout)'+w;
   if(s>=500)return 'the database answered '+s+' \u2014 the project may be paused or overloaded'+w;
   return 'HTTP '+s+(d?(' \u2014 '+d):'')+w;
+}
+/* THE HEADER'S DATABASE STATE IS WRITTEN THROUGH THESE TWO. Three loaders (the live
+   board, the record, its analytics) set #dbPill, which System health reads, and each
+   painted "DB error" for ANY throw, its own rendering bugs included. A page error now
+   paints no outage, and the failure that is painted keeps its cause and its time, so
+   the panel can say "the record could not be read 4m ago" once the database answers
+   again instead of holding a red pill for the rest of the session. */
+function edDbViewFail(er,where){
+  if(!edNoteDbError(er,where))return false;
+  var why=edDbReason();                             // the panel names the view itself
+  if(why&&where)why=why.replace(' · '+String(where).split('?')[0],'');
+  ED_DB.view={where:where||null,at:ED_DB.failAt,reason:why};
+  var p=document.getElementById('dbPill');if(p){p.textContent='DB error';p.className='pill err';}
+  try{if(typeof sysHealthPaint==='function')sysHealthPaint();}catch(_){}
+  return true;
+}
+function edDbViewOk(){
+  ED_DB.view=null;
+  var p=document.getElementById('dbPill');if(p){p.textContent='DB \u2713';p.className='pill ok';}
+  try{if(typeof sysHealthPaint==='function')sysHealthPaint();}catch(_){}
 }
 async function sbFetch(q,extra,signal){
   var t=await edToken();
@@ -4312,7 +4353,7 @@ async function sbFetch(q,extra,signal){
   if(extra)for(var k in extra)h[k]=extra[k];
   var r;
   try{ r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal}); }
-  catch(e){ edNoteDbError(e,q); throw e; }        // a transport failure has no status; record it as one
+  catch(e){ if(e&&typeof e==='object')e.edDb=true; edNoteDbError(e,q); throw e; }   // a transport failure has no status; record it as one
   if(r.status===401){                     // token rejected — refresh once (shared single-flight), retry once
     var n=await edRefreshShared();
     if(n&&n.access_token){h.authorization="Bearer "+n.access_token;r=await fetch(SB_URL+"/rest/v1/"+q,{headers:h,signal:signal});}
@@ -4327,7 +4368,7 @@ async function sbFetch(q,extra,signal){
   if(!r.ok){
     /* message is unchanged (rsClassifyError still reads it); status and body ride
        along so a caller can tell "column does not exist" from a real outage. */
-    var er=new Error("db "+r.status);er.status=r.status;
+    var er=new Error("db "+r.status);er.status=r.status;er.edDb=true;
     try{er.body=await r.text();}catch(_){}
     edNoteDbError(er,q);
     throw er;
@@ -4378,13 +4419,27 @@ async function sbCount(filter){
      is how every counter on the Record tab read 0 while the table held 10,667
      graded rows. A count that cannot see the data must not report "none". */
   var tok=await edToken();
-  var r=await fetch(SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:""),
-    {headers:{apikey:SB_KEY,authorization:"Bearer "+tok,prefer:"count=exact"}});
-  if(!r.ok)throw new Error("count "+r.status+" "+(await r.text()).slice(0,140));
+  var u=SB_URL+"/rest/v1/signals?select=id&limit=1"+(filter?"&"+filter:"");
+  var h={apikey:SB_KEY,authorization:"Bearer "+tok,prefer:"count=exact"},r;
+  /* Its failures used to throw a bare Error with no status, so a 500 statement
+     timeout, a refused key and a dropped connection all reached System health as
+     "the database could not be reached at all". They now carry what sbFetch's do. */
+  try{
+    r=await fetch(u,{headers:h});
+    /* a refused token gets the one shared refresh, as in sbFetch — but never the anon
+       fallback: an anon count is the silent zero described above */
+    if(r.status===401&&tok!==SB_KEY){
+      var nt=await edRefreshShared();
+      if(nt&&nt.access_token){h.authorization="Bearer "+nt.access_token;r=await fetch(u,{headers:h});}
+    }
+  }catch(e){ if(e&&typeof e==='object')e.edDb=true; edNoteDbError(e,'signals'); throw e; }
+  function fail(msg,body){var er=new Error(msg);er.status=r.status;er.body=body;er.edDb=true;edNoteDbError(er,'signals');return er;}
+  if(!r.ok){var b='';try{b=await r.text();}catch(_){}throw fail("count "+r.status+" "+b.slice(0,140),b);}
   var cr=r.headers.get("content-range");
-  if(!cr)throw new Error("count: no content-range header");
+  if(!cr)throw fail("count: no content-range header",'no content-range header on a count');
   var n=parseInt(cr.split("/")[1]);
-  if(isNaN(n))throw new Error("count: unparseable range "+cr);
+  if(isNaN(n))throw fail("count: unparseable range "+cr,'unparseable content-range '+cr);
+  edNoteDbOk();
   return n;
 }
 
@@ -6933,7 +6988,7 @@ async function loadEdges(){
     window.__boardStored=null;
     try{ var st=await sbGet('signals?select=sig_key,sport_key&commence_time=gte.'+nowIso+'&commence_time=lte.'+horizonIso+'&edge=gt.0&limit=1000');
       window.__boardStored=dropRetiredSports(st).length; }catch(_){}
-    $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
+    edDbViewOk();window.__EDGES_DB_FAILED=false;
     // sport filter options — every sport with a LIVE line in the window, not just the positive-edge (EDGES) set.
     // old code keyed this off EDGES (edge>0), which silently dropped MLB/WNBA whenever they had no positive edge live.
     var sportsSet={};EDGES.forEach(function(e){var L=evSportLabel(e);if(L)sportsSet[L]=1;});
@@ -7013,8 +7068,11 @@ async function loadEdges(){
        back turns "the board is empty" into "run the migration". */
     var _m=String((e&&e.message)||e);
     if(/actionable|qual_reason|column|schema cache|PGRST/i.test(_m)) window.__QUAL_SCHEMA_ERR=_m.slice(0,300);
-    edNoteDbError(e,'the live board');
-    $('dbPill').textContent='DB error';$('dbPill').className='pill err';setStale(0);$('feed').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';$('leadWrap').classList.add('hide');}
+    /* the boot load feeds every board, so System health re-runs it once the
+       database answers again (sysHealthProbe) rather than leaving them empty */
+    var _db=edDbViewFail(e,'the live board');
+    if(_db){window.__EDGES_DB_FAILED=true;setStale(0);}
+    $('feed').innerHTML='<div class="empty">'+(_db?'Could not reach the database: ':'The board failed to draw \u2014 a page error, not the database: ')+e.message+'</div>';$('leadWrap').classList.add('hide');}
   finally{ if(_gen===LOAD_EDGES_GEN) LOAD_EDGES_BUSY=false; }   // only the latest load clears the in-flight flag
 }
 /* ===== BOARDS tab: MLB elimination watch + all real odds, de-vigged ===== */
@@ -8806,7 +8864,7 @@ async function loadRecordProof(){
     renderEthos();
     WEIGHT_ROWS=await sbGet('model_weights?select=*');WEIGHTS={book:{},sport:{},market:{},edge_bucket:{},ttk_bucket:{}};WEIGHT_ROWS.forEach(function(r){WEIGHTS[r.slice_type]=WEIGHTS[r.slice_type]||{};WEIGHTS[r.slice_type][r.slice_value]=r.weight;});
     CALIB=await sbGet('calibration?select=*');
-    $('dbPill').textContent='DB ✓';$('dbPill').className='pill ok';
+    edDbViewOk();
     // CLV time series (the proof layer) — cumulative CLV over the flagged edges only
     try{var series=recScopeRows(await sbGet('signals?select=clv,graded_at,sport_key,sport_title&graded_at=not.is.null&'+EDGEQ+'&clv=not.is.null&clv_excluded_reason=is.null'+recScopeAmp()+'&order=graded_at.asc&limit=5000'));renderClvHero(series,avgCLV,beatRate,med,posRate,beatStoredRate);}catch(_){renderClvHero([],null,null,null,null,null);}
     function kpi(nv,lb){return'<div class="kpi"><div class="n">'+nv+'</div><div class="l">'+lb+'</div></div>';}
@@ -8816,7 +8874,7 @@ async function loadRecordProof(){
     $('recKpis').innerHTML=kpi(total,'captured')+kpi(gradedEdges+' / '+graded,'edges graded')+kpi(hit!=null?(hit*100).toFixed(0)+'%':'—','edge hit rate')+kpi(avgCLV!=null?((avgCLV>=0?'+':'')+(avgCLV*100).toFixed(1)+'%'):'—','edge avg CLV')+kpi(med!=null?((med>=0?'+':'')+(med*100).toFixed(1)+'%'):'—','edge median CLV')+kpi(posRate!=null?(posRate*100).toFixed(0)+'%':'—','CLV+ rate · clv>0')+kpi(beatRate!=null?(beatRate*100).toFixed(0)+'%':'—','edges beat close');
     renderSlice();renderCalib();
     if(total===0)$('recKpis').insertAdjacentHTML('afterend','<div class="empty" style="margin:8px 0">No data yet. The capture job logs signals continuously; grades fill in after games finish.</div>');
-  }catch(e){edNoteDbError(e,'the record analytics');$('dbPill').textContent='DB error';$('dbPill').className='pill err';$('recKpis').innerHTML='<div class="empty">Could not reach the database: '+e.message+'</div>';}
+  }catch(e){var _db=edDbViewFail(e,'the record analytics');$('recKpis').innerHTML='<div class="empty">'+(_db?'Could not reach the database: ':'The analytics failed to draw \u2014 a page error, not the database: ')+e.message+'</div>';}
 }
 /* ═══ WHICH SYSTEM PRODUCED THIS RECORD ═══════════════════════════════════
    A record computed over signals from two different qualification policies is
@@ -9139,16 +9197,15 @@ async function loadRecord(force){
     REC.rows=rows;REC.loaded=true;REC.dirty={charts:true,analytics:true};REC.open={};
     recAttachPnl(rows).then(function(){if(REC.rows===rows){try{recRenderTable();}catch(_){}}});
     recBuildFilterOptions();
-    $('dbPill').textContent='DB \u2713';$('dbPill').className='pill ok';
+    edDbViewOk();
     var t=new Date();$('recFresh').textContent=rows.length+' graded \u00b7 '+t.getHours()+':'+('0'+t.getMinutes()).slice(-2);
     if(force){REC.proofDone=false;recProofReset();if(REC.tab==='proof'){REC.proofDone=true;loadRecordProof();}}
     recApplyFilters();
     try{recCheckHash();}catch(_){}
   }catch(e){
-    edNoteDbError(e,'the record');
-    $('dbPill').textContent='DB error';$('dbPill').className='pill err';
+    var _db=edDbViewFail(e,'the record');
     $('recHero').innerHTML='';
-    $('recPoolNote').innerHTML=recEmptyHTML('error','<b>Could not reach the database.</b><br>'+recEsc(e.message)+'<br>Nothing is shown rather than something stale.',true);
+    $('recPoolNote').innerHTML=recEmptyHTML('error',(_db?'<b>Could not reach the database.</b><br>':'<b>The record failed to draw \u2014 a page error, not the database.</b><br>')+recEsc(e.message)+'<br>Nothing is shown rather than something stale.',true);
     $('recCount').textContent='';
   }finally{REC.loading=false;}
 }
@@ -20170,7 +20227,7 @@ document.addEventListener('click',function(){var m=$('avMenu');if(m)m.classList.
    This panel INVENTS NOTHING. Every row is a number some existing part of the
    app already computed, or it says it does not know yet. A section whose
    source has not loaded reads "not loaded", never a reassuring tick. */
-var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null};
+var SH={open:false,health:null,healthErr:null,healthAt:0,pending:null,hb:0,hbReadAt:0,probe:null,probeAt:0};
 
 /* The single read of football/health.json. Both the football module and this
    control call it; whichever asks first does the fetch and the other joins the
@@ -20211,20 +20268,63 @@ function sysHealthLoad(force){
      err   an actual failed system check: the database read failed, or a
            self-check check reported fail.
    A fault on a futures board is not a broken system, and colouring it red
-   would teach a reader to ignore red. */
+   would teach a reader to ignore red.
+
+   THE DATABASE IS JUDGED BY ITS LATEST ANSWER, NOT ITS WORST ONE. #dbPill is
+   written by three loaders and nothing else, so one failed read — a sleeping
+   laptop, a gateway timeout, the record's count running long — held the header
+   red for the rest of the session while every later read succeeded. ED_DB knows
+   the latest outcome: when the database has answered since the loader failed,
+   that is one thing needing attention (amber, named, with its age), not a failed
+   system check. Red means the latest read failed too, and sysHealthProbe keeps
+   re-asking until it does not. */
+function sysHealthDb(){
+  var E=(typeof ED_DB!=='undefined')?ED_DB:null;
+  return E&&(E.at||E.failAt)?E:null;
+}
 function sysHealthState(){
-  var db=$('dbPill'),dbc=db?db.className:'',dbErr=/\berr\b/.test(dbc),dbOk=/\bok\b/.test(dbc);
+  var db=$('dbPill'),dbc=db?db.className:'',pillErr=/\berr\b/.test(dbc),pillOk=/\bok\b/.test(dbc);
+  var E=sysHealthDb(),answered=!!(E&&E.ok);
+  var dbErr=pillErr&&!answered,dbWarn=pillErr&&answered,dbOk=pillOk||answered;
   var h=SH.health,fails=0,warns=0;
   if(h&&h.checks)h.checks.forEach(function(c){if(c.status==='fail')fails++;else if(c.status==='warn')warns++;});
   var faults=(window.FL&&FL.faults)?FL.faults.length:null;
-  var st=dbErr||fails>0?'err':(warns>0||(faults!=null&&faults>0)||!dbOk?'warn':'ok');
+  var st=dbErr||fails>0?'err':(warns>0||(faults!=null&&faults>0)||dbWarn||!dbOk?'warn':'ok');
   /* the count belongs to the state it is shown in: a red pill counts failed
      system checks, an amber one counts the things asking for attention. A red
      "HEALTH 2" that was really two research warnings would teach a reader that
      red means nothing. */
-  var n=st==='err'?(fails+(dbErr?1:0)):(warns+(faults||0));
-  return {state:st,fails:fails,warns:warns,faults:faults,n:n,dbOk:dbOk,dbErr:dbErr,health:h};
+  var n=st==='err'?(fails+(dbErr?1:0)):(warns+(faults||0)+(dbWarn?1:0));
+  return {state:st,fails:fails,warns:warns,faults:faults,n:n,dbOk:dbOk,dbErr:dbErr,dbWarn:dbWarn,health:h};
 }
+/* THE RE-CHECK. One small read — the capture heartbeat, which is also the number
+   the feed rows need — asked when the panel opens, while the database is failing
+   (at most once a minute), and when the device comes back online. It goes through
+   sbFetch, so a success clears the failure in ED_DB and a failure names its cause.
+   It never writes window.__edgeLatest: that belongs to the live board, and other
+   surfaces read it as "the board has loaded". */
+var SH_HB_Q='signals?select=last_seen_at&last_seen_at=not.is.null&order=last_seen_at.desc.nullslast&limit=1';
+function sysHealthProbe(minGap){
+  if(SH.probe)return SH.probe;
+  if(typeof sbGet!=='function'||(Date.now()-SH.probeAt)<(minGap||0))return Promise.resolve(null);
+  SH.probeAt=Date.now();
+  SH.probe=sbGet(SH_HB_Q)
+    .then(function(rows){
+      var t=rows&&rows[0]&&rows[0].last_seen_at?new Date(rows[0].last_seen_at).getTime():0;
+      SH.hb=isNaN(t)?0:t;SH.hbReadAt=Date.now();
+      /* the boot load feeds every board; if the database was what stopped it, run
+         it again now that the database answers */
+      if(window.__EDGES_DB_FAILED&&typeof loadEdges==='function'&&!(typeof LOAD_EDGES_BUSY!=='undefined'&&LOAD_EDGES_BUSY)){
+        window.__EDGES_DB_FAILED=false;try{loadEdges();}catch(_){}
+      }
+      return true;
+    },function(){return false;})
+    .then(function(v){SH.probe=null;try{sysHealthPaint();}catch(_){}return v;});
+  try{sysHealthPaint();}catch(_){}
+  return SH.probe;
+}
+/* the newest capture write either reader has seen */
+function sysHealthHeartbeat(){var a=window.__edgeLatest||0,b=SH.hb||0;return a>b?a:b;}
 /* One compact status: "System ● Healthy", "System ● 1 warning". A phone
    drops the word and keeps the dot and the count (.hpc), so the three states
    still read without colour alone; the button's aria-label always carries the
@@ -20262,11 +20362,17 @@ function sysHealthHTML(){
      unapplied migration and a paused project all read identically and none of them
      are fixed the same way. sbFetch already captures the status and the PostgREST
      message, so the panel names the cause instead of only the symptom. */
-  var dbWhy=null;
-  try{ if(s.dbErr&&typeof edDbReason==='function')dbWhy=edDbReason(); }catch(_){}
+  var dbWhy=null,E=sysHealthDb(),V=E&&E.view;
+  try{ if(s.dbErr&&typeof edDbReason==='function')dbWhy=edDbReason()||(V&&V.reason)||null; }catch(_){}
+  if(s.dbErr&&SH.probe)dbWhy=(dbWhy?dbWhy+' \u00b7 ':'')+'re-checking now';
+  else if(s.dbErr&&SH.probeAt)dbWhy=(dbWhy?dbWhy+' \u00b7 ':'')+'re-checked '+shAgo(SH.probeAt);
+  /* answered since: say which view is still showing the failure, and that its own
+     Retry will clear it */
+  if(s.dbWarn)dbWhy=(V&&V.where?V.where:'a view')+' could not be read '+(V&&V.at?shAgo(V.at):'earlier')
+    +(V&&V.reason?': '+V.reason:'')+' \u00b7 the database has answered since, so retry that view';
   out+=shRow('Database',dbWhy,
     s.dbErr?'read failed':(s.dbOk?'connected':'connecting…'),
-    s.dbErr?'err':(s.dbOk?'ok':'mut'));
+    s.dbErr?'err':(s.dbWarn?'warn':(s.dbOk?'ok':'mut')));
   /* An expired login is not an outage and must not be reported as one. Reads fall
      back to the anon reader, so the public boards keep answering while anything
      user-scoped is legitimately empty — which would otherwise read as lost data. */
@@ -20282,10 +20388,10 @@ function sysHealthHTML(){
 
   /* 3 · DATA / FEED HEALTH — the capture heartbeat is the one feed every board
      depends on; the research modules publish their own build times. */
-  var hb=window.__edgeLatest||0;
+  var hb=sysHealthHeartbeat();
   var hbAge=hb?(Date.now()-hb)/60000:null;
-  out+=shRow('Data / feed health',hb?'odds capture heartbeat':'no capture heartbeat read yet',
-    hb?shAgo(hb):'unknown',hb?(hbAge>180?'warn':'ok'):'mut');
+  out+=shRow('Data / feed health',hb?(hbAge>180?'odds capture has not written in over 3 hours':'odds capture is writing'):(SH.probe?'reading the capture heartbeat…':(SH.hbReadAt?'the database answered with no capture row visible to this account':'no capture heartbeat read yet')),
+    hb?(hbAge>180?'stale':'fresh'):'unknown',hb?(hbAge>180?'warn':'ok'):'mut');
   if(h&&h.pipeline_meta){
     var pm=h.pipeline_meta,bad=0,tot=0;
     Object.keys(pm).forEach(function(k){tot++;var v=pm[k];if(v&&(v.ok===false||v.status==='fail'))bad++;});
@@ -20326,6 +20432,10 @@ function sysHealthOpen(){
   SH.open=true;pop.classList.add('on');if(btn)btn.setAttribute('aria-expanded','true');
   pop.innerHTML=sysHealthHTML();sysHealthPill();
   sysHealthLoad(false);
+  /* opening the panel is asking "is it working NOW": answer from a fresh read
+     whenever the database is in doubt or the heartbeat has not been read */
+  var s=sysHealthState();
+  if(s.dbErr||s.dbWarn||!s.dbOk||!sysHealthHeartbeat())sysHealthProbe(10000);
 }
 function sysHealthClose(){
   var pop=$('sysHealthPop'),btn=$('sysHealthBtn');
@@ -20342,8 +20452,12 @@ window.sysHealthToggle=sysHealthToggle;window.sysHealthGoFaults=sysHealthGoFault
 window.sysHealthOpen=sysHealthOpen;window.sysHealthPaint=sysHealthPaint;
 /* the pill is a summary of things that arrive at different times, so it
    repaints on a slow tick rather than trying to hook every writer */
-sysHealthLoad(false);setInterval(function(){try{sysHealthPill();}catch(_){}},20000);
+sysHealthLoad(false);setInterval(function(){try{sysHealthPill();if(sysHealthState().dbErr)sysHealthProbe(60000);}catch(_){}},20000);
 try{sysHealthPill();}catch(_){}
+/* a laptop that wakes or a phone that reconnects re-checks at once, rather than
+   holding the failure its last connection left behind */
+if(window.addEventListener)window.addEventListener('online',function(){try{if(sysHealthState().dbErr)sysHealthProbe(0);}catch(_){}});
+document.addEventListener('visibilitychange',function(){try{if(document.visibilityState==='visible'&&sysHealthState().dbErr)sysHealthProbe(15000);}catch(_){}});
 
 /* ── MORE ──────────────────────────────────────────────────────────────
    Every row here opens something that already exists. "Do not invent

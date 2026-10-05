@@ -27,6 +27,10 @@
      · a known-expired token is never presented; reads fall back to anon
      · the fallback is bounded — no read may loop
      · a failure names its cause, so "read failed" is never the whole story
+     · a failed COUNT names its cause too: sbCount threw a bare Error, so a 500
+       statement timeout on the record read as "could not be reached at all"
+     · a bug in the page is not a database outage: a TypeError thrown while
+       drawing the record must not be recorded as a failed read
      · automatic recovery must never call edSignOut(): that wipes the CLV
        ledger, saved research and prefs and navigates away. A stale login
        costs the reader the login, and nothing else.
@@ -57,7 +61,12 @@ const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
 const START = APP.indexOf('var SB_URL="https://');
 const END = APP.indexOf('async function sbGetAll(');
 chk('the Supabase auth/read module is found in app.html', START >= 0 && END > START);
-const SRC = APP.slice(START, END);
+/* sbCount sits after sbGetAll; it is lifted with the module so a count's failure
+   is held to the same standard as a read's */
+const C0 = APP.indexOf('async function sbCount(');
+const C1 = APP.indexOf('/* ===== ANCHOR PROVENANCE', C0);
+chk('sbCount is found in app.html', C0 > END && C1 > C0);
+const SRC = APP.slice(START, END) + '\n' + APP.slice(C0, C1);
 const ANON = (/var SB_KEY="([^"]+)"/.exec(SRC) || [])[1];
 chk('and it carries the anon key', !!ANON);
 
@@ -67,7 +76,7 @@ function harness(opts) {
   if (opts.session) store['edgedesk_session'] = JSON.stringify(opts.session);
   const calls = [];
   const ctx = {
-    console, Date, Math, JSON, String, Number, Object, Array, RegExp, Error, Promise, isFinite,
+    console: opts.console || console, Date, Math, JSON, String, Number, Object, Array, RegExp, Error, Promise, isFinite,
     localStorage: {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = String(v); },
@@ -91,6 +100,10 @@ const res = (status, body) => ({
   ok: status >= 200 && status < 300, status,
   json: () => Promise.resolve(typeof body === 'string' ? JSON.parse(body) : body),
   text: () => Promise.resolve(typeof body === 'string' ? body : JSON.stringify(body))
+});
+/* a count answer: PostgREST puts the total in content-range */
+const counted = (status, total, body) => Object.assign(res(status, body || []), {
+  headers: { get: (k) => (/content-range/i.test(k) && total != null ? '0-0/' + total : null) }
 });
 const ROWS = [{ sig_key: 'k1' }];
 const AUTH = (u) => /\/auth\/v1\/token/.test(u);
@@ -224,6 +237,61 @@ later((async () => {
   await H.sbGet('signals?select=sig_key');
   eq('once it recovers the stale cause is gone', H.edDbReason(), null);
 })());
+
+/* ======================================================================== */
+/* 5b. A COUNT IS A READ, AND A PAGE BUG IS NOT                            */
+/* ======================================================================== */
+/* 2026-10-05: System health said "the database could not be reached at all —
+   network, DNS, or a paused project · the record" while capture was writing to the
+   same database every few minutes. The record's counts threw without a status, so
+   any count failure read as an unreachable host. */
+later((async () => {
+  const H = harness({ session: null, net: () => counted(500, null, { code: '57014', message: 'canceling statement due to statement timeout' }) });
+  let threw = null;
+  try { await H.sbCount('graded_at=not.is.null'); } catch (e) { threw = e; }
+  chk('a failed count still rejects', !!threw);
+  eq('and carries its HTTP status', threw && threw.status, 500);
+  const why = String(H.edDbReason());
+  has(why, 'time limit', 'a statement timeout is named as one');
+  chk('and is never called unreachable', why.indexOf('could not be reached') < 0, why);
+})());
+
+later((async () => {
+  const H = harness({ session: null, net: () => counted(200, 10667) });
+  eq('a good count returns the total', await H.sbCount('graded_at=not.is.null'), 10667);
+  chk('and counts as a healthy read', H.ED_DB.ok === true);
+})());
+
+/* a refused token on a count gets the shared refresh — and never the anon key,
+   whose count is a silent zero */
+later((async () => {
+  const H = harness({
+    session: { access_token: 'STALE', refresh_token: 'GOOD', expires_at: now() + 86400 },
+    net: (u, b) => AUTH(u) ? res(200, { access_token: 'FRESH', refresh_token: 'NEXT', expires_at: now() + 3600 })
+                           : (b === 'FRESH' ? counted(200, 42) : counted(401, null, { message: 'JWT expired' }))
+  });
+  eq('a refused count is retried on the refreshed token', await H.sbCount(''), 42);
+  chk('and never as anon', H.__calls.filter((c) => !AUTH(c.url) && c.bearer === ANON).length === 0,
+    JSON.stringify(H.__calls.map((c) => c.bearer)));
+})());
+
+later((async () => {
+  const quiet = { log() {}, info() {}, warn() {}, error() {} };
+  const H = harness({ session: null, console: quiet, net: () => res(200, ROWS) });
+  const bug = new TypeError("Cannot read properties of undefined (reading 'flagged_edge')");
+  eq('a TypeError from drawing the page is not recorded as a database failure', H.edNoteDbError(bug, 'the record'), false);
+  eq('so nothing is left for the panel to blame on the database', H.ED_DB.failAt, 0);
+  eq('nor is a ReferenceError', H.edNoteDbError(Object.assign(new Error('recFoo is not defined'), { name: 'ReferenceError' }), 'the record'), false);
+  eq('but fetch\'s own network failure is', H.edNoteDbError(new TypeError('Failed to fetch'), 'the record'), true);
+  has(String(H.edDbReason()), 'could not be reached', 'and reads as unreachable');
+  eq('and so is Safari\'s', H.edNoteDbError(new TypeError('Load failed'), 'the record'), true);
+})());
+
+/* the loaders paint the header through the two helpers, never by hand */
+['the live board', 'the record analytics', 'the record'].forEach((w) =>
+  has(APP, "edDbViewFail(e,'" + w + "')", w + ' reports its failure through edDbViewFail'));
+chk('no loader paints the database pill red by hand',
+  !/\$\('dbPill'\)\.className='pill err'/.test(APP));
 
 /* ======================================================================== */
 /* 6. RECOVERY MUST NOT COST THE READER THEIR DATA                         */
