@@ -238,7 +238,12 @@
 .pfo-cal-p,.pfo-cal-e{color:var(--f-dim);font-size:10.5px;white-space:nowrap}
 .pfo-cal-s{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .pfo-cal-key{font-size:11.5px;color:var(--f-dim);margin:8px 0 0;line-height:1.6}
-@media(max-width:420px){.pfo-cal-d{min-height:52px}.pfo-cal-p,.pfo-cal-e{display:none}}
+.pfo-cal-short{display:none}
+.pfo-cal-sum{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:13px;margin:8px 0 0}
+.pfo-cal-sum .pfo-k{margin:0}
+.pfo-cal-sum .pfo-num{font-size:16px;font-weight:800}
+@media(max-width:420px){.pfo-cal-d{min-height:52px}.pfo-cal-p,.pfo-cal-e{display:none}
+  .pfo-cal-full{display:none}.pfo-cal-short{display:inline}.pfo-cal-s{text-overflow:clip;letter-spacing:-.03em}}
 .pfo-day-g{margin:10px 0 0}
 .pfo-day-gh{font-size:12px;font-weight:700;color:var(--f-dim);letter-spacing:.04em;text-transform:uppercase;margin:0 0 6px}
 .pfo-day-gh small{font-weight:500}

@@ -141,6 +141,21 @@ chk('by event day: the events, not the P&L', /3 ev/.test(t) && !/−\$40\.00/.te
 h = J.calendarView({ month: '2026-09', basis: 'placed', view: 'week', selected: '2026-09-09', days, dayList: [] });
 chk('the week view is the seven days around the selected day, Monday first', (h.match(/data-act="cal-day"/g) || []).length === 7 && /data-v="2026-09-07"/.test(h) && /data-v="2026-09-13"/.test(h));
 chk('each day cell names its counts for a screen reader', /aria-label="Mon Sep 7, 2026: 2 entered, 1 events, 2 settled, P&amp;L −\$40\.00"/.test(J.calendarView({ month: '2026-09', basis: 'placed', days })));
+const dw = days.map((d) => Object.assign({ wins: 0, losses: 0, pushes: 0 }, d));
+dw[0].wins = 1; dw[0].losses = 1; dw[1].wins = 1;
+t = strip(J.calendarView({ month: '2026-09', basis: 'placed', view: 'month', days: dw }));
+chk('the month line: what settled in it, exactly, with the record and the up and down days', /Settled in September −\$1\.50 · 3 positions · 2-1-0 · 1 up \/ 1 down days/.test(t), t.slice(0, 400));
+chk('a month with nothing settled says so', /Nothing settled in October 2026\./.test(strip(J.calendarView({ month: '2026-10', basis: 'placed', view: 'month', days: [] }))));
+chk('the month line counts only the month on screen (a week view can load days around it)', J.monthSettled(dw.concat([{ day: '2026-10-01', settled: 4, pnl: '500', wins: 4 }]), '2026-09').pnl === '-1.5');
+h = J.calendarView({ month: '2026-10', basis: 'placed', view: 'month', days: [], loading: true }); t = strip(h);
+chk('while a month loads, its heading, arrows and grid stay, marked busy', /October 2026/.test(t) && (h.match(/data-act="cal-move"/g) || []).length === 2 && /class="pfo-cal" role="grid" aria-label="October 2026" aria-busy="true"/.test(h)
+  && /Loading October 2026…/.test(t) && !/Nothing settled/.test(t));
+h = J.calendarView({ month: '2026-09', basis: 'settled', view: 'month', days: dw });
+chk('a cell carries the exact P&L and, for a phone, a short one that is never an ellipsis', /<span class="pfo-cal-full">−\$40\.00<\/span><span class="pfo-cal-short" aria-hidden="true">−\$40<\/span>/.test(h));
+chk('short amounts: cents under a dollar, dollars, then thousands', JSON.stringify(['0', '0.4', '45.2', '-999.4', '999.6', '1234.5', '-12345', '999960', '-0.001'].map(J.compactMoney))
+  === JSON.stringify(['$0', '+$0.40', '+$45', '−$999', '+$1k', '+$1.2k', '−$12k', '+$1M', '<$0.01']));
+const CSS = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'lib', 'edgedesk_portfolio.css'), 'utf8');
+chk('a phone shows the short amount and a wider screen the exact one', /\.pfo-cal-short\{display:none\}/.test(CSS) && /@media\(max-width:420px\)\{[^@]*\.pfo-cal-full\{display:none\}\.pfo-cal-short\{display:inline\}/.test(CSS));
 h = J.dayDetail('2026-09-07', [ROW(), ROW({ id: 'a2', placed_day: '2026-09-05', settled_day: '2026-09-07', event_day: '2026-09-07', pnl: '60.00', status: 'WON', event_name: 'Jets @ Giants' })], 'placed'); t = strip(h);
 rendered.push(h);
 chk('a day groups what was entered, the events, and what settled, with the settled P&L', /Entered this day 1/.test(t) && /Events this day 2/.test(t) && /Settled this day 2 · −\$40\.00/.test(t), t.slice(0, 300));
