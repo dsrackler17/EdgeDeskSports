@@ -55027,8 +55027,9 @@ function fbQevAnchor(qs){
   var a=Q.mainLineOf(f,'away');return a!=null?-a:null;
 }
 /* CFB: the SHADOW calibration, applied by the frozen engine (anchorOf /
-   shiftedSide), carried from the market line to every other line by the SAME
-   distribution. Fails closed with a reason, never a default. */
+   recentredSide), carried from the market line to every other line by the SAME
+   distribution, reweighted in place (its spikes stay on their margins). Fails
+   closed with a reason, never a default. */
 function fbQevAdjustedCfb(u,p,hc,anchor){
   var A=FBQEV.cal,EV=window.EDEV,RD=window.EDRead;
   if(!A||!EV||!RD)return {available:false,reason:FBQEV.err?('the calibration did not load ('+FBQEV.err+')'):'the calibration is loading'};
@@ -55043,7 +55044,7 @@ function fbQevAdjustedCfb(u,p,hc,anchor){
   var An=null;try{An=EV.anchorOf({anchor_home_line:anchor,anchor_source:'the fresh main line',curve:curve,game:{home:u.g.home_team}},cal);}catch(_){An=null;}
   if(!An||An.problem)return {available:false,reason:An?An.problem:'the calibrator could not be anchored'};
   return {available:true,label:'CALIBRATED',method:cal.method,version:cal.version,maturity:cal.maturity,key:key,anchor:An,
-    side_prob:function(side,line){return EV.shiftedSide(curve,side,line,An.delta_pts);}};
+    side_prob:function(side,line){return EV.recentredSide(curve,side,line,An.delta_pts);}};
 }
 function fbQevCalReason(key,sport,market){
   var A=FBQEV.cal,EV=window.EDEV,t=fbQevTier(sport,market);

@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-05 — CFB calibration anchor: the calibrated curve keeps the key numbers and the "no ties" hole
+
+- **The defect.** On 2026-10-04 the champion stopped shifting its margin table and began reweighting it in place, so its spikes stay on 3 / 7 / 10 / 14 and a tie keeps no mass. The calibration anchor (`lib/edgedesk_ev.js`, frozen) still carried that curve to the calibrated probability by a **location** move (`shiftedHome`, a mixture of two whole-point moves). That moved the spikes off their margins again and gave a tie mass. On the 2023–2025 walk-forward folds:
+  - the anchored push rate at integer market lines was 2.9% (raw 3.3%, observed 5.3%);
+  - |margin| = 3 carried 4.1% of the anchored mass (raw 9.6%, games 10.5%);
+  - a tie carried 2.0%.
+- **The fix.** The anchor now reweights the stored curve in place (`recentredHome` / `recentredSide` / `solveRecentre`).
+  - It reads P(M = k) from `curve.push` at every whole k and tilts it by exp(θ·k). θ is solved so P(home covers the market line | no push) equals the calibrated probability. This is the champion's own move (`cfbRecentre`).
+  - A margin with no mass keeps none, so a college curve never gives a tie mass.
+  - The robust EV's model-location noise moves the curve the same way.
+  - Where the engine reweights rather than shifts, the anchored curve matches the engine re-run at the moved fair margin: 0.03 pp at the median, 0.1 pp at the 95th percentile, at close ± 3 and ± 7.
+  - NFL is untouched: its calibrated path is the pricing blend, which re-runs `football/engine.js` at the blended centre and never goes through this anchor.
+- **What moved** (tournament re-run, DEV only; the holdout was not re-read; every map, status and verdict is unchanged):
+
+  | Anchored audit | Location move | Reweighting | Raw | Observed |
+  |---|---|---|---|---|
+  | push, all integer lines | 2.9% | 3.4% | 3.3% | 5.3% (95% 4.0–6.9%) |
+  | push at 3 / at 7 | 3.2% / 3.0% | 6.4% / 5.6% | 6.1% / 5.3% | 9.6% / 11.1% |
+  | mass on \|3\| / \|7\| | 4.1% / 3.8% | 9.7% / 8.1% | 9.6% / 8.0% | 10.5% / 8.7% |
+  | tie | 2.0% | 0 | 0 | 0 |
+  | three-state log loss, integer lines | 0.8715 | 0.8569 | 0.8976 | — |
+
+  - Key-number mass stays **NOT VALIDATED**: the push rate is still below its interval. What remains is the PMF's own shortfall at the market's number.
+  - **Alternate-line audit.** The calibrated slopes at −7 / −3 / +3 / +7 go from 0.42 / 0.70 / 0.10 / 0.38 to 1.37 / 1.51 / 1.03 / 0.81. Log loss and Brier improve at every offset.
+  - All four slopes are inside 0.6–1.6, so the validated tail (`tailDomain`, unchanged) goes from **0 to ±7**. Each interval is about ±1 wide, and the +3 and +7 intervals reach 0. Alternates that cross 3 or 7 stay never actionable.
+  - Today's board prices no alternates. No EV, quote or bettor decision changed. Calibrated push at whole-number lines rose (UNLV +3: 2.0% → 6.3%). The bet trigger line moved on 9 of 11 games, mostly further from the market.
+- **Governance.** The new hashes of `lib/edgedesk_ev.js` and `calibration.json` are a PATCH in `football/cfb_ev/versions.jsonl`, and the engine keeps `edgedesk_ev_engine_v1`. The next-100 population was already full (100 of 100, 94 graded), so no frozen read moves. Disclosed in PREREG.md, post-registration change 4.
+
 ## 2026-10-05 — The Decision Record, and one tap from the Card to it
 
 Every position now keeps what was known when it was entered, exactly as it was, and everything learned afterwards. It sits under the existing five destinations; no navigation was added. EdgeDesk still never places, accepts or executes a wager.

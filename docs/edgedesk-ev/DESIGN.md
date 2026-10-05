@@ -88,12 +88,17 @@ Nothing is refitted per line.
 **Market-line anchor.** The calibrator maps the raw P(home covers | no push). It
 is evaluated **only at the fresh consensus market line**, because that is where
 it was trained. To carry the calibrated distribution to other lines, the engine
-moves its location (`solveShift`): it finds the fractional shift δ of the frozen
-curve whose cover probability at the market line equals the calibrated one. It then
-reads every other line off the shifted curve (`shiftedHome`, a mixture of the two
-neighbouring integer shifts, so push mass stays on the integers and the curve stays
-monotone). This is `anchorOf` / `calibratedAt`. It is a post-registration change,
-disclosed in PREREG. Without the anchor, a temperature map applied line by line
+reweights the frozen curve in place (`solveRecentre`). It reads P(M = k) off the
+curve's push mass at every whole margin and tilts it by exp(θ·k). θ is solved so
+the cover probability at the market line equals the calibrated one, and the move
+is reported as the shift δ of the mean. It then reads every other line off the
+reweighted curve (`recentredHome`). Every margin keeps its own mass: the spikes
+stay on 3 and 7, a tie keeps none, and the curve stays monotone. This is the tilt
+the champion itself uses to re-centre its row (`cfbRecentre`). This is `anchorOf`
+/ `calibratedAt`. It is a post-registration change, disclosed in PREREG
+(changes 1 and 4). Until 2026-10-05 the anchor moved the curve's location instead,
+a mixture of the two neighbouring integer shifts, which carried the spikes off
+their margins. Without the anchor, a temperature map applied line by line
 would squash every alternate toward 50%.
 
 `curveSane(curve)` checks monotonicity, bounds and the push range. An incoherent

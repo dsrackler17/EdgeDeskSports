@@ -315,13 +315,15 @@ section('8. the alternate ladder');
   /* the real tournament audit */
   const tour = require(path.join(ROOT, 'football', 'cfb_ev', 'artifacts', 'cfb_ev_calibration_v1', 'tournament.json'));
   const td = Q.tailDomain(tour.alternate_line_domain);
-  /* It was ±3 before the 2026-10-04 re-centring. The raw curve now keeps its
-     spikes on their margins, and the calibration anchor's location move
-     (lib/edgedesk_ev.js shiftedHome) displaces them by a game-dependent
-     amount. The +3 slope fell from 1.24 to 0.10, against a 95% CI about ±1.15
-     wide either way, so no alternate is inside a validated tail. */
-  chk('tail domain from the CFB alternate-line audit: +3 fails the slope band, so no alternate is validated (−3 passes; ±7 fail)',
-    td.validated_within_pts === 0 && td.audited.some((a) => a.offset === 3 && !a.pass) && td.audited.some((a) => a.offset === -3 && a.pass), td);
+  /* It was ±3 before the 2026-10-04 re-centring, and 0 after it while the
+     calibration anchor still moved the curve in location (the +3 slope fell
+     to 0.10). Since 2026-10-05 the anchor reweights the curve in place
+     (lib/edgedesk_ev.js recentredHome), so the spikes stay on their margins:
+     the slopes at −7 / −3 / +3 / +7 are 1.37 / 1.51 / 1.03 / 0.81, each with a
+     95% CI about ±1 wide, all inside the 0.6–1.6 band. An alternate that
+     crosses 3 or 7 is still never actionable (key-number mass NOT VALIDATED). */
+  chk('tail domain from the CFB alternate-line audit: every audited offset (±3, ±7) passes the slope band, so alternates are validated to ±7',
+    td.validated_within_pts === 7 && td.audited.length === 4 && td.audited.every((a) => a.pass), td);
   chk('no audit, no validated domain', Q.tailDomain(null).validated_within_pts === 0);
   /* a non-monotone distribution is caught */
   const bad = Object.assign(model(), { home_cover: (t) => (Math.abs(t - 5.5) < 1e-9 ? { win: 0.3, push: 0, lose: 0.7 } : normalCover(1.3, 14)(t)) });

@@ -134,6 +134,7 @@ candidate, a metric or the promotion rule.
    - The runtime therefore evaluates the map at the market line (the fresh
      consensus) only. It carries the result to every other line through the
      same frozen distribution, moved in location (a mixture of integer moves).
+     Change 4 replaced that move with a reweighting in place.
    - The tournament gained a check of exactly that transport at close ± 3 and
      ± 7 (`alternate_line_domain`).
    - The map's inputs are unchanged and football-only. The market line
@@ -183,3 +184,68 @@ candidate, a metric or the promotion rule.
      recorded as a PATCH in `football/cfb_ev/versions.jsonl`, so the
      prospective next-100 count continues. Bumping the version would have
      stopped that count, because it keys on the calibrator version.
+4. **The anchor reweights the curve in place (2026-10-05).** This change
+   came after the holdout was read. It moved no threshold, candidate,
+   metric, fold, offset, band or promotion rule.
+   - Change 1 carried the calibrated probability from the market line to
+     every other line by moving the frozen curve's **location** (a mixture
+     of the two neighbouring whole-point moves). After change 3 that move
+     displaced the spikes the raw curve now keeps, and gave a tie mass. On the
+     2023–2025 walk-forward folds:
+     - the anchored push rate at integer market lines was 2.9% (raw 3.3%,
+       observed 5.3%);
+     - |margin| = 3 carried 4.1% of the anchored mass (raw 9.6%, games 10.5%);
+     - a tie carried 2.0% (raw 0, games 0).
+   - `lib/edgedesk_ev.js` now **reweights** the stored curve in place. It
+     reads P(M = k) from the curve's push mass at every whole k and tilts it
+     by exp(θ·k). θ is solved so that P(home covers the market line | no
+     push) equals the calibrated probability. The champion uses the same tilt
+     to re-centre its own row (`cfbRecentre`).
+     - A margin with no mass keeps none, so a college curve never gives a tie
+       mass, and the spikes stay on 3 and 7.
+     - The robust EV's model-location noise moves the curve the same way.
+     - Where the engine itself reweights (not past its reach), the anchored
+       curve matches the engine re-run at the moved fair margin. The gap is
+       0.03 pp at the median and 0.1 pp at the 95th percentile, at close ± 3
+       and ± 7. The residual is the curve's tail mass, weighted at its ends.
+   - The tournament was re-run, DEV only. The holdout was **not** re-read and
+     its recorded verdict is carried. Every task, map, verdict and the
+     calibrators are unchanged, because the tournament fits maps at the market
+     line, where the anchor is exact by construction. Only the anchored audits
+     moved (2023–2025 folds, n = 2,388 games, 933 at integer lines):
+
+     | Anchored audit | Location move | Reweighting | Raw | Observed |
+     |---|---|---|---|---|
+     | push, all integer lines | 2.9% | 3.4% | 3.3% | 5.3% (95% 4.0–6.9%) |
+     | push at a line of 3 | 3.2% | 6.4% | 6.1% | 9.6% (95% 5.9–15.2%) |
+     | push at a line of 7 | 3.0% | 5.6% | 5.3% | 11.1% (95% 6.3–18.8%) |
+     | mass on \|margin\| = 3 | 4.1% | 9.7% | 9.6% | 10.5% |
+     | mass on \|margin\| = 7 | 3.8% | 8.1% | 8.0% | 8.7% |
+     | mass on a tie | 2.0% | 0 | 0 | 0 |
+     | three-state log loss, integer lines | 0.8715 | 0.8569 | 0.8976 | — |
+
+   - The push rate still sits below its 95% interval, so key-number mass
+     stays **NOT VALIDATED**. What remains is the PMF's own shortfall at the
+     market's number, not the anchor's.
+   - The alternate-line audit (`alternate_line_domain`), calibrated slope:
+
+     | Offset | Location move | Reweighting (95% CI) |
+     |---|---|---|
+     | −7 | 0.4201 | 1.3689 (0.51 – 2.23) |
+     | −3 | 0.7008 | 1.5095 (0.45 – 2.57) |
+     | +3 | 0.0997 | 1.0279 (0.00 – 2.05) |
+     | +7 | 0.3804 | 0.8116 (−0.02 – 1.65) |
+
+     Log loss and Brier improve at every offset. All four slopes now sit
+     inside the 0.6–1.6 band, so the validated tail domain goes from 0 to
+     **±7**. That domain is read by the unchanged rule in
+     `lib/edgedesk_quote_ev.js` `tailDomain`. Two cautions:
+     - each interval is about ±1 wide, and the +3 and +7 intervals reach 0;
+     - the +7 calibration-in-the-large interval (0.013 to 0.188) excludes 0:
+       there the calibrated probability runs about 2 pp below the observed
+       rate.
+   - `lib/edgedesk_ev.js` keeps its version (`edgedesk_ev_engine_v1`). Its
+     new hash, and the calibration artifact's (its key-number finding text
+     changed), are recorded as a PATCH in `football/cfb_ev/versions.jsonl`.
+     The next-100 population was already full (100 of 100 reads, 94 graded)
+     and keys on the versions it was frozen with, so no frozen read moves.

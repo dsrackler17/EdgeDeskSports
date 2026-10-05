@@ -584,7 +584,7 @@ Object.keys(GAMES.games).forEach((gid) => {
   const key = (CAL.checkpoint_map || {})[EV.checkpointOf(new Date(now).toISOString(), o.kickoff, false)] || 'cfb|spread|close';
   const cal = EV.calibrationFor(CAL, key, ri.model.model_version);
   let adjusted = { available: false, reason: 'calibration ' + cal.status };
-  if (cal.usable) { const An = EV.anchorOf({ anchor_home_line: anchorLine, anchor_source: 'replay', curve: ri.curve, game: { home: o.game.home } }, cal); if (An && !An.problem) adjusted = { available: true, label: 'CALIBRATED', method: cal.method, version: cal.version, maturity: cal.maturity, side_prob: (s, l) => EV.shiftedSide(ri.curve, s, l, An.delta_pts) }; }
+  if (cal.usable) { const An = EV.anchorOf({ anchor_home_line: anchorLine, anchor_source: 'replay', curve: ri.curve, game: { home: o.game.home } }, cal); if (An && !An.problem) adjusted = { available: true, label: 'CALIBRATED', method: cal.method, version: cal.version, maturity: cal.maturity, side_prob: (s, l) => EV.recentredSide(ri.curve, s, l, An.delta_pts) }; }
   const model = { sport: 'CFB', available: true, model_version: ri.model.model_version, fair_home_margin: ri.model.home_margin, home_cover: cover, adjusted, tail: { validated_within_pts: 0 } };
   const facts = I.factsFromTerminal(o, o.read, o.ev, { policy_status: 'SHADOW' });
   facts.market.stale = false;

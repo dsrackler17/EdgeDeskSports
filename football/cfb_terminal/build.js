@@ -574,7 +574,7 @@ function quoteEvOf(ctx, o, rin, read, ev) {
   const model = { sport: 'CFB', available: true, model_version: rin.model.model_version, projection_timestamp: rin.model.prediction_ts || null,
     fair_home_margin: rin.model.home_margin, home_cover: curveCover(rin.curve), basis: rin.curve.basis || null,
     adjusted: anchor ? { available: true, label: 'CALIBRATED', method: ev.calibration.method, version: ev.calibrator_version, maturity: ev.calibration.maturity,
-      side_prob: (side, line) => EV.shiftedSide(rin.curve, side, line, anchor.delta_pts) }
+      side_prob: (side, line) => EV.recentredSide(rin.curve, side, line, anchor.delta_pts) }
       : { available: false, reason: ev && ev.calibration ? (ev.calibration.reason || (ev.calibration_anchor && ev.calibration_anchor.problem) || 'no fresh consensus line to anchor the calibrator') : 'no EV read' },
     tail: ctx.qevTail, key_mass: (window.EDCfbP4Params.distributions || {}).abs_margin_key_mass || null,
     total_calibration: tc,
