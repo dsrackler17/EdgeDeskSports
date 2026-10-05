@@ -2,6 +2,41 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- THE LIVE SMOKE TEST, recorded by tools/portfolio/connector_smoke.js. A
+-- stage can pass only after every stage before it has passed; the test can
+-- be PASSED only with all ten (the table's own check enforces it again).
+create or replace function public.portfolio_svc_smoke_begin(p_platform text, p_run_by text default null)
+returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare v text; tid uuid;
+begin
+  perform public.portfolio_svc_assert();
+  select connector_version into v from public.portfolio_platform_registry where platform_key = p_platform and automatic_method is not null;
+  if v is null then raise exception 'portfolio: % has no automatic connector to test', p_platform using errcode = '22023'; end if;
+  insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, run_by)
+  values (p_platform, v, 'PRODUCTION', left(p_run_by, 120)) returning id into tid;
+  return tid;
+end $$;
+create or replace function public.portfolio_svc_smoke_stage(p_test uuid, p_stage text, p_ok boolean, p_detail jsonb default '{}'::jsonb)
+returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare t record; idx int; prev text;
+begin
+  perform public.portfolio_svc_assert();
+  select * into t from portfolio_private.connector_smoke_tests where id = p_test for update;
+  if not found or t.status <> 'RUNNING' then raise exception 'portfolio: no running smoke test %', p_test using errcode = 'P0002'; end if;
+  idx := array_position(public.portfolio_smoke_stages(), p_stage);
+  if idx is null then raise exception 'portfolio: unknown stage %', p_stage using errcode = '22023'; end if;
+  if p_ok then
+    foreach prev in array (public.portfolio_smoke_stages())[1:idx - 1] loop
+      if not coalesce((t.stages -> prev ->> 'ok')::boolean, false) then
+        raise exception 'portfolio: % cannot pass before % has', p_stage, prev using errcode = '22023';
+      end if;
+    end loop;
+  end if;
+  update portfolio_private.connector_smoke_tests set stages = stages || jsonb_build_object(p_stage,
+      jsonb_build_object('ok', p_ok, 'at', now(), 'detail', coalesce(p_detail, '{}'::jsonb)))
+   where id = p_test;
+  return (select stages from portfolio_private.connector_smoke_tests where id = p_test);
+end $$;
 create or replace function public.portfolio_svc_smoke_finish(p_test uuid)
 returns text language plpgsql set search_path = public, portfolio_private, pg_temp as $$
 declare st text;
@@ -180,23 +215,3 @@ do $$ begin
   execute 'grant select, insert, update, delete on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events to service_role';
   execute 'grant usage on sequence portfolio_private.connector_events_id_seq to service_role';
 end $$;
-
--- Service functions: the service role only. Reader functions: signed-in readers.
-do $$
-declare f record;
-begin
-  for f in select p.oid::regprocedure as sig, p.proname from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-            where s.nspname = 'public' and (p.proname like 'portfolio\_svc\_%' or p.proname in ('portfolio_disconnect', 'portfolio_admin_connector_health', 'portfolio_admin_ttv',
-              'portfolio_is_admin', 'portfolio_registry_guard', 'portfolio_smoke_stages', 'portfolio_smoke_all_ok')) loop
-    execute format('revoke all on function %s from public', f.sig);
-    execute format('revoke all on function %s from anon', f.sig);
-    if f.proname like 'portfolio\_svc\_%' or f.proname = 'portfolio_registry_guard' then
-      execute format('revoke all on function %s from authenticated', f.sig);
-      execute format('grant execute on function %s to service_role', f.sig);
-    else
-      execute format('grant execute on function %s to authenticated, service_role', f.sig);
-    end if;
-  end loop;
-end $$;
-
-notify pgrst, 'reload schema';

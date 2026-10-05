@@ -3,6 +3,26 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+-- Service functions: the service role only. Reader functions: signed-in readers.
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure as sig, p.proname from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+            where s.nspname = 'public' and (p.proname like 'portfolio\_svc\_%' or p.proname in ('portfolio_disconnect', 'portfolio_admin_connector_health', 'portfolio_admin_ttv',
+              'portfolio_is_admin', 'portfolio_registry_guard', 'portfolio_smoke_stages', 'portfolio_smoke_all_ok')) loop
+    execute format('revoke all on function %s from public', f.sig);
+    execute format('revoke all on function %s from anon', f.sig);
+    if f.proname like 'portfolio\_svc\_%' or f.proname = 'portfolio_registry_guard' then
+      execute format('revoke all on function %s from authenticated', f.sig);
+      execute format('grant execute on function %s to service_role', f.sig);
+    else
+      execute format('grant execute on function %s to authenticated, service_role', f.sig);
+    end if;
+  end loop;
+end $$;
+
+notify pgrst, 'reload schema';
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE REPORT. Every row should read ok.
 -- ─────────────────────────────────────────────────────────────────────────────

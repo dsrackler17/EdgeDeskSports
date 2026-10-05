@@ -554,6 +554,21 @@ try {
       + (select count(*) from public.portfolio_transactions t where t.import_id is not null and not exists (select 1 from public.portfolio_imports i where i.id = t.import_id));`) === '0'
     && db.sql(`select count(*) from public.portfolio_positions where event_name = 'Will the Chiefs win?' and user_id = ${L(A)} and import_id is null;`) === '1');
 
+  /* a bet recorded by hand (with its decision) that the book's export lists
+     again, worded and timed the way the book does: held for the reader */
+  const recId = wager(A, { platform: 'hardrockbet', platform_label: 'Hard Rock Bet', event_name: 'Saints at Falcons', market_name: 'Spread', selection: 'Saints +3.5',
+    stake: '40', odds_american: '-108', placed_at: '2026-09-14T16:02:00Z', source: 'EDGEDESK', edge_source: 'EDGEDESK' });
+  const st7 = I.stage(['Date Placed,Sportsbook,Sport,Event,Market,Selection,Odds,Stake,Result,Payout,Bet ID',
+    '2026-09-14 13:00,Hard Rock,NFL,NO Saints @ ATL Falcons,Point Spread,Saints +3.5,-108,40,,,',
+    '2026-09-14 13:00,Hard Rock,NFL,NO Saints @ ATL Falcons,Point Spread,Saints +3.5,-110,40,,,'].join('\n'), { timezone: 'America/New_York' });
+  const imp7 = stageImport(A, st7);
+  c = json(db.as(A, `select public.portfolio_import_classify(${L(imp7)});`));
+  const r7 = json(db.as(A, `select json_agg(json_build_object('c', classification, 'i', issues) order by row_number) from public.portfolio_import_rows where import_id = ${L(imp7)};`));
+  chk('a bet already recorded in EdgeDesk that the book\'s export lists again (different wording, same book, selection, price and stake) waits for review, naming the recorded one',
+    r7[0].c === 'NEEDS_REVIEW' && r7[0].i.some((x) => x.code === 'MATCHES_RECORDED_POSITION' && x.position_id === recId) && r7[1].c === 'NEW', r7);
+  c = json(db.as(A, `select public.portfolio_import_commit(${L(imp7)});`));
+  chk('…and is not imported unless the reader chooses to: the recorded bet, with its decision record, stays the only copy',
+    c.imported === 1 && db.sql(`select count(*) from public.portfolio_positions where user_id = ${L(A)} and platform = 'hardrockbet' and odds_american = -108 and stake = 40;`) === '1', c);
   chk('reader B cannot classify or commit A\'s import', db.mustFail(() => db.as(B, `select public.portfolio_import_commit(${L(imp6)});`)) !== null);
   chk('reader B cannot stage rows into A\'s import', db.mustFail(() => db.as(B, `insert into public.portfolio_import_rows (import_id, row_number, raw) values (${L(imp6)}, 99, '{}');`)) !== null);
   chk('reader B sees none of A\'s imports, rows or logs', +countAs(B, 'public.portfolio_imports') === 0 && +countAs(B, 'public.portfolio_import_rows') === 0 && +countAs(B, 'public.portfolio_sync_logs') === 0);

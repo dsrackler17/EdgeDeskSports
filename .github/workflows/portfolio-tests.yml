@@ -20,6 +20,11 @@ on:
     paths:
       - 'lib/edgedesk_portfolio*.js'
       - 'lib/edgedesk_portfolio.css'
+      - 'lib/edgedesk_decision_record.js'
+      - 'lib/edgedesk_decision_ui.js'
+      - 'lib/edgedesk_decision.css'
+      - 'lib/edgedesk_workspace_ui.js'
+      - 'lib/edgedesk_personal_ui.js'
       - 'tools/portfolio/**'
       - 'tools/personal/_pg.js'
       - 'tools/games/sql/supabase_shim.sql'
@@ -27,9 +32,12 @@ on:
       - 'supabase/portfolio.sql'
       - 'supabase/portfolio_journal.sql'
       - 'supabase/portfolio_connect.sql'
+      - 'supabase/portfolio_decision.sql'
+      - 'supabase/personal_research.sql'
       - 'supabase/parts/portfolio.part*.sql'
       - 'supabase/parts/portfolio_journal.part*.sql'
       - 'supabase/parts/portfolio_connect.part*.sql'
+      - 'supabase/parts/portfolio_decision.part*.sql'
       - 'supabase/functions/portfolio_connect/**'
       - 'app.html'
       - 'package.json'
@@ -38,10 +46,12 @@ on:
     branches: [main]
     paths:
       - 'lib/edgedesk_portfolio*.js'
+      - 'lib/edgedesk_decision_record.js'
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
       - 'supabase/portfolio_journal.sql'
       - 'supabase/portfolio_connect.sql'
+      - 'supabase/portfolio_decision.sql'
       - 'supabase/functions/portfolio_connect/**'
   workflow_dispatch:
 
@@ -73,6 +83,8 @@ jobs:
         run: node tools/portfolio/journal_ui.test.js
       - name: The connector core (registry, contract, vault, Kalshi signing and netting, Polymarket, reconciliation)
         run: node tools/portfolio/connect_core.test.js
+      - name: The Decision Record in Node (the record, Card → Record Position, process memory, the baseline, Ask about this decision)
+        run: node tools/portfolio/decision_record.test.js
       - name: The app's navigation still holds (seven seats, More, deep links)
         run: node tools/app/navigation.test.js
 
@@ -105,6 +117,10 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/connect_function.test.js
+      - name: supabase/portfolio_decision.sql — immutable snapshots, the market path, lineage, experiments, export and delete, as real readers
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/decision_sql.test.js
 
   browser:
     runs-on: ubuntu-latest
@@ -118,7 +134,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: The Portfolio page in Chromium against the real migrations (portfolio.sql and portfolio_journal.sql)
+      - name: The Portfolio page in Chromium against the real migrations (portfolio, journal, connect and decision)
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/portfolio_ui.e2e.js

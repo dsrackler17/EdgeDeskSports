@@ -58,6 +58,16 @@ select cron.schedule(
   $job$
 );
 
+-- THE PRICE FEED FOR DECISION RECORDS (supabase/portfolio_decision.sql):
+-- every fifteen minutes, the reader's book's own ticks for positions whose
+-- snapshot names an exact capture key, and the last pre-start tick as an
+-- EDGEDESK_CAPTURE close. Runs inside the database (no HTTP, no key); only
+-- scheduled once portfolio_decision.sql is applied — re-run this file then.
+select cron.unschedule('portfolio_feed_path')
+  where exists (select 1 from cron.job where jobname = 'portfolio_feed_path');
+select cron.schedule('portfolio_feed_path', '*/15 * * * *', $job$ select public.portfolio_svc_attach_feed_path(500); $job$)
+  where to_regprocedure('public.portfolio_svc_attach_feed_path(integer)') is not null;
+
 -- THE REPORT. Every row should say ok. Whether ticks ARRIVE is proven ten
 -- minutes later: select * from net._http_response order by created desc limit 5;
 -- a 404 is an undeployed function, a 401 one deployed with JWT verification on.
@@ -67,5 +77,8 @@ with checks as (
   union all select 2, 'it calls portfolio_connect with no key and no database setting',
          (select count(*) from cron.job where jobname = 'portfolio_sync_sweep' and command like '%/functions/v1/portfolio_connect%'
             and command not like '%authorization%' and command not like '%current_setting%')::int, 1
+  union all select 3, 'the Decision Record price feed runs every fifteen minutes (when portfolio_decision.sql is applied)',
+         (select count(*) from cron.job where jobname = 'portfolio_feed_path' and schedule = '*/15 * * * *' and active)::int,
+         case when to_regprocedure('public.portfolio_svc_attach_feed_path(integer)') is not null then 1 else 0 end
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status from checks order by 1;

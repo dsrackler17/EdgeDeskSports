@@ -1231,6 +1231,33 @@ begin
                           order by t.dedupe_occurrence limit 1)
    where r.import_id = p_import and r.outcome is null and r.normalized->>'kind' = 'fill' and r.duplicate_of is null and r.fingerprint is not null;
 
+  /* … and a bet the reader already RECORDED in EdgeDesk by hand (or from
+     their Card), which a platform export now lists again: the same platform,
+     selection and line, the same price and stake, placed within 36 hours of
+     each other. Never merged silently and never imported by default: the row
+     waits for the reader (NEEDS_REVIEW), so importing it is a choice, and
+     skipping it keeps the recorded one with its decision record. */
+  update public.portfolio_import_rows r
+     set issues = r.issues || jsonb_build_array(jsonb_build_object('level', 'warning', 'code', 'MATCHES_RECORDED_POSITION', 'server', 'true',
+           'position_id', m.id,
+           'message', 'You already recorded this bet in EdgeDesk (' || left(m.event_name, 80) || ', placed ' || to_char(m.placed_at at time zone 'UTC', 'YYYY-MM-DD')
+             || '). Importing it would count it twice; skip it to keep the one you recorded, with its decision record.'))
+    from (select ir.id as row_id,
+                 (select p.id from public.portfolio_positions p
+                   where p.user_id = imp.user_id and p.platform = ir.normalized->>'platform' and p.platform_type = 'SPORTSBOOK'
+                     and p.external_position_id is null and p.import_id is null and p.source in ('MANUAL', 'EDGEDESK')
+                     and public.portfolio_selection_token(p.selection, p.line)
+                         = public.portfolio_selection_token(ir.normalized->>'selection', public.portfolio_try_numeric(ir.normalized->>'line'))
+                     and p.odds_decimal = coalesce(public.portfolio_american_to_decimal(public.portfolio_try_numeric(ir.normalized->>'odds_american')::int),
+                                                   public.portfolio_try_numeric(ir.normalized->>'odds_decimal'))
+                     and p.stake = public.portfolio_try_numeric(ir.normalized->>'stake')
+                     and abs(extract(epoch from (p.placed_at - public.portfolio_try_timestamptz(ir.normalized->>'placed_at')))) <= 36 * 3600
+                   order by abs(extract(epoch from (p.placed_at - public.portfolio_try_timestamptz(ir.normalized->>'placed_at')))), p.id limit 1) as pid
+            from public.portfolio_import_rows ir
+           where ir.import_id = p_import and ir.outcome is null and ir.normalized->>'kind' = 'wager' and ir.duplicate_of is null) x
+    join public.portfolio_positions m on m.id = x.pid
+   where r.id = x.row_id;
+
   /* 3. the classification, with duplicates earlier in the same file found by
      window — over the WHOLE file, rows an earlier batch already imported or
      failed included, so a row's place among its twins never changes between
