@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-05T16:08:21.686Z",
+ "as_of": "2026-10-05T17:07:58.429Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "0160d38fa17bc5f0",
+ "inputs_key": "15c5a6e26db54872",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 1235,
+   "rows": 1262,
    "mode": "LIVE",
-   "sha1": "e5bcb85ab926"
+   "sha1": "5f8ae17208b6"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "ea7ca75839a9"
+   "sha1": "9e83253d83e1"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "1235 decision snapshots issued before kickoff; 66 settled"
+   "note": "1262 decision snapshots issued before kickoff; 66 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 1235,
+  "issued_snapshots": 1262,
   "issued_by_decision": {
-   "NO_DECISION": 618,
-   "PASS": 588,
-   "WATCH": 29
+   "NO_DECISION": 633,
+   "PASS": 599,
+   "WATCH": 30
   },
   "graded_rows": 68,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -15607,7 +15607,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-05T05:54:23.554Z",
+  "generated_at": "2026-10-05T16:11:11.032Z",
   "sports": {
    "nfl": {
     "versions": [
