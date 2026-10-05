@@ -40,6 +40,14 @@ function chk(name, cond, detail) {
 function has(hay, needle, name) { chk(name, String(hay).indexOf(needle) >= 0, 'missing: ' + needle); }
 function lacks(hay, needle, name) { chk(name, String(hay).indexOf(needle) < 0, 'unexpectedly present: ' + needle); }
 function eq(name, got, want) { chk(name, got === want, 'got ' + JSON.stringify(got) + ', want ' + JSON.stringify(want)); }
+/* chk() takes a returned Promise as truthy, so an async check has to be awaited
+   before the summary or it passes without running */
+const PENDING = [];
+function chkAsync(name, fn) {
+  let p; try { p = Promise.resolve(fn()); } catch (e) { p = Promise.reject(e); }   // run now: later tests reassign the contexts
+  PENDING.push(p.then((v) => chk(name, v === true, 'got ' + JSON.stringify(v)),
+    (e) => chk(name, false, String(e && e.stack || e).slice(0, 240))));
+}
 
 const ROOT = path.join(__dirname, '..', '..');
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
@@ -294,8 +302,52 @@ has(APP, '.hpbtn #dbPill{display:none}', 'and is drawn as part of the one status
 
 /* the health load never invents a record out of a failed fetch */
 C = makeCtx({ dbClass: 'pill' });
-chk('a failed health fetch leaves no health record', () =>
-  C.sysHealthLoad(true).then(() => C.SH.health === null && !!C.SH.healthErr));
+chkAsync('a failed health fetch leaves no health record', () => {
+  const X = C;   // the callback runs after later tests have reassigned C
+  return X.sysHealthLoad(true).then(() => X.SH.health === null && !!X.SH.healthErr);
+});
+
+/* -- the database is judged by its latest answer, not its worst one ------
+   2026-10-05: one failed read held the header at "1 failing" for the rest of
+   the session while every later read succeeded, and nothing ever re-checked. */
+function withDb(o, db) { const X = makeCtx(o); X.ED_DB = db; return X; }
+const T = Date.now();
+C = withDb({ dbClass: 'pill err', health: CLEAN, faults: [] },
+  { ok: true, at: T - 5000, failAt: T - 240000, view: { where: 'the record', at: T - 240000, reason: 'a query ran past the database’s time limit (statement timeout)' } });
+eq('a view that failed while the database has answered since is attention, not failure', C.sysHealthState().state, 'warn');
+eq('counted once, as a warning', C.sysHealthState().n, 1);
+H = C.sysHealthHTML();
+has(H, 'the record could not be read', 'the panel names the view still showing the failure');
+has(H, 'statement timeout', 'with the cause it failed on');
+has(H, 'the database has answered since', 'and says the database is up now');
+lacks(H, 'read failed', 'so it is not reported as a failed read');
+
+C = withDb({ dbClass: 'pill err', health: CLEAN, faults: [] }, { ok: false, at: 0, failAt: T - 1000, view: null });
+eq('while the latest read still fails, it is a failed check', C.sysHealthState().state, 'err');
+
+C = withDb({ dbClass: 'pill', health: CLEAN, faults: [] }, { ok: true, at: T - 1000, failAt: 0, view: null });
+eq('a database that has answered is connected before the board finishes loading', C.sysHealthState().dbOk, true);
+
+/* -- the re-check: one heartbeat read, through sbFetch's error capture --- */
+chkAsync('the re-check reads the heartbeat, re-runs a board the database stopped, and is throttled', () => {
+  const X = withDb({ dbClass: 'pill err', health: CLEAN, faults: [] }, { ok: false, at: 0, failAt: T - 1000, view: null });
+  let reads = 0, boards = 0;
+  X.sbGet = () => { reads++; return Promise.resolve([{ last_seen_at: new Date(T - 600000).toISOString() }]); };
+  X.loadEdges = () => { boards++; };
+  X.__EDGES_DB_FAILED = true;
+  return X.sysHealthProbe(0).then((v) => {
+    const h = X.sysHealthHTML();
+    return X.sysHealthProbe(60000).then((v2) => v === true && v2 === null && reads === 1 && boards === 1
+      && X.SH.hb > 0 && X.__edgeLatest === undefined && /fresh/.test(h) && !/no capture heartbeat read yet/.test(h));
+  });
+});
+chkAsync('a failed re-check is reported as failed and invents no heartbeat', () => {
+  const X = withDb({ dbClass: 'pill err', health: CLEAN, faults: [] }, { ok: false, at: 0, failAt: T - 1000, view: null });
+  X.sbGet = () => Promise.reject(Object.assign(new Error('db 503'), { status: 503 }));
+  return X.sysHealthProbe(0).then((v) => v === false && X.SH.hb === 0 && /re-checked/.test(X.sysHealthHTML()));
+});
+has(SH_SRC, "if(sysHealthState().dbErr)sysHealthProbe(60000)", 'a failing database is re-checked on the slow tick');
+has(SH_SRC, "window.addEventListener('online'", 'and as soon as the device is back online');
 
 /* ======================================================================== */
 /* 6. MORE IS SECTIONS, AND LISTS ONLY WHAT EXISTS                          */
@@ -348,7 +400,9 @@ const FOOT = (APP.match(/<div class="foot" id="edFoot"[^\n]*<\/div>/) || [''])[0
   .forEach(t => has(FOOT, t, 'the disclaimer keeps "' + t + '"'));
 has(FOOT, 'href="tel:18004262537"', 'and the helpline is a tap-to-call link');
 
-console.log('');
-failures.forEach(f => console.log('  FAIL  ' + f));
-console.log('\napp navigation: ' + pass + ' passed, ' + fail + ' failed');
-process.exit(fail ? 1 : 0);
+Promise.all(PENDING).then(() => {
+  console.log('');
+  failures.forEach(f => console.log('  FAIL  ' + f));
+  console.log('\napp navigation: ' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail ? 1 : 0);
+});
