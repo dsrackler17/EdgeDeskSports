@@ -14,7 +14,8 @@
      - the private key is never echoed in a response or written to a log;
      - a reader's sync is rate-limited; disconnect deletes the credential and
        says what to revoke at the platform;
-     - a seed phrase pasted as a wallet is refused.
+     - a seed phrase pasted as a wallet is refused;
+     - every connection attempt is counted for the operator (counts only).
 
    Run: node tools/portfolio/connect_function.test.js
    =========================================================================== */
@@ -131,6 +132,10 @@ function res(status, body, headers) {
     db.service(`update portfolio_private.connector_smoke_tests set platform_key = 'polymarket', connector_version = 'polymarket_v1' where id = ${L(smoke)};`);
     r = await call({ action: 'connect', platform: 'polymarket', wallet: 'apple banana cherry delta eagle falcon garden harbor island jungle kettle lemon', smoke_test: smoke }, 'tok-admin');
     chk('a seed phrase pasted as a wallet is refused, in plain words', r.status === 400 && r.body.reason === 'SECRET_PASTED' && /Never share those/.test(r.body.message));
+    chk('every attempt is counted for the operator — connected, refused with its code, disconnected — and nothing else is kept',
+      db.sql(`select string_agg(platform_key || ':' || kind || ':' || coalesce(code, '-'), ',' order by id) from portfolio_private.connector_events;`)
+        === 'kalshi:ATTEMPT:-,kalshi:CONNECTED:-,kalshi:DISCONNECTED:-,polymarket:ATTEMPT:-,polymarket:FAILED:SECRET_PASTED'
+      && !/apple|banana|PRIVATE|a952bcbe/.test(db.sql(`select coalesce(string_agg(row_to_json(e)::text, ','), '') from portfolio_private.connector_events e;`)));
     r = await call({ action: 'sweep' });
     chk('the scheduler\'s sweep needs no identity and syncs only what is due (nothing, here)', r.status === 200 && r.body.due === 0);
     r = await call({ action: 'nope' }, 'tok-a');

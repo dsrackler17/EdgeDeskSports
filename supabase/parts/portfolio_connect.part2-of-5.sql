@@ -1,6 +1,8 @@
--- portfolio_connect -- part 2 of 4.
+-- portfolio_connect -- part 2 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
+
+create index if not exists portfolio_sync_runs_recent on public.portfolio_sync_runs (started_at desc);
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. THE SERVICE ENTRY POINTS

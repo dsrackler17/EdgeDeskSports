@@ -1,4 +1,4 @@
--- portfolio_connect -- part 1 of 4.
+-- portfolio_connect -- part 1 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -195,6 +195,20 @@ create table if not exists portfolio_private.connect_sessions (
 alter table portfolio_private.connect_sessions enable row level security;
 create index if not exists connect_sessions_user on portfolio_private.connect_sessions (user_id, created_at desc);
 
+-- Connection attempts, for the operator's health panel: counts only — no
+-- reader, no credential, no wallet. Written by the connect function.
+create table if not exists portfolio_private.connector_events (
+  id            bigserial   primary key,
+  platform_key  text        not null,
+  kind          text        not null,
+  code          text        null,
+  at            timestamptz not null default now(),
+  constraint connector_events_kind check (kind in ('ATTEMPT', 'CONNECTED', 'FAILED', 'DISCONNECTED')),
+  constraint connector_events_text check (length(platform_key) <= 48 and coalesce(length(code), 0) <= 40)
+);
+alter table portfolio_private.connector_events enable row level security;
+create index if not exists connector_events_at on portfolio_private.connector_events (at desc);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. ACCOUNTS: the scheduler's fields, and SYNC RUNS the reader can see
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -234,5 +248,5 @@ create table if not exists public.portfolio_sync_runs (
   constraint portfolio_sync_runs_issues check (jsonb_typeof(issues) = 'array' and jsonb_array_length(issues) <= 200 and pg_column_size(issues) <= 65536),
   constraint portfolio_sync_runs_text check (coalesce(length(error_code), 0) <= 40 and coalesce(length(error_message), 0) <= 500)
 );
+alter table public.portfolio_sync_runs add column if not exists positions_settled int not null default 0;
 create index if not exists portfolio_sync_runs_account on public.portfolio_sync_runs (platform_account_id, started_at desc);
-create index if not exists portfolio_sync_runs_recent on public.portfolio_sync_runs (started_at desc);
