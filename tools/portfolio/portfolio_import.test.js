@@ -154,7 +154,7 @@ const leak = C.safeLogMessage('request failed: Authorization: Bearer abc.def-ghi
 chk('a log line never carries a token, key or private key', !/abc\.def|sk_live_123|9f9f|eyJhbGci|BEGIN RSA/.test(leak) && /\[redacted\]/.test(leak), leak);
 
 /* ═══ SPORTSBOOK IMPORT: platform, bonus bets, parlay legs, estimate ═══ */
-chk('every platform profile is marked unverified, and none asserts a column layout', I.PROFILES.length === 7 && I.PROFILES.every((p) => p.verified === false && !p.columns && !p.headers));
+chk('every platform profile is marked unverified, and none asserts a column layout', I.PROFILES.length === 10 && I.PROFILES.every((p) => p.verified === false && !p.columns && !p.headers));
 chk('a bonus bet is read from its own column, or named in the status or bet type — never guessed from a small stake',
   [I.readStakeType('Yes'), I.readStakeType('Free Bet'), I.readStakeType('cash'), I.readStakeType(null, 'Won (Free Bet)'), I.readStakeType(null, 'Moneyline'), I.readStakeType('maybe')].join()
   === 'BONUS,BONUS,CASH,BONUS,,UNKNOWN');
@@ -186,6 +186,11 @@ chk('times without a zone are read in the zone chosen: 13:00 New York is 17:00 U
 const est = I.estimate(st2.rows.filter((r) => !r.issues.some((x) => x.level === 'error')));
 /* D1 +60, D2 −22, D3 0, D4 0, D5 +11.10, D6 +50 (bonus), D7 +13 ×2, P1 +26 */
 chk('the estimate before import: P&L over the settled rows, by the engine\'s own arithmetic', est.settled === 9 && est.pnl === '151.1' && est.bonus === 1, est);
+chk('the review names the file\'s date range', st2.range && st2.range.text === 'Sep 2026');
+chk('the totals check: the file\'s own payouts agree with EdgeDesk\'s calculation — said so', st2.totals && st2.totals.agrees === true && st2.fileIssues.some((x) => x.code === 'TOTALS_AGREE'), st2.totals);
+const off = I.stage(BOOK.replace('D2,2026-09-07 14:00,Jets @ Giants,Jets ML,-110,22,Lost,0,', 'D2,2026-09-07 14:00,Jets @ Giants,Jets ML,-110,22,Lost,5,'), { platform: 'draftkings' });
+chk('…and a file whose payouts disagree is flagged with both totals, never silently reconciled', off.totals && off.totals.agrees === false && off.totals.difference === '-5'
+  && off.fileIssues.some((x) => x.code === 'TOTALS_DIFFER' && /odds and stakes pay/.test(x.message)), off.totals);
 chk('the header signature is the sorted, normalized column names — and no cell of data', I.headerSignature(['Stake', 'Bet ID', 'Free Bet']) === 'betid|freebet|stake'
   && I.headerSignature(['Free Bet', 'Stake', 'Bet ID']) === I.headerSignature(['Stake', 'Bet ID', 'Free Bet']) && st2.signature.indexOf('chiefs') < 0);
 st2 = I.stage(BOOK.replace('Bet ID,', 'Book,Bet ID,').split('\n').map((l, i) => (i ? 'FanDuel,' : '') + l).join('\n').replace('Book,Bet ID', 'Book,Bet ID'), { fileName: 'draftkings.csv' });

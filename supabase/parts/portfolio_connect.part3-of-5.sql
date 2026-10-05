@@ -1,4 +1,4 @@
--- portfolio_connect -- part 3 of 4.
+-- portfolio_connect -- part 3 of 5.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
@@ -19,6 +19,7 @@ declare
   pos_ins int := 0; pos_upd int := 0; tx_ins int := 0; tx_same int := 0; v_rejected int := 0;
   v_issues jsonb := coalesce(p_payload->'issues', '[]'::jsonb);
   b numeric; s numeric; first_at timestamptz; pre text; healed int := 0;
+  pos_settled int := 0; old_res text; old_sp numeric; new_res text;
 begin
   perform public.portfolio_svc_assert();
   select id, user_id, platform, platform_label, platform_type into a from public.platform_accounts where id = p_account;
@@ -30,6 +31,11 @@ begin
       end if;
       perform set_config('portfolio.bulk_fills', 'on', true);
       select min((x->>'executed_at')::timestamptz) into first_at from jsonb_array_elements(coalesce(p->'fills', '[]'::jsonb)) x;
+      -- what the position was settled as before this payload, so a new or
+      -- changed settlement is counted (observability), never inferred
+      old_res := null; old_sp := null; new_res := nullif(p->>'resolution', '');
+      select resolution, settlement_price into old_res, old_sp from public.portfolio_positions
+       where user_id = a.user_id and platform = a.platform and external_position_id = p->>'external_position_id';
       insert into public.portfolio_positions (user_id, platform_account_id, platform, platform_label, platform_type, external_position_id, contract_key,
           position_type, sport, league, event_name, event_id, event_start_at, market_name, selection, side, current_price, current_price_at,
           resolution, settlement_price, settled_at, placed_at, source)
@@ -87,6 +93,9 @@ begin
       if s > b then raise exception using errcode = '23514', message = 'portfolio: more contracts sold than bought'; end if;
       update public.portfolio_positions set updated_at = now() where id = pid;
       if was_new then pos_ins := pos_ins + 1; else pos_upd := pos_upd + 1; end if;
+      if new_res is not null and (old_res is distinct from new_res or old_sp is distinct from (nullif(p->>'settlement_price', ''))::numeric) then
+        pos_settled := pos_settled + 1;
+      end if;
     exception when others then
       perform set_config('portfolio.bulk_fills', 'off', true);
       v_rejected := v_rejected + 1;
@@ -106,6 +115,7 @@ begin
   end loop;
   if p_run is not null then
     update public.portfolio_sync_runs set positions_inserted = positions_inserted + pos_ins, positions_updated = positions_updated + pos_upd,
+           positions_settled = positions_settled + pos_settled,
            transactions_inserted = transactions_inserted + tx_ins, transactions_unchanged = transactions_unchanged + tx_same,
            rejected = portfolio_sync_runs.rejected + v_rejected,
            fetched = fetched + coalesce((p_payload->>'fetched')::int, 0),
@@ -113,7 +123,7 @@ begin
      where id = p_run and platform_account_id = p_account;
   end if;
   return jsonb_build_object('positions_inserted', pos_ins, 'positions_updated', pos_upd, 'transactions_inserted', tx_ins,
-    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed);
+    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed, 'positions_settled', pos_settled);
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
@@ -220,20 +230,4 @@ begin
       jsonb_build_object('ok', p_ok, 'at', now(), 'detail', coalesce(p_detail, '{}'::jsonb)))
    where id = p_test;
   return (select stages from portfolio_private.connector_smoke_tests where id = p_test);
-end $$;
-create or replace function public.portfolio_svc_smoke_finish(p_test uuid)
-returns text language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare st text;
-begin
-  perform public.portfolio_svc_assert();
-  update portfolio_private.connector_smoke_tests
-     set status = case when public.portfolio_smoke_all_ok(stages) and environment = 'PRODUCTION' then 'PASSED' else 'FAILED' end, finished_at = now()
-   where id = p_test and status = 'RUNNING' returning status into st;
-  return st;
-end $$;
-create or replace function public.portfolio_svc_smoke_status(p_test uuid)
-returns jsonb language plpgsql stable set search_path = public, portfolio_private, pg_temp as $$
-begin
-  perform public.portfolio_svc_assert();
-  return (select to_jsonb(t) from portfolio_private.connector_smoke_tests t where t.id = p_test);
 end $$;

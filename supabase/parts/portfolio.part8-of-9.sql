@@ -117,7 +117,9 @@ select a.id, a.user_id, a.platform, a.platform_label, a.platform_type, a.connect
        count(p.id) filter (where p.status = 'OPEN') as open_positions,
        count(p.id) filter (where p.status <> 'OPEN') as settled_positions,
        max(p.placed_at) as last_position_at,
-       (select max(i.committed_at) from public.portfolio_imports i where i.platform_account_id = a.id) as last_import_at
+       (select max(i.committed_at) from public.portfolio_imports i where i.platform_account_id = a.id) as last_import_at,
+       -- how the data arrives, and what a reader may see about a stored key
+       a.ingestion_method, a.connection_tier, a.metadata -> 'credential' as credential
   from public.platform_accounts a
   left join public.portfolio_positions p on p.platform_account_id = a.id
  group by a.id;

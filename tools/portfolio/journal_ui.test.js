@@ -103,6 +103,10 @@ chk('every finding has a WHY and a way to list its positions', leak && h.indexOf
 const fw = strip(J.whyPanel(leak));
 chk('a finding\'s WHY names data used, sample, period, comparison, calculation, confidence, limitations',
   ['Data used', 'Sample size', 'Period', 'Comparison group', 'Calculation', 'Confidence', 'Limitations'].every((k) => fw.indexOf(k) >= 0) && /last 30 days/.test(fw), fw.slice(0, 400));
+chk('…and the group\'s own positions analyzed, P&L, ROI and CLV, from its cell — CLV only over positions with a closing price',
+  ['Positions analyzed', 'P&L', 'ROI', 'CLV'].every((k) => fw.indexOf(k) >= 0) && /positions in the group, \d+ settled/.test(fw) && /(with a closing price|No closing price is recorded)/.test(fw), fw);
+const noClv = strip(J.whyPanel(Object.assign({}, leak, { why: Object.assign({}, leak.why, { group: { positions: 12, settled: 0, pnl: '0', staked: '0', clv_n: 0, clv_mean: null } }) })));
+chk('a group with nothing settled and no closing prices says so, inventing neither', /n\/a — nothing in the group has settled/.test(noClv) && /No closing price is recorded for these positions/.test(noClv));
 h = J.insights(X.headlines(X.analyze([cell('all', 'all', population(12, { ps: 60, clv: 0, ret: 0 }))], {})));
 chk('with too little data: NO RELIABLE LEAK DETECTED, and how much more data it needs', /NO RELIABLE LEAK DETECTED/.test(strip(h)) && /more positions would let most groups qualify/.test(strip(h)));
 rendered.push(h);
@@ -221,6 +225,9 @@ chk('…the reader\'s own record in this context, with its sample and confidence
   /Your last 12 months in this sport \(NFL\): 45 settled positions, ROI −2\.7%, average CLV \+1\.00% \(n=40\), process 60\.0 \(n=40\) · confidence MEDIUM/.test(t) && !/price range/.test(t), t);
 chk('…and it is context, never a verdict: no BET, DON\'T BET, LOCK or GUARANTEED', !VERDICT.test(t) && /the decision is yours/.test(t));
 chk('with no comparable history it says so', /No history yet in a context like this one/.test(strip(J.preBetPanel({ history: [] }))));
+const exPanel = strip(J.preBetPanel({}, { exposure: { n: 2, risk: '160', platforms: ['DraftKings', 'Kalshi'], picks: ['Chiefs -2.5', 'YES'] } }));
+chk('existing exposure on the same event, across platforms, is stated as a fact — never as advice', /Already open on this event: 2 positions\s*,\s*\$160\.00\s*at risk on DraftKings, Kalshi \(Chiefs -2\.5; YES\)/.test(exPanel)
+  && !/\b(BET|DON'T BET|LOCK|GUARANTEED)\b/.test(exPanel), exPanel);
 
 /* ═══ THE FORM'S DECISION FIELDS ════════════════════════════════════════ */
 chk('decision fields → the journal: planned, thesis, a model probability strictly between 0 and 1',

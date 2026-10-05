@@ -86,6 +86,7 @@ const CSV = [
   if (db.skip) skip(db.skip);
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio.sql'));
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_journal.sql'));
+  db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_connect.sql'));
   db.sql(`insert into auth.users (id, email) values ('${A}', 'a@example.com'), ('${B}', 'b@example.com');`);
   /* reader B's book, which reader A must never see */
   db.as(B, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, odds_american, stake, status, placed_at)
@@ -100,6 +101,7 @@ const CSV = [
   }
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
+  const tracked = [], fnCalls = [];
   async function open(viewport, opts) {
     opts = opts || {};
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 700 });
@@ -113,6 +115,15 @@ const CSV = [
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       const m = /supabase\.co\/rest\/v1\/([^?]+)\??(.*)$/.exec(url);
+      if (/supabase\.co\/rest\/v1\/rpc\/ed_track/.test(url)) {
+        try { (JSON.parse(req.postData() || '{}').p_events || []).forEach((e) => tracked.push(e.event)); } catch (_) { /* ignore */ }
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, recorded: 1 }) });
+      }
+      if (/supabase\.co\/functions\/v1\/portfolio_connect/.test(url)) {
+        let body = {}; try { body = JSON.parse(req.postData() || '{}'); } catch (_) { body = {}; }
+        fnCalls.push(body);
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, account_id: 'acct-e2e', sync: { status: 'SUCCEEDED', totals: { transactions_inserted: 2 } } }) });
+      }
       if (m && opts.failRpc && opts.failRpc.test(decodeURIComponent(m[1]))) {
         return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
       }
@@ -167,6 +178,20 @@ const CSV = [
     chk('Portfolio is a primary destination', await page.evaluate(() => !!document.querySelector('.bottomnav button[data-v="portfolio"]')));
     chk('and its own seat reads active while it is open', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="portfolio"]'); return !!b && b.classList.contains('on'); }));
     await shot(page, 'desktop-empty');
+
+    /* setup: choose where you bet, add them, see the progress */
+    await tab(page, 'accounts');
+    await waitText(page, /Set up your portfolio/i);
+    chk('a new reader is offered setup: where do you bet or trade?', /Where do you bet or trade\?/.test(await text(page)));
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="draftkings"]');
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="kalshi"]');
+    await page.click('#pfoHost [data-act="setup-add"]');
+    await waitText(page, /0 of 2 platforms with history/i);
+    chk('the chosen platforms are added as accounts, each waiting for its history',
+      db.sql(`select string_agg(platform || ':' || connection_type, ',' order by platform) from public.platform_accounts where user_id = '${A}';`) === 'draftkings:CSV,kalshi:CSV'
+      && /Waiting for import/.test(await text(page)) && !/\bConnected\b/.test(await text(page)));
+    await shot(page, 'desktop-setup');
+    await tab(page, 'overview');
 
     /* a winning sportsbook bet */
     await page.click('#pfoHost [data-act="new-wager"]');
@@ -253,10 +278,12 @@ const CSV = [
     await waitText(page, /Check the columns/i);
     t = await text(page);
     chk('the importer reads the file in the browser and maps the columns', /Rows read\s*4/i.test(t.replace(/\n/g, ' ')) || /4\s*Rows read/i.test(t), t.slice(0, 500));
+    chk('…and says what it detected: platform, wagers found, date range', /Detected: BetMGM · 4 wagers found · [A-Z][a-z]{2} 2026/.test(t), t.slice(t.search(/Detected/), t.search(/Detected/) + 200));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Detected/i);
+    await waitText(page, /Before anything is stored/i);
     t = (await text(page)).replace(/\s+/g, ' ');
-    chk('the server classifies: 4 detected, 2 new, 1 duplicate, 1 invalid', /4 Detected/i.test(t) && /2 New/i.test(t) && /1 Duplicates/i.test(t) && /1 Invalid/i.test(t), t.slice(t.search(/detected/i) - 40, t.search(/detected/i) + 400));
+    chk('the server classifies: 4 found, 2 ready, 1 duplicate, 1 cannot import', /4 Found/i.test(t) && /2 Ready/i.test(t) && /1 Duplicates/i.test(t) && /1 Cannot import/i.test(t) && /Import 2/.test(t),
+      t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 400));
     chk('nothing is inserted before the reader confirms', +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}';`) === 2);
     await shot(page, 'desktop-import');
     await page.click('#pfoHost [data-act="imp-commit"]');
@@ -272,21 +299,21 @@ const CSV = [
     await page.setInputFiles('#pfoHost input[type="file"]', { name: 'betmgm-history.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV2) });
     await waitText(page, /from the file's name/);
     t = await text(page);
-    chk('a file with no platform column: the platform comes from its name, and the unchecked format is flagged', /Platform: BetMGM/.test(t) && /not yet checked this format against a real BetMGM export/.test(t), t.slice(t.search(/Review/i), t.search(/Review/i) + 400));
+    chk('a file with no platform column: the platform comes from its name, and the unchecked format is flagged', /Detected: BetMGM/.test(t) && /not yet checked this format against a real BetMGM export/.test(t), t.slice(t.search(/Review/i), t.search(/Review/i) + 400));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Detected/i);
+    await waitText(page, /Before anything is stored/i);
     await page.click('#pfoHost [data-act="imp-commit"]');
     await waitText(page, /Imported 1/);
     const CSV3 = CSV2.replace('Open,', 'Won,41');
     await page.click('#pfoHost [data-act="imp-reset"]');
     await page.setInputFiles('#pfoHost input[type="file"]', { name: 'export.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV3) });
     await waitText(page, /a layout you imported before/);
-    chk('the same columns again: read the way they were imported before, platform included', /Platform: BetMGM/.test(await text(page)));
+    chk('the same columns again: read the way they were imported before, platform included', /Detected: BetMGM/.test(await text(page)));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Updates/i);
+    await waitText(page, /Updated since/i);
     t = (await text(page)).replace(/\s+/g, ' ');
-    chk('the bet that settled since is an UPDATE, with the estimate shown before anything is stored', /1 Updates/i.test(t) && /If you import these: 1 settled, P&L \+\$20\.00/.test(t)
-      && /update 1/.test(t), t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 500));
+    chk('the bet that settled since is an UPDATE, with the estimate shown before anything is stored', /1 Updated since/i.test(t) && /If you import these: 1 settled, P&L \+\$20\.00/.test(t)
+      && /0 new positions · 1 updated/.test(t) && /Update portfolio · 0 new, 1 updated/.test(t), t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 500));
     await page.click('#pfoHost [data-act="imp-commit"]');
     await waitText(page, /updated 1/);
     chk('…and committing updates the stored bet in place: WON, +$20.00, still one bet',
@@ -446,6 +473,48 @@ const CSV = [
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
+
+    /* "Add account" opens the grouped list; the ready card carries the server's all-time totals */
+    await tab(page, 'accounts');
+    await page.click('#pfoHost [data-act="setup-open"]');
+    await waitText(page, /Tracked positions\s*\d+[\s\S]*Total P&L\s*[+\u2212-]?\$[\d,.]+/i);
+    t = await text(page);
+    chk('Add account lists platforms by how they come in, and the ready card shows the server\'s totals', /Sportsbooks · import/i.test(t) && /Prediction markets ·/i.test(t)
+      && /Your portfolio is ready/i.test(t) && /Process profile\s*(Building|Ready) ·/i.test(t) && /Total\s*\d+ positions?/i.test(t), t.slice(0, 1600));
+    await shot(page, 'desktop-ready');
+
+    /* the time-to-value evidence the page sent */
+    await page.evaluate(() => window.EDTrack && window.EDTrack.flush && window.EDTrack.flush());
+    await page.waitForTimeout(300);
+    const want = ['portfolio_onboarding_started', 'platform_selected', 'first_position_created', 'import_started', 'import_detected', 'import_reviewed', 'import_completed', 'portfolio_ready'];
+    chk('time to value: setup, platforms chosen, the first position, every import step and "ready" were recorded', want.every((w) => tracked.indexOf(w) >= 0), { missing: want.filter((w) => tracked.indexOf(w) < 0), tracked });
+
+    /* once the database switches automatic connection on, Accounts offers it — read-only, in a sheet */
+    const smokeIds = ['kalshi', 'polymarket'].map((pk) => db.sql(`insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, stages, status, finished_at)
+      values ('${pk}', '${pk}_v1', 'PRODUCTION', '${JSON.stringify(Object.fromEntries(['CONNECT', 'IMPORT', 'VERIFY', 'INCREMENTAL', 'NEW_ACTIVITY', 'SETTLEMENT', 'RECONCILE', 'DISCONNECT', 'RECONNECT', 'NO_DUPLICATES'].map((x) => [x, { ok: true }])))}'::jsonb, 'PASSED', now()) returning id;`).split('\n')[0]);
+    db.sql(`update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_at = now(), enabled_by_smoke_test = case platform_key when 'kalshi' then '${smokeIds[0]}'::uuid else '${smokeIds[1]}'::uuid end where platform_key in ('kalshi', 'polymarket');`);
+    await tab(page, 'overview'); await tab(page, 'accounts');
+    await page.waitForSelector('#pfoHost [data-act="acct-connect"][data-platform="polymarket"]');
+    await page.click('#pfoHost .pfo-rows [data-act="acct-connect"][data-platform="polymarket"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="connect"] [name="wallet"]');
+    await page.fill('.pfo-sheet [name="wallet"]', 'apple banana cherry delta eagle falcon garden harbor island jungle kettle lemon');
+    await page.click('.pfo-sheet [data-act="connect-submit"]');
+    await page.waitForSelector('.pfo-sheet .pfo-err');
+    chk('a seed phrase typed as a wallet is refused in the browser — it is never sent anywhere', /Never share those/.test(await page.$eval('.pfo-sheet .pfo-err', (e) => e.innerText)) && fnCalls.length === 0
+      && await page.$eval('.pfo-sheet [name="wallet"]', (e) => e.value === ''));
+    await page.click('.pfo-sheet [data-act="close"]');
+    await page.click('#pfoHost .pfo-rows [data-act="acct-connect"][data-platform="kalshi"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="connect"] [name="private_key"]');
+    chk('the Kalshi sheet asks for a READ-ONLY key and says what happens to it', /read access only/.test(await page.$eval('.pfo-sheet', (e) => e.innerText)) && /Read-only/.test(await page.$eval('.pfo-sheet', (e) => e.innerText)));
+    const FAKE_KEY = 'e2e-private-key-material-' + 'z'.repeat(40);
+    await page.fill('.pfo-sheet [name="key_id"]', 'a952bcbe-ec3b-4b5b-b8f9-11dae589608c');
+    await page.fill('.pfo-sheet [name="private_key"]', FAKE_KEY);
+    await page.click('.pfo-sheet [data-act="connect-submit"]');
+    await waitText(page, /First sync: 2 trades/);
+    chk('connect sends the key to EdgeDesk\'s server function once, under the reader\'s token', fnCalls.length === 1 && fnCalls[0].action === 'connect' && fnCalls[0].platform === 'kalshi' && fnCalls[0].private_key === FAKE_KEY);
+    chk('…and the key is kept nowhere in the page or the browser afterwards', await page.evaluate((k) => !document.documentElement.innerHTML.includes(k)
+      && !JSON.stringify(Object.keys(localStorage).map((x) => localStorage.getItem(x))).includes(k) && !JSON.stringify(window.EDPortfolioUI ? (document.getElementById('pfoHost').__pfo || {}).state || {} : {}).includes(k), FAKE_KEY));
+    db.sql(`update public.portfolio_platform_registry set automatic_enabled = false where platform_key in ('kalshi', 'polymarket');`);
     const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions/.test(ls));
     chk('no page errors on desktop', errors.length === 0, errors);

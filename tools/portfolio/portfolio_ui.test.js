@@ -103,10 +103,101 @@ const accts = [
 t = strip(U.render.accounts(Object.assign({}, S, { accounts: accts })));
 chk('accounts say how each platform is tracked', /DraftKings/.test(t) && /Manual tracking/.test(t) && /Kalshi/.test(t) && /CSV import/.test(t));
 chk('and never say "Connected" for a manual or CSV account', !/\bConnected\b/.test(t));
-chk('automatic sync is described as unavailable, with no password ask', /Automatic sync is not available for DraftKings yet/.test(t) && /never by asking for a sportsbook password/.test(t));
+chk('how each platform comes in: a sportsbook by file (no sportsbook API), never a password', /DraftKings\s*Import a file — no sportsbook offers customers an API/.test(t) && /never asks for a sportsbook password/.test(t), t);
+chk('Kalshi reads as being tested, not as connectable, until the database switches it on', /Kalshi\s*Import a file \(automatic connection is built and being tested/.test(t) && !/data-act="acct-connect"/.test(U.render.accounts(Object.assign({}, S, { accounts: accts }))));
 chk('remove is offered only for an account with no positions', (U.render.accounts(Object.assign({}, S, { accounts: accts })).match(/remove-account/g) || []).length === 1);
 const live = strip(U.render.accounts(Object.assign({}, S, { accounts: [{ id: 'x', platform: 'kalshi', platform_label: 'Kalshi', platform_type: 'PREDICTION_MARKET', connection_type: 'API', status: 'CONNECTED', positions: 4, open_positions: 0, last_sync_at: '2026-10-04T11:57:00Z', last_success_at: '2026-10-04T11:57:00Z' }] })));
-chk('a real API account (Phase B) shows Connected with its sync times', /Connected/.test(live) && /Last successful sync/.test(live));
+chk('a real API account shows Connected with when it last synced', /Connected/.test(live) && /Last synced/.test(live));
+/* the honest statuses of an automatic account */
+const autoAcct = (o) => Object.assign({ id: 'y', platform: 'kalshi', platform_label: 'Kalshi', platform_type: 'PREDICTION_MARKET', connection_type: 'API', ingestion_method: 'API_KEY',
+  positions: 0, open_positions: 0, credential: { hint: '…608c', scopes: ['read'] } }, o);
+const st1 = (o, extra) => strip(U.render.accounts(Object.assign({}, S, { positions: [{}], accounts: [autoAcct(o)] }, extra || {})));
+chk('a first sync that has not finished reads Syncing, never Connected', /Syncing/.test(st1({ status: 'SYNCING' })) && !/\bConnected\b/.test(st1({ status: 'SYNCING' })) && /nothing has synced yet/.test(st1({ status: 'SYNCING' })));
+chk('a refused key reads Action required, with the reason and no retry', /Action required/.test(st1({ status: 'ACTION_REQUIRED', last_error: 'The platform rejected the key.' })) && /rejected the key/.test(st1({ status: 'ACTION_REQUIRED', last_error: 'The platform rejected the key.' })));
+chk('repeated failures read Sync failing, with the next retry', /Sync failing/.test(st1({ status: 'ERROR', last_error: 'down' }, { connections: { y: { consecutive_failures: 5, next_sync_at: '2026-10-04T13:00:00Z' } } })));
+chk('a disconnected account keeps its history and says so', /Disconnected/.test(st1({ status: 'DISCONNECTED' })) && /history is kept/.test(st1({ status: 'DISCONNECTED' })));
+chk('the key is shown by its hint only, with how it connects', /Read-only API key …608c/.test(st1({ status: 'CONNECTED', last_success_at: '2026-10-04T11:57:00Z' })));
+const runs = [{ platform_account_id: 'y', started_at: '2026-10-04T11:57:00Z', status: 'PARTIAL', transactions_inserted: 3, rejected: 1, issues: [{ code: 'REJECTED', message: 'more contracts sold than bought' }], reconcile: { ok: false } }];
+chk('the sync log shows what each run did, what it rejected and why, and a repair', (() => { const x = st1({ status: 'CONNECTED', last_success_at: '2026-10-04T11:57:00Z' }, { runs }); return /\+3 trades/.test(x) && /1 rejected/.test(x) && /more contracts sold than bought/.test(x) && /rebuilding on the next sync/.test(x); })());
+const onH = U.render.accounts(Object.assign({}, S, { positions: [{}], accounts: [autoAcct({ status: 'DISCONNECTED' }), Object.assign({}, accts[1], { platform: 'polymarket' })], registry: { kalshi: { automatic_enabled: true, automatic_method: 'API_KEY' }, polymarket: { automatic_enabled: true, automatic_method: 'PUBLIC_WALLET' } } }));
+chk('once switched on: Reconnect for a disconnected account, Connect automatically to upgrade a quick-import one in place', /data-act="acct-connect" data-platform="kalshi">Reconnect/.test(onH) && /data-act="acct-connect" data-platform="polymarket">Connect automatically/.test(onH));
+/* setup: choose, bring in, ready — progress from the reader's own data */
+const fresh = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC' });
+let su = strip(U.render.accounts(fresh));
+chk('a new reader sees setup: where do you bet or trade, every platform to choose', U.setupVisible(fresh) && /Set up your portfolio/.test(su) && /Where do you bet or trade\?/.test(su) && /DraftKings/.test(su) && /Polymarket/.test(su) && !/Portfolio ready/.test(su));
+const picked = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC' }); picked.setup.selected = { draftkings: true, kalshi: true };
+chk('choosing platforms offers to add them, all at once', /data-act="setup-add">Add 2 platforms/.test(U.render.accounts(picked)));
+const half = Object.assign(U.defaults(), { tz: 'UTC', positions: [pos({})], accounts: [Object.assign({}, accts[0], { positions: 1 }), Object.assign({}, accts[1], { positions: 0 })] });
+su = strip(U.render.accounts(half));
+chk('progress: each platform says where its history stands, with a total; the rest wait for a file', /1 of 2 platforms with history/.test(su) && /DraftKings\s*Recorded ✓ · 1 position/.test(su)
+  && /Kalshi\s*Waiting for import/.test(su) && /Total\s*1 position\b/.test(su), su);
+chk('ready: tracked and open positions from the server\'s counts; totals wait for the server, never computed from capped rows', /Your portfolio is ready/.test(su) && /Tracked positions\s*1\b/.test(su)
+  && /Open positions\s*1\b/.test(su) && /Total P&L\s*…/.test(su) && /View my portfolio/.test(su), su);
+const halfLife = strip(U.render.accounts(Object.assign({}, half, { lifetime: { settled: { n: 1, pnl: '90.91', roi: 0.9091 }, process: { graded: 0 } } })));
+const readyText = halfLife.slice(halfLife.indexOf('Your portfolio is ready'), halfLife.indexOf('Your portfolio is ready') + 600);
+chk('ready shows only real numbers — no insight is invented before there is a price to judge', /Total P&L\s*\+\$90\.91 1 settled/.test(halfLife) && /ROI\s*\+?90\.9/.test(halfLife)
+  && /Process profile\s*Building · 0 of 10 graded/.test(halfLife) && /EdgeDesk shows none until then/.test(halfLife) && !/working|leak|strength/i.test(readyText), readyText);
+chk('the process profile is ready only once enough positions are graded', /Process profile\s*Ready · 24 graded/.test(strip(U.render.accounts(Object.assign({}, half, { lifetime: { settled: { n: 30, pnl: '12', roi: 0.01 }, process: { graded: 24 } } })))));
+chk('when the totals cannot load, the card says so instead of guessing', /could not be loaded here/.test(strip(U.render.accounts(Object.assign({}, half, { lifetimeError: true })))));
+/* step 1 is grouped by how a platform's history can arrive */
+const g0 = strip(U.render.accounts(fresh));
+chk('setup groups: prediction markets (import now, automatic once switched on), sportsbooks by import, and other', /Prediction markets · import now, automatic once switched on/.test(g0)
+  && /Sportsbooks · import/.test(g0) && /Other/.test(g0) && /Import another platform/.test(g0) && /Add manually/.test(g0) && /never asks for a sportsbook password/.test(g0), g0);
+chk('the five major sportsbooks, then BetRivers, Fanatics and theScore Bet (ESPN BET) are offered', ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'bet365', 'BetRivers', 'Fanatics', 'theScore Bet']
+  .every((x) => g0.indexOf(x) >= 0) && /data-v="espnbet"/.test(U.render.accounts(fresh)));
+chk('setup offers no Connect while automatic connection is off', !/data-act="acct-connect"/.test(U.render.accounts(fresh)));
+const g1 = U.render.accounts(Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC', registry: { kalshi: { automatic_enabled: true, automatic_method: 'API_KEY' } } }));
+chk('once one is switched on, setup offers Connect for it alone, and says the other is imported for now', /data-act="acct-connect" data-platform="kalshi">Connect Kalshi/.test(g1) && !/data-platform="polymarket">Connect/.test(g1)
+  && /Kalshi connects automatically and read-only; the other is imported from a file for now/.test(strip(g1)));
+const live2 = (o) => strip(U.render.accounts(Object.assign(U.defaults(), { tz: 'UTC', now: Date.parse('2026-10-04T12:00:00Z'), positions: [pos({})],
+  accounts: [autoAcct(Object.assign({ positions: 143 }, o)), Object.assign({}, accts[1], { positions: 0 })] })));
+chk('a synced account reads "Connected ✓ · 143 positions"; a first sync still running never reads Connected', /Kalshi\s*Connected ✓ · 143 positions/.test(live2({ status: 'CONNECTED', last_success_at: '2026-10-04T11:58:00Z' }))
+  && /Kalshi\s*Syncing · 143 positions/.test(live2({ status: 'SYNCING' })) && !/\bConnected\b/.test(live2({ status: 'SYNCING' })));
+chk('when it last synced reads in minutes', /Last synced 2 min ago/.test(live2({ status: 'CONNECTED', last_success_at: '2026-10-04T11:58:00Z' })));
+const imported = strip(U.render.accounts(Object.assign({}, S, { accounts: [Object.assign({}, accts[1], { positions: 421, last_import_at: '2026-10-03T17:00:00Z' })] })));
+chk('a quick-import account with history reads "Quick import", when it was last imported, and offers an import update', /Quick import/.test(imported) && /Last imported/.test(imported) && /Import update/.test(imported) && !/\bConnected\b/.test(imported), imported);
+chk('"Add account" opens the grouped platform list', /data-act="setup-open">Add account/.test(U.render.accounts(Object.assign({}, S, { accounts: accts }))));
+chk('a reader whose every platform has history sees no setup, only "Add platforms"', !U.setupVisible(Object.assign(U.defaults(), { positions: [pos({})], accounts: [Object.assign({}, accts[0], { positions: 1 })] })));
+/* the operator's panel: only for an operator, counts only */
+const adm = strip(U.render.accounts(Object.assign({}, half, { isAdmin: true, admin: { health: { platforms: [{ platform: 'kalshi', runs: 9, succeeded: 7, partial: 1, failed: 1, p95_ms: 1800, errors: { RATE_LIMITED: 1 } }], registry: [{ platform: 'kalshi', automatic_enabled: false }] },
+  ttv: { onboarding_started: 12, time_to_first_position_minutes_median: 6.5, time_to_portfolio_ready_minutes_median: 11, onboarding_abandonment: 0.25, import_failure_rate: 0.1, connection_failure_rate: null } } })));
+chk('operators see connector health and time to value; readers never do', /Operator · connectors/.test(adm) && /RATE_LIMITED 1/.test(adm) && /Median time to first position\s*6\.5 min/.test(adm) && /Setup abandonment \(7\+ days\)\s*25\.0%/.test(adm)
+  && !/Operator/.test(strip(U.render.accounts(half))));
+
+/* ═══ IMPORT REVIEW: what was found, what is ready, what needs a look ═══ */
+const IMP = require(path.join(ROOT, 'lib', 'edgedesk_portfolio_import.js'));
+const dkCsv = ['Bet ID,Placed,Event,Selection,Odds,Stake,Status,Payout', 'DK-1,2024-08-10 13:00,A @ B,A -3,-110,110,Won,210', 'DK-2,2026-10-01 13:00,C @ D,D +3,-110,55,Lost,0'].join('\n');
+const staged = IMP.stage(dkCsv, { fileName: 'draftkings_history.csv', timezone: 'UTC' });
+const imp0 = (o, extra) => strip(U.render.import(Object.assign(U.defaults(), { tz: 'UTC', accounts: [], imp: Object.assign({ staged, fileName: 'draftkings_history.csv' }, o) }, extra || {})));
+let iv = imp0({});
+chk('a dropped file says what it detected: platform, wagers found, date range — and how it knew', /Detected: DraftKings · 2 wagers found · Aug 2024 – Oct 2026/.test(iv) && /Platform from the file's name/.test(iv), iv.slice(iv.indexOf('Detected'), iv.indexOf('Detected') + 200));
+const unknownIv = strip(U.render.import(Object.assign(U.defaults(), { tz: 'UTC', imp: { staged: IMP.stage(dkCsv, { fileName: 'export.csv', timezone: 'UTC' }), fileName: 'export.csv' } })));
+chk('a file it cannot place is not guessed: the reader is asked to choose', /could not tell which platform/.test(unknownIv) && !/Detected:/.test(unknownIv));
+const rowsOf = (cls) => cls.map((k, i) => ({ id: 'r' + i, row_number: i + 2, classification: k, normalized: { kind: 'wager', platform_label: 'DraftKings', event_name: 'A @ B', selection: 'A', stake: '10', odds_american: -110, status: 'WON', placed_at: '2026-09-01T13:00:00Z' }, issues: [] }));
+iv = imp0({ counts: { total: 5, new: 2, update: 0, duplicate: 1, review: 1, invalid: 1 }, serverRows: rowsOf(['NEW', 'NEW', 'DUPLICATE', 'NEEDS_REVIEW', 'INVALID']) });
+chk('review: found / ready / duplicates / need review / cannot import, then [Import n] and [Review n]', /5 Found/.test(iv) && /2 Ready/.test(iv) && /1 Duplicates/.test(iv) && /1 Need review/.test(iv) && /1 Cannot import/.test(iv)
+  && /Import 2/.test(iv) && /Review 1/.test(iv) && !/Update portfolio/.test(iv), iv.slice(iv.indexOf('Before anything'), iv.indexOf('Before anything') + 400));
+const ivReview = imp0({ reviewOnly: true, counts: { total: 5, new: 2, update: 0, duplicate: 1, review: 1, invalid: 1 }, serverRows: rowsOf(['NEW', 'NEW', 'DUPLICATE', 'NEEDS_REVIEW', 'INVALID']) });
+chk('[Review n] narrows the table to the rows that need a look', (ivReview.match(/NEEDS REVIEW/g) || []).length === 1 && !/\bDUPLICATE\b/.test(ivReview) && /Show all rows/.test(ivReview));
+iv = imp0({ counts: { total: 26, new: 18, update: 7, duplicate: 1, review: 0, invalid: 0 }, serverRows: rowsOf(['NEW', 'UPDATE', 'DUPLICATE']) },
+  { accounts: [{ id: 'a', platform: 'draftkings', platform_label: 'DraftKings', connection_type: 'CSV', positions: 241, last_import_at: '2026-10-03T12:00:00Z' }] });
+chk('a newer file from a platform imported before: new, updated, already known — and [Update portfolio]', /18 new positions · 7 updated/.test(iv) && /nothing is counted twice/.test(iv) && /Update portfolio · 1 new, 1 updated/.test(iv), iv.slice(iv.indexOf('Before anything'), iv.indexOf('Before anything') + 500));
+
+/* ═══ BEFORE YOU ENTER: what is already open on the same event ═══ */
+const openDK = Object.assign(pos({ status: 'OPEN', settled_at: null, event_name: 'Chiefs at Bills', selection: 'Chiefs -2.5' }), { platform_label: 'DraftKings' });
+const openK = Object.assign(pos({ platform: 'kalshi', platform_type: 'PREDICTION_MARKET', status: 'OPEN', settled_at: null, event_name: 'Chiefs @ Bills', selection: 'YES' }), { platform_label: 'Kalshi', open_cost_basis: '40' });
+const settledSame = pos({ event_name: 'Chiefs @ Bills' });
+const ex = U.exposureOn('chiefs vs bills', [openDK, openK, settledSame, pos({ status: 'OPEN', settled_at: null, event_name: 'Jets @ Dolphins' })]);
+chk('exposure on the same event: open positions only, any platform, the event written differently', ex.n === 2 && ex.risk === E.dec.add(openDK.open_cost_basis, '40') && ex.platforms.join() === 'DraftKings,Kalshi', ex);
+chk('…and none for an empty event name', U.exposureOn('', [openDK]) === null);
+
+const adm2 = strip(U.render.accounts(Object.assign({}, half, { isAdmin: true, admin: { health: { window_hours: 24,
+  platforms: [{ platform: 'kalshi', runs: 4, succeeded: 3, partial: 1, failed: 0, discovered: 812, positions_inserted: 5, transactions_inserted: 40, positions_updated: 9, duplicates_rejected: 760, settlements: 3, rejected: 1, reconciled: 3, reconcile_mismatches: 1, p95_ms: 900, errors: {} }],
+  connections: [{ platform: 'kalshi', attempts: 6, connected: 4, failed: 2, disconnected: 1, failures: { WRITE_SCOPE: 1, BAD_CREDENTIAL: 1 } }],
+  imports: [{ platform: 'draftkings', files: 7, committed: 5, failed: 1, not_finished: 1, parser_failures: 12, files_with_parser_failures: 2, new_layouts: 1 }] }, ttv: {} } })));
+chk('operator diagnostics: discovered, inserted, updated, duplicates rejected, settlements, reconciled; connection attempts and failure codes; parser failures and format changes',
+  /kalshi\s*4\s*3\s*1\s*0\s*812\s*45\s*9\s*760\s*3\s*1\s*3 \/ 1 off/.test(adm2) && /Attempts[\s\S]*kalshi\s*6\s*4\s*2\s*1\s*WRITE_SCOPE 1, BAD_CREDENTIAL 1/.test(adm2)
+  && /draftkings\s*7\s*5\s*1\s*1\s*12 in 2\s*1 new layout — check the export format/.test(adm2) && /Counts only/.test(adm2), adm2.slice(adm2.indexOf('Operator'), adm2.indexOf('Operator') + 900));
 
 /* ═══ FORMS ═════════════════════════════════════════════════════════════ */
 const wf = strip(U.render.wagerForm({ status: 'WON', position_type: 'PARLAY' }, {}));
@@ -162,7 +253,7 @@ chk('no password or credential field exists in the page', !/type="password"|name
 
 /* ═══ APP WIRING ════════════════════════════════════════════════════════ */
 const APP = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
-const order = ['edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_process.js', 'edgedesk_portfolio_journal_ui.js', 'edgedesk_portfolio_ui.js']
+const order = ['edgedesk_portfolio.js', 'edgedesk_portfolio_import.js', 'edgedesk_portfolio_connectors.js', 'edgedesk_portfolio_connect_core.js', 'edgedesk_portfolio_process.js', 'edgedesk_portfolio_journal_ui.js', 'edgedesk_portfolio_ui.js']
   .map((f) => APP.indexOf('<script src="/lib/' + f + '?v='));
 chk('app.html loads the engine, importer, contract, process engine, journal views and page, in that order', order.every((i) => i > 0) && order.every((i, k) => k === 0 || i > order[k - 1]), order);
 chk('and the stylesheet', /<link rel="stylesheet" href="\/lib\/edgedesk_portfolio\.css\?v=/.test(APP));
