@@ -746,6 +746,11 @@ declare
   v public.newsletter_subscribers;
   v_manage text;
 begin
+  -- every token this schema issues is 32 random bytes in hex; anything else
+  -- cannot be one, and is refused before it is looked up
+  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_token');
+  end if;
   select * into v from public.newsletter_subscribers
    where confirm_token_hash = public.newsletter_token_hash(p_token);
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
@@ -786,6 +791,9 @@ set search_path = public, pg_temp
 as $$
 declare v public.newsletter_subscribers;
 begin
+  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_token');
+  end if;
   select * into v from public.newsletter_subscribers
    where manage_token = p_token;
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
@@ -805,6 +813,9 @@ set search_path = public, pg_temp
 as $$
 declare v public.newsletter_subscribers;
 begin
+  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_token');
+  end if;
   select * into v from public.newsletter_subscribers
    where manage_token = p_token;
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
@@ -837,7 +848,16 @@ as $$
 declare
   v public.newsletter_subscribers;
   v_scope text := upper(coalesce(p_scope, 'all'));
+  -- the source is a label the caller supplies; only a short lowercase word is
+  -- kept, so nothing a link carries is written verbatim into the ledger
+  v_source text := case when coalesce(p_source, '') ~ '^[a-z_]{1,40}$' then p_source else 'link' end;
 begin
+  -- THE TOKEN IS THE AUTHORIZATION: it is the subscriber's own secret from
+  -- their email, it names exactly one row, and only that row's address is
+  -- ever suppressed here. No token, no change.
+  if p_token is null or p_token !~ '^[0-9a-f]{64}$' then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_token');
+  end if;
   select * into v from public.newsletter_subscribers
    where manage_token = p_token;
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
@@ -858,16 +878,29 @@ begin
   end if;
 
   update public.newsletter_subscribers
-     set status = 'unsubscribed', unsubscribed_at = now(), unsubscribe_source = p_source
+     set status = 'unsubscribed', unsubscribed_at = now(), unsubscribe_source = v_source
    where id = v.id;
   insert into public.newsletter_suppressions (email, reason, detail)
-  values (v.email, 'unsubscribe', p_source)
+  values (v.email, 'unsubscribe', v_source)
   on conflict (email) do update set reason = 'unsubscribe', detail = excluded.detail, updated_at = now()
     where public.newsletter_suppressions.reason not in ('bounce', 'complaint');
   return jsonb_build_object('ok', true, 'scope', 'ALL', 'state', 'unsubscribed',
     'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
+
+-- THE TOKEN DOORS, stated rather than inherited from PUBLIC. The newsletter
+-- Edge Function calls them with the service role; they stay callable by the
+-- client roles too because the secret manage/confirm token — not the caller's
+-- role — is what authorizes them, and each changes only the row it names.
+revoke all on function public.newsletter_confirm(text) from public;
+revoke all on function public.newsletter_preferences_get(text) from public;
+revoke all on function public.newsletter_preferences_set(text, boolean, boolean) from public;
+revoke all on function public.newsletter_unsubscribe(text, text, text) from public;
+grant execute on function public.newsletter_confirm(text) to anon, authenticated, service_role;
+grant execute on function public.newsletter_preferences_get(text) to anon, authenticated, service_role;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to anon, authenticated, service_role;
+grant execute on function public.newsletter_unsubscribe(text, text, text) to anon, authenticated, service_role;
 
 -- ------------------------------------------------------ the signed-in door --
 -- An account holder managing their own preference, without ever exposing the
@@ -912,7 +945,11 @@ declare
   v_email text;
   v_confirmed timestamptz;
   v_manage text;
+  -- a label, not free text: it lands in the suppression ledger
+  v_source text := case when coalesce(p_source, '') ~ '^[a-z_]{1,40}$' then p_source else 'account_settings' end;
 begin
+  -- ONLY EVER THE CALLER'S OWN ADDRESS: the email is read from auth.users for
+  -- auth.uid(), never taken from the request.
   if auth.uid() is null then return jsonb_build_object('ok', false, 'reason', 'not_signed_in'); end if;
   select lower(btrim(email)), email_confirmed_at into v_email, v_confirmed
     from auth.users where id = auth.uid();
@@ -937,7 +974,7 @@ begin
     insert into public.newsletter_subscribers
       (email, user_id, status, wants_cfb, wants_nfl, consent_source, consent_at, manage_token)
     values (v_email, auth.uid(), 'confirmed', coalesce(p_wants_cfb, false), coalesce(p_wants_nfl, false),
-            p_source, now(), v_manage);
+            v_source, now(), v_manage);
     return jsonb_build_object('ok', true, 'subscribed', true,
       'wants_cfb', coalesce(p_wants_cfb, false), 'wants_nfl', coalesce(p_wants_nfl, false));
   end if;
@@ -945,10 +982,10 @@ begin
   if not (coalesce(p_wants_cfb, false) or coalesce(p_wants_nfl, false)) then
     update public.newsletter_subscribers
        set status = 'unsubscribed', user_id = coalesce(user_id, auth.uid()),
-           unsubscribed_at = now(), unsubscribe_source = p_source
+           unsubscribed_at = now(), unsubscribe_source = v_source
      where id = v.id;
     insert into public.newsletter_suppressions (email, reason, detail)
-    values (v_email, 'unsubscribe', p_source)
+    values (v_email, 'unsubscribe', v_source)
     on conflict (email) do update set reason = 'unsubscribe', detail = excluded.detail, updated_at = now()
       where public.newsletter_suppressions.reason not in ('bounce', 'complaint');
     return jsonb_build_object('ok', true, 'subscribed', false, 'wants_cfb', false, 'wants_nfl', false);
@@ -957,7 +994,7 @@ begin
   update public.newsletter_subscribers
      set status = 'confirmed', user_id = coalesce(user_id, auth.uid()),
          wants_cfb = coalesce(p_wants_cfb, false), wants_nfl = coalesce(p_wants_nfl, false),
-         consent_source = coalesce(v.consent_source, p_source),
+         consent_source = coalesce(v.consent_source, v_source),
          consent_at = coalesce(v.consent_at, now()),
          unsubscribed_at = null, unsubscribe_source = null
    where id = v.id;
@@ -970,16 +1007,48 @@ revoke all on function public.newsletter_set_my_preferences(boolean, boolean, te
 grant execute on function public.newsletter_set_my_preferences(boolean, boolean, text) to authenticated;
 
 -- ------------------------------------------------------------ suppression --
+-- SUPPRESS AN ARBITRARY ADDRESS: A SERVER-SIDE OPERATION, AND NOTHING ELSE.
+-- It takes any email and blocks it for good (a complaint is never downgraded),
+-- so it must never be reachable with the public anon key. It used to be a
+-- SECURITY DEFINER function with no revoke, which left it executable by
+-- PUBLIC — and so by anyone holding the anon key embedded in every page.
+--
+-- Three locks now, each enough on its own:
+--   1  EXECUTE is revoked from public, anon and authenticated and granted to
+--      service_role (the webhook in functions/newsletter and the pipeline in
+--      tools/newsletter/runtime.js — both already call it with that key).
+--   2  It runs with the CALLER'S rights (security invoker), so it can only
+--      write what the caller could write directly — and anon and
+--      authenticated hold no privilege on the suppression or subscriber
+--      tables (revoked below). An accidental re-grant of EXECUTE still fails.
+--   3  It refuses, by name, any caller that is not the service role, the
+--      tables' owner or a superuser — failing closed with 42501 rather than
+--      quietly doing nothing.
+-- A reader's own opt-out never comes through here: it is newsletter_unsubscribe
+-- (below), which changes only the row its secret manage token names.
 create or replace function public.newsletter_suppress(
   p_email text, p_reason text, p_detail text default null, p_event_id text default null
 ) returns jsonb
 language plpgsql
-security definer
+security invoker
 set search_path = public, pg_temp
 as $$
 declare v_email text := lower(btrim(coalesce(p_email, '')));
 begin
+  if not (current_user = 'service_role'
+          or exists (select 1 from pg_roles r where r.rolname = current_user and r.rolsuper)
+          or pg_has_role(current_user, (select c.relowner from pg_class c
+                                         where c.oid = 'public.newsletter_suppressions'::regclass), 'MEMBER')) then
+    raise exception 'newsletter_suppress is a server-side operation: only the service role may suppress an address'
+      using errcode = 'insufficient_privilege';
+  end if;
   if v_email = '' then return jsonb_build_object('ok', false, 'reason', 'no_email'); end if;
+  if length(v_email) > 254 or v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then
+    return jsonb_build_object('ok', false, 'reason', 'not_an_email');
+  end if;
+  if p_reason is null or p_reason not in ('unsubscribe', 'bounce', 'complaint', 'manual', 'invalid') then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_reason');
+  end if;
   insert into public.newsletter_suppressions (email, reason, detail, provider_event_id)
   values (v_email, p_reason, p_detail, p_event_id)
   on conflict (email) do update
@@ -1000,6 +1069,12 @@ begin
   return jsonb_build_object('ok', true, 'email_masked', public.newsletter_mask_email(v_email), 'reason', p_reason);
 end;
 $$;
+revoke all on function public.newsletter_suppress(text, text, text, text) from public, anon, authenticated;
+grant execute on function public.newsletter_suppress(text, text, text, text) to service_role;
+-- what the service role writes through it, stated rather than assumed from
+-- the platform's default privileges (the client roles are revoked below)
+grant select, insert, update on public.newsletter_suppressions to service_role;
+grant select, update on public.newsletter_subscribers to service_role;
 
 -- ------------------------------------------------------------ eligibility --
 -- THE ONLY PLACE AN ADDRESS LEAVES THE DATABASE, and it is service-role only.
@@ -1478,6 +1553,16 @@ union all select 16, 'the membership test degrades to free on a bare project',
        then 'ok' else 'CHECK THIS' end
 union all select 17, 'the operator allowlist is the article system''s',
   case when to_regprocedure('public.newsletter_is_admin()') is not null then 'ok' else 'CHECK THIS' end
+union all select 17.5, 'suppressing an arbitrary address is server-side only (not anon, not a signed-in reader)',
+  case when not has_function_privilege('anon', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+        and not has_function_privilege('authenticated', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+        and has_function_privilege('service_role', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+        and not (select prosecdef from pg_proc where oid = 'public.newsletter_suppress(text,text,text,text)'::regprocedure)
+       then 'ok' else 'CHECK THIS — the anon key could suppress any address' end
+union all select 17.6, 'every manage token has the shape the unsubscribe door accepts ('
+  || (select count(*) from public.newsletter_subscribers where manage_token !~ '^[0-9a-f]{64}$')::text || ' do not)',
+  case when not exists (select 1 from public.newsletter_subscribers where manage_token !~ '^[0-9a-f]{64}$')
+       then 'ok' else 'CHECK THIS — those subscribers'' unsubscribe links would be refused' end
 union all select 18, 'the install report is callable by the service role only',
   case when to_regprocedure('public.newsletter_install_status()') is not null
     and not exists (select 1 from information_schema.role_routine_grants

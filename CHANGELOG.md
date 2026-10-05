@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-05 — Newsletter: the anon key can no longer suppress an arbitrary address
+
+**Security fix.** `newsletter_suppress(email, reason)` was a `SECURITY DEFINER` function with no `revoke`, so PUBLIC could execute it. That meant anyone holding the anon key embedded in every page could mark any address a `complaint`. A complaint is never downgraded, so the address would never receive the newsletter again, and `lifecycle_due()` would stop its trial emails too. This was verified on a throwaway cluster before the fix.
+
+- **Three locks, each enough alone** (`supabase/newsletter.sql`):
+  - `EXECUTE` is revoked from public, anon and authenticated and granted to `service_role`, which is what the webhook and the pipeline already use;
+  - the function runs with the **caller's** rights, and the client roles hold no privilege on the suppression or subscriber tables;
+  - it refuses any caller other than the service role, the table owner or a superuser with `42501`.
+
+  It also validates the address and the reason.
+- **The token doors are stated, not inherited.** `newsletter_confirm`, `newsletter_preferences_get/set` and `newsletter_unsubscribe` get explicit grants, and the token is the authorization:
+  - each refuses anything that is not a 64-hex token before looking it up;
+  - each changes only the row its token names;
+  - a caller-supplied source label is kept only if it is a plain word.
+- **Report rows:**
+  - 17.5: the anon key cannot suppress;
+  - 17.6: every stored manage token has the shape the doors accept, so no existing unsubscribe link is refused.
+- **`tools/newsletter/newsletter_suppress_sql.test.js`** (52 checks, real PostgreSQL with Supabase's default grants) covers:
+  - anon, signed-in and PUBLIC refused;
+  - each lock removed in turn and the call still refused;
+  - forged and guessed tokens refused;
+  - the webhook's ranking and validation, one-click / single-sport / preferences-page unsubscribe (as anon and as the Edge Function's service role), confirmation, re-subscribe (never clearing a bounce or complaint), and the signed-in self-service door, which suppresses only the caller's own confirmed address;
+  - a catalogue check that fails on any new anon-reachable writer.
+
+  Against the old file the anon attack succeeds and the suite fails. CI runs it in `games-sql.yml`.
+- **Deploy:** re-run `supabase/newsletter.sql` in the SQL editor; every report row should say `ok`. No Edge Function change.
+
 ## 2026-10-05 — System health stops latching on one failed read
 
 The header said **System · 1 failing** with "the database could not be reached at all — network, DNS, or a paused project · the record". Capture was writing to that same database every few minutes the whole time.
