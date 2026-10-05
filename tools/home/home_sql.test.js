@@ -156,8 +156,12 @@ try {
 
   /* 2 · a subset */
   const txt = JSON.stringify(r);
+  /* the private research-state FIELDS must not leave the database. Match them
+     as JSON keys: a public sentence may say "open-to-close movement" (the
+     pricing explanation does), and that is not the movement blob */
+  const leaked = ['movement', 'drivers', 'state_hash', 'priority_why'].filter((k) => txt.indexOf('"' + k + '":') >= 0);
   chk('no priority reasoning, driver, movement or research-state blob leaves the database',
-    txt.indexOf('PRIVATE') < 0 && txt.indexOf('movement') < 0 && txt.indexOf('drivers') < 0 && txt.indexOf('state_hash') < 0 && txt.indexOf('priority_why') < 0);
+    txt.indexOf('PRIVATE') < 0 && leaked.length === 0, leaked);
   chk('at most 8 games', r.games.length > 0 && r.games.length <= 8, r.games.length);
   chk('at most 3 props a game', r.games.every((g) => !g.props || !g.props.top || g.props.top.length <= 3));
   const withProps = r.games.filter((g) => g.props && g.props.top && g.props.top.length);
