@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-05 — The Process Coach is the Process seat
+
+#504 built the Process Coach as a tab inside Portfolio, while the bottom nav's **Process** seat still showed the earlier tracked-price page. The five-destination navigation (`docs/ia/NAVIGATION_AUDIT.md`) gives each question its own seat. Portfolio answers "what do I hold and how did it go"; Process answers "how do I decide". The Coach now lives in Process.
+
+- **Process opens on the Coach.** It is the same controller (`lib/edgedesk_portfolio_ui.js`), mounted coach-only in the Process view. It shows:
+  - the Decision Grade and process against outcome;
+  - leaks and strengths (pre-specified comparisons, corrected for multiple comparisons);
+  - timing and edge capture;
+  - rules, experiments and the weekly Film Room.
+
+  It has the same platform and period filters, and the same journal and "WHY?" sheets.
+- **What EdgeDesk tracked folds under it.** Prices tracked from an edge and Card bets graded against the close (`lib/edgedesk_process.js`) sit in a "Tracked from EdgeDesk" section, as Portfolio folds them under the book.
+- **Portfolio loses its Coach tab:** Overview · Calendar · Journal · Open · History · Analytics · Accounts · Import. The Overview's Decision Grade gains "How you decide: open Process ›".
+- **Links still work.**
+  - `#portfolio/coach` and `pfSetTab('coach')` land on Process.
+  - Each page of the Coach has its own link, `#process/<page>` (report, leaks, strengths, timing, edge, rules, experiments, film), and Process reopens on the page last read.
+  - Links from one page to the other (Process's "Connect accounts" / "Import a CSV" → Portfolio) are routed by the app through a `pfo-route` event.
+- **An empty book.** It says "Nothing to grade yet", with Connect accounts and Import a CSV, and no longer asks the server for a summary of nothing.
+- **Tests.**
+  - `tools/portfolio/portfolio_ui.e2e.js`: 84 checks. The Coach is exercised in the Process seat: report, leaks with `#process/leaks`, rules, experiments and the Film Room. It also checks the Overview's link, the old `#portfolio/coach` link and reader isolation in Process.
+  - `tools/app/navigation.e2e.js`: 172 checks. Covers the empty Process at 390 and 1440 px, its Connect accounts → Portfolio › Accounts, and the tracked section under the Coach.
+  - `tools/app/navigation.test.js`: 234 checks.
+
 ## 2026-10-04 — Portfolio Calendar: month arrows no longer blank it; whole amounts on a phone; the month's settled line
 
 Three fixes to the Calendar that #504 added.

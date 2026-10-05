@@ -145,9 +145,9 @@ const CSV = [
     await page.waitForFunction(() => !!(window.EDPortfolioUI && document.querySelector('#pfoHost.pfo-root')), null, { timeout: 40000 });
     return { ctx, page, errors };
   }
-  const text = (page) => page.evaluate(() => document.getElementById('pfoHost').innerText);
+  const text = (page, host) => page.evaluate((h) => document.getElementById(h).innerText, host || 'pfoHost');
   /* innerText is the RENDERED text: CSS-uppercased headings read uppercased, so keep the regex's own flags */
-  const waitText = (page, re, ms) => page.waitForFunction((a) => new RegExp(a[0], a[1]).test(document.getElementById('pfoHost').innerText), [re.source, re.flags], { timeout: ms || 15000 });
+  const waitText = (page, re, ms, host) => page.waitForFunction((a) => new RegExp(a[0], a[1]).test(document.getElementById(a[2]).innerText), [re.source, re.flags, host || 'pfoHost'], { timeout: ms || 15000 });
   const tab = async (page, v) => { await page.click(`#pfoHost .pfo-tab[data-v="${v}"]`); await page.waitForTimeout(150); };
   async function noSideways(page, label) {
     const w = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
@@ -405,39 +405,55 @@ const CSV = [
       await page.$eval('#pfoHost details[data-r="fold"][data-v="m:2026-9"]', (e) => e.open) && /(Entered|Settled) this day/i.test(await text(page)));
     await shot(page, 'desktop-journal');
 
-    /* the Process Coach */
-    await tab(page, 'coach');
-    await waitText(page, /Process vs outcome/i);
-    t = await text(page);
+    /* the Process Coach: the Process seat (docs/ia/NAVIGATION_AUDIT.md), not a Portfolio tab */
+    chk('Portfolio has no Coach tab', !(await page.$('#pfoHost .pfo-tab[data-v="coach"]')));
+    await tab(page, 'overview');
+    await waitText(page, /How you decide: open Process/);
+    await page.click('#pfoHost [data-act="tab"][data-v="coach"]');   /* the overview's "How you decide: open Process" */
+    await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide'));
+    chk('the overview\'s "open Process" lands on the Process seat', await page.evaluate(() => location.hash === '#process'
+      && document.querySelector('.bottomnav button[data-v="process"]').classList.contains('on')));
+    await waitText(page, /Process vs outcome/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
     chk('the Process Report: the grade, process against outcome — the lost Chiefs bet is a good loss', /Process vs outcome/i.test(t) && /1\s*good loss/.test(t), t.slice(0, 600));
-    await page.click('#pfoHost [data-act="coach"][data-v="leaks"]');
-    await waitText(page, /NO RELIABLE LEAK DETECTED/);
+    await page.click('#pcoHost [data-act="coach"][data-v="leaks"]');
+    await waitText(page, /NO RELIABLE LEAK DETECTED/, 15000, 'pcoHost');
+    chk('a page of the coach is linkable: #process/leaks', await page.evaluate(() => location.hash) === '#process/leaks');
     chk('Leaks: with this little data, no leak is claimed', true);
     for (const sub of ['strengths', 'timing', 'edge']) {
-      await page.click(`#pfoHost [data-act="coach"][data-v="${sub}"]`);
+      await page.click(`#pcoHost [data-act="coach"][data-v="${sub}"]`);
       await page.waitForTimeout(250);
     }
-    chk('Strengths, Timing and Edge Capture render', !/Loading your process/.test(await text(page)) && /Edge capture/i.test(await text(page)));
-    await page.click('#pfoHost [data-act="coach"][data-v="rules"]');
-    await page.waitForSelector('#pfoHost form[data-form="rule"]');
-    await page.selectOption('#pfoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
-    await page.fill('#pfoHost form[data-form="rule"] [name="a"]', '2');
-    await page.click('#pfoHost [data-act="rule-add"]');
-    await waitText(page, /No position larger than 2 units/);
+    chk('Strengths, Timing and Edge Capture render', !/Loading your process/.test(await text(page, 'pcoHost')) && /Edge capture/i.test(await text(page, 'pcoHost')));
+    await page.click('#pcoHost [data-act="coach"][data-v="rules"]');
+    await page.waitForSelector('#pcoHost form[data-form="rule"]');
+    await page.selectOption('#pcoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
+    await page.fill('#pcoHost form[data-form="rule"] [name="a"]', '2');
+    await page.click('#pcoHost [data-act="rule-add"]');
+    await waitText(page, /No position larger than 2 units/, 15000, 'pcoHost');
     chk('a rule is adopted from now on', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and kind = 'MAX_STAKE_UNITS' and active_until is null and active_from > now() - interval '5 minutes';`) === '1');
-    await page.click('#pfoHost [data-act="rule-retire"]');
-    await waitText(page, /retired \d{4}-/);
+    await page.click('#pcoHost [data-act="rule-retire"]');
+    await waitText(page, /retired \d{4}-/, 15000, 'pcoHost');
     chk('and retired, keeping its history', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and active_until is not null;`) === '1');
-    await page.click('#pfoHost [data-act="coach"][data-v="experiments"]');
-    await page.waitForSelector('#pfoHost form[data-form="experiment"]');
-    await page.fill('#pfoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
-    await page.click('#pfoHost [data-act="exp-add"]');
-    await waitText(page, /Not enough positions yet/);
+    await page.click('#pcoHost [data-act="coach"][data-v="experiments"]');
+    await page.waitForSelector('#pcoHost form[data-form="experiment"]');
+    await page.fill('#pcoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
+    await page.click('#pcoHost [data-act="exp-add"]');
+    await waitText(page, /Not enough positions yet/, 15000, 'pcoHost');
     chk('an experiment starts, and says it needs data rather than guessing', db.sql(`select count(*) from public.portfolio_experiments where user_id = '${A}' and status = 'ACTIVE';`) === '1');
-    await page.click('#pfoHost [data-act="coach"][data-v="film"]');
-    await waitText(page, /Weekly Film Room/i);
-    chk('the Film Room opens on a week, best and weakest decisions apart from results', /Best decisions/i.test(await text(page)) && /Won on a poor decision/i.test(await text(page)));
+    await page.click('#pcoHost [data-act="coach"][data-v="film"]');
+    await waitText(page, /Weekly Film Room/i, 15000, 'pcoHost');
+    chk('the Film Room opens on a week, best and weakest decisions apart from results', /Best decisions/i.test(await text(page, 'pcoHost')) && /Won on a poor decision/i.test(await text(page, 'pcoHost')));
     await shot(page, 'desktop-coach');
+    chk('what EdgeDesk tracked is folded under the coach', await page.evaluate(() => { const d = document.getElementById('pcTracked'); return !!d && !d.open && !!d.querySelector('#processHost'); }));
+    /* an old #portfolio/coach link lands on the Process seat */
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
+    await page.evaluate(() => { location.hash = '#portfolio/coach'; });
+    await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide') && /^#process(\/[a-z]+)?$/.test(location.hash), null, { timeout: 10000 });
+    chk('an old #portfolio/coach link opens Process, and the link names the page shown', await page.evaluate(() => location.hash) === '#process/film' && /Weekly Film Room/i.test(await text(page, 'pcoHost')));
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
 
     /* one combined book, filtered on request */
     await tab(page, 'overview');
@@ -464,12 +480,18 @@ const CSV = [
     await page.click('#pfoHost [data-act="period"][data-v="7D"]');
     chk('and filters by period', await page.$eval('#pfoHost [data-act="period"][data-v="7D"]', (e) => e.getAttribute('aria-pressed') === 'true'));
     await shot(page, 'desktop-analytics');
-    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       await page.waitForTimeout(300);
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
+    await page.click('.bottomnav button[data-v="process"]');
+    /* Process reopens on the coach page last read: the Film Room */
+    await waitText(page, /Weekly Film Room/i, 15000, 'pcoHost');
+    chk('Process reopens on the coach page last read, and its link says so', await page.evaluate(() => location.hash) === '#process/film');
+    chk('nor in Process', !/SECRET-B/.test(await text(page, 'pcoHost')));
+    await page.click('.bottomnav button[data-v="portfolio"]');
     const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions/.test(ls));
     chk('no page errors on desktop', errors.length === 0, errors);
@@ -478,7 +500,7 @@ const CSV = [
     /* ═══ PHONE: 390 px ════════════════════════════════════════════════ */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
     await waitText(page, /Total P&L/i);
-    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       await page.waitForTimeout(400);
       await noSideways(page, '390px ' + v);
