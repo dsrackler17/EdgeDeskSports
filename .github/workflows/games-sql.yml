@@ -58,6 +58,7 @@ on:
       - 'supabase/newsletter.sql'
       - 'tools/newsletter/sql/**'
       - 'tools/newsletter/newsletter_sql.test.js'
+      - 'tools/newsletter/newsletter_suppress_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -152,6 +153,7 @@ on:
       - 'supabase/newsletter.sql'
       - 'tools/newsletter/sql/**'
       - 'tools/newsletter/newsletter_sql.test.js'
+      - 'tools/newsletter/newsletter_suppress_sql.test.js'
       - 'supabase/ufc_live_center.sql'
       - 'tools/ufc/sql/**'
       - 'tools/ufc/ufc_sql.test.js'
@@ -321,6 +323,14 @@ jobs:
           PGPASSWORD: postgres
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/newsletter/newsletter_sql.test.js | tee newsletter.log
+
+      # The anon key can never suppress an arbitrary address: newsletter_suppress
+      # is the service role's alone, runs with the caller's rights and refuses
+      # any other caller by name, each lock holding on its own; the reader's own
+      # token-gated unsubscribe, the webhook and confirmation still work. Starts
+      # its own throwaway cluster (tools/personal/_pg.js).
+      - name: Run the newsletter suppression-authorization suite
+        run: node tools/newsletter/newsletter_suppress_sql.test.js | tee newsletter_suppress.log
 
       # Problem reports: the one table `anon` may write to. That concession is
       # only safe if an anonymous reporter cannot read anything back, nobody can
@@ -654,7 +664,7 @@ jobs:
           # be read off the run at all. Now it names the file and shows the tail
           # that failed to satisfy it.
           bad=0
-          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+          for f in sql.log franchise.log issues.log billing.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log newsletter_suppress.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if [ ! -f "$f" ]; then
               echo "::error::REFUSING: $f was never written — the step that produces it did not run"
               bad=1

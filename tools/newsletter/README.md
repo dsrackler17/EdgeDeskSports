@@ -347,6 +347,23 @@ ends in a report whose every row should say `ok`.
 | 4 | **`supabase/newsletter.sql`** | the newsletter schema |
 | 5 | **`supabase/newsletter_cron.sql`** | the primary scheduler. Needs `pg_cron` and `pg_net` enabled and the two `edgedesk.*` database settings |
 
+### Who may suppress an address
+
+`newsletter_suppress(email, reason)` blocks any address it is given, and a complaint is never downgraded. So it is **server-side only**:
+
+- `EXECUTE` is granted to `service_role` alone. The webhook in `functions/newsletter` and `tools/newsletter/runtime.js` both call it with that key.
+- It runs with the caller's own rights, and `anon`/`authenticated` hold no privilege on the suppression or subscriber tables.
+- It refuses, with `42501`, any caller that is not the service role, the table owner or a superuser.
+
+Each of these locks holds on its own.
+
+A reader's own opt-out never comes through it. It goes through one of two doors:
+
+- `newsletter_unsubscribe` / `newsletter_preferences_set`, authorized by the reader's secret 64-hex manage token. Each changes only the row that token names.
+- `newsletter_set_my_preferences`, for a signed-in account. It reads the caller's own confirmed email from `auth.users`.
+
+`tools/newsletter/newsletter_suppress_sql.test.js` attacks all of this as `anon`, as a signed-in reader and with each lock removed in turn.
+
 Then deploy the two functions:
 
 ```bash
