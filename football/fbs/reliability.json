@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-04T22:50:56.447Z",
+ "generated_at": "2026-10-05T03:46:42.801Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -77,12 +77,12 @@
   }
  ],
  "summary": {
-  "games": 60,
+  "games": 62,
   "mean": 86.2,
   "median": 88,
   "percentiles": {
    "p10": 79,
-   "p25": 85.8,
+   "p25": 85.3,
    "p50": 88,
    "p75": 89,
    "p90": 89
@@ -98,7 +98,7 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 51
+    "n": 53
    },
    {
     "grade": "ADEQUATE",
@@ -147,8 +147,8 @@
     "conference": "Big Ten"
    },
    {
-    "n": 6,
-    "mean": 83.7,
+    "n": 8,
+    "mean": 83.9,
     "median": 84.5,
     "conference": "Conference USA"
    },
@@ -191,7 +191,7 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 60,
+    "n": 62,
     "mean": 86.2,
     "median": 88
    },
@@ -208,7 +208,7 @@
    "missing_venue_coordinates": 0,
    "roster_conflicts": 1,
    "unstable_projections": 1,
-   "source_disagreement": 17,
+   "source_disagreement": 18,
    "thin_data": 0,
    "data_fault": 0
   },
@@ -222,7 +222,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.9,
+    "mean": 10.8,
     "max": 20
    },
    {
@@ -251,7 +251,7 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 60,
+   "n": 62,
    "mean": 76.1,
    "median": 77,
    "p10": 73,
@@ -259,45 +259,45 @@
    "min": 72,
    "max": 77,
    "mode": 77,
-   "mode_n": 46,
+   "mode_n": 48,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
     "key": "availability",
     "label": "Injury/availability information incomplete",
-    "games": 60,
-    "points": 295.2
+    "games": 62,
+    "points": 307.2
    },
    {
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
-    "games": 60,
-    "points": 148.5
+    "games": 62,
+    "points": 156.5
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 60,
-    "points": 88.9
+    "games": 62,
+    "points": 92.2
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 60,
-    "points": 47.6
+    "games": 62,
+    "points": 50
    },
    {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 56,
-    "points": 78.6
+    "games": 58,
+    "points": 81.4
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 51,
-    "points": 22.2
+    "games": 53,
+    "points": 23.4
    },
    {
     "key": "qb_conflict",
@@ -318,6 +318,12 @@
     "points": 5.6
    },
    {
+    "key": "venue",
+    "label": "Venue/coordinates unresolved",
+    "games": 2,
+    "points": 2.8
+   },
+   {
     "key": "prior_missing",
     "label": "No prior-season rating",
     "games": 2,
@@ -334,17 +340,11 @@
     "label": "Forecast unavailable",
     "games": 1,
     "points": 1.8
-   },
-   {
-    "key": "venue",
-    "label": "Venue/coordinates unresolved",
-    "games": 1,
-    "points": 1.4
    }
   ]
  },
  "summary_without_evidence": {
-  "games": 60,
+  "games": 62,
   "mean": 85.5,
   "median": 88,
   "percentiles": {
@@ -365,7 +365,7 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 52
+    "n": 54
    },
    {
     "grade": "ADEQUATE",
@@ -414,8 +414,8 @@
     "conference": "Big Ten"
    },
    {
-    "n": 6,
-    "mean": 83.8,
+    "n": 8,
+    "mean": 84,
     "median": 84.5,
     "conference": "Conference USA"
    },
@@ -458,7 +458,7 @@
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
-    "n": 60,
+    "n": 62,
     "mean": 85.5,
     "median": 88
    },
@@ -475,7 +475,7 @@
    "missing_venue_coordinates": 0,
    "roster_conflicts": 3,
    "unstable_projections": 1,
-   "source_disagreement": 17,
+   "source_disagreement": 18,
    "thin_data": 0,
    "data_fault": 0
   },
@@ -489,7 +489,7 @@
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.9,
+    "mean": 10.8,
     "max": 20
    },
    {
@@ -518,7 +518,7 @@
    }
   ],
   "legacy_input_coverage": {
-   "n": 60,
+   "n": 62,
    "mean": 76.1,
    "median": 77,
    "p10": 73,
@@ -526,45 +526,45 @@
    "min": 72,
    "max": 77,
    "mode": 77,
-   "mode_n": 46,
+   "mode_n": 48,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
    {
     "key": "availability",
     "label": "Injury/availability information incomplete",
-    "games": 60,
-    "points": 295.2
+    "games": 62,
+    "points": 307.2
    },
    {
     "key": "qb_status",
     "label": "QB status unconfirmed (can he play)",
-    "games": 60,
-    "points": 148.5
+    "games": 62,
+    "points": 156.5
    },
    {
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
-    "games": 60,
-    "points": 91.4
+    "games": 62,
+    "points": 94.7
    },
    {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 60,
-    "points": 47.6
+    "games": 62,
+    "points": 50
    },
    {
     "key": "stability",
     "label": "Projection dispersion under perturbation",
-    "games": 56,
-    "points": 78.6
+    "games": 58,
+    "points": 81.4
    },
    {
     "key": "transfer_turnover",
     "label": "Extreme transfer turnover",
-    "games": 51,
-    "points": 22.2
+    "games": 53,
+    "points": 23.4
    },
    {
     "key": "qb_conflict",
@@ -585,6 +585,12 @@
     "points": 7
    },
    {
+    "key": "venue",
+    "label": "Venue/coordinates unresolved",
+    "games": 2,
+    "points": 2.8
+   },
+   {
     "key": "prior_missing",
     "label": "No prior-season rating",
     "games": 2,
@@ -601,24 +607,18 @@
     "label": "Forecast unavailable",
     "games": 1,
     "points": 1.8
-   },
-   {
-    "key": "venue",
-    "label": "Venue/coordinates unresolved",
-    "games": 1,
-    "points": 1.4
    }
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-04T22:50:50.472Z",
-  "games_with_evidence": 60,
+  "artifact_generated_at": "2026-10-05T03:46:36.024Z",
+  "games_with_evidence": 62,
   "summary": {
-   "games": 60,
+   "games": 62,
    "frozen_games": 59,
    "qb": {
     "by_confirmation": {
-     "EXPECTED": 115,
+     "EXPECTED": 119,
      "CONFLICTED": 4,
      "UNCERTAIN": 1
     },
@@ -626,13 +626,13 @@
     "conflicts_resolved": 9,
     "conflicts_open": 4,
     "status_known": 0,
-    "sides": 120
+    "sides": 124
    },
    "availability": {
     "by_class": {
      "NOT_DUE_YET": 89,
      "NOT_REQUIRED": 5,
-     "PROVIDER_FAILED": 26
+     "PROVIDER_FAILED": 30
     },
     "fbs_teams_on_slate": 118,
     "teams_covered": 0,
@@ -641,13 +641,13 @@
     "unavailable": 24,
     "starters_known_pct": 0,
     "starters_known": 0,
-    "starters_total": 2878,
+    "starters_total": 2974,
     "historical_rows_refused": 4
    },
    "player_quality": {
-    "projected_starters_rated_pct": 39.7,
-    "starters_rated": 1142,
-    "starters_total": 2880,
+    "projected_starters_rated_pct": 39.5,
+    "starters_rated": 1175,
+    "starters_total": 2976,
     "key_contributors_rated_pct": 35.6,
     "unrated_meaningful_absences": 0,
     "unrated_critical_or_major_absences": 0
@@ -692,9 +692,9 @@
     "average_books_per_game": null,
     "one_book_games": 0,
     "three_plus_book_games": 0,
-    "under_two_sources": 60,
+    "under_two_sources": 62,
     "stale_markets": 0,
-    "no_market": 60
+    "no_market": 62
    },
    "providers": [
     {
@@ -726,7 +726,7 @@
      "label": "CFBD lines via Supabase cfb.lines (every provider)",
      "kind": "market",
      "state": "HEALTHY",
-     "reason": "1 of 1 calls answered",
+     "reason": "2 of 2 calls answered",
      "attributable_to": "provider"
     },
     {
@@ -859,7 +859,7 @@
     }
    ],
    "provider_failures": 4,
-   "stale_evidence_records": 83,
+   "stale_evidence_records": 82,
    "conflicts": 13
   }
  },
@@ -869,31 +869,31 @@
    {
     "key": "availability",
     "label": "Availability feed",
-    "games_affected": 60,
-    "current_points_lost": 443.7,
-    "maximum_recoverable_points": 411,
-    "games_recoverable": 53,
+    "games_affected": 62,
+    "current_points_lost": 463.7,
+    "maximum_recoverable_points": 431,
+    "games_recoverable": 55,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 246.6,
-    "enrichment_roi": 82.2,
+    "estimated_recoverable_points": 258.6,
+    "enrichment_roi": 86.2,
     "engineering_priority": 1
    },
    {
     "key": "qb_identity",
     "label": "QB confirmation",
-    "games_affected": 60,
-    "current_points_lost": 88.9,
-    "maximum_recoverable_points": 70,
-    "games_recoverable": 27,
+    "games_affected": 62,
+    "current_points_lost": 92.2,
+    "maximum_recoverable_points": 73,
+    "games_recoverable": 29,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 35,
-    "enrichment_roi": 11.67,
+    "estimated_recoverable_points": 36.5,
+    "enrichment_roi": 12.17,
     "engineering_priority": 2
    },
    {
@@ -929,8 +929,8 @@
    {
     "key": "stability",
     "label": "Projection stability",
-    "games_affected": 56,
-    "current_points_lost": 115.9,
+    "games_affected": 58,
+    "current_points_lost": 118.7,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -944,8 +944,8 @@
    {
     "key": "rating_sample",
     "label": "In-season rating sample",
-    "games_affected": 60,
-    "current_points_lost": 47.6,
+    "games_affected": 62,
+    "current_points_lost": 50,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -959,7 +959,7 @@
    {
     "key": "market_sources",
     "label": "Market-source depth",
-    "games_affected": 60,
+    "games_affected": 62,
     "current_points_lost": null,
     "maximum_recoverable_points": null,
     "estimated_recoverable_points": null,
@@ -974,7 +974,7 @@
    }
   ],
   "potential": {
-   "games": 60,
+   "games": 62,
    "mean_score": 86.2,
    "mean_potential": 96.8,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
@@ -11267,6 +11267,193 @@
     "grade": "STRONG"
    }
   },
+  "401871054": {
+   "game_id": "401871054",
+   "home": "Missouri State",
+   "away": "Kennesaw State",
+   "kickoff": "2026-10-14T23:30:00.000Z",
+   "home_conference": "Conference USA",
+   "away_conference": "Conference USA",
+   "matchup_type": "conference",
+   "legacy_input_coverage": 0.769,
+   "reliability": {
+    "contract": "cfb_reliability/2",
+    "score": 83,
+    "grade": "STRONG",
+    "grade_label": "STRONG",
+    "tier": "STRONG",
+    "raw": 83,
+    "capped_by": [],
+    "gate_label": null,
+    "components": {
+     "team_data": {
+      "score": 18.7,
+      "max": 20
+     },
+     "roster_availability": {
+      "score": 7.2,
+      "max": 20
+     },
+     "projection_stability": {
+      "score": 18.5,
+      "max": 20
+     },
+     "freshness": {
+      "score": 15,
+      "max": 15
+     },
+     "source_integrity": {
+      "score": 13.6,
+      "max": 15
+     },
+     "environment": {
+      "score": 10,
+      "max": 10
+     }
+    },
+    "main_deduction": "every source that covers Kennesaw State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Kennesaw State’s absences cannot be assessed: no current availability read for this game",
+    "potential": 97,
+    "evidence_used": true,
+    "stability": {
+     "sd": 1.93,
+     "p10": 1.22,
+     "p50": 4.12,
+     "p90": 7.01,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
+    },
+    "penalties": [
+     {
+      "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers Kennesaw State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Kennesaw State’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers Missouri State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Missouri State’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2,
+      "reason": "Skyler Locklear — expected; measured: a last-game opener in the split cell opened the next game 50.9% of the time (743 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2,
+      "reason": "no source states whether Rickie Collins can play — silence is not health",
+      "family": "qb_status",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2,
+      "reason": "no source states whether Skyler Locklear can play — silence is not health",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 1.5,
+      "reason": "the projected spread moves ±1.93 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "source_integrity",
+      "points": 1.4,
+      "reason": "the schedule lists Plaster Sports Complex but Missouri State’s venue table says Robert W. Plaster Stadium (an unflagged neutral site?)",
+      "family": "venue",
+      "action_key": "venue"
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Kennesaw State: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Missouri State: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Rickie Collins — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     }
+    ],
+    "gates": [
+     {
+      "id": "QB_STATUS_UNCONFIRMED",
+      "cap": 89,
+      "binding": false
+     }
+    ],
+    "missing": [
+     "qb_availability:home",
+     "availability:home",
+     "qb_availability:away",
+     "availability:away"
+    ],
+    "next_actions": [
+     {
+      "action": "Restore an injury/availability source for Kennesaw State",
+      "key": "availability:away",
+      "potential_gain": 5
+     },
+     {
+      "action": "Restore an injury/availability source for Missouri State",
+      "key": "availability:home",
+      "potential_gain": 5
+     },
+     {
+      "action": "Confirm Missouri State’s starting QB (Skyler Locklear)",
+      "key": "qb_identity:home",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm the site of this game",
+      "key": "venue",
+      "potential_gain": 1
+     }
+    ],
+    "recoverable_by_family": {
+     "availability": 10,
+     "qb_identity": 2,
+     "venue": 1
+    }
+   },
+   "reliability_without_evidence": {
+    "score": 83,
+    "grade": "STRONG"
+   }
+  },
   "401871066": {
    "game_id": "401871066",
    "home": "Florida International",
@@ -11661,6 +11848,185 @@
    },
    "reliability_without_evidence": {
     "score": 80,
+    "grade": "STRONG"
+   }
+  },
+  "401871068": {
+   "game_id": "401871068",
+   "home": "Sam Houston",
+   "away": "Western Kentucky",
+   "kickoff": "2026-10-15T00:00:00.000Z",
+   "home_conference": "Conference USA",
+   "away_conference": "Conference USA",
+   "matchup_type": "conference",
+   "legacy_input_coverage": 0.769,
+   "reliability": {
+    "contract": "cfb_reliability/2",
+    "score": 86,
+    "grade": "STRONG",
+    "grade_label": "STRONG",
+    "tier": "STRONG",
+    "raw": 86.3,
+    "capped_by": [],
+    "gate_label": null,
+    "components": {
+     "team_data": {
+      "score": 19,
+      "max": 20
+     },
+     "roster_availability": {
+      "score": 8.6,
+      "max": 20
+     },
+     "projection_stability": {
+      "score": 18.7,
+      "max": 20
+     },
+     "freshness": {
+      "score": 15,
+      "max": 15
+     },
+     "source_integrity": {
+      "score": 15,
+      "max": 15
+     },
+     "environment": {
+      "score": 10,
+      "max": 10
+     }
+    },
+    "main_deduction": "every source that covers Western Kentucky failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Western Kentucky’s absences cannot be assessed: no current availability read for this game",
+    "potential": 97,
+    "evidence_used": true,
+    "stability": {
+     "sd": 1.87,
+     "p10": 0.11,
+     "p50": 2.86,
+     "p90": 5.61,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
+    },
+    "penalties": [
+     {
+      "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers Western Kentucky failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Western Kentucky’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 3,
+      "reason": "every source that covers Sam Houston failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Sam Houston’s absences cannot be assessed: no current availability read for this game",
+      "family": "availability",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2,
+      "reason": "no source states whether Rodney Tisdale Jr. can play — silence is not health",
+      "family": "qb_status",
+      "action_key": "availability:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 2,
+      "reason": "no source states whether Landyn Locke can play — silence is not health",
+      "family": "qb_status",
+      "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 1.3,
+      "reason": "the projected spread moves ±1.87 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "team_data",
+      "points": 0.7,
+      "reason": "Sam Houston: 4 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Rodney Tisdale Jr. — expected; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Landyn Locke — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Western Kentucky: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.3,
+      "reason": "extreme transfer turnover (most of last season’s production is gone)",
+      "family": "transfer_turnover",
+      "action_key": null
+     }
+    ],
+    "gates": [
+     {
+      "id": "QB_STATUS_UNCONFIRMED",
+      "cap": 89,
+      "binding": false
+     }
+    ],
+    "missing": [
+     "qb_availability:home",
+     "availability:home",
+     "qb_availability:away",
+     "availability:away"
+    ],
+    "next_actions": [
+     {
+      "action": "Restore an injury/availability source for Western Kentucky",
+      "key": "availability:away",
+      "potential_gain": 3
+     },
+     {
+      "action": "Restore an injury/availability source for Sam Houston",
+      "key": "availability:home",
+      "potential_gain": 3
+     },
+     {
+      "action": "Confirm Western Kentucky’s starting QB (Rodney Tisdale Jr.)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Sam Houston’s starting QB (Landyn Locke)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     }
+    ],
+    "recoverable_by_family": {
+     "availability": 10,
+     "qb_identity": 1
+    }
+   },
+   "reliability_without_evidence": {
+    "score": 86,
     "grade": "STRONG"
    }
   },
