@@ -38,11 +38,13 @@ Loop: Research → Decide (Card) → Track (Portfolio) → Review / Improve (Pro
   prediction-market position, with CSV import and a connector contract
   (`docs/portfolio-architecture.md`). It is now *the* Portfolio destination;
   see "Reconciled with Portfolio Phase A" below.
-* **Process Coach does not exist yet.** The nearest real material: the journal's
-  decision-quality analytics (`EDPersonal.analytics`, beat-close rate with a
-  Wilson interval, CLV by league / market / reliability), the Ledger's CLV, and
-  the Card's CLV on placed bets. The hidden Bet Discipline engine reads tables
-  that are not in this repository.
+* **Process Coach did not exist yet** when this audit was written. The nearest
+  real material: the journal's decision-quality analytics (`EDPersonal.analytics`,
+  beat-close rate with a Wilson interval, CLV by league / market / reliability),
+  the Ledger's CLV, and the Card's CLV on placed bets. The hidden Bet Discipline
+  engine reads tables that are not in this repository. *Since then:* #504 built
+  the Process Coach over `supabase/portfolio_journal.sql`, and it now leads the
+  Process seat (see "Reconciled with Portfolio Phase A").
 * **AI is an overlay**, not a view. `show('ai')` only opens the drawer. It had
   two entry points from outside the drawer (the nav seat and Edges receipts).
 
@@ -183,6 +185,53 @@ contract, SQL and page, and changes only where it sits and what surrounds it:
 * The pre-merge prototype of a device-only Portfolio (its own CSV import,
   overview and calendar) was dropped in favour of Phase A's; the position
   normaliser Process needs became `lib/edgedesk_positions.js` (`EDPositions`).
+* **The Process Coach is the Process seat, not a Portfolio tab.** #504 shipped
+  it as Portfolio › Coach. Portfolio answers "what do I hold and how did it go",
+  and Process answers "how do I decide", so the Coach moved to Process.
+  * **The page.** Process mounts the same Phase A controller coach-only
+    (`EDPortfolioUI.show(#pcoHost, { tabs: ['coach'], bare: true, name:
+    'Process' })`). It shows the Decision Grade, process against outcome, leaks,
+    strengths, timing, edge capture, rules, experiments and the weekly Film Room.
+  * **Under it.** What EdgeDesk tracked (tracked prices and Card bets graded
+    against the close, `lib/edgedesk_process.js`) is folded underneath, as
+    Portfolio folds it under the book.
+  * **Links.** The Overview's Decision Grade links to Process. Process's
+    "Connect accounts" and "Import a CSV" lead back to Portfolio, through a
+    `pfo-route` event the app routes.
+  * **An empty book** asks for nothing from the server and says
+    "Nothing to grade yet".
+  * **Old links.** `#portfolio/coach` and `pfSetTab('coach')` land on Process.
+    Each page of the Coach has its own link, `#process/<page>`.
+* **Process tells the reader what matters before offering reports.** The
+  first Coach put eight reports side by side (Process Report, Leaks,
+  Strengths, Timing, Edge Capture, Rules, Experiments, Film Room) and two
+  rows of chips (platforms, periods). Process now has three places:
+  * **Overview** (`#process`), in this order:
+    * how is my process — the score and letter, or *Building* with the count;
+    * the price quality, timing, sizing and rule discipline grades, each from
+      10 graded positions;
+    * What's working and Needs attention — the strongest and weakest
+      evidence-backed patterns;
+    * the current experiment, or a focus to measure.
+  * **Film Room** (`#process/film`), the weekly retrospective:
+    * the result, process grade, rules and average CLV, with one sentence its
+      figures support;
+    * what worked and what hurt;
+    * the bad win and the good loss, explained from what was recorded;
+    * the after-the-result review;
+    * next week's focus.
+  * **Explore** (`#process/explore`), holding the reports: Leaks, Strengths,
+    Timing, Edge capture, Rules, Experiments, and Process vs outcome (the
+    former Report).
+  * **Filters.** One **Filter** control (source type, platform, time with a
+    custom range). The filters applied show as removable chips; none applied
+    reads "All activity".
+  * **No grade below 10 graded positions**, the engine's own evidence rule
+    (`X.MIN.observation`, where confidence leaves "Building").
+  * **Every figure has a WHY.** That covers every grade, pattern, experiment,
+    decision, the week and each table. Each WHY gives the sample size,
+    positions, date range, comparison group, CLV, P&L, ROI, confidence,
+    methodology and limitations.
 
 ## Old → new route map
 
@@ -204,7 +253,9 @@ Every row is held by `tools/app/navigation.e2e.js` in a real browser.
 | `#settings` (newsletter link; was ignored) | Settings | More |
 | `#faults` · `#collective` · `#terms` | the same views | More |
 | `show('social')` · `show('discipline')` (hidden before this change) | Research › Edges | Research |
-| new: `#portfolio/overview|open|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
+| new: `#portfolio/overview|calendar|journal|open|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
+| `#portfolio/coach` (#504's Coach tab) · `pfSetTab('coach')` | Process, on the Coach page last read | Process |
+| new: `#process` (Overview) · `#process/film|explore|leaks|strengths|timing|edge|rules|experiments|outcome` | that page of Process (`#process/report`, the first Coach's Report, opens the Overview) | Process |
 
 ## Reading the navigation evidence
 

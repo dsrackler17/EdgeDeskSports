@@ -199,9 +199,20 @@ function seededLedger(now) {
       await page.click('.bottomnav button[data-v="process"]');
       st = await state(page);
       chk(W + ': Process is a destination', st.views.join() === 'v-process' && st.seat.join() === 'process' && st.hash === '#process', st);
+      /* the Process Coach leads; with no positions it says how to give it some */
+      await page.waitForFunction(() => /Nothing to grade yet|Sign in to use Process/.test((document.getElementById('pcoHost') || {}).textContent || ''), null, { timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(1200);   /* and it stays that way once everything has loaded */
+      const pco = await page.textContent('#pcoHost');
+      chk(W + ': Process leads with the coach, which invents nothing on an empty book', /Nothing to grade yet/.test(pco) && /Nothing here is sample data/.test(pco) && !/Process vs outcome/.test(pco), pco.slice(0, 200));
+      chk(W + ': what EdgeDesk tracked is folded under it', await page.evaluate(() => { const d = document.getElementById('pcTracked'); return !!d && !d.open && !!d.querySelector('#processHost'); }));
       const pe = await page.textContent('#processHost');
       chk(W + ': an empty Process is building, not inventing', /Building your process profile/i.test(pe) && !(await page.$('#processHost .pc-score')) && !(await page.$('#processHost .pc-ins')), pe.slice(0, 200));
       await shot(page, 'process-empty-' + W);
+      await page.click('#pcoHost [data-act="tab"][data-v="accounts"]');
+      await page.waitForTimeout(300);
+      st = await state(page);
+      chk(W + ': its Connect accounts opens Portfolio › Accounts', st.views.join() === 'v-portfolio' && st.hash === '#portfolio/accounts'
+        && await page.evaluate(() => document.querySelector('#pfoHost .pfo-tab[data-v="accounts"]').getAttribute('aria-selected') === 'true'), st);
 
       /* ------------------------------------------------ 4 More */
       await page.click('.bottomnav button[data-v="more"]');
@@ -334,6 +345,7 @@ function seededLedger(now) {
       await shot(page, 'portfolio-tracked-' + W, true);
       await page.click('.bottomnav button[data-v="process"]');
       await page.waitForTimeout(300);
+      await page.evaluate(() => { document.getElementById('pcTracked').open = true; });
       const pr = await page.textContent('#processHost');
       chk(W + ': Process shows a score once the history carries one', /Process score/.test(pr), pr.slice(0, 160));
       chk(W + ': and names what is working, with the numbers', /early positions/.test(pr) && /beat the closing line/.test(pr), pr.slice(0, 400));

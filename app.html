@@ -2917,7 +2917,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
-<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261005pf3">
+<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261005pc3">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3149,14 +3149,24 @@ body.focus .dk-focusnote{display:block}
     </details>
   </section>
 
-  <!-- PROCESS — what the reader's own history says about how they decide
-       (lib/edgedesk_process.js). Portfolio says what happened; this says why it
-       might be happening, and only once the history can carry it: below the
-       sample gates it shows what it is building, never an invented insight. -->
+  <!-- PROCESS — what the reader's own history says about how they decide.
+       Portfolio says what happened; this says why it might be happening, and
+       only once the history can carry it. The Process Coach is the Phase A
+       page's coach mounted alone (lib/edgedesk_portfolio_ui.js over
+       supabase/portfolio_journal.sql): Decision Grade, leaks and strengths
+       (pre-specified, corrected for multiple comparisons), timing, edge
+       capture, rules, experiments, the weekly Film Room. Under it, what
+       EdgeDesk tracked graded against the close (lib/edgedesk_process.js).
+       Below the sample gates both say what they are building, never an
+       invented insight. -->
   <section id="v-process" class="view hide">
     <div class="row-between"><h2 style="margin:0">Process</h2><span class="spacer"></span><button class="refreshbtn" title="Refresh" aria-label="Refresh process" onclick="pcOpen(true)">&#8635;</button></div>
-    <p class="ws-lede">What your history says about how you make decisions &mdash; measured by whether your prices beat the closing line, not by whether bets won.</p>
-    <div id="processHost"><div class="empty">Loading&hellip;</div></div>
+    <p class="ws-lede">How you decide, graded by the decision &mdash; the price you took against the close, your edge at entry, your timing and sizing &mdash; never by whether a bet won.</p>
+    <div id="pcoHost"></div>
+    <details class="ws-tracked" id="pcTracked" style="margin-top:14px">
+      <summary><b>Tracked from EdgeDesk</b><span>prices you tracked from an edge and Card bets, graded against the closing line</span></summary>
+      <div id="processHost"><div class="empty">Loading&hellip;</div></div>
+    </details>
   </section>
 
   <!-- SETUP — the one-time start for a new account: welcome, bring your
@@ -3917,7 +3927,7 @@ window.mcRefresh=function(){
      tools/app/portfolio_process.test.js. -->
 <script src="/lib/edgedesk_positions.js?v=20261004b"></script>
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261004pf2"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261005pc3"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20261004a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
@@ -3986,8 +3996,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_connect_core.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
-<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261005pf3"></script>
-<script src="/lib/edgedesk_portfolio_ui.js?v=20261005pf3"></script>
+<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261005pc3"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261005pc3"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -5330,12 +5340,15 @@ function navHashRoute(h){
   if(/^#receipt=/.test(h)){var rv=$('v-record');if(rv&&rv.classList.contains('hide'))show('record');return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
   var t=NAV_HASH_MAP[m[1]];
+  /* the coach was a Portfolio tab before it became the Process seat */
+  if(t==='portfolio'&&m[2]==='coach'){if($('v-process').classList.contains('hide'))show('process');try{if(window.pcSetSub)window.pcSetSub('',true);}catch(_){}return true;}
   if(t==='portfolio'&&m[2]){try{if(window.pfSetTab)window.pfSetTab(m[2],true);}catch(_){}}
   if(t==='ai'){if($('v-card').classList.contains('hide'))researchGo(prefs().lastResearchSub||'football');
     var op=function(){try{window.EDAI&&window.EDAI.open();}catch(_){}};if(document.readyState==='complete')op();else window.addEventListener('load',op);return true;}
   var tv=$('v-'+t);
   if(RESEARCH_MODULES[t]){if(RESEARCH_SUB!==t||$('v-research').classList.contains('hide'))researchGo(t);return true;}
   if(!tv||tv.classList.contains('hide'))show(t);
+  if(t==='process'&&m[2]){try{if(window.pcSetSub)window.pcSetSub(m[2],true);}catch(_){}}
   return true;
 }
 window.navHashRoute=navHashRoute;

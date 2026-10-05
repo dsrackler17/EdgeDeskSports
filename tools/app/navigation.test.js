@@ -108,6 +108,18 @@ chk('Portfolio opens on the Phase A book, with what EdgeDesk tracked under it',
     /<section id="v-portfolio" class="view hide">\s*<div id="pfoHost"><\/div>/.test(APP) && APP.indexOf('<details class="ws-tracked" id="pfTracked">') > APP.indexOf('id="pfoHost"'));
 ['pfoHost', 'pfTracked', 'betlist', 'betlistDone', 'clvKpis', 'qaList', 'lg_form', 'lg_toggle', 'portfolio', 'pfCardOpen', 'pfCardDone'].forEach(id =>
   chk('Portfolio carries #' + id, APP.indexOf('id="' + id + '"') > APP.indexOf('<section id="v-portfolio"') && APP.indexOf('id="' + id + '"') < APP.indexOf('<section id="v-process"')));
+/* the Process Coach is the Process seat, not a Portfolio tab: the same Phase A
+   page mounted coach-only in #pcoHost, with what EdgeDesk tracked folded under it */
+const WSUI = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_workspace_ui.js'), 'utf8');
+const PFUI = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_portfolio_ui.js'), 'utf8');
+chk('Process opens on the Process Coach, with what EdgeDesk tracked under it',
+    /<section id="v-process" class="view hide">[\s\S]*?<div id="pcoHost"><\/div>\s*<details class="ws-tracked" id="pcTracked"[^>]*>[\s\S]*?<div id="processHost">/.test(APP));
+has(WSUI, "W.EDPortfolioUI.show(host, { tabs: ['coach'], bare: true, name: 'Process' })", 'the Process seat mounts the coach alone');
+chk('Portfolio no longer has a Coach tab', !/\['coach', 'Coach'\]/.test(PFUI.slice(PFUI.indexOf('var TABS = '), PFUI.indexOf('var TAB_LABEL'))) && !/var PFO_TABS = \[[^\]]*'coach'/.test(WSUI));
+has(APP, "if(t==='portfolio'&&m[2]==='coach'){if($('v-process').classList.contains('hide'))show('process');try{if(window.pcSetSub)window.pcSetSub('',true);}catch(_){}return true;}", 'an old #portfolio/coach link lands on Process');
+has(WSUI, "if (tab === 'coach') { if (W.show) W.show('process'); return; }", "and so does pfSetTab('coach')");
+has(APP, "if(t==='process'&&m[2]){try{if(window.pcSetSub)window.pcSetSub(m[2],true);}catch(_){}}", '#process/<page> opens that page of the coach');
+chk('a link from one mount to the other\'s tab is routed by the app', /dispatchEvent\(new root\.CustomEvent\('pfo-route'/.test(PFUI) && /addEventListener\('pfo-route'/.test(WSUI));
 has(APP, "var NAV_ALIAS={ledger:'portfolio'", "show('ledger') lands on Portfolio");
 lacks(APP, "dest.push(moreItem(IC.portfolio,'Portfolio'", 'Portfolio is a seat, not also a More row');
 chk('and there is one Portfolio, not two', (APP.match(/id="v-portfolio"/g) || []).length === 1 && (APP.match(/id="pfoHost"/g) || []).length === 1);

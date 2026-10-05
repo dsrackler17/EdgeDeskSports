@@ -156,9 +156,9 @@ const CSV = [
     await page.waitForFunction(() => !!(window.EDPortfolioUI && document.querySelector('#pfoHost.pfo-root')), null, { timeout: 40000 });
     return { ctx, page, errors };
   }
-  const text = (page) => page.evaluate(() => document.getElementById('pfoHost').innerText);
+  const text = (page, host) => page.evaluate((h) => document.getElementById(h).innerText, host || 'pfoHost');
   /* innerText is the RENDERED text: CSS-uppercased headings read uppercased, so keep the regex's own flags */
-  const waitText = (page, re, ms) => page.waitForFunction((a) => new RegExp(a[0], a[1]).test(document.getElementById('pfoHost').innerText), [re.source, re.flags], { timeout: ms || 15000 });
+  const waitText = (page, re, ms, host) => page.waitForFunction((a) => new RegExp(a[0], a[1]).test(document.getElementById(a[2]).innerText), [re.source, re.flags, host || 'pfoHost'], { timeout: ms || 15000 });
   const tab = async (page, v) => { await page.click(`#pfoHost .pfo-tab[data-v="${v}"]`); await page.waitForTimeout(150); };
   async function noSideways(page, label) {
     const w = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, w: window.innerWidth }));
@@ -415,9 +415,12 @@ const CSV = [
     chk('the database refuses a rewrite, whatever a page sends', rw.status === 403 && /never rewritten/.test(rw.body.message), rw);
     await page.click('.pfo-sheet [data-act="close"]');
     await tab(page, 'overview');
-    await waitText(page, /process score/i);
+    await waitText(page, /\b1 of \d+ positions? graded/);
     t = await text(page);
-    chk('a lost bet taken at a better price than the close grades well: the grade follows the price, not the result', /\b1 of \d+ positions graded/.test(t) && /\bA\+/.test(t), t.slice(t.search(/Decision Grade/i), t.search(/Decision Grade/i) + 300));
+    /* the decision is graded on its price; the book's letter waits for the engine's evidence rule (10 graded) */
+    const chiefsGrade = db.as(A, `select grade || '|' || result from public.portfolio_facts(null, null, 'UTC', null) where id = '${chiefs}';`);
+    chk('a lost bet taken at a better price than the close grades well: the grade follows the price, not the result', /^A\+\|LOSS$/.test(chiefsGrade), chiefsGrade);
+    chk('…and one graded position gives the book no letter yet: Building, with its count', /Building\./.test(t) && /\b1 of \d+ positions? graded/.test(t) && /given from 10 graded positions/.test(t), t.slice(t.search(/Decision Grade/i), t.search(/Decision Grade/i) + 300));
 
     /* the journal's folders */
     await tab(page, 'journal');
@@ -432,39 +435,103 @@ const CSV = [
       await page.$eval('#pfoHost details[data-r="fold"][data-v="m:2026-9"]', (e) => e.open) && /(Entered|Settled) this day/i.test(await text(page)));
     await shot(page, 'desktop-journal');
 
-    /* the Process Coach */
-    await tab(page, 'coach');
-    await waitText(page, /Process vs outcome/i);
-    t = await text(page);
-    chk('the Process Report: the grade, process against outcome — the lost Chiefs bet is a good loss', /Process vs outcome/i.test(t) && /1\s*good loss/.test(t), t.slice(0, 600));
-    await page.click('#pfoHost [data-act="coach"][data-v="leaks"]');
-    await waitText(page, /NO RELIABLE LEAK DETECTED/);
+    /* the Process Coach: the Process seat (docs/ia/NAVIGATION_AUDIT.md), not a Portfolio tab */
+    chk('Portfolio has no Coach tab', !(await page.$('#pfoHost .pfo-tab[data-v="coach"]')));
+    await tab(page, 'overview');
+    await waitText(page, /How you decide: open Process/);
+    await page.click('#pfoHost [data-act="tab"][data-v="coach"]');   /* the overview's "How you decide: open Process" */
+    await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide'));
+    chk('the overview\'s "open Process" lands on the Process seat', await page.evaluate(() => location.hash === '#process'
+      && document.querySelector('.bottomnav button[data-v="process"]').classList.contains('on')));
+    /* Process opens on an answer, not on a menu of reports */
+    await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
+    chk('Process opens on Overview · Film Room · Explore, and answers first: how is my process?', await page.$$eval('#pcoHost .pcx-nav .pcx-seg', (b) => b.map((x) => x.textContent).join('|')) === 'Overview|Film Room|Explore'
+      && /How is my process\?/i.test(t) && /Process (score|profile)/i.test(t), t.slice(0, 400));
+    const graded = +db.as(A, `select (portfolio_summary(null, null, '${await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)}', null)->'process'->>'graded')::int;`);
+    chk('with fewer than 10 graded positions the profile reads Building, with the count — no score is invented', graded >= 10 || (/Process profile\s*Building/i.test(t) && new RegExp('\\b' + graded + '\\s*eligible position').test(t)), [graded, t.slice(0, 300)]);
+    chk('no report is a peer of the Overview: Leaks, Timing, Rules … are under Explore', !(await page.$('#pcoHost .pcx-nav [data-v="leaks"]')) && !(await page.$('#pcoHost [data-act="platform"]')) && /All activity/.test(t));
+    await page.click('#pcoHost [data-act="why"][data-id="score"]');
+    await page.waitForSelector('#pcoHost .pfo-sheet:not([hidden]) .pfo-why-dl');
+    const scoreWhy = await page.$eval('#pcoHost .pfo-sheet', (e) => e.innerText);
+    chk('WHY opens the evidence: sample size, date range, comparison, CLV, P&L, confidence, methodology, limitations',
+      ['Sample size', 'Date range', 'Comparison group', 'CLV', 'P&L', 'Confidence', 'Methodology', 'Limitations'].every((k) => new RegExp(k, 'i').test(scoreWhy)), scoreWhy.slice(0, 500));
+    await page.click('#pcoHost .pfo-sheet [data-act="why-close"]');
+    /* one Filter; chips only once a filter is applied */
+    await page.click('#pcoHost [data-act="filter-open"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="filter"]');
+    await page.click('.pfo-sheet .pcx-opt:has(input[name="source"][value="SPORTSBOOK"])');
+    await page.click('.pfo-sheet [data-act="filter-apply"]');
+    await page.waitForSelector('#pcoHost .pcx-chip[data-v="platform"]');
+    chk('a filter applied shows as one removable chip', /Sportsbooks/.test(await page.$eval('#pcoHost .pcx-filterbar', (e) => e.innerText)) && !/All activity/.test(await page.$eval('#pcoHost .pcx-filterbar', (e) => e.innerText)));
+    await page.click('#pcoHost .pcx-chip[data-v="platform"]');
+    await waitText(page, /All activity/, 15000, 'pcoHost');
+    /* the depth, one step down */
+    const explore = async (sub) => { await page.click('#pcoHost .pcx-nav [data-v="explore"]'); await page.waitForSelector('#pcoHost .pcx-explore'); await page.click(`#pcoHost .pcx-xrow[data-v="${sub}"]`); };
+    await explore('outcome');
+    await waitText(page, /Process vs outcome/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
+    chk('Explore › Process vs outcome: the lost Chiefs bet is a good loss', /1\s*good loss/.test(t), t.slice(0, 600));
+    await explore('leaks');
+    await waitText(page, /NO RELIABLE LEAK DETECTED/, 15000, 'pcoHost');
+    chk('a page of the coach is linkable: #process/leaks', await page.evaluate(() => location.hash) === '#process/leaks');
     chk('Leaks: with this little data, no leak is claimed', true);
-    for (const sub of ['strengths', 'timing', 'edge']) {
-      await page.click(`#pfoHost [data-act="coach"][data-v="${sub}"]`);
-      await page.waitForTimeout(250);
-    }
-    chk('Strengths, Timing and Edge Capture render', !/Loading your process/.test(await text(page)) && /Edge capture/i.test(await text(page)));
-    await page.click('#pfoHost [data-act="coach"][data-v="rules"]');
-    await page.waitForSelector('#pfoHost form[data-form="rule"]');
-    await page.selectOption('#pfoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
-    await page.fill('#pfoHost form[data-form="rule"] [name="a"]', '2');
-    await page.click('#pfoHost [data-act="rule-add"]');
-    await waitText(page, /No position larger than 2 units/);
+    for (const sub of ['strengths', 'timing', 'edge']) { await explore(sub); await page.waitForTimeout(250); }
+    chk('Strengths, Timing and Edge Capture render under Explore, each with its way back', !/Loading your process/.test(await text(page, 'pcoHost')) && /Edge capture/i.test(await text(page, 'pcoHost'))
+      && !!(await page.$('#pcoHost [data-act="coach"][data-v="explore"]')));
+    await explore('rules');
+    await page.waitForSelector('#pcoHost form[data-form="rule"]');
+    await page.selectOption('#pcoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
+    await page.fill('#pcoHost form[data-form="rule"] [name="a"]', '2');
+    await page.click('#pcoHost [data-act="rule-add"]');
+    await waitText(page, /No position larger than 2 units/, 15000, 'pcoHost');
     chk('a rule is adopted from now on', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and kind = 'MAX_STAKE_UNITS' and active_until is null and active_from > now() - interval '5 minutes';`) === '1');
-    await page.click('#pfoHost [data-act="rule-retire"]');
-    await waitText(page, /retired \d{4}-/);
+    await page.click('#pcoHost [data-act="rule-retire"]');
+    await waitText(page, /retired \d{4}-/, 15000, 'pcoHost');
     chk('and retired, keeping its history', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and active_until is not null;`) === '1');
-    await page.click('#pfoHost [data-act="coach"][data-v="experiments"]');
-    await page.waitForSelector('#pfoHost form[data-form="experiment"]');
-    await page.fill('#pfoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
-    await page.click('#pfoHost [data-act="exp-add"]');
-    await waitText(page, /Not enough positions yet/);
+    await explore('experiments');
+    await page.waitForSelector('#pcoHost form[data-form="experiment"]');
+    await page.fill('#pcoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
+    await page.click('#pcoHost [data-act="exp-add"]');
+    await waitText(page, /Not enough positions yet/, 15000, 'pcoHost');
     chk('an experiment starts, and says it needs data rather than guessing', db.sql(`select count(*) from public.portfolio_experiments where user_id = '${A}' and status = 'ACTIVE';`) === '1');
-    await page.click('#pfoHost [data-act="coach"][data-v="film"]');
-    await waitText(page, /Weekly Film Room/i);
-    chk('the Film Room opens on a week, best and weakest decisions apart from results', /Best decisions/i.test(await text(page)) && /Won on a poor decision/i.test(await text(page)));
+    await page.click('#pcoHost .pcx-nav [data-v="overview"]');
+    await waitText(page, /Current experiment/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
+    chk('the Overview shows the running experiment: its week, during against before, and that it never promises a result', /Current experiment\s*Enter NFL positions a day before kickoff/i.test(t) && /Week 1 of 4/.test(t) && /never promises a result/.test(t), t.slice(t.search(/Current experiment/i), t.search(/Current experiment/i) + 400));
+    /* the Film Room, on the week the book was built in */
+    await page.click('#pcoHost .pcx-nav [data-v="film"]');
+    await page.waitForSelector('#pcoHost .pcx-film-t');
+    for (let i = 0; i < 80 && !/Sep 7/.test(await page.$eval('#pcoHost .pcx-film-t', (e) => e.textContent)); i++) {
+      const before = await page.$eval('#pcoHost .pcx-film-t', (e) => e.textContent);
+      await page.click('#pcoHost [data-act="film-move"][data-v="-1"]');
+      await page.waitForFunction((b) => { const el = document.querySelector('#pcoHost .pcx-film-t'); return el && el.textContent !== b; }, before, { timeout: 15000 });
+    }
+    t = await text(page, 'pcoHost');
+    chk('the Film Room leads with the week: result, process grade, rules, average CLV, and one sentence with its WHY', /Week of Sep 7/.test(t) && /Financial result/i.test(t) && /Process grade/i.test(t)
+      && /Rules followed/i.test(t) && /Avg CLV/i.test(t) && !!(await page.$('#pcoHost [data-act="why"][data-id="week"]')), t.slice(0, 600));
+    chk('a sparse week says how few positions it rests on, and shows no empty sections', /Only \d+ eligible position|\d+ eligible positions this week/.test(t) && !/None this week/.test(t));
+    chk('the good loss is named, and why EdgeDesk still graded it well', /Lost on a good decision/i.test(t) && /Chiefs -2\.5/.test(t) && /EdgeDesk graded the entry positively despite the loss/.test(t), t.slice(t.search(/Lost on a good/i), t.search(/Lost on a good/i) + 400));
+    /* the reflection: after the result, beside what was recorded before */
+    const rid = await page.$eval('#pcoHost .pcx-review', (e) => e.getAttribute('data-id'));
+    const decisionBefore = db.sql(`select coalesce(thesis, '') || '|' || coalesce(decision_recorded_at::text, '') || '|' || coalesce(closing_odds_american::text, '') from public.portfolio_journal_entries where position_id = '${rid}';`);
+    await page.click(`#pcoHost [data-act="review-pick"][data-id="${rid}"][data-v="NO"]`);
+    await page.fill(`#pcoHost [data-review="${rid}"]`, 'Took it after the line moved.');
+    await page.click(`#pcoHost [data-act="review-save"][data-id="${rid}"]`);
+    await waitText(page, /Reflection saved/, 15000, 'pcoHost');
+    chk('WOULD YOU MAKE THIS BET AGAIN? NO, and why — stored as the after-the-result reflection',
+      db.sql(`select would_repeat || '|' || review_note || '|' || (reviewed_at is not null)::text from public.portfolio_journal_entries where position_id = '${rid}';`) === 'NO|Took it after the line moved.|true');
+    chk('…and what was recorded before the bet is unchanged', db.sql(`select coalesce(thesis, '') || '|' || coalesce(decision_recorded_at::text, '') || '|' || coalesce(closing_odds_american::text, '') from public.portfolio_journal_entries where position_id = '${rid}';`) === decisionBefore);
     await shot(page, 'desktop-coach');
+    chk('what EdgeDesk tracked is folded under the coach', await page.evaluate(() => { const d = document.getElementById('pcTracked'); return !!d && !d.open && !!d.querySelector('#processHost'); }));
+    /* an old #portfolio/coach link lands on the Process seat */
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
+    await page.evaluate(() => { location.hash = '#portfolio/coach'; });
+    await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide') && /^#process(\/[a-z]+)?$/.test(location.hash), null, { timeout: 10000 });
+    chk('an old #portfolio/coach link opens Process, and the link names the page shown', await page.evaluate(() => location.hash) === '#process/film' && /Film Room/i.test(await text(page, 'pcoHost')));
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
 
     /* one combined book, filtered on request */
     await tab(page, 'overview');
@@ -491,12 +558,18 @@ const CSV = [
     await page.click('#pfoHost [data-act="period"][data-v="7D"]');
     chk('and filters by period', await page.$eval('#pfoHost [data-act="period"][data-v="7D"]', (e) => e.getAttribute('aria-pressed') === 'true'));
     await shot(page, 'desktop-analytics');
-    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       await page.waitForTimeout(300);
       if (/SECRET-B/.test(await text(page))) { chk('reader B\'s position never appears (' + v + ')', false); }
     }
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
+    await page.click('.bottomnav button[data-v="process"]');
+    /* Process reopens on the coach page last read: the Film Room */
+    await waitText(page, /Film Room[\s\S]*Week of Sep 7/i, 15000, 'pcoHost');
+    chk('Process reopens on the page and week last read, and its link says so', await page.evaluate(() => location.hash) === '#process/film');
+    chk('nor in Process', !/SECRET-B/.test(await text(page, 'pcoHost')));
+    await page.click('.bottomnav button[data-v="portfolio"]');
 
     /* "Add account" opens the grouped list; the ready card carries the server's all-time totals */
     await tab(page, 'accounts');
@@ -547,7 +620,7 @@ const CSV = [
     /* ═══ PHONE: 390 px ════════════════════════════════════════════════ */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
     await waitText(page, /Total P&L/i);
-    for (const v of ['overview', 'calendar', 'journal', 'coach', 'open', 'history', 'analytics', 'accounts', 'import']) {
+    for (const v of ['overview', 'calendar', 'journal', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
       await page.waitForTimeout(400);
       await noSideways(page, '390px ' + v);
@@ -572,6 +645,27 @@ const CSV = [
     chk('390px: the short figure is the exact one, rounded (the label keeps it exact)', cells.every((c) => { const m = /P&L ([^,]+)$/.exec(c.label); return m && J.compactMoney(m[1].replace('−', '-').replace(/[$,+]/g, '')) === c.text; }), cells);
     await noSideways(page, '390px calendar, September');
     await shot(page, 'phone-calendar-september');
+    /* Process on a phone: the answer in the first screen, no chip explosion */
+    await page.click('.bottomnav button[data-v="process"]');
+    await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
+    const pp = await page.evaluate(() => {
+      const segs = [...document.querySelectorAll('#pcoHost .pcx-nav .pcx-seg')], hero = document.querySelector('#pcoHost .pcx-hero');
+      return { segs: segs.length, fit: segs.every((b) => b.scrollWidth <= b.clientWidth + 1), heroTop: hero ? hero.getBoundingClientRect().top : 9999, vh: innerHeight,
+        bar: document.querySelectorAll('#pcoHost .pcx-filterbar button').length, chips: document.querySelectorAll('#pcoHost [data-act="platform"], #pcoHost [data-act="period"]').length };
+    });
+    chk('390px: Process shows three places that fit, one Filter, and the answer in the first screen', pp.segs === 3 && pp.fit && pp.bar === 1 && pp.chips === 0 && pp.heroTop < pp.vh * 0.6, pp);
+    await noSideways(page, '390px Process overview');
+    await shot(page, 'phone-process');
+    await page.click('#pcoHost .pcx-nav [data-v="film"]');
+    await page.waitForSelector('#pcoHost .pcx-film-t');
+    await noSideways(page, '390px Film Room');
+    await shot(page, 'phone-film');
+    await page.click('#pcoHost .pcx-nav [data-v="explore"]');
+    await page.waitForSelector('#pcoHost .pcx-explore');
+    await noSideways(page, '390px Explore');
+    await shot(page, 'phone-explore');
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="history"]');
     await tab(page, 'history');
     chk('390px: history is cards, not a wide table', await page.evaluate(() => {
       const c = document.querySelector('#pfoHost .pfo-hist-cards'), tb = document.querySelector('#pfoHost .pfo-hist-table');

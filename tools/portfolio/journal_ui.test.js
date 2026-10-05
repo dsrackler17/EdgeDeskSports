@@ -101,10 +101,10 @@ const leak = ANALYSIS.findings.find((f) => f.kind === 'LEAK' && f.key === 'CFB �
 chk('a supported leak is listed under What\'s not, with its evidence level', leak && /What's not/.test(t) && t.indexOf(leak.headline) > t.indexOf('What\'s not'), leak && leak.headline);
 chk('every finding has a WHY and a way to list its positions', leak && h.indexOf('data-act="why" data-id="f:' + leak.id + '"') >= 0 && /data-act="drill" data-dim="sport_type" data-key="CFB · SPREAD"/.test(h));
 const fw = strip(J.whyPanel(leak));
-chk('a finding\'s WHY names data used, sample, period, comparison, calculation, confidence, limitations',
-  ['Data used', 'Sample size', 'Period', 'Comparison group', 'Calculation', 'Confidence', 'Limitations'].every((k) => fw.indexOf(k) >= 0) && /last 30 days/.test(fw), fw.slice(0, 400));
-chk('…and the group\'s own positions analyzed, P&L, ROI and CLV, from its cell — CLV only over positions with a closing price',
-  ['Positions analyzed', 'P&L', 'ROI', 'CLV'].every((k) => fw.indexOf(k) >= 0) && /positions in the group, \d+ settled/.test(fw) && /(with a closing price|No closing price is recorded)/.test(fw), fw);
+chk('a finding\'s WHY names data used, sample, date range, comparison, methodology, confidence, limitations',
+  ['Data used', 'Sample size', 'Date range', 'Comparison group', 'Methodology', 'Confidence', 'Limitations'].every((k) => fw.indexOf(k) >= 0) && /last 30 days/.test(fw), fw.slice(0, 400));
+chk('…and the group\'s own positions, P&L, ROI and CLV, from its cell — CLV only over positions with a closing price',
+  ['Positions', 'P&L', 'ROI', 'CLV'].every((k) => fw.indexOf(k) >= 0) && /positions in the group, \d+ settled/.test(fw) && /(with a closing price|No closing price is recorded)/.test(fw), fw);
 const noClv = strip(J.whyPanel(Object.assign({}, leak, { why: Object.assign({}, leak.why, { group: { positions: 12, settled: 0, pnl: '0', staked: '0', clv_n: 0, clv_mean: null } }) })));
 chk('a group with nothing settled and no closing prices says so, inventing neither', /n\/a — nothing in the group has settled/.test(noClv) && /No closing price is recorded for these positions/.test(noClv));
 h = J.insights(X.headlines(X.analyze([cell('all', 'all', population(12, { ps: 60, clv: 0, ret: 0 }))], {})));
@@ -195,36 +195,161 @@ chk('an open year shows months → weeks → days, and a folder the reader opene
   && /data-v="w:2026-9:2026-09-07"/.test(h) && !/open data-r="fold" data-v="w:/.test(h) && /data-act="journal-day" data-v="2026-09-07"/.test(h));
 chk('an empty journal says so plainly', /No history yet/.test(strip(J.journalView({ top: [] }))));
 
-/* ═══ THE PROCESS COACH ═════════════════════════════════════════════════ */
-const coachState = (sub, extra) => Object.assign({ sub, summary: SUM, cells: CELLS, analysis: ANALYSIS }, extra || {});
-const CMP = X.compare(SUM, Object.assign({}, SUM, { process: Object.assign({}, SUM.process, { ps_sum: 20000 }) }));
-h = J.coachView(coachState('report', { compare: CMP })); t = strip(h);
+/* ═══ PROCESS: what matters first, the reports behind it ═══════════════ */
+const NOW = Date.parse('2026-09-15T12:00:00Z');
+const EXPS = [{ id: 'e1', title: 'Enter a day early', hypothesis: 'CLV improves', metric: 'CLV', starts_at: '2026-09-01T00:00:00Z', ends_at: '2026-09-29T00:00:00Z', min_sample: 20, status: 'ACTIVE' }];
+const EXPR = { e1: X.evaluateExperiment(EXPS[0], [], []) };
+const pst = (sub, extra) => Object.assign({ sub, summary: SUM, cells: CELLS, analysis: ANALYSIS, filter: { chips: [] }, now: NOW, experiments: EXPS, expResults: EXPR }, extra || {});
+const BUILDING = Object.assign({}, SUM, { process: Object.assign({}, SUM.process, { n: 7, graded: 1, score: '81.0', letter: 'A-', confidence: 'BUILDING',
+  components: { clv: { n: 1, avg: '80' }, model: { n: 0, avg: null }, price: { n: 1, avg: '90' }, sizing: { n: 0, avg: null }, timing: { n: 0, avg: null }, rules: { n: 0, avg: null }, market: { n: 1, avg: '80' } } }) });
+
+/* 1. three places, not eight */
+h = J.processView(pst('overview')); t = strip(h);
 rendered.push(h);
-chk('the Process Report: grade, process vs outcome with bad wins and good losses, variance, the change since last period',
-  /Decision Grade/.test(t) && /Process vs outcome/.test(t) && /30 bad wins/.test(t) && /70 good losses/.test(t) && /the prices you took implied 198\.4/.test(t) && /Last 30 days vs the 30 before/.test(t), t.slice(0, 900));
-chk('every matrix cell lists its positions', /data-act="matrix" data-process="POOR" data-result="WIN"/.test(h));
-for (const sub of ['leaks', 'strengths', 'timing', 'edge']) {
-  const hh = J.coachView(coachState(sub)); rendered.push(hh);
-  chk('the coach page "' + sub + '" renders with its navigation', /data-act="coach" data-v="film"/.test(hh) && strip(hh).length > 200, strip(hh).slice(0, 200));
+const navHtml = h.slice(h.indexOf('<nav class="pcx-nav"'), h.indexOf('</nav>', h.indexOf('<nav class="pcx-nav"')));
+chk('Process navigation is Overview · Film Room · Explore — nothing else is peer-level', (navHtml.match(/data-act="coach"/g) || []).length === 3
+  && /data-v="overview" aria-current="page">Overview/.test(navHtml) && /data-v="film"/.test(navHtml) && /data-v="explore"/.test(navHtml) && !/data-v="leaks"/.test(navHtml));
+chk('one Filter control, "All activity" until a filter is applied, and no chip rows on the page', /data-act="filter-open"/.test(h) && /All activity/.test(t)
+  && !/pfo-plats/.test(h) && !/data-act="platform"/.test(h) && !/data-act="period"/.test(h));
+const chipped = J.processView(pst('overview', { filter: { chips: [{ k: 'platform', label: 'Sportsbooks' }, { k: 'period', label: 'Last 30 days' }] } }));
+chk('applied filters show as compact chips, each removable', /data-act="filter-clear" data-v="platform"[^>]*>Sportsbooks/.test(chipped) && /data-act="filter-clear" data-v="period"/.test(chipped)
+  && !/All activity/.test(strip(chipped)) && /Filter <span class="pcx-count">2/.test(chipped));
+const sheetH = J.filterSheet({ source: 'SPORTSBOOK', platform: '', period: 'CUSTOM', from: '2026-09-01', to: '2026-09-30' },
+  [{ key: 'draftkings', label: 'DraftKings', type: 'SPORTSBOOK' }, { key: 'kalshi', label: 'Kalshi', type: 'PREDICTION_MARKET' }, { key: 'evil', label: XSS, type: 'SPORTSBOOK' }]);
+chk('inside Filter: source type, the platforms of that type, and time with a custom range', /Source type/.test(sheetH) && /value="SPORTSBOOK" data-f="filter" checked/.test(sheetH)
+  && /DraftKings/.test(sheetH) && !/Kalshi/.test(sheetH) && /Last 7 days[\s\S]*Last 30 days[\s\S]*This year[\s\S]*All time[\s\S]*Custom/.test(strip(sheetH))
+  && /name="from" value="2026-09-01"/.test(sheetH) && sheetH.indexOf(XSS) < 0);
+
+/* 2. how is my process? */
+chk('the Overview answers first: Process score and letter, its sample and confidence', /How is my process\? Process score 58 C\+/.test(t) && /380 graded positions of 410 · confidence High/.test(t), t.slice(0, 300));
+chk('dimension grades only where a dimension has 10 graded positions — never a letter for price quality on 0', /Timing C /.test(t) && /Sizing A /.test(t) && /Rule discipline A\+/.test(t)
+  && !/Price quality [A-F]/.test(t) && /Price quality 0\/10 graded — each dimension is graded from 10/.test(t), t.slice(0, 500));
+chk('every grade on the Overview has its WHY', ['score', 'dim:timing', 'dim:sizing', 'dim:rules'].every((k) => h.indexOf('data-act="why" data-id="' + k + '"') >= 0) && h.indexOf('data-id="dim:price"') < 0);
+h = J.processView(pst('overview', { summary: BUILDING })); t = strip(h);
+rendered.push(h);
+chk('with too few graded positions: PROCESS PROFILE · BUILDING, the count, and the engine\'s own threshold — no score, no letter',
+  /Process profile Building/.test(t) && /1 eligible position of 7 in this period/.test(t) && /from 10 graded positions/.test(t) && !/Process score/.test(strip(h.slice(0, h.indexOf('</section>')))) && !/pcx-letter/.test(h.slice(0, h.indexOf('</section>'))) && !/n=0/.test(strip(h.slice(0, h.indexOf('</section>')))), t.slice(0, 500));
+chk('a dimension under 10 shows its progress, not a grade', /Price quality 1\/10/.test(t) && !/Price quality A/.test(t));
+
+/* 3–4. what is working, what needs attention — from evidence, never an instruction */
+h = J.processView(pst('overview')); t = strip(h);
+const good = X.headlines(ANALYSIS, { limit: 1 }).working[0], bad = X.headlines(ANALYSIS, { limit: 1 }).not_working[0];
+chk('WHAT\'S WORKING: the strongest supported pattern, its process grade, positions and average CLV', good && /What's working NFL · Spread/.test(t) && /Process grade B− Positions 260 Avg CLV \+1\.\d\d% n=260/.test(t), t.slice(t.indexOf('What\'s working'), t.indexOf('What\'s working') + 260));
+chk('NEEDS ATTENTION: the weakest, the same way', bad && /Needs attention CFB · Spread/.test(t) && /Process grade C Positions 140 Avg CLV −1\.\d\d% n=140/.test(t));
+chk('each pattern has its WHY and its positions', h.indexOf('data-id="f:' + good.id + '"') >= 0 && h.indexOf('data-id="f:' + bad.id + '"') >= 0 && /data-act="drill" data-dim="sport_type" data-key="CFB · SPREAD">See the 140 positions/.test(h));
+chk('no wagering instruction anywhere on the Overview', !/stop betting|don'?t bet|bet earlier|avoid betting|bet more|bet less/i.test(t));
+const noPat = strip(J.processView(pst('overview', { cells: [cell('all', 'all', population(12, { ps: 60, clv: 0, ret: 0 }))], analysis: X.analyze([cell('all', 'all', population(12, { ps: 60, clv: 0, ret: 0 }))], {}) })));
+chk('with no pattern strong enough, one quiet line instead of empty cards — and how much more data it needs', /No pattern is strong enough to call yet/.test(noPat) && /more positions would let most groups qualify/.test(noPat)
+  && !/What's working NFL/.test(noPat));
+
+/* 5. the current experiment, or a focus to measure */
+chk('CURRENT EXPERIMENT: its title, week of its length, during against before, and that it never promises a result', /Current experiment Enter a day early/.test(t) && /Week 3 of 4 · measured on closing line value/.test(t)
+  && /During — n=0 Before — n=0/.test(t) && /Needs more positions: 0 during and 0 before; each side needs 20/.test(t) && /never promises a result/.test(t) && /data-act="coach" data-v="experiments">View experiment/.test(h) && /data-id="exp:e1"/.test(h));
+h = J.processView(pst('overview', { experiments: [] })); t = strip(h);
+chk('no experiment running: CURRENT FOCUS proposes something to measure, from the weakest pattern — the decision stays the reader\'s',
+  /Current focus CFB · Spread/.test(t) && /Something to measure, not an instruction/.test(t) && /What you change is your decision/.test(t) && /data-act="exp-setup" data-v="CFB · Spread" data-metric="PROCESS"/.test(h)
+  && !/don'?t bet|bet earlier|stop/i.test(t));
+
+/* 6. Explore: the depth, one step down */
+h = J.processView(pst('explore', { rules: [] })); t = strip(h);
+rendered.push(h);
+chk('EXPLORE lists the reports with a figure each: Leaks, Strengths, Timing, Edge capture, Rules, Experiments, Process vs outcome',
+  ['leaks', 'strengths', 'timing', 'edge', 'rules', 'experiments', 'outcome'].every((k) => h.indexOf('data-act="coach" data-v="' + k + '"') >= 0)
+  && /Edge capture .*Avg CLV \+0\.42% · n=350/.test(t) && /Rules .*570 of 600 checks kept/.test(t) && /Process vs outcome .*30 bad wins · 70 good losses/.test(t) && /Experiments .*1 running/.test(t), t.slice(0, 900));
+chk('Explore is the current place in the nav while a report is open', /data-v="explore" aria-current="page"/.test(J.processView(pst('leaks'))));
+const CMP = X.compare(SUM, Object.assign({}, SUM, { process: Object.assign({}, SUM.process, { ps_sum: 20000 }) }));
+for (const sub of ['leaks', 'strengths', 'timing', 'edge', 'outcome']) {
+  const hh = J.processView(pst(sub, { compare: CMP })); rendered.push(hh);
+  chk('Explore › ' + sub + ' renders with its way back, and its WHY', /data-act="coach" data-v="explore">‹ Explore/.test(hh) && /data-act="why"/.test(hh) && strip(hh).length > 300, strip(hh).slice(0, 200));
 }
-chk('Leaks names the tests it ran and corrects for them', /pre-specified comparisons only \(\d+ tests/i.test(strip(J.coachView(coachState('leaks')))) && /CFB · Spread/.test(strip(J.coachView(coachState('leaks')))));
-chk('Edge Capture: model edge, CLV, beat-the-close, and the capture rate labelled an estimate',
-  /Model edge at entry \+2\.10%/.test(strip(J.coachView(coachState('edge')))) && /190 of 350/.test(strip(J.coachView(coachState('edge')))) && /An estimate/.test(strip(J.coachView(coachState('edge')))));
-h = J.coachView(coachState('rules', { rules: [{ id: 'r1', label: XSS, active_from: '2026-09-01T00:00:00Z' }, { id: 'r2', label: 'No live positions', active_from: '2026-08-01', active_until: '2026-09-01T00:00:00Z' }] })); t = strip(h);
+chk('Leaks names the tests it ran and corrects for them', /pre-specified comparisons only \(\d+ tests/i.test(strip(J.processView(pst('leaks')))) && /CFB · Spread/.test(strip(J.processView(pst('leaks')))));
+chk('Edge capture: model edge, CLV, beat-the-close, and the capture rate labelled an estimate',
+  /Model edge at entry \+2\.10%/.test(strip(J.processView(pst('edge')))) && /190 of 350/.test(strip(J.processView(pst('edge')))) && /An estimate/.test(strip(J.processView(pst('edge')))));
+h = J.processView(pst('outcome', { compare: CMP })); t = strip(h);
+chk('Process vs outcome keeps the matrix with its bad wins and good losses, the variance and the change since last period',
+  /30 bad wins/.test(t) && /70 good losses/.test(t) && /the prices you took implied 198\.4/.test(t) && /Last 30 days vs the 30 before/.test(t) && /data-act="matrix" data-process="POOR" data-result="WIN"/.test(h));
+h = J.processView(pst('rules', { rules: [{ id: 'r1', label: XSS, active_from: '2026-09-01T00:00:00Z' }, { id: 'r2', label: 'No live positions', active_from: '2026-08-01', active_until: '2026-09-01T00:00:00Z' }] })); t = strip(h);
 rendered.push(h);
 chk('Rules: adherence this period, retire an active rule, history of retired ones', /570 of 600 rule checks followed/.test(t) && /data-act="rule-retire" data-id="r1"/.test(h) && !/data-act="rule-retire" data-id="r2"/.test(h) && /retired 2026-09-01/.test(t) && h.indexOf(XSS) < 0);
 chk('a rule is built from the form, or refused with a reason', J.ruleFromForm({ kind: 'MAX_STAKE_UNITS', a: '2' }).row.label === 'No position larger than 2 units'
   && !!J.ruleFromForm({ kind: 'MAX_STAKE_UNITS', a: '' }).error && JSON.stringify(J.ruleFromForm({ kind: 'ONLY_SPORTS', b: 'nfl, cfb' }).row.params) === '{"sports":["NFL","CFB"]}'
   && !!J.ruleFromForm({ kind: 'ODDS_BETWEEN' }).error && !!J.ruleFromForm({ kind: 'NOPE' }).error);
-const EXPS = [{ id: 'e1', title: 'Enter a day early', hypothesis: 'CLV improves', metric: 'CLV', starts_at: '2026-09-01T00:00:00Z', ends_at: '2026-09-29T00:00:00Z', min_sample: 20, status: 'ACTIVE' }];
-h = J.coachView(coachState('experiments', { experiments: EXPS, expResults: { e1: X.evaluateExperiment(EXPS[0], [], []) } })); t = strip(h);
+h = J.processView(pst('experiments', { expDraft: { title: 'Focus: CFB · Spread', hypothesis: 'My process score improves', metric: 'PROCESS' } })); t = strip(h);
 rendered.push(h);
-chk('Experiments: what is measured and for how long, and "not enough positions yet" rather than a guess', /Measured on closing line value · 2026-09-01 to 2026-09-29 · at least 20 positions each side/.test(t) && /Not enough positions yet/.test(t) && /data-act="exp-end"/.test(h));
-const film = { week: '2026-09-07', summary: SUM, prior: SUM, best: [ROW()], worst: [], badWins: [ROW({ id: 'b', process_score: '30.0', grade: 'F', status: 'WON', pnl: '90.91' })], goodLosses: [ROW()], broken: [] };
-h = J.coachView(coachState('film', { film })); t = strip(h);
+chk('Experiments: what is measured and for how long, "not enough positions yet" rather than a guess, and each result\'s WHY', /Measured on closing line value · 2026-09-01 to 2026-09-29 · at least 20 positions each side/.test(t) && /Not enough positions yet/.test(t) && /data-act="exp-end"/.test(h) && /data-id="exp:e1"/.test(h));
+chk('a focus carried into the form: prefilled, still the reader\'s to edit or start', /name="title" maxlength="120" value="Focus: CFB · Spread"/.test(h) && /<option value="PROCESS" selected>/.test(h));
+
+/* 7–13. the Film Room */
+const W = (o) => Object.assign({}, SUM, o);
+const proc = (o) => Object.assign({}, SUM.process, o);
+const FILM = { week: '2026-09-07', summary: SUM, prior: SUM,
+  best: [ROW({ id: 'g1', selection: 'Iowa +7.5', process_score: '91.0', grade: 'A+' })], worst: [ROW({ id: 'p1', selection: 'Over 47.5', process_score: '31.0', grade: 'D', clv_pct: '-0.012' })],
+  badWins: [ROW({ id: 'bw', selection: 'Chiefs -7', status: 'WON', result: 'WIN', pnl: '90.91', process_score: '33.0', grade: 'D', clv_pct: null, clv_points: '-3', line: '-7',
+    journal: { closing_line: '-4' }, s_price: '28', s_timing: '35', s_sizing: '100' })],
+  goodLosses: [ROW({ id: 'gl', selection: 'Iowa +7.5', status: 'LOST', result: 'LOSS', pnl: '-100.00', process_score: '86.0', grade: 'A', clv_pct: null, clv_points: '2.5', line: '7.5',
+    journal: { closing_line: '5' }, s_price: '100', s_timing: '92' })],
+  broken: [ROW({ id: 'rb' })],
+  settledList: [ROW({ id: 'bw', selection: 'Chiefs -7', status: 'WON', result: 'WIN', pnl: '90.91', grade: 'D', journal: { thesis: 'Line value after the injury news' } }), ROW({ id: 'gl', selection: 'Iowa +7.5', grade: 'A', journal: {} }),
+    ROW({ id: 'r3', journal: { would_repeat: 'YES', review_note: 'Same again' } })] };
+h = J.processView(pst('film', { film: FILM })); t = strip(h);
 rendered.push(h);
-chk('the Film Room: the week, best and weakest decisions, bad wins, good losses, and one review question',
-  /Weekly Film Room · week of Mon Sep 7/.test(t) && /Best decisions 1/.test(t) && /Weakest decisions 0 .*None this week/.test(t) && /Won on a poor decision 1/.test(t) && /would you make this bet again\?/.test(t), t.slice(0, 600));
+chk('FILM ROOM leads with the week: result, process grade, rules followed, average CLV', /Film Room Week of Sep 7–13/.test(t) && /Financial result −\$1,520\.50 400 settled positions/.test(t)
+  && /Process grade C\+ 380 graded/.test(t) && /Rules followed 570 \/ 600/.test(t) && /Avg CLV \+0\.42% n=350/.test(t), t.slice(0, 500));
+chk('one sentence, from the figures, with its WHY', /You finished down \$1,520\.50; the process graded C\+\./.test(t) && /data-id="week"/.test(h));
+chk('WHAT WORKED / WHAT HURT: the strongest and weakest decisions, each graded, with CLV and a WHY', /What worked Iowa \+7\.5 .*Process A\+/.test(t) && /What hurt Over 47\.5 .*Process D CLV −1\.20%/.test(t)
+  && /data-id="pos:g1"/.test(h) && /data-id="pos:p1"/.test(h));
+chk('WON ON A POOR DECISION: the result, the grade, and why — from what was recorded', /Won on a poor decision Chiefs -7 .*Result Win \+\$90\.91 Process D/.test(t)
+  && /The position won \(\+\$90\.91\), but the line closed at -4 against your -7 \(−3 pts against you\), and its price quality scored 28 and its entry timing scored 35 out of 100\./.test(t) && /data-id="pos:bw"/.test(h), t.slice(t.indexOf('Won on a poor'), t.indexOf('Won on a poor') + 400));
+chk('LOST ON A GOOD DECISION: the same, and that the grade held despite the loss', /Lost on a good decision Iowa \+7\.5 .*Result Loss −\$100\.00 Process A/.test(t)
+  && /The position lost \(−\$100\.00\), but the line closed at 5 against your 7\.5 \(\+2\.5 pts in your favour\), and its price quality scored 100 and its entry timing scored 92 out of 100\. EdgeDesk graded the entry positively despite the loss\./.test(t));
+chk('outcome is not decision quality, said once', /Outcome and decision quality are different things/.test(t));
+chk('REVIEW: would you make it again — YES / NO / UNSURE and why — beside what was recorded before the bet', /Would you make this bet again\? YES NO UNSURE Why\?/.test(t)
+  && /Before the bet “Line value after the injury news”/.test(t) && /data-act="review-pick" data-id="bw" data-v="NO"/.test(h) && /data-review="bw"/.test(h)
+  && /which never changes/.test(t) && !/data-review="r3"/.test(h) && /1 already reviewed/.test(t));
+chk('the bad win and the good loss are asked first', h.indexOf('data-review="bw"') < h.indexOf('data-review="gl"') || h.indexOf('data-review="gl"') < 0);
+chk('NEXT WEEK: a focus and an experiment to measure — never an instruction', /Next week Focus CFB · Spread Experiment Measure it/.test(t) && /what you do is your decision/.test(t)
+  && !/don'?t bet|bet earlier|stop betting/i.test(t) && /data-act="exp-setup"/.test(h));
+chk('no "None this week" cards anywhere', !/None this week/.test(t));
+chk('rules broken this week: one line, not a card', /1 position outside your rules this week\. List them/.test(t));
+
+/* the sentence says only what the figures support */
+const S1 = (sum, prior) => J.filmSentence({ summary: sum, prior: prior || null });
+chk('strong results, strong process', S1(W({ settled: { n: 12, pnl: '184.00' }, process: proc({ graded: 12, score: '74.0', letter: 'B+' }) })) === 'Strong results. Strong process (B+).');
+chk('bad results, good process', S1(W({ settled: { n: 12, pnl: '-90.00' }, process: proc({ graded: 12, score: '70.0', letter: 'B+' }) })) === 'The results were bad. The process wasn’t (B+).');
+chk('a win while the grade fell against the four weeks before', S1(W({ settled: { n: 12, pnl: '184.00' }, process: proc({ graded: 12, score: '56.0', letter: 'C+' }) }), W({ process: proc({ graded: 40, letter: 'B' }) })) === 'You won this week, but your process grade fell (B → C+).');
+chk('too few graded to judge: says so instead of a verdict', S1(W({ settled: { n: 2, pnl: '40.00' }, process: proc({ graded: 3, score: '90.0', letter: 'A+' }) })) === 'You finished up $40.00. Too few graded positions (3) to judge the process yet.');
+
+/* 15. sparse and empty weeks collapse */
+const sparse = { week: '2026-09-07', summary: W({ settled: { n: 1, pnl: '-100.00' }, placed: { n: 1 }, process: proc({ n: 1, graded: 1, score: '81.0', letter: 'A-', rules: { applicable: 0 }, clv: { n: 0 } }) }),
+  prior: null, best: [], worst: [], badWins: [], goodLosses: [], broken: [], settledList: [ROW({ id: 's1', process_score: '81.0', grade: 'A-' })] };
+h = J.processView(pst('film', { film: sparse })); t = strip(h);
+rendered.push(h);
+chk('a sparse week: "Only 1 eligible position", why a reliable Film Room needs more, and the position itself — no empty sections',
+  /Only 1 eligible position this week\. EdgeDesk needs more activity before it can build a reliable Film Room/.test(t) && /Process grade Building 1 of 10 graded/.test(t)
+  && /This week's positions Chiefs -2\.5/.test(t) && !/What worked|What hurt|Won on a poor|Lost on a good/.test(t), t.slice(0, 700));
+h = J.processView(pst('film', { film: { week: '2026-09-14', summary: W({ settled: { n: 0 }, placed: { n: 2 }, process: proc({ n: 2, graded: 0, rules: { applicable: 0 }, clv: { n: 0 } }) }),
+  best: [], worst: [], badWins: [], goodLosses: [], broken: [], settledList: [], placedList: [ROW({ id: 'o1', status: 'OPEN', selection: 'Bills ML', process_score: null, grade: null })] } })); t = strip(h);
+chk('a week with nothing graded says so once, and still shows what was entered', /Nothing settled this week\. No position this week has a price to judge the decision by yet\./.test(t)
+  && !/Only 0/.test(t) && /This week's positions Bills ML/.test(t) && /Process not graded/.test(t), t.slice(0, 700));
+h = J.processView(pst('film', { film: { week: '2026-09-14', summary: W({ settled: { n: 0 }, placed: { n: 0 }, process: proc({ n: 0, graded: 0 }) }) } })); t = strip(h);
+chk('an empty week is one line', /Nothing was entered or settled this week\./.test(t) && !/Financial result/.test(t));
+
+/* 14. WHY: every figure opens its evidence */
+const WCTX = { summary: SUM, cells: CELLS, analysis: ANALYSIS, film: FILM, experiments: EXPS, expResults: EXPR, periodText: 'Aug 16 – Sep 15, 2026 (last 30 days, your time zone)',
+  rows: Object.fromEntries([].concat(FILM.best, FILM.worst, FILM.badWins, FILM.goodLosses).map((x) => [x.id, x])) };
+const NEED = ['Sample size', 'Positions', 'Date range', 'Comparison group', 'CLV', 'P&L', 'ROI', 'Confidence', 'Methodology', 'Limitations'];
+for (const id of ['score', 'dim:price', 'dim:timing', 'dim:sizing', 'dim:rules', 'tests', 'exp:e1', 'pos:bw', 'pos:gl', 'week', 'matrix', 'variance', 'compare', 'edge', 'table:timing', 'f:' + bad.id]) {
+  const it = J.whyItem(id, WCTX), w = it ? strip(J.whyPanel(it)) : '';
+  rendered.push(it ? J.whyPanel(it) : '');
+  chk('WHY ' + id + ' shows sample size, positions, date range, comparison group, CLV, P&L, ROI, confidence, methodology and limitations', !!it && NEED.every((k) => w.indexOf(k) >= 0), [id, NEED.filter((k) => w.indexOf(k) < 0)]);
+}
+let wy = strip(J.whyPanel(J.whyItem('score', Object.assign({}, WCTX, { summary: BUILDING }))));
+chk('the Building WHY names the threshold and that no score is given below it', /Why the Process profile is still building/.test(wy) && /No score or letter below 10 graded positions/.test(wy) && /1 graded of 7 positions/.test(wy));
+wy = strip(J.whyPanel(J.whyItem('pos:bw', WCTX)));
+chk('a decision\'s WHY: its components, its close, its rules — and a way to its journal', /Price quality 28/.test(wy) && /Entry timing 35/.test(wy) && /−3 pts on the line/.test(wy) && /data-act="journal" data-id="bw"/.test(J.whyPanel(J.whyItem('pos:bw', WCTX))));
+wy = strip(J.whyPanel(J.whyItem('exp:e1', WCTX)));
+chk('an experiment\'s WHY: both windows, the minimum sample, and that it is before-and-after, never a promise', /2026-09-01 to 2026-09-29 \(during\), against 2026-08-04 to 2026-09-01 \(before\)/.test(wy) && /each side needs 20/.test(wy) && /never promises a result/.test(wy));
+chk('a dimension\'s WHY says how it is scored and what it needs', /10 points off for each 1% given up/.test(strip(J.whyPanel(J.whyItem('dim:price', WCTX)))) && /0 positions with a price \(or line\) you researched/.test(strip(J.whyPanel(J.whyItem('dim:price', WCTX)))));
 
 /* ═══ BEFORE YOU ENTER ══════════════════════════════════════════════════ */
 const ctx = { model_ev: '0.0633', timing_bucket: 'D1_3', units: '2.4', max_single_units: '2', max_daily_units: '6', today_units: '3.5', today_count: 3,
