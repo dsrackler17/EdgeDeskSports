@@ -186,7 +186,8 @@ const stagesAll = () => JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((s)
     const settle = { settlements: [{ ticker: 'NFL-KC', market_result: 'no', revenue: 450, fee_cost: '0.02', settled_time: '2026-09-20T03:00:00Z' }],
       known: { 'NFL-KC:YES': true, 'NFL-KC:NO': true }, heldAtSettle: { 'NFL-KC': 'NO' }, markets, events };
     res = ingest(acct, run1, K.ingestPayload(K.kalshiNormalize(settle)));
-    chk('a later settlement lands on the positions an earlier sync stored', res.positions_inserted === 0 && res.positions_updated === 2 && res.transactions_inserted === 1, res);
+    chk('a later settlement lands on the positions an earlier sync stored, and is counted as two settlements', res.positions_inserted === 0 && res.positions_updated === 2 && res.transactions_inserted === 1
+      && res.positions_settled === 2, res);
     const pl = json(one(db.sql(`select json_object_agg(external_position_id, profit_loss::text) from public.portfolio_positions where platform_account_id = ${L(acct)};`)));
     const jsN = K.kalshiNormalize(Object.assign({ fills }, settle));
     const jsPl = (side) => { const p = jsN.positions.find((x) => x.side === side); return E.derive({ platform_type: 'PREDICTION_MARKET', side: p.side, resolution: p.resolution, settlement_price: p.settlement_price },
@@ -198,6 +199,8 @@ const stagesAll = () => JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((s)
     chk('an UPDATED settlement (a corrected result) replaces the earlier one', db.sql(`select resolution || ':' || profit_loss::text from public.portfolio_positions where external_position_id = 'kalshi:NFL-KC:NO';`) === 'YES:-3.197'
       && count(`select count(*) from public.portfolio_transactions where platform_account_id = ${L(acct)} and transaction_type = 'FEE';`) === 1);
     ingest(acct, run1, K.ingestPayload(K.kalshiNormalize(settle)));
+    res = ingest(acct, run1, K.ingestPayload(K.kalshiNormalize(settle)));
+    chk('the same settlement read again is not counted again', res.positions_settled === 0 && res.positions_updated === 2, res);
     const bad = K.ingestPayload(K.kalshiNormalize({ fills: [{ fill_id: 'g1', ticker: 'NBA-X', outcome_side: 'yes', count_fp: '2', yes_price_dollars: '0.5', fee_cost: '0', created_time: TS(5) }], markets: { 'NBA-X': { title: 'X' } } }));
     bad.positions.push({ platform: 'kalshi', external_position_id: 'kalshi:BROKEN:YES', event_name: 'Broken', market_name: 'Broken', selection: 'YES', side: 'YES',
       fills: [{ external_transaction_id: 'kalshi:b1:c', action: 'SELL', quantity: '3', price: '0.5', fee: '0', executed_at: TS(5) }], fees: [] });
@@ -256,6 +259,51 @@ const stagesAll = () => JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((s)
     const k = health.platforms.find((x) => x.platform === 'kalshi'), p = health.platforms.find((x) => x.platform === 'polymarket');
     chk('…which counts runs, failures by code and timings per platform, and names no reader or position', k.runs === 2 && k.failed === 1 && k.errors.BAD_CREDENTIAL === 1 && p.failed === 5
       && health.registry.length === 7 && !/a@example|NFL-KC|kalshi-member|\b0x[0-9a-f]{40}\b/.test(JSON.stringify(health)), health);
+    chk('…and what the syncs moved: discovered, inserted, duplicates rejected, settlements recorded (a re-read counts none), rejected, reconciliations',
+      k.discovered >= 3 && k.positions_inserted >= 2 && k.transactions_inserted >= 4 && k.duplicates_rejected >= 4 && k.settlements === 6 && k.rejected >= 2
+      && typeof k.reconciled === 'number' && typeof k.reconcile_mismatches === 'number', k);
+    /* connection attempts: counts written by the connect function, never a reader */
+    chk('a reader cannot record a connector event', /permission denied/.test(db.mustFail(() => db.as(A, `select public.portfolio_svc_connector_event('kalshi', 'ATTEMPT');`)) || ''));
+    db.service(`select public.portfolio_svc_connector_event('kalshi', 'ATTEMPT'); select public.portfolio_svc_connector_event('kalshi', 'FAILED', 'WRITE_SCOPE');
+      select public.portfolio_svc_connector_event('kalshi', 'ATTEMPT'); select public.portfolio_svc_connector_event('kalshi', 'CONNECTED');
+      select public.portfolio_svc_connector_event('kalshi', 'DISCONNECTED');`);
+    chk('an unknown event kind is refused', /connector_events_kind/.test(db.mustFail(() => db.service(`select public.portfolio_svc_connector_event('kalshi', 'GUESS');`)) || ''));
+    chk('the private connector events table has no reader column at all', db.sql(`select count(*) from information_schema.columns where table_schema = 'portfolio_private' and table_name = 'connector_events' and column_name like '%user%';`) === '0');
+    /* imports: files, parser failures, and a layout the platform had not exported before */
+    /* (the import guard sets status and dates itself; a fixture of past imports bypasses it) */
+    db.sql(`set session_replication_role = replica;
+      insert into public.portfolio_imports (user_id, platform, platform_type, importer, status, rows_total, rows_invalid, header_signature, created_at) values
+      (${L(A)}, 'draftkings', 'SPORTSBOOK', 'sportsbook_wagers', 'COMMITTED', 20, 0, 'bet id|odds|payout|stake', now() - interval '10 days'),
+      (${L(A)}, 'draftkings', 'SPORTSBOOK', 'sportsbook_wagers', 'COMMITTED', 30, 3, 'bet id|odds|payout|stake|wager type', now() - interval '2 hours'),
+      (${L(B)}, 'draftkings', 'SPORTSBOOK', 'sportsbook_wagers', 'FAILED', 10, 10, 'bet id|odds|payout|stake|wager type', now() - interval '1 hour');
+      set session_replication_role = origin;`);
+    const h2 = json(one(db.as(ADMIN, `select public.portfolio_admin_connector_health(24);`)));
+    const kc = h2.connections.find((x) => x.platform === 'kalshi'), dk = h2.imports.find((x) => x.platform === 'draftkings');
+    chk('connection attempts, successes and failures by code', kc && kc.attempts === 2 && kc.connected === 1 && kc.failed === 1 && kc.disconnected === 1 && kc.failures.WRITE_SCOPE === 1, h2.connections);
+    chk('imports: files, failures, rows that could not be read, and one new layout flagged as a possible format change', dk && dk.files === 2 && dk.committed === 1 && dk.failed === 1
+      && dk.parser_failures === 13 && dk.files_with_parser_failures === 2 && dk.new_layouts === 1, h2.imports);
+    chk('…naming no reader or file', !/a@example|b@example|00000000-0000-0000-0000-00000000000[ab]|bet id/.test(JSON.stringify(h2.imports) + JSON.stringify(h2.connections)));
+
+    /* ═══ TIME TO VALUE (operators) ══════════════════════════════════════ */
+    chk('time to value: operators only', /operators only/.test(db.mustFail(() => db.as(A, `select public.portfolio_admin_ttv(30);`)) || ''));
+    chk('…and without the funnel installed it says so rather than inventing numbers', JSON.parse(one(db.as(ADMIN, `select public.portfolio_admin_ttv(30);`))).events === false);
+    db.sql(`create table public.user_events (id bigint generated always as identity, user_id uuid, event_name text not null, event_properties jsonb not null default '{}', created_at timestamptz not null default now());
+      insert into auth.users (id, email) values ('00000000-0000-0000-0000-0000000000c1', 'c1@x'), ('00000000-0000-0000-0000-0000000000c2', 'c2@x'), ('00000000-0000-0000-0000-0000000000c3', 'c3@x');
+      insert into public.user_events (user_id, event_name, created_at) values
+        ('00000000-0000-0000-0000-0000000000c1', 'portfolio_onboarding_started', now() - interval '10 days'),
+        ('00000000-0000-0000-0000-0000000000c1', 'first_position_created', now() - interval '10 days' + interval '4 minutes'),
+        ('00000000-0000-0000-0000-0000000000c1', 'portfolio_ready', now() - interval '10 days' + interval '9 minutes'),
+        ('00000000-0000-0000-0000-0000000000c2', 'portfolio_onboarding_started', now() - interval '9 days'),
+        ('00000000-0000-0000-0000-0000000000c2', 'first_position_created', now() - interval '9 days' + interval '8 minutes'),
+        ('00000000-0000-0000-0000-0000000000c3', 'portfolio_onboarding_started', now() - interval '8 days'),
+        ('00000000-0000-0000-0000-0000000000c1', 'connection_started', now() - interval '10 days'),
+        ('00000000-0000-0000-0000-0000000000c1', 'connection_completed', now() - interval '10 days' + interval '1 minute'),
+        ('00000000-0000-0000-0000-0000000000c2', 'connection_started', now() - interval '9 days');`);
+    const ttv = JSON.parse(one(db.as(ADMIN, `select public.portfolio_admin_ttv(30);`)));
+    chk('time to value: setups started, median minutes to a first position and to ready, abandonment, connection failures',
+      ttv.events === true && ttv.onboarding_started === 3 && +ttv.time_to_first_position_minutes_median === 6 && +ttv.time_to_portfolio_ready_minutes_median === 9
+      && +ttv.onboarding_abandonment === 0.6667 && +ttv.connection_failure_rate === 0.5 && ttv.import_failure_rate !== undefined, ttv);
+    chk('…and names no reader', !/c1@x|0000000000c1/.test(JSON.stringify(ttv)));
 
     /* ═══ SESSIONS ═══════════════════════════════════════════════════════ */
     const state = nodeCrypto.createHash('sha256').update('state-1').digest('hex');

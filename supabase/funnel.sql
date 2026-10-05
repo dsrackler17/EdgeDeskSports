@@ -181,6 +181,20 @@ insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_i
   ('primary_nav_process',     'client', 'session',        60, true,  'The Process seat in the primary navigation was tapped.'),
   ('primary_nav_more',        'client', 'session',        60, true,  'The More seat in the primary navigation was tapped.'),
   ('secondary_nav_opened',    'client', 'session_entity', 61, true,  'A destination inside a primary one was opened (props.entity names it).'),
+  -- Portfolio time to value (lib/edgedesk_portfolio_ui.js): from the first
+  -- look at setting up a portfolio to a portfolio with real history in it.
+  -- props.entity is a platform key, or an import id — never a figure.
+  ('portfolio_onboarding_started', 'client', 'once',      70, true,  'The Portfolio setup checklist was first shown.'),
+  ('platform_selected',       'client', 'session_entity', 71, true,  'A platform was chosen during Portfolio setup (props.entity = platform key).'),
+  ('connection_started',      'client', 'session_entity', 72, true,  'An automatic connection was submitted (props.entity = platform key).'),
+  ('connection_completed',    'client', 'entity',         73, true,  'An automatic connection was validated and stored (props.entity = platform key).'),
+  ('import_started',          'client', 'session_entity', 74, true,  'A file was dropped on Import (props.entity = platform key or detect).'),
+  ('import_detected',         'client', 'session_entity', 75, true,  'The import named the file''s platform (props.entity = how: chosen, column, file_name, remembered).'),
+  ('import_reviewed',         'client', 'entity',         76, true,  'The server counted the file against the portfolio (props.entity = import id).'),
+  ('import_completed',        'client', 'entity',         77, true,  'An import committed (props.entity = import id).'),
+  ('first_position_created',  'client', 'once',           78, true,  'The reader''s portfolio holds its first position.'),
+  ('portfolio_ready',         'client', 'once',           79, true,  'Setup reached a portfolio with history in it.'),
+  ('first_process_insight_ready', 'client', 'once',       80, true,  'The first Decision Grade or supported process finding was shown.'),
   ('second_session',          'server', 'once',           40, true,  'A terminal session in a different browser session from an earlier one.'),
   ('return_day_1',            'server', 'once',           41, true,  'Back in the terminal 1+ days after the account was created.'),
   ('return_day_3',            'server', 'once',           42, true,  'Back in the terminal 3+ days after the account was created.'),

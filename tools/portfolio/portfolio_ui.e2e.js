@@ -88,6 +88,7 @@ const CSV = [
   if (db.skip) skip(db.skip);
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio.sql'));
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_journal.sql'));
+  db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_connect.sql'));
   db.sql(`insert into auth.users (id, email) values ('${A}', 'a@example.com'), ('${B}', 'b@example.com');`);
   /* reader B's book, which reader A must never see */
   db.as(B, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, odds_american, stake, status, placed_at)
@@ -102,6 +103,7 @@ const CSV = [
   }
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 
+  const tracked = [], fnCalls = [];
   async function open(viewport, opts) {
     opts = opts || {};
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 700 });
@@ -115,6 +117,15 @@ const CSV = [
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       const m = /supabase\.co\/rest\/v1\/([^?]+)\??(.*)$/.exec(url);
+      if (/supabase\.co\/rest\/v1\/rpc\/ed_track/.test(url)) {
+        try { (JSON.parse(req.postData() || '{}').p_events || []).forEach((e) => tracked.push(e.event)); } catch (_) { /* ignore */ }
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, recorded: 1 }) });
+      }
+      if (/supabase\.co\/functions\/v1\/portfolio_connect/.test(url)) {
+        let body = {}; try { body = JSON.parse(req.postData() || '{}'); } catch (_) { body = {}; }
+        fnCalls.push(body);
+        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, account_id: 'acct-e2e', sync: { status: 'SUCCEEDED', totals: { transactions_inserted: 2 } } }) });
+      }
       if (m && opts.failRpc && opts.failRpc.test(decodeURIComponent(m[1]))) {
         return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ code: 'PGRST202', message: 'Could not find the function' }) });
       }
@@ -172,6 +183,20 @@ const CSV = [
     chk('Portfolio is a primary destination', await page.evaluate(() => !!document.querySelector('.bottomnav button[data-v="portfolio"]')));
     chk('and its own seat reads active while it is open', await page.evaluate(() => { const b = document.querySelector('.bottomnav button[data-v="portfolio"]'); return !!b && b.classList.contains('on'); }));
     await shot(page, 'desktop-empty');
+
+    /* setup: choose where you bet, add them, see the progress */
+    await tab(page, 'accounts');
+    await waitText(page, /Set up your portfolio/i);
+    chk('a new reader is offered setup: where do you bet or trade?', /Where do you bet or trade\?/.test(await text(page)));
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="draftkings"]');
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="kalshi"]');
+    await page.click('#pfoHost [data-act="setup-add"]');
+    await waitText(page, /0 of 2 platforms with history/i);
+    chk('the chosen platforms are added as accounts, each waiting for its history',
+      db.sql(`select string_agg(platform || ':' || connection_type, ',' order by platform) from public.platform_accounts where user_id = '${A}';`) === 'draftkings:CSV,kalshi:CSV'
+      && /Waiting for import/.test(await text(page)) && !/\bConnected\b/.test(await text(page)));
+    await shot(page, 'desktop-setup');
+    await tab(page, 'overview');
 
     /* a winning sportsbook bet */
     await page.click('#pfoHost [data-act="new-wager"]');
@@ -258,10 +283,12 @@ const CSV = [
     await waitText(page, /Check the columns/i);
     t = await text(page);
     chk('the importer reads the file in the browser and maps the columns', /Rows read\s*4/i.test(t.replace(/\n/g, ' ')) || /4\s*Rows read/i.test(t), t.slice(0, 500));
+    chk('…and says what it detected: platform, wagers found, date range', /Detected: BetMGM · 4 wagers found · [A-Z][a-z]{2} 2026/.test(t), t.slice(t.search(/Detected/), t.search(/Detected/) + 200));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Detected/i);
+    await waitText(page, /Before anything is stored/i);
     t = (await text(page)).replace(/\s+/g, ' ');
-    chk('the server classifies: 4 detected, 2 new, 1 duplicate, 1 invalid', /4 Detected/i.test(t) && /2 New/i.test(t) && /1 Duplicates/i.test(t) && /1 Invalid/i.test(t), t.slice(t.search(/detected/i) - 40, t.search(/detected/i) + 400));
+    chk('the server classifies: 4 found, 2 ready, 1 duplicate, 1 cannot import', /4 Found/i.test(t) && /2 Ready/i.test(t) && /1 Duplicates/i.test(t) && /1 Cannot import/i.test(t) && /Import 2/.test(t),
+      t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 400));
     chk('nothing is inserted before the reader confirms', +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}';`) === 2);
     await shot(page, 'desktop-import');
     await page.click('#pfoHost [data-act="imp-commit"]');
@@ -277,21 +304,21 @@ const CSV = [
     await page.setInputFiles('#pfoHost input[type="file"]', { name: 'betmgm-history.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV2) });
     await waitText(page, /from the file's name/);
     t = await text(page);
-    chk('a file with no platform column: the platform comes from its name, and the unchecked format is flagged', /Platform: BetMGM/.test(t) && /not yet checked this format against a real BetMGM export/.test(t), t.slice(t.search(/Review/i), t.search(/Review/i) + 400));
+    chk('a file with no platform column: the platform comes from its name, and the unchecked format is flagged', /Detected: BetMGM/.test(t) && /not yet checked this format against a real BetMGM export/.test(t), t.slice(t.search(/Review/i), t.search(/Review/i) + 400));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Detected/i);
+    await waitText(page, /Before anything is stored/i);
     await page.click('#pfoHost [data-act="imp-commit"]');
     await waitText(page, /Imported 1/);
     const CSV3 = CSV2.replace('Open,', 'Won,41');
     await page.click('#pfoHost [data-act="imp-reset"]');
     await page.setInputFiles('#pfoHost input[type="file"]', { name: 'export.csv', mimeType: 'text/csv', buffer: Buffer.from(CSV3) });
     await waitText(page, /a layout you imported before/);
-    chk('the same columns again: read the way they were imported before, platform included', /Platform: BetMGM/.test(await text(page)));
+    chk('the same columns again: read the way they were imported before, platform included', /Detected: BetMGM/.test(await text(page)));
     await page.click('#pfoHost [data-act="imp-check"]');
-    await waitText(page, /Updates/i);
+    await waitText(page, /Updated since/i);
     t = (await text(page)).replace(/\s+/g, ' ');
-    chk('the bet that settled since is an UPDATE, with the estimate shown before anything is stored', /1 Updates/i.test(t) && /If you import these: 1 settled, P&L \+\$20\.00/.test(t)
-      && /update 1/.test(t), t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 500));
+    chk('the bet that settled since is an UPDATE, with the estimate shown before anything is stored', /1 Updated since/i.test(t) && /If you import these: 1 settled, P&L \+\$20\.00/.test(t)
+      && /0 new positions · 1 updated/.test(t) && /Update portfolio · 0 new, 1 updated/.test(t), t.slice(t.search(/Before anything/i), t.search(/Before anything/i) + 500));
     await page.click('#pfoHost [data-act="imp-commit"]');
     await waitText(page, /updated 1/);
     chk('…and committing updates the stored bet in place: WON, +$20.00, still one bet',
@@ -388,9 +415,12 @@ const CSV = [
     chk('the database refuses a rewrite, whatever a page sends', rw.status === 403 && /never rewritten/.test(rw.body.message), rw);
     await page.click('.pfo-sheet [data-act="close"]');
     await tab(page, 'overview');
-    await waitText(page, /process score/i);
+    await waitText(page, /\b1 of \d+ positions? graded/);
     t = await text(page);
-    chk('a lost bet taken at a better price than the close grades well: the grade follows the price, not the result', /\b1 of \d+ positions graded/.test(t) && /\bA\+/.test(t), t.slice(t.search(/Decision Grade/i), t.search(/Decision Grade/i) + 300));
+    /* the decision is graded on its price; the book's letter waits for the engine's evidence rule (10 graded) */
+    const chiefsGrade = db.as(A, `select grade || '|' || result from public.portfolio_facts(null, null, 'UTC', null) where id = '${chiefs}';`);
+    chk('a lost bet taken at a better price than the close grades well: the grade follows the price, not the result', /^A\+\|LOSS$/.test(chiefsGrade), chiefsGrade);
+    chk('…and one graded position gives the book no letter yet: Building, with its count', /Building\./.test(t) && /\b1 of \d+ positions? graded/.test(t) && /given from 10 graded positions/.test(t), t.slice(t.search(/Decision Grade/i), t.search(/Decision Grade/i) + 300));
 
     /* the journal's folders */
     await tab(page, 'journal');
@@ -413,19 +443,43 @@ const CSV = [
     await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide'));
     chk('the overview\'s "open Process" lands on the Process seat', await page.evaluate(() => location.hash === '#process'
       && document.querySelector('.bottomnav button[data-v="process"]').classList.contains('on')));
+    /* Process opens on an answer, not on a menu of reports */
+    await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
+    chk('Process opens on Overview · Film Room · Explore, and answers first: how is my process?', await page.$$eval('#pcoHost .pcx-nav .pcx-seg', (b) => b.map((x) => x.textContent).join('|')) === 'Overview|Film Room|Explore'
+      && /How is my process\?/i.test(t) && /Process (score|profile)/i.test(t), t.slice(0, 400));
+    const graded = +db.as(A, `select (portfolio_summary(null, null, '${await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone)}', null)->'process'->>'graded')::int;`);
+    chk('with fewer than 10 graded positions the profile reads Building, with the count — no score is invented', graded >= 10 || (/Process profile\s*Building/i.test(t) && new RegExp('\\b' + graded + '\\s*eligible position').test(t)), [graded, t.slice(0, 300)]);
+    chk('no report is a peer of the Overview: Leaks, Timing, Rules … are under Explore', !(await page.$('#pcoHost .pcx-nav [data-v="leaks"]')) && !(await page.$('#pcoHost [data-act="platform"]')) && /All activity/.test(t));
+    await page.click('#pcoHost [data-act="why"][data-id="score"]');
+    await page.waitForSelector('#pcoHost .pfo-sheet:not([hidden]) .pfo-why-dl');
+    const scoreWhy = await page.$eval('#pcoHost .pfo-sheet', (e) => e.innerText);
+    chk('WHY opens the evidence: sample size, date range, comparison, CLV, P&L, confidence, methodology, limitations',
+      ['Sample size', 'Date range', 'Comparison group', 'CLV', 'P&L', 'Confidence', 'Methodology', 'Limitations'].every((k) => new RegExp(k, 'i').test(scoreWhy)), scoreWhy.slice(0, 500));
+    await page.click('#pcoHost .pfo-sheet [data-act="why-close"]');
+    /* one Filter; chips only once a filter is applied */
+    await page.click('#pcoHost [data-act="filter-open"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="filter"]');
+    await page.click('.pfo-sheet .pcx-opt:has(input[name="source"][value="SPORTSBOOK"])');
+    await page.click('.pfo-sheet [data-act="filter-apply"]');
+    await page.waitForSelector('#pcoHost .pcx-chip[data-v="platform"]');
+    chk('a filter applied shows as one removable chip', /Sportsbooks/.test(await page.$eval('#pcoHost .pcx-filterbar', (e) => e.innerText)) && !/All activity/.test(await page.$eval('#pcoHost .pcx-filterbar', (e) => e.innerText)));
+    await page.click('#pcoHost .pcx-chip[data-v="platform"]');
+    await waitText(page, /All activity/, 15000, 'pcoHost');
+    /* the depth, one step down */
+    const explore = async (sub) => { await page.click('#pcoHost .pcx-nav [data-v="explore"]'); await page.waitForSelector('#pcoHost .pcx-explore'); await page.click(`#pcoHost .pcx-xrow[data-v="${sub}"]`); };
+    await explore('outcome');
     await waitText(page, /Process vs outcome/i, 15000, 'pcoHost');
     t = await text(page, 'pcoHost');
-    chk('the Process Report: the grade, process against outcome — the lost Chiefs bet is a good loss', /Process vs outcome/i.test(t) && /1\s*good loss/.test(t), t.slice(0, 600));
-    await page.click('#pcoHost [data-act="coach"][data-v="leaks"]');
+    chk('Explore › Process vs outcome: the lost Chiefs bet is a good loss', /1\s*good loss/.test(t), t.slice(0, 600));
+    await explore('leaks');
     await waitText(page, /NO RELIABLE LEAK DETECTED/, 15000, 'pcoHost');
     chk('a page of the coach is linkable: #process/leaks', await page.evaluate(() => location.hash) === '#process/leaks');
     chk('Leaks: with this little data, no leak is claimed', true);
-    for (const sub of ['strengths', 'timing', 'edge']) {
-      await page.click(`#pcoHost [data-act="coach"][data-v="${sub}"]`);
-      await page.waitForTimeout(250);
-    }
-    chk('Strengths, Timing and Edge Capture render', !/Loading your process/.test(await text(page, 'pcoHost')) && /Edge capture/i.test(await text(page, 'pcoHost')));
-    await page.click('#pcoHost [data-act="coach"][data-v="rules"]');
+    for (const sub of ['strengths', 'timing', 'edge']) { await explore(sub); await page.waitForTimeout(250); }
+    chk('Strengths, Timing and Edge Capture render under Explore, each with its way back', !/Loading your process/.test(await text(page, 'pcoHost')) && /Edge capture/i.test(await text(page, 'pcoHost'))
+      && !!(await page.$('#pcoHost [data-act="coach"][data-v="explore"]')));
+    await explore('rules');
     await page.waitForSelector('#pcoHost form[data-form="rule"]');
     await page.selectOption('#pcoHost form[data-form="rule"] [name="kind"]', 'MAX_STAKE_UNITS');
     await page.fill('#pcoHost form[data-form="rule"] [name="a"]', '2');
@@ -435,15 +489,39 @@ const CSV = [
     await page.click('#pcoHost [data-act="rule-retire"]');
     await waitText(page, /retired \d{4}-/, 15000, 'pcoHost');
     chk('and retired, keeping its history', db.sql(`select count(*) from public.portfolio_rules where user_id = '${A}' and active_until is not null;`) === '1');
-    await page.click('#pcoHost [data-act="coach"][data-v="experiments"]');
+    await explore('experiments');
     await page.waitForSelector('#pcoHost form[data-form="experiment"]');
     await page.fill('#pcoHost form[data-form="experiment"] [name="title"]', 'Enter NFL positions a day before kickoff');
     await page.click('#pcoHost [data-act="exp-add"]');
     await waitText(page, /Not enough positions yet/, 15000, 'pcoHost');
     chk('an experiment starts, and says it needs data rather than guessing', db.sql(`select count(*) from public.portfolio_experiments where user_id = '${A}' and status = 'ACTIVE';`) === '1');
-    await page.click('#pcoHost [data-act="coach"][data-v="film"]');
-    await waitText(page, /Weekly Film Room/i, 15000, 'pcoHost');
-    chk('the Film Room opens on a week, best and weakest decisions apart from results', /Best decisions/i.test(await text(page, 'pcoHost')) && /Won on a poor decision/i.test(await text(page, 'pcoHost')));
+    await page.click('#pcoHost .pcx-nav [data-v="overview"]');
+    await waitText(page, /Current experiment/i, 15000, 'pcoHost');
+    t = await text(page, 'pcoHost');
+    chk('the Overview shows the running experiment: its week, during against before, and that it never promises a result', /Current experiment\s*Enter NFL positions a day before kickoff/i.test(t) && /Week 1 of 4/.test(t) && /never promises a result/.test(t), t.slice(t.search(/Current experiment/i), t.search(/Current experiment/i) + 400));
+    /* the Film Room, on the week the book was built in */
+    await page.click('#pcoHost .pcx-nav [data-v="film"]');
+    await page.waitForSelector('#pcoHost .pcx-film-t');
+    for (let i = 0; i < 80 && !/Sep 7/.test(await page.$eval('#pcoHost .pcx-film-t', (e) => e.textContent)); i++) {
+      const before = await page.$eval('#pcoHost .pcx-film-t', (e) => e.textContent);
+      await page.click('#pcoHost [data-act="film-move"][data-v="-1"]');
+      await page.waitForFunction((b) => { const el = document.querySelector('#pcoHost .pcx-film-t'); return el && el.textContent !== b; }, before, { timeout: 15000 });
+    }
+    t = await text(page, 'pcoHost');
+    chk('the Film Room leads with the week: result, process grade, rules, average CLV, and one sentence with its WHY', /Week of Sep 7/.test(t) && /Financial result/i.test(t) && /Process grade/i.test(t)
+      && /Rules followed/i.test(t) && /Avg CLV/i.test(t) && !!(await page.$('#pcoHost [data-act="why"][data-id="week"]')), t.slice(0, 600));
+    chk('a sparse week says how few positions it rests on, and shows no empty sections', /Only \d+ eligible position|\d+ eligible positions this week/.test(t) && !/None this week/.test(t));
+    chk('the good loss is named, and why EdgeDesk still graded it well', /Lost on a good decision/i.test(t) && /Chiefs -2\.5/.test(t) && /EdgeDesk graded the entry positively despite the loss/.test(t), t.slice(t.search(/Lost on a good/i), t.search(/Lost on a good/i) + 400));
+    /* the reflection: after the result, beside what was recorded before */
+    const rid = await page.$eval('#pcoHost .pcx-review', (e) => e.getAttribute('data-id'));
+    const decisionBefore = db.sql(`select coalesce(thesis, '') || '|' || coalesce(decision_recorded_at::text, '') || '|' || coalesce(closing_odds_american::text, '') from public.portfolio_journal_entries where position_id = '${rid}';`);
+    await page.click(`#pcoHost [data-act="review-pick"][data-id="${rid}"][data-v="NO"]`);
+    await page.fill(`#pcoHost [data-review="${rid}"]`, 'Took it after the line moved.');
+    await page.click(`#pcoHost [data-act="review-save"][data-id="${rid}"]`);
+    await waitText(page, /Reflection saved/, 15000, 'pcoHost');
+    chk('WOULD YOU MAKE THIS BET AGAIN? NO, and why — stored as the after-the-result reflection',
+      db.sql(`select would_repeat || '|' || review_note || '|' || (reviewed_at is not null)::text from public.portfolio_journal_entries where position_id = '${rid}';`) === 'NO|Took it after the line moved.|true');
+    chk('…and what was recorded before the bet is unchanged', db.sql(`select coalesce(thesis, '') || '|' || coalesce(decision_recorded_at::text, '') || '|' || coalesce(closing_odds_american::text, '') from public.portfolio_journal_entries where position_id = '${rid}';`) === decisionBefore);
     await shot(page, 'desktop-coach');
     chk('what EdgeDesk tracked is folded under the coach', await page.evaluate(() => { const d = document.getElementById('pcTracked'); return !!d && !d.open && !!d.querySelector('#processHost'); }));
     /* an old #portfolio/coach link lands on the Process seat */
@@ -451,7 +529,7 @@ const CSV = [
     await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
     await page.evaluate(() => { location.hash = '#portfolio/coach'; });
     await page.waitForFunction(() => !document.getElementById('v-process').classList.contains('hide') && /^#process(\/[a-z]+)?$/.test(location.hash), null, { timeout: 10000 });
-    chk('an old #portfolio/coach link opens Process, and the link names the page shown', await page.evaluate(() => location.hash) === '#process/film' && /Weekly Film Room/i.test(await text(page, 'pcoHost')));
+    chk('an old #portfolio/coach link opens Process, and the link names the page shown', await page.evaluate(() => location.hash) === '#process/film' && /Film Room/i.test(await text(page, 'pcoHost')));
     await page.click('.bottomnav button[data-v="portfolio"]');
     await page.waitForSelector('#pfoHost .pfo-tab[data-v="overview"]');
 
@@ -488,10 +566,52 @@ const CSV = [
     chk('reader B\'s position never appears on any tab', !/SECRET-B/.test(await text(page)));
     await page.click('.bottomnav button[data-v="process"]');
     /* Process reopens on the coach page last read: the Film Room */
-    await waitText(page, /Weekly Film Room/i, 15000, 'pcoHost');
-    chk('Process reopens on the coach page last read, and its link says so', await page.evaluate(() => location.hash) === '#process/film');
+    await waitText(page, /Film Room[\s\S]*Week of Sep 7/i, 15000, 'pcoHost');
+    chk('Process reopens on the page and week last read, and its link says so', await page.evaluate(() => location.hash) === '#process/film');
     chk('nor in Process', !/SECRET-B/.test(await text(page, 'pcoHost')));
     await page.click('.bottomnav button[data-v="portfolio"]');
+
+    /* "Add account" opens the grouped list; the ready card carries the server's all-time totals */
+    await tab(page, 'accounts');
+    await page.click('#pfoHost [data-act="setup-open"]');
+    await waitText(page, /Tracked positions\s*\d+[\s\S]*Total P&L\s*[+\u2212-]?\$[\d,.]+/i);
+    t = await text(page);
+    chk('Add account lists platforms by how they come in, and the ready card shows the server\'s totals', /Sportsbooks · import/i.test(t) && /Prediction markets ·/i.test(t)
+      && /Your portfolio is ready/i.test(t) && /Process profile\s*(Building|Ready) ·/i.test(t) && /Total\s*\d+ positions?/i.test(t), t.slice(0, 1600));
+    await shot(page, 'desktop-ready');
+
+    /* the time-to-value evidence the page sent */
+    await page.evaluate(() => window.EDTrack && window.EDTrack.flush && window.EDTrack.flush());
+    await page.waitForTimeout(300);
+    const want = ['portfolio_onboarding_started', 'platform_selected', 'first_position_created', 'import_started', 'import_detected', 'import_reviewed', 'import_completed', 'portfolio_ready'];
+    chk('time to value: setup, platforms chosen, the first position, every import step and "ready" were recorded', want.every((w) => tracked.indexOf(w) >= 0), { missing: want.filter((w) => tracked.indexOf(w) < 0), tracked });
+
+    /* once the database switches automatic connection on, Accounts offers it — read-only, in a sheet */
+    const smokeIds = ['kalshi', 'polymarket'].map((pk) => db.sql(`insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, stages, status, finished_at)
+      values ('${pk}', '${pk}_v1', 'PRODUCTION', '${JSON.stringify(Object.fromEntries(['CONNECT', 'IMPORT', 'VERIFY', 'INCREMENTAL', 'NEW_ACTIVITY', 'SETTLEMENT', 'RECONCILE', 'DISCONNECT', 'RECONNECT', 'NO_DUPLICATES'].map((x) => [x, { ok: true }])))}'::jsonb, 'PASSED', now()) returning id;`).split('\n')[0]);
+    db.sql(`update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_at = now(), enabled_by_smoke_test = case platform_key when 'kalshi' then '${smokeIds[0]}'::uuid else '${smokeIds[1]}'::uuid end where platform_key in ('kalshi', 'polymarket');`);
+    await tab(page, 'overview'); await tab(page, 'accounts');
+    await page.waitForSelector('#pfoHost [data-act="acct-connect"][data-platform="polymarket"]');
+    await page.click('#pfoHost .pfo-rows [data-act="acct-connect"][data-platform="polymarket"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="connect"] [name="wallet"]');
+    await page.fill('.pfo-sheet [name="wallet"]', 'apple banana cherry delta eagle falcon garden harbor island jungle kettle lemon');
+    await page.click('.pfo-sheet [data-act="connect-submit"]');
+    await page.waitForSelector('.pfo-sheet .pfo-err');
+    chk('a seed phrase typed as a wallet is refused in the browser — it is never sent anywhere', /Never share those/.test(await page.$eval('.pfo-sheet .pfo-err', (e) => e.innerText)) && fnCalls.length === 0
+      && await page.$eval('.pfo-sheet [name="wallet"]', (e) => e.value === ''));
+    await page.click('.pfo-sheet [data-act="close"]');
+    await page.click('#pfoHost .pfo-rows [data-act="acct-connect"][data-platform="kalshi"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="connect"] [name="private_key"]');
+    chk('the Kalshi sheet asks for a READ-ONLY key and says what happens to it', /read access only/.test(await page.$eval('.pfo-sheet', (e) => e.innerText)) && /Read-only/.test(await page.$eval('.pfo-sheet', (e) => e.innerText)));
+    const FAKE_KEY = 'e2e-private-key-material-' + 'z'.repeat(40);
+    await page.fill('.pfo-sheet [name="key_id"]', 'a952bcbe-ec3b-4b5b-b8f9-11dae589608c');
+    await page.fill('.pfo-sheet [name="private_key"]', FAKE_KEY);
+    await page.click('.pfo-sheet [data-act="connect-submit"]');
+    await waitText(page, /First sync: 2 trades/);
+    chk('connect sends the key to EdgeDesk\'s server function once, under the reader\'s token', fnCalls.length === 1 && fnCalls[0].action === 'connect' && fnCalls[0].platform === 'kalshi' && fnCalls[0].private_key === FAKE_KEY);
+    chk('…and the key is kept nowhere in the page or the browser afterwards', await page.evaluate((k) => !document.documentElement.innerHTML.includes(k)
+      && !JSON.stringify(Object.keys(localStorage).map((x) => localStorage.getItem(x))).includes(k) && !JSON.stringify(window.EDPortfolioUI ? (document.getElementById('pfoHost').__pfo || {}).state || {} : {}).includes(k), FAKE_KEY));
+    db.sql(`update public.portfolio_platform_registry set automatic_enabled = false where platform_key in ('kalshi', 'polymarket');`);
     const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
     chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions/.test(ls));
     chk('no page errors on desktop', errors.length === 0, errors);
@@ -525,6 +645,27 @@ const CSV = [
     chk('390px: the short figure is the exact one, rounded (the label keeps it exact)', cells.every((c) => { const m = /P&L ([^,]+)$/.exec(c.label); return m && J.compactMoney(m[1].replace('−', '-').replace(/[$,+]/g, '')) === c.text; }), cells);
     await noSideways(page, '390px calendar, September');
     await shot(page, 'phone-calendar-september');
+    /* Process on a phone: the answer in the first screen, no chip explosion */
+    await page.click('.bottomnav button[data-v="process"]');
+    await waitText(page, /How is my process\?/i, 15000, 'pcoHost');
+    const pp = await page.evaluate(() => {
+      const segs = [...document.querySelectorAll('#pcoHost .pcx-nav .pcx-seg')], hero = document.querySelector('#pcoHost .pcx-hero');
+      return { segs: segs.length, fit: segs.every((b) => b.scrollWidth <= b.clientWidth + 1), heroTop: hero ? hero.getBoundingClientRect().top : 9999, vh: innerHeight,
+        bar: document.querySelectorAll('#pcoHost .pcx-filterbar button').length, chips: document.querySelectorAll('#pcoHost [data-act="platform"], #pcoHost [data-act="period"]').length };
+    });
+    chk('390px: Process shows three places that fit, one Filter, and the answer in the first screen', pp.segs === 3 && pp.fit && pp.bar === 1 && pp.chips === 0 && pp.heroTop < pp.vh * 0.6, pp);
+    await noSideways(page, '390px Process overview');
+    await shot(page, 'phone-process');
+    await page.click('#pcoHost .pcx-nav [data-v="film"]');
+    await page.waitForSelector('#pcoHost .pcx-film-t');
+    await noSideways(page, '390px Film Room');
+    await shot(page, 'phone-film');
+    await page.click('#pcoHost .pcx-nav [data-v="explore"]');
+    await page.waitForSelector('#pcoHost .pcx-explore');
+    await noSideways(page, '390px Explore');
+    await shot(page, 'phone-explore');
+    await page.click('.bottomnav button[data-v="portfolio"]');
+    await page.waitForSelector('#pfoHost .pfo-tab[data-v="history"]');
     await tab(page, 'history');
     chk('390px: history is cards, not a wide table', await page.evaluate(() => {
       const c = document.querySelector('#pfoHost .pfo-hist-cards'), tb = document.querySelector('#pfoHost .pfo-hist-table');

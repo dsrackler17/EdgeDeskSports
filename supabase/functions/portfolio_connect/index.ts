@@ -48,7 +48,7 @@
 //   GET                                              health: build and what is
 //        configured, never a value
 
-const BUILD = 'portfolio_connect-2026-10-04-1';
+const BUILD = 'portfolio_connect-2026-10-04-2';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -692,7 +692,7 @@ function config() {
     return secret;
   }
   async function ingestChunks(ctx, accountId, runId, payload) {
-    var tot = { positions_inserted: 0, positions_updated: 0, transactions_inserted: 0, transactions_unchanged: 0, rejected: 0, healed: 0 };
+    var tot = { positions_inserted: 0, positions_updated: 0, positions_settled: 0, transactions_inserted: 0, transactions_unchanged: 0, rejected: 0, healed: 0 };
     var ps = payload.positions || [], first = true;
     for (var i = 0; i < Math.max(1, ps.length); i += 200) {
       var chunk = Object.assign({}, payload, { positions: ps.slice(i, i + 200), issues: first ? payload.issues : [], fetched: first ? payload.fetched : 0,
@@ -976,6 +976,11 @@ async function ownAccount(c, user, id) {
   return { account_id: a.id, user_id: a.user_id, platform: a.platform, external_account_id: a.external_account_id, sync_cursor: a.sync_cursor,
     connection_type: a.connection_type, status: a.status };
 }
+/* a count for the operator's health panel (no reader, no credential); it
+   never fails or delays the request it describes */
+async function connectorEvent(c, platform, kind, code) {
+  try { await serviceRpc(c)('portfolio_svc_connector_event', { p_platform: platform, p_kind: kind, p_code: code || null }); } catch (_) { /* observability only */ }
+}
 function readerFailure(e) {
   const code = e && e.code && K.ERRORS[e.code] ? e.code : (e && /not enabled/.test(String(e.body || '')) ? 'DISABLED' : 'UNKNOWN');
   return K.readerError(code);
@@ -995,10 +1000,17 @@ async function connect(c, user, body) {
   }
   const ctx = ctxFor(c, 45000);
   let conn;
+  await connectorEvent(c, platform, 'ATTEMPT', null);
   try {
     if (platform === 'kalshi') {
-      if (String(body.private_key || '').length > 8192 || String(body.key_id || '').length > 100) return json({ ok: false, reason: 'BAD_CREDENTIAL', message: K.ERRORS.BAD_CREDENTIAL }, 400);
-      if (!Object.keys(c.keyring.keys || {}).length) return json({ ok: false, reason: 'not_configured', message: 'Automatic connection is not configured on this server.' }, 503);
+      if (String(body.private_key || '').length > 8192 || String(body.key_id || '').length > 100) {
+        await connectorEvent(c, platform, 'FAILED', 'BAD_CREDENTIAL');
+        return json({ ok: false, reason: 'BAD_CREDENTIAL', message: K.ERRORS.BAD_CREDENTIAL }, 400);
+      }
+      if (!Object.keys(c.keyring.keys || {}).length) {
+        await connectorEvent(c, platform, 'FAILED', 'NOT_CONFIGURED');
+        return json({ ok: false, reason: 'not_configured', message: 'Automatic connection is not configured on this server.' }, 503);
+      }
       conn = await K.connectKalshi(ctx, { userId: user.id, keyId: String(body.key_id || '').trim(), privateKey: String(body.private_key || ''), smokeTestId });
     } else {
       conn = await K.connectPolymarket(ctx, { userId: user.id, wallet: String(body.wallet || ''), smokeTestId });
@@ -1006,8 +1018,10 @@ async function connect(c, user, body) {
   } catch (e) {
     const f = readerFailure(e);
     logLine('warn', 'connect.refused', { platform, code: f.code });
+    await connectorEvent(c, platform, 'FAILED', f.code);
     return json({ ok: false, reason: f.code, message: f.message }, f.code === 'UNKNOWN' ? 500 : 400);
   }
+  await connectorEvent(c, platform, 'CONNECTED', null);
   /* the first sync, now, inside this request's budget; the scheduler continues it if needed */
   const account = await ownAccount(c, user, conn.account_id);
   const sync = account ? await K.syncAccount(ctx, account, 'INITIAL') : null;
@@ -1036,6 +1050,7 @@ async function disconnect(c, user, body) {
   try { out = await rpcAsCaller(c, user.authz, 'portfolio_disconnect', { p_account: account.account_id, p_delete_history: body.delete_history === true }); }
   catch (e) { return json({ ok: false, reason: 'failed', message: 'The account could not be disconnected. Nothing was changed.' }, 400); }
   logLine('info', 'disconnect', { platform: account.platform, deleted_history: body.delete_history === true });
+  await connectorEvent(c, account.platform, 'DISCONNECTED', null);
   const revoke = account.platform === 'kalshi'
     ? 'EdgeDesk deleted its copy of your key. To revoke the key itself, delete it in your Kalshi account\'s API key settings.'
     : account.platform === 'polymarket' ? 'EdgeDesk no longer reads this wallet. A public address has nothing to revoke.' : null;

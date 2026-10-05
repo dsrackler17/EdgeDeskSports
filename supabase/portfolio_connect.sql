@@ -191,6 +191,20 @@ create table if not exists portfolio_private.connect_sessions (
 alter table portfolio_private.connect_sessions enable row level security;
 create index if not exists connect_sessions_user on portfolio_private.connect_sessions (user_id, created_at desc);
 
+-- Connection attempts, for the operator's health panel: counts only — no
+-- reader, no credential, no wallet. Written by the connect function.
+create table if not exists portfolio_private.connector_events (
+  id            bigserial   primary key,
+  platform_key  text        not null,
+  kind          text        not null,
+  code          text        null,
+  at            timestamptz not null default now(),
+  constraint connector_events_kind check (kind in ('ATTEMPT', 'CONNECTED', 'FAILED', 'DISCONNECTED')),
+  constraint connector_events_text check (length(platform_key) <= 48 and coalesce(length(code), 0) <= 40)
+);
+alter table portfolio_private.connector_events enable row level security;
+create index if not exists connector_events_at on portfolio_private.connector_events (at desc);
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 4. ACCOUNTS: the scheduler's fields, and SYNC RUNS the reader can see
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -230,6 +244,7 @@ create table if not exists public.portfolio_sync_runs (
   constraint portfolio_sync_runs_issues check (jsonb_typeof(issues) = 'array' and jsonb_array_length(issues) <= 200 and pg_column_size(issues) <= 65536),
   constraint portfolio_sync_runs_text check (coalesce(length(error_code), 0) <= 40 and coalesce(length(error_message), 0) <= 500)
 );
+alter table public.portfolio_sync_runs add column if not exists positions_settled int not null default 0;
 create index if not exists portfolio_sync_runs_account on public.portfolio_sync_runs (platform_account_id, started_at desc);
 create index if not exists portfolio_sync_runs_recent on public.portfolio_sync_runs (started_at desc);
 
@@ -376,6 +391,7 @@ declare
   pos_ins int := 0; pos_upd int := 0; tx_ins int := 0; tx_same int := 0; v_rejected int := 0;
   v_issues jsonb := coalesce(p_payload->'issues', '[]'::jsonb);
   b numeric; s numeric; first_at timestamptz; pre text; healed int := 0;
+  pos_settled int := 0; old_res text; old_sp numeric; new_res text;
 begin
   perform public.portfolio_svc_assert();
   select id, user_id, platform, platform_label, platform_type into a from public.platform_accounts where id = p_account;
@@ -387,6 +403,11 @@ begin
       end if;
       perform set_config('portfolio.bulk_fills', 'on', true);
       select min((x->>'executed_at')::timestamptz) into first_at from jsonb_array_elements(coalesce(p->'fills', '[]'::jsonb)) x;
+      -- what the position was settled as before this payload, so a new or
+      -- changed settlement is counted (observability), never inferred
+      old_res := null; old_sp := null; new_res := nullif(p->>'resolution', '');
+      select resolution, settlement_price into old_res, old_sp from public.portfolio_positions
+       where user_id = a.user_id and platform = a.platform and external_position_id = p->>'external_position_id';
       insert into public.portfolio_positions (user_id, platform_account_id, platform, platform_label, platform_type, external_position_id, contract_key,
           position_type, sport, league, event_name, event_id, event_start_at, market_name, selection, side, current_price, current_price_at,
           resolution, settlement_price, settled_at, placed_at, source)
@@ -444,6 +465,9 @@ begin
       if s > b then raise exception using errcode = '23514', message = 'portfolio: more contracts sold than bought'; end if;
       update public.portfolio_positions set updated_at = now() where id = pid;
       if was_new then pos_ins := pos_ins + 1; else pos_upd := pos_upd + 1; end if;
+      if new_res is not null and (old_res is distinct from new_res or old_sp is distinct from (nullif(p->>'settlement_price', ''))::numeric) then
+        pos_settled := pos_settled + 1;
+      end if;
     exception when others then
       perform set_config('portfolio.bulk_fills', 'off', true);
       v_rejected := v_rejected + 1;
@@ -463,6 +487,7 @@ begin
   end loop;
   if p_run is not null then
     update public.portfolio_sync_runs set positions_inserted = positions_inserted + pos_ins, positions_updated = positions_updated + pos_upd,
+           positions_settled = positions_settled + pos_settled,
            transactions_inserted = transactions_inserted + tx_ins, transactions_unchanged = transactions_unchanged + tx_same,
            rejected = portfolio_sync_runs.rejected + v_rejected,
            fetched = fetched + coalesce((p_payload->>'fetched')::int, 0),
@@ -470,7 +495,7 @@ begin
      where id = p_run and platform_account_id = p_account;
   end if;
   return jsonb_build_object('positions_inserted', pos_ins, 'positions_updated', pos_upd, 'transactions_inserted', tx_ins,
-    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed);
+    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed, 'positions_settled', pos_settled);
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
@@ -638,25 +663,101 @@ end $$;
 -- The operator's view of every connector: run counts, failure codes and
 -- timings by platform over a window. Counts only: no reader, no position,
 -- no credential.
+-- One connection attempt and how it ended (the connect function). Counts only.
+create or replace function public.portfolio_svc_connector_event(p_platform text, p_kind text, p_code text default null)
+returns void language plpgsql set search_path = public, pg_temp as $$
+begin
+  perform public.portfolio_svc_assert();
+  insert into portfolio_private.connector_events (platform_key, kind, code) values (left(p_platform, 48), p_kind, left(p_code, 40));
+end $$;
+
+-- What the operator sees: per platform, every sync's outcome and what it
+-- moved (records discovered, inserted, updated, duplicates rejected,
+-- settlements recorded, rejected, reconciliations); connection attempts and
+-- their failures; imports, parser failures and new file layouts. Counts and
+-- rates only — never a reader, a credential or a position.
 create or replace function public.portfolio_admin_connector_health(p_hours int default 24)
 returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare h int := greatest(1, least(coalesce(p_hours, 24), 720)); since timestamptz := now() - make_interval(hours => greatest(1, least(coalesce(p_hours, 24), 720)));
 begin
   if not public.portfolio_is_admin() then raise exception 'portfolio: operators only' using errcode = '42501'; end if;
-  return (select jsonb_build_object('window_hours', greatest(1, least(p_hours, 720)), 'platforms', coalesce(jsonb_agg(x order by x->>'platform'), '[]'::jsonb),
-      'registry', (select jsonb_agg(jsonb_build_object('platform', g.platform_key, 'automatic_method', g.automatic_method, 'connector_version', g.connector_version,
-         'automatic_enabled', g.automatic_enabled, 'enabled_at', g.enabled_at, 'tos_review', g.tos_review, 'docs_verified_on', g.docs_verified_on,
-         'import_verified', g.import_verified) order by g.platform_key) from public.portfolio_platform_registry g),
-      'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type = 'API' group by status) q))
-    from (select jsonb_build_object('platform', r.platform, 'runs', count(*), 'succeeded', count(*) filter (where r.status = 'SUCCEEDED'),
+  return jsonb_build_object('window_hours', h,
+    'platforms', (select coalesce(jsonb_agg(x order by x->>'platform'), '[]'::jsonb) from (
+        select jsonb_build_object('platform', r.platform, 'runs', count(*), 'succeeded', count(*) filter (where r.status = 'SUCCEEDED'),
             'partial', count(*) filter (where r.status = 'PARTIAL'), 'failed', count(*) filter (where r.status = 'FAILED'),
             'running', count(*) filter (where r.status = 'RUNNING'),
             'p50_ms', percentile_cont(0.5) within group (order by r.duration_ms), 'p95_ms', percentile_cont(0.95) within group (order by r.duration_ms),
-            'rejected', sum(r.rejected), 'transactions_inserted', sum(r.transactions_inserted),
+            'discovered', coalesce(sum(r.fetched), 0), 'positions_inserted', coalesce(sum(r.positions_inserted), 0),
+            'positions_updated', coalesce(sum(r.positions_updated), 0), 'transactions_inserted', coalesce(sum(r.transactions_inserted), 0),
+            'duplicates_rejected', coalesce(sum(r.transactions_unchanged), 0), 'settlements', coalesce(sum(r.positions_settled), 0),
+            'rejected', coalesce(sum(r.rejected), 0),
+            'reconciled', count(*) filter (where (r.reconcile->>'ok')::boolean is true),
+            'reconcile_mismatches', count(*) filter (where (r.reconcile->>'ok')::boolean is false),
             'errors', (select jsonb_object_agg(code, c) from (select r2.error_code as code, count(*) as c from public.portfolio_sync_runs r2
-                        where r2.platform = r.platform and r2.started_at > now() - make_interval(hours => greatest(1, least(p_hours, 720))) and r2.error_code is not null
-                        group by r2.error_code) e),
+                        where r2.platform = r.platform and r2.started_at > since and r2.error_code is not null group by r2.error_code) e),
             'last_success', max(r.finished_at) filter (where r.status in ('SUCCEEDED', 'PARTIAL'))) as x
-            from public.portfolio_sync_runs r where r.started_at > now() - make_interval(hours => greatest(1, least(p_hours, 720))) group by r.platform) t);
+          from public.portfolio_sync_runs r where r.started_at > since group by r.platform) t),
+    'connections', (select coalesce(jsonb_agg(x order by x->>'platform'), '[]'::jsonb) from (
+        select jsonb_build_object('platform', e.platform_key, 'attempts', count(*) filter (where e.kind = 'ATTEMPT'),
+            'connected', count(*) filter (where e.kind = 'CONNECTED'), 'failed', count(*) filter (where e.kind = 'FAILED'),
+            'disconnected', count(*) filter (where e.kind = 'DISCONNECTED'),
+            'failures', (select jsonb_object_agg(code, c) from (select e2.code, count(*) as c from portfolio_private.connector_events e2
+                          where e2.platform_key = e.platform_key and e2.at > since and e2.kind = 'FAILED' and e2.code is not null group by e2.code) f)) as x
+          from portfolio_private.connector_events e where e.at > since group by e.platform_key) t),
+    'imports', (select coalesce(jsonb_agg(x order by x->>'platform'), '[]'::jsonb) from (
+        select jsonb_build_object('platform', coalesce(i.platform, 'unknown'), 'files', count(*),
+            'committed', count(*) filter (where i.status = 'COMMITTED'), 'failed', count(*) filter (where i.status = 'FAILED'),
+            'not_finished', count(*) filter (where i.status in ('STAGED', 'CLASSIFIED')),
+            'rows', coalesce(sum(i.rows_total), 0), 'parser_failures', coalesce(sum(i.rows_invalid), 0),
+            'files_with_parser_failures', count(*) filter (where i.rows_invalid > 0),
+            -- a layout first seen in the window, for a platform imported before
+            -- with another layout: the platform may have changed its export
+            'new_layouts', (select count(*) from (select i2.header_signature, min(i2.created_at) as first_at from public.portfolio_imports i2
+                              where i2.platform is not distinct from i.platform and i2.header_signature is not null group by i2.header_signature) sig
+                             where sig.first_at > since
+                               and exists (select 1 from public.portfolio_imports i3 where i3.platform is not distinct from i.platform
+                                            and i3.header_signature is not null and i3.header_signature <> sig.header_signature and i3.created_at <= since))) as x
+          from public.portfolio_imports i where i.created_at > since group by i.platform) t),
+    'registry', (select jsonb_agg(jsonb_build_object('platform', g.platform_key, 'automatic_method', g.automatic_method, 'connector_version', g.connector_version,
+         'automatic_enabled', g.automatic_enabled, 'enabled_at', g.enabled_at, 'tos_review', g.tos_review, 'docs_verified_on', g.docs_verified_on,
+         'import_verified', g.import_verified) order by g.platform_key) from public.portfolio_platform_registry g),
+    'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type = 'API' group by status) q));
+end $$;
+
+-- Time to value, for the operator: how long readers take from starting setup
+-- to a first position and to a ready portfolio, how many abandon setup, and
+-- how often imports and connections fail. Medians and rates only; no reader.
+create or replace function public.portfolio_admin_ttv(p_days int default 30)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare since timestamptz := now() - make_interval(days => greatest(1, least(p_days, 365))); out jsonb;
+begin
+  if not public.portfolio_is_admin() then raise exception 'portfolio: operators only' using errcode = '42501'; end if;
+  if to_regclass('public.user_events') is null then
+    return jsonb_build_object('window_days', p_days, 'events', false, 'note', 'supabase/funnel.sql is not installed: no event data.');
+  end if;
+  execute $q$
+    with ev as (select user_id, event_name, min(created_at) as at from public.user_events
+                 where created_at > $1 and user_id is not null and event_name in ('portfolio_onboarding_started', 'first_position_created', 'portfolio_ready',
+                   'connection_started', 'connection_completed', 'import_started', 'import_completed') group by user_id, event_name),
+    starts as (select user_id, at from ev where event_name = 'portfolio_onboarding_started'),
+    t as (select s.user_id, s.at as started,
+                 (select at from ev e where e.user_id = s.user_id and e.event_name = 'first_position_created') as first_pos,
+                 (select at from ev e where e.user_id = s.user_id and e.event_name = 'portfolio_ready') as ready
+            from starts s)
+    select jsonb_build_object(
+      'window_days', $2, 'events', true,
+      'onboarding_started', (select count(*) from t),
+      'time_to_first_position_minutes_median', (select round((percentile_cont(0.5) within group (order by extract(epoch from first_pos - started) / 60))::numeric, 1) from t where first_pos >= started),
+      'time_to_portfolio_ready_minutes_median', (select round((percentile_cont(0.5) within group (order by extract(epoch from ready - started) / 60))::numeric, 1) from t where ready >= started),
+      'onboarding_abandonment', (select case when count(*) > 0 then round(count(*) filter (where ready is null)::numeric / count(*), 4) end from t where started < now() - interval '7 days'),
+      'import_failure_rate', (select case when count(*) > 0 then round(count(*) filter (where status = 'FAILED' or rows_failed > 0)::numeric / count(*), 4) end
+                                from public.portfolio_imports where created_at > $1 and status in ('COMMITTED', 'FAILED')),
+      'imports_abandoned', (select count(*) from public.portfolio_imports where created_at > $1 and created_at < now() - interval '1 day' and status in ('STAGED', 'CLASSIFIED')),
+      'connection_failure_rate', (select case when count(*) > 0 then round(count(*) filter (where not exists (select 1 from ev c where c.user_id = s.user_id
+                                    and c.event_name = 'connection_completed' and c.at >= s.at))::numeric / count(*), 4) end
+                                    from ev s where s.event_name = 'connection_started'))
+  $q$ into out using since, greatest(1, least(p_days, 365));
+  return out;
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -674,10 +775,11 @@ revoke all on public.portfolio_platform_registry, public.portfolio_sync_runs fro
 grant select on public.portfolio_platform_registry, public.portfolio_sync_runs to authenticated;
 grant select, insert, update, delete on public.portfolio_platform_registry, public.portfolio_sync_runs to service_role;
 
-revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions from public;
+revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from public;
 do $$ begin
-  execute 'revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions from anon, authenticated';
-  execute 'grant select, insert, update, delete on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions to service_role';
+  execute 'revoke all on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events from anon, authenticated';
+  execute 'grant select, insert, update, delete on portfolio_private.connector_smoke_tests, portfolio_private.connect_sessions, portfolio_private.connector_events to service_role';
+  execute 'grant usage on sequence portfolio_private.connector_events_id_seq to service_role';
 end $$;
 
 -- Service functions: the service role only. Reader functions: signed-in readers.
@@ -685,7 +787,7 @@ do $$
 declare f record;
 begin
   for f in select p.oid::regprocedure as sig, p.proname from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-            where s.nspname = 'public' and (p.proname like 'portfolio\_svc\_%' or p.proname in ('portfolio_disconnect', 'portfolio_admin_connector_health',
+            where s.nspname = 'public' and (p.proname like 'portfolio\_svc\_%' or p.proname in ('portfolio_disconnect', 'portfolio_admin_connector_health', 'portfolio_admin_ttv',
               'portfolio_is_admin', 'portfolio_registry_guard', 'portfolio_smoke_stages', 'portfolio_smoke_all_ok')) loop
     execute format('revoke all on function %s from public', f.sig);
     execute format('revoke all on function %s from anon', f.sig);
@@ -704,9 +806,10 @@ notify pgrst, 'reload schema';
 -- THE REPORT. Every row should read ok.
 -- ─────────────────────────────────────────────────────────────────────────────
 select step, item, outcome from (
-  select 1 as step, 'the registry, sync runs, smoke tests and connect sessions exist' as item,
+  select 1 as step, 'the registry, sync runs, smoke tests, connect sessions and connector events exist' as item,
     case when to_regclass('public.portfolio_platform_registry') is not null and to_regclass('public.portfolio_sync_runs') is not null
       and to_regclass('portfolio_private.connector_smoke_tests') is not null and to_regclass('portfolio_private.connect_sessions') is not null
+      and to_regclass('portfolio_private.connector_events') is not null
       then 'ok' else 'CHECK THIS — a table is missing' end as outcome
   union all select 2, 'no connector is switched on without a passing live smoke test',
     case when not exists (select 1 from public.portfolio_platform_registry g where g.automatic_enabled and not exists (

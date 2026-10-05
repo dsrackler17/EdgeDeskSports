@@ -202,6 +202,36 @@ contract, SQL and page, and changes only where it sits and what surrounds it:
     "Nothing to grade yet".
   * **Old links.** `#portfolio/coach` and `pfSetTab('coach')` land on Process.
     Each page of the Coach has its own link, `#process/<page>`.
+* **Process tells the reader what matters before offering reports.** The
+  first Coach put eight reports side by side (Process Report, Leaks,
+  Strengths, Timing, Edge Capture, Rules, Experiments, Film Room) and two
+  rows of chips (platforms, periods). Process now has three places:
+  * **Overview** (`#process`), in this order:
+    * how is my process — the score and letter, or *Building* with the count;
+    * the price quality, timing, sizing and rule discipline grades, each from
+      10 graded positions;
+    * What's working and Needs attention — the strongest and weakest
+      evidence-backed patterns;
+    * the current experiment, or a focus to measure.
+  * **Film Room** (`#process/film`), the weekly retrospective:
+    * the result, process grade, rules and average CLV, with one sentence its
+      figures support;
+    * what worked and what hurt;
+    * the bad win and the good loss, explained from what was recorded;
+    * the after-the-result review;
+    * next week's focus.
+  * **Explore** (`#process/explore`), holding the reports: Leaks, Strengths,
+    Timing, Edge capture, Rules, Experiments, and Process vs outcome (the
+    former Report).
+  * **Filters.** One **Filter** control (source type, platform, time with a
+    custom range). The filters applied show as removable chips; none applied
+    reads "All activity".
+  * **No grade below 10 graded positions**, the engine's own evidence rule
+    (`X.MIN.observation`, where confidence leaves "Building").
+  * **Every figure has a WHY.** That covers every grade, pattern, experiment,
+    decision, the week and each table. Each WHY gives the sample size,
+    positions, date range, comparison group, CLV, P&L, ROI, confidence,
+    methodology and limitations.
 
 ## Old → new route map
 
@@ -225,7 +255,7 @@ Every row is held by `tools/app/navigation.e2e.js` in a real browser.
 | `show('social')` · `show('discipline')` (hidden before this change) | Research › Edges | Research |
 | new: `#portfolio/overview|calendar|journal|open|history|analytics|accounts|import|tracked` · `#process` · `#more` | those destinations | themselves |
 | `#portfolio/coach` (#504's Coach tab) · `pfSetTab('coach')` | Process, on the Coach page last read | Process |
-| new: `#process/report|leaks|strengths|timing|edge|rules|experiments|film` | that page of the Process Coach | Process |
+| new: `#process` (Overview) · `#process/film|explore|leaks|strengths|timing|edge|rules|experiments|outcome` | that page of Process (`#process/report`, the first Coach's Report, opens the Overview) | Process |
 
 ## Reading the navigation evidence
 

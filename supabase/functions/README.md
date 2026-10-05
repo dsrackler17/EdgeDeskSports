@@ -59,6 +59,16 @@ one core (`tools/billing/billing_core.js`, copied in by
 | `create_checkout_session` | `index.html` (`lib/edgedesk_access.js`) | the server-created Stripe Checkout: account from the verified token, on the session, the subscription and the customer; refuses an account Stripe already has live, and a price that is not the consented figure. JWT verification OFF; the token is verified inside. |
 | `sync_subscription` | `index.html`, `app.html`, `admin/billing/`, pg_cron (`supabase/billing_reconcile_cron.sql`) | reconcile an account with Stripe: the reader's own (rate-limited), after checkout, the operator's repair/link/inspect, and the debounced 10-minute sweep. JWT verification OFF; every reader action verifies the token inside, the sweep takes no identity and answers counts only. |
 
+**Portfolio** (`docs/platform-connections.md`) — one single-file function carrying
+the connector core (`lib/edgedesk_portfolio_connect_core.js`, copied in by
+`tools/portfolio/inline_connect_core.js`; `tools/portfolio/connect_core.test.js`
+fails on drift). Built and deployable; every connector it serves is switched
+off in `portfolio_platform_registry` until its live smoke test passes:
+
+| function | called by | what for |
+|---|---|---|
+| `portfolio_connect` | `app.html` (Portfolio → Accounts), pg_cron (`supabase/portfolio_sync_cron.sql`, every 10 minutes), `tools/portfolio/connector_smoke.js` | connect a read-only Kalshi key or a public Polymarket wallet (validated against the platform, the key sealed with AES-256-GCM, never returned), a reader's rate-limited sync, disconnect (deletes the key, says how to revoke it at the platform), and the scheduler's `sweep` of due accounts. Read-only: it never places, changes or cancels anything. A sportsbook is refused. JWT verification OFF (`--no-verify-jwt`); every reader action verifies the token inside, the sweep takes no identity and answers counts only. Secrets: `PORTFOLIO_CREDENTIAL_KEYS`, `PORTFOLIO_CREDENTIAL_KEY_VERSION`. |
+
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**
 
 | function | what for |

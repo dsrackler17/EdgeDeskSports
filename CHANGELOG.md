@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-05 — Process tells you what matters before asking which report to open
+
+Process opened on eight peer reports and two rows of filter chips; it read like an analytics dashboard, not a coach. The same engine (`lib/edgedesk_portfolio_process.js`, `supabase/portfolio_journal.sql`) now sits under a simpler surface. The five destinations — Research, Card, Portfolio, Process, More — are unchanged.
+
+- **Three places instead of eight: Overview · Film Room · Explore.** Leaks, Strengths, Timing, Edge capture, Rules, Experiments and Process vs outcome (the former Process Report) live under **Explore**, each with a figure on its row and a way back.
+- **One Filter.** It covers source type, platform (of that type) and time: 7D, 30D, YTD, All or Custom. Until something is applied the page reads "All activity"; applied filters show as compact, removable chips.
+- **Overview: how is my process?**
+  - **The answer comes first:** the Process score and its letter, with the graded count and confidence.
+  - **Below 10 graded positions** the hero shows **Process profile · Building**, the eligible count, and the rule. No score or letter is assigned below 10, the engine's own evidence rule (`X.MIN.observation`, where confidence leaves "Building"). No arbitrary threshold is added, and no "— n=0".
+  - **Dimension grades:** price quality, timing, sizing and rule discipline, each graded only from 10 positions with that data. A dimension under 10 shows its progress (e.g. "Timing 3/10"), never a letter.
+  - **What's working and Needs attention:** the strongest and weakest pattern that clears the existing evidence bar, each with its process grade, positions, average CLV and evidence level. The wording is analysis, never "stop" or "don't bet". With nothing strong enough, one quiet line says so and how much more data it needs, instead of empty cards.
+  - **Current experiment:** week x of y, the metric during against before, and its status. It says that an experiment never promises a result.
+  - **Current focus** (when no experiment is running): the weakest pattern or dimension, offered as something to measure. "Set up an experiment" prefills the form; the reader decides.
+- **Film Room: the week, like game film.**
+  - **The week:** result, process grade, rules followed and average CLV, with one sentence its figures support. Examples: "Strong results. Strong process." / "The results were bad. The process wasn't." / "You won this week, but your process grade fell (B → C+)." With fewer than 10 graded positions it says the process can't be judged yet.
+  - **What worked / What hurt:** the strongest and weakest decisions, each shown once.
+  - **Won on a poor decision / Lost on a good decision:** the explanation is built from what was recorded, e.g. "the line closed at -4 against your -7 (−3 pts against you), and its price quality scored 28". Market structure is never cited, because it is a constant of the market type.
+  - **Review:** "Would you make this bet again? YES / NO / UNSURE — Why?", asked first for the bad win and the good loss. It is saved as the after-the-result reflection (`would_repeat`, `review_note`, `reviewed_at`), beside what was recorded before the bet. That pre-bet record is write-once in the database and never part of the save.
+  - **Next week:** a focus and an experiment to measure, never an instruction.
+  - **Sparse and empty weeks collapse.** "Only 1 eligible position…" comes with the positions themselves; there are no "None this week" cards.
+- **WHY on everything.** Every grade, pattern, experiment, decision, week and table opens one evidence panel (`whyItem`). It gives the sample size, positions, date range (actual dates, in the reader's zone), comparison group, CLV, P&L, ROI, confidence, methodology and limitations, so the reader can check and challenge each number. A decision's WHY lists its components and links to its journal.
+- **Portfolio's Decision Grade follows the same rule.** It shows no letter below 10 graded positions, reading "Building", with the count.
+- **Mobile.** A phone opens on Process → the three places → the score or Building → What's working → Needs attention → Current focus. There's one Filter button and no chip rows. The e2e checks the segments fit, that nothing scrolls sideways, and that the hero sits in the first screen.
+- **Tests.**
+  - `tools/portfolio/journal_ui.test.js`: 126 checks. Navigation, the filter, the Building rule, dimension gates, the cards, Explore, the Film Room sentences, explanations, review, focus wording, collapse, and the required fields in every WHY.
+  - `tools/portfolio/portfolio_ui.e2e.js`: 108 checks against PostgreSQL. The Overview, WHY, Filter and chips, every Explore report, the experiment on the Overview, the Film Room week of Sep 7, and a review saved while the pre-bet fields stay unchanged in the database. At 390 px it checks Process, the Film Room and Explore.
+  - `tools/app/navigation.e2e.js`, `tools/app/navigation.test.js`, `npm run portfolio:test`.
+
+
 ## 2026-10-05 — The Process Coach is the Process seat
 
 #504 built the Process Coach as a tab inside Portfolio, while the bottom nav's **Process** seat still showed the earlier tracked-price page. The five-destination navigation (`docs/ia/NAVIGATION_AUDIT.md`) gives each question its own seat. Portfolio answers "what do I hold and how did it go"; Process answers "how do I decide". The Coach now lives in Process.
@@ -22,6 +51,89 @@
   - `tools/portfolio/portfolio_ui.e2e.js`: 84 checks. The Coach is exercised in the Process seat: report, leaks with `#process/leaks`, rules, experiments and the Film Room. It also checks the Overview's link, the old `#portfolio/coach` link and reader isolation in Process.
   - `tools/app/navigation.e2e.js`: 172 checks. Covers the empty Process at 390 and 1440 px, its Connect accounts → Portfolio › Accounts, and the tracked section under the Coach.
   - `tools/app/navigation.test.js`: 234 checks.
+
+## 2026-10-05 — Portfolio ingestion: Kalshi and Polymarket connectors (built, switched off), sportsbook import, setup and operator health
+
+How a reader's history gets into the Portfolio. Every source ends in the same rows, the same P&L rules and the same tests. Nothing connects automatically in production yet.
+
+### Automatic connectors: built, off until a live test passes
+
+**The pipeline.** `lib/edgedesk_portfolio_connect_core.js` holds:
+
+- the platform registry, with how each platform was verified;
+- a 13-method adapter contract, which refuses any adapter that could place orders;
+- the Kalshi adapter: a read-only API key, signed requests, a key that can trade refused, a boundary-safe cursor, historical fills, settlements including scalar and void, and net-position reconciliation that rebuilds a market that disagrees;
+- the Polymarket adapter: a public wallet only, with a seed phrase or private key refused.
+
+The function `supabase/functions/portfolio_connect` carries the core verbatim and handles connect, sync, disconnect and a 10-minute scheduler sweep (`supabase/portfolio_sync_cron.sql`).
+
+**Credentials** are sealed with AES-256-GCM on the server, bound to the reader, account and kind, and re-sealed on key rotation. They live in a schema readers cannot reach. The browser sees a hint, never the key.
+
+**The switch.** `supabase/portfolio_connect.sql` adds the registry and service-only ingest. The database refuses to switch a connector on without:
+
+- a PASSED ten-stage live smoke test of the same connector version, in production, within 30 days;
+- a cleared terms review.
+
+`tools/portfolio/connector_smoke.js` runs the ten stages (CONNECT → IMPORT → VERIFY → INCREMENTAL → NEW_ACTIVITY → SETTLEMENT → RECONCILE → DISCONNECT → RECONNECT → NO_DUPLICATES) and never throws the switch itself.
+
+**How it was verified.** The official documentation hosts were blocked from the build environment. The facts come from each platform's own published client source, and must be re-read before anything is switched on (`docs/platform-connections.md`).
+
+### Sportsbook import: select platform → drop file → review → done
+
+- **Import, never Connect**, for every sportsbook. EdgeDesk never asks for a sportsbook password.
+- **Platform detection** in order: the reader's choice, the file's platform column, then the file's name. Otherwise the page asks. The review headline reads "Detected: DraftKings · 284 wagers found · Aug 2024 – Oct 2026".
+- **Profiles** for DraftKings, FanDuel, BetMGM, Caesars, bet365, BetRivers, Fanatics, theScore Bet (ESPN BET), and Kalshi and Polymarket CSVs. All are marked unverified until a real export has been imported.
+- **Remembered layouts.**
+- **Bonus bets and parlay legs.**
+- **A totals check:** the file's stated results against what its odds pay.
+- **Review:** Found / Ready / Duplicates / Need review / Cannot import, an estimated P&L, [Import n] and [Review n].
+- **Re-importing a newer file** updates results in place, with [Update portfolio] and "nothing is counted twice".
+
+### Setup and Accounts
+
+- **Setup** groups platforms by how their history arrives: prediction markets (Connect only once switched on), sportsbook import, and other (import another platform, add manually).
+- **Progress** reads "Connected ✓ · 143 positions", "Imported ✓", or "Waiting for import", with a total.
+- **"Your portfolio is ready"** shows tracked and open positions and the server's all-time P&L and ROI. The process profile reads *Building* until 10 positions are graded. No insight is invented before then.
+- **Accounts** are grouped Automatic / Quick import / Manual. They show honest statuses: Syncing is never "Connected", plus Action required, Sync failing and Disconnected. Each shows "Last synced 2 min ago", a sync log, and "Import update". Disconnect explains how to revoke the key at the platform.
+- **The WHY panel** adds positions analyzed and the group's own P&L, ROI and CLV. CLV is shown only over positions with a closing price.
+- **Before you enter** adds what is already open on the same event, across platforms.
+
+### Observability
+
+**The operator panel** (operators only, counts only) shows, per platform:
+
+- sync runs, timings and errors;
+- records discovered, inserted and updated;
+- duplicates rejected and settlements recorded;
+- rejected positions and reconciliations;
+- connection attempts and failures by code;
+- import files, rows that could not be read, and new file layouts (a likely export-format change);
+- time to value: median minutes to a first position and to ready, setup abandonment, and import and connection failure rates.
+
+Eleven funnel events are registered in `supabase/funnel.sql` and allow-listed in `lib/edgedesk_track.js`.
+
+### Fix
+
+A seed phrase pasted into the wallet field was cut to the field's 42-character limit and read as a bad address, not refused as a secret. The field now takes the whole paste, so the refusal fires.
+
+### Tests
+
+| Suite | Checks |
+|---|---|
+| connect core | 67 |
+| connect SQL | 82 |
+| connect sync, end to end | 33 |
+| connect function | 18 |
+| import | 83 |
+| UI | 100 |
+| journal UI | 70 |
+| process | 38 |
+| calc | 106 |
+| browser e2e | 87 |
+
+### Not changed
+
+The landing page still says importing and connecting are in development (`tools/presentation/landing_positioning.test.js` pins it). It changes once the import is deployed and a connector is switched on.
 
 ## 2026-10-04 — Portfolio Calendar: month arrows no longer blank it; whole amounts on a phone; the month's settled line
 
