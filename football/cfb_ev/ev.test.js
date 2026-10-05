@@ -9,7 +9,7 @@
    3  market de-vig benchmark (F14-F18)
    4  staking arithmetic (F21-F23) — downstream, disabled
    5  CLV, edge decay, the juice panel (F24-F28)
-   6  the frozen curve: signs, pushes, the location move
+   6  the frozen curve: signs, pushes, the re-centring (reweighting in place)
    7  calibration: maps, the artifact contract, the market-line anchor
    8  uncertainty: Pr(EV>0) and the conservative quantile (F29-F30)
    9  the EV read: the §68 fixtures and the §77 demonstrations
@@ -194,7 +194,7 @@ chk('the explanation reads "EXTRA 1.0 POINT / +x pp model … / +y pp required b
 chk('juice cents: −113 → −178 is +65 cents more', altRow.vs_main.juice_cost_cents === 65);
 
 /* ======================================================================= 6 */
-section('6. the frozen curve: signs, pushes, the location move');
+section('6. the frozen curve: signs, pushes, the re-centring (reweighting in place)');
 const cv = RD.buildCurve(normalCover(3, 14), 3, 30, {});
 const h7 = EV.probabilityAt(cv, 'home', -7), h75 = EV.probabilityAt(cv, 'home', -7.5), a7 = EV.probabilityAt(cv, 'away', 7);
 chk('probabilities sum to one', near(h7.win + h7.push + h7.loss, 1, 1e-9));
@@ -203,11 +203,34 @@ chk('+7 vs +7.5 differ by exactly P(margin = 7)', near(EV.probabilityAt(cv, 'awa
 chk('a half point has no push mass', EV.probabilityAt(cv, 'home', -7.5).push === 0);
 chk('a quarter line is not priced from the curve', EV.probabilityAt(cv, 'home', -7.25) === null);
 chk('a line outside the curve is not priced (never extrapolated, never 50%)', EV.probabilityAt(cv, 'home', -60) === null);
-const s0 = EV.shiftedHome(cv, -7, 0), s1 = EV.shiftedHome(cv, -7, 1), s05 = EV.shiftedHome(cv, -7, 0.5);
-chk('an integer move reproduces a lookup at the moved line', near(s1.win, EV.probabilityAt(cv, 'home', -6).win, 1e-9) && near(s0.win, h7.win, 1e-9));
-chk('a fractional move is the mixture of the two integer moves (push kept on integers)', near(s05.win, 0.5 * (s0.win + s1.win), 1e-9) && near(s05.push, 0.5 * (s0.push + s1.push), 1e-9) && near(s05.win + s05.push + s05.loss, 1, 1e-9));
-const target = 0.5, ds = EV.solveShift(cv, -7, target);
-chk('solveShift finds the move that gives the target conditional cover', near(EV.shiftedHome(cv, -7, ds).cover, target, 1e-6));
+/* the move: the stored masses reweighted by exp(θ·margin), θ solved so the mean moves by delta */
+const r0 = EV.recentredHome(cv, -7, 0);
+chk('delta 0 is the stored curve itself', near(r0.win, h7.win, 1e-12) && near(r0.push, h7.push, 1e-12) && near(EV.recentredSide(cv, 'away', 7, 0).win, a7.win, 1e-12));
+const nc = RD.buildCurve(normalCover(3, 6), 3, 30, {});      /* no mass past the curve’s ends (5 sd) */
+const meanOf = (c, d) => { let m = 0, t = 0; for (let k = -27; k <= 33; k++) { const x = EV.recentredHome(c, -k, d); if (x) { m += k * x.push; t += x.push; } } return m / t; };
+chk('the reweighting moves the mean by exactly delta', near(meanOf(nc, 2.4) - meanOf(nc, 0), 2.4, 1e-4) && near(meanOf(nc, -5) - meanOf(nc, 0), -5, 1e-4));
+const lr = []; for (let k = -10; k <= 16; k++) lr.push(Math.log(EV.recentredHome(nc, -k, 2.4).push / EV.recentredHome(nc, -k, 0).push));
+chk('every margin keeps its own mass: P_δ(k) / P(k) is exp(θ·k) up to a constant', lr.every((x, i) => i < 2 || near(x - 2 * lr[i - 1] + lr[i - 2], 0, 2e-4)));
+/* a college-shaped curve: no tie, spikes on 3 and 7 */
+const spiky = (mu, sd) => { const base = normalCover(mu, sd), pm = {}; let tot = 0;
+  for (let k = -90; k <= 90; k++) { const p = base(k).push * (k === 0 ? 0 : ([3, 7].indexOf(Math.abs(k)) >= 0 ? 3 : 1)); pm[k] = p; tot += p; }
+  return (t) => { let win = 0, push = 0; for (let k = -90; k <= 90; k++) { if (Math.abs(k - t) < 1e-9) push += pm[k] / tot; else if (k > t) win += pm[k] / tot; } return { win, push, lose: 1 - win - push }; }; };
+const sc = RD.buildCurve(spiky(1, 14), 1, 30, {});
+const at = (k, d) => EV.recentredHome(sc, -k, d).push;
+chk('a margin with no mass keeps none: a re-centred college curve never gives a tie mass', [-6.3, -2.5, 0.7, 4.1, 9].every((d) => at(0, d) === 0));
+chk('the spikes stay on their margins (3 and 7 above both neighbours after a 2.5-point move)', [3, 7, -3, -7].every((k) => at(k, 2.5) > at(k - 1, 2.5) && at(k, 2.5) > at(k + 1, 2.5)));
+const target = 0.5, ds = EV.solveRecentre(cv, -7, target);
+chk('solveRecentre finds the move that gives the target conditional cover', near(EV.recentredHome(cv, -7, ds).cover, target, 1e-9));
+chk('the cover rises with the move, and the curve stays monotone in the line', EV.recentredHome(cv, -7, ds + 0.5).cover > EV.recentredHome(cv, -7, ds).cover
+  && [-12.5, -10, -7.5, -7, -3, 0.5, 4].every((L, i, a) => i === 0 || EV.recentredHome(cv, L, ds).win >= EV.recentredHome(cv, a[i - 1], ds).win - 1e-12));
+chk('a line off the curve is not priced, before or after the move', EV.recentredHome(cv, -60, ds) === null && EV.solveRecentre(cv, -60, 0.5) === null && EV.recentredHome(cv, -7.25, ds) === null);
+/* the champion's own curve, re-centred, is the champion at another fair margin (same row, same sigma) */
+require(path.join(ROOT, 'football', 'cfb_p4', 'params.js'));
+const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js')), PD = window.EDCfbP4Params.distributions, SB = (window.EDCfbP4Params.volatility || {}).sigma_base || PD.sigma_margin;
+const champ = (fair) => RD.buildCurve(QEV.cfbGameCover(PD, fair, 7, 16.2, SB), 7, 30, {});
+const c4 = champ(4), c7 = champ(7), toward = EV.solveRecentre(c4, -7, EV.recentredHome(c7, -7, 0).cover);
+chk('the re-centred champion curve is the champion re-run at the moved fair margin (within 0.2 pp at the line ± 7)', [-14, -10.5, -10, -7, -3.5, -3, 0].every((L) => near(EV.recentredHome(c4, L, toward).cover, EV.recentredHome(c7, L, 0).cover, 2e-3) && near(EV.recentredHome(c4, L, toward).push, EV.recentredHome(c7, L, 0).push, 2e-3)));
+chk('…and keeps the champion’s empty tie', EV.recentredHome(c4, 0, toward).push === 0 && RD.massAt(c4, 'home', 0) === 0);
 chk('curveSane accepts a coherent curve and refuses one whose P(margin > t) rises', EV.curveSane(cv).ok && !EV.curveSane(Object.assign({}, cv, { win: cv.win.map((w, i) => i === 10 ? cv.win[9] + 0.01 : w) })).ok);
 
 /* ======================================================================= 7 */
@@ -452,7 +475,11 @@ chk('the moneyline calibrator is NOT validated (nothing beat identity; identity 
 const HA = fs.readFileSync(path.join(AD, 'holdout_access.jsonl'), 'utf8').split('\n').filter(Boolean);
 chk('the 2026 holdout was read exactly once', HA.length === 1 && JSON.parse(HA[0]).version === 'cfb_ev_calibration_v1');
 chk('the holdout confirms or revokes, never selects', TN.holdout && /^(CONFIRMED|REVOKED|nothing)/.test(TN.holdout['cfb|spread|close'].verdict));
-chk('the key-number verdict is recorded (NOT VALIDATED on this data)', CAL.key_numbers && CAL.key_numbers.validated === false && /re-centres/.test(CAL.key_numbers.finding));
+chk('the key-number verdict is recorded (NOT VALIDATED on this data)', CAL.key_numbers && CAL.key_numbers.validated === false && /reweights that curve in place/.test(CAL.key_numbers.finding));
+const ANC = TN.audits.anchored, k3 = (k, a) => a.key_numbers.filter((x) => x.abs_margin === k)[0];
+chk('the anchored distribution keeps the no-ties hole and the key numbers on their margins (tie 0; |3| and |7| within 0.5 pp of raw)',
+  ANC.tie && ANC.tie.anchored_mean_mass === 0 && [3, 7].every((k) => Math.abs(k3(k, ANC).anchored_mean_mass - k3(k, ANC).raw_mean_mass) < 0.005), ANC.tie);
+chk('every alternate-line slope carries its 95% CI', TN.alternate_line_domain.every((a) => a.anchored.slope_ci95 && a.anchored.slope_ci95.length === 2));
 chk('the extreme-EV thresholds are out-of-sample percentiles', CAL.extremes.prob_p99 > CAL.extremes.prob_p95 && CAL.extremes.gap_p99 > CAL.extremes.gap_p95 && CAL.extremes.n >= 3000);
 chk('the uncertainty layer carries bootstrap draws for every calibrator', Object.values(CAL.calibrators).every((c) => c.uncertainty && c.uncertainty.platt_draws.length >= 100));
 chk('the dataset excludes in-sample seasons from every fit', DMAN.windows.IN_SAMPLE && TN.tasks.every((t) => t.n_oos < DMAN.rows));

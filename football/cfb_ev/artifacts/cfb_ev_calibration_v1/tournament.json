@@ -2,7 +2,7 @@
  "schema": "edgedesk_ev_tournament_v1",
  "version": "cfb_ev_calibration_v1",
  "base_model_version": "edgedesk_cfb_p4_v1.0.0",
- "built_at": "2026-10-04T21:25:48.071Z",
+ "built_at": "2026-10-05T13:59:11.665Z",
  "dataset": {
   "file": "football/cfb_ev/data/cfb_ev_calibration_rows_v1.csv.gz",
   "sha256": "74fa31d5ce342e05218426a16d265031f275a2f3d38d3e1d89aa510c6daa63df"
@@ -4614,7 +4614,7 @@
     "all_integer_lines": {
      "n": 933,
      "predicted_raw": 0.0328,
-     "predicted_anchored": 0.0287,
+     "predicted_anchored": 0.0343,
      "observed": 0.0525,
      "wilson95": [
       0.04,
@@ -4624,7 +4624,7 @@
     "line_3": {
      "n": 157,
      "predicted_raw": 0.0613,
-     "predicted_anchored": 0.032,
+     "predicted_anchored": 0.0641,
      "observed": 0.0955,
      "wilson95": [
       0.0588,
@@ -4634,7 +4634,7 @@
     "line_7": {
      "n": 99,
      "predicted_raw": 0.0532,
-     "predicted_anchored": 0.0301,
+     "predicted_anchored": 0.0556,
      "observed": 0.1111,
      "wilson95": [
       0.0632,
@@ -4644,7 +4644,7 @@
     "line_10": {
      "n": 59,
      "predicted_raw": 0.0323,
-     "predicted_anchored": 0.0258,
+     "predicted_anchored": 0.0336,
      "observed": 0.0678,
      "wilson95": [
       0.0267,
@@ -4654,7 +4654,7 @@
     "other_integers": {
      "n": 618,
      "predicted_raw": 0.0223,
-     "predicted_anchored": 0.0279,
+     "predicted_anchored": 0.0234,
      "observed": 0.0307,
      "wilson95": [
       0.0198,
@@ -4665,89 +4665,94 @@
    "three_state_log_loss": {
     "n": 933,
     "raw": 0.89761,
-    "anchored": 0.87154
+    "anchored": 0.85693
    },
    "key_numbers": [
     {
      "abs_margin": 1,
      "empirical": 0.0314,
      "raw_mean_mass": 0.0356,
-     "anchored_mean_mass": 0.0395
+     "anchored_mean_mass": 0.0361
     },
     {
      "abs_margin": 2,
      "empirical": 0.0322,
      "raw_mean_mass": 0.0259,
-     "anchored_mean_mass": 0.0404
+     "anchored_mean_mass": 0.0262
     },
     {
      "abs_margin": 3,
      "empirical": 0.1055,
      "raw_mean_mass": 0.0963,
-     "anchored_mean_mass": 0.0409
+     "anchored_mean_mass": 0.0972
     },
     {
      "abs_margin": 4,
      "empirical": 0.0356,
      "raw_mean_mass": 0.0366,
-     "anchored_mean_mass": 0.0396
+     "anchored_mean_mass": 0.037
     },
     {
      "abs_margin": 5,
      "empirical": 0.0235,
      "raw_mean_mass": 0.0273,
-     "anchored_mean_mass": 0.0375
+     "anchored_mean_mass": 0.0277
     },
     {
      "abs_margin": 6,
      "empirical": 0.0314,
      "raw_mean_mass": 0.0307,
-     "anchored_mean_mass": 0.0382
+     "anchored_mean_mass": 0.031
     },
     {
      "abs_margin": 7,
      "empirical": 0.0871,
      "raw_mean_mass": 0.0803,
-     "anchored_mean_mass": 0.0376
+     "anchored_mean_mass": 0.081
     },
     {
      "abs_margin": 8,
      "empirical": 0.031,
      "raw_mean_mass": 0.0239,
-     "anchored_mean_mass": 0.0343
+     "anchored_mean_mass": 0.0242
     },
     {
      "abs_margin": 10,
      "empirical": 0.0482,
      "raw_mean_mass": 0.0442,
-     "anchored_mean_mass": 0.0317
+     "anchored_mean_mass": 0.0447
     },
     {
      "abs_margin": 13,
      "empirical": 0.0226,
      "raw_mean_mass": 0.0175,
-     "anchored_mean_mass": 0.0272
+     "anchored_mean_mass": 0.0178
     },
     {
      "abs_margin": 14,
      "empirical": 0.0423,
      "raw_mean_mass": 0.0456,
-     "anchored_mean_mass": 0.0266
+     "anchored_mean_mass": 0.0459
     },
     {
      "abs_margin": 17,
      "empirical": 0.0415,
      "raw_mean_mass": 0.033,
-     "anchored_mean_mass": 0.0244
+     "anchored_mean_mass": 0.0332
     },
     {
      "abs_margin": 21,
      "empirical": 0.0377,
      "raw_mean_mass": 0.0372,
-     "anchored_mean_mass": 0.021
+     "anchored_mean_mass": 0.0375
     }
    ],
-   "note": "OOF: each season read with the map fitted on the seasons before it, evaluated at the close and carried by the frozen distribution (fractional moves are mixtures of the two neighbouring integer moves)"
+   "tie": {
+    "empirical": 0,
+    "raw_mean_mass": 0,
+    "anchored_mean_mass": 0
+   },
+   "note": "OOF: each season read with the map fitted on the seasons before it, evaluated at the close and carried by the frozen distribution reweighted in place (lib/edgedesk_ev.js recentredHome: every margin keeps its own mass, so a tie keeps none and the spikes stay on their margins)"
   }
  },
  "alternate_line_domain": [
@@ -4762,13 +4767,21 @@
    },
    "anchored": {
     "method": "temperature",
-    "brier": 0.218534,
-    "log_loss": 0.628839,
-    "slope": 0.4201,
-    "citl": -0.0501
+    "brier": 0.217585,
+    "log_loss": 0.626642,
+    "slope": 1.3689,
+    "slope_ci95": [
+     0.512,
+     2.2257
+    ],
+    "citl": -0.042,
+    "citl_ci95": [
+     -0.1284,
+     0.0444
+    ]
    },
    "mean_raw_p": 0.3677,
-   "mean_anchored_p": 0.3331,
+   "mean_anchored_p": 0.3313,
    "observed": 0.322,
    "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
   },
@@ -4783,13 +4796,21 @@
    },
    "anchored": {
     "method": "temperature",
-    "brier": 0.243778,
-    "log_loss": 0.680648,
-    "slope": 0.7008,
-    "citl": -0.0172
+    "brier": 0.243178,
+    "log_loss": 0.679416,
+    "slope": 1.5095,
+    "slope_ci95": [
+     0.4478,
+     2.5713
+    ],
+    "citl": -0.0163,
+    "citl_ci95": [
+     -0.098,
+     0.0654
+    ]
    },
    "mean_raw_p": 0.461,
-   "mean_anchored_p": 0.4259,
+   "mean_anchored_p": 0.4257,
    "observed": 0.4217,
    "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
   },
@@ -4804,13 +4825,21 @@
    },
    "anchored": {
     "method": "temperature",
-    "brier": 0.242582,
-    "log_loss": 0.678249,
-    "slope": 0.0997,
-    "citl": 0.0541
+    "brier": 0.241981,
+    "log_loss": 0.677019,
+    "slope": 1.0279,
+    "slope_ci95": [
+     0.0015,
+     2.0542
+    ],
+    "citl": 0.0601,
+    "citl_ci95": [
+     -0.0218,
+     0.142
+    ]
    },
    "mean_raw_p": 0.6028,
-   "mean_anchored_p": 0.5754,
+   "mean_anchored_p": 0.5739,
    "observed": 0.5885,
    "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
   },
@@ -4825,13 +4854,21 @@
    },
    "anchored": {
     "method": "temperature",
-    "brier": 0.213975,
-    "log_loss": 0.619347,
-    "slope": 0.3804,
-    "citl": 0.0974
+    "brier": 0.21357,
+    "log_loss": 0.618414,
+    "slope": 0.8116,
+    "slope_ci95": [
+     -0.0234,
+     1.6465
+    ],
+    "citl": 0.1005,
+    "citl_ci95": [
+     0.0132,
+     0.1878
+    ]
    },
    "mean_raw_p": 0.6929,
-   "mean_anchored_p": 0.6702,
+   "mean_anchored_p": 0.6695,
    "observed": 0.6913,
    "note": "the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)"
   }

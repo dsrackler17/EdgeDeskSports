@@ -1,22 +1,6 @@
 # Changelog
 
-## 2026-10-05 — System health stops latching on one failed read
 
-The header said **System · 1 failing** with "the database could not be reached at all — network, DNS, or a paused project · the record". Capture was writing to that same database every few minutes the whole time.
-
-- **One failed read held the header red for the whole session.** The Database row read a CSS class that only three loaders (the live board, the record and its analytics) ever write. Nothing re-checked it, so a sleeping laptop, a gateway timeout or a slow count kept it red after every later read had succeeded.
-  - It is now judged by the latest answer.
-  - Red means the latest read failed too. While it stays red, a single heartbeat read re-checks on open, about once a minute, and as soon as the device is back online.
-  - If the database has answered since a view failed, that is one amber warning naming the view, the cause and its age.
-  - If the database stopped the boot load of the live board, the board reloads once the database answers again.
-- **The cause was mislabelled.** `sbCount` threw a bare error with no status, so the record's 500 statement timeouts and refused keys all read as "could not be reached".
-  - Counts now carry their status and body, get the shared token refresh (never the anon fallback), and count as healthy reads when they succeed.
-  - A statement timeout is named as one.
-- **A bug in the page is not a database outage.** A TypeError thrown while drawing the record, its analytics or the live board no longer turns the header red. Those views now say "a page error, not the database", and the error goes to the console.
-- **The feed rows no longer depend on the live board having loaded.** Data / feed health reads its own heartbeat and shows fresh / stale. Last successful sync shows the age.
-- **Tests:**
-  - `tools/app/db_session.test.js`: 51 checks.
-  - `tools/app/navigation.test.js`: 246 checks. Its async checks are now awaited; before, a returned Promise counted as a pass.
 
 ## 2026-10-05 — The Decision Record, and one tap from the Card to it
 

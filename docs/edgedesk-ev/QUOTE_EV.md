@@ -28,7 +28,7 @@ the identity `EV = win · (d − d_fair)`.
 | Arithmetic, gates, ladders, sanity guards, history | `lib/edgedesk_quote_ev.js` (`window.EDQuoteEV`, UMD, no dependencies beyond `lib/research_core.js`) |
 | CFB distribution | the champion's PMF from `football/cfb_p4/engine.js`, its shape conditioned **once** on the market spread and centred on the pure fair margin (`EDQuoteEV.cfbConditionedCover`, the same function `build.js` uses). One shape serves every alternate line, so the ladder is coherent. |
 | NFL distribution | `football/engine.js` `dist.coverProbSpread('nfl', fair, t)`, keyed by EdgeDesk's own fair spread |
-| CFB calibrated EV | the SHADOW calibrator the EV tournament promoted (`football/cfb_ev`), applied through the frozen engine (`lib/edgedesk_ev.js` `anchorOf` / `shiftedSide`); shown beside the raw EV, never in place of it |
+| CFB calibrated EV | the SHADOW calibrator the EV tournament promoted (`football/cfb_ev`), applied through the frozen engine (`lib/edgedesk_ev.js` `anchorOf` / `recentredSide`: the curve reweighted in place, so its spikes stay on their margins); shown beside the raw EV, never in place of it |
 | Page | `app.html`, the "QUOTE-LEVEL EXPECTED VALUE" block (the board's loaders sit beside `fbP4Ensure`) |
 | Offline build / API | `football/cfb_terminal/build.js`: `board.json` rows carry `quote_ev`, `games.json` carries every priced quote and the ladder, `quote_ev.csv`, and `ev_validation.json` → `validation.quote_ev_buckets` |
 
@@ -185,20 +185,28 @@ Alternates never inherit the main-line decision.
 - **Tail safeguard.** The EV tournament's `alternate_line_domain` audits the
   calibrated slope at ±3 and ±7 pts from the market line. The slopes are:
 
-  | Offset | Slope until 2026-10-04 | Slope since |
-  |---|---|---|
-  | −7 | 0.4432 (fail) | 0.4201 (fail) |
-  | −3 | 0.8875 | 0.7008 |
-  | +3 | 1.2386 | 0.0997 (fail) |
-  | +7 | 0.6702 | 0.3804 (fail) |
+  | Offset | Slope until 2026-10-04 | 2026-10-04 | Since 2026-10-05 (95% CI) |
+  |---|---|---|---|
+  | −7 | 0.4432 (fail) | 0.4201 (fail) | 1.3689 (0.51 – 2.23) |
+  | −3 | 0.8875 | 0.7008 | 1.5095 (0.45 – 2.57) |
+  | +3 | 1.2386 | 0.0997 (fail) | 1.0279 (0.00 – 2.05) |
+  | +7 | 0.6702 | 0.3804 (fail) | 0.8116 (−0.02 – 1.65) |
 
   The validated domain is the largest offset at which every audited offset,
   on both sides, sits inside the 0.6–1.6 band. That was **±3 pts** until
-  2026-10-04 and is **0** since. On 2026-10-04 the champion stopped shifting
-  its margin table (its spikes now stay on their margins). The calibration
-  anchor still carries the curve to the calibrated probability by a location
-  move, which displaces those spikes. Each slope's 95% interval is about
-  ±1.15 wide, so the ±3 pass was itself marginal.
+  2026-10-04, **0** on 2026-10-04 and is **±7** since 2026-10-05.
+  - On 2026-10-04 the champion stopped shifting its margin table, so its
+    spikes stay on their margins. The calibration anchor still carried the
+    curve to the calibrated probability by a location move, which displaced
+    those spikes again.
+  - On 2026-10-05 the anchor began reweighting the curve in place too
+    (`lib/edgedesk_ev.js` `recentredHome`).
+  - Each slope's 95% interval is about ±1 wide. A pass is therefore weak
+    evidence, and the +3 and +7 intervals reach 0. The +7 calibration-in-the-
+    large interval (0.013 – 0.188) excludes 0: the calibrated probability
+    runs about 2 pp low there.
+  - An alternate that crosses 3 or 7 from the market line is still never
+    actionable, because key-number mass stays NOT VALIDATED.
 
   Outside the domain a quote is `LOW CONFIDENCE / TAIL CALIBRATION NOT
   VALIDATED` and cannot be SAFEST +EV. The NFL has no audit, so every NFL
