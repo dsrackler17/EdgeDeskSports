@@ -765,6 +765,11 @@ begin
     'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl, 'manage_token', v_manage);
 end;
 $$;
+-- CALLABLE BY A BROWSER ON PURPOSE. This and the three manage-by-token doors
+-- below are gated by a secret token that only the address's own mailbox ever
+-- received, so the grant is stated rather than inherited from PUBLIC.
+revoke all on function public.newsletter_confirm(text) from public;
+grant execute on function public.newsletter_confirm(text) to anon, authenticated;
 
 -- ------------------------------------------------------- manage by token ---
 create or replace function public.newsletter_mask_email(p_email text)
@@ -795,6 +800,8 @@ begin
     'confirmed_at', v.confirmed_at, 'consent_source', v.consent_source, 'consent_at', v.consent_at);
 end;
 $$;
+revoke all on function public.newsletter_preferences_get(text) from public;
+grant execute on function public.newsletter_preferences_get(text) to anon, authenticated;
 
 create or replace function public.newsletter_preferences_set(
   p_token text, p_wants_cfb boolean, p_wants_nfl boolean
@@ -823,6 +830,8 @@ begin
     'wants_nfl', coalesce(p_wants_nfl, false), 'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
+revoke all on function public.newsletter_preferences_set(text, boolean, boolean) from public;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to anon, authenticated;
 
 -- UNSUBSCRIBE WITHOUT A LOGIN, which is what the one-click header needs.
 -- Scope 'all' suppresses the address; a single sport turns one preference off
@@ -868,6 +877,8 @@ begin
     'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
+revoke all on function public.newsletter_unsubscribe(text, text, text) from public;
+grant execute on function public.newsletter_unsubscribe(text, text, text) to anon, authenticated;
 
 -- ------------------------------------------------------ the signed-in door --
 -- An account holder managing their own preference, without ever exposing the
@@ -970,6 +981,12 @@ revoke all on function public.newsletter_set_my_preferences(boolean, boolean, te
 grant execute on function public.newsletter_set_my_preferences(boolean, boolean, text) to authenticated;
 
 -- ------------------------------------------------------------ suppression --
+-- SERVICE ROLE ONLY. Unlike the doors above, this one takes no token: it
+-- trusts its caller to have already verified a provider webhook, and it
+-- records a complaint that nothing downgrades. Callable by a browser, it lets
+-- anybody holding the public anon key permanently block mail to any address
+-- they name. The one legitimate caller is the edge function's webhook
+-- handler, which uses the service role.
 create or replace function public.newsletter_suppress(
   p_email text, p_reason text, p_detail text default null, p_event_id text default null
 ) returns jsonb
@@ -1000,6 +1017,7 @@ begin
   return jsonb_build_object('ok', true, 'email_masked', public.newsletter_mask_email(v_email), 'reason', p_reason);
 end;
 $$;
+revoke all on function public.newsletter_suppress(text, text, text, text) from public, anon, authenticated;
 
 -- ------------------------------------------------------------ eligibility --
 -- THE ONLY PLACE AN ADDRESS LEAVES THE DATABASE, and it is service-role only.
@@ -1455,6 +1473,13 @@ union all select 10, 'the edition lease is not callable by a browser',
   case when not exists (select 1 from information_schema.role_routine_grants
       where routine_schema = 'public' and routine_name = 'newsletter_claim_edition'
         and grantee in ('anon','authenticated')) then 'ok' else 'CHECK THIS' end
+-- has_function_privilege rather than role_routine_grants: the latter lists a
+-- grant to PUBLIC under the grantee 'PUBLIC', so it reads ok while anon can
+-- still execute the function through PUBLIC.
+union all select 10.5, 'suppression is not callable by a browser',
+  case when not has_function_privilege('anon', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+        and not has_function_privilege('authenticated', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+       then 'ok' else 'CHECK THIS — anon or authenticated can suppress any address' end
 union all select 11, 'an account holder can manage their own preference',
   case when exists (select 1 from information_schema.role_routine_grants
       where routine_schema = 'public' and routine_name = 'newsletter_set_my_preferences'

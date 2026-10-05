@@ -16,6 +16,8 @@
 --   7  A COMPLAINT OUTRANKS a bounce outranks an unsubscribe, and nothing a
 --      click can do clears the first two.
 --   8  DOUBLE OPT-IN cannot be short-circuited from the table.
+--   9  ONLY THE SERVICE ROLE CAN SUPPRESS AN ADDRESS. A browser that could
+--      would permanently block mail to anybody it named.
 --
 -- Every check raises on failure, so reaching the end is the suite passing.
 -- ===========================================================================
@@ -299,6 +301,79 @@ begin
   r := public.newsletter_preferences_set(m, true, true);
   perform pg_temp.chk('…and the preferences page cannot revive it either',
     public.newsletter_eligible_count('NFL') = 0);
+end $$;
+
+-- ===========================================================================
+-- 3b — ONLY THE SERVICE ROLE CAN SUPPRESS
+--
+-- newsletter_suppress takes no token: it trusts its caller to have verified a
+-- provider webhook, and a complaint it records is never downgraded. Callable
+-- with the public anon key, it is a way to stop mail to anybody. The victim
+-- here is the account holder subscribed above.
+-- ===========================================================================
+do $$
+begin
+  perform pg_temp.chk('anon holds no execute grant on suppression',
+    not has_function_privilege('anon', 'public.newsletter_suppress(text,text,text,text)', 'execute'));
+  perform pg_temp.chk('a signed-in reader holds no execute grant on suppression',
+    not has_function_privilege('authenticated', 'public.newsletter_suppress(text,text,text,text)', 'execute'));
+  perform pg_temp.chk('the service role does',
+    has_function_privilege('service_role', 'public.newsletter_suppress(text,text,text,text)', 'execute'));
+
+  -- the token-gated doors are meant for a browser, and say so
+  perform pg_temp.chk('anon can confirm with a token',
+    has_function_privilege('anon', 'public.newsletter_confirm(text)', 'execute'));
+  perform pg_temp.chk('anon can read preferences with a token',
+    has_function_privilege('anon', 'public.newsletter_preferences_get(text)', 'execute'));
+  perform pg_temp.chk('anon can set preferences with a token',
+    has_function_privilege('anon', 'public.newsletter_preferences_set(text,boolean,boolean)', 'execute'));
+  perform pg_temp.chk('anon can unsubscribe with a token',
+    has_function_privilege('anon', 'public.newsletter_unsubscribe(text,text,text)', 'execute'));
+end $$;
+
+set role anon;
+do $$ begin
+  begin
+    perform public.newsletter_suppress('reader@example.com', 'complaint');
+    perform pg_temp.chk('anon CAN suppress any address', false);
+  exception when insufficient_privilege then
+    perform pg_temp.chk('anon cannot suppress an address', true);
+  end;
+end $$;
+reset role;
+
+set role authenticated;
+do $$ begin
+  perform set_config('request.jwt.claim.sub', current_setting('nl.operator'), true);
+  begin
+    perform public.newsletter_suppress('reader@example.com', 'complaint');
+    perform pg_temp.chk('a signed-in account CAN suppress any address', false);
+  exception when insufficient_privilege then
+    perform pg_temp.chk('a signed-in account, even an operator, cannot suppress an address', true);
+  end;
+end $$;
+reset role;
+
+do $$ begin
+  perform pg_temp.chk('the attempts wrote no suppression', not exists (
+    select 1 from public.newsletter_suppressions where email = 'reader@example.com'));
+  perform pg_temp.chk('…and left the subscriber confirmed', (
+    select status from public.newsletter_subscribers where email = 'reader@example.com') = 'confirmed');
+end $$;
+
+set role service_role;
+do $$
+declare r jsonb;
+begin
+  r := public.newsletter_suppress('svc-check@example.com', 'bounce', 'webhook', 'evt_svc');
+  perform pg_temp.chk('the service role can suppress', (r->>'ok')::boolean);
+end $$;
+reset role;
+
+do $$ begin
+  perform pg_temp.chk('…and its suppression is written', exists (
+    select 1 from public.newsletter_suppressions where email = 'svc-check@example.com' and reason = 'bounce'));
+  delete from public.newsletter_suppressions where email = 'svc-check@example.com';
 end $$;
 
 -- ===========================================================================
