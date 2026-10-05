@@ -770,6 +770,11 @@ begin
     'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl, 'manage_token', v_manage);
 end;
 $$;
+-- CALLABLE BY A BROWSER ON PURPOSE. This and the three manage-by-token doors
+-- below are gated by a secret token that only the address's own mailbox ever
+-- received, so the grant is stated rather than inherited from PUBLIC.
+revoke all on function public.newsletter_confirm(text) from public;
+grant execute on function public.newsletter_confirm(text) to anon, authenticated;
 
 -- ------------------------------------------------------- manage by token ---
 create or replace function public.newsletter_mask_email(p_email text)
@@ -803,6 +808,8 @@ begin
     'confirmed_at', v.confirmed_at, 'consent_source', v.consent_source, 'consent_at', v.consent_at);
 end;
 $$;
+revoke all on function public.newsletter_preferences_get(text) from public;
+grant execute on function public.newsletter_preferences_get(text) to anon, authenticated;
 
 create or replace function public.newsletter_preferences_set(
   p_token text, p_wants_cfb boolean, p_wants_nfl boolean
@@ -834,6 +841,8 @@ begin
     'wants_nfl', coalesce(p_wants_nfl, false), 'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
+revoke all on function public.newsletter_preferences_set(text, boolean, boolean) from public;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to anon, authenticated;
 
 -- UNSUBSCRIBE WITHOUT A LOGIN, which is what the one-click header needs.
 -- Scope 'all' suppresses the address; a single sport turns one preference off
@@ -888,6 +897,8 @@ begin
     'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
+revoke all on function public.newsletter_unsubscribe(text, text, text) from public;
+grant execute on function public.newsletter_unsubscribe(text, text, text) to anon, authenticated;
 
 -- THE TOKEN DOORS, stated rather than inherited from PUBLIC. The newsletter
 -- Edge Function calls them with the service role; they stay callable by the
@@ -1007,25 +1018,7 @@ revoke all on function public.newsletter_set_my_preferences(boolean, boolean, te
 grant execute on function public.newsletter_set_my_preferences(boolean, boolean, text) to authenticated;
 
 -- ------------------------------------------------------------ suppression --
--- SUPPRESS AN ARBITRARY ADDRESS: A SERVER-SIDE OPERATION, AND NOTHING ELSE.
--- It takes any email and blocks it for good (a complaint is never downgraded),
--- so it must never be reachable with the public anon key. It used to be a
--- SECURITY DEFINER function with no revoke, which left it executable by
--- PUBLIC — and so by anyone holding the anon key embedded in every page.
---
--- Three locks now, each enough on its own:
---   1  EXECUTE is revoked from public, anon and authenticated and granted to
---      service_role (the webhook in functions/newsletter and the pipeline in
---      tools/newsletter/runtime.js — both already call it with that key).
---   2  It runs with the CALLER'S rights (security invoker), so it can only
---      write what the caller could write directly — and anon and
---      authenticated hold no privilege on the suppression or subscriber
---      tables (revoked below). An accidental re-grant of EXECUTE still fails.
---   3  It refuses, by name, any caller that is not the service role, the
---      tables' owner or a superuser — failing closed with 42501 rather than
---      quietly doing nothing.
--- A reader's own opt-out never comes through here: it is newsletter_unsubscribe
--- (below), which changes only the row its secret manage token names.
+
 create or replace function public.newsletter_suppress(
   p_email text, p_reason text, p_detail text default null, p_event_id text default null
 ) returns jsonb
@@ -1070,11 +1063,7 @@ begin
 end;
 $$;
 revoke all on function public.newsletter_suppress(text, text, text, text) from public, anon, authenticated;
-grant execute on function public.newsletter_suppress(text, text, text, text) to service_role;
--- what the service role writes through it, stated rather than assumed from
--- the platform's default privileges (the client roles are revoked below)
-grant select, insert, update on public.newsletter_suppressions to service_role;
-grant select, update on public.newsletter_subscribers to service_role;
+
 
 -- ------------------------------------------------------------ eligibility --
 -- THE ONLY PLACE AN ADDRESS LEAVES THE DATABASE, and it is service-role only.
@@ -1530,6 +1519,13 @@ union all select 10, 'the edition lease is not callable by a browser',
   case when not exists (select 1 from information_schema.role_routine_grants
       where routine_schema = 'public' and routine_name = 'newsletter_claim_edition'
         and grantee in ('anon','authenticated')) then 'ok' else 'CHECK THIS' end
+-- has_function_privilege rather than role_routine_grants: the latter lists a
+-- grant to PUBLIC under the grantee 'PUBLIC', so it reads ok while anon can
+-- still execute the function through PUBLIC.
+union all select 10.5, 'suppression is not callable by a browser',
+  case when not has_function_privilege('anon', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+        and not has_function_privilege('authenticated', 'public.newsletter_suppress(text,text,text,text)', 'execute')
+       then 'ok' else 'CHECK THIS — anon or authenticated can suppress any address' end
 union all select 11, 'an account holder can manage their own preference',
   case when exists (select 1 from information_schema.role_routine_grants
       where routine_schema = 'public' and routine_name = 'newsletter_set_my_preferences'

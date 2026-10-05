@@ -108,6 +108,15 @@ try {
   for (const f of [SHIM, BILLING, ARTICLES, SCHEMA]) {
     const r = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', f]);
     if (!ok(path.basename(f) + ' applies', r.status === 0, r.stderr)) throw new Error('apply');
+    /* A SUPABASE PROJECT ALSO GRANTS EXECUTE on every new public function to
+       the client roles by name, so revoking from PUBLIC alone still leaves
+       anon able to call it. The shim leaves that out, and without it here a
+       function exposed that way would pass. Same grant as tools/personal/_pg.js. */
+    if (f === SHIM) {
+      const d = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-c',
+        'alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;']);
+      if (!ok('the Supabase function grants are in place', d.status === 0, d.stderr)) throw new Error('apply');
+    }
   }
   const twice = psql(conn, ['-d', DB, '-v', 'ON_ERROR_STOP=1', '-q', '-f', SCHEMA]);
   ok('applying it again changes nothing and fails nothing', twice.status === 0, twice.stderr);
