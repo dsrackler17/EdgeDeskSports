@@ -27,7 +27,7 @@ PASS / NOT_EVALUATED.
 | Odds conversion, break-even, `expectedRoi`, `clvPoints` | `lib/research_core.js` |
 | Win / push / loss at an exact quote, raw EV, fair odds, sanity flags, alternate ladder, frontier | `lib/edgedesk_quote_ev.js` (`priceQuote`, `evaluateGame`, `ladder`) |
 | The stored probability curve (every half point) | `lib/edgedesk_read.js` `sideProb`, `buildCurve`; stored per game in `games.json` `read_inputs.curve` |
-| Calibrated probability | `lib/edgedesk_ev.js` `calibrationFor` → `anchorOf` → `shiftedSide`; artifact `football/cfb_ev/artifacts/cfb_ev_calibration_v1` (temperature, PROMOTED, maturity SHADOW) |
+| Calibrated probability | `lib/edgedesk_ev.js` `calibrationFor` → `anchorOf` → `recentredSide`; artifact `football/cfb_ev/artifacts/cfb_ev_calibration_v1` (temperature, PROMOTED, maturity SHADOW) |
 | CFB distribution | champion PMF conditioned on the market spread (`EDQuoteEV.cfbConditionedCover`) |
 | NFL distribution | `football/engine.js` `dist.coverProbSpread('nfl', …)`; **no calibration exists** |
 | Existing boundaries | `EDEV.priceTargets` / `worstClearingPrice` (EV policy), `EDRead.bettableTo`, `decision.js priceTargets` |

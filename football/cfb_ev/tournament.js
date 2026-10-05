@@ -260,8 +260,8 @@ function audits(all) {
 
 /* alternate-line transport check: the map fitted on the training folds is
    evaluated AT the close (the anchor) and carried to close ± 3 / ± 7 by the
-   same frozen distribution (lib/edgedesk_ev.js anchorOf → solveShift →
-   shiftedHome) — exactly the runtime path for an alternate line */
+   same frozen distribution, reweighted in place (lib/edgedesk_ev.js anchorOf →
+   solveRecentre → recentredHome) — exactly the runtime path for an alternate line */
 function altDomain(all, t) {
   const byGame = new Map();
   all.filter((x) => x.window === 'OOS' && /^close/.test(x.checkpoint)).forEach((x) => { if (!byGame.has(x.game_id)) byGame.set(x.game_id, {}); byGame.get(x.game_id)[x.checkpoint] = x; });
@@ -276,19 +276,19 @@ function altDomain(all, t) {
     const H = N(c.market_home_line), p0 = RD.sideProb(curve, 'home', H);
     if (!p0) return;
     const q = Math.min(1 - 1e-4, Math.max(1e-4, EV.applyCalibrator(maps[s], p0.cover)));
-    const d = Math.abs(q - p0.cover) < 1e-12 ? 0 : EV.solveShift(curve, H, q);
+    const d = Math.abs(q - p0.cover) < 1e-12 ? 0 : EV.solveRecentre(curve, H, q);
     if (d == null) return;
     Object.keys(acc).forEach((cp) => {
       const x = g[cp]; if (!x) return;
       const y = N(x.y_cover); if (!(y === 0 || y === 1)) return;
-      const sh = EV.shiftedHome(curve, N(x.market_home_line), d);
+      const sh = EV.recentredHome(curve, N(x.market_home_line), d);
       if (!sh || sh.cover == null) return;
       acc[cp].pi.push(N(x.p_cover)); acc[cp].pc.push(Math.min(1 - 1e-6, Math.max(1e-6, sh.cover))); acc[cp].y.push(y);
     });
   });
   return Object.keys(acc).map((cp) => {
     const a = acc[cp], mi = C.metrics(a.pi, a.y), mc = C.metrics(a.pc, a.y);
-    return { checkpoint: cp, n: a.y.length, identity: { brier: mi.brier, log_loss: mi.log_loss, slope: mi.slope, citl: mi.citl }, anchored: { method: t.chosen, brier: mc.brier, log_loss: mc.log_loss, slope: mc.slope, citl: mc.citl },
+    return { checkpoint: cp, n: a.y.length, identity: { brier: mi.brier, log_loss: mi.log_loss, slope: mi.slope, citl: mi.citl }, anchored: { method: t.chosen, brier: mc.brier, log_loss: mc.log_loss, slope: mc.slope, slope_ci95: mc.slope_ci95, citl: mc.citl, citl_ci95: mc.citl_ci95 },
       mean_raw_p: mi.mean_p, mean_anchored_p: mc.mean_p, observed: mi.base_rate,
       note: 'the calibrator evaluated at the close and carried to this line by the frozen distribution (the runtime path for an alternate)' };
   });
@@ -303,6 +303,7 @@ function anchoredAudit(all, t) {
   const maps = {};
   FOLDS.forEach((s) => { maps[s] = t.chosen === 'identity' ? { method: 'identity' } : fitMethod(t.chosen, t._oos.filter((x) => x.season < s)); });
   const ks = [1, 2, 3, 4, 5, 6, 7, 8, 10, 13, 14, 17, 21], acc = {}; ks.forEach((k) => { acc[k] = { raw: 0, anc: 0, obs: 0 }; });
+  const tie = { raw: 0, anc: 0, obs: 0 };
   const push = { all: { n: 0, raw: 0, anc: 0, obs: 0 }, k3: { n: 0, raw: 0, anc: 0, obs: 0 }, k7: { n: 0, raw: 0, anc: 0, obs: 0 }, k10: { n: 0, raw: 0, anc: 0, obs: 0 }, other: { n: 0, raw: 0, anc: 0, obs: 0 } };
   let llRaw = 0, llAnc = 0, n3 = 0, n = 0;
   const g = (a) => Math.log(Math.max(1e-6, a));
@@ -311,18 +312,19 @@ function anchoredAudit(all, t) {
     const H = N(x.market_home_line), p0 = RD.sideProb(curve, 'home', H);
     if (!p0) return;
     const q = Math.min(1 - 1e-4, Math.max(1e-4, EV.applyCalibrator(maps[N(x.season)], p0.cover)));
-    const d = Math.abs(q - p0.cover) < 1e-12 ? 0 : EV.solveShift(curve, H, q);
+    const d = Math.abs(q - p0.cover) < 1e-12 ? 0 : EV.solveRecentre(curve, H, q);
     if (d == null) return;
     n++;
     const fm = N(x.final_margin);
+    const at = (kk) => { const a = EV.recentredHome(curve, -kk, d); return a ? a.push : 0; };
+    tie.raw += RD.massAt(curve, 'home', 0) || 0; tie.anc += at(0); tie.obs += fm === 0 ? 1 : 0;
     ks.forEach((k) => {
-      const at = (kk) => { const a = EV.shiftedHome(curve, -kk, d); return a ? a.push : 0; };
       acc[k].raw += (RD.massAt(curve, 'home', k) || 0) + (RD.massAt(curve, 'home', -k) || 0);
       acc[k].anc += at(k) + at(-k);
       acc[k].obs += Math.abs(fm) === k ? 1 : 0;
     });
     if (Math.abs(H - Math.round(H)) < 1e-9) {
-      const sh = EV.shiftedHome(curve, H, d), yP = N(x.y_push), a = Math.abs(H);
+      const sh = EV.recentredHome(curve, H, d), yP = N(x.y_push), a = Math.abs(H);
       const b = a === 3 ? 'k3' : (a === 7 ? 'k7' : (a === 10 ? 'k10' : 'other'));
       [push.all, push[b]].forEach((P) => { P.n++; P.raw += p0.push; P.anc += sh.push; P.obs += yP; });
       const o = yP === 1 ? 'P' : (N(x.y_cover) === 1 ? 'W' : 'L');
@@ -335,7 +337,8 @@ function anchoredAudit(all, t) {
   return { method: t.chosen, games: n, push: { all_integer_lines: pr(push.all), line_3: pr(push.k3), line_7: pr(push.k7), line_10: pr(push.k10), other_integers: pr(push.other) },
     three_state_log_loss: { n: n3, raw: r(llRaw / n3, 5), anchored: r(llAnc / n3, 5) },
     key_numbers: ks.map((k) => ({ abs_margin: k, empirical: r(acc[k].obs / n, 4), raw_mean_mass: r(acc[k].raw / n, 4), anchored_mean_mass: r(acc[k].anc / n, 4) })),
-    note: 'OOF: each season read with the map fitted on the seasons before it, evaluated at the close and carried by the frozen distribution (fractional moves are mixtures of the two neighbouring integer moves)' };
+    tie: { empirical: r(tie.obs / n, 4), raw_mean_mass: r(tie.raw / n, 4), anchored_mean_mass: r(tie.anc / n, 4) },
+    note: 'OOF: each season read with the map fitted on the seasons before it, evaluated at the close and carried by the frozen distribution reweighted in place (lib/edgedesk_ev.js recentredHome: every margin keeps its own mass, so a tie keeps none and the spikes stay on their margins)' };
 }
 
 
@@ -346,15 +349,18 @@ function keyVerdict(au) {
   /* where the key-number mass is lost: the raw curve (the champion re-centres its
      market-conditioned PMF by reweighting it in place since 2026-10-04, so its
      spikes stay on the margins games end on) or the calibration anchor, which
-     carries that curve to the calibrated probability by a location move */
+     since 2026-10-05 reweights that curve in place too (lib/edgedesk_ev.js
+     recentred) and so moves no spike off its margin */
   const raw3 = (au.key_numbers.filter((k) => k.abs_margin === 3)[0] || {}).pmf_mean_mass, raw7 = (au.key_numbers.filter((k) => k.abs_margin === 7)[0] || {}).pmf_mean_mass;
   const anchorLoses = raw3 > k3.anchored_mean_mass && raw7 > k7.anchored_mean_mass;
-  const cause = anchorLoses
-    ? ' Cause: the raw curve keeps its spikes on the key numbers (raw mass ' + (100 * raw3).toFixed(1) + '% at 3, ' + (100 * raw7).toFixed(1) + '% at 7: football/cfb_p4/engine.js cfbRecentre re-centres the market-conditioned PMF by reweighting it in place), but the calibration anchor re-centres that curve on the calibrated probability by a location move (a mixture of integer moves, lib/edgedesk_ev.js shiftedHome), which carries the spikes off the key numbers again.'
-    : ' Cause: the champion’s market-conditioned PMF, as re-centred (football/cfb_p4/engine.js cfbRecentre), carries less mass on the key numbers than games show (raw mass ' + (100 * raw3).toFixed(1) + '% at 3, ' + (100 * raw7).toFixed(1) + '% at 7).';
+  const pp = (x) => (100 * x).toFixed(1) + '%';
+  const cause = (anchorLoses
+    ? ' Cause: the calibration anchor carries less of the key-number mass than the raw curve does (raw ' + pp(raw3) + ' at 3, ' + pp(raw7) + ' at 7).'
+    : ' Cause: the champion’s market-conditioned PMF (football/cfb_p4/engine.js cfbRecentre) puts less mass on the market’s own number than games land on: at a close of 3 it pushes ' + pp(A.push.line_3.predicted_raw) + ' of the time against ' + pp(A.push.line_3.observed) + ' observed, at 7 ' + pp(A.push.line_7.predicted_raw) + ' against ' + pp(A.push.line_7.observed) + '.')
+    + ' The calibration anchor reweights that curve in place (lib/edgedesk_ev.js recentred), so every margin keeps its own mass: ' + pp(k3.anchored_mean_mass) + ' at 3 and ' + pp(k7.anchored_mean_mass) + ' at 7 (raw ' + pp(raw3) + ', ' + pp(raw7) + '), and ' + pp(A.tie.anchored_mean_mass) + ' on a tie.';
   return { validated: !!covered, primary: [3, 7],
     finding: 'At integer market lines the anchored distribution predicts a ' + (100 * P.predicted_anchored).toFixed(1) + '% push rate (raw ' + (100 * P.predicted_raw).toFixed(1) + '%) against ' + (100 * P.observed).toFixed(1)
-      + '% observed (95% ' + (100 * P.wilson95[0]).toFixed(1) + '–' + (100 * P.wilson95[1]).toFixed(1) + '%); |margin| = 3 is ' + (100 * k3.empirical).toFixed(1) + '% of 2022-2025 FBS games but carries ' + (100 * k3.anchored_mean_mass).toFixed(1)
+      + '% observed (95% ' + (100 * P.wilson95[0]).toFixed(1) + '–' + (100 * P.wilson95[1]).toFixed(1) + '%); |margin| = 3 is ' + (100 * k3.empirical).toFixed(1) + '% of 2023-2025 FBS games (the walk-forward folds) but carries ' + (100 * k3.anchored_mean_mass).toFixed(1)
       + '% of the anchored mass, 7 is ' + (100 * k7.empirical).toFixed(1) + '% vs ' + (100 * k7.anchored_mean_mass).toFixed(1) + '%.' + cause,
     consequence: covered ? null : 'Key-number mass is NOT VALIDATED: an alternate line that crosses 3 or 7 relative to the market line is never actionable, and the juice panel prints the empirical share beside the model mass. A main-line EV at an integer number moves by about 0.1 pt of EV per 2 pp of push error at −110, so main lines are not blocked. No manual key-number bonus is added.' };
 }

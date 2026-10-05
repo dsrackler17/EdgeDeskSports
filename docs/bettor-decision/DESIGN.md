@@ -72,7 +72,7 @@ Deterministic: the same input returns the same object and the same
   governance. `factsFromTerminal()` reads the research-terminal object; the
   build stores the result on every `board.json` row as `decision_facts`.
 - **Pricing** — the `EDQuoteEV` model (the champion's curve; CFB's calibrated
-  `side_prob` from `EDEV.shiftedSide`), the quotes and their evaluation. The
+  `side_prob` from `EDEV.recentredSide`), the quotes and their evaluation. The
   build passes `quoteEvOf`'s; the page passes the live ones it already priced.
 - The page overlays its live research view (`factsFromView`) and live market
   (`marketFromEvaluation`) on the build's facts. Without a build row the QB
