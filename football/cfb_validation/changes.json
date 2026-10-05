@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-05T12:07:34.494Z",
+ "generated_at": "2026-10-05T13:07:34.637Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-09-29T11:07:32.383Z",
+  "since": "2026-09-29T13:07:31.974Z",
   "changes": [
    {
     "what": "pricing code",
@@ -28,7 +28,7 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-09-29T10:25:23.510Z",
+    "from": "2026-09-29T12:43:30.620Z",
     "to": "2026-10-05T05:59:54.267Z"
    },
    {
@@ -38,13 +38,19 @@
     "to": 87
    },
    {
-    "what": "market coverage (% of slate games with a fresh quote)",
+    "what": "market coverage (% of slate games with 2+ fresh books)",
     "kind": "MARKET",
     "from": 3,
-    "to": 11
+    "to": 0
+   },
+   {
+    "what": "market coverage (% of slate games with a fresh quote)",
+    "kind": "MARKET",
+    "from": 62,
+    "to": 18
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -118,7 +124,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-04T22:50:56.447Z",
+   "to_at": "2026-10-05T05:59:54.267Z",
    "old_fair": 19.2,
    "new_fair": 11.95,
    "change": -7.25,
@@ -147,10 +153,10 @@
    "game_id": "401856808",
    "game": "Hawai'i @ Arizona State",
    "market_then": null,
-   "market_now": -21.5,
+   "market_now": -21,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -422,7 +428,7 @@
    "market_now": -14,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -454,7 +460,7 @@
    "market_now": -4,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -787,7 +793,7 @@
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-05T03:46:42.801Z",
+   "to_at": "2026-10-05T05:59:54.267Z",
    "old_fair": 4.05,
    "new_fair": 1.13,
    "change": -2.92,
@@ -811,10 +817,10 @@
    "game_id": "401864518",
    "game": "North Dakota State @ UNLV",
    "market_then": null,
-   "market_now": 3.5,
+   "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -987,7 +993,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-04T17:43:47.869Z",
+   "to_at": "2026-10-05T05:59:54.267Z",
    "old_fair": -1.67,
    "new_fair": -3.73,
    "change": -2.06,
@@ -1018,7 +1024,7 @@
    "market_now": 2.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1632,7 +1638,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-04T22:50:56.447Z",
+   "to_at": "2026-10-05T05:59:54.267Z",
    "old_fair": -7.1,
    "new_fair": -6.73,
    "change": 0.37,
@@ -1659,7 +1665,7 @@
    "market_now": 9.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
