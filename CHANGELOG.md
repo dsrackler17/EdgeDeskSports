@@ -1,5 +1,88 @@
 # Changelog
 
+## 2026-10-05 — Portfolio ingestion: Kalshi and Polymarket connectors (built, switched off), sportsbook import, setup and operator health
+
+How a reader's history gets into the Portfolio. Every source ends in the same rows, the same P&L rules and the same tests. Nothing connects automatically in production yet.
+
+### Automatic connectors: built, off until a live test passes
+
+**The pipeline.** `lib/edgedesk_portfolio_connect_core.js` holds:
+
+- the platform registry, with how each platform was verified;
+- a 13-method adapter contract, which refuses any adapter that could place orders;
+- the Kalshi adapter: a read-only API key, signed requests, a key that can trade refused, a boundary-safe cursor, historical fills, settlements including scalar and void, and net-position reconciliation that rebuilds a market that disagrees;
+- the Polymarket adapter: a public wallet only, with a seed phrase or private key refused.
+
+The function `supabase/functions/portfolio_connect` carries the core verbatim and handles connect, sync, disconnect and a 10-minute scheduler sweep (`supabase/portfolio_sync_cron.sql`).
+
+**Credentials** are sealed with AES-256-GCM on the server, bound to the reader, account and kind, and re-sealed on key rotation. They live in a schema readers cannot reach. The browser sees a hint, never the key.
+
+**The switch.** `supabase/portfolio_connect.sql` adds the registry and service-only ingest. The database refuses to switch a connector on without:
+
+- a PASSED ten-stage live smoke test of the same connector version, in production, within 30 days;
+- a cleared terms review.
+
+`tools/portfolio/connector_smoke.js` runs the ten stages (CONNECT → IMPORT → VERIFY → INCREMENTAL → NEW_ACTIVITY → SETTLEMENT → RECONCILE → DISCONNECT → RECONNECT → NO_DUPLICATES) and never throws the switch itself.
+
+**How it was verified.** The official documentation hosts were blocked from the build environment. The facts come from each platform's own published client source, and must be re-read before anything is switched on (`docs/platform-connections.md`).
+
+### Sportsbook import: select platform → drop file → review → done
+
+- **Import, never Connect**, for every sportsbook. EdgeDesk never asks for a sportsbook password.
+- **Platform detection** in order: the reader's choice, the file's platform column, then the file's name. Otherwise the page asks. The review headline reads "Detected: DraftKings · 284 wagers found · Aug 2024 – Oct 2026".
+- **Profiles** for DraftKings, FanDuel, BetMGM, Caesars, bet365, BetRivers, Fanatics, theScore Bet (ESPN BET), and Kalshi and Polymarket CSVs. All are marked unverified until a real export has been imported.
+- **Remembered layouts.**
+- **Bonus bets and parlay legs.**
+- **A totals check:** the file's stated results against what its odds pay.
+- **Review:** Found / Ready / Duplicates / Need review / Cannot import, an estimated P&L, [Import n] and [Review n].
+- **Re-importing a newer file** updates results in place, with [Update portfolio] and "nothing is counted twice".
+
+### Setup and Accounts
+
+- **Setup** groups platforms by how their history arrives: prediction markets (Connect only once switched on), sportsbook import, and other (import another platform, add manually).
+- **Progress** reads "Connected ✓ · 143 positions", "Imported ✓", or "Waiting for import", with a total.
+- **"Your portfolio is ready"** shows tracked and open positions and the server's all-time P&L and ROI. The process profile reads *Building* until 10 positions are graded. No insight is invented before then.
+- **Accounts** are grouped Automatic / Quick import / Manual. They show honest statuses: Syncing is never "Connected", plus Action required, Sync failing and Disconnected. Each shows "Last synced 2 min ago", a sync log, and "Import update". Disconnect explains how to revoke the key at the platform.
+- **The WHY panel** adds positions analyzed and the group's own P&L, ROI and CLV. CLV is shown only over positions with a closing price.
+- **Before you enter** adds what is already open on the same event, across platforms.
+
+### Observability
+
+**The operator panel** (operators only, counts only) shows, per platform:
+
+- sync runs, timings and errors;
+- records discovered, inserted and updated;
+- duplicates rejected and settlements recorded;
+- rejected positions and reconciliations;
+- connection attempts and failures by code;
+- import files, rows that could not be read, and new file layouts (a likely export-format change);
+- time to value: median minutes to a first position and to ready, setup abandonment, and import and connection failure rates.
+
+Eleven funnel events are registered in `supabase/funnel.sql` and allow-listed in `lib/edgedesk_track.js`.
+
+### Fix
+
+A seed phrase pasted into the wallet field was cut to the field's 42-character limit and read as a bad address, not refused as a secret. The field now takes the whole paste, so the refusal fires.
+
+### Tests
+
+| Suite | Checks |
+|---|---|
+| connect core | 67 |
+| connect SQL | 82 |
+| connect sync, end to end | 33 |
+| connect function | 18 |
+| import | 83 |
+| UI | 100 |
+| journal UI | 70 |
+| process | 38 |
+| calc | 106 |
+| browser e2e | 87 |
+
+### Not changed
+
+The landing page still says importing and connecting are in development (`tools/presentation/landing_positioning.test.js` pins it). It changes once the import is deployed and a connector is switched on.
+
 ## 2026-10-04 — Portfolio Calendar: month arrows no longer blank it; whole amounts on a phone; the month's settled line
 
 Three fixes to the Calendar that #504 added.

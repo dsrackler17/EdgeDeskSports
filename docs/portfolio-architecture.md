@@ -402,21 +402,24 @@ file ──(browser: parse, detect, map, normalize, issues)──▶ portfolio_i
 - **F** — email / receipt import
 - **G** — manual entry only
 
-### The sync engine (designed now, built in Phase B)
+### The automatic connectors and the sync engine (built; switched off)
 
-The runner is a Supabase Edge Function plus pg_cron, the repository's existing pattern. Edge functions here are single-file and zero-import, so the engine is inlined between markers the same way `tools/presentation/inline.js` does it.
+The full account is in [`platform-connections.md`](platform-connections.md). In short:
 
-- **Incremental:** from `platform_accounts.sync_cursor`, page by page; the cursor advances only after a page commits.
-- **Idempotent:**
-  - Rows upsert on `(user, platform, external id)`.
-  - Before inserting a synced record with no prior platform id, the connector first claims a matching manual or CSV row by fingerprint, by setting its external id. A reader's hand-entered bet is never duplicated by its synced twin.
-  - Settlements update the existing row in place.
-- **Failures** go through `classifyFailure`:
-  - 401/403 → `ACTION_REQUIRED` (revoked or expired credential; no retry);
-  - 429 → back off, honouring `Retry-After`;
-  - 5xx / network → retry with `backoffMs` (exponential, capped, with jitter).
-  - A partial run is logged `PARTIAL` with counts, and the cursor stays at the last committed page.
-- **Every run** writes a `portfolio_sync_logs` row, with error text through `safeLogMessage` (which strips tokens, keys, cookies and signatures).
+- **The contract.** `lib/edgedesk_portfolio_connect_core.js` holds the registry and a 13-method adapter contract: describe, validateCredential, connect, disconnect, healthCheck, initialSync, incrementalSync, fetchAccount, fetchPositions, fetchTransactions, fetchSettlements, normalize and reconcile. It also holds the Kalshi and Polymarket adapters. The core is pure: it never touches a database, a DOM or storage, and never logs.
+- **The function.** `supabase/functions/portfolio_connect` carries a verbatim copy of the core and handles connect, sync, disconnect and the scheduler's `sweep`. A drift test fails if the copy differs.
+- **The schedule.** pg_cron runs the sweep every 10 minutes (`supabase/portfolio_sync_cron.sql`).
+- **Writes.** Only the service role writes, through `portfolio_svc_*` functions in `supabase/portfolio_connect.sql`:
+  - `portfolio_svc_ingest` upserts positions by `(user, platform, external id)` and fills by external transaction id.
+  - Each position is checked in its own sub-transaction, so a malformed one is rejected **alone** and reported, never silently dropped.
+  - It counts inserted, updated, unchanged (duplicates rejected) and newly settled positions.
+- **Runs.** Every run is a `portfolio_sync_runs` row the reader can see under RLS. The cursor advances only with a successful run.
+- **Failures.**
+  - Backoff is 5 min × 2^(n−1), capped at 6 h.
+  - A refused credential reads `ACTION_REQUIRED`, with no retry storm.
+  - Five failures in a row read `ERROR`.
+- **Self-healing.** Each Kalshi sync reconciles net holdings against the platform's own positions. A market that disagrees is rebuilt from its full history on the next run.
+- **The switch** is a database guard (`portfolio_registry_guard`). It needs a PASSED ten-stage production smoke test of the same connector version within 30 days, plus a cleared terms review. Code that compiles is never enough.
 
 ## 10. Security model and threat model
 
@@ -445,12 +448,19 @@ The runner is a Supabase Edge Function plus pg_cron, the repository's existing p
 
 ## 12. Deployment
 
-1. **Apply the schema** (either way):
-   - *Actions → Deploy Portfolio schema* (`.github/workflows/deploy-portfolio.yml`). It runs the SQL suite against a throwaway PostgreSQL, then applies `supabase/portfolio.sql` in one transaction with the `SB_DB_URL` secret, and fails on any `CHECK THIS`.
-   - Or paste `supabase/parts/portfolio.part1-of-8.sql` … `part8-of-8.sql` into the Supabase SQL editor, in order. The last part prints the report; all 15 rows should read `ok`.
+1. **Apply the schema**, in this order: `supabase/portfolio.sql`, then `portfolio_journal.sql`, then `portfolio_connect.sql`. Either way:
+   - *Actions → Deploy Portfolio schema* (`.github/workflows/deploy-portfolio.yml`). It runs each file's SQL suite against a throwaway PostgreSQL, then applies each file in one transaction with the `SB_DB_URL` secret, and fails on any `CHECK THIS`.
+   - Or paste `supabase/parts/portfolio.part*-of-9.sql`, then `portfolio_journal.part*-of-8.sql`, then `portfolio_connect.part*-of-5.sql` into the Supabase SQL editor, in order. The last part of each prints its report; every row should read `ok`.
+   - Also apply `supabase/funnel.sql` so the time-to-value events are accepted.
 2. **Do not expose `portfolio_private`** in *Settings → API → Exposed schemas*.
-3. **Ship the front end:** merging deploys `app.html` and `lib/edgedesk_portfolio*.{js,css}` with the site (GitHub Pages). The script tags carry `?v=20261004pf1`; bump it when a file changes.
-4. **Check:** sign in, then the *Portfolio* seat (or `/app.html#portfolio`) should show "Build your portfolio."
+3. **The connector function** (optional until a connector is switched on):
+   - set the `PORTFOLIO_CREDENTIAL_KEYS` and `PORTFOLIO_CREDENTIAL_KEY_VERSION` secrets;
+   - deploy `portfolio_connect` with `--no-verify-jwt` (the workflow's `deploy_function` input);
+   - apply `supabase/portfolio_sync_cron.sql`.
+
+   Without them, Accounts simply offers import ("not deployed" is handled).
+4. **Ship the front end:** merging deploys `app.html` and `lib/edgedesk_portfolio*.{js,css}` with the site (GitHub Pages). The script tags carry `?v=20261005pf3`; bump it when a file changes.
+5. **Check:** sign in, then the *Portfolio* seat (or `/app.html#portfolio`) should show "Build your portfolio", and *Accounts* should offer setup grouped by prediction markets, sportsbook import and other.
 
 ## 13. Testing
 
@@ -465,8 +475,8 @@ CI: `.github/workflows/portfolio-tests.yml` runs all of it on every relevant pul
 
 ## 14. Known limitations (Phase A)
 
-- **No automatic sync for any platform.** Manual entry and CSV only (`platform-support.md`).
-- **Only generic CSV adapters.** No book-specific importer exists yet, because none should be written without a real export file in hand.
+- **No automatic sync is switched on.** The Kalshi and Polymarket connectors are built and off, pending the live smoke test and terms review (`platform-connections.md`). Until then: manual entry and file import.
+- **The sportsbook import profiles are unverified.** They carry likely column names and status words, and the review says they are unchecked until a real export from that book has been imported end to end.
 - **The current price of an open contract** is the reader's own mark. There is no market data feed, so unrealized P&L is labelled as such.
 - **Partial exits** of a still-open contract position join Total P&L when the position closes (they are shown on the position and on the Overview meanwhile).
 - **Deposits and withdrawals** are in the schema but not yet in the UI or in any figure.
@@ -475,26 +485,15 @@ CI: `.github/workflows/portfolio-tests.yml` runs all of it on every relevant pul
 - **Paste-sized parts.** The `NOWAIT` lock guard covers the single-transaction apply (the workflow, or the whole file at once). Pasting the parts separately on a busy site can still meet a concurrent save; re-run it if so — it is idempotent.
 - **Analytics are client-side**, over the reader's rows (paged 1,000 at a time, up to 50,000). A server-side rollup can be added when books get that large.
 
-## 15. Next step: the first automatic connector (Phase B)
+## 15. Next step: switching the first connector on
 
-**Kalshi**, class A/D: an official, documented trading API. The reader creates their own API key in Kalshi's account settings, and requests are signed with RSA-PSS.
+The Kalshi and Polymarket connectors are built. Switching one on is an operator procedure, not a code change:
 
-1. **Verify the docs first.** Confirm against Kalshi's current API documentation:
-   - the base URL;
-   - the signing string and the `KALSHI-ACCESS-KEY` / `-SIGNATURE` / `-TIMESTAMP` headers;
-   - the portfolio endpoints (positions, fills, settlements) and their pagination cursors;
-   - the rate limits;
-   - Kalshi's terms for third-party use of a user's own key.
+1. Re-verify the docs and terms.
+2. Set the credential keyring.
+3. Deploy the SQL, the function and the schedule.
+4. Run `tools/portfolio/connector_smoke.js` through all ten stages with a real account.
+5. Clear the terms review.
+6. Run the one `update` it prints.
 
-   Record the findings in `platform-support.md` before writing code.
-2. **`supabase/functions/portfolio_connect`:** accepts the key id and private key once over TLS from the signed-in reader. It verifies them with one signed read-only request, encrypts them (AES-GCM, key from a function secret), stores ciphertext in `portfolio_private.platform_credentials`, and creates the `API` / `CONNECTED` account through the service role.
-3. **`supabase/functions/portfolio_sync`** (plus a pg_cron schedule and a reader's *Sync now*):
-   - pages fills and settlements from the stored cursor;
-   - normalizes each fill to the `kind: 'fill'` shape (Kalshi prices are in cents; NO-side contracts map to `side: 'NO'`);
-   - claims matching CSV or manual rows by fingerprint before inserting;
-   - upserts by `external_transaction_id`;
-   - sets `resolution` / `reported_payout` from settlements;
-   - logs every run;
-   - sets `ACTION_REQUIRED` on 401/403.
-4. **Disconnect and reconnect:** disconnect deletes the credential, sets `DISCONNECTED` and keeps the history; reconnect replaces the credential.
-5. **Tests:** recorded Kalshi responses as fixtures for initial sync, incremental sync, the duplicate re-run, a settlement update, an expired key, a rate limit, and disconnect / reconnect.
+The steps in full: [`platform-connections.md` § Switching a connector on](platform-connections.md#switching-a-connector-on--the-only-way).
