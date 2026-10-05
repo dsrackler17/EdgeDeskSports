@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-05T11:09:02.664Z",
+ "generated_at": "2026-10-05T11:22:23.409Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -10,7 +10,7 @@
    "file": "football/props/nfl/2026/evaluations.jsonl",
    "rows": 1951,
    "results_file": "football/props/nfl/2026/results.jsonl",
-   "results": 3980
+   "results": 4062
   },
   {
    "source": "player_props",
@@ -197343,31 +197343,51 @@
    "odds_captured_at": "2026-10-04T12:15:37.192Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
    "closing_odds": null,
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T12:19:54.289Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5556,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.8,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_1c5c5f04",
@@ -215815,31 +215835,51 @@
    "odds_captured_at": "2026-10-04T13:30:47.476Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 9.5,
    "closing_odds": null,
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T13:39:19.922Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5122,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.952381,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_17b85290",
@@ -225872,33 +225912,53 @@
    "odds_captured_at": "2026-10-01T17:00:41.188Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 7.5,
    "closing_odds": -115,
    "clv_points": 0,
    "clv_prob_pp": -2.96,
    "beat_close": false,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T17:04:58.327Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 0.877193,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_3eafc9b6",
@@ -237915,33 +237975,53 @@
    "odds_captured_at": "2026-10-01T17:00:41.188Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
    "closing_odds": null,
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T17:04:58.327Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6212,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_66b6438e",
@@ -238907,33 +238987,53 @@
    "odds_captured_at": "2026-10-03T03:26:21.056Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 7.5,
    "closing_odds": -115,
    "clv_points": 0,
    "clv_prob_pp": 0,
    "beat_close": false,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T03:36:44.822Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_6a23a04f",
@@ -241122,31 +241222,51 @@
    "odds_captured_at": "2026-10-03T19:59:07.138Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 2.5,
    "closing_odds": -184,
    "clv_points": 0,
    "clv_prob_pp": 8.43,
    "beat_close": true,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T20:08:57.149Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5192,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.925926,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_6f884db2",
@@ -241729,33 +241849,53 @@
    "odds_captured_at": "2026-10-01T05:00:47.449Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 7.5,
    "closing_odds": null,
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T05:05:14.393Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5146,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 0.943396,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_72125d61",
@@ -260777,33 +260917,53 @@
    "odds_captured_at": "2026-10-01T05:00:47.449Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 20.5,
    "closing_odds": null,
    "clv_points": -9,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T05:05:14.393Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3546,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_b09ae9fe",
@@ -266643,33 +266803,53 @@
    "odds_captured_at": "2026-10-01T05:00:47.449Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
    "closing_odds": -171,
    "clv_points": 0,
    "clv_prob_pp": -1.22,
    "beat_close": false,
-   "settled_at": "2026-10-04T21:31:53.929Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T05:05:14.393Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-04T21:31:53.929Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.6063,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 0.649351,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_c609f302",
@@ -286588,33 +286768,53 @@
    "odds_captured_at": "2026-09-30T20:05:48.909Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 29.5,
    "closing_odds": null,
    "clv_points": -10,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-09-30T20:08:17.229Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3333,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_67f8e292",
@@ -286856,31 +287056,51 @@
    "odds_captured_at": "2026-10-04T17:30:43.262Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 29.5,
    "closing_odds": null,
    "clv_points": -20,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T17:33:55.740Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2632,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_6bc1769b",
@@ -288835,31 +289055,51 @@
    "odds_captured_at": "2026-10-04T16:30:42.027Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
    "closing_odds": null,
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T16:36:06.148Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_8ef815db",
@@ -291211,33 +291451,53 @@
    "odds_captured_at": "2026-10-01T02:05:46.095Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 3.5,
    "closing_odds": 123,
    "clv_points": 0,
    "clv_prob_pp": 5.5,
    "beat_close": true,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T02:08:24.109Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3636,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_c373375d",
@@ -296090,31 +296350,51 @@
    "odds_captured_at": "2026-10-04T19:00:48.655Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": null,
    "clv_points": 2,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T19:04:09.672Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.877193,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_1588065c",
@@ -296336,31 +296616,51 @@
    "odds_captured_at": "2026-10-04T17:30:43.262Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": -112,
    "clv_points": 0,
    "clv_prob_pp": -1.92,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T17:33:55.740Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5192,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.925926,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_1a57caa9",
@@ -297813,31 +298113,51 @@
    "odds_captured_at": "2026-10-04T01:25:40.592Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 13.5,
    "closing_odds": null,
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T01:30:02.097Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5455,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.833333,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_2581df19",
@@ -298511,33 +298831,53 @@
    "odds_captured_at": "2026-10-02T20:26:10.823Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
    "closing_odds": null,
    "clv_points": -9,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-02T20:32:35.195Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.2874,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_2f06204a",
@@ -304234,33 +304574,53 @@
    "odds_captured_at": "2026-10-03T04:57:51.100Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": null,
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T05:08:27.345Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5261,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 0.900901,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_59be5ca6",
@@ -304916,31 +305276,51 @@
    "odds_captured_at": "2026-10-04T13:56:25.886Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": null,
    "clv_points": 1,
    "clv_prob_pp": null,
    "beat_close": true,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T14:05:22.354Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5327,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.877193,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_5ba484bb",
@@ -305442,33 +305822,53 @@
    "odds_captured_at": "2026-10-01T02:25:47.761Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
    "closing_odds": 115,
    "clv_points": 0,
    "clv_prob_pp": -6.33,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T02:29:17.024Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_5e7cf46a",
@@ -305986,33 +306386,53 @@
    "odds_captured_at": "2026-10-02T20:26:10.823Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": null,
    "clv_points": -3,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-02T20:32:35.195Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4878,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 1.05,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_653bc1a3",
@@ -308093,31 +308513,51 @@
    "odds_captured_at": "2026-10-03T22:40:53.088Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
    "closing_odds": -110,
    "clv_points": 0,
    "clv_prob_pp": -3.39,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T22:50:36.265Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5238,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": 0.909091,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_776387f2",
@@ -310257,33 +310697,53 @@
    "odds_captured_at": "2026-10-01T02:25:47.761Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 1.5,
    "closing_odds": null,
    "clv_points": -1,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-01T02:29:17.024Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3425,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_88f42cd6",
@@ -310333,33 +310793,53 @@
    "odds_captured_at": "2026-10-03T02:28:12.160Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 57.5,
    "closing_odds": null,
    "clv_points": -2,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T02:33:47.277Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.5,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_89030ca0",
@@ -311609,33 +312089,53 @@
    "odds_captured_at": "2026-10-03T02:28:12.160Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 4.5,
    "closing_odds": 115,
    "clv_points": 0,
    "clv_prob_pp": -2.84,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-03T02:33:47.277Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.4651,
-   "profit_units": 0,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "profit_units": 0.2875,
+   "flat_profit_units": 1.15,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "stake_source": "explicit",
    "price_source": "decision",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_974339d2",
@@ -314011,31 +314511,51 @@
    "odds_captured_at": "2026-10-04T20:15:46.486Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 5.5,
    "closing_odds": null,
    "clv_points": -14,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-04T20:18:41.578Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.25,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_a9d1b84b",
@@ -314652,33 +315172,53 @@
    "odds_captured_at": "2026-10-02T20:26:10.823Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "win",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 0.5,
    "closing_odds": 131,
    "clv_points": 0,
    "clv_prob_pp": 1.53,
    "beat_close": true,
-   "settled_at": "2026-10-05T00:06:37.036Z",
+   "settled_at": "2026-10-05T11:21:28.554Z",
    "first_recorded_at": "2026-10-02T20:32:35.195Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-05T11:22:23.409Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "win"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-05T00:06:37.036Z",
+       "to": "2026-10-05T11:21:28.554Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → WIN)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3922,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
+   "flat_profit_units": 1.55,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
    "price_source": "decision",
    "stake_source": null,
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_ad97c1d6",
