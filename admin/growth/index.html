@@ -31,6 +31,13 @@
      (public.affiliate_admins) under the OPERATOR'S OWN token. No reader is
      named anywhere on this page; activation is internal and never shown to
      the reader it describes.
+
+     THE SESSION (lib/edgedesk_admin_session.js). A token near expiry is
+     refreshed before use; a 401 refreshes once and retries once; a refused
+     refresh ends the session and shows sign-in with a sentence, not JSON. The
+     operator check (growth_is_admin) runs first, so "signed out", "not an
+     operator" and "not installed" are three different answers. No call is
+     ever downgraded to the anon key, and nothing here decodes or logs a token.
      =========================================================================== -->
 <style>
 :root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
@@ -77,16 +84,20 @@ td.r,th.r{text-align:right}
 </style>
 </head>
 <body>
-<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">growth</span><nav><a href="/admin/affiliates/">Partner program &amp; campaigns</a><a href="/research/sample/" target="_blank" rel="noopener">Public samples ↗</a></nav><span class="sp"></span><span class="who" id="who"></span></div></header>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">growth</span><nav><a href="/admin/affiliates/">Partner program &amp; campaigns</a><a href="/research/sample/" target="_blank" rel="noopener">Public samples ↗</a></nav><span class="sp"></span><span class="who" id="who"></span><button class="g sm hide" id="signOut" type="button">Sign out</button></div></header>
 <div class="wrap">
-  <div id="gate" class="card" style="max-width:420px;margin:40px auto">
+  <form id="gate" class="card" style="max-width:420px;margin:40px auto" autocomplete="on">
     <h2 style="margin-top:0">Operator sign-in</h2>
-    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
-    <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
-    <div class="row" style="margin-top:12px"><button id="gGo">Sign in</button></div>
-    <div class="msg" id="gMsg"></div>
-  </div>
+    <div id="gFields">
+      <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username" required></div>
+      <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password" required></div>
+      <div class="row" style="margin-top:12px"><button id="gGo" type="submit">Sign in</button></div>
+    </div>
+    <div class="row hide" id="gSwitch" style="margin-top:4px"><button class="g" id="gOut" type="button">Sign out and use another account</button></div>
+    <div class="msg" id="gMsg" role="status" aria-live="polite"></div>
+  </form>
   <div id="app" class="hide">
+    <div class="msg err hide" id="appMsg" role="alert"></div>
     <div class="row" style="margin-top:16px"><div class="f" style="max-width:220px"><label for="win">Window</label>
       <select id="win"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 180 days</option><option value="365">Last 365 days</option></select></div>
       <span class="sp"></span><button class="g" id="reload">Refresh</button></div>
@@ -145,11 +156,17 @@ td.r,th.r{text-align:right}
     </div>
   </div>
 </div>
+<script src="/lib/edgedesk_auth.js?v=20261005a"></script>
+<script src="/lib/edgedesk_admin_session.js?v=20261005a"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var KEY = 'edgedesk_growth_admin_session';
-var SESSION = null, TOUCH = 'first', ACT = null;
+var TOUCH = 'first', ACT = null;
+/* The one session for this page. onSignedOut fires when the session ends
+   underneath the console (refresh refused, another tab signed out). */
+var S = window.EDAdminSession.create({ url: SB_URL, key: SB_KEY, storageKey: KEY, adminRpc: 'growth_is_admin',
+  onSignedOut: function (why) { showGate(why, false); } });
 var KINDS = [['matchup_viewed', 'Matchup viewed'], ['repeat_visit', 'Repeat visit'], ['top5_opened', 'Top 5 Research opened'], ['watchlist_save', 'Watchlist save'],
   ['alert_configured', 'Alert configured'], ['ai_research_used', 'AI research used'], ['compare_my_number', 'Compare My Number used'],
   ['journal_entry_created', 'Journal entry created'], ['share_card_generated', 'Share card generated']];
@@ -160,28 +177,49 @@ function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.tex
 function pct(x) { return x == null ? '—' : (Math.round(x * 1000) / 10) + '%'; }
 function rate(a, b) { return b ? pct(a / b) : '—'; }
 function when(v) { return v ? String(v).replace('T', ' ').slice(0, 16) + 'Z' : '—'; }
-async function api(path, init) {
-  var t = (SESSION && SESSION.access_token) || SB_KEY;
-  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json' } }));
-  var txt = await r.text();
-  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
-  return txt ? JSON.parse(txt) : null;
-}
-function rpc(n, b) { return api('rpc/' + n, { method: 'POST', body: JSON.stringify(b || {}) }); }
+function rpc(n, b) { return S.rpc(n, b); }
 function days() { return parseInt($('win').value, 10) || 90; }
 function kpi(label, v, sub) { return '<div class="kpi"><i>' + esc(label) + '</i><b>' + esc(v) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
+/* A failed call: an ended session goes back to sign-in; anything else is
+   said where it happened, as a sentence. */
+function fail(id, e) {
+  if (e && e.kind === 'signed_out') { showGate(e.message, false); return; }
+  say(id, 'err', S.message(e));
+}
 
-$('gGo').onclick = async function () {
+/* ── the gate ───────────────────────────────────────────────────────────── */
+function showGate(text, signedInButNotOperator) {
+  $('app').classList.add('hide'); $('gate').classList.remove('hide');
+  $('signOut').classList.add('hide'); $('who').textContent = signedInButNotOperator ? S.email() : '';
+  $('gFields').classList.toggle('hide', !!signedInButNotOperator);
+  $('gSwitch').classList.toggle('hide', !signedInButNotOperator);
+  say('gMsg', text ? 'err' : '', text || '');
+}
+function showApp() {
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = S.email() || 'operator'; $('signOut').classList.remove('hide');
+  say('gMsg', '', '');
+}
+$('gate').onsubmit = async function (ev) {
+  ev.preventDefault();
   var email = $('gEmail').value.trim(), pass = $('gPass').value;
-  if (!email || !pass) return;
+  if (!email || !pass) { say('gMsg', 'err', 'Enter your email and password.'); return; }
+  if (window.EDAuth && !window.EDAuth.validEmail(email)) { say('gMsg', 'err', 'That email address does not look right.'); return; }
+  $('gGo').disabled = true; say('gMsg', '', 'Signing in…');
   try {
-    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
-    var j = await r.json();
-    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
-    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    var r = await S.signIn(email, pass);
+    $('gPass').value = '';
+    if (!r.ok) { say('gMsg', 'err', r.message); return; }
     await boot();
-  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+  } finally { $('gGo').disabled = false; }
 };
+async function signOutNow() {
+  await S.signOut();
+  showGate('', false);
+  say('gMsg', 'ok', 'Signed out.');
+}
+$('signOut').onclick = signOutNow;
+$('gOut').onclick = signOutNow;
 
 function renderActivation(a) {
   ACT = a;
@@ -226,7 +264,7 @@ $('tSave').onclick = async function () {
     var r = await rpc('growth_admin_update_activation_settings', { p: p });
     if (r && r.ok === false) say('tMsg', 'err', 'Not saved: ' + (r.detail || r.reason));
     else { say('tMsg', 'ok', 'Saved. ' + r.recomputed + ' reader(s) recomputed.'); await loadActivation(); }
-  } catch (e) { say('tMsg', 'err', String(e.message || e)); }
+  } catch (e) { fail('tMsg', e); }
 };
 
 function renderFunnel(f) {
@@ -269,7 +307,7 @@ async function setSample(key, on, note, end) {
     var r = await rpc('growth_admin_sample_set', { p_game_key: key, p_enabled: on, p_note: note, p_expires_at: end });
     if (r && r.ok === false) say('sMsg', 'err', r.reason === 'no_research_state_for_that_game' ? 'EdgeDesk has no research state for that game yet.' : r.reason);
     else { say('sMsg', 'ok', key + (on ? ' is public.' : ' is no longer public.')); await loadSamples(); }
-  } catch (e) { say('sMsg', 'err', String(e.message || e)); }
+  } catch (e) { fail('sMsg', e); }
 }
 $('sAdd').onclick = function () {
   var end = $('sEnd').value ? new Date($('sEnd').value).toISOString() : null;
@@ -285,18 +323,35 @@ Array.prototype.forEach.call(document.querySelectorAll('#touch button'), functio
 async function loadActivation() { renderActivation(await rpc('growth_admin_activation', { p_days: days() })); }
 async function loadFunnel() { renderFunnel(await rpc('growth_admin_funnel', { p_days: days(), p_touch: TOUCH })); }
 async function loadSamples() { renderSamples(await rpc('growth_admin_samples', {})); }
-async function reload() { await Promise.all([loadActivation(), loadFunnel(), loadSamples()]); }
+/* Each section loads on its own: one failing read no longer blanks the rest,
+   and an ended session sends the operator back to sign-in exactly once. */
+async function reload() {
+  var parts = [['activation', loadActivation], ['funnel', loadFunnel], ['public samples', loadSamples]];
+  var out = await Promise.allSettled(parts.map(function (p) { return p[1](); }));
+  var bad = [];
+  for (var i = 0; i < out.length; i++) {
+    if (out[i].status !== 'rejected') continue;
+    var e = out[i].reason;
+    if (e && e.kind === 'signed_out') { showGate(e.message, false); return; }
+    bad.push(parts[i][0] + ': ' + S.message(e));
+  }
+  $('appMsg').classList.toggle('hide', !bad.length);
+  $('appMsg').textContent = bad.length ? 'Some sections could not load — ' + bad.join(' · ') : '';
+}
 $('reload').onclick = reload;
 $('win').onchange = reload;
+/* The operator check comes FIRST and alone, so the answer is one of: signed
+   out, not an operator, not installed, unreachable, or in. */
 async function boot() {
-  try { await reload(); }
-  catch (e) { say('gMsg', 'err', 'This account cannot open the growth console: an operator must add it to public.affiliate_admins, and supabase/growth.sql must be installed. (' + String(e.message || e) + ')'); return; }
-  $('gate').classList.add('hide'); $('app').classList.remove('hide');
-  var u = null; try { u = JSON.parse(atob((SESSION.access_token.split('.')[1] || '').replace(/-/g, '+').replace(/_/g, '/'))); } catch (e) {}
-  $('who').textContent = (u && u.email) || 'operator';
+  say('gMsg', '', S.hasSession() ? 'Checking access…' : '');
+  var a = await S.checkAdmin();
+  if (a.state === 'signed_out') { showGate(a.message, false); return; }
+  if (a.state === 'not_admin') { showGate(a.message, true); return; }
+  if (a.state !== 'ok') { showGate(a.message, false); return; }
+  showApp();
+  await reload();
 }
-try { SESSION = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { SESSION = null; }
-if (SESSION && SESSION.access_token) boot();
+if (S.hasSession()) boot();
 </script>
 </body>
 </html>
