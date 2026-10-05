@@ -10,8 +10,9 @@
 #               throwaway cluster, and attacked as other readers, as anon and
 #               as the service role.
 #
-# The browser suite (tools/personal/personal_ui.e2e.js) needs Playwright and
-# is run by hand: npm run personal:e2e. Nothing here deploys or writes.
+# The browser suites (tools/personal/personal_ui.e2e.js and
+# tools/growth/admin_growth_login.e2e.js) need Playwright and are run by hand:
+# npm run personal:e2e, npm run growth:e2e. Nothing here deploys or writes.
 name: Personal research CI
 
 on:
@@ -59,6 +60,9 @@ on:
       - 'lib/edgedesk_home.js'
       - 'research/sample/**'
       - 'admin/growth/**'
+      - 'lib/edgedesk_admin_session.js'
+      - 'lib/edgedesk_auth.js'
+      - 'tools/growth/**'
       - 'admin/affiliates/**'
       - 'index.html'
       - 'app.html'
@@ -113,6 +117,12 @@ jobs:
         run: node tools/billing/admin_console.test.js
       - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
         run: node tools/personal/growth.test.js
+      # /admin/growth/ used to present an hour-old token forever and report the
+      # 401 as "not an operator". The console's session: refresh before expiry,
+      # one refresh and one retry on a 401, a refused refresh ends the session in
+      # words, single-flight across loaders and tabs, never the anon key.
+      - name: The operator console's session refreshes, retries once, and never loops or leaks a token
+        run: node tools/growth/admin_session.test.js
       - name: The AI desk answers the reader's research from their own rows
         run: node tools/intelligence/mine.test.js
       - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
@@ -159,6 +169,8 @@ jobs:
         run: node tools/bettor/bettor_sql.test.js
       - name: Trial activation, acquisition attribution and public samples
         run: node tools/personal/growth_sql.test.js
+      - name: Only a listed operator opens the growth console; nobody can list themselves
+        run: node tools/growth/admin_gate_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

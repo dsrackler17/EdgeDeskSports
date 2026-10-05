@@ -2,6 +2,23 @@
 
 
 
+## 2026-10-05 — Growth console: sign-in that survives the hour (outbound engine, phase 1)
+
+`/admin/growth/` used to send a stored access token forever without refreshing it. After an hour every visit got `401 PGRST303 "JWT expired"`, and the page reported that as *"this account cannot open the growth console: an operator must add it to public.affiliate_admins…"* with the raw JSON attached. Authorization was never the problem, and it has not been loosened.
+
+- **`lib/edgedesk_admin_session.js`** is the operator consoles' session, ported from `app.html`'s refresh logic:
+  - refreshes before expiry;
+  - refreshes once and retries once on a 401, then stops;
+  - shares one in-flight refresh across loaders and tabs, so rotating single-use refresh tokens are never raced;
+  - a refused refresh ends the session in words, while a 5xx or network failure keeps it;
+  - never downgrades to the anon key, never logs, and redacts tokens from messages.
+- **The growth console** checks `growth_is_admin` first and alone, so *signed out*, *not an operator*, *not installed* and *unreachable* are distinct answers, and a non-operator triggers no data read. It also gains sign-out (local state cleared first, server session revoked), "use another account", Enter-to-submit and per-section errors.
+- **Tests:**
+  - `npm run growth:test` — 83 checks, mutation-verified;
+  - `npm run growth:sql` — 34 checks on a real PostgreSQL. Anon, a subscriber and a partner are refused, and no client-callable path writes `affiliate_admins`;
+  - `npm run growth:e2e` — 42 checks in Chromium, including the original failure reproduced against the old page.
+- Plan and runbook: `docs/growth-outbound.md`. No SQL ships in this phase.
+
 ## 2026-10-05 — The Decision Record, and one tap from the Card to it
 
 Every position now keeps what was known when it was entered, exactly as it was, and everything learned afterwards. It sits under the existing five destinations; no navigation was added. EdgeDesk still never places, accepts or executes a wager.
