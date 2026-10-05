@@ -435,7 +435,7 @@ The full account is in [`platform-connections.md`](platform-connections.md). In 
 | CSV formula injection on export | Cells starting `= + - @` or a tab are prefixed with `'` (tested). |
 | Webhook forgery and replay (Phase B) | HMAC signature over the raw body plus timestamp, rejected outside a 5-minute window, delivery id recorded once (the `stripe_webhook` pattern). |
 | Secrets in logs | `error_code` is a pattern-checked code; `error_summary` ≤ 500 characters through `safeLogMessage`; nothing financial reaches `console` or `localStorage` (tested). |
-| A lapsed subscriber loses their own data | Portfolio RLS is ownership-only, not entitlement-gated: a reader can always read, export and delete their own records. The app-level paywall still governs access to the app. |
+| A lapsed subscriber loses their own data | Portfolio RLS is ownership-only, not entitlement-gated: a reader can always read, export and delete their own records. The app-level paywall still governs access to the app. Everything exports as JSON (`portfolio_export`) as well as CSV, and `portfolio_delete_everything` deletes all of it on request ([docs/decision-record.md](decision-record.md) §13). |
 | Deleting an account | `on delete cascade` from `auth.users` removes every position, fill, account, import, log and credential (tested). |
 | Migration re-run while readers write | The file takes all its tables with `NOWAIT`, retrying without holding any, so it cannot deadlock a reader's save (tested with a concurrent session). |
 
@@ -481,7 +481,7 @@ CI: `.github/workflows/portfolio-tests.yml` runs all of it on every relevant pul
 - **Partial exits** of a still-open contract position join Total P&L when the position closes (they are shown on the position and on the Overview meanwhile).
 - **Deposits and withdrawals** are in the schema but not yet in the UI or in any figure.
 - **Parlay legs** are optional and informational. The ticket's combined price and the book's payout are what count.
-- **Fingerprint matching across sources** needs the same normalized event, market, pick, price, stake and minute. A manual entry typed a minute off its export is two records until the reader deletes one. Platform ids (Phase B) remove this for synced data.
+- **Fingerprint matching across sources** needs the same normalized event, market, pick, price, stake and minute. Since `supabase/portfolio_decision.sql`, an import row that matches a bet already recorded in EdgeDesk is held for review (`MATCHES_RECORDED_POSITION`), never imported by default. A synced contract ADOPTS a single hand-recorded position of the same contract. See [docs/decision-record.md](decision-record.md) §12.
 - **Paste-sized parts.** The `NOWAIT` lock guard covers the single-transaction apply (the workflow, or the whole file at once). Pasting the parts separately on a busy site can still meet a concurrent save; re-run it if so — it is idempotent.
 - **Analytics are client-side**, over the reader's rows (paged 1,000 at a time, up to 50,000). A server-side rollup can be added when books get that large.
 

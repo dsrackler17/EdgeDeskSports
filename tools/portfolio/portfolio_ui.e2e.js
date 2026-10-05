@@ -59,6 +59,7 @@ const B = '00000000-0000-0000-0000-0000000000b2';
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) { pass++; console.log('  ok   ' + name); } else { fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); } }
 function done(note) { console.log((fail ? 'FAIL' : 'PASS') + ' | portfolio UI e2e | ' + pass + ' passed, ' + fail + ' failed' + (note ? ' | ' + note : '')); process.exit(fail ? 1 : 0); }
+const json = (s) => JSON.parse(String(s || '').split('\n')[0] || 'null');
 function skip(why) { if (REQUIRED) { chk('environment: ' + why, false); done(); } console.log('SKIPPED: ' + why); process.exit(0); }
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.csv': 'text/csv', '.png': 'image/png' };
@@ -89,6 +90,7 @@ const CSV = [
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio.sql'));
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_journal.sql'));
   db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_connect.sql'));
+  db.applyFileAtomic(path.join(ROOT, 'supabase', 'portfolio_decision.sql'));
   db.sql(`insert into auth.users (id, email) values ('${A}', 'a@example.com'), ('${B}', 'b@example.com');`);
   /* reader B's book, which reader A must never see */
   db.as(B, `insert into public.portfolio_positions (platform, platform_label, platform_type, position_type, event_name, market_name, selection, odds_american, stake, status, placed_at)
@@ -113,6 +115,12 @@ const CSV = [
         localStorage.setItem('edgedesk_session', JSON.stringify({ access_token: 'e2e', refresh_token: 'e2e', expires_at: Math.floor(Date.now() / 1000) + 86400, user: { id: uid, email: 'reader@edgedesk.test' } }));
       } catch (e) { /* private mode */ }
     }, A);
+    /* a saved Card entry on this device (lib/edgedesk_decision_ui.js), the Card's onboarding already done */
+    if (opts.card) {
+      await ctx.addInitScript((c) => {
+        try { localStorage.setItem('edgedesk_card_opportunities_v1', JSON.stringify([c])); localStorage.setItem('edgedesk_decision_onboarded_v1', JSON.stringify(new Date().toISOString())); } catch (e) { /* private mode */ }
+      }, opts.card);
+    }
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
@@ -150,6 +158,8 @@ const CSV = [
     });
     const page = await ctx.newPage();
     const errors = [];
+    page.downloads = [];
+    page.on('download', (d) => page.downloads.push(d));
     page.on('pageerror', (e) => errors.push(String(e && e.message).slice(0, 300)));
     page.on('dialog', (d) => d.accept());
     await page.goto(`http://127.0.0.1:${site.port}/app.html#portfolio`, { waitUntil: 'domcontentloaded' });
@@ -617,8 +627,96 @@ const CSV = [
     chk('no page errors on desktop', errors.length === 0, errors);
     await ctx.close();
 
+    /* ═══ CARD → RECORD POSITION → THE DECISION RECORD ═══════════════════ */
+    const KICK = new Date(Date.now() + 2 * 86400000).toISOString(), SAVED = new Date(Date.now() - 3 * 3600000).toISOString();
+    const CARD_ENTRY = { schema: 'edgedesk_card_entry_v1', entry_id: 'ce_e2e_1', opportunity_id: 'opp_e2e', key: 'game|nfl|e2e1|spread|home', type: 'GAME', sport: 'NFL', league: 'nfl',
+      event_key: 'nfl|e2e1', game_id: 'e2e1', kickoff: KICK, home: 'Chiefs', away: 'Bills', market: 'spread', market_label: 'Spread', side: 'home', line: -3,
+      selection: 'Chiefs -3', american: -110, book: 'draftkings', captured_at: SAVED, probability: 0.56, ev: 0.069, edge_pp: 3.6, confidence: 71, decision: 'BET', units: 0.5,
+      probability_source: 'calibrated', saved_at: SAVED, evaluated_at: SAVED,
+      snapshot: { engine: 'opp_v3', decision_id: 'bd_e2e', model: { probability: 0.56, fair_american: -127, fair_line: -4.5, model_version: 'nfl_r2', calibration_version: 'cal_7' }, market_view: { consensus_line: -3, n_books: 6 } } };
+    ({ ctx, page, errors } = await open({ width: 1280, height: 900 }, { card: CARD_ENTRY }));
+    await page.click('.bottomnav button[data-v="card"]');
+    await page.waitForSelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_1"]', { timeout: 20000 });
+    t = await page.$eval('#eddCardHost [data-edd-entry="ce_e2e_1"]', (e) => e.innerText);
+    chk('a saved Card entry is a workspace: View research · Before you enter · Record position · Remove', /View research/.test(t) && /Before you enter/.test(t) && /Record position/.test(t) && /Remove/.test(t), t);
+    await page.click('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_1"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="wager"]');
+    await page.waitForFunction(() => /Before you enter/i.test((document.querySelector('.pfo-sheet [data-r="prebet"]') || {}).innerText || ''), null, { timeout: 15000 });
+    const sheet = await page.evaluate(() => {
+      const f = document.querySelector('.pfo-sheet form[data-form="wager"]'), v = (n) => (f.querySelector('[name="' + n + '"]') || {}).value;
+      const order = [...document.querySelectorAll('.pfo-sheet .pfo-dr-from, .pfo-sheet [data-r="prebet"], .pfo-sheet form[data-form="wager"]')].map((e) => e.className || e.getAttribute('data-r') || e.tagName);
+      return { title: document.querySelector('.pfo-sheet .pfo-panel-t').innerText, platform: v('platform'), event: v('event_name'), sel: v('selection'), line: v('line'), odds: v('odds'),
+        type: v('position_type'), start: v('event_start_at'), from: document.querySelector('.pfo-sheet .pfo-dr-from').innerText, order: order, hash: location.hash };
+    });
+    chk('Record position opens on Portfolio, prefilled from the Card — book, event, pick, line, price, market type and start', sheet.title === 'Record position' && sheet.platform === 'draftkings'
+      && sheet.event === 'Bills @ Chiefs' && sheet.sel === 'Chiefs -3' && sheet.line === '-3' && sheet.odds === '-110' && sheet.type === 'SPREAD' && sheet.start !== '' && /^#portfolio/.test(sheet.hash), sheet);
+    chk('…saying where it came from and that the saved price is not current (captured hours ago — confirm it at the book)',
+      /From your Card/.test(sheet.from) && /3 h ago/.test(sheet.from) && /confirm the price at the book/.test(sheet.from), sheet.from);
+    await shot(page, 'desktop-record-position');
+    chk('…with Before You Enter ahead of the form', sheet.order.length === 3 && /pfo-dr-from/.test(sheet.order[0]) && sheet.order[1] === 'prebet', sheet.order);
+    const preCard = await page.$eval('.pfo-sheet [data-r="prebet"]', (e) => e.innerText);
+    chk('Before You Enter never says BET or DON\'T BET', !/\bBET THIS\b|DON.?T BET|\bLOCK\b|GUARANTEED/i.test(preCard), preCard.slice(0, 400));
+    await fill(page, { odds: '-105', stake: '25' });
+    await page.click('.pfo-sheet [data-act="save"]');
+    await waitText(page, /Recorded\./);
+    const recRow = json(db.sql(`select json_build_object('id', p.id, 'src', p.edge_source, 'origin', s.origin, 'ref', s.origin_ref, 'model', s.edgedesk->>'model_version', 'fresh', s.market_freshness,
+        'research', j.research_odds_american, 'rec', (select count(*) from public.portfolio_card_events e where e.entry_id = 'ce_e2e_1' and e.event = 'RECORDED' and e.position_id = p.id),
+        'considered', (select count(*) from public.portfolio_card_events e where e.entry_id = 'ce_e2e_1' and e.event = 'CONSIDERED'),
+        'path', (select count(*) from public.portfolio_market_path m where m.position_id = p.id))
+      from public.portfolio_positions p join public.portfolio_decision_snapshots s on s.position_id = p.id join public.portfolio_journal_entries j on j.position_id = p.id
+     where p.user_id = '${A}' and p.event_name = 'Bills @ Chiefs';`));
+    chk('one tap stored the position, its immutable decision snapshot (the model\'s version, the saved price and how stale it was), the journal\'s researched price, and the Card\'s RECORDED event',
+      recRow && recRow.src === 'EDGEDESK' && recRow.origin === 'CARD' && recRow.ref === 'ce_e2e_1' && recRow.model === 'nfl_r2' && recRow.fresh === 'STALE' && recRow.research === -110
+      && +recRow.rec === 1 && +recRow.considered >= 1 && +recRow.path >= 2, recRow);
+    await page.click('.bottomnav button[data-v="card"]');
+    await page.waitForSelector('#eddCardHost [data-edd-act="card-open-record"]', { timeout: 15000 });
+    chk('back on the Card, the entry reads Recorded in Portfolio and opens its record — no second record is offered',
+      await page.$('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_1"]') === null
+      && await page.$eval('#eddCardHost [data-edd-act="card-open-record"]', (b) => b.getAttribute('data-edd-v')) === recRow.id);
+    /* the record, from a notification's or search's door */
+    await page.evaluate((id) => window.edOpenRecord(id), recRow.id);
+    await page.waitForFunction(() => /Market path/i.test((document.querySelector('.pfo-sheet .pfo-dr') || {}).innerText || ''), null, { timeout: 15000 });
+    t = await page.$eval('.pfo-sheet', (e) => e.innerText);
+    chk('the Decision Record: BEFORE · ENTRY · MARKET PATH · RESULT · GRADE · REFLECTION · FOLLOW-UP, with its context quality',
+      ['Before', 'Entry', 'Market path', 'Result', 'Grade', 'Reflection', 'Follow-up'].every((h) => new RegExp('\\b' + h + '\\b', 'i').test(t)) && /Full context/i.test(t), t.slice(0, 1600));
+    chk('…what EdgeDesk said and the market showed, frozen, with the model version and the price\'s age', /Saved to your Card, then recorded/.test(t) && /nfl_r2/.test(t) && /BET/.test(t)
+      && /captured more than 90 minutes before the decision/.test(t) && /never rewritten/.test(t), t.slice(0, 1600));
+    chk('…and no closing price is invented', /No closing price recorded/.test(t));
+    await shot(page, 'desktop-decision-record');
+    await page.click('.pfo-sheet [data-act="dr-ask"]');
+    await page.waitForFunction(() => document.getElementById('edaiPanel') && document.getElementById('edaiPanel').classList.contains('open'), null, { timeout: 10000 });
+    const ans = await page.$eval('#edaiLog', (e) => e.innerText);
+    chk('Ask EdgeDesk about this decision answers from the record alone, and says so', /Before\./.test(ans) && /You entered at −105/.test(ans) && /From your own decision record only/.test(ans)
+      && !/BET THIS|DON.?T BET|GUARANTEED/i.test(ans), ans.slice(0, 800));
+    await page.evaluate(() => window.EDAI && window.EDAI.close());
+    /* search reaches the reader's own positions and Card */
+    await page.evaluate(() => { if (window.show) window.show('research'); });
+    await page.evaluate(() => window.rsToggleSearch && window.rsToggleSearch());
+    await page.fill('#rsQ', 'Chiefs');
+    await page.waitForFunction(() => /Your positions[\s\S]*Bills @ Chiefs/i.test((document.getElementById('rsMine') || {}).innerText || ''), null, { timeout: 15000 });
+    chk('search finds the reader\'s Card entry and recorded position beside research', /On your Card/i.test(await page.$eval('#rsMine', (e) => e.innerText)));
+    await page.click('#rsMine [data-ws-rec]');
+    await page.waitForFunction(() => /Market path/i.test((document.querySelector('.pfo-sheet .pfo-dr') || {}).innerText || ''), null, { timeout: 15000 });
+    chk('…and a position result opens its Decision Record', true);
+    await page.click('.pfo-sheet [data-act="close"]');
+    /* your data: everything out as data; delete asks for the phrase */
+    await tab(page, 'accounts');
+    await page.waitForSelector('#pfoHost [data-act="export-json"]');
+    await page.click('#pfoHost [data-act="export-json"]');
+    await page.waitForFunction(() => /Downloaded/.test(document.getElementById('pfoHost').innerText), null, { timeout: 15000 });
+    const dl = page.downloads[page.downloads.length - 1];
+    const dlBody = dl ? JSON.parse(fs.readFileSync(await dl.path(), 'utf8')) : null;
+    chk('Download everything gives every record as data — positions, snapshots, path, journal — and none of reader B\'s',
+      dlBody && dlBody.format === 'edgedesk_portfolio_export_v1' && dlBody.positions.length > 0 && dlBody.decision_snapshots.some((x) => x.origin === 'CARD' && x.origin_ref === 'ce_e2e_1') && dlBody.market_path.length >= 2
+      && !/SECRET-B/.test(JSON.stringify(dlBody)), dlBody && Object.keys(dlBody));
+    await page.click('#pfoHost [data-act="delete-all"]');
+    await waitText(page, /Nothing was deleted/);
+    chk('Delete my Portfolio deletes nothing without the typed phrase', +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}';`) > 0);
+    chk('no page errors on the Card → Record → Decision Record path', errors.length === 0, errors);
+    await ctx.close();
+
     /* ═══ PHONE: 390 px ════════════════════════════════════════════════ */
-    ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
+    ({ ctx, page, errors } = await open({ width: 390, height: 844 }, { card: Object.assign({}, CARD_ENTRY, { entry_id: 'ce_e2e_phone' }) }));
     await waitText(page, /Total P&L/i);
     for (const v of ['overview', 'calendar', 'journal', 'open', 'history', 'analytics', 'accounts', 'import']) {
       await tab(page, v);
@@ -679,6 +777,20 @@ const CSV = [
     chk('390px: the form sheet fits the screen', panel.right <= 391, panel);
     await noSideways(page, '390px form');
     await shot(page, 'phone-form');
+    await page.click('.pfo-sheet [data-act="close"]');
+    /* the Card entry's actions and Record Position, on a phone */
+    await page.click('.bottomnav button[data-v="card"]');
+    await page.waitForSelector('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', { timeout: 20000 });
+    const rec = await page.$eval('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]', (b) => { const r = b.getBoundingClientRect(); return { w: r.width, h: r.height, right: r.right }; });
+    chk('390px: Record position is a full-width, thumb-sized button on the Card', rec.w >= 300 && rec.h >= 40 && rec.right <= 391, rec);
+    await noSideways(page, '390px Card with an entry');
+    await shot(page, 'phone-card-entry');
+    await page.click('#eddCardHost [data-edd-act="card-record"][data-edd-v="ce_e2e_phone"]');
+    await page.waitForSelector('.pfo-sheet form[data-form="wager"]');
+    const rp = await page.$eval('.pfo-sheet .pfo-panel', (e) => { const r = e.getBoundingClientRect(); return { right: r.right, from: !!e.querySelector('.pfo-dr-from') }; });
+    chk('390px: Record position opens prefilled, with where it came from, and fits the screen', rp.right <= 391 && rp.from, rp);
+    await noSideways(page, '390px Record position');
+    await shot(page, 'phone-record-position');
     chk('no page errors on the phone', errors.length === 0, errors);
     await ctx.close();
 

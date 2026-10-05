@@ -302,6 +302,11 @@ do $c$ begin
       and reliability_change_pts between 1 and 50);
   end if;
 end $c$;
+-- the reader's own Portfolio notices (supabase/portfolio_decision.sql): a
+-- settled position's decision record ready to review, an experiment whose
+-- window ended. Each can be turned off on its own.
+alter table public.alert_preferences add column if not exists on_decision_review  boolean not null default true;
+alter table public.alert_preferences add column if not exists on_experiment_ready boolean not null default true;
 create or replace function public.alert_preferences_touch()
 returns trigger language plpgsql as $$ begin new.updated_at := now(); return new; end $$;
 drop trigger if exists alert_preferences_touch_trg on public.alert_preferences;
@@ -537,10 +542,17 @@ do $c$ begin
   if not exists (select 1 from pg_constraint where conname = 'user_alerts_once') then
     alter table public.user_alerts add constraint user_alerts_once unique (user_id, dedupe_key);
   end if;
+  /* the kinds grew (decision_review, experiment_ready): a shape check from
+     before is replaced by the current one, in this same transaction */
+  if exists (select 1 from pg_constraint where conname = 'user_alerts_shape'
+              and pg_get_constraintdef(oid) not like '%experiment_ready%') then
+    alter table public.user_alerts drop constraint user_alerts_shape;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'user_alerts_shape') then
     alter table public.user_alerts add constraint user_alerts_shape check (
           kind in ('fair_move','market_move','key_number','gap_min','converge','diverge','reliability_min',
-                   'reliability_change','qb_confirmed','qb_change','injury_change','research_grade','research_grade_lost')
+                   'reliability_change','qb_confirmed','qb_change','injury_change','research_grade','research_grade_lost',
+                   'decision_review','experiment_ready')
       and severity in ('info','notable','caution')
       and email_status in ('not_sent','queued','sent','suppressed')
       and length(title) between 1 and 160 and (body is null or length(body) <= 600)

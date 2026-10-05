@@ -235,6 +235,34 @@ const stagesAll = () => JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((s)
     chk('a wallet account is tier 2 by public wallet, and holds no credential', db.sql(`select ingestion_method || ':' || connection_tier from public.platform_accounts where id = ${L(pmAcct)};`) === 'PUBLIC_WALLET:2'
       && count(`select count(*) from portfolio_private.platform_credentials where platform_account_id = ${L(pmAcct)};`) === 0);
 
+    /* ═══ RECONCILIATION: recorded by hand first, then synced ════════════ */
+    const recPayload = () => K.ingestPayload(K.kalshiNormalize({
+      fills: [{ fill_id: 'r1', ticker: 'NBA-LAL', outcome_side: 'yes', count_fp: '4.00', yes_price_dollars: '0.4500', no_price_dollars: '0.5500', fee_cost: '0.01', created_time: TS(6) }],
+      markets: { 'NBA-LAL': { event_ticker: 'NBA-E1', title: 'Will the Lakers win?', yes_sub_title: 'Lakers' } }, events: { 'NBA-E1': { title: 'Lakers at Celtics' } } }));
+    const rp = recPayload().positions[0];
+    const recordByHand = (k) => one(db.as(A, `select public.portfolio_record_prediction(${L(JSON.stringify({ platform: 'kalshi', platform_label: 'Kalshi',
+      event_name: rp.event_name, market_name: rp.market_name, side: rp.side, dedupe_occurrence: k || 1, fills: [{ action: 'BUY', quantity: '4', price: k === 2 ? '0.47' : '0.46', executed_at: TS(6) }] }))}::jsonb);`));
+    const manual = recordByHand();
+    db.as(A, `update public.portfolio_journal_entries set thesis = 'Rest edge, recorded by hand before connecting' where position_id = ${L(manual)};`);
+    res = ingest(acct, null, recPayload());
+    const adoptedRow = json(one(db.sql(`select json_build_object('ext', p.external_position_id, 'acct', p.platform_account_id, 'thesis', j.thesis,
+        'fills', (select json_agg(t.source || ':' || t.price::text) from public.portfolio_transactions t where t.position_id = p.id and t.transaction_type = 'BUY'))
+      from public.portfolio_positions p join public.portfolio_journal_entries j on j.position_id = p.id where p.id = ${L(manual)};`)));
+    chk('a contract recorded by hand before connecting is ADOPTED by the sync, not duplicated: one position, the platform\'s id and fills, the decision record kept',
+      res.positions_adopted === 1 && res.positions_inserted === 0 && adoptedRow.ext === rp.external_position_id && adoptedRow.acct === acct
+      && adoptedRow.thesis === 'Rest edge, recorded by hand before connecting' && JSON.stringify(adoptedRow.fills) === '["SYNC:0.45"]'
+      && count(`select count(*) from public.portfolio_positions where user_id = ${L(A)} and contract_key = (select contract_key from public.portfolio_positions where id = ${L(manual)});`) === 1, { res, adoptedRow });
+    chk('…and the next sync of it is an ordinary update', ingest(acct, null, recPayload()).positions_adopted === 0
+      && count(`select count(*) from public.portfolio_positions where external_position_id = ${L(rp.external_position_id)};`) === 1);
+    db.service(`delete from public.portfolio_positions where id = ${L(manual)};`);
+    const twinA = recordByHand(1), twinB = recordByHand(2);
+    res = ingest(acct, null, recPayload());
+    chk('two hand-recorded copies of one contract are never guessed between: neither is adopted, the synced one arrives, and the possible duplicate is reported',
+      res.positions_adopted === 0 && res.positions_inserted === 1 && res.issues.some((i) => i.code === 'POSSIBLE_DUPLICATE')
+      && count(`select count(*) from public.portfolio_positions where id in (${L(twinA)}, ${L(twinB)}) and external_position_id is null;`) === 2, res);
+    /* leave the account as the sections below expect it */
+    db.service(`delete from public.portfolio_positions where id in (${L(twinA)}, ${L(twinB)}) or external_position_id = ${L(rp.external_position_id)};`);
+
     /* ═══ RUNS: refused keys, backoff, ERROR ═════════════════════════════ */
     let r = one(db.service(`select public.portfolio_svc_run_begin(${L(pmAcct)}, 'INCREMENTAL');`));
     db.service(`select public.portfolio_svc_run_finish(${L(r)}, 'FAILED', 'PLATFORM_DOWN', 'The platform did not answer.');`);

@@ -2912,12 +2912,12 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261003a">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261005dr1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
-<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261005pc3">
+<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261005dr1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3927,7 +3927,7 @@ window.mcRefresh=function(){
      tools/app/portfolio_process.test.js. -->
 <script src="/lib/edgedesk_positions.js?v=20261004b"></script>
 <script src="/lib/edgedesk_process.js?v=20261004b"></script>
-<script src="/lib/edgedesk_workspace_ui.js?v=20261005pc3"></script>
+<script src="/lib/edgedesk_workspace_ui.js?v=20261005dr1"></script>
 <script src="/lib/edgedesk_share_card.js?v=20261001a"></script>
 <script src="/lib/edgedesk_pricing.js?v=20261004a"></script>
 <!-- the one access decision (public.my_billing_access) and the server
@@ -3981,7 +3981,7 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
 <script src="/lib/edgedesk_decision_inputs.js?v=20261002a"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20261004a"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20261005dr1"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
 <script src="/lib/edgedesk_props.js?v=20260929fr1"></script>
@@ -3996,8 +3996,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_connect_core.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
-<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261005pc3"></script>
-<script src="/lib/edgedesk_portfolio_ui.js?v=20261005pc3"></script>
+<!-- THE DECISION RECORD: context quality, edge capture, process memory and Card → Record Position (supabase/portfolio_decision.sql) -->
+<script src="/lib/edgedesk_decision_record.js?v=20261005dr1"></script>
+<script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261005dr1"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261005dr1"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -6268,8 +6270,8 @@ window.rsToggleSearch=function(){
   w.classList.toggle('hide',!open);
   $('rsSearchBtn').classList.toggle('on',open);
   if(open){
-    w.innerHTML='<input class="stsearch" id="rsQ" placeholder="Search every research module — team, fighter, player…" oninput="rsSearchRender()">'+
-      '<div id="rsHits" style="margin-top:8px"></div>';
+    w.innerHTML='<input class="stsearch" id="rsQ" placeholder="Search research, your Card and your positions — team, player, event…" oninput="rsSearchRender()">'+
+      '<div id="rsMine" style="margin-top:8px"></div><div id="rsHits" style="margin-top:8px"></div>';
     var i=$('rsQ');if(i)i.focus();
     rsSearchRender();
   }else{w.innerHTML='';}
@@ -6277,7 +6279,10 @@ window.rsToggleSearch=function(){
 window.rsSearchRender=function(){
   var host=$('rsHits');if(!host)return;
   var q=($('rsQ')&&$('rsQ').value||'').trim();
-  if(q.length<2){host.innerHTML='<div class="sidenote">Type at least two characters. Search covers the modules you have opened this session — each one loads its own data.</div>';return;}
+  var mine=$('rsMine');
+  if(q.length<2){if(mine)mine.innerHTML='';host.innerHTML='<div class="sidenote">Type at least two characters. Search covers your Card, your recorded positions and the research modules you have opened this session.</div>';return;}
+  /* the reader's own Card entries and positions (lib/edgedesk_workspace_ui.js) */
+  if(mine&&window.edSearchMine){try{window.edSearchMine(q,mine);}catch(_){}}
   var r=rsSearchAll(q);
   var html=r.hits.slice(0,40).map(function(h){
     return '<div class="rs-hit" onclick="rsOpenHit(\''+edAttrJs(h.module)+'\',\''+edAttrJs(String(h.id))+'\')">'+
@@ -44387,6 +44392,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
       renderActions(); if(!$id('edaiLog').children.length){ try{ scanSlate(true); }catch(_){ emptyState(); } } },
     close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },
+    /* "Ask EdgeDesk about this decision" (Portfolio's Decision Record): an
+       answer built from the reader's own record on the page, every sentence
+       from it — shown here, never sent anywhere */
+    explainRecord:function(q, html){
+      try{ var em=$id('edaiLog')&&$id('edaiLog').querySelector('.edai-empty'); if(em) em.remove(); }catch(_){}
+      push('u', q); push('a', html); window.EDAI.open();
+    },
     unload:function(){ LOADED=null; $id('edaiLoaded').classList.add('hide'); renderActions(); },
     loadFrom:function(i){ var e=(window.__EDAI_BB||[])[i]; if(e) window.EDAI.loadSignal(e,true); },
     scanSlate:function(){ return scanSlate(); },
@@ -62984,7 +62996,7 @@ try{
 <script src="/lib/edgedesk_auth.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report.js?v=20260907b"></script>
 <script src="/lib/edgedesk_report_ui.js?v=20260907b"></script>
-<script src="/lib/edgedesk_personal_ui.js?v=20261001a"></script>
+<script src="/lib/edgedesk_personal_ui.js?v=20261005dr1"></script>
 <!-- first run ("Here's what EdgeDesk found today") and the funnel's in-app steps,
      over the landing page's own view model (lib/edgedesk_home.js) -->
 <script src="/lib/edgedesk_home.js?v=20260930c"></script>

@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-10-05 — The Decision Record, and one tap from the Card to it
+
+Every position now keeps what was known when it was entered, exactly as it was, and everything learned afterwards. It sits under the existing five destinations; no navigation was added. EdgeDesk still never places, accepts or executes a wager.
+
+- **The Decision Record** (`supabase/portfolio_decision.sql`, `docs/decision-record.md`). One record per position: BEFORE · ENTRY · MARKET PATH · RESULT · GRADE · REFLECTION · FOLLOW-UP. It opens from a position, from search and from a notification.
+  - **Immutable decision snapshots** keep EdgeDesk's state (model and its versions, probability, fair price, decision) and the market's state (price, consensus, per-book prices, capture time, freshness). They also keep the reader's own state, computed by the server: unit, caps, the day's exposure, rules and experiments in force. A snapshot is never rewritten, and one taken after the fact is refused.
+  - **The market path** is append-only. Each price has its source, and its time is either observed or only recorded. The feed reads `book_quote_ticks` by exact key only and captures a close only within 6 hours of the start.
+  - **Edge capture** (`edge_capture_v1`) covers spreads, totals, moneylines, props and contracts, with its limitations in words.
+  - **Context quality:** FULL / STRONG / PARTIAL / RESULT_ONLY. Imported history is valued but nothing is invented.
+  - **Persisted outcome classes:** good win / bad win / good loss / bad loss, from the process grade and the result together, never the result alone.
+  - **Reflections** keep every version, stamped before or after the result.
+  - **Methodology versions** come with recalculation rules (LIVE vs APPEND), and old conclusions are never overwritten.
+- **Process memory.** Each surfaced pattern shows FIRST DETECTED · THEN · NOW · STATUS. The status (Improving / Unchanged / Declined / Insufficient new evidence) is a Welch test on the positions since detection, never two letters compared. Every look stores the exact positions it used and those it excluded, with the reason.
+- **Your baseline.** The first 30 graded decisions are frozen, and later ones are tested against them. **Analysis depth** at 10 / 30 / 100 says what becomes possible, never a target. Up to three **questions from your own record** appear, each with its WHY.
+- **Experiments are a permanent record.** Success criteria and the baseline freeze at the start. *Record the result* runs the pre-registered test on evidence the server froze, and the server refuses a conclusion that evidence does not allow. The reflection is written once.
+- **Card → Record Position.** A saved Card entry offers View research · Before you enter · Record position · Remove. Record position opens Portfolio's sheet:
+  - prefilled from the Card;
+  - says how old the saved price is;
+  - shows Before You Enter first.
+  - One save stores the position, journal, snapshot, path and the Card's RECORDED event.
+  - The Card's lifecycle (added, viewed, considered, recorded, removed) is kept privately. A removed entry is never a position.
+- **Reconciliation without duplicates.**
+  - An import row matching a bet already recorded waits for review.
+  - A synced contract adopts a single hand-recorded copy; two or more are reported, never guessed between.
+- **Search** reaches the reader's Card entries and recorded positions beside research.
+- **Notices.**
+  - A settled position's record is ready to review.
+  - An experiment's window has ended.
+  - Each has its own switch, and neither ever prompts a wager.
+- **Ask EdgeDesk about this decision** answers on the page from the record alone.
+- **Your data.** *Download everything (JSON)* and *Delete my Portfolio…* (typed confirmation). Account deletion cascades through every new table.
+- **Operator moat metrics** are counts only, withheld below 5 readers. Cross-reader intelligence is designed, not enabled.
+- **Tests:**
+  - `tools/portfolio/decision_sql.test.js`: 103 checks.
+  - `tools/portfolio/decision_record.test.js`: 29 checks.
+  - The Card → Record → Decision Record → Ask → search → export journey in `tools/portfolio/portfolio_ui.e2e.js`: 128 checks in all, at 1280 and 390 px.
+  - Reconciliation in `connect_sql.test.js` and `portfolio_sql.test.js`.
+
 ## 2026-10-05 — Process tells you what matters before asking which report to open
 
 Process opened on eight peer reports and two rows of filter chips; it read like an analytics dashboard, not a coach. The same engine (`lib/edgedesk_portfolio_process.js`, `supabase/portfolio_journal.sql`) now sits under a simpler surface. The five destinations — Research, Card, Portfolio, Process, More — are unchanged.

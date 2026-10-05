@@ -391,7 +391,7 @@ declare
   pos_ins int := 0; pos_upd int := 0; tx_ins int := 0; tx_same int := 0; v_rejected int := 0;
   v_issues jsonb := coalesce(p_payload->'issues', '[]'::jsonb);
   b numeric; s numeric; first_at timestamptz; pre text; healed int := 0;
-  pos_settled int := 0; old_res text; old_sp numeric; new_res text;
+  pos_settled int := 0; old_res text; old_sp numeric; new_res text; adopt uuid[]; adopted int := 0; did_adopt boolean;
 begin
   perform public.portfolio_svc_assert();
   select id, user_id, platform, platform_label, platform_type into a from public.platform_accounts where id = p_account;
@@ -402,6 +402,32 @@ begin
         raise exception using errcode = '22023', message = 'portfolio: a position for another platform, or without its id';
       end if;
       perform set_config('portfolio.bulk_fills', 'on', true);
+      did_adopt := false;
+      -- RECONCILIATION. A position the reader recorded by hand (or from
+      -- EdgeDesk) before connecting, of exactly this contract — the same
+      -- platform and the same normalized event, market and side — with no
+      -- platform id yet: the platform's record ADOPTS it instead of arriving
+      -- as a second copy. Its decision record (journal, snapshot, path)
+      -- stays; its typed fills give way to the platform's own. Only when
+      -- exactly one matches: two or more stay apart, reported, never guessed.
+      if not exists (select 1 from public.portfolio_positions where user_id = a.user_id and platform = a.platform
+                       and external_position_id = p->>'external_position_id') then
+        select array_agg(x.id order by x.placed_at) into adopt from public.portfolio_positions x
+         where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'PREDICTION_MARKET' and x.external_position_id is null
+           and x.source in ('MANUAL', 'EDGEDESK')
+           and x.contract_key = public.portfolio_contract_key(a.platform,
+                 left(coalesce(nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),
+                 left(coalesce(nullif(btrim(p->>'market_name'), ''), nullif(btrim(p->>'event_name'), ''), p->>'external_position_id'), 200),
+                 left(nullif(btrim(p->>'side'), ''), 80));
+        if coalesce(array_length(adopt, 1), 0) = 1 then
+          delete from public.portfolio_transactions where position_id = adopt[1] and source <> 'SYNC' and transaction_type in ('BUY', 'SELL', 'FILL');
+          update public.portfolio_positions set external_position_id = p->>'external_position_id', platform_account_id = a.id where id = adopt[1];
+          did_adopt := true;
+        elsif coalesce(array_length(adopt, 1), 0) > 1 and jsonb_array_length(v_issues) < 200 then
+          v_issues := v_issues || jsonb_build_array(jsonb_build_object('code', 'POSSIBLE_DUPLICATE', 'ref', left(p->>'external_position_id', 120),
+            'message', array_length(adopt, 1) || ' positions you recorded match this contract; they were left as they are. Delete the copy you do not want.'));
+        end if;
+      end if;
       select min((x->>'executed_at')::timestamptz) into first_at from jsonb_array_elements(coalesce(p->'fills', '[]'::jsonb)) x;
       -- what the position was settled as before this payload, so a new or
       -- changed settlement is counted (observability), never inferred
@@ -465,6 +491,7 @@ begin
       if s > b then raise exception using errcode = '23514', message = 'portfolio: more contracts sold than bought'; end if;
       update public.portfolio_positions set updated_at = now() where id = pid;
       if was_new then pos_ins := pos_ins + 1; else pos_upd := pos_upd + 1; end if;
+      if did_adopt then adopted := adopted + 1; end if;
       if new_res is not null and (old_res is distinct from new_res or old_sp is distinct from (nullif(p->>'settlement_price', ''))::numeric) then
         pos_settled := pos_settled + 1;
       end if;
@@ -495,7 +522,8 @@ begin
      where id = p_run and platform_account_id = p_account;
   end if;
   return jsonb_build_object('positions_inserted', pos_ins, 'positions_updated', pos_upd, 'transactions_inserted', tx_ins,
-    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed, 'positions_settled', pos_settled);
+    'transactions_unchanged', tx_same, 'rejected', v_rejected, 'issues', v_issues, 'healed', healed, 'positions_settled', pos_settled,
+    'positions_adopted', adopted);
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
