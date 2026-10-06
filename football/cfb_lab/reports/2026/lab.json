@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-06T17:23:54.000Z",
+ "generated_at": "2026-10-06T18:07:26.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 518,
-    "latest_snapshot_at": "2026-10-06T12:07:41.000Z",
+    "snapshots": 519,
+    "latest_snapshot_at": "2026-10-06T18:07:26.000Z",
     "upcoming_games": 65,
     "avg_confidence_upcoming": 75.7
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 775,
-    "latest_snapshot_at": "2026-10-06T12:11:09.000Z",
+    "snapshots": 776,
+    "latest_snapshot_at": "2026-10-06T18:07:26.000Z",
     "upcoming_games": 65,
     "avg_confidence_upcoming": 78.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 775,
-    "latest_snapshot_at": "2026-10-06T12:11:09.000Z",
+    "snapshots": 776,
+    "latest_snapshot_at": "2026-10-06T18:07:26.000Z",
     "upcoming_games": 65,
     "avg_confidence_upcoming": 78.4
    }
@@ -840,16 +840,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-06T17:23:54.000Z",
-    "quotes_total": 8963,
+    "last_quote_at": "2026-10-06T18:07:26.000Z",
+    "quotes_total": 8969,
     "last_result_at": "2026-10-04T10:12:51.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 2578,
-   "live_predictions": 2068,
-   "quotes": 8963,
+   "predictions": 2581,
+   "live_predictions": 2071,
+   "quotes": 8969,
    "lines": 1896,
    "results": 341,
    "evaluations": 2229,
@@ -864,22 +864,22 @@
    "home": "Troy",
    "away": "Southern Miss",
    "market": {
-    "current": -9.5,
+    "current": -10,
     "open": -8.5,
     "books": 1,
-    "as_of": "2026-10-06T12:08:09Z",
+    "as_of": "2026-10-06T18:07:26.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T12",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:07:41.000Z",
+     "prediction_ts": "2026-10-06T18:07:26.000Z",
      "margin": 9.72,
      "fair": "Troy -9.5",
      "p_home": 0.7438,
@@ -889,17 +889,17 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.78,
-     "line": 10.5,
+     "gap": -0.28,
+     "line": 10,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-06T18:07:26.000Z",
      "margin": 9.34,
      "fair": "Troy -9.5",
      "p_home": 0.7247,
@@ -909,8 +909,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.16,
-     "line": 9.5,
+     "gap": -0.66,
+     "line": 10,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -920,10 +920,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T6",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-06T18:07:26.000Z",
      "margin": 9.26,
      "fair": "Troy -9.5",
      "p_home": 0.7225,
@@ -933,8 +933,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -0.24,
-     "line": 9.5,
+     "gap": -0.74,
+     "line": 10,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10466,7 +10466,7 @@
   "data_fault": 0,
   "market_fault": 11,
   "verification_not_run": 0,
-  "average_raw_gap": 4.18,
+  "average_raw_gap": 4.173,
   "average_raw_gap_7plus": 10.793,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
