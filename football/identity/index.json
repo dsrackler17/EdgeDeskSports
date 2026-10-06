@@ -2,7 +2,7 @@
  "schema": "edgedesk_team_identity_v1_index",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-10-06T00:52:38.210Z",
+ "generated_at": "2026-10-06T06:25:06.663Z",
  "note": "One dated identity per team: measured statistics (copied with their sample and source), sourced qualitative observations, and analytical inferences derived by a stated rule. A previous season’s identity never becomes this season’s; the season is a field and the trend block is within-season only.",
  "rules": {
   "measured": "copied from the named artifact; the only arithmetic is the NFL season rate (counts re-summed from the team-week rows) and the trend deltas",
@@ -16,21 +16,21 @@
    "plays_per_game": 58.23099041533546
   },
   "nfl": {
-   "off_epa_play": 0.009040845013346496,
-   "pass_epa_db": 0.06080284157047293,
-   "rush_epa_att": -0.06815001505490756,
-   "expl_pass": 0.08975383328142349,
-   "expl_rush": 0.09797731317752485,
-   "sack_rate_all": 0.0634558026475626,
-   "pass_rate": 0.5670536223087177,
-   "plays": 61.90104166666667,
-   "def_epa_play": 0.00942404637499691,
-   "def_pass_epa_db": 0.06746241394885931,
-   "def_rush_epa_att": -0.07098348860227448,
-   "def_expl_pass": 0.08906922581934501,
-   "def_expl_rush": 0.09779282244548483,
-   "sack_rate_made": 0.06158226391942591,
-   "def_qb_hit_rate": 0.17281491560825882,
+   "off_epa_play": 0.012262860280385016,
+   "pass_epa_db": 0.06589362689839312,
+   "rush_epa_att": -0.06785900516697006,
+   "expl_pass": 0.09058252348686918,
+   "expl_rush": 0.09748102104282722,
+   "sack_rate_all": 0.06300106736917856,
+   "pass_rate": 0.5671311831037014,
+   "plays": 61.8046875,
+   "def_epa_play": 0.011487618892923577,
+   "def_pass_epa_db": 0.06897878508606964,
+   "def_rush_epa_att": -0.0686077676857795,
+   "def_expl_pass": 0.08977155912722908,
+   "def_expl_rush": 0.09741144299344687,
+   "sack_rate_made": 0.06152704952737945,
+   "def_qb_hit_rate": 0.17254303981157387,
    "pts_for": null,
    "pts_against": null
   }
@@ -88,7 +88,7 @@
    "path": "football/availability/current.json",
    "ok": true,
    "error": null,
-   "generated_at": "2026-10-05T23:58:56.902Z"
+   "generated_at": "2026-10-06T06:12:14.307Z"
   },
   "INJ": {
    "path": "football/injuries/nfl_2026.json",
@@ -123,17 +123,17 @@
   "TW": {
    "path": "football/nfl/.cache/stats_team_week_2026.csv",
    "ok": true,
-   "retrieved_at": "2026-10-06T00:52:35.673Z"
+   "retrieved_at": "2026-10-06T06:25:02.636Z"
   },
   "QBW": {
    "path": "football/nfl/.cache/stats_player_week_2026.csv",
    "ok": true,
-   "retrieved_at": "2026-10-06T00:52:35.873Z"
+   "retrieved_at": "2026-10-06T06:25:02.695Z"
   },
   "DEPTH": {
    "path": "football/data/cache/nfl_depth_2026.csv",
-   "ok": true,
-   "clubs": 32
+   "ok": false,
+   "clubs": 0
   }
  },
  "counts": {
@@ -142,7 +142,7 @@
   "fbs_with_units": 138,
   "fbs_with_backup_qb": 138,
   "nfl_with_units": 32,
-  "nfl_with_backup_qb": 32,
+  "nfl_with_backup_qb": 0,
   "nfl_with_report": 32
  },
  "teams": {
@@ -2428,7 +2428,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/ari.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2443,15 +2443,14 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/atl.json",
    "inferences": [
     "run-heavy offence",
-    "the pass rush does not get home",
-    "small sample: 3 games"
+    "the pass rush does not get home"
    ],
    "units": 15,
-   "games": 3
+   "games": 4
   },
   "bal": {
    "key": "bal",
@@ -2459,7 +2458,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/bal.json",
    "inferences": [
     "run-heavy offence"
@@ -2473,7 +2472,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/buf.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2488,7 +2487,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/car.json",
    "inferences": [
     "pass-heavy offence",
@@ -2503,7 +2502,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/chi.json",
    "inferences": [
     "run-heavy offence",
@@ -2520,7 +2519,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/cin.json",
    "inferences": [
     "pass-heavy offence",
@@ -2535,7 +2534,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/cle.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2550,7 +2549,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/dal.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2568,7 +2567,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/den.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2583,7 +2582,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/det.json",
    "inferences": [
     "pass-heavy offence",
@@ -2600,7 +2599,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/gb.json",
    "inferences": [
     "pass-heavy offence"
@@ -2614,7 +2613,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/hou.json",
    "inferences": [
     "pass-heavy offence",
@@ -2631,7 +2630,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/ind.json",
    "inferences": [
     "balanced run/pass mix"
@@ -2645,7 +2644,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/jax.json",
    "inferences": [
     "run-heavy offence",
@@ -2661,7 +2660,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/kc.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2676,7 +2675,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/la.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2692,7 +2691,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/lac.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2709,7 +2708,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/lv.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2726,7 +2725,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/mia.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2743,7 +2742,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/min.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2759,7 +2758,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/ne.json",
    "inferences": [
     "balanced run/pass mix"
@@ -2773,15 +2772,14 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/no.json",
    "inferences": [
     "pass-heavy offence",
-    "fast tempo (play-count proxy)",
-    "small sample: 3 games"
+    "fast tempo (play-count proxy)"
    ],
    "units": 15,
-   "games": 3
+   "games": 4
   },
   "nyg": {
    "key": "nyg",
@@ -2789,7 +2787,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/nyg.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2805,7 +2803,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/nyj.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2820,7 +2818,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/phi.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2836,7 +2834,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/pit.json",
    "inferences": [
     "pass-heavy offence",
@@ -2852,7 +2850,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/sea.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2867,7 +2865,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/sf.json",
    "inferences": [
     "run-heavy offence",
@@ -2883,7 +2881,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/tb.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2899,7 +2897,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/ten.json",
    "inferences": [
     "balanced run/pass mix",
@@ -2915,7 +2913,7 @@
    "league": "NFL",
    "conference": null,
    "season": 2026,
-   "verified_at": "2026-10-06T00:52:35.673Z",
+   "verified_at": "2026-10-06T06:25:02.636Z",
    "file": "football/identity/teams/was.json",
    "inferences": [
     "balanced run/pass mix",
