@@ -20,9 +20,9 @@
   "week": 2,
   "season": 2026,
   "game_time": "2026-09-21T20:15:00.000Z",
-  "published_at": null,
-  "updated_at": "2026-10-05T23:59:41.808Z",
-  "generated_at": "2026-10-05T23:59:41.808Z",
+  "published_at": "2026-10-06T00:02:02.233Z",
+  "updated_at": "2026-10-06T00:02:02.233Z",
+  "generated_at": "2026-10-06T00:02:02.233Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "MIXED",
   "model_status_note": "The number did not land and the reasoning half held. There is something here to investigate without concluding the model is broken.",
@@ -34,9 +34,9 @@
   "canonical_url": "https://edgedesksports.com/articles/new-york-giants-vs-los-angeles-rams-2026-postgame-analysis",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/nfl",
-  "status": "draft",
+  "status": "published",
   "frozen": true,
-  "frozen_at": "2026-10-05T23:59:41.808Z",
+  "frozen_at": "2026-10-06T00:02:02.233Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 31 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
@@ -3004,7 +3004,7 @@
     "sport": "NFL",
     "season": 2026,
     "week": 2,
-    "observed_at": "2026-10-05T23:59:41.808Z",
+    "observed_at": "2026-10-06T00:02:02.233Z",
     "kickoff": "2026-09-21T20:15:00.000Z",
     "final_seen_at": null,
     "home_team": "Los Angeles Rams",
@@ -4374,7 +4374,7 @@
     "game_id": "2026_02_NYG_LA",
     "sport": "NFL",
     "snapshot_id": "snap_8b03464ee5b6d999",
-    "graded_at": "2026-10-05T23:59:41.808Z",
+    "graded_at": "2026-10-06T00:02:02.233Z",
     "final": {
       "home_team": "Los Angeles Rams",
       "away_team": "New York Giants",
@@ -4499,7 +4499,7 @@
       "suggested_investigation": "These claims carried 2.2 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
       "bet_result": "LOSS",
       "process_grade": "MIXED",
-      "created_at": "2026-10-05T23:59:41.808Z"
+      "created_at": "2026-10-06T00:02:02.233Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -4523,7 +4523,7 @@
       "suggested_investigation": "Consider whether a postgame data source exists for model.",
       "bet_result": "LOSS",
       "process_grade": "MIXED",
-      "created_at": "2026-10-05T23:59:41.808Z"
+      "created_at": "2026-10-06T00:02:02.233Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -4547,7 +4547,7 @@
       "suggested_investigation": "Was the play count or the points per drive the miss? Both are in this game’s result record.",
       "bet_result": "LOSS",
       "process_grade": "MIXED",
-      "created_at": "2026-10-05T23:59:41.808Z"
+      "created_at": "2026-10-06T00:02:02.233Z"
     },
     {
       "schema": "edgedesk_game_research_lesson_v1",
@@ -4571,7 +4571,7 @@
       "suggested_investigation": null,
       "bet_result": "LOSS",
       "process_grade": "MIXED",
-      "created_at": "2026-10-05T23:59:41.808Z"
+      "created_at": "2026-10-06T00:02:02.233Z"
     }
   ],
   "pregame_published_at": "2026-09-21T13:20:19.185Z",
@@ -4584,16 +4584,10 @@
   "generation_version": "edgedesk_postgame_article_v1",
   "quality": {
     "score": 92,
-    "publishable": false,
-    "manual_review_required": true,
-    "hold_reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
-    "integrity_failed": [
-      {
-        "id": "no_unsupported_statistics",
-        "why": "every figure on the page must trace to the research snapshot, the result record or this repository’s own arithmetic",
-        "detail": "2.2 in \"rushing high model review candidate EdgeDesk named New York Giants as better in rushing and the game went the other way, across 2 separate p\" | 2.2 in \"REVIEW CANDIDATE — rushing: These claims carried 2.2 points of the published number between them and were contradicted. Check whether the sa\""
-      }
-    ],
+    "publishable": true,
+    "manual_review_required": false,
+    "hold_reason": null,
+    "integrity_failed": [],
     "craft_failed": [
       {
         "id": "repetition",
@@ -4602,11 +4596,24 @@
         "cost": 8
       }
     ],
-    "at": "2026-10-05T23:59:41.808Z"
+    "at": "2026-10-06T00:02:02.233Z"
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-05T23:59:41.808Z"
+    "at": "2026-10-06T00:02:02.233Z"
+  },
+  "publish_state": {
+    "ok": true,
+    "at": "2026-10-06T00:02:02.233Z",
+    "blocking": [],
+    "warnings": [
+      {
+        "id": "craft_repetition",
+        "why": "five sentences on one page opening the same three words reads as generated",
+        "detail": "added the way"
+      }
+    ],
+    "hold_reason": null
   }
 }

@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-05T23:59:41.808Z",
-  "open": 9,
-  "count": 9,
+  "generated_at": "2026-10-06T00:02:02.233Z",
+  "open": 10,
+  "count": 10,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -303,6 +303,35 @@
           "result": "The game finished with 89 points, an error of 28.9.",
           "severity": "high",
           "at": "2026-10-02T05:20:25.196Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:rushing:advantage",
+      "sport": "NFL",
+      "category": "rushing",
+      "question": "Does EdgeDesk’s rushing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T00:02:02.233Z",
+      "updated_at": "2026-10-06T00:02:02.233Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_02_NYG_LA:contradicted:rushing",
+          "game_id": "2026_02_NYG_LA",
+          "season": 2026,
+          "week": 2,
+          "team": "New York Giants",
+          "expectation": "2 published claims said the same thing: New York Giants holds the largest measured edge in this matchup: New York Giants +0.044 (#6 of 32) vs Los Angeles Rams +0.028 (#13 of 32) — 7 places on the league board. New York Giants’ run offence rates +0.044 (#6 of 32) and Los Angeles Rams’ run defence rates +0.001 (#16 of 32). Added the way the model adds them, this pairing sits +0.045 from the league mean, which favours New York Giants.",
+          "result": "New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163. New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163.",
+          "severity": "high",
+          "at": "2026-10-06T00:02:02.233Z"
         }
       ],
       "occurrences": 1,
