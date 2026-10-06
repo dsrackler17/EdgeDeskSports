@@ -21,8 +21,8 @@
   "game_time": "2026-10-07T00:00:00.000Z",
   "game_when_label": "2026-10-07 00:00 UTC",
   "published_at": "2026-10-06T10:00:39.414Z",
-  "updated_at": "2026-10-06T19:21:22.949Z",
-  "generated_at": "2026-10-06T19:21:22.949Z",
+  "updated_at": "2026-10-06T19:50:56.650Z",
+  "generated_at": "2026-10-06T19:50:56.650Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1570,7 +1570,7 @@
       "difference_n": 0.7750040910839306,
       "total_model": "50.1",
       "total_market": "52.5",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T18:50:01.273+00:00",
       "capture_age": "1 hour old",
       "stale": false,
@@ -1587,10 +1587,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.8 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1610,9 +1610,9 @@
         "market_line_text": "Troy -10.5",
         "market_home_margin": 10.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1622,11 +1622,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 83,
+        "pct": 80,
         "tier": "STRONG",
-        "text": "83 · STRONG",
+        "text": "80 · STRONG",
         "sub": "main deduction: Southern Miss’s availability sources refused",
-        "score": 83,
+        "score": 80,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1652,7 +1652,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.6,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1682,9 +1682,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1714,28 +1714,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Southern Miss",
-          "side": "away",
-          "line": 10.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Southern Miss +10.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Troy",
-          "side": "home",
-          "line": -10.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Troy -10.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1937,7 +1917,7 @@
       "EdgeDesk’s line is Troy -9.7 on a neutral read of the two teams, before any book is consulted. Projected total 50.1.",
       "Troy wins 74% of the time in EdgeDesk’s simulation, Southern Miss 26%.",
       "Eight games in ten land between -12.3 and +29.7 for Troy. A single result inside that band tells you nothing new about either team.",
-      "The market has Troy -10.5 at captured consensus · 1 book · best at FanDuel, 0.8 points from EdgeDesk’s number.",
+      "The market has Troy -10.5 at captured consensus (stale) · 1 book · best at FanDuel, 0.8 points from EdgeDesk’s number.",
       "Southern Miss quarterback: Landry Lyddy — started the last game; no announcement for this one.",
       "Troy quarterback: Goose Crowder — started the last game; no announcement for this one."
     ],
@@ -1950,15 +1930,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_0db56756dcae7a28",
+  "snapshot_id": "snap_5bf54fddfec78324",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-07T00:00:00.000Z",
-    "minutes_before_kickoff": 279,
+    "minutes_before_kickoff": 249,
     "published_at": "2026-10-06T10:00:39.414Z",
     "refreshed": false,
-    "at": "2026-10-06T19:21:22.949Z"
+    "at": "2026-10-06T19:50:56.650Z"
   },
   "featured": {
     "editorial_priority": 40,
@@ -2001,7 +1981,7 @@
         "label": "EdgeDesk differs from the market by 0.8 points",
         "points": 1,
         "tier": "EDGEDESK_MODEL",
-        "detail": "Troy -9.7 against Troy -10.5 at captured consensus · 1 book · best at FanDuel — AGREEMENT · the gap earns 1 of a possible 2.6 because the price is current. A gap alone orders no research and implies no expected value."
+        "detail": "Troy -9.7 against Troy -10.5 at captured consensus (stale) · 1 book · best at FanDuel — AGREEMENT · the gap earns 1 of a possible 2.6 because the price is current. A gap alone orders no research and implies no expected value."
       }
     ]
   },
@@ -2037,7 +2017,7 @@
       "schema": "edgedesk_thesis_v1",
       "thesis_id": "market_gap",
       "kind": "market",
-      "claim": "EdgeDesk makes it Troy -9.7 where the market has Troy -10.5 at captured consensus · 1 book · best at FanDuel — a 0.8 points disagreement.",
+      "claim": "EdgeDesk makes it Troy -9.7 where the market has Troy -10.5 at captured consensus (stale) · 1 book · best at FanDuel — a 0.8 points disagreement.",
       "basis": "EdgeDesk’s own number against a captured sportsbook quote",
       "source_path": "market.difference",
       "category": "market",
@@ -2250,11 +2230,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-06T19:21:22.949Z"
+    "at": "2026-10-06T19:50:56.650Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-06T19:21:22.949Z",
+    "at": "2026-10-06T19:50:56.650Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2262,6 +2242,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T19:21:22.949Z"
+    "at": "2026-10-06T19:50:56.650Z"
   }
 }
