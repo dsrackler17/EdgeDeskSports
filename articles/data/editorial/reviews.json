@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-06T18:20:32.157Z",
-  "open": 10,
-  "count": 10,
+  "generated_at": "2026-10-06T18:25:23.283Z",
+  "open": 11,
+  "count": 11,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -100,6 +100,46 @@
           "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
           "severity": "high",
           "at": "2026-09-29T03:20:22.190Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:scoring:general",
+      "sport": "CFB",
+      "category": "scoring",
+      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-02T05:20:25.196Z",
+      "updated_at": "2026-10-06T18:25:23.283Z",
+      "evidence": [
+        {
+          "lesson_id": "401862786:total_miss",
+          "game_id": "401862786",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 60.1.",
+          "result": "The game finished with 89 points, an error of 28.9.",
+          "severity": "high",
+          "at": "2026-10-02T05:20:25.196Z"
+        },
+        {
+          "lesson_id": "401862792:total_miss",
+          "game_id": "401862792",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 55.1.",
+          "result": "The game finished with 30 points, an error of 25.1.",
+          "severity": "high",
+          "at": "2026-10-06T18:25:23.283Z"
         }
       ],
       "occurrences": 2,
@@ -285,35 +325,6 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:scoring:general",
-      "sport": "CFB",
-      "category": "scoring",
-      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-02T05:20:25.196Z",
-      "updated_at": "2026-10-02T05:20:25.196Z",
-      "evidence": [
-        {
-          "lesson_id": "401862786:total_miss",
-          "game_id": "401862786",
-          "season": 2026,
-          "week": 5,
-          "team": null,
-          "expectation": "EdgeDesk published a fair total of 60.1.",
-          "result": "The game finished with 89 points, an error of 28.9.",
-          "severity": "high",
-          "at": "2026-10-02T05:20:25.196Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:rushing:advantage",
       "sport": "NFL",
       "category": "rushing",
@@ -332,6 +343,35 @@
           "result": "New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163. New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163.",
           "severity": "high",
           "at": "2026-10-06T00:02:02.233Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:market:price market_gap",
+      "sport": "CFB",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T18:25:23.283Z",
+      "updated_at": "2026-10-06T18:25:23.283Z",
+      "evidence": [
+        {
+          "lesson_id": "401862792:contradicted:market",
+          "game_id": "401862792",
+          "season": 2026,
+          "week": 5,
+          "team": "South Florida",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at South Florida -14.9 with a fair total of 55.1, which makes South Florida the better team here by that margin on this field. EdgeDesk makes it South Florida -14.9 where the market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — a 8.4 points disagreement.",
+          "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
+          "severity": "high",
+          "at": "2026-10-06T18:25:23.283Z"
         }
       ],
       "occurrences": 1,
