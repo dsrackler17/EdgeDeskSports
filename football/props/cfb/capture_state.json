@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "574 prop prices from 5 books across 1 of 1 events queried.",
+ "why": "938 prop prices from 6 books across 1 of 1 events queried.",
  "error_message": null,
- "started_at": "2026-10-06T21:45:54.047Z",
- "completed_at": "2026-10-06T21:45:54.411Z",
- "updated_at": "2026-10-06T21:45:54.411Z",
- "last_attempt": "2026-10-06T21:45:54.047Z",
- "duration_ms": 364,
+ "started_at": "2026-10-06T21:55:49.467Z",
+ "completed_at": "2026-10-06T21:55:49.729Z",
+ "updated_at": "2026-10-06T21:55:49.729Z",
+ "last_attempt": "2026-10-06T21:55:49.467Z",
+ "duration_ms": 262,
  "run": {
-  "id": "37536054754.1",
+  "id": "37537181763.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,11 +81,11 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-10-06T21:45:54.047Z",
- "last_success_at": "2026-10-06T21:45:54.047Z",
- "last_full_success_at": "2026-10-06T21:45:54.047Z",
+ "last_run": "2026-10-06T21:55:49.467Z",
+ "last_success_at": "2026-10-06T21:55:49.467Z",
+ "last_full_success_at": "2026-10-06T21:55:49.467Z",
  "polled_at": {
-  "57ad14afc7db1843fd56f5971dadb058": "2026-10-06T21:25:52.368Z",
+  "57ad14afc7db1843fd56f5971dadb058": "2026-10-06T21:55:49.467Z",
   "c89488b9c83038e85e02e92481d093fe": "2026-10-06T21:01:03.273Z",
   "9aa0a267b153a6cc0d6c3e5746e78213": "2026-10-06T21:45:54.047Z",
   "b274da111dc9826f36e5fa238998dd69": "2026-10-06T17:45:46.456Z",
@@ -189,8 +189,8 @@
  },
  "events_state": {
   "57ad14afc7db1843fd56f5971dadb058": {
-   "polled_ok_at": "2026-10-06T21:25:52.368Z",
-   "attempted_at": "2026-10-06T21:25:52.368Z",
+   "polled_ok_at": "2026-10-06T21:55:49.467Z",
+   "attempted_at": "2026-10-06T21:55:49.467Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -202,8 +202,8 @@
    "away_team": "Southern Mississippi Golden Eagles",
    "books": 6,
    "markets": 14,
-   "quotes": 919,
-   "next_due_at": "2026-10-06T21:55:52.368Z"
+   "quotes": 938,
+   "next_due_at": "2026-10-06T22:25:49.467Z"
   },
   "c89488b9c83038e85e02e92481d093fe": {
    "polled_ok_at": "2026-10-06T21:01:03.273Z",
@@ -1262,8 +1262,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 32831,
-  "requests_used": 67169
+  "requests_remaining": 32787,
+  "requests_used": 67213
  },
  "pacing": {
   "factor": 1,
@@ -1280,75 +1280,77 @@
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "9aa0a267b153a6cc0d6c3e5746e78213"
+  "57ad14afc7db1843fd56f5971dadb058"
  ],
  "books_returned": [
   "betonlineag",
+  "betrivers",
   "draftkings",
+  "espnbet",
   "fanduel",
-  "hardrockbet",
-  "pinnacle"
+  "hardrockbet"
  ],
  "markets_returned": {
+  "player_anytime_td": 5,
   "player_pass_tds": 3,
   "player_pass_tds_alternate": 3,
-  "player_pass_yds": 3,
-  "player_pass_yds_alternate": 4,
-  "player_reception_yds": 3,
-  "player_reception_yds_alternate": 3,
-  "player_rush_yds": 3,
-  "player_rush_yds_alternate": 3,
-  "player_receptions_alternate": 2,
+  "player_pass_yds": 5,
+  "player_pass_yds_alternate": 6,
+  "player_reception_yds": 5,
+  "player_reception_yds_alternate": 6,
+  "player_receptions": 2,
+  "player_receptions_alternate": 3,
+  "player_rush_yds": 4,
+  "player_rush_yds_alternate": 6,
   "player_pass_attempts": 1,
   "player_pass_completions": 1,
-  "player_rush_reception_yds": 1,
-  "player_anytime_td": 1,
-  "player_receptions": 1
+  "player_rush_reception_yds": 1
  },
- "outcomes_returned": 594,
- "quotes": 574,
- "quotes_normalized": 574,
- "quotes_written": 574,
+ "outcomes_returned": 981,
+ "quotes": 938,
+ "quotes_normalized": 938,
+ "quotes_written": 938,
  "refused": {
-  "conflicting duplicate outcome": 2,
-  "duplicate outcome": 18
+  "team or defense entity, not a player": 3,
+  "conflicting duplicate outcome": 18,
+  "duplicate outcome": 22
  },
  "flagged": {},
  "stopped": null,
  "credits_spent": 14,
- "requests_remaining": 32831,
- "requests_used": 67169,
+ "requests_remaining": 32787,
+ "requests_used": 67213,
  "requests": [
   {
-   "event_id": "9aa0a267b153a6cc0d6c3e5746e78213",
-   "matchup": "New Mexico State Aggies @ Florida International Panthers",
-   "kickoff": "2026-10-07T23:30:00Z",
+   "event_id": "57ad14afc7db1843fd56f5971dadb058",
+   "matchup": "Southern Mississippi Golden Eagles @ Troy Trojans",
+   "kickoff": "2026-10-07T00:00:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 100,
-   "books": 5,
+   "ms": 61,
+   "books": 6,
    "markets": 14,
-   "outcomes": 594,
-   "quotes": 574,
+   "outcomes": 981,
+   "quotes": 938,
    "cost": 14,
-   "remaining": 32831
+   "remaining": 32787
   }
  ],
- "feed_quotes": 6243,
+ "feed_quotes": 6262,
  "feed_events": 42,
  "markets_closed": 5,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-10-06T21:55:52.368Z",
+ "next_due_at": "2026-10-06T22:00:00.000Z",
  "health": {
-  "now": "2026-10-06T21:45:54.047Z",
+  "now": "2026-10-06T21:55:49.467Z",
   "active_events": 42,
   "on_target": 42,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-10-06T21:45:54.047Z",
-  "last_attempt_at": "2026-10-06T21:45:54.047Z",
+  "last_success_at": "2026-10-06T21:55:49.467Z",
+  "last_attempt_at": "2026-10-06T21:55:49.467Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
