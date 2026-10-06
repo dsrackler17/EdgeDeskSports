@@ -21,8 +21,8 @@
   "game_time": "2026-10-08T23:30:00.000Z",
   "game_when_label": "2026-10-08 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T18:55:04.438Z",
-  "generated_at": "2026-10-06T18:55:04.438Z",
+  "updated_at": "2026-10-06T22:36:37.858Z",
+  "generated_at": "2026-10-06T22:36:37.858Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -303,9 +303,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T23:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
-      "generated_at": "2026-10-06T16:18:47.878Z",
+      "generated_at": "2026-10-06T18:55:48.007Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1526,9 +1526,9 @@
       "difference_n": 5.823010161766161,
       "total_model": "55.8",
       "total_market": "49.5",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "4 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1543,10 +1543,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 5.8 pts toward South Florida. REGIME CHANGE: South Florida (new head coach; returning roster share at the 42nd percentile; returning production at the 22nd percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1566,9 +1566,9 @@
         "market_line_text": "UTSA -7.5",
         "market_home_margin": 7.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1608,7 +1608,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1631,8 +1631,8 @@
         "next_actions": [
           {
             "action": "Confirm South Florida’s starting QB (Michael Van Buren Jr.)",
-            "potential_gain": 7,
-            "text": "up to +7"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Re-read availability inside the filing window (South Florida)",
@@ -1672,28 +1672,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "South Florida",
-          "side": "away",
-          "line": 7.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "South Florida +7.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "UTSA",
-          "side": "home",
-          "line": -7.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "UTSA -7.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1895,7 +1875,7 @@
       "EdgeDesk’s line is UTSA -1.7 on a neutral read of the two teams, before any book is consulted. Projected total 55.8.",
       "UTSA wins 55% of the time in EdgeDesk’s simulation, South Florida 45%.",
       "Eight games in ten land between -20.3 and +21.7 for UTSA. A single result inside that band tells you nothing new about either team.",
-      "The market has UTSA -7.5 at captured consensus · 1 book · best at FanDuel, 5.8 points from EdgeDesk’s number.",
+      "The market has UTSA -7.5 at captured consensus (stale) · 1 book · best at FanDuel, 5.8 points from EdgeDesk’s number.",
       "UTSA quarterback: Owen McCown — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1912,6 +1892,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:55:04.438Z"
+    "at": "2026-10-06T22:36:37.858Z"
   }
 }

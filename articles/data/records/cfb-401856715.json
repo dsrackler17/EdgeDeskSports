@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T18:55:04.438Z",
-  "generated_at": "2026-10-06T18:55:04.438Z",
+  "updated_at": "2026-10-06T22:36:37.858Z",
+  "generated_at": "2026-10-06T22:36:37.858Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -245,7 +245,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T23:45:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
       "home": {
         "team": "Kentucky",
@@ -335,9 +335,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T20:15:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
-      "generated_at": "2026-10-06T16:18:47.878Z",
+      "generated_at": "2026-10-06T18:55:48.007Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1574,7 +1574,7 @@
       "total_market": "52.5",
       "book": "captured consensus · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "4 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1624,11 +1624,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Kentucky or LSU’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: LSU’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1654,7 +1654,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 13.9,
             "max": 15
           },
           {
@@ -1670,15 +1670,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Kentucky or LSU’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "LSU’s availability report is not due yet; the impact of LSU’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
+            "action": "Re-read availability inside the filing window (LSU)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Kentucky) and Re-read availability inside the filing window (LSU) is done"
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Kentucky)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1940,6 +1948,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:55:04.438Z"
+    "at": "2026-10-06T22:36:37.858Z"
   }
 }

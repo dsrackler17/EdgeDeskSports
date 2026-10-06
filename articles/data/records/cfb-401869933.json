@@ -21,8 +21,8 @@
   "game_time": "2026-10-08T23:30:00.000Z",
   "game_when_label": "2026-10-08 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T18:55:04.438Z",
-  "generated_at": "2026-10-06T18:55:04.438Z",
+  "updated_at": "2026-10-06T22:36:37.858Z",
+  "generated_at": "2026-10-06T22:36:37.858Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -261,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T23:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
       "home": {
         "team": "Arkansas State",
@@ -333,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T00:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
-      "generated_at": "2026-10-06T16:18:47.878Z",
+      "generated_at": "2026-10-06T18:55:48.007Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1552,9 +1552,9 @@
       "difference_n": 7.160409782511738,
       "total_model": "56.4",
       "total_market": "58.5",
-      "book": "captured consensus · 1 book · best at BetRivers",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "4 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1569,10 +1569,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_FAULT",
-        "label": "MARKET FAULT",
-        "rule": "market",
-        "means": "EdgeDesk and the market are 7.2 pts toward Arkansas State, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1580,8 +1580,9 @@
         "raw_market_gap": 7.16,
         "verified_market_gap": null,
         "calibrated_gap": 5.57,
-        "root_cause": "THIN_MARKET",
+        "root_cause": "STALE_MARKET",
         "failed": [
+          "MARKET.quote_fresh",
           "MARKET.book_count",
           "ROSTER.home_availability",
           "ROSTER.away_availability",
@@ -1610,9 +1611,9 @@
         "market_line_text": "South Alabama -0.5",
         "market_home_margin": -0.5,
         "favorite_differs": true,
-        "source": "captured consensus · 1 book · best at BetRivers",
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
         "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1622,11 +1623,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "85 · STRONG",
+        "text": "82 · STRONG",
         "sub": "main deduction: South Alabama’s availability sources refused",
-        "score": 85,
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1652,13 +1653,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1673,18 +1674,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for South Alabama",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Restore an injury/availability source for Arkansas State",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Resolve South Alabama’s starter conflict",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1720,28 +1721,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Arkansas State",
-          "side": "home",
-          "line": 0.5,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Arkansas State +0.5 (price not captured) at BetRivers"
-        },
-        "other": {
-          "team": "South Alabama",
-          "side": "away",
-          "line": -0.5,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "South Alabama -0.5 (price not captured) at BetRivers"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1943,7 +1924,7 @@
       "EdgeDesk’s line is Arkansas State -6.7 on a neutral read of the two teams, before any book is consulted. Projected total 56.4.",
       "Arkansas State wins 68% of the time in EdgeDesk’s simulation, South Alabama 32%.",
       "Eight games in ten land between -15.3 and +26.7 for Arkansas State. A single result inside that band tells you nothing new about either team.",
-      "The market has Arkansas State +0.5 at captured consensus · 1 book · best at BetRivers, 7.2 points from EdgeDesk’s number.",
+      "The market has Arkansas State +0.5 at captured consensus (stale) · 1 book · best at BetRivers, 7.2 points from EdgeDesk’s number.",
       "South Alabama quarterback: Jared Hollins — started the last game; no announcement for this one.",
       "Arkansas State quarterback: Trey Owens — started the last game; no announcement for this one."
     ],
@@ -1958,6 +1939,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:55:04.438Z"
+    "at": "2026-10-06T22:36:37.858Z"
   }
 }

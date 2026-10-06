@@ -21,8 +21,8 @@
   "game_time": "2026-10-07T23:30:00.000Z",
   "game_when_label": "2026-10-07 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T18:55:04.438Z",
-  "generated_at": "2026-10-06T18:55:04.438Z",
+  "updated_at": "2026-10-06T22:36:37.858Z",
+  "generated_at": "2026-10-06T22:36:37.858Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -267,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-02T00:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
       "home": {
         "team": "Florida International",
@@ -351,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T22:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
-      "generated_at": "2026-10-06T16:18:47.878Z",
+      "generated_at": "2026-10-06T18:55:48.007Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1576,9 +1576,9 @@
       "difference_n": 0.1655755128329961,
       "total_model": "51.0",
       "total_market": "46.5",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "4 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1593,10 +1593,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.2 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1616,9 +1616,9 @@
         "market_line_text": "Florida International -6.0",
         "market_home_margin": 6,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1628,13 +1628,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
-        "tier": "STRONG",
-        "text": "82 · STRONG",
+        "pct": 79,
+        "tier": "ADEQUATE",
+        "text": "79 · ADEQUATE",
         "sub": "main deduction: New Mexico State’s availability sources refused",
-        "score": 82,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "score": 79,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
         "gate_label": null,
         "components": [
           {
@@ -1658,13 +1658,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.3,
+            "score": 11.6,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.5,
+            "score": 13.6,
             "max": 15
           },
           {
@@ -1688,9 +1688,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Confirm Florida International’s starting QB (JJ Kohl)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1720,28 +1720,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "New Mexico State",
-          "side": "away",
-          "line": 6,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "New Mexico State +6.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "Florida International",
-          "side": "home",
-          "line": -6,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Florida International -6.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1943,7 +1923,7 @@
       "EdgeDesk’s line is Florida International -5.8 on a neutral read of the two teams, before any book is consulted. Projected total 51.0.",
       "Florida International wins 65% of the time in EdgeDesk’s simulation, New Mexico State 35%.",
       "Eight games in ten land between -16.2 and +25.8 for Florida International. A single result inside that band tells you nothing new about either team.",
-      "The market has Florida International -6.0 at captured consensus · 1 book · best at Pinnacle, 0.2 points from EdgeDesk’s number.",
+      "The market has Florida International -6.0 at captured consensus (stale) · 1 book · best at Pinnacle, 0.2 points from EdgeDesk’s number.",
       "New Mexico State quarterback: Adam Damante — started the last game; no announcement for this one.",
       "Florida International quarterback: JJ Kohl — started the last game; no announcement for this one."
     ],
@@ -1958,6 +1938,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:55:04.438Z"
+    "at": "2026-10-06T22:36:37.858Z"
   }
 }
