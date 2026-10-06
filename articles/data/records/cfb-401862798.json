@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UAB vs. Memphis: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UAB vs. Memphis 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices UAB at Memphis at Memphis -15.6 with a 56.7 fair total. Memphis wins 86% of simulations. Data confidence 83%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices UAB at Memphis at Memphis -15.6 with a 56.7 fair total. Memphis wins 86% of simulations. Data confidence 83%. Model status AGREEMENT. Research, not picks.",
   "excerpt": "Memphis carries the stronger underlying team rating — -0.7 against -3.2, a 2.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Memphis -15.6 before any sportsbook number is consulted, with Memphis winning 86% of…",
   "home_team": "Memphis",
   "away_team": "UAB",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T06:11:08.693Z",
-  "generated_at": "2026-10-06T15:52:09.884Z",
+  "updated_at": "2026-10-06T18:55:04.438Z",
+  "generated_at": "2026-10-06T18:55:04.438Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "AGREEMENT",
+  "model_status_note": null,
   "confidence": 83,
   "priced": true,
   "fair_spread_text": "Memphis -15.6",
@@ -41,8 +41,8 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetRivers and Bovada on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -161,8 +161,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "AGREEMENT",
+      "status_note": null,
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -243,7 +243,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
       "home": {
         "team": "Memphis",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T15:00:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
-      "generated_at": "2026-10-06T00:52:01.967Z",
+      "generated_at": "2026-10-06T16:18:47.878Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1486,18 +1486,6 @@
         },
         {
           "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
           "label": "low confidence",
           "text": "rivalry situational effect is in the number but rests on a thin sample",
           "widening": null
@@ -1556,11 +1544,21 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Memphis -15.6",
       "model_raw": "Memphis -15.6",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Memphis -14.5",
+      "difference": "1.1 points",
+      "difference_n": 1.108705738735134,
+      "total_model": "56.7",
+      "total_market": "57.5",
+      "book": "captured consensus · 1 book · best at BetRivers",
+      "captured": "2026-10-06T18:50:01.273+00:00",
+      "capture_age": "0 hours old",
+      "stale": false,
+      "classification": "AGREEMENT",
+      "classification_note": null,
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1571,10 +1569,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "key": "MARKET_ALIGNED",
+        "label": "MARKET ALIGNED",
+        "rule": "aligned",
+        "means": "EdgeDesk and the market are 1.1 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
       },
       "disagreement": null,
       "fair": {
@@ -1587,8 +1585,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 1.11,
+        "toward_team": "Memphis",
+        "text": "1.1 pts toward Memphis",
+        "market_line_text": "Memphis -14.5",
+        "market_home_margin": 14.5,
+        "favorite_differs": false,
+        "source": "captured consensus · 1 book · best at BetRivers",
+        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "stale": false,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 83,
@@ -1596,11 +1604,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 89,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: UAB’s availability report is not due yet",
-        "score": 88,
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether Memphis or UAB’s starting QB can play",
+        "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1626,13 +1634,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 15,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1642,23 +1650,15 @@
             "max": 10
           }
         ],
-        "main_deduction": "UAB’s availability report is not due yet; the impact of UAB’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
+        "main_deduction": "no source has established whether Memphis or UAB’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (UAB)",
+            "action": "Fetch the venue forecast",
             "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Re-read availability inside the filing window (Memphis)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "text": "up to +1 once re-read availability inside the filing window (Memphis) and Re-read availability inside the filing window (UAB) is done"
           }
         ],
         "stability": {
@@ -1694,8 +1694,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Memphis",
+          "side": "home",
+          "line": -14.5,
+          "price_american": null,
+          "book": "BetRivers",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Memphis -14.5 (price not captured) at BetRivers"
+        },
+        "other": {
+          "team": "UAB",
+          "side": "away",
+          "line": 14.5,
+          "price_american": null,
+          "book": "BetRivers",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "UAB +14.5 (price not captured) at BetRivers"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1744,8 +1764,8 @@
     },
     "headline": "EdgeDesk projects Memphis 36, UAB 21.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "AGREEMENT",
+      "note": null,
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1897,7 +1917,7 @@
       "EdgeDesk’s line is Memphis -15.6 on a neutral read of the two teams, before any book is consulted. Projected total 56.7.",
       "Memphis wins 86% of the time in EdgeDesk’s simulation, UAB 14%.",
       "Eight games in ten land between -6.4 and +35.6 for Memphis. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Memphis -14.5 at captured consensus · 1 book · best at BetRivers, 1.1 points from EdgeDesk’s number.",
       "UAB quarterback: Ryder Burton — started the last game; no announcement for this one.",
       "Memphis quarterback: Marcus Stokes — started the last game; no announcement for this one."
     ],
@@ -1907,11 +1927,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T15:52:09.884Z"
+    "at": "2026-10-06T18:55:04.438Z"
   }
 }

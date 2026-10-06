@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Southern Miss vs. Troy: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Southern Miss vs. Troy 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Southern Miss at Troy at Troy -9.7 with a 50.1 fair total. Troy wins 74% of simulations. Data confidence 82%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Southern Miss at Troy at Troy -9.7 with a 50.1 fair total. Troy wins 74% of simulations. Data confidence 82%. Model status AGREEMENT. Research, not picks.",
   "excerpt": "Troy carries the stronger underlying team rating — +0.0 against -5.1, a 5.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Troy -9.7 before any sportsbook number is consulted, with Troy winning 74% of simulations.",
   "home_team": "Troy",
   "away_team": "Southern Miss",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-07T00:00:00.000Z",
   "game_when_label": "2026-10-07 00:00 UTC",
   "published_at": "2026-10-06T10:00:39.414Z",
-  "updated_at": "2026-10-06T18:50:50.366Z",
-  "generated_at": "2026-10-06T18:50:50.366Z",
+  "updated_at": "2026-10-06T18:55:04.438Z",
+  "generated_at": "2026-10-06T18:55:04.438Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "AGREEMENT",
+  "model_status_note": null,
   "confidence": 82,
   "priced": true,
   "fair_spread_text": "Troy -9.7",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel and Pinnacle on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -179,8 +179,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "AGREEMENT",
+      "status_note": null,
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1507,12 +1507,6 @@
           "label": "missing",
           "text": "REGIME CHANGE (Southern Miss): REGIME CHANGE: new head coach; returning roster share at the 4th percentile; returning production at the 10th percentile; transfers out at the 76th percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played.",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1568,11 +1562,21 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Troy -9.7",
       "model_raw": "Troy -9.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Troy -10.5",
+      "difference": "0.8 points",
+      "difference_n": 0.7750040910839306,
+      "total_model": "50.1",
+      "total_market": "52.5",
+      "book": "captured consensus · 1 book · best at FanDuel",
+      "captured": "2026-10-06T18:50:01.273+00:00",
+      "capture_age": "0 hours old",
+      "stale": false,
+      "classification": "AGREEMENT",
+      "classification_note": null,
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1583,10 +1587,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "key": "MARKET_ALIGNED",
+        "label": "MARKET ALIGNED",
+        "rule": "aligned",
+        "means": "EdgeDesk and the market are 0.8 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
       },
       "disagreement": null,
       "fair": {
@@ -1599,8 +1603,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 0.78,
+        "toward_team": "Southern Miss",
+        "text": "0.8 pts toward Southern Miss",
+        "market_line_text": "Troy -10.5",
+        "market_home_margin": 10.5,
+        "favorite_differs": false,
+        "source": "captured consensus · 1 book · best at FanDuel",
+        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "stale": false,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 82,
@@ -1608,11 +1622,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 80,
+        "pct": 83,
         "tier": "STRONG",
-        "text": "80 · STRONG",
+        "text": "83 · STRONG",
         "sub": "main deduction: Southern Miss’s availability sources refused",
-        "score": 80,
+        "score": 83,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1638,13 +1652,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 10.9,
+            "score": 13.6,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1668,9 +1682,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1700,8 +1714,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Southern Miss",
+          "side": "away",
+          "line": 10.5,
+          "price_american": null,
+          "book": "FanDuel",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Southern Miss +10.5 (price not captured) at FanDuel"
+        },
+        "other": {
+          "team": "Troy",
+          "side": "home",
+          "line": -10.5,
+          "price_american": null,
+          "book": "FanDuel",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Troy -10.5 (price not captured) at FanDuel"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1750,8 +1784,8 @@
     },
     "headline": "EdgeDesk projects Troy 30, Southern Miss 20.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "AGREEMENT",
+      "note": null,
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1903,7 +1937,7 @@
       "EdgeDesk’s line is Troy -9.7 on a neutral read of the two teams, before any book is consulted. Projected total 50.1.",
       "Troy wins 74% of the time in EdgeDesk’s simulation, Southern Miss 26%.",
       "Eight games in ten land between -12.3 and +29.7 for Troy. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Troy -10.5 at captured consensus · 1 book · best at FanDuel, 0.8 points from EdgeDesk’s number.",
       "Southern Miss quarterback: Landry Lyddy — started the last game; no announcement for this one.",
       "Troy quarterback: Goose Crowder — started the last game; no announcement for this one."
     ],
@@ -2199,6 +2233,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:50:50.366Z"
+    "at": "2026-10-06T18:55:04.438Z"
   }
 }

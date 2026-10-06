@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Air Force vs. Northern Illinois: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Air Force vs. Northern Illinois 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices Air Force at Northern Illinois at Northern Illinois +11.6 with a 49.2 fair total. Air Force wins 78% of simulations. Data confidence 83%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices Air Force at Northern Illinois at Northern Illinois +11.6 with a 49.2 fair total. Air Force wins 78% of simulations. Data confidence 83%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "Northern Illinois carries the stronger underlying team rating — -6.1 against -6.5, a 0.4-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Northern Illinois +11.6 before any sportsbook number is consulted, with…",
   "home_team": "Northern Illinois",
   "away_team": "Air Force",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T06:11:08.693Z",
-  "generated_at": "2026-10-06T15:52:09.884Z",
+  "updated_at": "2026-10-06T18:55:04.438Z",
+  "generated_at": "2026-10-06T18:55:04.438Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 83,
   "priced": true,
   "fair_spread_text": "Northern Illinois +11.6",
@@ -41,8 +41,8 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetOnline.ag and Hard Rock Bet on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -155,8 +155,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T16:00:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
       "home": {
         "team": "Northern Illinois",
@@ -327,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T18:00:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
-      "generated_at": "2026-10-06T00:52:01.967Z",
+      "generated_at": "2026-10-06T16:18:47.878Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1432,6 +1432,12 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 4.6 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
           "widening": null
@@ -1501,18 +1507,6 @@
           "label": "missing",
           "text": "REGIME CHANGE (Northern Illinois): REGIME CHANGE: new head coach; returning roster share at the 43rd percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played.",
           "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
-          "widening": null
         }
       ],
       "unmeasured": [
@@ -1568,11 +1562,21 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Northern Illinois +11.6",
       "model_raw": "Northern Illinois +11.6",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Northern Illinois +7.0",
+      "difference": "4.6 points",
+      "difference_n": 4.592256028003165,
+      "total_model": "49.2",
+      "total_market": "48.5",
+      "book": "captured consensus · 1 book · best at BetOnline.ag",
+      "captured": "2026-10-06T18:50:01.273+00:00",
+      "capture_age": "0 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1583,10 +1587,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "key": "INVESTIGATE",
+        "label": "INVESTIGATE",
+        "rule": "regime_change",
+        "means": "EdgeDesk differs from the market by 4.6 pts toward Air Force. REGIME CHANGE: Northern Illinois (new head coach; returning roster share at the 43rd percentile; 4 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
       },
       "disagreement": null,
       "fair": {
@@ -1599,8 +1603,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 4.59,
+        "toward_team": "Air Force",
+        "text": "4.6 pts toward Air Force",
+        "market_line_text": "Air Force -7.0",
+        "market_home_margin": -7,
+        "favorite_differs": false,
+        "source": "captured consensus · 1 book · best at BetOnline.ag",
+        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "stale": false,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 83,
@@ -1608,11 +1622,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "88 · STRONG",
         "sub": "main deduction: Air Force’s availability report is not due yet",
-        "score": 86,
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1638,13 +1652,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 14.5,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1659,18 +1673,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Air Force)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Re-read availability inside the filing window (Northern Illinois)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1696,12 +1710,38 @@
             "key": "matchup",
             "points": 1.54,
             "text": "+1.5 pts stylistic matchup"
+          },
+          {
+            "kind": "market",
+            "key": "market_gap",
+            "points": 4.59,
+            "text": "The market is 4.6 pts away from EdgeDesk’s number, toward Air Force (market: Air Force -7.0)"
           }
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Air Force",
+          "side": "away",
+          "line": -7,
+          "price_american": null,
+          "book": "BetOnline.ag",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Air Force -7.0 (price not captured) at BetOnline.ag"
+        },
+        "other": {
+          "team": "Northern Illinois",
+          "side": "home",
+          "line": 7,
+          "price_american": null,
+          "book": "BetOnline.ag",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Northern Illinois +7.0 (price not captured) at BetOnline.ag"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1750,8 +1790,8 @@
     },
     "headline": "EdgeDesk projects Air Force 30, Northern Illinois 19.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1903,7 +1943,7 @@
       "EdgeDesk’s line is Northern Illinois +11.6 on a neutral read of the two teams, before any book is consulted. Projected total 49.2.",
       "Northern Illinois wins 22% of the time in EdgeDesk’s simulation, Air Force 78%.",
       "Eight games in ten land between -33.6 and +8.4 for Northern Illinois. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Northern Illinois +7.0 at captured consensus · 1 book · best at BetOnline.ag, 4.6 points from EdgeDesk’s number.",
       "Air Force quarterback: Liam Szarka — started the last game; no announcement for this one.",
       "Northern Illinois quarterback: Taron Dickens — started the last game; no announcement for this one."
     ],
@@ -1913,11 +1953,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T15:52:09.884Z"
+    "at": "2026-10-06T18:55:04.438Z"
   }
 }

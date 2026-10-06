@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "South Alabama vs. Arkansas State: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "South Alabama vs. Arkansas State 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices South Alabama at Arkansas State at Arkansas State -6.7 with a 56.4 fair total. Arkansas State wins 68% of simulations. Data confidence 85%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk prices South Alabama at Arkansas State at Arkansas State -6.7 with a 56.4 fair total. Arkansas State wins 68% of simulations. Data confidence 85%. Model status DATA FAULT. Research, not picks.",
   "excerpt": "South Alabama carries the stronger underlying team rating — -4.9 against -8.1, a 3.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Arkansas State -6.7 before any sportsbook number is consulted, with Arkansas…",
   "home_team": "Arkansas State",
   "away_team": "South Alabama",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-08T23:30:00.000Z",
   "game_when_label": "2026-10-08 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T06:11:08.693Z",
-  "generated_at": "2026-10-06T15:52:09.884Z",
+  "updated_at": "2026-10-06T18:55:04.438Z",
+  "generated_at": "2026-10-06T18:55:04.438Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "DATA FAULT",
+  "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
   "confidence": 85,
   "priced": true,
   "fair_spread_text": "Arkansas State -6.7",
@@ -41,8 +41,8 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetRivers and BetOnline.ag on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -179,8 +179,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "DATA FAULT",
+      "status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -261,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T23:00:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
       "home": {
         "team": "Arkansas State",
@@ -333,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T00:00:00.000Z",
-        "retrieved_at": "2026-10-06T00:52:02.908Z"
+        "retrieved_at": "2026-10-06T16:18:08.242Z"
       },
-      "generated_at": "2026-10-06T00:52:01.967Z",
+      "generated_at": "2026-10-06T16:18:47.878Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1429,13 +1429,19 @@
           "Continuity: South Alabama 46.5 (#61 of 138) vs Arkansas State 35.0 (#115 of 138) — 54 places on the national board.",
           "Secondary: South Alabama 49.8 (#106 of 138) vs Arkansas State 43.9 (#133 of 138) — 27 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -15.3 to p90 +26.7 for Arkansas State, so a projection of +6.7 still produces results a long way either side of it.",
-          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
+          "The market disagrees by 7.2 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
     },
     "uncertainty": {
       "items": [
+        {
+          "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 7.2 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
         {
           "sev": "MEDIUM",
           "label": "sample",
@@ -1482,18 +1488,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1550,11 +1544,21 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Arkansas State -6.7",
       "model_raw": "Arkansas State -6.7",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Arkansas State +0.5",
+      "difference": "7.2 points",
+      "difference_n": 7.160409782511738,
+      "total_model": "56.4",
+      "total_market": "58.5",
+      "book": "captured consensus · 1 book · best at BetRivers",
+      "captured": "2026-10-06T18:50:01.273+00:00",
+      "capture_age": "0 hours old",
+      "stale": false,
+      "classification": "DATA FAULT",
+      "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1565,12 +1569,30 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "key": "MARKET_FAULT",
+        "label": "MARKET FAULT",
+        "rule": "market",
+        "means": "EdgeDesk and the market are 7.2 pts toward Arkansas State, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
       },
-      "disagreement": null,
+      "disagreement": {
+        "status": "MARKET_FAULT",
+        "verified": false,
+        "raw_market_gap": 7.16,
+        "verified_market_gap": null,
+        "calibrated_gap": 5.57,
+        "root_cause": "THIN_MARKET",
+        "failed": [
+          "MARKET.book_count",
+          "ROSTER.home_availability",
+          "ROSTER.away_availability",
+          "MODEL.calibration",
+          "MODEL.submodel_support",
+          "MODEL.ensemble_direction"
+        ],
+        "incomplete": [],
+        "favorite_flip": true,
+        "manual_review": false
+      },
       "fair": {
         "line_text": "Arkansas State -6.7",
         "favorite_team": "Arkansas State",
@@ -1581,8 +1603,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 7.16,
+        "toward_team": "Arkansas State",
+        "text": "7.2 pts toward Arkansas State",
+        "market_line_text": "South Alabama -0.5",
+        "market_home_margin": -0.5,
+        "favorite_differs": true,
+        "source": "captured consensus · 1 book · best at BetRivers",
+        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "stale": false,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 85,
@@ -1590,11 +1622,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "82 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: South Alabama’s availability sources refused",
-        "score": 82,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1620,13 +1652,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 15,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.3,
+            "score": 13.2,
             "max": 15
           },
           {
@@ -1641,18 +1673,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for South Alabama",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Restore an injury/availability source for Arkansas State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Resolve South Alabama’s starter conflict",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1688,8 +1720,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Arkansas State",
+          "side": "home",
+          "line": 0.5,
+          "price_american": null,
+          "book": "BetRivers",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "Arkansas State +0.5 (price not captured) at BetRivers"
+        },
+        "other": {
+          "team": "South Alabama",
+          "side": "away",
+          "line": -0.5,
+          "price_american": null,
+          "book": "BetRivers",
+          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "text": "South Alabama -0.5 (price not captured) at BetRivers"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1738,8 +1790,8 @@
     },
     "headline": "EdgeDesk projects Arkansas State 32, South Alabama 25.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "DATA FAULT",
+      "note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1891,7 +1943,7 @@
       "EdgeDesk’s line is Arkansas State -6.7 on a neutral read of the two teams, before any book is consulted. Projected total 56.4.",
       "Arkansas State wins 68% of the time in EdgeDesk’s simulation, South Alabama 32%.",
       "Eight games in ten land between -15.3 and +26.7 for Arkansas State. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Arkansas State +0.5 at captured consensus · 1 book · best at BetRivers, 7.2 points from EdgeDesk’s number.",
       "South Alabama quarterback: Jared Hollins — started the last game; no announcement for this one.",
       "Arkansas State quarterback: Trey Owens — started the last game; no announcement for this one."
     ],
@@ -1901,11 +1953,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-05. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T15:52:09.884Z"
+    "at": "2026-10-06T18:55:04.438Z"
   }
 }
