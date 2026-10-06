@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T22:36:37.858Z",
-  "generated_at": "2026-10-06T22:36:37.858Z",
+  "updated_at": "2026-10-06T23:03:07.900Z",
+  "generated_at": "2026-10-06T23:03:07.900Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings and BetMGM on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet and BetMGM on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -1538,14 +1538,14 @@
       "available": true,
       "model": "Bowling Green -8.2",
       "model_raw": "Bowling Green -8.2",
-      "market": "Bowling Green -7.5",
-      "difference": "0.7 points",
-      "difference_n": 0.6893566060025833,
+      "market": "Bowling Green -8.5",
+      "difference": "0.3 points",
+      "difference_n": 0.3106433939974167,
       "total_model": "47.0",
       "total_market": "44.5",
-      "book": "captured consensus · 1 book · best at DraftKings",
-      "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "4 hours old",
+      "book": "captured consensus · 1 book · best at Hard Rock Bet",
+      "captured": "2026-10-06T23:00:13.589+00:00",
+      "capture_age": "0 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1563,7 +1563,7 @@
         "key": "MARKET_ALIGNED",
         "label": "MARKET ALIGNED",
         "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.7 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "means": "EdgeDesk and the market are 0.3 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
       },
       "disagreement": null,
       "fair": {
@@ -1577,14 +1577,14 @@
       },
       "market_gap": {
         "available": true,
-        "points": 0.69,
-        "toward_team": "Bowling Green",
-        "text": "0.7 pts toward Bowling Green",
-        "market_line_text": "Bowling Green -7.5",
-        "market_home_margin": 7.5,
+        "points": 0.31,
+        "toward_team": "Sacramento State",
+        "text": "0.3 pts toward Sacramento State",
+        "market_line_text": "Bowling Green -8.5",
+        "market_home_margin": 8.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at DraftKings",
-        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "source": "captured consensus · 1 book · best at Hard Rock Bet",
+        "as_of": "2026-10-06T23:00:13.589+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1598,7 +1598,7 @@
         "pct": 89,
         "tier": "STRONG",
         "text": "89 · STRONG",
-        "sub": "main deduction: Sacramento State’s availability report is not due yet",
+        "sub": "main deduction: no source has established whether Bowling Green or Sacramento State’s starting QB can play",
         "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
@@ -1625,7 +1625,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.4,
+            "score": 14.5,
             "max": 15
           },
           {
@@ -1641,9 +1641,27 @@
             "max": 10
           }
         ],
-        "main_deduction": "Sacramento State’s availability report is not due yet; the impact of Sacramento State’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
-        "next_actions": [],
+        "main_deduction": "no source has established whether Bowling Green or Sacramento State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
+        "next_actions": [
+          {
+            "action": "Fetch the venue forecast",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+          },
+          {
+            "action": "Add another market source",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+          },
+          {
+            "action": "Confirm Sacramento State’s starting QB (Jackson Sharman)",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+          }
+        ],
         "stability": {
           "tier": "VERY_STABLE",
           "sd": 1.48,
@@ -1675,22 +1693,22 @@
         "single_book": true,
         "n_books": 1,
         "focus": {
-          "team": "Bowling Green",
-          "side": "home",
-          "line": -7.5,
-          "price_american": null,
-          "book": "DraftKings",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Bowling Green -7.5 (price not captured) at DraftKings"
-        },
-        "other": {
           "team": "Sacramento State",
           "side": "away",
-          "line": 7.5,
+          "line": 8.5,
           "price_american": null,
-          "book": "DraftKings",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Sacramento State +7.5 (price not captured) at DraftKings"
+          "book": "Hard Rock Bet",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Sacramento State +8.5 (price not captured) at Hard Rock Bet"
+        },
+        "other": {
+          "team": "Bowling Green",
+          "side": "home",
+          "line": -8.5,
+          "price_american": null,
+          "book": "Hard Rock Bet",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Bowling Green -8.5 (price not captured) at Hard Rock Bet"
         },
         "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
@@ -1894,7 +1912,7 @@
       "EdgeDesk’s line is Bowling Green -8.2 on a neutral read of the two teams, before any book is consulted. Projected total 47.0.",
       "Bowling Green wins 71% of the time in EdgeDesk’s simulation, Sacramento State 29%.",
       "Eight games in ten land between -13.8 and +28.2 for Bowling Green. A single result inside that band tells you nothing new about either team.",
-      "The market has Bowling Green -7.5 at captured consensus · 1 book · best at DraftKings, 0.7 points from EdgeDesk’s number.",
+      "The market has Bowling Green -8.5 at captured consensus · 1 book · best at Hard Rock Bet, 0.3 points from EdgeDesk’s number.",
       "Sacramento State quarterback: Jackson Sharman — started the last game; no announcement for this one.",
       "Bowling Green quarterback: Jay Kastantin — started the last game; no announcement for this one."
     ],
@@ -1909,6 +1927,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T22:36:37.858Z"
+    "at": "2026-10-06T23:03:07.900Z"
   }
 }

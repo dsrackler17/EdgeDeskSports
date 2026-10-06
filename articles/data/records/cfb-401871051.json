@@ -21,8 +21,8 @@
   "game_time": "2026-10-07T23:00:00.000Z",
   "game_when_label": "2026-10-07 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T22:36:37.858Z",
-  "generated_at": "2026-10-06T22:36:37.858Z",
+  "updated_at": "2026-10-06T23:03:07.900Z",
+  "generated_at": "2026-10-06T23:03:07.900Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1538,9 +1538,9 @@
       "difference_n": 0.5498604616917975,
       "total_model": "50.1",
       "total_market": "50.0",
-      "book": "captured consensus (stale) · 1 book · best at theScore Bet",
-      "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "4 hours old",
+      "book": "captured consensus · 1 book · best at theScore Bet",
+      "captured": "2026-10-06T23:00:13.589+00:00",
+      "capture_age": "0 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1555,10 +1555,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "STALE MARKET",
-        "rule": "stale_market",
-        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
+        "key": "MARKET_ALIGNED",
+        "label": "MARKET ALIGNED",
+        "rule": "aligned",
+        "means": "EdgeDesk and the market are 0.5 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
       },
       "disagreement": null,
       "fair": {
@@ -1578,9 +1578,9 @@
         "market_line_text": "Jacksonville State -2.5",
         "market_home_margin": -2.5,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 1 book · best at theScore Bet",
-        "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": true,
+        "source": "captured consensus · 1 book · best at theScore Bet",
+        "as_of": "2026-10-06T23:00:13.589+00:00",
+        "stale": false,
         "measured_from": "raw",
         "note": null
       },
@@ -1590,11 +1590,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "82 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: Jacksonville State’s availability sources refused",
-        "score": 82,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1620,7 +1620,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 10.9,
+            "score": 13.6,
             "max": 15
           },
           {
@@ -1641,18 +1641,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for Jacksonville State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Restore an injury/availability source for Kennesaw State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1682,8 +1682,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Kennesaw State",
+          "side": "home",
+          "line": 2.5,
+          "price_american": null,
+          "book": "theScore Bet",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Kennesaw State +2.5 (price not captured) at theScore Bet"
+        },
+        "other": {
+          "team": "Jacksonville State",
+          "side": "away",
+          "line": -2.5,
+          "price_american": null,
+          "book": "theScore Bet",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Jacksonville State -2.5 (price not captured) at theScore Bet"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1885,7 +1905,7 @@
       "EdgeDesk’s line is Kennesaw State +2.0 on a neutral read of the two teams, before any book is consulted. Projected total 50.1.",
       "Kennesaw State wins 45% of the time in EdgeDesk’s simulation, Jacksonville State 55%.",
       "Eight games in ten land between -24.0 and +18.0 for Kennesaw State. A single result inside that band tells you nothing new about either team.",
-      "The market has Kennesaw State +2.5 at captured consensus (stale) · 1 book · best at theScore Bet, 0.5 points from EdgeDesk’s number.",
+      "The market has Kennesaw State +2.5 at captured consensus · 1 book · best at theScore Bet, 0.5 points from EdgeDesk’s number.",
       "Jacksonville State quarterback: Caden Creel — started the last game; no announcement for this one.",
       "Kennesaw State quarterback: Rickie Collins — started the last game; no announcement for this one."
     ],
@@ -1900,6 +1920,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T22:36:37.858Z"
+    "at": "2026-10-06T23:03:07.900Z"
   }
 }

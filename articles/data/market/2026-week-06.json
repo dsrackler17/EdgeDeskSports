@@ -1,7 +1,7 @@
 {
   "schema": "edgedesk_article_market_snapshot_v1",
   "season": 2026,
-  "generated_at": "2026-10-06T18:55:00.604Z",
+  "generated_at": "2026-10-06T23:03:03.918Z",
   "source": "Captured book quotes read from EdgeDesk’s own odds capture (public.signals) by tools/newsletter/market.js. Replayed here so a headless build joins the same sportsbook number the terminal joins; the live capture is behind an account and a build server has no session for it.",
   "convention": "spread.selection names the team spread.point belongs to and spread.side says whether that is the home or the away side of the game. A point spread is one handicap with two sides, so a quote captured on the away side is the same number seen from the other end; the replay presents both and never invents a second price.",
   "note": "These are SPORTSBOOK numbers, not EdgeDesk numbers, and every article and newsletter that uses one says so and names the book. Nothing here is an EdgeDesk projection, and no line in this file is read by any model: the engine has already priced the game before the market section is assembled.",
@@ -26,21 +26,22 @@
     },
     "with_odds": 116,
     "without_odds": 0,
-    "oldest_capture": "2026-10-06T18:50:01.273Z",
-    "newest_capture": "2026-10-06T18:50:01.273Z",
+    "oldest_capture": "2026-10-06T23:00:13.589Z",
+    "newest_capture": "2026-10-06T23:00:13.589Z",
     "books": {
-      "BetMGM": 12,
-      "BetOnline.ag": 15,
-      "DraftKings": 8,
-      "Pinnacle": 23,
-      "FanDuel": 18,
-      "Hard Rock Bet": 13,
-      "BetRivers": 10,
-      "theScore Bet": 12,
-      "Bovada": 5
+      "BetMGM": 16,
+      "theScore Bet": 9,
+      "BetOnline.ag": 20,
+      "FanDuel": 14,
+      "DraftKings": 7,
+      "BetRivers": 7,
+      "Hard Rock Bet": 16,
+      "Pinnacle": 22,
+      "Bovada": 4,
+      "Caesars": 1
     },
     "current_share": 1,
-    "statement": "116 live, 0 recent, 0 stale and 0 archived of 116 quote(s); oldest captured 2026-10-06T18:50:01.273Z. A model timestamp says nothing about a price’s age."
+    "statement": "116 live, 0 recent, 0 stale and 0 archived of 116 quote(s); oldest captured 2026-10-06T23:00:13.589Z. A model timestamp says nothing about a price’s age."
   },
   "quotes": [
     {
@@ -49,7 +50,7 @@
       "home": "Alabama",
       "away": "Georgia",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Alabama",
@@ -58,16 +59,16 @@
         "book": "BetMGM",
         "odds_american": -108,
         "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 54,
-        "book": "BetOnline.ag",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "point": 52.5,
+        "book": "theScore Bet",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 10
       },
       "contract": [
         {
@@ -85,15 +86,15 @@
           "line": -2,
           "odds_american": -108,
           "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Alabama -2 (-108) at BetMGM — captured 5 minutes ago"
+          "label": "Alabama -2 (-108) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -103,22 +104,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetOnline.ag",
+          "book": "theScore Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 54,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 52.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +54 (-110) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +52.5 (-105) at theScore Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -128,25 +129,25 @@
       "home": "Arkansas",
       "away": "Tennessee",
       "kickoff": "2026-10-10T20:15:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Arkansas",
         "side": "home",
         "point": 13.5,
-        "book": "DraftKings",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "BetOnline.ag",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
-        "point": 51,
-        "book": "Pinnacle",
-        "odds_american": -101,
-        "odds_decimal": 1.99,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 51.5,
+        "book": "theScore Bet",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 10
       },
       "contract": [
         {
@@ -157,22 +158,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "BetOnline.ag",
           "market_type": "spreads",
           "selection": "Arkansas",
           "side": "home",
           "line": 13.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Arkansas +13.5 (-105) at DraftKings — captured 5 minutes ago"
+          "label": "Arkansas +13.5 (-108) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -182,22 +183,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "theScore Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 51,
-          "odds_american": -101,
-          "odds_decimal": 1.99,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 51.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +51 (-101) at Pinnacle — captured 5 minutes ago"
+          "label": "total +51.5 (-105) at theScore Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -207,7 +208,7 @@
       "home": "Florida",
       "away": "South Carolina",
       "kickoff": "2026-10-10T16:45:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Florida",
@@ -216,16 +217,16 @@
         "book": "FanDuel",
         "odds_american": -106,
         "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
         "point": 62,
-        "book": "Pinnacle",
-        "odds_american": -104,
-        "odds_decimal": 1.96,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "book": "BetOnline.ag",
+        "odds_american": -115,
+        "odds_decimal": 1.87,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -243,15 +244,15 @@
           "line": -13.5,
           "odds_american": -106,
           "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Florida -13.5 (-106) at FanDuel — captured 5 minutes ago"
+          "label": "Florida -13.5 (-106) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -261,22 +262,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 62,
-          "odds_american": -104,
-          "odds_decimal": 1.96,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -115,
+          "odds_decimal": 1.87,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +62 (-104) at Pinnacle — captured 5 minutes ago"
+          "label": "total +62 (-115) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -286,25 +287,25 @@
       "home": "Kentucky",
       "away": "LSU",
       "kickoff": "2026-10-10T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Kentucky",
         "side": "home",
         "point": 8.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "book": "DraftKings",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 52.5,
-        "book": "DraftKings",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "BetMGM",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -315,22 +316,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "DraftKings",
           "market_type": "spreads",
           "selection": "Kentucky",
           "side": "home",
           "line": 8.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Kentucky +8.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Kentucky +8.5 (-108) at DraftKings — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -340,22 +341,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "BetMGM",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 52.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +52.5 (-110) at DraftKings — captured 5 minutes ago"
+          "label": "total +52.5 (-108) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -365,7 +366,7 @@
       "home": "Missouri",
       "away": "Texas A&M",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Missouri",
@@ -374,16 +375,16 @@
         "book": "BetRivers",
         "odds_american": -109,
         "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "total": {
         "point": 48.5,
-        "book": "FanDuel",
-        "odds_american": -106,
-        "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "book": "DraftKings",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -401,15 +402,15 @@
           "line": -3.5,
           "odds_american": -109,
           "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Missouri -3.5 (-109) at BetRivers — captured 5 minutes ago"
+          "label": "Missouri -3.5 (-109) at BetRivers — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -419,22 +420,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "DraftKings",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 48.5,
-          "odds_american": -106,
-          "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +48.5 (-106) at FanDuel — captured 5 minutes ago"
+          "label": "total +48.5 (-105) at DraftKings — captured 3 minutes ago"
         }
       ]
     },
@@ -444,25 +445,25 @@
       "home": "Oklahoma",
       "away": "Texas",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Oklahoma",
         "side": "home",
-        "point": 8.5,
-        "book": "FanDuel",
-        "odds_american": -108,
-        "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 8,
+        "book": "BetMGM",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 39.5,
         "book": "FanDuel",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "contract": [
         {
@@ -473,22 +474,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Oklahoma",
           "side": "home",
-          "line": 8.5,
-          "odds_american": -108,
-          "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 8,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Oklahoma +8.5 (-108) at FanDuel — captured 5 minutes ago"
+          "label": "Oklahoma +8 (-110) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -505,15 +506,15 @@
           "line": 39.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +39.5 (-110) at FanDuel — captured 5 minutes ago"
+          "label": "total +39.5 (-110) at FanDuel — captured 3 minutes ago"
         }
       ]
     },
@@ -523,7 +524,7 @@
       "home": "Vanderbilt",
       "away": "Ole Miss",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Vanderbilt",
@@ -532,16 +533,16 @@
         "book": "Hard Rock Bet",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
-        "point": 60.5,
-        "book": "theScore Bet",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": 59,
+        "book": "Pinnacle",
+        "odds_american": -104,
+        "odds_decimal": 1.96,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -559,15 +560,15 @@
           "line": 9.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Vanderbilt +9.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Vanderbilt +9.5 (-105) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -577,22 +578,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 60.5,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 59,
+          "odds_american": -104,
+          "odds_decimal": 1.96,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +60.5 (-115) at theScore Bet — captured 5 minutes ago"
+          "label": "total +59 (-104) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -602,25 +603,25 @@
       "home": "Arizona State",
       "away": "Hawai'i",
       "kickoff": "2026-10-11T01:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Arizona State",
         "side": "home",
         "point": -21,
         "book": "Pinnacle",
-        "odds_american": -106,
-        "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "odds_american": -104,
+        "odds_decimal": 1.96,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 1
       },
       "total": {
         "point": 49.5,
         "book": "FanDuel",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "contract": [
         {
@@ -636,17 +637,17 @@
           "selection": "Arizona State",
           "side": "home",
           "line": -21,
-          "odds_american": -106,
-          "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -104,
+          "odds_decimal": 1.96,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Arizona State -21 (-106) at Pinnacle — captured 5 minutes ago"
+          "label": "Arizona State -21 (-104) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -663,15 +664,15 @@
           "line": 49.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +49.5 (-105) at FanDuel — captured 5 minutes ago"
+          "label": "total +49.5 (-105) at FanDuel — captured 3 minutes ago"
         }
       ]
     },
@@ -681,25 +682,25 @@
       "home": "West Virginia",
       "away": "Arizona",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "West Virginia",
         "side": "home",
-        "point": 2.5,
-        "book": "theScore Bet",
-        "odds_american": 105,
-        "odds_decimal": 2.05,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": 3,
+        "book": "BetMGM",
+        "odds_american": -102,
+        "odds_decimal": 1.98,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 61,
         "book": "Pinnacle",
         "odds_american": -108,
         "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -710,22 +711,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "West Virginia",
           "side": "home",
-          "line": 2.5,
-          "odds_american": 105,
-          "odds_decimal": 2.05,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 3,
+          "odds_american": -102,
+          "odds_decimal": 1.98,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "West Virginia +2.5 (+105) at theScore Bet — captured 5 minutes ago"
+          "label": "West Virginia +3 (-102) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -742,15 +743,15 @@
           "line": 61,
           "odds_american": -108,
           "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +61 (-108) at Pinnacle — captured 5 minutes ago"
+          "label": "total +61 (-108) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -760,25 +761,25 @@
       "home": "Oklahoma State",
       "away": "UCF",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Oklahoma State",
         "side": "home",
-        "point": -9,
-        "book": "Pinnacle",
-        "odds_american": -106,
-        "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": -10.5,
+        "book": "theScore Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 11
       },
       "total": {
-        "point": 53.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 52.5,
+        "book": "BetOnline.ag",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -789,22 +790,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "theScore Bet",
           "market_type": "spreads",
           "selection": "Oklahoma State",
           "side": "home",
-          "line": -9,
-          "odds_american": -106,
-          "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -10.5,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Oklahoma State -9 (-106) at Pinnacle — captured 5 minutes ago"
+          "label": "Oklahoma State -10.5 (-110) at theScore Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -814,22 +815,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 53.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 52.5,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +53.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +52.5 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -839,7 +840,7 @@
       "home": "Kansas State",
       "away": "Houston",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Kansas State",
@@ -848,16 +849,16 @@
         "book": "FanDuel",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
-        "point": 55.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 56,
+        "book": "BetRivers",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "contract": [
         {
@@ -875,15 +876,15 @@
           "line": -2.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Kansas State -2.5 (-110) at FanDuel — captured 5 minutes ago"
+          "label": "Kansas State -2.5 (-110) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -893,22 +894,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "BetRivers",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 55.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 56,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +55.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +56 (-110) at BetRivers — captured 3 minutes ago"
         }
       ]
     },
@@ -918,7 +919,7 @@
       "home": "BYU",
       "away": "Iowa State",
       "kickoff": "2026-10-10T02:15:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "BYU",
@@ -927,16 +928,16 @@
         "book": "Bovada",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 167
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 122
       },
       "total": {
-        "point": 47,
-        "book": "BetOnline.ag",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "point": 47.5,
+        "book": "Pinnacle",
+        "odds_american": 101,
+        "odds_decimal": 2.01,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -954,15 +955,15 @@
           "line": -10,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "BYU -10 (-110) at Bovada — captured 5 minutes ago"
+          "label": "BYU -10 (-110) at Bovada — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -972,22 +973,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetOnline.ag",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 47,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 47.5,
+          "odds_american": 101,
+          "odds_decimal": 2.01,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47 (-105) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +47.5 (+101) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -997,25 +998,25 @@
       "home": "Utah",
       "away": "Kansas",
       "kickoff": "2026-10-11T02:15:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Utah",
         "side": "home",
-        "point": -15.5,
-        "book": "theScore Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": -15,
+        "book": "BetMGM",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 51.5,
         "book": "theScore Bet",
         "odds_american": 100,
         "odds_decimal": 2,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 10
       },
       "contract": [
         {
@@ -1026,22 +1027,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Utah",
           "side": "home",
-          "line": -15.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -15,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Utah -15.5 (-105) at theScore Bet — captured 5 minutes ago"
+          "label": "Utah -15 (-110) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1058,15 +1059,15 @@
           "line": 51.5,
           "odds_american": 100,
           "odds_decimal": 2,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +51.5 (+100) at theScore Bet — captured 5 minutes ago"
+          "label": "total +51.5 (+100) at theScore Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -1076,7 +1077,7 @@
       "home": "Louisville",
       "away": "Florida State",
       "kickoff": "2026-10-09T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Louisville",
@@ -1085,16 +1086,16 @@
         "book": "Pinnacle",
         "odds_american": -102,
         "odds_decimal": 1.98,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 59.5,
-        "book": "Pinnacle",
-        "odds_american": -109,
-        "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 60.5,
+        "book": "theScore Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 11
       },
       "contract": [
         {
@@ -1112,15 +1113,15 @@
           "line": -4,
           "odds_american": -102,
           "odds_decimal": 1.98,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Louisville -4 (-102) at Pinnacle — captured 5 minutes ago"
+          "label": "Louisville -4 (-102) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1130,22 +1131,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "theScore Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 59.5,
-          "odds_american": -109,
-          "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 60.5,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +59.5 (-109) at Pinnacle — captured 5 minutes ago"
+          "label": "total +60.5 (-110) at theScore Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -1155,7 +1156,7 @@
       "home": "Georgia Tech",
       "away": "Duke",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Georgia Tech",
@@ -1164,16 +1165,16 @@
         "book": "BetMGM",
         "odds_american": -112,
         "odds_decimal": 1.89,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 49,
-        "book": "Pinnacle",
-        "odds_american": -108,
-        "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 48.5,
+        "book": "Hard Rock Bet",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -1191,15 +1192,15 @@
           "line": 7,
           "odds_american": -112,
           "odds_decimal": 1.89,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Georgia Tech +7 (-112) at BetMGM — captured 5 minutes ago"
+          "label": "Georgia Tech +7 (-112) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1209,22 +1210,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 49,
-          "odds_american": -108,
-          "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 48.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +49 (-108) at Pinnacle — captured 5 minutes ago"
+          "label": "total +48.5 (-105) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -1234,25 +1235,25 @@
       "home": "Pittsburgh",
       "away": "North Carolina",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Pittsburgh",
         "side": "home",
-        "point": -3.5,
-        "book": "theScore Bet",
-        "odds_american": 100,
-        "odds_decimal": 2,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": -3,
+        "book": "BetMGM",
+        "odds_american": -118,
+        "odds_decimal": 1.85,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 47.5,
-        "book": "FanDuel",
-        "odds_american": -114,
-        "odds_decimal": 1.88,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 47,
+        "book": "BetOnline.ag",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -1263,22 +1264,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Pittsburgh",
           "side": "home",
-          "line": -3.5,
-          "odds_american": 100,
-          "odds_decimal": 2,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -3,
+          "odds_american": -118,
+          "odds_decimal": 1.85,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Pittsburgh -3.5 (+100) at theScore Bet — captured 5 minutes ago"
+          "label": "Pittsburgh -3 (-118) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1288,22 +1289,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 47.5,
-          "odds_american": -114,
-          "odds_decimal": 1.88,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 47,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47.5 (-114) at FanDuel — captured 5 minutes ago"
+          "label": "total +47 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -1313,7 +1314,7 @@
       "home": "Notre Dame",
       "away": "Stanford",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Notre Dame",
@@ -1322,16 +1323,16 @@
         "book": "DraftKings",
         "odds_american": -102,
         "odds_decimal": 1.98,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
-        "point": 53.5,
-        "book": "BetMGM",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": 55,
+        "book": "BetRivers",
+        "odds_american": -114,
+        "odds_decimal": 1.88,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "contract": [
         {
@@ -1349,15 +1350,15 @@
           "line": -38.5,
           "odds_american": -102,
           "odds_decimal": 1.98,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Notre Dame -38.5 (-102) at DraftKings — captured 5 minutes ago"
+          "label": "Notre Dame -38.5 (-102) at DraftKings — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1367,22 +1368,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "BetRivers",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 53.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 55,
+          "odds_american": -114,
+          "odds_decimal": 1.88,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +53.5 (-105) at BetMGM — captured 5 minutes ago"
+          "label": "total +55 (-114) at BetRivers — captured 3 minutes ago"
         }
       ]
     },
@@ -1392,25 +1393,25 @@
       "home": "Virginia",
       "away": "Syracuse",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Virginia",
         "side": "home",
         "point": -9.5,
         "book": "Pinnacle",
-        "odds_american": -106,
-        "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 50,
-        "book": "BetRivers",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": 49.5,
+        "book": "DraftKings",
+        "odds_american": -112,
+        "odds_decimal": 1.89,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -1426,17 +1427,17 @@
           "selection": "Virginia",
           "side": "home",
           "line": -9.5,
-          "odds_american": -106,
-          "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Virginia -9.5 (-106) at Pinnacle — captured 5 minutes ago"
+          "label": "Virginia -9.5 (-108) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1446,22 +1447,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "DraftKings",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 50,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 49.5,
+          "odds_american": -112,
+          "odds_decimal": 1.89,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50 (-110) at BetRivers — captured 5 minutes ago"
+          "label": "total +49.5 (-112) at DraftKings — captured 3 minutes ago"
         }
       ]
     },
@@ -1471,25 +1472,25 @@
       "home": "California",
       "away": "Virginia Tech",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "California",
         "side": "home",
-        "point": 9.5,
-        "book": "Bovada",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 167
+        "point": 9,
+        "book": "BetOnline.ag",
+        "odds_american": 100,
+        "odds_decimal": 2,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "total": {
-        "point": 54,
-        "book": "BetRivers",
-        "odds_american": -114,
-        "odds_decimal": 1.88,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": 53.5,
+        "book": "FanDuel",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "contract": [
         {
@@ -1500,22 +1501,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Bovada",
+          "book": "BetOnline.ag",
           "market_type": "spreads",
           "selection": "California",
           "side": "home",
-          "line": 9.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 9,
+          "odds_american": 100,
+          "odds_decimal": 2,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "California +9.5 (-110) at Bovada — captured 5 minutes ago"
+          "label": "California +9 (+100) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1525,22 +1526,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "FanDuel",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 54,
-          "odds_american": -114,
-          "odds_decimal": 1.88,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 53.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +54 (-114) at BetRivers — captured 5 minutes ago"
+          "label": "total +53.5 (-105) at FanDuel — captured 3 minutes ago"
         }
       ]
     },
@@ -1550,7 +1551,7 @@
       "home": "NC State",
       "away": "Wake Forest",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "NC State",
@@ -1559,16 +1560,16 @@
         "book": "FanDuel",
         "odds_american": -106,
         "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
         "point": 59.5,
-        "book": "FanDuel",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "book": "BetMGM",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -1586,15 +1587,15 @@
           "line": 3.5,
           "odds_american": -106,
           "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "NC State +3.5 (-106) at FanDuel — captured 5 minutes ago"
+          "label": "NC State +3.5 (-106) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1604,22 +1605,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "BetMGM",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 59.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +59.5 (-110) at FanDuel — captured 5 minutes ago"
+          "label": "total +59.5 (-108) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -1629,7 +1630,7 @@
       "home": "Michigan State",
       "away": "Illinois",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Michigan State",
@@ -1638,16 +1639,16 @@
         "book": "Pinnacle",
         "odds_american": -101,
         "odds_decimal": 1.99,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 47.5,
-        "book": "BetMGM",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -1665,15 +1666,15 @@
           "line": 2.5,
           "odds_american": -101,
           "odds_decimal": 1.99,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Michigan State +2.5 (-101) at Pinnacle — captured 5 minutes ago"
+          "label": "Michigan State +2.5 (-101) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1683,22 +1684,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 47.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47.5 (-105) at BetMGM — captured 5 minutes ago"
+          "label": "total +47.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -1708,52 +1709,27 @@
       "home": "Nebraska",
       "away": "Indiana",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Nebraska",
         "side": "home",
         "point": 7.5,
-        "book": "theScore Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "book": "FanDuel",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
-        "point": 50.5,
-        "book": "FanDuel",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 50,
+        "book": "Bovada",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 122
       },
       "contract": [
-        {
-          "schema": "edgedesk_market_snapshot_v2",
-          "version": 2,
-          "game_id": "401858481",
-          "sport": "CFB",
-          "model_version": null,
-          "model_generated_at": null,
-          "input_cutoff": null,
-          "book": "theScore Bet",
-          "market_type": "spreads",
-          "selection": "Nebraska",
-          "side": "home",
-          "line": 7.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
-          "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
-          "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
-          "source": "EdgeDesk odds capture (public.signals)",
-          "missing": [],
-          "label": "Nebraska +7.5 (-105) at theScore Bet — captured 5 minutes ago"
-        },
         {
           "schema": "edgedesk_market_snapshot_v2",
           "version": 2,
@@ -1763,21 +1739,46 @@
           "model_generated_at": null,
           "input_cutoff": null,
           "book": "FanDuel",
+          "market_type": "spreads",
+          "selection": "Nebraska",
+          "side": "home",
+          "line": 7.5,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
+          "freshness": "LIVE",
+          "freshness_why": "captured 3 minutes ago",
+          "snapshot_kind": "EDITION",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
+          "source": "EdgeDesk odds capture (public.signals)",
+          "missing": [],
+          "label": "Nebraska +7.5 (-108) at FanDuel — captured 3 minutes ago"
+        },
+        {
+          "schema": "edgedesk_market_snapshot_v2",
+          "version": 2,
+          "game_id": "401858481",
+          "sport": "CFB",
+          "model_version": null,
+          "model_generated_at": null,
+          "input_cutoff": null,
+          "book": "Bovada",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 50.5,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 50,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50.5 (-115) at FanDuel — captured 5 minutes ago"
+          "label": "total +50 (-110) at Bovada — captured 3 minutes ago"
         }
       ]
     },
@@ -1787,25 +1788,25 @@
       "home": "Northwestern",
       "away": "Ball State",
       "kickoff": "2026-10-10T16:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Northwestern",
         "side": "home",
-        "point": -37.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": -37,
+        "book": "Pinnacle",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 52.5,
-        "book": "BetMGM",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "Pinnacle",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -1816,22 +1817,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "Pinnacle",
           "market_type": "spreads",
           "selection": "Northwestern",
           "side": "home",
-          "line": -37.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -37,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Northwestern -37.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Northwestern -37 (-108) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1841,22 +1842,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 52.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +52.5 (-110) at BetMGM — captured 5 minutes ago"
+          "label": "total +52.5 (-108) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -1866,7 +1867,7 @@
       "home": "Ohio State",
       "away": "Maryland",
       "kickoff": "2026-10-10T20:15:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Ohio State",
@@ -1875,16 +1876,16 @@
         "book": "BetOnline.ag",
         "odds_american": -125,
         "odds_decimal": 1.8,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 56,
         "book": "BetRivers",
         "odds_american": -109,
         "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "contract": [
         {
@@ -1902,15 +1903,15 @@
           "line": -33,
           "odds_american": -125,
           "odds_decimal": 1.8,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Ohio State -33 (-125) at BetOnline.ag — captured 5 minutes ago"
+          "label": "Ohio State -33 (-125) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -1927,15 +1928,15 @@
           "line": 56,
           "odds_american": -109,
           "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +56 (-109) at BetRivers — captured 5 minutes ago"
+          "label": "total +56 (-109) at BetRivers — captured 3 minutes ago"
         }
       ]
     },
@@ -1945,7 +1946,7 @@
       "home": "Oregon",
       "away": "UCLA",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Oregon",
@@ -1954,16 +1955,16 @@
         "book": "BetOnline.ag",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "total": {
         "point": 58,
         "book": "Pinnacle",
         "odds_american": -108,
         "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -1981,15 +1982,15 @@
           "line": -12,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Oregon -12 (-105) at BetOnline.ag — captured 5 minutes ago"
+          "label": "Oregon -12 (-105) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2006,15 +2007,15 @@
           "line": 58,
           "odds_american": -108,
           "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +58 (-108) at Pinnacle — captured 5 minutes ago"
+          "label": "total +58 (-108) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -2024,25 +2025,25 @@
       "home": "Penn State",
       "away": "USC",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Penn State",
         "side": "home",
-        "point": -1.5,
-        "book": "theScore Bet",
-        "odds_american": 100,
-        "odds_decimal": 2,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": -1,
+        "book": "Pinnacle",
+        "odds_american": -109,
+        "odds_decimal": 1.92,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 55,
-        "book": "BetOnline.ag",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "point": 54.5,
+        "book": "FanDuel",
+        "odds_american": -104,
+        "odds_decimal": 1.96,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "contract": [
         {
@@ -2053,22 +2054,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "Pinnacle",
           "market_type": "spreads",
           "selection": "Penn State",
           "side": "home",
-          "line": -1.5,
-          "odds_american": 100,
-          "odds_decimal": 2,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -1,
+          "odds_american": -109,
+          "odds_decimal": 1.92,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Penn State -1.5 (+100) at theScore Bet — captured 5 minutes ago"
+          "label": "Penn State -1 (-109) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2078,22 +2079,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetOnline.ag",
+          "book": "FanDuel",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 55,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 54.5,
+          "odds_american": -104,
+          "odds_decimal": 1.96,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +55 (-115) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +54.5 (-104) at FanDuel — captured 3 minutes ago"
         }
       ]
     },
@@ -2103,7 +2104,7 @@
       "home": "Purdue",
       "away": "Minnesota",
       "kickoff": "2026-10-11T00:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Purdue",
@@ -2112,16 +2113,16 @@
         "book": "theScore Bet",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 10
       },
       "total": {
         "point": 50.5,
-        "book": "BetMGM",
-        "odds_american": -112,
-        "odds_decimal": 1.89,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2139,15 +2140,15 @@
           "line": 2.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Purdue +2.5 (-105) at theScore Bet — captured 5 minutes ago"
+          "label": "Purdue +2.5 (-105) at theScore Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2157,22 +2158,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 50.5,
-          "odds_american": -112,
-          "odds_decimal": 1.89,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50.5 (-112) at BetMGM — captured 5 minutes ago"
+          "label": "total +50.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -2182,25 +2183,25 @@
       "home": "Washington",
       "away": "Iowa",
       "kickoff": "2026-10-10T01:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Washington",
         "side": "home",
         "point": -3,
-        "book": "Pinnacle",
-        "odds_american": -109,
-        "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "BetOnline.ag",
+        "odds_american": -112,
+        "odds_decimal": 1.89,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "total": {
         "point": 41,
         "book": "BetOnline.ag",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -2211,22 +2212,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "BetOnline.ag",
           "market_type": "spreads",
           "selection": "Washington",
           "side": "home",
           "line": -3,
-          "odds_american": -109,
-          "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -112,
+          "odds_decimal": 1.89,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Washington -3 (-109) at Pinnacle — captured 5 minutes ago"
+          "label": "Washington -3 (-112) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2243,15 +2244,15 @@
           "line": 41,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +41 (-105) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +41 (-105) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -2261,25 +2262,25 @@
       "home": "Fresno State",
       "away": "Boise State",
       "kickoff": "2026-10-11T02:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Fresno State",
         "side": "home",
-        "point": 6.5,
-        "book": "theScore Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "point": 6,
+        "book": "BetRivers",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "total": {
         "point": 48.5,
-        "book": "theScore Bet",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "book": "Pinnacle",
+        "odds_american": -101,
+        "odds_decimal": 1.99,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -2290,22 +2291,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "BetRivers",
           "market_type": "spreads",
           "selection": "Fresno State",
           "side": "home",
-          "line": 6.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 6,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Fresno State +6.5 (-105) at theScore Bet — captured 5 minutes ago"
+          "label": "Fresno State +6 (-108) at BetRivers — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2315,22 +2316,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "theScore Bet",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 48.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -101,
+          "odds_decimal": 1.99,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +48.5 (-105) at theScore Bet — captured 5 minutes ago"
+          "label": "total +48.5 (-101) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -2340,25 +2341,25 @@
       "home": "Oregon State",
       "away": "San Diego State",
       "kickoff": "2026-10-10T22:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Oregon State",
         "side": "home",
-        "point": -15.5,
-        "book": "BetRivers",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": -14.5,
+        "book": "BetMGM",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 53.5,
-        "book": "FanDuel",
+        "book": "Bovada",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 122
       },
       "contract": [
         {
@@ -2369,22 +2370,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Oregon State",
           "side": "home",
-          "line": -15.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -14.5,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Oregon State -15.5 (-110) at BetRivers — captured 5 minutes ago"
+          "label": "Oregon State -14.5 (-108) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2394,22 +2395,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "Bovada",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 53.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +53.5 (-105) at FanDuel — captured 5 minutes ago"
+          "label": "total +53.5 (-105) at Bovada — captured 3 minutes ago"
         }
       ]
     },
@@ -2419,7 +2420,7 @@
       "home": "Utah State",
       "away": "Washington State",
       "kickoff": "2026-10-10T01:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Utah State",
@@ -2428,16 +2429,16 @@
         "book": "BetOnline.ag",
         "odds_american": -106,
         "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "total": {
-        "point": 43.5,
-        "book": "DraftKings",
-        "odds_american": -102,
-        "odds_decimal": 1.98,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 44.5,
+        "book": "BetMGM",
+        "odds_american": -118,
+        "odds_decimal": 1.85,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -2455,15 +2456,15 @@
           "line": -6,
           "odds_american": -106,
           "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Utah State -6 (-106) at BetOnline.ag — captured 5 minutes ago"
+          "label": "Utah State -6 (-106) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2473,22 +2474,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "BetMGM",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 43.5,
-          "odds_american": -102,
-          "odds_decimal": 1.98,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 44.5,
+          "odds_american": -118,
+          "odds_decimal": 1.85,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +43.5 (-102) at DraftKings — captured 5 minutes ago"
+          "label": "total +44.5 (-118) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -2498,25 +2499,25 @@
       "home": "Temple",
       "away": "UConn",
       "kickoff": "2026-10-10T19:45:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Temple",
         "side": "home",
-        "point": -4.5,
-        "book": "BetRivers",
+        "point": -4,
+        "book": "Pinnacle",
         "odds_american": -109,
         "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 53.5,
         "book": "Hard Rock Bet",
         "odds_american": -115,
         "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2527,22 +2528,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "Pinnacle",
           "market_type": "spreads",
           "selection": "Temple",
           "side": "home",
-          "line": -4.5,
+          "line": -4,
           "odds_american": -109,
           "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Temple -4.5 (-109) at BetRivers — captured 5 minutes ago"
+          "label": "Temple -4 (-109) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2559,15 +2560,15 @@
           "line": 53.5,
           "odds_american": -115,
           "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +53.5 (-115) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +53.5 (-115) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -2577,7 +2578,7 @@
       "home": "UTSA",
       "away": "South Florida",
       "kickoff": "2026-10-08T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "UTSA",
@@ -2586,16 +2587,16 @@
         "book": "FanDuel",
         "odds_american": 100,
         "odds_decimal": 2,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
         "point": 49.5,
-        "book": "DraftKings",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2613,15 +2614,15 @@
           "line": -7.5,
           "odds_american": 100,
           "odds_decimal": 2,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "UTSA -7.5 (+100) at FanDuel — captured 5 minutes ago"
+          "label": "UTSA -7.5 (+100) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2631,22 +2632,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 49.5,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +49.5 (-115) at DraftKings — captured 5 minutes ago"
+          "label": "total +49.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -2656,7 +2657,7 @@
       "home": "Army",
       "away": "Tulane",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Army",
@@ -2665,16 +2666,16 @@
         "book": "FanDuel",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
-        "point": 48.5,
-        "book": "DraftKings",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 47.5,
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2692,15 +2693,15 @@
           "line": -3.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Army -3.5 (-105) at FanDuel — captured 5 minutes ago"
+          "label": "Army -3.5 (-105) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2710,22 +2711,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 48.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 47.5,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +48.5 (-105) at DraftKings — captured 5 minutes ago"
+          "label": "total +47.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -2735,7 +2736,7 @@
       "home": "North Texas",
       "away": "Charlotte",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "North Texas",
@@ -2744,16 +2745,16 @@
         "book": "BetRivers",
         "odds_american": -114,
         "odds_decimal": 1.88,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "total": {
-        "point": 58.5,
-        "book": "FanDuel",
-        "odds_american": -112,
-        "odds_decimal": 1.89,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 58,
+        "book": "Pinnacle",
+        "odds_american": -109,
+        "odds_decimal": 1.92,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 1
       },
       "contract": [
         {
@@ -2771,15 +2772,15 @@
           "line": -28,
           "odds_american": -114,
           "odds_decimal": 1.88,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "North Texas -28 (-114) at BetRivers — captured 5 minutes ago"
+          "label": "North Texas -28 (-114) at BetRivers — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2789,22 +2790,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 58.5,
-          "odds_american": -112,
-          "odds_decimal": 1.89,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 58,
+          "odds_american": -109,
+          "odds_decimal": 1.92,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +58.5 (-112) at FanDuel — captured 5 minutes ago"
+          "label": "total +58 (-109) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -2814,25 +2815,25 @@
       "home": "East Carolina",
       "away": "Rice",
       "kickoff": "2026-10-10T20:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "East Carolina",
         "side": "home",
-        "point": -10,
-        "book": "Pinnacle",
-        "odds_american": -106,
-        "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": -9.5,
+        "book": "FanDuel",
+        "odds_american": -115,
+        "odds_decimal": 1.87,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
         "point": 47,
         "book": "BetOnline.ag",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2843,22 +2844,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "FanDuel",
           "market_type": "spreads",
           "selection": "East Carolina",
           "side": "home",
-          "line": -10,
-          "odds_american": -106,
-          "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -9.5,
+          "odds_american": -115,
+          "odds_decimal": 1.87,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "East Carolina -10 (-106) at Pinnacle — captured 5 minutes ago"
+          "label": "East Carolina -9.5 (-115) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2875,15 +2876,15 @@
           "line": 47,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47 (-110) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +47 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -2893,25 +2894,25 @@
       "home": "Memphis",
       "away": "UAB",
       "kickoff": "2026-10-10T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Memphis",
         "side": "home",
-        "point": -14.5,
-        "book": "BetRivers",
+        "point": -14,
+        "book": "Pinnacle",
         "odds_american": -109,
         "odds_decimal": 1.92,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 57.5,
-        "book": "Bovada",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 167
+        "point": 56,
+        "book": "BetOnline.ag",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -2922,22 +2923,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "Pinnacle",
           "market_type": "spreads",
           "selection": "Memphis",
           "side": "home",
-          "line": -14.5,
+          "line": -14,
           "odds_american": -109,
           "odds_decimal": 1.92,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Memphis -14.5 (-109) at BetRivers — captured 5 minutes ago"
+          "label": "Memphis -14 (-109) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -2947,22 +2948,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Bovada",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 57.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 56,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +57.5 (-105) at Bovada — captured 5 minutes ago"
+          "label": "total +56 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -2972,7 +2973,7 @@
       "home": "Navy",
       "away": "Tulsa",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Navy",
@@ -2981,16 +2982,16 @@
         "book": "FanDuel",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
         "point": 49,
         "book": "Bovada",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 167
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 122
       },
       "contract": [
         {
@@ -3008,15 +3009,15 @@
           "line": -2.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Navy -2.5 (-110) at FanDuel — captured 5 minutes ago"
+          "label": "Navy -2.5 (-110) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3033,15 +3034,15 @@
           "line": 49,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +49 (-110) at Bovada — captured 5 minutes ago"
+          "label": "total +49 (-110) at Bovada — captured 3 minutes ago"
         }
       ]
     },
@@ -3051,7 +3052,7 @@
       "home": "Northern Illinois",
       "away": "Air Force",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Northern Illinois",
@@ -3060,16 +3061,16 @@
         "book": "BetOnline.ag",
         "odds_american": -106,
         "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
-        "point": 48.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -120,
-        "odds_decimal": 1.83,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 46,
+        "book": "BetOnline.ag",
+        "odds_american": -112,
+        "odds_decimal": 1.89,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -3087,15 +3088,15 @@
           "line": 7,
           "odds_american": -106,
           "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Northern Illinois +7 (-106) at BetOnline.ag — captured 5 minutes ago"
+          "label": "Northern Illinois +7 (-106) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3105,22 +3106,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 48.5,
-          "odds_american": -120,
-          "odds_decimal": 1.83,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 46,
+          "odds_american": -112,
+          "odds_decimal": 1.89,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +48.5 (-120) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +46 (-112) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -3130,7 +3131,7 @@
       "home": "UTEP",
       "away": "Nevada",
       "kickoff": "2026-10-10T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "UTEP",
@@ -3139,16 +3140,16 @@
         "book": "BetMGM",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 50,
-        "book": "Pinnacle",
-        "odds_american": -120,
-        "odds_decimal": 1.83,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 49.5,
+        "book": "DraftKings",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -3166,15 +3167,15 @@
           "line": 8.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "UTEP +8.5 (-110) at BetMGM — captured 5 minutes ago"
+          "label": "UTEP +8.5 (-110) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3184,22 +3185,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "DraftKings",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 50,
-          "odds_american": -120,
-          "odds_decimal": 1.83,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 49.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50 (-120) at Pinnacle — captured 5 minutes ago"
+          "label": "total +49.5 (-105) at DraftKings — captured 3 minutes ago"
         }
       ]
     },
@@ -3209,25 +3210,25 @@
       "home": "UNLV",
       "away": "North Dakota State",
       "kickoff": "2026-10-10T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "UNLV",
         "side": "home",
         "point": 3.5,
-        "book": "FanDuel",
-        "odds_american": -120,
-        "odds_decimal": 1.83,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "book": "Hard Rock Bet",
+        "odds_american": -115,
+        "odds_decimal": 1.87,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 47.5,
-        "book": "BetMGM",
-        "odds_american": -112,
-        "odds_decimal": 1.89,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -3238,22 +3239,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "Hard Rock Bet",
           "market_type": "spreads",
           "selection": "UNLV",
           "side": "home",
           "line": 3.5,
-          "odds_american": -120,
-          "odds_decimal": 1.83,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -115,
+          "odds_decimal": 1.87,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "UNLV +3.5 (-120) at FanDuel — captured 5 minutes ago"
+          "label": "UNLV +3.5 (-115) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3263,22 +3264,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
           "line": 47.5,
-          "odds_american": -112,
-          "odds_decimal": 1.89,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47.5 (-112) at BetMGM — captured 5 minutes ago"
+          "label": "total +47.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -3288,7 +3289,7 @@
       "home": "San José State",
       "away": "Wyoming",
       "kickoff": "2026-10-10T01:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "San José State",
@@ -3297,16 +3298,16 @@
         "book": "Pinnacle",
         "odds_american": -104,
         "odds_decimal": 1.96,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 43,
         "book": "BetOnline.ag",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -3324,15 +3325,15 @@
           "line": -6.5,
           "odds_american": -104,
           "odds_decimal": 1.96,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "San José State -6.5 (-104) at Pinnacle — captured 5 minutes ago"
+          "label": "San José State -6.5 (-104) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3349,15 +3350,15 @@
           "line": 43,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +43 (-110) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +43 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -3367,25 +3368,25 @@
       "home": "Akron",
       "away": "Eastern Michigan",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Akron",
         "side": "home",
-        "point": 7,
-        "book": "DraftKings",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 6.5,
+        "book": "FanDuel",
+        "odds_american": 100,
+        "odds_decimal": 2,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 15
       },
       "total": {
-        "point": 52,
-        "book": "BetOnline.ag",
+        "point": 51.5,
+        "book": "Hard Rock Bet",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -3396,22 +3397,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "FanDuel",
           "market_type": "spreads",
           "selection": "Akron",
           "side": "home",
-          "line": 7,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 6.5,
+          "odds_american": 100,
+          "odds_decimal": 2,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Akron +7 (-115) at DraftKings — captured 5 minutes ago"
+          "label": "Akron +6.5 (+100) at FanDuel — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3421,22 +3422,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetOnline.ag",
+          "book": "Hard Rock Bet",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 52,
+          "line": 51.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +52 (-110) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +51.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -3446,25 +3447,25 @@
       "home": "Bowling Green",
       "away": "Sacramento State",
       "kickoff": "2026-10-10T16:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Bowling Green",
         "side": "home",
-        "point": -7.5,
-        "book": "DraftKings",
+        "point": -8.5,
+        "book": "Hard Rock Bet",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 44.5,
         "book": "BetMGM",
         "odds_american": -108,
         "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -3475,22 +3476,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "DraftKings",
+          "book": "Hard Rock Bet",
           "market_type": "spreads",
           "selection": "Bowling Green",
           "side": "home",
-          "line": -7.5,
+          "line": -8.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Bowling Green -7.5 (-105) at DraftKings — captured 5 minutes ago"
+          "label": "Bowling Green -8.5 (-105) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3507,15 +3508,15 @@
           "line": 44.5,
           "odds_american": -108,
           "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +44.5 (-108) at BetMGM — captured 5 minutes ago"
+          "label": "total +44.5 (-108) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -3525,7 +3526,7 @@
       "home": "Toledo",
       "away": "Buffalo",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Toledo",
@@ -3534,16 +3535,16 @@
         "book": "Hard Rock Bet",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 54.5,
         "book": "BetMGM",
         "odds_american": -112,
         "odds_decimal": 1.89,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -3561,15 +3562,15 @@
           "line": -20.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Toledo -20.5 (-110) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Toledo -20.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3586,15 +3587,15 @@
           "line": 54.5,
           "odds_american": -112,
           "odds_decimal": 1.89,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +54.5 (-112) at BetMGM — captured 5 minutes ago"
+          "label": "total +54.5 (-112) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -3604,7 +3605,7 @@
       "home": "Ohio",
       "away": "Central Michigan",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Ohio",
@@ -3613,16 +3614,16 @@
         "book": "Pinnacle",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 47,
         "book": "Pinnacle",
         "odds_american": -114,
         "odds_decimal": 1.88,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -3640,15 +3641,15 @@
           "line": -3,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Ohio -3 (-105) at Pinnacle — captured 5 minutes ago"
+          "label": "Ohio -3 (-105) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3665,15 +3666,15 @@
           "line": 47,
           "odds_american": -114,
           "odds_decimal": 1.88,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +47 (-114) at Pinnacle — captured 5 minutes ago"
+          "label": "total +47 (-114) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -3683,7 +3684,7 @@
       "home": "Western Michigan",
       "away": "Kent State",
       "kickoff": "2026-10-10T19:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Western Michigan",
@@ -3692,16 +3693,16 @@
         "book": "Hard Rock Bet",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 43.5,
         "book": "BetOnline.ag",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -3719,15 +3720,15 @@
           "line": -13.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Western Michigan -13.5 (-110) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Western Michigan -13.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3744,15 +3745,15 @@
           "line": 43.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +43.5 (-110) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +43.5 (-110) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -3762,25 +3763,25 @@
       "home": "Massachusetts",
       "away": "Miami (OH)",
       "kickoff": "2026-10-10T18:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Massachusetts",
         "side": "home",
-        "point": 2.5,
-        "book": "BetMGM",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": 2,
+        "book": "BetOnline.ag",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "total": {
-        "point": 46.5,
-        "book": "Pinnacle",
-        "odds_american": 101,
-        "odds_decimal": 2.01,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": 47.5,
+        "book": "DraftKings",
+        "odds_american": -105,
+        "odds_decimal": 1.95,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -3791,22 +3792,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "BetOnline.ag",
           "market_type": "spreads",
           "selection": "Massachusetts",
           "side": "home",
-          "line": 2.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 2,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Massachusetts +2.5 (-110) at BetMGM — captured 5 minutes ago"
+          "label": "Massachusetts +2 (-108) at BetOnline.ag — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3816,22 +3817,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "DraftKings",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 46.5,
-          "odds_american": 101,
-          "odds_decimal": 2.01,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 47.5,
+          "odds_american": -105,
+          "odds_decimal": 1.95,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +46.5 (+101) at Pinnacle — captured 5 minutes ago"
+          "label": "total +47.5 (-105) at DraftKings — captured 3 minutes ago"
         }
       ]
     },
@@ -3841,25 +3842,25 @@
       "home": "App State",
       "away": "Old Dominion",
       "kickoff": "2026-10-10T17:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "App State",
         "side": "home",
-        "point": -10,
-        "book": "Pinnacle",
-        "odds_american": -101,
-        "odds_decimal": 1.99,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": -9.5,
+        "book": "Hard Rock Bet",
+        "odds_american": -110,
+        "odds_decimal": 1.91,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "total": {
         "point": 50,
         "book": "BetOnline.ag",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -3870,22 +3871,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "Hard Rock Bet",
           "market_type": "spreads",
           "selection": "App State",
           "side": "home",
-          "line": -10,
-          "odds_american": -101,
-          "odds_decimal": 1.99,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -9.5,
+          "odds_american": -110,
+          "odds_decimal": 1.91,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "App State -10 (-101) at Pinnacle — captured 5 minutes ago"
+          "label": "App State -9.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3902,15 +3903,15 @@
           "line": 50,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50 (-105) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +50 (-105) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -3920,25 +3921,25 @@
       "home": "Arkansas State",
       "away": "South Alabama",
       "kickoff": "2026-10-08T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Arkansas State",
         "side": "home",
-        "point": 0.5,
-        "book": "BetRivers",
-        "odds_american": -114,
-        "odds_decimal": 1.88,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": -1.5,
+        "book": "Caesars",
+        "odds_american": -106,
+        "odds_decimal": 1.94,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 31
       },
       "total": {
         "point": 58.5,
         "book": "BetOnline.ag",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 46
       },
       "contract": [
         {
@@ -3949,22 +3950,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetRivers",
+          "book": "Caesars",
           "market_type": "spreads",
           "selection": "Arkansas State",
           "side": "home",
-          "line": 0.5,
-          "odds_american": -114,
-          "odds_decimal": 1.88,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -1.5,
+          "odds_american": -106,
+          "odds_decimal": 1.94,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Arkansas State +0.5 (-114) at BetRivers — captured 5 minutes ago"
+          "label": "Arkansas State -1.5 (-106) at Caesars — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -3981,15 +3982,15 @@
           "line": 58.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +58.5 (-105) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +58.5 (-105) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -3999,25 +4000,25 @@
       "home": "Marshall",
       "away": "Coastal Carolina",
       "kickoff": "2026-10-10T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Marshall",
         "side": "home",
-        "point": -2.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -115,
-        "odds_decimal": 1.87,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "point": -3,
+        "book": "BetMGM",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 57,
-        "book": "BetOnline.ag",
-        "odds_american": -130,
-        "odds_decimal": 1.77,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 29
+        "point": 58.5,
+        "book": "Pinnacle",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -4028,22 +4029,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Marshall",
           "side": "home",
-          "line": -2.5,
-          "odds_american": -115,
-          "odds_decimal": 1.87,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -3,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Marshall -2.5 (-115) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Marshall -3 (-108) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4053,22 +4054,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetOnline.ag",
+          "book": "Pinnacle",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 57,
-          "odds_american": -130,
-          "odds_decimal": 1.77,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 58.5,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +57 (-130) at BetOnline.ag — captured 5 minutes ago"
+          "label": "total +58.5 (-108) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -4078,7 +4079,7 @@
       "home": "Georgia Southern",
       "away": "James Madison",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Georgia Southern",
@@ -4087,16 +4088,16 @@
         "book": "Pinnacle",
         "odds_american": -111,
         "odds_decimal": 1.9,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
-        "point": 53.5,
-        "book": "BetMGM",
-        "odds_american": -108,
-        "odds_decimal": 1.93,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "point": 52.5,
+        "book": "BetOnline.ag",
+        "odds_american": -115,
+        "odds_decimal": 1.87,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -4114,15 +4115,15 @@
           "line": 8,
           "odds_american": -111,
           "odds_decimal": 1.9,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Georgia Southern +8 (-111) at Pinnacle — captured 5 minutes ago"
+          "label": "Georgia Southern +8 (-111) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4132,22 +4133,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "BetMGM",
+          "book": "BetOnline.ag",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 53.5,
-          "odds_american": -108,
-          "odds_decimal": 1.93,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 52.5,
+          "odds_american": -115,
+          "odds_decimal": 1.87,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +53.5 (-108) at BetMGM — captured 5 minutes ago"
+          "label": "total +52.5 (-115) at BetOnline.ag — captured 3 minutes ago"
         }
       ]
     },
@@ -4157,25 +4158,25 @@
       "home": "Louisiana Tech",
       "away": "Louisiana",
       "kickoff": "2026-10-10T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Louisiana Tech",
         "side": "home",
         "point": -2.5,
-        "book": "Hard Rock Bet",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "book": "theScore Bet",
+        "odds_american": -120,
+        "odds_decimal": 1.83,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 10
       },
       "total": {
-        "point": 48,
-        "book": "Bovada",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 167
+        "point": 48.5,
+        "book": "BetMGM",
+        "odds_american": -115,
+        "odds_decimal": 1.87,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "contract": [
         {
@@ -4186,22 +4187,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Hard Rock Bet",
+          "book": "theScore Bet",
           "market_type": "spreads",
           "selection": "Louisiana Tech",
           "side": "home",
           "line": -2.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -120,
+          "odds_decimal": 1.83,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Louisiana Tech -2.5 (-110) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "Louisiana Tech -2.5 (-120) at theScore Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4211,22 +4212,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Bovada",
+          "book": "BetMGM",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 48,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 48.5,
+          "odds_american": -115,
+          "odds_decimal": 1.87,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +48 (-105) at Bovada — captured 5 minutes ago"
+          "label": "total +48.5 (-115) at BetMGM — captured 3 minutes ago"
         }
       ]
     },
@@ -4236,25 +4237,25 @@
       "home": "Liberty",
       "away": "Sam Houston",
       "kickoff": "2026-10-08T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Liberty",
         "side": "home",
         "point": -13.5,
-        "book": "FanDuel",
-        "odds_american": -110,
-        "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "book": "BetMGM",
+        "odds_american": -108,
+        "odds_decimal": 1.93,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 27
       },
       "total": {
         "point": 52.5,
         "book": "Hard Rock Bet",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -4265,22 +4266,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "FanDuel",
+          "book": "BetMGM",
           "market_type": "spreads",
           "selection": "Liberty",
           "side": "home",
           "line": -13.5,
-          "odds_american": -110,
-          "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -108,
+          "odds_decimal": 1.93,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Liberty -13.5 (-110) at FanDuel — captured 5 minutes ago"
+          "label": "Liberty -13.5 (-108) at BetMGM — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4297,15 +4298,15 @@
           "line": 52.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +52.5 (-105) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +52.5 (-105) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -4315,7 +4316,7 @@
       "home": "Kennesaw State",
       "away": "Jacksonville State",
       "kickoff": "2026-10-07T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Kennesaw State",
@@ -4324,16 +4325,16 @@
         "book": "theScore Bet",
         "odds_american": 105,
         "odds_decimal": 2.05,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 11
       },
       "total": {
         "point": 50,
         "book": "Pinnacle",
         "odds_american": -104,
         "odds_decimal": 1.96,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 26
       },
       "contract": [
         {
@@ -4351,15 +4352,15 @@
           "line": 2.5,
           "odds_american": 105,
           "odds_decimal": 2.05,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Kennesaw State +2.5 (+105) at theScore Bet — captured 5 minutes ago"
+          "label": "Kennesaw State +2.5 (+105) at theScore Bet — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4376,15 +4377,15 @@
           "line": 50,
           "odds_american": -104,
           "odds_decimal": 1.96,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +50 (-104) at Pinnacle — captured 5 minutes ago"
+          "label": "total +50 (-104) at Pinnacle — captured 3 minutes ago"
         }
       ]
     },
@@ -4394,7 +4395,7 @@
       "home": "Western Kentucky",
       "away": "Missouri State",
       "kickoff": "2026-10-08T23:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Western Kentucky",
@@ -4403,16 +4404,16 @@
         "book": "BetRivers",
         "odds_american": -106,
         "odds_decimal": 1.94,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 7
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 44
       },
       "total": {
         "point": 56.5,
         "book": "theScore Bet",
         "odds_american": -105,
         "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 26
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 11
       },
       "contract": [
         {
@@ -4430,15 +4431,15 @@
           "line": -3,
           "odds_american": -106,
           "odds_decimal": 1.94,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Western Kentucky -3 (-106) at BetRivers — captured 5 minutes ago"
+          "label": "Western Kentucky -3 (-106) at BetRivers — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4455,15 +4456,15 @@
           "line": 56.5,
           "odds_american": -105,
           "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +56.5 (-105) at theScore Bet — captured 5 minutes ago"
+          "label": "total +56.5 (-105) at theScore Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -4473,25 +4474,25 @@
       "home": "Florida International",
       "away": "New Mexico State",
       "kickoff": "2026-10-07T23:30:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Florida International",
         "side": "home",
         "point": -6,
         "book": "Pinnacle",
-        "odds_american": -116,
-        "odds_decimal": 1.86,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "odds_american": -118,
+        "odds_decimal": 1.85,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 1
       },
       "total": {
         "point": 46.5,
         "book": "Hard Rock Bet",
         "odds_american": -110,
         "odds_decimal": 1.91,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 8
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 45
       },
       "contract": [
         {
@@ -4507,17 +4508,17 @@
           "selection": "Florida International",
           "side": "home",
           "line": -6,
-          "odds_american": -116,
-          "odds_decimal": 1.86,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "odds_american": -118,
+          "odds_decimal": 1.85,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Florida International -6 (-116) at Pinnacle — captured 5 minutes ago"
+          "label": "Florida International -6 (-118) at Pinnacle — captured 3 minutes ago"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4534,15 +4535,15 @@
           "line": 46.5,
           "odds_american": -110,
           "odds_decimal": 1.91,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago",
+          "freshness_why": "captured 3 minutes ago",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +46.5 (-110) at Hard Rock Bet — captured 5 minutes ago"
+          "label": "total +46.5 (-110) at Hard Rock Bet — captured 3 minutes ago"
         }
       ]
     },
@@ -4552,25 +4553,25 @@
       "home": "Troy",
       "away": "Southern Miss",
       "kickoff": "2026-10-07T00:00:00.000Z",
-      "captured_at": "2026-10-06T18:50:01.273+00:00",
+      "captured_at": "2026-10-06T23:00:13.589+00:00",
       "from": "EdgeDesk odds capture (public.signals), read by the newsletter pipeline",
       "spread": {
         "selection": "Troy",
         "side": "home",
-        "point": -10.5,
+        "point": -32.5,
         "book": "FanDuel",
-        "odds_american": -102,
-        "odds_decimal": 1.98,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "odds_american": 900,
+        "odds_decimal": 10,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 40
       },
       "total": {
-        "point": 52.5,
-        "book": "Pinnacle",
-        "odds_american": -105,
-        "odds_decimal": 1.95,
-        "captured_at": "2026-10-06T18:50:01.273+00:00",
-        "quote_age_s": 9
+        "point": 45.5,
+        "book": "DraftKings",
+        "odds_american": -222,
+        "odds_decimal": 1.45,
+        "captured_at": "2026-10-06T23:00:13.589+00:00",
+        "quote_age_s": 26
       },
       "contract": [
         {
@@ -4585,18 +4586,18 @@
           "market_type": "spreads",
           "selection": "Troy",
           "side": "home",
-          "line": -10.5,
-          "odds_american": -102,
-          "odds_decimal": 1.98,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": -32.5,
+          "odds_american": 900,
+          "odds_decimal": 10,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago, inside the six hours before kickoff when the number moves fastest",
+          "freshness_why": "captured 3 minutes ago, inside the six hours before kickoff when the number moves fastest",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "Troy -10.5 (-102) at FanDuel — captured 5 minutes ago, inside the six hours before kickoff when the number moves fastest"
+          "label": "Troy -32.5 (+900) at FanDuel — captured 3 minutes ago, inside the six hours before kickoff when the number moves fastest"
         },
         {
           "schema": "edgedesk_market_snapshot_v2",
@@ -4606,22 +4607,22 @@
           "model_version": null,
           "model_generated_at": null,
           "input_cutoff": null,
-          "book": "Pinnacle",
+          "book": "DraftKings",
           "market_type": "totals",
           "selection": "total",
           "side": null,
-          "line": 52.5,
-          "odds_american": -105,
-          "odds_decimal": 1.95,
-          "captured_at": "2026-10-06T18:50:01.273Z",
-          "observed_age_s": 299,
+          "line": 45.5,
+          "odds_american": -222,
+          "odds_decimal": 1.45,
+          "captured_at": "2026-10-06T23:00:13.589Z",
+          "observed_age_s": 170,
           "freshness": "LIVE",
-          "freshness_why": "captured 5 minutes ago, inside the six hours before kickoff when the number moves fastest",
+          "freshness_why": "captured 3 minutes ago, inside the six hours before kickoff when the number moves fastest",
           "snapshot_kind": "EDITION",
-          "retrieved_at": "2026-10-06T18:55:00.604Z",
+          "retrieved_at": "2026-10-06T23:03:03.918Z",
           "source": "EdgeDesk odds capture (public.signals)",
           "missing": [],
-          "label": "total +52.5 (-105) at Pinnacle — captured 5 minutes ago, inside the six hours before kickoff when the number moves fastest"
+          "label": "total +45.5 (-222) at DraftKings — captured 3 minutes ago, inside the six hours before kickoff when the number moves fastest"
         }
       ]
     }

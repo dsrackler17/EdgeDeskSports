@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T00:00:00.000Z",
   "game_when_label": "2026-10-11 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T22:36:37.858Z",
-  "generated_at": "2026-10-06T22:36:37.858Z",
+  "updated_at": "2026-10-06T23:03:07.900Z",
+  "generated_at": "2026-10-06T23:03:07.900Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and BetMGM on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and Hard Rock Bet on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -1534,8 +1534,8 @@
       "total_model": "52.3",
       "total_market": "50.5",
       "book": "captured consensus · 1 book · best at theScore Bet",
-      "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "4 hours old",
+      "captured": "2026-10-06T23:00:13.589+00:00",
+      "capture_age": "0 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1574,7 +1574,7 @@
         "market_home_margin": -2.5,
         "favorite_differs": false,
         "source": "captured consensus · 1 book · best at theScore Bet",
-        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "as_of": "2026-10-06T23:00:13.589+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1588,7 +1588,7 @@
         "pct": 89,
         "tier": "STRONG",
         "text": "89 · STRONG",
-        "sub": "main deduction: Minnesota’s availability report is not due yet",
+        "sub": "main deduction: no source has established whether Purdue or Minnesota’s starting QB can play",
         "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
@@ -1615,7 +1615,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 15,
             "max": 15
           },
           {
@@ -1631,9 +1631,27 @@
             "max": 10
           }
         ],
-        "main_deduction": "Minnesota’s availability report is not due yet; the impact of Minnesota’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
-        "next_actions": [],
+        "main_deduction": "no source has established whether Purdue or Minnesota’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
+        "next_actions": [
+          {
+            "action": "Fetch the venue forecast",
+            "potential_gain": 2,
+            "text": "up to +2 once re-read availability inside the filing window (Purdue) and Re-read availability inside the filing window (Minnesota) is done"
+          },
+          {
+            "action": "Add another market source",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Purdue) and Re-read availability inside the filing window (Minnesota) is done"
+          },
+          {
+            "action": "Confirm Minnesota’s starting QB (Drake Lindsey)",
+            "potential_gain": 1,
+            "text": "up to +1 once re-read availability inside the filing window (Purdue) and Re-read availability inside the filing window (Minnesota) is done"
+          }
+        ],
         "stability": {
           "tier": "STABLE",
           "sd": 1.63,
@@ -1670,7 +1688,7 @@
           "line": -2.5,
           "price_american": null,
           "book": "theScore Bet",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
           "text": "Minnesota -2.5 (price not captured) at theScore Bet"
         },
         "other": {
@@ -1679,7 +1697,7 @@
           "line": 2.5,
           "price_american": null,
           "book": "theScore Bet",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
           "text": "Purdue +2.5 (price not captured) at theScore Bet"
         },
         "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
@@ -1899,6 +1917,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T22:36:37.858Z"
+    "at": "2026-10-06T23:03:07.900Z"
   }
 }

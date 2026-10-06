@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T22:36:37.858Z",
-  "generated_at": "2026-10-06T22:36:37.858Z",
+  "updated_at": "2026-10-06T23:03:07.900Z",
+  "generated_at": "2026-10-06T23:03:07.900Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at theScore Bet and Pinnacle on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetMGM and Pinnacle on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -1441,7 +1441,7 @@
         {
           "sev": "MEDIUM",
           "label": "market disagreement",
-          "text": "The market disagrees by 4.9 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "text": "The market disagrees by 4.4 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
           "widening": null
         },
         {
@@ -1549,14 +1549,14 @@
       "available": true,
       "model": "West Virginia +7.4",
       "model_raw": "West Virginia +7.4",
-      "market": "West Virginia +2.5",
-      "difference": "4.9 points",
-      "difference_n": 4.9288431799205545,
+      "market": "West Virginia +3.0",
+      "difference": "4.4 points",
+      "difference_n": 4.4288431799205545,
       "total_model": "55.9",
       "total_market": "61.0",
-      "book": "captured consensus · 1 book · best at theScore Bet",
-      "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "4 hours old",
+      "book": "captured consensus · 1 book · best at BetMGM",
+      "captured": "2026-10-06T23:00:13.589+00:00",
+      "capture_age": "0 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1574,7 +1574,7 @@
         "key": "WORTH_RESEARCHING",
         "label": "WORTH RESEARCHING",
         "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 4.9 pts toward Arizona, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "means": "EdgeDesk differs from the market by 4.4 pts toward Arizona, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "disagreement": null,
       "fair": {
@@ -1588,14 +1588,14 @@
       },
       "market_gap": {
         "available": true,
-        "points": 4.93,
+        "points": 4.43,
         "toward_team": "Arizona",
-        "text": "4.9 pts toward Arizona",
-        "market_line_text": "Arizona -2.5",
-        "market_home_margin": -2.5,
+        "text": "4.4 pts toward Arizona",
+        "market_line_text": "Arizona -3.0",
+        "market_home_margin": -3,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at theScore Bet",
-        "as_of": "2026-10-06T18:50:01.273+00:00",
+        "source": "captured consensus · 1 book · best at BetMGM",
+        "as_of": "2026-10-06T23:00:13.589+00:00",
         "stale": false,
         "measured_from": "raw",
         "note": null
@@ -1606,11 +1606,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 89,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Arizona’s availability report is not due yet",
-        "score": 88,
+        "text": "89 · STRONG",
+        "sub": "main deduction: no source has established whether West Virginia or Arizona’s starting QB can play",
+        "score": 89,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1636,7 +1636,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 15,
             "max": 15
           },
           {
@@ -1652,23 +1652,15 @@
             "max": 10
           }
         ],
-        "main_deduction": "Arizona’s availability report is not due yet; the impact of Arizona’s absences cannot be assessed: no graded availability read",
-        "capped_by": [],
+        "main_deduction": "no source has established whether West Virginia or Arizona’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+        "capped_by": [
+          "QB_STATUS_UNCONFIRMED"
+        ],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Arizona)",
+            "action": "Fetch the venue forecast",
             "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Re-read availability inside the filing window (West Virginia)",
-            "potential_gain": 1,
-            "text": "up to +1"
-          },
-          {
-            "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "text": "up to +1 once re-read availability inside the filing window (West Virginia) and Re-read availability inside the filing window (Arizona) is done"
           }
         ],
         "stability": {
@@ -1698,8 +1690,8 @@
           {
             "kind": "market",
             "key": "market_gap",
-            "points": 4.93,
-            "text": "The market is 4.9 pts away from EdgeDesk’s number, toward Arizona (market: Arizona -2.5)"
+            "points": 4.43,
+            "text": "The market is 4.4 pts away from EdgeDesk’s number, toward Arizona (market: Arizona -3.0)"
           }
         ]
       },
@@ -1710,20 +1702,20 @@
         "focus": {
           "team": "Arizona",
           "side": "away",
-          "line": -2.5,
+          "line": -3,
           "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "Arizona -2.5 (price not captured) at theScore Bet"
+          "book": "BetMGM",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Arizona -3.0 (price not captured) at BetMGM"
         },
         "other": {
           "team": "West Virginia",
           "side": "home",
-          "line": 2.5,
+          "line": 3,
           "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T18:50:01.273+00:00",
-          "text": "West Virginia +2.5 (price not captured) at theScore Bet"
+          "book": "BetMGM",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "West Virginia +3.0 (price not captured) at BetMGM"
         },
         "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
@@ -1927,7 +1919,7 @@
       "EdgeDesk’s line is West Virginia +7.4 on a neutral read of the two teams, before any book is consulted. Projected total 55.9.",
       "West Virginia wins 31% of the time in EdgeDesk’s simulation, Arizona 69%.",
       "Eight games in ten land between -29.4 and +12.6 for West Virginia. A single result inside that band tells you nothing new about either team.",
-      "The market has West Virginia +2.5 at captured consensus · 1 book · best at theScore Bet, 4.9 points from EdgeDesk’s number.",
+      "The market has West Virginia +3.0 at captured consensus · 1 book · best at BetMGM, 4.4 points from EdgeDesk’s number.",
       "Arizona quarterback: Noah Fifita — started the last game; no announcement for this one.",
       "West Virginia quarterback: Michael Hawkins Jr. — started the last game; no announcement for this one."
     ],
@@ -1942,6 +1934,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T22:36:37.858Z"
+    "at": "2026-10-06T23:03:07.900Z"
   }
 }

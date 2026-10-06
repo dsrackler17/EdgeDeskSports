@@ -21,8 +21,8 @@
   "game_time": "2026-10-08T23:00:00.000Z",
   "game_when_label": "2026-10-08 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T22:36:37.858Z",
-  "generated_at": "2026-10-06T22:36:37.858Z",
+  "updated_at": "2026-10-06T23:03:07.900Z",
+  "generated_at": "2026-10-06T23:03:07.900Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at FanDuel and Hard Rock Bet on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetMGM and Hard Rock Bet on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -1554,9 +1554,9 @@
       "difference_n": 5.350528435887512,
       "total_model": "52.3",
       "total_market": "52.5",
-      "book": "captured consensus (stale) · 1 book · best at FanDuel",
-      "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "4 hours old",
+      "book": "captured consensus · 1 book · best at BetMGM",
+      "captured": "2026-10-06T23:00:13.589+00:00",
+      "capture_age": "0 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1571,10 +1571,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "NO_MARKET",
-        "label": "STALE MARKET",
-        "rule": "stale_market",
-        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
+        "key": "WORTH_RESEARCHING",
+        "label": "WORTH RESEARCHING",
+        "rule": "research_gap",
+        "means": "EdgeDesk differs from the market by 5.4 pts toward Liberty, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
       },
       "disagreement": null,
       "fair": {
@@ -1594,9 +1594,9 @@
         "market_line_text": "Liberty -13.5",
         "market_home_margin": 13.5,
         "favorite_differs": false,
-        "source": "captured consensus (stale) · 1 book · best at FanDuel",
-        "as_of": "2026-10-06T18:50:01.273+00:00",
-        "stale": true,
+        "source": "captured consensus · 1 book · best at BetMGM",
+        "as_of": "2026-10-06T23:00:13.589+00:00",
+        "stale": false,
         "measured_from": "raw",
         "note": null
       },
@@ -1606,11 +1606,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 81,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "81 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: Sam Houston’s availability sources refused",
-        "score": 81,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1636,13 +1636,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 11.6,
+            "score": 14.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.3,
+            "score": 13.2,
             "max": 15
           },
           {
@@ -1666,9 +1666,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Refresh the market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Resolve Liberty’s starter conflict",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1704,8 +1704,28 @@
         ]
       },
       "best_available_line": {
-        "available": false,
-        "reason": "every captured quote is past its freshness limit, so none is shown as available"
+        "available": true,
+        "single_book": true,
+        "n_books": 1,
+        "focus": {
+          "team": "Liberty",
+          "side": "home",
+          "line": -13.5,
+          "price_american": null,
+          "book": "BetMGM",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Liberty -13.5 (price not captured) at BetMGM"
+        },
+        "other": {
+          "team": "Sam Houston",
+          "side": "away",
+          "line": 13.5,
+          "price_american": null,
+          "book": "BetMGM",
+          "captured_at": "2026-10-06T23:00:13.589+00:00",
+          "text": "Sam Houston +13.5 (price not captured) at BetMGM"
+        },
+        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
       },
       "projection_status": {
         "key": "STABLE",
@@ -1907,7 +1927,7 @@
       "EdgeDesk’s line is Liberty -18.9 on a neutral read of the two teams, before any book is consulted. Projected total 52.3.",
       "Liberty wins 90% of the time in EdgeDesk’s simulation, Sam Houston 10%.",
       "Eight games in ten land between -3.1 and +38.9 for Liberty. A single result inside that band tells you nothing new about either team.",
-      "The market has Liberty -13.5 at captured consensus (stale) · 1 book · best at FanDuel, 5.4 points from EdgeDesk’s number.",
+      "The market has Liberty -13.5 at captured consensus · 1 book · best at BetMGM, 5.4 points from EdgeDesk’s number.",
       "Sam Houston quarterback: Landyn Locke — started the last game; no announcement for this one.",
       "Liberty quarterback: Deshawn Purdie — started the last game; no announcement for this one."
     ],
@@ -1923,6 +1943,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T22:36:37.858Z"
+    "at": "2026-10-06T23:03:07.900Z"
   }
 }
