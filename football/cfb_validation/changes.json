@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-06T13:07:42.161Z",
+ "generated_at": "2026-10-06T14:07:40.987Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-09-30T13:07:37.897Z",
+  "since": "2026-09-30T14:07:30.408Z",
   "changes": [
    {
     "what": "pricing code",
@@ -40,8 +40,8 @@
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 9,
-    "to": 8
+    "from": 5,
+    "to": 20
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -279,10 +279,10 @@
    "game_id": "401860902",
    "game": "San Diego State @ Oregon State",
    "market_then": null,
-   "market_now": -14,
+   "market_now": -14.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -319,7 +319,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-05T18:51:54.845Z",
+   "to_at": "2026-10-06T06:38:25.946Z",
    "old_fair": 1.72,
    "new_fair": 6.45,
    "change": 4.73,
@@ -350,7 +350,7 @@
    "market_now": -9.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -755,7 +755,7 @@
   },
   {
    "from_at": "2026-09-28T00:53:47.573Z",
-   "to_at": "2026-10-06T00:52:51.249Z",
+   "to_at": "2026-10-06T06:38:25.946Z",
    "old_fair": 8.81,
    "new_fair": 5.83,
    "change": -2.98,
@@ -779,11 +779,11 @@
    "game_id": "401871066",
    "game": "New Mexico State @ Florida International",
    "market_then": null,
-   "market_now": -4.75,
+   "market_now": -6.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
@@ -814,12 +814,12 @@
    "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-05T18:51:54.845Z",
+   "to_at": "2026-10-06T06:38:25.946Z",
    "old_fair": -4.93,
    "new_fair": -7.43,
    "change": -2.5,
@@ -843,10 +843,10 @@
    "game_id": "401856823",
    "game": "Arizona @ West Virginia",
    "market_then": null,
-   "market_now": 3.5,
+   "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1538,10 +1538,10 @@
    "game_id": "401858481",
    "game": "Indiana @ Nebraska",
    "market_then": null,
-   "market_now": 7.75,
+   "market_now": 7,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1642,7 +1642,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-06T00:52:51.249Z",
+   "to_at": "2026-10-06T06:38:25.946Z",
    "old_fair": 31.78,
    "new_fair": 32.15,
    "change": 0.37,
@@ -1669,7 +1669,7 @@
    "market_now": -28.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
@@ -1953,7 +1953,7 @@
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-06T00:52:51.249Z",
+   "to_at": "2026-10-06T06:38:25.946Z",
    "old_fair": -9.75,
    "new_fair": -9.75,
    "change": 0,
@@ -1968,10 +1968,10 @@
    "game_id": "401856717",
    "game": "Texas @ Oklahoma",
    "market_then": 7.75,
-   "market_now": 9,
-   "market_change": 1.25,
+   "market_now": 8.5,
+   "market_change": 0.75,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "EDGE MOSTLY PRICED IN"
   }
  ]
