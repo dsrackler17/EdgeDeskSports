@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-06T06:08:14.387Z",
+ "as_of": "2026-10-06T07:07:47.271Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "bdf82d88f28d3ee7",
+ "inputs_key": "187a52cbb0e69130",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 1369,
+   "rows": 1371,
    "mode": "LIVE",
-   "sha1": "bb105f30eca5"
+   "sha1": "ebb3936e4c28"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "6062142bc3e1"
+   "sha1": "032f0c0d0e57"
   },
   {
    "file": "football/params.js",
@@ -52,7 +52,7 @@
   {
    "file": "football/validation/key_numbers.json",
    "mode": "DESCRIPTIVE (final margins)",
-   "sha1": "93c625063d17"
+   "sha1": "af9bbd673a59"
   }
  ],
  "maturity": [
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "1369 decision snapshots issued before kickoff; 66 settled"
+   "note": "1371 decision snapshots issued before kickoff; 66 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 1369,
+  "issued_snapshots": 1371,
   "issued_by_decision": {
-   "NO_DECISION": 688,
-   "PASS": 646,
+   "NO_DECISION": 689,
+   "PASS": 647,
    "WATCH": 35
   },
   "graded_rows": 68,
@@ -15607,56 +15607,56 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-06T00:53:25.800Z",
+  "generated_at": "2026-10-06T06:32:53.289Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0"
     ],
-    "graded": 47,
+    "graded": 48,
     "ats": {
-     "n": 47,
+     "n": 48,
      "w": 27,
-     "l": 16,
+     "l": 17,
      "p": 4,
-     "pct": 62.8,
+     "pct": 61.4,
      "sample": {
       "key": "DESCRIPTIVE_ONLY",
       "label": "Too early to evaluate",
-      "n": 47,
-      "text": "n=47 · Too early to evaluate",
+      "n": 48,
+      "text": "n=48 · Too early to evaluate",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 47,
-     "avg": 0.31,
-     "beat": 26,
+     "n": 48,
+     "avg": 0.34,
+     "beat": 27,
      "flat": 12,
      "lost": 9,
-     "beat_pct": 55.3,
+     "beat_pct": 56.3,
      "sample": {
       "key": "DESCRIPTIVE_ONLY",
       "label": "Too early to evaluate",
-      "n": 47,
-      "text": "n=47 · Too early to evaluate",
+      "n": 48,
+      "text": "n=48 · Too early to evaluate",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 47,
-     "model_mae": 8.71,
-     "close_mae": 8.8,
-     "model_closer_pct": 55.3,
-     "total_n": 47,
-     "model_total_mae": 10.74,
-     "close_total_mae": 10.18
+     "n": 48,
+     "model_mae": 9.04,
+     "close_mae": 9.08,
+     "model_closer_pct": 54.2,
+     "total_n": 48,
+     "model_total_mae": 11.04,
+     "close_total_mae": 10.42
     },
     "brier": {
-     "n": 47,
-     "model": 0.2228
+     "n": 48,
+     "model": 0.2264
     }
    },
    "cfb": {
@@ -15821,10 +15821,10 @@
      },
      {
       "closing_expected_margin": 1.5,
-      "n": 116,
+      "n": 117,
       "learned_mean": 1.88,
-      "actual_mean": 0.29,
-      "gap": 1.58
+      "actual_mean": 0.11,
+      "gap": 1.76
      },
      {
       "closing_expected_margin": 2,
@@ -16568,19 +16568,19 @@
    "ranked": [
     {
      "margin": 3,
-     "mass": 0.15125
+     "mass": 0.15123
     },
     {
      "margin": 7,
-     "mass": 0.09034
+     "mass": 0.09033
     },
     {
      "margin": 6,
-     "mass": 0.06009
+     "mass": 0.06008
     },
     {
      "margin": 10,
-     "mass": 0.05491
+     "mass": 0.0549
     },
     {
      "margin": 4,
@@ -16588,7 +16588,7 @@
     },
     {
      "margin": 14,
-     "mass": 0.04878
+     "mass": 0.04877
     },
     {
      "margin": 1,
@@ -16665,7 +16665,7 @@
    "rule": "primary: mass ≥ 2× the league average over margins 1–21 and ≥ 6%; secondary: ≥ 1.25×"
   },
   "n": {
-   "NFL": 7339,
+   "NFL": 7340,
    "CFB": 11502
   }
  },
