@@ -21,8 +21,8 @@
   "game_time": "2026-10-07T00:00:00.000Z",
   "game_when_label": "2026-10-07 00:00 UTC",
   "published_at": "2026-10-06T10:00:39.414Z",
-  "updated_at": "2026-10-06T18:55:04.438Z",
-  "generated_at": "2026-10-06T18:55:04.438Z",
+  "updated_at": "2026-10-06T19:21:22.949Z",
+  "generated_at": "2026-10-06T19:21:22.949Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -273,7 +273,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T23:00:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
       "home": {
         "team": "Troy",
@@ -351,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T23:30:00.000Z",
-        "retrieved_at": "2026-10-06T16:18:08.242Z"
+        "retrieved_at": "2026-10-06T18:55:49.420Z"
       },
-      "generated_at": "2026-10-06T16:18:47.878Z",
+      "generated_at": "2026-10-06T18:55:48.007Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1572,7 +1572,7 @@
       "total_market": "52.5",
       "book": "captured consensus · 1 book · best at FanDuel",
       "captured": "2026-10-06T18:50:01.273+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "1 hour old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1950,18 +1950,18 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 5, built 2026-10-06. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_d5519a2529c3d796",
+  "snapshot_id": "snap_0db56756dcae7a28",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-07T00:00:00.000Z",
-    "minutes_before_kickoff": 309,
+    "minutes_before_kickoff": 279,
     "published_at": "2026-10-06T10:00:39.414Z",
     "refreshed": false,
-    "at": "2026-10-06T18:50:50.366Z"
+    "at": "2026-10-06T19:21:22.949Z"
   },
   "featured": {
-    "editorial_priority": 39,
+    "editorial_priority": 40,
     "status": "featured",
     "window_label": "Tue night",
     "window_key": "weeknight",
@@ -1972,7 +1972,7 @@
     "home_rank": 65,
     "away_rank": 108,
     "rank_pool": 136,
-    "model_disagreement": null,
+    "model_disagreement": 0.8,
     "manual_override": null,
     "components": [
       {
@@ -1998,10 +1998,10 @@
       },
       {
         "key": "model_disagreement",
-        "label": "No captured market number to disagree with",
-        "points": 0,
+        "label": "EdgeDesk differs from the market by 0.8 points",
+        "points": 1,
         "tier": "EDGEDESK_MODEL",
-        "detail": "the game is scored on its occasion alone"
+        "detail": "Troy -9.7 against Troy -10.5 at captured consensus · 1 book · best at FanDuel — AGREEMENT · the gap earns 1 of a possible 2.6 because the price is current. A gap alone orders no research and implies no expected value."
       }
     ]
   },
@@ -2030,6 +2030,35 @@
       },
       "falsifier": "Southern Miss winning the game outright, or the margin landing on the wrong side of zero.",
       "watch": "Whether Troy is ahead on the scoreboard in a way that looks like Troy -9.7 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Troy -9.7 where the market has Troy -10.5 at captured consensus · 1 book · best at FanDuel — a 0.8 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 0.8,
+      "favours_side": "home",
+      "favours_team": "Troy",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0.8,
+        "unit": "points",
+        "market_margin": 10.5,
+        "market_text": "Troy -10.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Troy -10.5 and Troy -9.7.",
       "observable": true,
       "not_observable_why": null
     },
@@ -2221,11 +2250,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-06T18:50:50.366Z"
+    "at": "2026-10-06T19:21:22.949Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-06T18:50:50.366Z",
+    "at": "2026-10-06T19:21:22.949Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
@@ -2233,6 +2262,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T18:55:04.438Z"
+    "at": "2026-10-06T19:21:22.949Z"
   }
 }
