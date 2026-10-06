@@ -1,8 +1,8 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-06T23:40:27.060Z",
-  "open": 11,
-  "count": 11,
+  "generated_at": "2026-10-06T23:51:04.490Z",
+  "open": 12,
+  "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
   "candidates": [
     {
@@ -151,6 +151,86 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:scoring:general",
+      "sport": "NFL",
+      "category": "scoring",
+      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-13T20:41:25.405Z",
+      "updated_at": "2026-10-06T23:51:04.490Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_01_BUF_HOU:total_miss",
+          "game_id": "2026_01_BUF_HOU",
+          "season": 2026,
+          "week": 1,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 45.9.",
+          "result": "The game finished with 67 points, an error of 21.1.",
+          "severity": "high",
+          "at": "2026-09-13T20:41:25.405Z"
+        },
+        {
+          "lesson_id": "2026_04_ATL_NO:total_miss",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 43.7.",
+          "result": "The game finished with 69 points, an error of 25.3.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:market:price market_gap",
+      "sport": "NFL",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-25T03:20:23.133Z",
+      "updated_at": "2026-10-06T23:51:04.490Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_ATL_GB:contradicted:market",
+          "game_id": "2026_03_ATL_GB",
+          "season": 2026,
+          "week": 3,
+          "team": "Green Bay Packers",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Green Bay Packers -4.8 with a fair total of 44.0, which makes Green Bay Packers the better team here by that margin on this field. EdgeDesk makes it Green Bay Packers -4.8 where the market has Green Bay Packers -6.5 at Pinnacle — a 1.7 points disagreement.",
+          "result": "Green Bay Packers lost by 21 where EdgeDesk projected a 4.8-point edge. Green Bay Packers lost by 21.",
+          "severity": "high",
+          "at": "2026-09-25T03:20:23.133Z"
+        },
+        {
+          "lesson_id": "2026_04_ATL_NO:contradicted:market",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": "New Orleans Saints",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at New Orleans Saints -3.5 with a fair total of 43.7, which makes New Orleans Saints the better team here by that margin on this field. EdgeDesk makes it New Orleans Saints -3.5 where the market has New Orleans Saints -2.5 at Caesars — a 1.0 points disagreement.",
+          "result": "New Orleans Saints lost by 21 where EdgeDesk projected a 3.5-point edge. New Orleans Saints lost by 21.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:market:market_gap price",
       "sport": "NFL",
       "category": "market",
@@ -169,64 +249,6 @@
           "result": "Houston Texans lost by 5. Houston Texans lost by 5 where EdgeDesk projected a 0.5-point edge.",
           "severity": "high",
           "at": "2026-09-13T20:41:25.405Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:scoring:general",
-      "sport": "NFL",
-      "category": "scoring",
-      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-09-13T20:41:25.405Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_01_BUF_HOU:total_miss",
-          "game_id": "2026_01_BUF_HOU",
-          "season": 2026,
-          "week": 1,
-          "team": null,
-          "expectation": "EdgeDesk published a fair total of 45.9.",
-          "result": "The game finished with 67 points, an error of 21.1.",
-          "severity": "high",
-          "at": "2026-09-13T20:41:25.405Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:market:price market_gap",
-      "sport": "NFL",
-      "category": "market",
-      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-25T03:20:23.133Z",
-      "updated_at": "2026-09-25T03:20:23.133Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_03_ATL_GB:contradicted:market",
-          "game_id": "2026_03_ATL_GB",
-          "season": 2026,
-          "week": 3,
-          "team": "Green Bay Packers",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Green Bay Packers -4.8 with a fair total of 44.0, which makes Green Bay Packers the better team here by that margin on this field. EdgeDesk makes it Green Bay Packers -4.8 where the market has Green Bay Packers -6.5 at Pinnacle — a 1.7 points disagreement.",
-          "result": "Green Bay Packers lost by 21 where EdgeDesk projected a 4.8-point edge. Green Bay Packers lost by 21.",
-          "severity": "high",
-          "at": "2026-09-25T03:20:23.133Z"
         }
       ],
       "occurrences": 1,
@@ -372,6 +394,35 @@
           "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
           "severity": "high",
           "at": "2026-10-06T18:25:23.283Z"
+        }
+      ],
+      "occurrences": 1,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:defence:advantage",
+      "sport": "NFL",
+      "category": "defence",
+      "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T23:51:04.490Z",
+      "updated_at": "2026-10-06T23:51:04.490Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_04_ATL_NO:contradicted:defence",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": "New Orleans Saints",
+          "expectation": "New Orleans Saints holds the largest measured edge in this matchup: New Orleans Saints −0.057 (#6 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 19 places on the league board.",
+          "result": "New Orleans Saints 4.64 yards per play against Atlanta Falcons 7.5.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
         }
       ],
       "occurrences": 1,
