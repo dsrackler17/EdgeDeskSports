@@ -2,7 +2,7 @@
 
 SOURCE WEEK: 5  ·  TARGET WEEK: 6  ·  season 2026
 
-Run `cfbw_1e4ba52e374227b508eaa834` — **PUBLISHED**. Model `edgedesk_cfb_v2.1.0`, features `cfb_v2_fv2`, data `856958d811b0`. Freeze instant 2026-10-06T12:00:00.000Z.
+Run `cfbw_b844e472d67f4b87be9758c0` — **PUBLISHED**. Model `edgedesk_cfb_v2.1.0`, features `cfb_v2_fv2`, data `856958d811b0`. Freeze instant 2026-10-06T12:00:00.000Z.
 
 ## Data
 
@@ -13,11 +13,11 @@ Run `cfbw_1e4ba52e374227b508eaa834` — **PUBLISHED**. Model `edgedesk_cfb_v2.1.
 |---|---|---|---|
 | schedule | HEALTHY | — | 1.0 |
 | pbp | HEALTHY | — | 1.0 |
-| roster | HEALTHY | 141.33 | — |
-| injury | DEGRADED | 3.06 | 0.0 |
-| qb_status | HEALTHY | 1.32 | 0.9164 |
-| market | HEALTHY | 0.17 | — |
-| weather | NOT_USED_BY_MODEL | 1.31 | — |
+| roster | HEALTHY | 17.06 | — |
+| injury | DEGRADED | 5.93 | 0.0 |
+| qb_status | HEALTHY | 11.27 | 0.9199 |
+| market | HEALTHY | 1.38 | — |
+| weather | NOT_USED_BY_MODEL | 5.49 | — |
 
 ## Largest rises (overall, points vs an average FBS team)
 
@@ -117,7 +117,7 @@ Run `cfbw_1e4ba52e374227b508eaa834` — **PUBLISHED**. Model `edgedesk_cfb_v2.1.
 
 ## Upcoming week
 
-- games projected: 58 · decisions: {'BET': 0, 'LEAN': 0, 'REVIEW': 0, 'PASS': 59} · model modes: {'FULL': 0, 'DEGRADED_MARKET': 0, 'DEGRADED_AVAILABILITY': 58, 'DEGRADED_PBP': 0, 'FALLBACK': 0}
+- games projected: 58 · decisions: {'BET': 0, 'LEAN': 0, 'REVIEW': 0, 'PASS': 117} · model modes: {'FULL': 0, 'DEGRADED_MARKET': 0, 'DEGRADED_AVAILABILITY': 58, 'DEGRADED_PBP': 0, 'FALLBACK': 0}
 
 High-uncertainty games:
 
@@ -131,21 +131,6 @@ High-uncertainty games:
 - Miami (OH) @ Massachusetts (sigma 16.25): turnover-dependent teams, uncertain team ratings
 
 > Decisions: BET/LEAN/RESEARCH/PASS come from the market layer on frozen rows (shadow_decisions.js). Counts are the frozen rows decided so far this week.
-
-## Projection changes (why the pure number moved)
-
-- game 401871090: +9.10 → +9.34 (+0.23): form +0.14, matchup +0.07, adj_eff +0.03, qb -0.01
-- game 401871051: -5.36 → -5.21 (+0.15): form +0.09, trench_havoc +0.04, adj_eff +0.02
-- game 401871066: +10.22 → +10.08 (-0.13): adj_eff -0.05, matchup -0.04, trench_havoc -0.03, form -0.01
-- game 401870766: +15.01 → +14.77 (-0.24): form -0.15, matchup -0.05, adj_eff -0.04
-- game 401871052: -0.07 → +0.42 (+0.50): form +0.23, matchup +0.19, adj_eff +0.04, base -0.03
-- game 401862794: +4.32 → +5.26 (+0.93): base +0.85, trench_havoc +0.30, adj_eff -0.22, form +0.20
-- game 401869933: +1.29 → +0.86 (-0.43): form +0.54, matchup -0.33, trench_havoc -0.33, qb -0.17
-- game 401858254: +2.22 → +0.46 (-1.76): base -1.23, form -0.60, matchup +0.47, adj_eff -0.35
-- game 401858487: -3.36 → +0.39 (+3.75): form +2.38, adj_eff +0.51, trench_havoc +0.49, matchup +0.23
-- game 401860922: +0.73 → +4.14 (+3.41): form +1.82, adj_eff +0.66, base +0.50, matchup +0.49
-- game 401864519: +1.43 → +5.57 (+4.14): form +3.58, base +0.53, trench_havoc -0.25, matchup +0.18
-- game 401856826: +17.33 → +17.02 (-0.31): adj_eff -0.48, trench_havoc +0.31, matchup -0.22, base +0.05
 
 ## Record vs underlying performance (largest gaps)
 

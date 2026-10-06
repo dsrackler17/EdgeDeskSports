@@ -7,6 +7,19 @@
    "kind": "disagreement",
    "level": "info",
    "message": "Stanford @ Notre Dame: C 43.3 vs D 35.6 (beyond the backtest 99th percentile 7.5)"
+  },
+  {
+   "evidence": {
+    "games": [
+     401870766,
+     401871052,
+     401862794,
+     401869933
+    ]
+   },
+   "kind": "stale_odds",
+   "level": "info",
+   "message": "4 games within 72 h have no line observation"
   }
  ],
  "bet_enabled": false,
@@ -51,21 +64,27 @@
    "mae_v2_vs_v1_games": 13.589,
    "rmse": 17.596,
    "week": 5
+  },
+  {
+   "disagreement_c_d_mean": 1.482,
+   "final": 0,
+   "frozen_games": 58,
+   "week": 6
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.198,
-  "ens_pred_noise_q99": 0.342,
+  "ens_pred": 0.222,
+  "ens_pred_noise_q99": 0.33,
   "ens_sd": 0.292,
-  "ens_sd_noise_q99": 0.342,
-  "pred_total": 0.083,
-  "pred_total_noise_q99": 0.342,
+  "ens_sd_noise_q99": 0.33,
+  "pred_total": 0.089,
+  "pred_total_noise_q99": 0.33,
   "reference_weeks": "week5",
-  "sigma": 0.276,
-  "sigma_noise_q99": 0.342
+  "sigma": 0.266,
+  "sigma_noise_q99": 0.33
  },
- "generated_at": "2026-10-04T15:19:42Z",
+ "generated_at": "2026-10-06T12:10:17Z",
  "learning": {
   "bias": -1.2345714285714287,
   "by_model_version": {
@@ -1780,14 +1799,14 @@
  "research_status_counts": {
   "BET": 0,
   "LEAN": 0,
-  "PASS": 59,
+  "PASS": 117,
   "REVIEW": 0
  },
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
   "final": 56,
-  "frozen_games": 56,
+  "frozen_games": 114,
   "mae": 13.589
  }
 }
