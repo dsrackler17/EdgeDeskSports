@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-06T20:07:40.221Z",
+ "generated_at": "2026-10-06T21:07:50.833Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-09-30T19:36:56.190Z",
+  "since": "2026-09-30T21:07:40.123Z",
   "changes": [
    {
     "what": "pricing code",
@@ -28,7 +28,7 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-09-30T18:52:41.173Z",
+    "from": "2026-09-30T20:37:43.779Z",
     "to": "2026-10-06T18:56:42.733Z"
    },
    {
@@ -36,9 +36,15 @@
     "kind": "FOOTBALL",
     "from": 89,
     "to": 88
+   },
+   {
+    "what": "market coverage (% of slate games with a fresh quote)",
+    "kind": "MARKET",
+    "from": 9,
+    "to": 12
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -489,7 +495,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-06T00:52:51.249Z",
+   "to_at": "2026-10-06T18:56:42.733Z",
    "old_fair": 1.58,
    "new_fair": -2.49,
    "change": -4.07,
@@ -516,7 +522,7 @@
    "market_now": 4,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1309,7 +1315,7 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-09-30T02:47:34.357Z",
@@ -1764,7 +1770,7 @@
   },
   {
    "from_at": "2026-09-28T23:51:45.169Z",
-   "to_at": "2026-10-05T18:51:54.845Z",
+   "to_at": "2026-10-06T18:56:42.733Z",
    "old_fair": 6.63,
    "new_fair": 6.66,
    "change": 0.03,
@@ -1791,7 +1797,7 @@
    "market_now": -1.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
