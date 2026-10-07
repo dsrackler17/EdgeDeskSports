@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-07T00:07:24.000Z",
+ "generated_at": "2026-10-07T01:07:32.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 528,
-    "latest_snapshot_at": "2026-10-07T00:07:24.000Z",
+    "snapshots": 531,
+    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
     "upcoming_games": 64,
-    "avg_confidence_upcoming": 75.8
+    "avg_confidence_upcoming": 76.4
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 785,
-    "latest_snapshot_at": "2026-10-07T00:07:24.000Z",
+    "snapshots": 788,
+    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
     "upcoming_games": 64,
     "avg_confidence_upcoming": 78.8
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 785,
-    "latest_snapshot_at": "2026-10-07T00:07:24.000Z",
+    "snapshots": 788,
+    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
     "upcoming_games": 64,
     "avg_confidence_upcoming": 78.4
    }
@@ -73,56 +73,17 @@
   "data_quality": {
    "games": 64,
    "counts": {
-    "GREEN": 7,
-    "YELLOW": 57,
+    "GREEN": 10,
+    "YELLOW": 54,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 57,
+     "YELLOW": 54,
      "RED": 0
     }
    },
    "not_green": [
-    {
-     "game_id": "401858487",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-10T01:00:00.000Z",
-     "matchup": "Iowa @ Washington"
-    },
-    {
-     "game_id": "401860922",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-10T01:00:00.000Z",
-     "matchup": "Washington State @ Utah State"
-    },
-    {
-     "game_id": "401864519",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-10T01:00:00.000Z",
-     "matchup": "Wyoming @ San José State"
-    },
     {
      "game_id": "401856826",
      "status": "YELLOW",
@@ -827,16 +788,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-07T00:07:24.000Z",
-    "quotes_total": 9165,
+    "last_quote_at": "2026-10-07T01:07:32.000Z",
+    "quotes_total": 9218,
     "last_result_at": "2026-10-04T10:12:51.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 2608,
-   "live_predictions": 2098,
-   "quotes": 9165,
+   "predictions": 2617,
+   "live_predictions": 2107,
+   "quotes": 9218,
    "lines": 1896,
    "results": 341,
    "evaluations": 2229,
@@ -1452,53 +1413,53 @@
    "home": "Washington",
    "away": "Iowa",
    "market": {
-    "current": -1.5,
+    "current": -3,
     "open": -1.5,
     "books": 1,
-    "as_of": "2026-10-06T12:08:09Z",
+    "as_of": "2026-10-06T22:07:32.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-30T03:07:30.000Z",
-     "margin": 0.01,
-     "fair": "PICK",
-     "p_home": 0.5004,
-     "sigma": null,
-     "conf": 75,
-     "dq": "YELLOW",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
+     "margin": 1.3,
+     "fair": "Washington -1.5",
+     "p_home": 0.5353,
+     "sigma": 14.673,
+     "conf": 84,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -1.7,
+     "line": 3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 0.39,
      "fair": "Washington -0.5",
      "p_home": 0.5103,
      "sigma": 15.195,
      "conf": 100,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
-     "gap": -1.11,
-     "line": 1.5,
+     "gap": -2.61,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1507,21 +1468,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 0.54,
      "fair": "Washington -0.5",
      "p_home": 0.5144,
      "sigma": 15.194,
      "conf": 100,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "AWAY",
-     "gap": -0.96,
-     "line": 1.5,
+     "gap": -2.46,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1537,42 +1498,42 @@
    "home": "Utah State",
    "away": "Washington State",
    "market": {
-    "current": null,
-    "open": null,
-    "books": 0,
-    "as_of": "2026-10-06T12:08:09Z",
+    "current": -5.5,
+    "open": -3,
+    "books": 1,
+    "as_of": "2026-10-07T01:07:32.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-30T03:07:30.000Z",
-     "margin": 0.28,
-     "fair": "Utah State -0.5",
-     "p_home": 0.5074,
-     "sigma": null,
-     "conf": 75,
-     "dq": "YELLOW",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
+     "margin": 4.74,
+     "fair": "Utah State -4.5",
+     "p_home": 0.6269,
+     "sigma": 14.645,
+     "conf": 87,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -0.76,
+     "line": 5.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 4.14,
      "fair": "Utah State -4.0",
      "p_home": 0.6039,
@@ -1581,9 +1542,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -1.36,
+     "line": 5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1592,10 +1553,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 4.24,
      "fair": "Utah State -4.0",
      "p_home": 0.6056,
@@ -1604,9 +1565,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -1.26,
+     "line": 5.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1622,42 +1583,42 @@
    "home": "San José State",
    "away": "Wyoming",
    "market": {
-    "current": null,
-    "open": null,
-    "books": 0,
-    "as_of": "2026-10-06T12:08:09Z",
+    "current": -6,
+    "open": -6,
+    "books": 1,
+    "as_of": "2026-10-07T01:07:32.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-30T03:07:30.000Z",
-     "margin": 1.91,
-     "fair": "San José State -2.0",
-     "p_home": 0.5512,
-     "sigma": 14.841,
-     "conf": 75,
-     "dq": "YELLOW",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
+     "margin": 5.94,
+     "fair": "San José State -6.0",
+     "p_home": 0.6575,
+     "sigma": 14.643,
+     "conf": 89,
+     "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -0.06,
+     "line": 6,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 5.57,
      "fair": "San José State -5.5",
      "p_home": 0.6408,
@@ -1666,9 +1627,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -0.43,
+     "line": 6,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1677,10 +1638,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T01:07:32.000Z",
      "margin": 5.45,
      "fair": "San José State -5.5",
      "p_home": 0.639,
@@ -1689,9 +1650,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "side": "AWAY",
+     "gap": -0.55,
+     "line": 6,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10526,8 +10487,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 67,
-  "games_with_verdict": 67,
+  "games_with_market": 70,
+  "games_with_verdict": 70,
   "raw_major_disagreements": 11,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10536,7 +10497,7 @@
   "data_fault": 0,
   "market_fault": 11,
   "verification_not_run": 0,
-  "average_raw_gap": 4.139,
+  "average_raw_gap": 3.997,
   "average_raw_gap_7plus": 10.793,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
