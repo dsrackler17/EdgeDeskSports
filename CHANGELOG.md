@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-10-07 — Growth console: sending (outbound engine, phase 5)
+
+**Only an approved draft, only when the owner presses Send.**
+
+**`supabase/functions/growth_outbound_send`** (new) is the only code that sends outbound email. For each draft it:
+1. verifies the owner (GoTrue, then `growth_outbound_is_owner()` asked as the caller);
+2. claims the send in the database first;
+3. sends through Resend, from `Davis <davis@edgedesksports.com>`, with one Idempotency-Key per draft;
+4. records the answer.
+
+A message that is not one EdgeDesk email to one person is never sent. The function holds no service-role key. It is deployed manually by `.github/workflows/deploy-growth-outbound.yml`.
+
+**`supabase/growth_outbound.sql`** adds:
+- **the claim door** (`growth_outbound_send_claim`): it re-evaluates the prospect, writes the send row through the send trigger (every rule re-checked), marks the draft sent, and returns the message exactly as it must go out. That message carries the footer with the postal address, this send's own opt-out link, and RFC 8058 `List-Unsubscribe` headers;
+- **the result door** (`growth_outbound_send_result`):
+  - a Resend id → `sent`, and a real step-1 prospect becomes `contacted`;
+  - a permanent refusal → `failed`, never retried;
+  - anything else stays claimed, for a retry with the same key;
+- **no second send, ever:**
+  - claiming again returns the same key;
+  - a sent or failed send is never re-sent;
+  - an outcome unknown after 23 hours is abandoned, not retried;
+- **a personal opt-out token on every send** (immutable);
+- **test sends without the opt-out endpoint:** a test send, only ever to the owner's test inbox, needs the postal address and the test inbox; a live send also needs the opt-out endpoint (Phase 6). Settings now return both lists;
+- **`growth_outbound_sends`** lists every send; report rows 21–22.
+
+**`/admin/growth/` → Outbound:**
+- **Send test** / **Send now** on approved cards (asked first);
+- **Send all shown** (the count typed);
+- a **Sends** table with **Try again** for an unanswered send;
+- what live sending still needs;
+- a missing function or Resend key said in words.
+
+**Tests:**
+- `outbound_send.test.js`: 48 checks on the deployed function; 9 mutations, all caught;
+- `outbound_send_sql.test.js`: 46 checks; 10 mutations, all caught;
+- console e2e: 128;
+- earlier suites: all passing.
+
 ## 2026-10-07 — Growth console: the review queue (outbound engine, phase 4)
 
 **Software may draft and queue; only the owner approves, and approving sends nothing.**

@@ -65,6 +65,8 @@ on:
       - 'lib/edgedesk_auth.js'
       - 'tools/growth/**'
       - 'supabase/growth_outbound.sql'
+      - 'supabase/functions/growth_outbound_send/**'
+      - '.github/workflows/deploy-growth-outbound.yml'
       - 'admin/affiliates/**'
       - 'index.html'
       - 'app.html'
@@ -130,6 +132,10 @@ jobs:
       # answer exactly true; every other answer, and every failure, refuses.
       - name: The outbound Edge Functions' owner check refuses everything but a verified owner
         run: node tools/growth/outbound_auth.test.js
+      # The deployed send function itself, against a mocked GoTrue, PostgREST and
+      # Resend: owner first, claim before send, one key per draft, no second send.
+      - name: The send function sends only a claimed, approved draft, once, as the owner
+        run: node tools/growth/outbound_send.test.js
       - name: The AI desk answers the reader's research from their own rows
         run: node tools/intelligence/mine.test.js
       - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
@@ -192,6 +198,8 @@ jobs:
       # they confirm (all or nothing); approving sends nothing.
       - name: The review queue approves only what the owner confirms, within the content rules
         run: node tools/growth/outbound_review_sql.test.js
+      - name: A send is claimed before it is sent, once per draft, and never sent twice
+        run: node tools/growth/outbound_send_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

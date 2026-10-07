@@ -366,8 +366,8 @@ setTimeout(() => { console.log('FAIL — admin session: the suite did not finish
       fn: (name, bearer) => bearer === B ? res(200, { ok: true, fn: name }) : res(401, { code: 401, message: 'Invalid JWT' })
     });
     const S = make(memStore({ [SKEY]: JSON.stringify(stored(A, 'rt-a', sec() + 1800)) }), sb);
-    const r = await S.invoke('growth-send-approved', { draft_id: 1 });
-    chk('functions gateway 401 "Invalid JWT" → refresh, retry once, succeed', r && r.fn === 'growth-send-approved', r);
+    const r = await S.invoke('growth_outbound_send', { draft_id: 1 });
+    chk('functions gateway 401 "Invalid JWT" → refresh, retry once, succeed', r && r.fn === 'growth_outbound_send', r);
     eq('… two attempts', sb.log.filter((e) => /functions\/v1/.test(e.url)).length, 2);
     chk('the caller cannot override the bearer', (await (async () => {
       const sb2 = fakeSupabase({ rpc: (n, b) => res(200, { bearer: b }) });

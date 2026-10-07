@@ -215,6 +215,7 @@ ul.claims li.badc b{color:var(--neg)}
     <div id="tabOutbound" class="hide" role="tabpanel" aria-labelledby="tabBtnOutbound">
       <div class="chips" id="obChips"></div>
       <div class="block hide" id="obBlock" role="status"></div>
+      <div class="note hide" id="obLiveNote" role="status"></div>
       <div class="msg err hide" id="obMsg" role="alert"></div>
       <div class="row" style="margin-top:10px"><span class="sp"></span><button class="g sm" id="obReload" type="button">Refresh outbound</button></div>
 
@@ -230,10 +231,17 @@ ul.claims li.badc b{color:var(--neg)}
           <span class="sub" id="rqTotal"></span><span class="sp"></span>
           <button type="button" class="g sm" id="rqFixture" title="A test prospect at your own test inbox, with a draft to review">Test draft for my inbox</button>
           <button type="button" id="rqBatch" disabled>Approve selected (0)</button>
+          <button type="button" class="hide" id="rqSendAll">Send all shown (0)</button>
         </div>
         <div class="msg" id="rqMsg" role="status" aria-live="polite"></div>
         <div id="rqCards"></div>
-        <div class="note">Approving sends nothing. Each card is the message exactly as it would go out, and what it says about the person with the evidence behind it. Approving several asks you to type how many, and the database approves exactly that many or none.</div>
+        <div class="note">Approving sends nothing. Each card is the message exactly as it would go out, and what it says about the person with the evidence behind it. Approving several asks you to type how many, and the database approves exactly that many or none. An approved draft goes out only when you press Send — in test mode, only to your test inbox.</div>
+      </div>
+
+      <h2>Sends</h2>
+      <div class="card">
+        <div class="tw"><table id="obSends"></table></div>
+        <div class="note">Every email handed to Resend, newest first. A send is written down before Resend is called, with one key per draft, so "Try again" can never send it twice; an answer still missing after 23 hours is marked failed rather than retried. Delivery, bounces and replies arrive with the next phase.</div>
       </div>
 
       <h2>Prospects</h2>
@@ -326,7 +334,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261005a"></script>
-<script src="/admin/growth/outbound.js?v=20261007b"></script>
+<script src="/admin/growth/outbound.js?v=20261007c"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";

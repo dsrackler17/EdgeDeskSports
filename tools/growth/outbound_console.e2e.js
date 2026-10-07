@@ -47,6 +47,15 @@
     23  approved, not sent: withdraw the approval; no batch there
     24  the test-draft button, and its refusal without a test inbox
     25  write a draft from a prospect: claims with their evidence and words
+    26  SENDING (Phase 5): the Sends table (TEST/LIVE, who for, status, why,
+        "Try again" only for an unanswered send); before going live, what
+        live sending still needs
+    27  Send asks first, names the inbox, and calls the send function with
+        exactly that draft
+    28  "Send all shown": the count must be typed; a wrong number sends nothing
+    29  the function's refusals are said in words: the database's reason, a
+        function not deployed, no Resend key
+    30  "Try again" asks, and resends the same draft (the same key)
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -92,7 +101,7 @@ function freshSettings() {
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
-    send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 } };
+    send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 } };
 }
 const XSS = '<img src=x onerror="window.__pwned=1">';
 const DETAIL = { ok: true,
@@ -122,6 +131,13 @@ const card = (o) => ({
   prospect: { id: o.pid, full_name: o.name, organization: o.org || null, fit_score: o.fit == null ? null : o.fit, status: o.pstatus || 'ready_for_review', is_test: !!o.test, gates: o.gates || [], email: o.email },
   lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [],
   preview: { test: true, from: 'Davis <davis@edgedesksports.com>', to: 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject, body: o.body, footer: MAILFOOT } });
+const SENDS = [
+  { id: 's1', draft_id: 'd7', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'pat@cfbnumbers.test',
+    subject: 'Your CFB ratings', delivery_status: 'sent', claimed_at: '2026-10-07T10:00:00Z', sent_at: '2026-10-07T10:00:02Z', attempts: 1 },
+  { id: 's2', draft_id: 'd8', prospect_id: 'p2', full_name: 'Lo Confidence', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'lo@maybe.test',
+    subject: 'Hello', delivery_status: 'claimed', claimed_at: '2026-10-07T10:05:00Z', last_error: 'Resend answered 503', attempts: 2 },
+  { id: 's3', draft_id: 'd6', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: false, sequence_number: 1, recipient: 'pat@cfbnumbers.test', intended_recipient: 'pat@cfbnumbers.test',
+    subject: '<b>bold</b>', delivery_status: 'failed', claimed_at: '2026-10-07T09:00:00Z', failure_reason: 'refused by Resend (422): Invalid `to` field', attempts: 1 }];
 const QPENDING = { ok: true, status: 'pending_review', total: 3, rows: [
   card({ id: 'dt', pid: 'pt', name: 'EdgeDesk Test Prospect', test: true, email: 'owner-test@edgedesk.test', subject: '[TEST] EdgeDesk outbound check', body: 'Hi,\n\nThis message is the EdgeDesk outbound pipeline check.' }),
   card({ id: 'd1', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Your CFB ratings',
@@ -160,13 +176,21 @@ const PROSPECTS = { total: 2, rows: [
     await ctx.addInitScript(([k, v]) => { try { if (!sessionStorage.getItem('__seeded')) { localStorage.setItem(k, v); sessionStorage.setItem('__seeded', '1'); } } catch (_) {} },
       [SKEY, JSON.stringify({ access_token: T, refresh_token: 'rt', expires_at: nowSec() + 3600, user: { id: o.role + '-id', email: o.role + '@edgedesk.test' } })]);
     const calls = [];
-    const state = { batchRefuse: false, noInbox: false };
+    const state = { batchRefuse: false, noInbox: false, fn: 'ok' };
     let st = freshSettings(), outboundData = 0;
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       const reply = (s, b) => route.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(b) });
       if (/auth\/v1\/logout/.test(url)) { calls.push(['logout']); return route.fulfill({ status: 204, body: '' }); }
+      if (/functions\/v1\/growth_outbound_send/.test(url)) {
+        const body = JSON.parse(req.postData() || '{}');
+        calls.push(['fn:growth_outbound_send', body, req.headers().authorization]);
+        if (state.fn === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
+        if (state.fn === 'nokey') return reply(503, { ok: false, reason: 'resend_not_configured', code: 'resend_not_configured' });
+        if (state.fn === 'refused') return reply(200, { ok: true, sent: 0, results: body.draft_ids.map((d) => ({ draft_id: d, ok: false, reason: 'refused', detail: 'the daily send cap (20) is reached' })) });
+        return reply(200, { ok: true, sent: body.draft_ids.length, results: body.draft_ids.map((d) => ({ draft_id: d, ok: true, state: 'sent', test: true, to: 'owner-test@edgedesk.test' })) });
+      }
       const m = /rest\/v1\/rpc\/([a-z_]+)/.exec(url);
       if (!m) return route.fulfill({ status: 204, body: '' });
       const name = m[1], body = JSON.parse(req.postData() || '{}');
@@ -189,6 +213,7 @@ const PROSPECTS = { total: 2, rows: [
           if (o.noQueue) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
           return reply(200, body.p_status === 'approved' ? QAPPROVED : QPENDING);
         }
+        if (name === 'growth_outbound_sends') return reply(200, SENDS);
         if (name === 'growth_outbound_draft_approve') return reply(200, { ok: true, draft_id: body.p_draft_id, approved_hash: body.p_content_hash });
         if (name === 'growth_outbound_drafts_approve_batch') {
           if (state.batchRefuse) return reply(200, { ok: false, reason: 'not_all_approvable', refused: [{ draft_id: 'd1', reason: 'below_gate', gates: ['fit score below minimum'] }] });
@@ -516,7 +541,7 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#rqSeg [data-q="approved"]'); await settle(t.page, 600);
     chk('23 the approved list is asked for', last('growth_outbound_review_queue')[1].p_status === 'approved' && /1 approved, not sent/.test(await text(t.page, '#rqTotal')));
     chk('23 an approved card can be withdrawn, cannot be selected, and there is no batch here', await visible(t.page, '[data-unapprove="d9"]')
-      && !(await t.page.$('[data-pick="d9"]')) && !(await visible(t.page, '#rqBatch')) && /Nothing has been sent/.test(await text(t.page, '[data-draft="d9"]')));
+      && !(await t.page.$('[data-pick="d9"]')) && !(await visible(t.page, '#rqBatch')) && /Not sent yet/.test(await text(t.page, '[data-draft="d9"]')));
     t.setAnswers([true]);
     await t.page.click('[data-unapprove="d9"]'); await settle(t.page, 600);
     chk('23 withdrawing asks, then takes the approval back', /Withdraw this approval\?/.test(t.dialogs.slice(-1)[0].msg) && last('growth_outbound_draft_unapprove')[1].p_draft_id === 'd9');
@@ -546,6 +571,64 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#wdCreate'); await settle(t.page, 700);
     chk('25 accepted, it is in the review queue', countOf('growth_outbound_draft_create') === 2 && /Your draft is in the review queue/.test(await text(t.page, '#rqMsg')));
     chk('18-25 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 26–30. sending ─────────────────────────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    const fnCalls = () => t.calls.filter((c) => c[0] === 'fn:growth_outbound_send');
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    const sends = await text(t.page, '#obSends');
+    chk('26 the Sends table: test sends to the test inbox, for whom, with their status and why', /owner-test@edgedesk\.testfor pat@cfbnumbers\.test/.test(sends)
+      && /sent/.test(sends) && /Resend answered 503/.test(sends) && /refused by Resend \(422\): Invalid `to` field/.test(sends), sends.slice(0, 400));
+    chk('26 … text from a subject stays text', await t.page.evaluate(() => !document.querySelector('#obSends b')) && /<b>bold<\/b>/.test(sends));
+    chk('26 "Try again" only for a send still waiting for an answer', await visible(t.page, '[data-resend="d8"]') && !(await t.page.$('[data-resend="d7"]')) && !(await t.page.$('[data-resend="d6"]')));
+    chk('26 in test mode, what live sending still needs is said', /Before going live, sending to real people also needs: no postal address is configured.*the opt-out endpoint is not configured yet/.test(await text(t.page, '#obLiveNote')));
+    chk('26 nothing is sent by opening the page', fnCalls().length === 0);
+
+    await t.page.click('#rqSeg [data-q="approved"]'); await settle(t.page, 600);
+    chk('27 an approved TEST card offers "Send test"', /Send test/.test(await text(t.page, '[data-send="d9"]')));
+    t.setAnswers([false]);
+    await t.page.click('[data-send="d9"]'); await settle(t.page);
+    chk('27 Send asks first, naming the test inbox; declining sends nothing', /Send this TEST email to your test inbox, owner-test@edgedesk\.test\?/.test(t.dialogs.slice(-1)[0].msg) && fnCalls().length === 0);
+    t.setAnswers([true]);
+    await t.page.click('[data-send="d9"]'); await settle(t.page, 700);
+    const f1 = fnCalls()[0];
+    chk('27 accepted, the send function is asked for exactly that draft, with the owner\'s own session', f1 && JSON.stringify(f1[1]) === JSON.stringify({ draft_ids: ['d9'] })
+      && /^Bearer /.test(f1[2] || ''), f1);
+    chk('27 … and the answer is said', /Sent 1 email to your test inbox\./.test(await text(t.page, '#rqMsg')));
+
+    await t.page.click('#rqSeg [data-q="approved"]'); await settle(t.page, 600);
+    chk('28 "Send all shown" counts what is shown', /Send all shown \(1\)/.test(await text(t.page, '#rqSendAll')) && await visible(t.page, '#rqSendAll'));
+    t.setAnswers(['2']);
+    await t.page.click('#rqSendAll'); await settle(t.page);
+    chk('28 the count must be typed; a wrong number sends nothing', fnCalls().length === 1 && /Nothing was sent: you typed "2" for 1/.test(await text(t.page, '#rqMsg'))
+      && /all to your test inbox/.test(t.dialogs.slice(-1)[0].msg));
+    t.setAnswers(['1']);
+    await t.page.click('#rqSendAll'); await settle(t.page, 700);
+    chk('28 typed right, it sends exactly those', fnCalls().length === 2 && JSON.stringify(fnCalls()[1][1]) === JSON.stringify({ draft_ids: ['d9'] }));
+
+    t.state.fn = 'refused';
+    await t.page.click('#rqSeg [data-q="approved"]'); await settle(t.page, 600);
+    t.setAnswers([true]); await t.page.click('[data-send="d9"]'); await settle(t.page, 700);
+    chk('29 the database\'s refusal is said in its words', /Nothing was sent\. Pat Analyst — the daily send cap \(20\) is reached/.test(await text(t.page, '#rqMsg')), await text(t.page, '#rqMsg'));
+    t.state.fn = 'missing';
+    t.setAnswers([true]); await t.page.click('[data-send="d9"]'); await settle(t.page, 700);
+    chk('29 a send function that is not deployed says so — and the tab stays', /The send function is not deployed yet/.test(await text(t.page, '#rqMsg')) && await visible(t.page, '#tabOutbound'));
+    t.state.fn = 'nokey';
+    t.setAnswers([true]); await t.page.click('[data-send="d9"]'); await settle(t.page, 700);
+    chk('29 no Resend key says so', /RESEND_API_KEY is not set/.test(await text(t.page, '#rqMsg')));
+
+    t.state.fn = 'ok';
+    t.setAnswers([false]);
+    const before = fnCalls().length;
+    await t.page.click('[data-resend="d8"]'); await settle(t.page);
+    chk('30 "Try again" asks first, saying it can never go out twice; declining sends nothing', fnCalls().length === before && /can never go out twice/.test(t.dialogs.slice(-1)[0].msg));
+    t.setAnswers([true]);
+    await t.page.click('[data-resend="d8"]'); await settle(t.page, 700);
+    chk('30 … accepted, the same draft is sent again (the same key, server-side)', JSON.stringify(fnCalls().slice(-1)[0][1]) === JSON.stringify({ draft_ids: ['d8'] }));
+    chk('26-30 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 
