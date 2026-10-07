@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_signal_scorecards_v1",
- "generated_at": "2026-10-07T19:07:33.006Z",
+ "generated_at": "2026-10-07T20:07:45.939Z",
  "what": "the rare large disagreements, from the gate verdict FROZEN on each LIVE snapshot (never re-judged after the fact)",
  "verified": {
   "summary": {
@@ -20,10 +20,10 @@
  },
  "investigate": {
   "summary": {
-   "n": 13,
+   "n": 15,
    "settled": 12,
    "label": "small sample",
-   "average_gap": 10.3,
+   "average_gap": 10.12,
    "market_moved_toward_pct": 12.5,
    "positive_clv_pct": 8.3,
    "average_clv": -0.62,
@@ -353,11 +353,45 @@
     "favorite_flip": false,
     "closing_market": null,
     "final_margin": null
+   },
+   {
+    "game_id": "401856718",
+    "game": "Ole Miss @ Vanderbilt",
+    "week": 6,
+    "at": "2026-10-07T20:07:34.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 0.41,
+    "market_at_snapshot": -10,
+    "gap": 10.41,
+    "toward": "Vanderbilt",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
+   },
+   {
+    "game_id": "401862799",
+    "game": "Tulsa @ Navy",
+    "week": 6,
+    "at": "2026-10-07T20:07:34.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 9.99,
+    "market_at_snapshot": 2.5,
+    "gap": 7.49,
+    "toward": "Navy",
+    "books": 1,
+    "verdict": "MARKET_FAULT",
+    "root_cause": "THIN_MARKET",
+    "favorite_flip": false,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "outcomes": {
    "MARKET_MOVED": 1,
-   "BAD_INFORMATION": 12
+   "BAD_INFORMATION": 14
   },
   "outcome_definitions": {
    "LATER_VERIFIED": "a later snapshot passed the gate",
@@ -384,10 +418,10 @@
    "ats_hypothetical": null
   },
   "investigate": {
-   "n": 13,
+   "n": 15,
    "settled": 12,
    "label": "small sample",
-   "average_gap": 10.3,
+   "average_gap": 10.12,
    "market_moved_toward_pct": 12.5,
    "positive_clv_pct": 8.3,
    "average_clv": -0.62,
@@ -421,10 +455,10 @@
  },
  "favorite_flips": {
   "summary": {
-   "n": 6,
+   "n": 7,
    "settled": 6,
    "label": "small sample",
-   "average_gap": 8.6,
+   "average_gap": 7.84,
    "market_moved_toward_pct": 66.7,
    "positive_clv_pct": 33.3,
    "average_clv": 1.08,
@@ -587,6 +621,23 @@
     "close_error": 0.5,
     "edgedesk_closer_than_close": false,
     "ats_hypothetical": "LOSS"
+   },
+   {
+    "game_id": "401858480",
+    "game": "Illinois @ Michigan State",
+    "week": 6,
+    "at": "2026-10-07T20:07:34.000Z",
+    "checkpoint": "T72",
+    "edgedesk_fair": 0.79,
+    "market_at_snapshot": -2.5,
+    "gap": 3.29,
+    "toward": "Michigan State",
+    "books": 1,
+    "verdict": "WORTH_RESEARCHING",
+    "root_cause": null,
+    "favorite_flip": true,
+    "closing_market": null,
+    "final_margin": null
    }
   ],
   "note": "EdgeDesk and the market favoured different teams at the snapshot",
