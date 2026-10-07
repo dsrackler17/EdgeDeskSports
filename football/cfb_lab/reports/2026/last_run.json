@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-07T03:07:30.000Z",
+ "started_at": "2026-10-07T04:07:30.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -12,7 +12,7 @@
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 525
+   "ms": 896
   },
   "market": {
    "ok": true,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-07T03:07:30.000Z",
+      "last_success_at": "2026-10-07T04:07:30.000Z",
       "last_failure_at": null,
-      "calls": 5785,
+      "calls": 5808,
       "failures": 0
      }
     },
@@ -70,38 +70,32 @@
    },
    "dedupe": {
     "received": 1520,
-    "written": 0,
-    "duplicates": 1520,
+    "written": 16,
+    "duplicates": 1504,
     "refused": 0,
     "refusals": {}
    },
-   "written": 0,
+   "written": 16,
    "conflicts": [],
-   "schedule_games": 65,
-   "ms": 1159
+   "schedule_games": 68,
+   "ms": 1405
   },
   "freeze_import": {
    "ok": true,
    "files": 2,
    "imported": 0,
    "skipped": [],
-   "ms": 214
+   "ms": 224
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-07T03:07:30.000Z",
+   "now": "2026-10-07T04:07:30.000Z",
    "season": 2026,
-   "due": 3,
-   "taken": 3,
+   "due": 0,
+   "taken": 0,
    "skipped_no_projection": 0,
-   "by_model": {
-    "edgedesk_cfb_p4_v1.0.0": 1,
-    "edgedesk_cfb_v2.1.0": 1,
-    "edgedesk_cfb_v2.0.0": 1
-   },
-   "by_checkpoint": {
-    "T72": 3
-   },
+   "by_model": {},
+   "by_checkpoint": {},
    "skipped_schedule": {},
    "kickoff_moved": [
     {
@@ -120,7 +114,7 @@
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 525
+   "ms": 529
   },
   "audit": {
    "ok": true,
@@ -129,7 +123,7 @@
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-07T03:07:30.000Z",
+   "now": "2026-10-07T04:07:30.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -145,9 +139,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-07T03:07:30.000Z",
+     "last_success_at": "2026-10-07T04:07:30.000Z",
      "last_failure_at": null,
-     "calls": 252,
+     "calls": 253,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -158,71 +152,71 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-07T03:07:30.000Z",
+     "last_success_at": "2026-10-07T04:07:30.000Z",
      "last_failure_at": null,
-     "calls": 5796,
+     "calls": 5819,
      "failures": 0
     }
    },
    "readings": [
-    124,
+    60,
     390
    ],
-   "results": 0,
+   "results": 1,
    "result_disagreements": [],
    "results_refused": [],
    "lines": {
-    "derived": 0,
-    "written": 0,
+    "derived": 14,
+    "written": 14,
     "conflicts": [],
-    "waiting_for_result": 1
+    "waiting_for_result": 0
    },
-   "evaluations": 0,
-   "miss_reviews": 0,
-   "ms": 1132
+   "evaluations": 28,
+   "miss_reviews": 3,
+   "ms": 1183
   },
   "report": {
    "ok": true,
-   "now": "2026-10-07T03:07:30.000Z",
+   "now": "2026-10-07T04:07:30.000Z",
    "weekly_written": [],
    "research_events": 0,
-   "alerts": 0,
-   "public_graded": 59,
-   "ms": 165
+   "alerts": 1,
+   "public_graded": 60,
+   "ms": 157
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 460
+   "ms": 465
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-07T03:07:30.000Z",
+  "at": "2026-10-07T04:07:30.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
-   "age_h": 1,
+   "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 2549
+   "upcoming_quotes": 2565
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 8.18,
+   "age_h": 9.18,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 14.99,
+   "age_h": 15.99,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
-  "results_newest": "2026-10-04T10:12:51.000Z"
+  "results_newest": "2026-10-07T04:07:30.000Z"
  },
- "finished_at": "2026-10-07T03:07:35.030Z",
+ "finished_at": "2026-10-07T04:07:35.138Z",
  "ok": true
 }
