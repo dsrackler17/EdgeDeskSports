@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-07T02:07:32.000Z",
+ "generated_at": "2026-10-07T03:07:30.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,17 +46,17 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 531,
-    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
+    "snapshots": 532,
+    "latest_snapshot_at": "2026-10-07T03:07:30.000Z",
     "upcoming_games": 64,
-    "avg_confidence_upcoming": 76.4
+    "avg_confidence_upcoming": 76.6
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 788,
-    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
+    "snapshots": 789,
+    "latest_snapshot_at": "2026-10-07T03:07:30.000Z",
     "upcoming_games": 64,
     "avg_confidence_upcoming": 78.8
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 788,
-    "latest_snapshot_at": "2026-10-07T01:07:32.000Z",
+    "snapshots": 789,
+    "latest_snapshot_at": "2026-10-07T03:07:30.000Z",
     "upcoming_games": 64,
     "avg_confidence_upcoming": 78.4
    }
@@ -73,30 +73,17 @@
   "data_quality": {
    "games": 64,
    "counts": {
-    "GREEN": 10,
-    "YELLOW": 54,
+    "GREEN": 11,
+    "YELLOW": 53,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 54,
+     "YELLOW": 53,
      "RED": 0
     }
    },
    "not_green": [
-    {
-     "game_id": "401856826",
-     "status": "YELLOW",
-     "issues": [
-      {
-       "check": "odds_freshness",
-       "status": "YELLOW",
-       "detail": "no market quote captured yet"
-      }
-     ],
-     "kickoff": "2026-10-10T02:15:00.000Z",
-     "matchup": "Iowa State @ BYU"
-    },
     {
      "game_id": "401856712",
      "status": "YELLOW",
@@ -795,8 +782,8 @@
   },
   "alerts": [],
   "ledger": {
-   "predictions": 2617,
-   "live_predictions": 2107,
+   "predictions": 2620,
+   "live_predictions": 2110,
    "quotes": 9248,
    "lines": 1896,
    "results": 341,
@@ -1668,53 +1655,53 @@
    "home": "BYU",
    "away": "Iowa State",
    "market": {
-    "current": -14.5,
+    "current": -10.5,
     "open": -14.5,
     "books": 1,
-    "as_of": "2026-10-06T12:08:09Z",
+    "as_of": "2026-10-07T02:07:32.000Z",
     "sources": [
-     "cfbd"
+     "espn"
     ],
     "stale": false
    },
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "OPEN",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-09-30T03:07:30.000Z",
-     "margin": 13.54,
-     "fair": "BYU -13.5",
-     "p_home": 0.8157,
-     "sigma": 15.06,
-     "conf": 75,
-     "dq": "YELLOW",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": null,
-     "gap": null,
-     "line": null,
+     "prediction_ts": "2026-10-07T03:07:30.000Z",
+     "margin": 13.85,
+     "fair": "BYU -14.0",
+     "p_home": 0.8246,
+     "sigma": 14.844,
+     "conf": 89,
+     "dq": "GREEN",
+     "decision": "LEAN",
+     "status": "LEAN",
+     "side": "HOME",
+     "gap": 3.35,
+     "line": -10.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T03:07:30.000Z",
      "margin": 17.02,
      "fair": "BYU -17.0",
      "p_home": 0.8632,
      "sigma": 15.614,
      "conf": 90,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
-     "gap": 2.52,
-     "line": -14.5,
+     "gap": 6.52,
+     "line": -10.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1723,21 +1710,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "WEEKLY_FREEZE",
+     "checkpoint": "T72",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-06T12:08:07.000Z",
+     "prediction_ts": "2026-10-07T03:07:30.000Z",
      "margin": 17.14,
      "fair": "BYU -17.0",
      "p_home": 0.8634,
      "sigma": 15.712,
      "conf": 88,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
-     "gap": 2.64,
-     "line": -14.5,
+     "gap": 6.64,
+     "line": -10.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10487,8 +10474,8 @@
  "major_disagreement": {
   "what": "the integrity gate’s verdict on V1’s latest market snapshot per game (lib/cfb_disagreement.js), graded like every snapshot",
   "definitions": "docs/cfb-disagreement/DESIGN.md; false extreme = the close did not move toward EdgeDesk AND the result landed on the market’s side (never every losing ticket)",
-  "games_with_market": 70,
-  "games_with_verdict": 70,
+  "games_with_market": 71,
+  "games_with_verdict": 71,
   "raw_major_disagreements": 11,
   "verified_major_disagreements": 0,
   "verified_10plus": 0,
@@ -10497,7 +10484,7 @@
   "data_fault": 0,
   "market_fault": 11,
   "verification_not_run": 0,
-  "average_raw_gap": 3.997,
+  "average_raw_gap": 3.988,
   "average_raw_gap_7plus": 10.793,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
