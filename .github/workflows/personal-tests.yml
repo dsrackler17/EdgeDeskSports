@@ -11,8 +11,9 @@
 #               as the service role.
 #
 # The browser suites (tools/personal/personal_ui.e2e.js and
-# tools/growth/admin_growth_login.e2e.js) need Playwright and are run by hand:
-# npm run personal:e2e, npm run growth:e2e. Nothing here deploys or writes.
+# tools/growth/admin_growth_login.e2e.js, tools/growth/outbound_console.e2e.js)
+# need Playwright and are run by hand: npm run personal:e2e, npm run growth:e2e.
+# Nothing here deploys or writes.
 name: Personal research CI
 
 on:
@@ -63,6 +64,7 @@ on:
       - 'lib/edgedesk_admin_session.js'
       - 'lib/edgedesk_auth.js'
       - 'tools/growth/**'
+      - 'supabase/growth_outbound.sql'
       - 'admin/affiliates/**'
       - 'index.html'
       - 'app.html'
@@ -123,6 +125,11 @@ jobs:
       # words, single-flight across loaders and tabs, never the anon key.
       - name: The operator console's session refreshes, retries once, and never loops or leaks a token
         run: node tools/growth/admin_session.test.js
+      # The check every privileged outbound Edge Function runs first: GoTrue
+      # must accept the token, then the database — asked as the caller — must
+      # answer exactly true; every other answer, and every failure, refuses.
+      - name: The outbound Edge Functions' owner check refuses everything but a verified owner
+        run: node tools/growth/outbound_auth.test.js
       - name: The AI desk answers the reader's research from their own rows
         run: node tools/intelligence/mine.test.js
       - name: The bettor decision layer (engine, tracks, bankroll, renderers) and placed-bet grading
@@ -171,6 +178,12 @@ jobs:
         run: node tools/personal/growth_sql.test.js
       - name: Only a listed operator opens the growth console; nobody can list themselves
         run: node tools/growth/admin_gate_sql.test.js
+      # normal user < affiliate_admin < outbound owner. Every outbound table and
+      # door attacked as anon, a subscriber, a partner, an affiliate admin who is
+      # not an owner and the service role; no self-enrollment; only an owner
+      # approves, only an approved draft can become a send.
+      - name: Only an explicit outbound owner reaches prospect data, approves or triggers a send
+        run: node tools/growth/outbound_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'
