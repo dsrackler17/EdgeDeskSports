@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-07T08:53:31.431Z",
+ "generated_at": "2026-10-07T13:33:56.290Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -78,7 +78,7 @@
  ],
  "summary": {
   "games": 110,
-  "mean": 85.8,
+  "mean": 85.9,
   "median": 88,
   "percentiles": {
    "p10": 79,
@@ -88,7 +88,7 @@
    "p90": 89
   },
   "min": 59,
-  "max": 93,
+  "max": 94,
   "by_grade": [
    {
     "grade": "VERY_STRONG",
@@ -136,7 +136,7 @@
    },
    {
     "n": 13,
-    "mean": 88.6,
+    "mean": 88.7,
     "median": 89,
     "conference": "Big 12"
    },
@@ -178,8 +178,8 @@
    },
    {
     "n": 4,
-    "mean": 86,
-    "median": 88,
+    "mean": 86.3,
+    "median": 88.5,
     "conference": "Pac-12"
    },
    {
@@ -285,7 +285,7 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 108,
-    "points": 526.8
+    "points": 525
    },
    {
     "key": "qb_status",
@@ -332,8 +332,8 @@
    {
     "key": "attribution",
     "label": "Player production attribution incomplete",
-    "games": 3,
-    "points": 5.5
+    "games": 4,
+    "points": 5.3
    },
    {
     "key": "prior_missing",
@@ -385,7 +385,7 @@
    "p90": 89
   },
   "min": 59,
-  "max": 94,
+  "max": 95,
   "by_grade": [
    {
     "grade": "VERY_STRONG",
@@ -433,7 +433,7 @@
    },
    {
     "n": 13,
-    "mean": 88.5,
+    "mean": 88.7,
     "median": 89,
     "conference": "Big 12"
    },
@@ -475,8 +475,8 @@
    },
    {
     "n": 4,
-    "mean": 82.8,
-    "median": 86.5,
+    "mean": 83.5,
+    "median": 88,
     "conference": "Pac-12"
    },
    {
@@ -570,7 +570,7 @@
     "key": "availability",
     "label": "Injury/availability information incomplete",
     "games": 110,
-    "points": 531.4
+    "points": 524.7
    },
    {
     "key": "qb_identity",
@@ -639,6 +639,12 @@
     "points": 2.8
    },
    {
+    "key": "attribution",
+    "label": "Player production attribution incomplete",
+    "games": 2,
+    "points": 1.6
+   },
+   {
     "key": "fcs_rating",
     "label": "Unrated (FCS) opponent",
     "games": 1,
@@ -657,12 +663,6 @@
     "points": 1.8
    },
    {
-    "key": "attribution",
-    "label": "Player production attribution incomplete",
-    "games": 1,
-    "points": 0.8
-   },
-   {
     "key": "player_identity",
     "label": "Injury names unresolved",
     "games": 1,
@@ -671,7 +671,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-07T08:53:22.509Z",
+  "artifact_generated_at": "2026-10-07T13:33:48.806Z",
   "games_with_evidence": 110,
   "summary": {
    "games": 110,
@@ -712,8 +712,8 @@
     "starters_rated": 2113,
     "starters_total": 5256,
     "key_contributors_rated_pct": 36.2,
-    "unrated_meaningful_absences": 36,
-    "unrated_critical_or_major_absences": 7
+    "unrated_meaningful_absences": 30,
+    "unrated_critical_or_major_absences": 5
    },
    "fcs": {
     "rated_teams": 129,
@@ -933,15 +933,15 @@
     "key": "availability",
     "label": "Availability feed",
     "games_affected": 108,
-    "current_points_lost": 790.8,
-    "maximum_recoverable_points": 703,
+    "current_points_lost": 789,
+    "maximum_recoverable_points": 701,
     "games_recoverable": 90,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 421.8,
-    "enrichment_roi": 140.6,
+    "estimated_recoverable_points": 420.6,
+    "enrichment_roi": 140.2,
     "engineering_priority": 1
    },
    {
@@ -1007,16 +1007,16 @@
    {
     "key": "attribution",
     "label": "Player-quality gaps",
-    "games_affected": 3,
-    "current_points_lost": 5.5,
-    "maximum_recoverable_points": 4,
+    "games_affected": 4,
+    "current_points_lost": 5.3,
+    "maximum_recoverable_points": 3,
     "games_recoverable": 2,
     "cost": 4,
     "feasible": 0.3,
     "how": "measured production for linemen needs charting data no public feed carries",
     "recover": "absent starters with no measured player quality",
-    "estimated_recoverable_points": 1.2,
-    "enrichment_roi": 0.3,
+    "estimated_recoverable_points": 0.9,
+    "enrichment_roi": 0.23,
     "engineering_priority": 6
    },
    {
@@ -1083,7 +1083,7 @@
   ],
   "potential": {
    "games": 110,
-   "mean_score": 85.8,
+   "mean_score": 85.9,
    "mean_potential": 96.6,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
@@ -2831,7 +2831,7 @@
      {
       "component": "environment",
       "points": 1.8,
-      "reason": "no forecast for an outdoor game (venue coordinates are known)",
+      "reason": "no forecast for an outdoor game (HTTP 429 x1)",
       "family": "weather",
       "action_key": "weather"
      },
@@ -2866,14 +2866,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
+      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -3052,7 +3052,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -3551,7 +3551,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -3706,7 +3706,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4010,7 +4010,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
+      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4872,7 +4872,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5040,7 +5040,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5095,11 +5095,11 @@
    "legacy_input_coverage": 0.923,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 93,
+    "score": 94,
     "grade": "VERY_STRONG",
     "grade_label": "VERY STRONG",
     "tier": "STRONG",
-    "raw": 92.7,
+    "raw": 93.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -5108,7 +5108,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 15.7,
+      "score": 16.7,
       "max": 20
      },
      "projection_stability": {
@@ -5150,14 +5150,7 @@
      {
       "component": "roster_availability",
       "points": 1.5,
-      "reason": "the impact of Iowa State’s absences cannot be assessed: no graded availability read",
-      "family": "attribution",
-      "action_key": "attribution:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1.5,
-      "reason": "the impact of BYU’s absences cannot be assessed: no graded availability read",
+      "reason": "BYU non-QB absences rate 29/100 team impact (largest: RB1 LJ Martin, out) — measured, not priced into the spread; plus 2 absences with UNKNOWN impact (no measured player quality), 1 in a critical or major role",
       "family": "attribution",
       "action_key": "attribution:home"
      },
@@ -5174,6 +5167,13 @@
       "reason": "BYU: 4 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Iowa State non-QB absences rate 4/100 team impact (largest: S5 Drew Surges, out) — measured, not priced into the spread; plus 4 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "roster_availability",
@@ -5208,12 +5208,12 @@
     "missing": [],
     "next_actions": [],
     "recoverable_by_family": {
-     "attribution": 3,
+     "attribution": 2,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 92,
+    "score": 95,
     "grade": "VERY_STRONG"
    }
   },
@@ -5332,7 +5332,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5811,7 +5811,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5979,7 +5979,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6310,7 +6310,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6664,14 +6664,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -7984,7 +7984,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8337,7 +8337,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -9656,14 +9656,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -10937,7 +10937,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -11253,7 +11253,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -11668,11 +11668,11 @@
    "legacy_input_coverage": 0.846,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 87,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.5,
+    "raw": 87.5,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11681,7 +11681,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 10.4,
+      "score": 11.4,
       "max": 20
      },
      "projection_stability": {
@@ -11737,14 +11737,7 @@
      {
       "component": "roster_availability",
       "points": 1.8,
-      "reason": "no comprehensive report covers Washington State for this game; the impact of Washington State’s absences cannot be assessed: no graded availability read",
-      "family": "availability",
-      "action_key": "availability:away"
-     },
-     {
-      "component": "roster_availability",
-      "points": 1.8,
-      "reason": "no comprehensive report covers Utah State for this game; the impact of Utah State’s absences cannot be assessed: no graded availability read",
+      "reason": "no comprehensive report covers Utah State for this game; Utah State non-QB absences rate 2/100 team impact (largest: S3 Chapman Lewis, questionable) — measured, not priced into the spread; plus 12 absences with UNKNOWN impact (no measured player quality), 2 in a critical or major role",
       "family": "availability",
       "action_key": "availability:home"
      },
@@ -11754,6 +11747,13 @@
       "reason": "Grady Brosterhous — expected (Grady Brosterhous opened the last game with 75% of the dropbacks); measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json); identity not corroborated against the current roster",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.8,
+      "reason": "no comprehensive report covers Washington State for this game; 5 absences with UNKNOWN impact (no measured player quality)",
+      "family": "attribution",
+      "action_key": "attribution:away"
      },
      {
       "component": "source_integrity",
@@ -11806,12 +11806,12 @@
      {
       "action": "Confirm Washington State’s QB availability",
       "key": "availability:away",
-      "potential_gain": 2
+      "potential_gain": 1
      },
      {
       "action": "Confirm Utah State’s QB availability",
       "key": "availability:home",
-      "potential_gain": 2
+      "potential_gain": 1
      },
      {
       "action": "Confirm Utah State’s starting QB (Grady Brosterhous)",
@@ -11820,12 +11820,12 @@
      }
     ],
     "recoverable_by_family": {
-     "availability": 7,
+     "availability": 5,
      "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 85,
+    "score": 88,
     "grade": "STRONG"
    }
   },
@@ -12246,7 +12246,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 38.1h ago and describes evidence from 38.1h ago",
+      "reason": "South Florida’s starter record was re-read 42.7h ago and describes evidence from 42.7h ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -12443,7 +12443,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -12759,7 +12759,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -13280,7 +13280,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13446,7 +13446,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14157,7 +14157,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "South Florida’s starter record was re-read 38.1h ago and describes evidence from 38.1h ago",
+      "reason": "South Florida’s starter record was re-read 42.7h ago and describes evidence from 42.7h ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14336,7 +14336,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
+      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 10.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14474,7 +14474,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Nevada’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Nevada’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15286,7 +15286,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -16735,7 +16735,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -17070,7 +17070,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -17250,7 +17250,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -17641,7 +17641,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Southern Miss’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Southern Miss’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -18687,7 +18687,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Troy’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Troy’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18862,7 +18862,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Sam Houston’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
+      "reason": "Sam Houston’s starter record was re-read 1 min ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -19046,14 +19046,14 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Jacksonville State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Jacksonville State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Kennesaw State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Kennesaw State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19254,7 +19254,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -19439,14 +19439,14 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Florida International’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
+      "reason": "Florida International’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Jacksonville State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Jacksonville State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19650,14 +19650,14 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Kennesaw State’s starter record was re-read 1 min ago and describes evidence from 10.4 days ago",
+      "reason": "Kennesaw State’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 10.3 days ago",
+      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19862,7 +19862,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Florida International’s starter record was re-read 1 min ago and describes evidence from 10.5 days ago",
+      "reason": "Florida International’s starter record was re-read 1 min ago and describes evidence from 10.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -20257,7 +20257,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Sam Houston’s starter record was re-read 1 min ago and describes evidence from 10.7 days ago",
+      "reason": "Sam Houston’s starter record was re-read 1 min ago and describes evidence from 10.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },

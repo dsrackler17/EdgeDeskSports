@@ -1,14 +1,14 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-07T08:53:31.431Z",
+ "generated_at": "2026-10-07T13:33:56.290Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-07T08:53:31.431Z",
-  "reliability_generated_at": "2026-10-07T08:53:31.431Z",
-  "enrichment_generated_at": "2026-10-07T08:53:22.509Z",
+  "at": "2026-10-07T13:33:56.290Z",
+  "reliability_generated_at": "2026-10-07T13:33:56.290Z",
+  "enrichment_generated_at": "2026-10-07T13:33:48.806Z",
   "counts": {
    "games": 110,
-   "mean": 85.8,
+   "mean": 85.9,
    "median": 88,
    "by_band": {
     "STRONG": 87,
@@ -21,7 +21,7 @@
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 22,
-   "unrated_meaningful_absences": 36,
+   "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 1,
    "games_under_two_market_sources": 110,
    "stale_evidence_records": 76,
@@ -522,11 +522,11 @@
    },
    "401856826": {
     "game": "Iowa State @ BYU",
-    "score": 93,
+    "score": 94,
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 1.8,
-     "attribution": 3,
+     "attribution": 2,
      "qb_identity": 1.1,
      "rating_sample": 1,
      "transfer_turnover": 0.3,
@@ -1388,13 +1388,14 @@
    },
    "401860922": {
     "game": "Washington State @ Utah State",
-    "score": 87,
+    "score": 88,
     "grade": "STRONG",
     "fam": {
      "stability": 2.4,
      "qb_status": 4,
-     "availability": 3.6,
+     "availability": 1.8,
      "qb_identity": 1.9,
+     "attribution": 0.8,
      "qb_conflict": 0.8,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
@@ -2506,7 +2507,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-07T06:15:25.756Z",
+  "at": "2026-10-07T08:53:31.431Z",
   "counts": {
    "games": 110,
    "mean": 85.8,
@@ -2531,34 +2532,13 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
+ "what_improved": [
+  "+0.1 mean reliability (85.8 → 85.9)",
+  "-6 unrated meaningful absences (36 → 30)"
+ ],
  "what_degraded": [],
  "why": [],
  "history": [
-  {
-   "at": "2026-09-29T12:43:30.620Z",
-   "counts": {
-    "games": 66,
-    "mean": 83.9,
-    "median": 86.5,
-    "by_band": {
-     "STRONG": 51,
-     "LOW": 3,
-     "ADEQUATE": 11,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 131,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 66,
-    "stale_evidence_records": 76,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-29T13:11:29.596Z",
    "counts": {
@@ -3973,6 +3953,31 @@
     "qb_confirmed": 0,
     "games_lacking_injury_information": 22,
     "unrated_meaningful_absences": 36,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 110,
+    "stale_evidence_records": 76,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-07T13:33:56.290Z",
+   "counts": {
+    "games": 110,
+    "mean": 85.9,
+    "median": 88,
+    "by_band": {
+     "STRONG": 87,
+     "ADEQUATE": 18,
+     "VERY_STRONG": 2,
+     "LOW": 1,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 216,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 30,
     "fcs_games_thin_data": 1,
     "games_under_two_market_sources": 110,
     "stale_evidence_records": 76,
