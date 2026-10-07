@@ -661,9 +661,146 @@ A follow-up written after a reply can never be sent (a follow-up goes only to a 
 - **Read replies automatically.** A person reads `davis@` and marks the reply. Reading the mailbox would need an inbound-mail provider (Resend inbound, or a mailbox API) and its credentials; it is not faked.
 - **Attribute conversions** (a reply that becomes a trial or a subscriber): Phase 10.
 
+## Phase 7: discovery and research
+
+**The engine may find, read, extract and verify. It may not approve, draft or send, and it may not make anything up.** It runs only when the owner presses a button (the scheduled morning run is Phase 9).
+
+### How a person is found
+
+1. **Search** (Discover and research → Search, or Run saved searches). The `growth_outbound_research` Edge Function asks **Brave Search**. Each result becomes a **candidate**, not a prospect:
+   - a page seen before is counted, not added again (tracking tags and `www.` don't fool it);
+   - a page that names a known prospect (their profile or own site) is marked "already a prospect", linked to them;
+   - a page on a domain that asked not to be contacted is marked suppressed and never read.
+2. **Research** a candidate (or "Research the next one", or **Research again** on a prospect). The function reads up to four pages:
+   - the candidate page;
+   - the site's home page;
+   - the about and contact pages it links to.
+3. **Every page is stored as read** (`growth_outbound.pages`): its visible text, its links and its structured data, with a hash the database computes. Pages are never rewritten.
+4. **Facts are quotes.** Claude reads the stored text and proposes facts (name, organization, role, project, audience, fit signals), each with a quote. The JSON-LD structured data on the page is read the same way. Then **every proposal is checked twice**:
+   - in the function: the quote must be on the page (whole words, ignoring case and punctuation), and the claim must be inside the quote;
+   - again by the database (`evidence_prepare`), which refuses the whole request if any item fails.
+
+   What fails is **dropped and reported**, never "fixed". Only a fit signal may describe in other words what its quote shows; it is never a fact an email can cite.
+5. **Own or not is the database's decision** (`engine_source_kind`). The engine cannot claim a page is the prospect's own site or profile.
+   - **Their own profile:** the page's handle is one of the prospect's handles.
+   - **Their own site:** the page is on the prospect's website, nobody else holds that site, and it is not a publisher.
+   - **Anything else** counts as a publication, interview or directory.
+
+   Built-in publishers include ESPN, The Athletic and Action Network; you can add more under `discovery_config.shared_sites`.
+6. **Who they are.** Their own site, and only those profile links that appear on their pages (`rel="me"`, the structured data's `sameAs`, or Claude's pick from the page's links).
+   - A URL or address that already names another prospect is left out, and said so. Two people are never merged.
+   - Rediscovering someone adds to their row.
+7. **Their business address:**
+   - **Published on their own site:** never a role address such as noreply@, privacy@ or abuse@.
+   - **Otherwise from Hunter:** a domain search, taking only an address Hunter lists **for that person's name** at that domain. It is recorded as Hunter's find, with the page where Hunter saw it.
+   - Never a guessed pattern.
+8. **Verified by a provider.** Hunter's email verifier is recorded as its own source:
+   - **"valid"** verifies the address. With the other gates met, the prospect becomes **qualified**: ready for a draft.
+   - **"invalid"** or **"disposable"** marks the address unusable.
+   - **"accept all"** and **"unknown"** verify nothing.
+9. **Fit reasons** come from the catalogue, and each positive one must cite a kept fact. The database scores them.
+
+**The gates do the rest.** A prospect clears identity, research and email only with enough **independent** sources. One page, however many facts it gives, does not. An address on a web page is "unverified" until a verifier or you confirm it.
+
+**What a quote does not prove.** A quote proves the words are on that page. It does not prove Claude read them right. A name quoted from a "thanks to …" line would pass the check. That is why one source never clears the gates, why conflicting sources lower confidence, and why every draft is reviewed by you before anything is sent.
+
+### Politeness and safety
+
+- **robots.txt is obeyed.**
+  - A group naming `EdgeDeskBot` wins over `*`.
+  - The longest rule wins, with Allow on a tie.
+  - An unreachable robots.txt (5xx) keeps the engine out (RFC 9309).
+- **The bot identifies itself** as `EdgeDeskBot/1.0 (+https://edgedesksports.com)`.
+- **What it will fetch:**
+  - https only, on the standard port, with no credentials in the URL;
+  - no IP literals, no reserved names (`localhost`, `.local`, `.internal`, …) and no Supabase or cloud-metadata hosts;
+  - no host that resolves to a private address, when the runtime can resolve DNS.
+  - Every redirect hop is checked again.
+  - Pages over 1.5 MB, and anything that is not a web page, are refused.
+- **X, LinkedIn, Instagram, Facebook, TikTok and Threads** are not fetched (they refuse robots), but a profile link to them still identifies a person.
+- **The daily budget is enforced by the database.** Each provider call is counted before it is made:
+  - searches 20;
+  - pages 150;
+  - Claude reads 30;
+  - email lookups 15;
+  - verifications 30.
+
+  You set each figure; the ceilings written in the SQL are 200 / 2,000 / 400 / 200 / 400. Once a figure is spent, nothing more is called that day.
+
+### Claude
+
+- Called through the official SDK (`npm:@anthropic-ai/sdk`, bundled at deploy), with model `claude-opus-5-5` (`OUTBOUND_RESEARCH_MODEL` to change it), effort `low`, and a JSON-schema output whose fit codes are exactly the catalogue's.
+- **Server-side refusal fallback is on** (`fallbacks: "default"`): a policy decline is retried on the model Anthropic recommends. A final decline means nothing Claude said is used.
+- The prompt treats page content as data, not instructions. A page that tries to steer it can only get words onto the record that are already on that page, and only as a quote.
+- **Cost:** one call per research, roughly 10–15k input tokens. At Opus 5.5 prices ($4 / $20 per million tokens), a few cents per prospect.
+
+### New in the database
+
+- **Tables:**
+  - `research_runs` (never deleted);
+  - `pages` (append-only);
+  - `candidates` (never deleted);
+  - `provider_usage`;
+  - `evidence.page_id`.
+- **The checks:** `quote_in`, `engine_source_kind`, `is_shared_site`, `research_budget`, `discovery_config_problems`. A malformed discovery setting or a figure over the ceiling is refused in words.
+- **Doors** (owner only, called by the function as the owner):
+  - `research_overview`, `research_begin`, `research_spend`, `research_finish`;
+  - `page_record`, `candidates_record`, `research_ingest`;
+  - `candidates`, `candidate`, `candidate_set`.
+- **Report rows 27–29:** the checks themselves, today's budget, the candidates.
+- **Seeds:** the weak test seeds now record directory finds as the owner's, because evidence from the research engine must cite a stored page.
+
+### The console
+
+**Discover and research:**
+- which providers are set up (named by their secret when not) and today's use of each;
+- search and saved searches;
+- the candidate queue (New, Researched, Not a fit, Failed, Already prospects, Dismissed) with Research, Dismiss (asks) and Put back;
+- the saved searches and the daily budget;
+- recent runs, with what each found, read, spent, and why one failed.
+
+Each research answer says:
+- how many facts were recorded and how many dropped (could not be quoted);
+- the address and the verifier's word;
+- the prospect's status.
+
+A prospect also has **Research again**. If the function is not deployed, the page says so and still shows the queue.
+
+### Deploy (in order)
+
+1. Merge the Phase 7 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. Report rows 1–29 should say `ok`.
+3. Add the provider keys under **Supabase → Edge Functions → Secrets**. Each is optional; without one, the console says that provider is not set up, and nothing is faked.
+   - `BRAVE_SEARCH_API_KEY`: [Brave Search API](https://api.search.brave.com/) (a plan includes monthly free credit; the key goes in the `X-Subscription-Token` header).
+   - `HUNTER_API_KEY`: [Hunter](https://hunter.io/api) (domain search and email verifier; a free tier exists).
+   - `ANTHROPIC_API_KEY`: already set if the AI desk is configured (secrets are shared by every function).
+4. **Deploy the function:** Actions → **Deploy outbound Edge Functions** (its tests need PostgreSQL, which the runner has), or `supabase functions deploy growth_outbound_research --no-verify-jwt`.
+5. In the console: **Discover and research** → type a search → Search → **Research** a candidate → open the prospect.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_engine_sql.test.js` | 124 | the budget (cap, ceiling, malformed settings, finished runs); runs (three at once, stale ones failed, finished is final); pages (canonical, hashed here, never rewritten); candidates (rediscovery, duplicates, suppressed domains); **quotes** (not on the page, claim outside the quote, a cut word, an address or audience figure not in its quote, no page, the wrong page, owner-verified or a guess from the engine: each refused, all or nothing); **own** (decided by the database: their site, their profile, never a publisher, never a site or profile somebody else holds); identity (rediscovery adds, another's URL or address left out, no identifier, suppressed); a verifier's word; the gates; owner only, anon nothing. **Mutation-checked:** 31 deliberate breaks, every one caught. |
+| `tools/growth/outbound_research.test.js` | 83 | the **deployed** function against the **real SQL** (a PostgREST stand-in runs every door in PostgreSQL). Brave, Hunter, Claude (the SDK, stubbed by a loader hook) and the web are mocked. It covers: owner only; provider status without keys; discovery; research with made-up facts dropped before the database; their own address, not noreply@; verification; not a fit; Claude declining; no Claude (structured data only); Hunter only for the named person; research again; a database refusal retried without the item; robots.txt; SSRF and redirect re-checks; size and type caps; the fetch budget; each key only to its provider. **Mutation-checked:** 26 deliberate breaks, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 171 | adds the Discover panel: providers and budget, searches, candidates (web text stays text, https links only), Research, next, Dismiss, Research again, saving searches and the budget, the function not deployed |
+| `tools/growth/admin_session.test.js` | 85 | adds: a slow call (the research engine) may wait longer, call by call |
+| earlier suites | all passing | (updated: seventeen tables) |
+
+### Rollback
+
+- **Stop all research at once:** set every daily figure to 0 (Discover and research → Save). Every provider call is then refused by the database.
+- **The function:** `supabase functions delete growth_outbound_research`. The console says it is not deployed and still shows the queue.
+- **The database:** additive. Pages, candidates and runs are history and are kept.
+
+### What Phase 7 does not do
+
+- **Run by itself.** The morning run (find, research, score, draft, queue — never approve or send) is Phase 9.
+- **Write emails.** Drafting from verified evidence is Phase 8.
+- **Read X, LinkedIn or Instagram.** They refuse robots; a profile link still identifies someone, and the owner can add evidence by hand.
+
 ## Next
 
-- **Phase 7:** discovery and research providers (interface first; nothing faked).
-- **Phase 8:** personalization from stored evidence only.
+- **Phase 8:** personalization: drafts written only from stored, quoted evidence, each claim cited.
 - **Phase 9:** the scheduled morning run (find, research, score, draft, queue; never approve or send).
 - **Phase 10:** analytics and attribution.

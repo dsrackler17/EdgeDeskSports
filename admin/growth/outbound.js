@@ -43,6 +43,7 @@
 
   var S = null, OWNER = false, LOADED = false, SETTINGS = null, DETAIL = null, CATALOG = null;
   var QUEUE = 'pending_review', QROWS = [], PICKED = {};
+  var CSTATUS = 'new', BUSY = false;
   var BLOCKERS = {
     postal_address_missing: 'no postal address is configured (required in every commercial email)',
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
@@ -131,7 +132,7 @@
     if ($('obModeTag')) $('obModeTag').classList.add('hide');
     show('growth');
     DETAIL = null; CATALOG = null; QROWS = []; PICKED = {};
-    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
+    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
   function show(which) {
@@ -189,7 +190,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadQueue(), loadSends(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadQueue(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -416,7 +417,9 @@
       + '<div class="row" style="margin-top:8px"><span class="sp"></span><button type="button" id="wdCreate">Put it in the review queue</button></div><div class="msg" id="wdMsg"></div>'
       + '<div class="note">Each thing the email says about them must be in its words and rest on current evidence; a real prospect\'s email says at least one. No promised winnings or locks, $49.99/month, a 7-day free trial, links to edgedesksports.com only.</div>';
 
-    h += '<div class="row" style="margin-top:12px"><span class="sp"></span><button type="button" class="g" id="pdEval">Re-evaluate</button>'
+    h += '<div class="row" style="margin-top:12px"><span class="sp"></span>'
+      + (p.status === 'suppressed' || p.status === 'rejected' ? '' : '<button type="button" class="g" id="pdResearchAgain" title="Read their pages again and record what can be quoted">Research again</button>')
+      + '<button type="button" class="g" id="pdEval">Re-evaluate</button>'
       + '<button type="button" class="g" id="pdResearch">Needs more research</button><button type="button" class="g" id="pdReject">Reject</button></div>';
     if (p.status === 'contacted' || p.status === 'replied') {
       h += '<div class="row" style="margin-top:8px"><span class="sp"></span>'
@@ -519,6 +522,166 @@
     if (!DETAIL) return Promise.resolve();
     var id = DETAIL.prospect.id;
     return S.rpc('growth_outbound_prospect_evaluate', { p_id: id }).then(function () { return refreshAfter(id); }, function (e) { fail('obDetailMsg', e); });
+  }
+
+  /* ── discover and research (Phase 7) ─────────────────────────────── */
+  var RESEARCH_WHY = {
+    search_not_configured: 'Discovery needs a Brave Search API key: set BRAVE_SEARCH_API_KEY in Supabase → Edge Functions → Secrets.',
+    no_queries: 'Type a search, or save some searches below.',
+    search_failed: 'The search provider refused or did not answer.',
+    too_many_running: 'Three research runs are already going; wait for one to finish.',
+    queue_empty: 'No new candidates are waiting.',
+    nothing_read: 'none of their pages could be read',
+    nothing_verifiable: 'nothing on their pages could be quoted, so nothing was recorded',
+    no_page: 'there is no website or profile the engine can read (X and LinkedIn do not let robots in)',
+    suppressed: 'that address or domain asked not to be contacted',
+    not_installed: 'Research arrives with the Phase 7 SQL: run supabase/growth_outbound.sql again.',
+    no_identifier: 'nothing found identifies them again (no address, profile or own site), so no prospect was made',
+    identity_conflict: 'what was found belongs to two different prospects; open them to sort it out',
+    not_found: 'it is no longer there'
+  };
+  function researchWhy(r) { return RESEARCH_WHY[r && (r.reason || r.code)] || (r && (r.detail || r.reason)) || 'it could not be done'; }
+  var BUDGET_KEYS = ['search', 'fetch', 'llm', 'email_finder', 'email_verifier'];
+  function used(b) { return b ? esc(b.used) + ' / ' + esc(b.cap) : '—'; }
+  function provChip(on, what, name, env, b, b2) {
+    return on ? '<span class="chip ok" data-prov="' + esc(what) + '">' + esc(what) + ': ' + esc(name) + ' · ' + used(b) + (b2 ? ' · checks ' + used(b2) : '') + ' today</span>'
+              : '<span class="chip off" data-prov="' + esc(what) + '">' + esc(what) + ': not set up (' + esc(env) + ')</span>';
+  }
+  function paintResearch(prov, ov) {
+    ov = ov || {};
+    var b = ov.budget || {};
+    $('dvProviders').innerHTML = prov
+      ? provChip(prov.search, 'Search', 'Brave', 'BRAVE_SEARCH_API_KEY', b.search) + provChip(prov.llm, 'Reading', 'Claude', 'ANTHROPIC_API_KEY', b.llm)
+        + provChip(prov.email, 'Email', 'Hunter', 'HUNTER_API_KEY', b.email_finder, b.email_verifier)
+        + '<span class="chip">pages read today ' + used(b.fetch) + '</span>'
+      : '';
+    if (document.activeElement !== $('dvQueries')) $('dvQueries').value = (ov.queries || []).join('\n');
+    BUDGET_KEYS.forEach(function (k) { var el = $('dvB_' + k); if (el && document.activeElement !== el) el.value = b[k] ? b[k].cap : ''; });
+    var counts = ov.candidates || {};
+    Array.prototype.forEach.call($('dvSeg').querySelectorAll('button'), function (x) {
+      var k = x.getAttribute('data-c'), base = x.getAttribute('data-label') || x.textContent.replace(/ \(\d+\)$/, '');
+      x.setAttribute('data-label', base);
+      x.textContent = base + (counts[k] ? ' (' + counts[k] + ')' : '');
+      x.classList.toggle('on', k === CSTATUS);
+    });
+    var runs = ov.runs || [];
+    $('dvRuns').innerHTML = '<tr><th>When</th><th>What</th><th>Status</th><th>Found / read</th><th>Spent</th><th>Note</th></tr>'
+      + (runs.length ? runs.map(function (r) {
+        var c = r.counts || {}, sp = c.spent || {};
+        var did = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '') : (c.pages != null ? c.pages + ' page(s), ' + (c.evidence || 0) + ' fact(s)' + (c.dropped ? ', ' + c.dropped + ' dropped' : '') : '');
+        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(r.kind === 'discover' ? 'search' : 'research') + (r.input && r.input.query ? ' <span class="sub">' + esc(clip(r.input.query, 60)) + '</span>' : '') + '</td>'
+          + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td><td>' + esc(did) + '</td>'
+          + '<td>' + esc(Object.keys(sp).map(function (k) { return k + ' ' + sp[k]; }).join(', ')) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
+      }).join('') : '<tr><td colspan="6">No research has run yet.</td></tr>');
+  }
+  function loadResearch() {
+    if (!OWNER) return Promise.resolve();
+    return S.invoke('growth_outbound_research', { action: 'status' }).then(function (r) { paintResearch(r.providers, r.overview); }, function (e) {
+      // the function is not deployed (or failing): the database can still show the queue
+      return S.rpc('growth_outbound_research_overview', {}).then(function (ov) {
+        paintResearch(null, ov);
+        $('dvProviders').innerHTML = '<span class="chip off">The research function is not deployed: deploy supabase/functions/growth_outbound_research (docs/growth-outbound.md, Phase 7)</span>';
+      }, function (e2) {
+        if (e2 && e2.kind === 'not_installed') { $('dvCands').innerHTML = '<tr><td>Discovery arrives with the Phase 7 SQL: run supabase/growth_outbound.sql again.</td></tr>'; return 'none'; }
+        throw e2;
+      });
+    }).then(function (x) { if (x !== 'none') return loadCandidates(); });
+  }
+  function loadCandidates() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_candidates', { p_status: CSTATUS, p_limit: 50 }).then(function (rows) {
+      rows = rows || [];
+      $('dvCands').innerHTML = '<tr><th>Found</th><th>Page</th><th>Search</th><th class="r">Seen</th><th>Status</th><th></th></tr>'
+        + (rows.length ? rows.map(function (c) {
+          var act = '';
+          if (c.status !== 'suppressed' && c.status !== 'researched' && c.status !== 'duplicate') act += '<button type="button" class="g sm" data-research="' + esc(c.id) + '">Research</button> ';
+          if (c.status === 'new') act += '<button type="button" class="g sm" data-cdismiss="' + esc(c.id) + '">Dismiss</button>';
+          if (c.status === 'dismissed' || c.status === 'not_a_fit' || c.status === 'failed') act += '<button type="button" class="g sm" data-crequeue="' + esc(c.id) + '">Put back</button>';
+          return '<tr><td>' + when(c.last_seen_at) + '</td><td class="wrap">' + link(c.url, clip(c.title || c.url, 90)) + (c.snippet ? '<div class="sub">' + esc(clip(c.snippet, 200)) + '</div>' : '') + '<div class="sub mono">' + esc(clip(c.url, 90)) + '</div></td>'
+            + '<td class="wrap">' + esc(clip(c.query || '', 80)) + '</td><td class="r">' + esc(c.times_seen) + '</td>'
+            + '<td><span class="pill ' + (c.status === 'failed' || c.status === 'suppressed' ? 'bad' : c.status === 'new' ? 'test' : 'on') + '">' + esc(c.status.replace(/_/g, ' ')) + '</span>'
+            + (c.status_reason ? '<div class="sub">' + esc(clip(c.status_reason, 160)) + '</div>' : '')
+            + (c.prospect_id ? '<div><button type="button" class="lnk" data-open="' + esc(c.prospect_id) + '">' + esc(c.full_name || 'open prospect') + '</button></div>' : '') + '</td>'
+            + '<td>' + act + '</td></tr>';
+        }).join('') : '<tr><td colspan="6">' + (CSTATUS === 'new' ? 'No new candidates. Search the web above.' : 'Nothing here.') + '</td></tr>');
+      setBusy(BUSY);
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { $('dvCands').innerHTML = '<tr><td>Discovery arrives with the Phase 7 SQL: run supabase/growth_outbound.sql again.</td></tr>'; return; }
+      throw e;
+    });
+  }
+  function setBusy(on) {
+    BUSY = !!on;
+    ['dvSearch', 'dvSaved', 'dvNext'].forEach(function (id) { if ($(id)) $(id).disabled = BUSY; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-research],#pdResearchAgain'), function (x) { x.disabled = BUSY; });
+  }
+  function researchFail(id, e) {
+    if (e && e.kind === 'not_installed') { say(id, 'err', 'The research function is not deployed yet: deploy supabase/functions/growth_outbound_research (docs/growth-outbound.md, Phase 7).'); return; }
+    if (e && e.code && RESEARCH_WHY[e.code]) { say(id, 'err', RESEARCH_WHY[e.code]); return; }
+    fail(id, e);
+  }
+  function discover(saved) {
+    if (BUSY) return Promise.resolve();
+    var q = saved ? '' : $('dvQuery').value.replace(/\s+/g, ' ').trim();
+    if (!saved && q.length < 3) { say('dvMsg', 'err', 'Type a search of at least 3 characters.'); return Promise.resolve(); }
+    setBusy(true);
+    say('dvMsg', '', saved ? 'Running the saved searches…' : 'Searching…');
+    return S.invoke('growth_outbound_research', saved ? { action: 'discover' } : { action: 'discover', query: q }, { timeoutMs: 120000 }).then(function (r) {
+      if (!r || r.ok === false) { say('dvMsg', 'err', 'Nothing found: ' + researchWhy(r) + (r && r.per_query ? ' ' + r.per_query.filter(function (p) { return p.error; }).map(function (p) { return p.error; }).join('; ') : '')); }
+      else {
+        say('dvMsg', 'ok', 'Searched ' + r.queries + (r.queries === 1 ? ' time' : ' times') + ': ' + r.results + ' results, ' + r.new + ' new candidate' + (r.new === 1 ? '' : 's')
+          + (r.seen_again ? ', ' + r.seen_again + ' seen before' : '') + (r.duplicates ? ', ' + r.duplicates + ' already prospects' : '')
+          + (r.suppressed ? ', ' + r.suppressed + ' asked not to be contacted' : '') + '.' + (r.notes && r.notes.length ? ' ' + r.notes.join('; ') + '.' : ''));
+        CSTATUS = 'new';
+      }
+    }, function (e) { researchFail('dvMsg', e); }).then(function () { setBusy(false); return loadResearch(); });
+  }
+  function research(t) {
+    if (BUSY) return Promise.resolve();
+    var msg = t.prospect_id ? 'obDetailMsg' : 'dvMsg';
+    setBusy(true);
+    say(msg, '', 'Reading their pages and checking every quote — this can take a minute…');
+    var said = null;
+    return S.invoke('growth_outbound_research', Object.assign({ action: 'research' }, t), { timeoutMs: 150000 }).then(function (r) {
+      if (r && r.ok && r.outcome === 'not_a_fit') say(msg, '', 'Not a fit: ' + (r.reason || 'not relevant') + '. Nothing was recorded about them.');
+      else if (r && r.ok) {
+        say(msg, 'ok', (r.outcome === 'created' ? 'New prospect' : 'Added to the prospect') + ': ' + r.evidence + ' fact' + (r.evidence === 1 ? '' : 's') + ' recorded from ' + r.pages + ' page' + (r.pages === 1 ? '' : 's')
+          + (r.dropped && r.dropped.length ? '; ' + r.dropped.length + ' dropped because they could not be quoted' : '')
+          + (r.email ? '; address ' + r.email.address + ' (' + r.email.from + (r.email.verdict ? ', verifier: ' + r.email.verdict : '') + ')' : '; no business address found')
+          + (r.urls_left_out && r.urls_left_out.length ? '; left out, as somebody else\'s: ' + r.urls_left_out.join(', ') : '')
+          + '. Status: ' + (STATUS[r.status] || r.status) + '.' + (r.llm ? ' (' + r.llm + ')' : '') + (r.notes && r.notes.length ? ' ' + r.notes.join('; ') + '.' : ''));
+        if (r.prospect_id && !t.prospect_id) { var b = document.createElement('button'); b.type = 'button'; b.className = 'lnk'; b.setAttribute('data-open', r.prospect_id); b.textContent = ' Open them'; $(msg).appendChild(b); }
+      } else say(msg, 'err', (r && r.reason === 'queue_empty') ? RESEARCH_WHY.queue_empty : 'Nothing recorded: ' + researchWhy(r) + '.');
+      said = { cls: $(msg).className, text: $(msg).textContent };
+    }, function (e) { researchFail(msg, e); said = { cls: $(msg).className, text: $(msg).textContent }; }).then(function () {
+      setBusy(false);
+      if (!t.prospect_id) return Promise.all([loadResearch(), loadProspects(), loadOverview(), loadActivity()]);
+      // the prospect is shown again with what was found; the answer stays above it
+      return Promise.all([loadResearch(), loadProspects(), loadOverview(), loadActivity(), openProspect(t.prospect_id)]).then(function () {
+        setBusy(false);
+        if (said) { $(msg).className = said.cls; $(msg).textContent = said.text; }
+      });
+    });
+  }
+  function candidateSet(id, st) {
+    var reason = st === 'dismissed' ? root.prompt('Dismiss this candidate? (It stays on the record; you can put it back.) Reason, optional:') : null;
+    if (st === 'dismissed' && reason == null) return Promise.resolve();
+    return S.rpc('growth_outbound_candidate_set', { p_id: Number(id), p_status: st, p_reason: reason ? String(reason).trim() || null : null }).then(function (r) {
+      if (!r || r.ok === false) { say('dvMsg', 'err', 'Not changed: ' + researchWhy(r)); return; }
+      return loadResearch();
+    }, function (e) { fail('dvMsg', e); });
+  }
+  function saveDiscovery() {
+    var qs = $('dvQueries').value.split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
+    var budget = {};
+    BUDGET_KEYS.forEach(function (k) { var v = String($('dvB_' + k).value || '').trim(); if (v !== '') budget[k] = /^\d+$/.test(v) ? Number(v) : v; });
+    var cfg = Object.assign({}, (SETTINGS && SETTINGS.discovery_config) || {}, { queries: qs, budget: budget });
+    return S.rpc('growth_outbound_settings_update', { p: { discovery_config: cfg } }).then(function (r) {
+      if (!r || r.ok === false) { say('dvMsg', 'err', 'Not saved: ' + ((r && (r.detail || r.reason)) || 'refused') + '.'); return; }
+      SETTINGS = r.settings || SETTINGS;
+      say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ' and the daily budget.');
+      return loadResearch();
+    }, function (e) { fail('dvMsg', e); });
   }
 
   /* ── the review queue ─────────────────────────────────────────────── */
@@ -796,6 +959,11 @@
     $('obSave').onclick = save;
     $('supAdd').onclick = suppress;
     $('obLookBtn').onclick = lookup;
+    $('dvSearch').onclick = function () { discover(false); };
+    $('dvSaved').onclick = function () { discover(true); };
+    $('dvNext').onclick = function () { research({ next: true }); };
+    $('dvSave').onclick = saveDiscovery;
+    $('dvQuery').addEventListener('keydown', function (e) { if (e.key === 'Enter') discover(false); });
     $('obLook').addEventListener('keydown', function (e) { if (e.key === 'Enter') lookup(); });
     $('apAdd').onclick = addProspect;
     $('apField').innerHTML = options(EV_FIELDS, 'full_name');
@@ -812,6 +980,11 @@
       else if (b.id === 'fitAdd') fitChange(false);
       else if (b.id === 'fitDrop') fitChange(true);
       else if (b.id === 'pdEval') reevaluate();
+      else if (b.id === 'pdResearchAgain') { if (DETAIL) research({ prospect_id: DETAIL.prospect.id }); }
+      else if (b.getAttribute('data-research')) research({ candidate_id: Number(b.getAttribute('data-research')) });
+      else if (b.getAttribute('data-cdismiss')) candidateSet(b.getAttribute('data-cdismiss'), 'dismissed');
+      else if (b.getAttribute('data-crequeue')) candidateSet(b.getAttribute('data-crequeue'), 'new');
+      else if (b.getAttribute('data-c')) { CSTATUS = b.getAttribute('data-c'); loadResearch().catch(function (er) { fail('dvMsg', er); }); }
       else if (b.id === 'pdResearch') setStatus('needs_research');
       else if (b.id === 'pdReject') setStatus('rejected');
       else if (b.id === 'pdReplied') replied(false);

@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-10-07 — Growth console: discovery and research (outbound engine, phase 7)
+
+**The engine may find, read and verify. It may not approve, draft or send, and it may not make anything up.**
+
+**`supabase/functions/growth_outbound_research`** (new; owner only, no service-role key):
+- **search:** Brave Search results become candidates, not prospects;
+- **research:** reads up to four of a candidate's own pages, obeying robots.txt and guarded against SSRF (https only, no private or reserved hosts, every redirect re-checked, size and type caps);
+- **facts as quotes:** Claude (official SDK, `claude-opus-5-5`, low effort, structured output, server-side refusal fallback) proposes facts as quotes, and every one is checked against the page before it is kept; JSON-LD is read the same way;
+- **business address:** from their own site, or Hunter's find for that named person at that domain, then Hunter's verifier.
+
+Made-up or unsupported facts are dropped and reported, never fixed. Every provider key is optional; without one, the console says that provider is not set up.
+
+**`supabase/growth_outbound.sql`** adds:
+- **stored pages:** append-only, hashed by the database;
+- **candidates** and **research runs**;
+- **a daily provider budget:** set by the owner, with ceilings in the file, enforced before every call;
+- **engine evidence checked in the database:** it cites a stored page, the quote is on it (whole words), and the claim is in the quote. Whether a page is the prospect's **own** site or profile is the database's decision, never the engine's, and a publisher is nobody's own site;
+- **the research doors:** a URL or address naming somebody else is left out rather than merged, and a verifier's "invalid" makes the address unusable;
+- report rows 27–29.
+
+**`/admin/growth/` → Outbound → Discover and research:**
+- provider status and today's budget;
+- search and saved searches;
+- the candidate queue (Research, Dismiss, Put back, Research the next one);
+- the budget form and recent runs;
+- **Research again** on a prospect.
+
+`lib/edgedesk_admin_session.js`: `invoke(fn, body, { timeoutMs })` for one slow call.
+
+**Tests:**
+- `outbound_engine_sql.test.js`: 124 checks; 31 mutations, all caught;
+- `outbound_research.test.js`: the deployed function against the real SQL, 83 checks; 26 mutations, all caught;
+- console e2e: 171;
+- admin session: 85;
+- earlier suites: all passing.
+
 ## 2026-10-07 — Growth console: what comes back (outbound engine, phase 6)
 
 **A hard bounce, a spam complaint, an opt-out or "please stop" ends email to that address for good. Nothing from outside changes a send unless it proves where it came from.**

@@ -69,19 +69,20 @@ off in `portfolio_platform_registry` until its live smoke test passes:
 |---|---|---|
 | `portfolio_connect` | `app.html` (Portfolio → Accounts), pg_cron (`supabase/portfolio_sync_cron.sql`, every 10 minutes), `tools/portfolio/connector_smoke.js` | connect a read-only Kalshi key or a public Polymarket wallet (validated against the platform, the key sealed with AES-256-GCM, never returned), a reader's rate-limited sync, disconnect (deletes the key, says how to revoke it at the platform), and the scheduler's `sweep` of due accounts. Read-only: it never places, changes or cancels anything. A sportsbook is refused. JWT verification OFF (`--no-verify-jwt`); every reader action verifies the token inside, the sweep takes no identity and answers counts only. Secrets: `PORTFOLIO_CREDENTIAL_KEYS`, `PORTFOLIO_CREDENTIAL_KEY_VERSION`. |
 
-**Outbound** (`docs/growth-outbound.md`) — three single-file functions, none
-holding a service-role key. The send function carries the owner check
+**Outbound** (`docs/growth-outbound.md`) — four single-file functions, none
+holding a service-role key. The send and research functions carry the owner check
 (`tools/growth/outbound_auth.js`, copied in by
 `tools/growth/inline_outbound_auth.js`; `tools/growth/outbound_send.test.js`
 imports the deployed file and fails on drift); the webhook and opt-out
 functions hold nothing but the public anon key
-(`tools/growth/outbound_events.test.js` imports both). All three are deployed
+(`tools/growth/outbound_events.test.js` imports both). All four are deployed
 by `.github/workflows/deploy-growth-outbound.yml` (manual):
 
 | function | called by | what for |
 |---|---|---|
 | `growth_outbound_send` | `admin/growth/` (Outbound → Review queue → Send) | sends an APPROVED outbound draft, only when the owner presses Send: the owner verified (GoTrue, then `growth_outbound_is_owner()` as the caller), the send claimed in the database first, Resend called with one Idempotency-Key per draft, the answer recorded. Holds no service-role key: every database call is the caller's. JWT verification OFF (`--no-verify-jwt`); the owner is verified inside. Secret: `RESEND_API_KEY`. |
 | `growth_outbound_webhook` | Resend (a webhook endpoint of its own) | relays Resend's events about outbound email: the raw body and the three Svix headers go to `growth_outbound_webhook()` as anon, and the DATABASE checks the signature with the secret it holds (set in the SQL editor), refuses repeats, then applies delivered / bounced / complained / opened / clicked. Unsigned → 401; the database unreachable → 503 (Resend retries). No secret in the function. JWT verification OFF. |
+| `growth_outbound_research` | `admin/growth/` (Outbound → Discover and research; Research again) | the research engine, owner only: Brave Search results become candidates; research reads a candidate's own pages (robots.txt obeyed, SSRF-guarded), stores each page, and records facts only as quotes Claude proposes and the function and the database both verify; a business address from their own site or Hunter's find for that named person, then Hunter's verifier. Every provider call is counted against the database's daily budget first. Never approves, drafts or sends. Uses `npm:@anthropic-ai/sdk` (bundled at deploy). JWT verification OFF; the owner is verified inside. Secrets (each optional): `BRAVE_SEARCH_API_KEY`, `HUNTER_API_KEY`, `ANTHROPIC_API_KEY`; `OUTBOUND_RESEARCH_MODEL` optional. |
 | `growth_outbound_optout` | every outbound email (footer link and `List-Unsubscribe`) | the RFC 8058 one-click POST stops all email to that send's address (`growth_outbound_optout()` with the send's 64-hex token). A GET changes nothing: it 303-redirects to `/email/stop/#t=…`, which shows the masked address and asks. Optional env `OUTBOUND_OPTOUT_PAGE`. JWT verification OFF. |
 
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**

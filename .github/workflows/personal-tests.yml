@@ -69,6 +69,7 @@ on:
       - 'supabase/functions/growth_outbound_send/**'
       - 'supabase/functions/growth_outbound_webhook/**'
       - 'supabase/functions/growth_outbound_optout/**'
+      - 'supabase/functions/growth_outbound_research/**'
       - 'supabase/functions/newsletter/**'
       - 'email/stop/**'
       - '.github/workflows/deploy-growth-outbound.yml'
@@ -215,6 +216,16 @@ jobs:
       # a test send never does; exactly two doors anon may call.
       - name: Only Resend's signed events change a send; bounces, complaints and opt-outs suppress for good
         run: node tools/growth/outbound_events_sql.test.js
+      # The research engine may find, read and verify, never approve or send:
+      # every quote is checked against the stored page, every claim against
+      # its quote, "own site" is the database's call, the budget is enforced.
+      - name: The research engine records only what it can quote, under a daily budget
+        run: node tools/growth/outbound_engine_sql.test.js
+      # The deployed research function against the real SQL: Brave, Hunter,
+      # Claude (via the SDK) and the web mocked; robots.txt, SSRF guards, and
+      # every made-up quote dropped before the database refuses it.
+      - name: The research function reads politely and keeps only verified quotes
+        run: node tools/growth/outbound_research.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

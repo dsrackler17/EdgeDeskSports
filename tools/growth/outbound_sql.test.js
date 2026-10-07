@@ -169,7 +169,7 @@ try {
 
   /* ══ B. CATALOGUE ═════════════════════════════════════════════════════ */
   const tables = one(`select string_agg(relname, ',' order by relname) from pg_class where relnamespace = 'growth_outbound'::regnamespace and relkind = 'r';`).split(',');
-  chk('B thirteen outbound tables', tables.length === 13, tables);
+  chk('B seventeen outbound tables', tables.length === 17, tables);
   for (const r of ['anon', 'authenticated', 'service_role']) {
     chk('B ' + r + ' has no USAGE on the schema', one(`select has_schema_privilege('${r}', 'growth_outbound', 'usage');`) === 'f');
     const held = one(`select coalesce(string_agg(c.relname || ':' || p, ','), '') from pg_class c, unnest(array['select','insert','update','delete','truncate','references','trigger']) p
@@ -178,7 +178,7 @@ try {
   }
   chk('B every table has RLS on and the restrictive deny policy, and no permissive policy exists',
     one(`select count(*) from pg_class c where c.relnamespace = 'growth_outbound'::regnamespace and c.relkind = 'r' and c.relrowsecurity
-          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '13'
+          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '17'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and permissive = 'PERMISSIVE';`) === '0');
 
   /* direct reads of every table, as every non-owner role (the owner too: no direct path for anyone) */

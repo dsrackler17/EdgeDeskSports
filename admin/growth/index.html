@@ -77,7 +77,7 @@ td.r,th.r{text-align:right}
 .pill{font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim)}
 .pill.on{color:var(--pos);border-color:rgba(118,189,62,.5)}
 .note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
-.seg{display:inline-flex;gap:4px;border:1px solid var(--border);border-radius:9px;padding:3px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;border:1px solid var(--border);border-radius:9px;padding:3px;max-width:100%}
 .seg button{background:none;color:var(--dim);padding:5px 10px}
 .seg button.on{background:var(--surface2);color:var(--text)}
 .cbs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
@@ -241,7 +241,38 @@ ul.claims li.badc b{color:var(--neg)}
       <h2>Sends</h2>
       <div class="card">
         <div class="tw"><table id="obSends"></table></div>
-        <div class="note">Every email handed to Resend, newest first. A send is written down before Resend is called, with one key per draft, so "Try again" can never send it twice; an answer still missing after 23 hours is marked failed rather than retried. Delivery, bounces and replies arrive with the next phase.</div>
+        <div class="note">Every email handed to Resend, newest first. A send is written down before Resend is called, with one key per draft, so "Try again" can never send it twice; an answer still missing after 23 hours is marked failed rather than retried. Delivery, bounces and spam complaints arrive from Resend's signed webhook.</div>
+      </div>
+
+      <h2>Discover and research</h2>
+      <div class="card">
+        <div class="chips" id="dvProviders"></div>
+        <div class="row">
+          <div class="f"><label for="dvQuery">Search the web for people to research</label><input id="dvQuery" maxlength="200" placeholder="college football betting model newsletter" autocomplete="off"></div>
+          <button type="button" id="dvSearch">Search</button>
+          <button type="button" class="g" id="dvSaved">Run saved searches</button>
+        </div>
+        <div class="msg" id="dvMsg" role="status" aria-live="polite"></div>
+        <div class="row" style="align-items:center;margin-top:10px">
+          <div class="seg" id="dvSeg"><button type="button" data-c="new" class="on">New</button><button type="button" data-c="researched">Researched</button><button type="button" data-c="not_a_fit">Not a fit</button><button type="button" data-c="failed">Failed</button><button type="button" data-c="duplicate">Already prospects</button><button type="button" data-c="dismissed">Dismissed</button></div>
+          <span class="sp"></span><button type="button" class="g sm" id="dvNext">Research the next one</button>
+        </div>
+        <div class="tw" style="margin-top:10px"><table id="dvCands"></table></div>
+        <h3>Saved searches and the daily budget</h3>
+        <div class="row">
+          <div class="f"><label for="dvQueries">Saved searches, one per line (Run saved searches uses these)</label><textarea id="dvQueries" rows="4" maxlength="5000"></textarea></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="f" style="max-width:120px"><label for="dvB_search">Searches / day</label><input id="dvB_search" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:120px"><label for="dvB_fetch">Pages / day</label><input id="dvB_fetch" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:120px"><label for="dvB_llm">Claude reads / day</label><input id="dvB_llm" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:140px"><label for="dvB_email_finder">Email lookups / day</label><input id="dvB_email_finder" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:150px"><label for="dvB_email_verifier">Verifications / day</label><input id="dvB_email_verifier" inputmode="numeric" maxlength="5"></div>
+          <span class="sp"></span><button type="button" class="g" id="dvSave">Save</button>
+        </div>
+        <h3>Recent runs</h3>
+        <div class="tw"><table id="dvRuns"></table></div>
+        <div class="note">Finding someone makes them a candidate, not a prospect. Research reads their own pages (robots.txt respected) and records only what it can quote; the database checks every quote against the stored page and decides which pages are their own. Nothing here writes, approves or sends an email. Every search, page, Claude read and email lookup counts against the daily budget, which the database enforces.</div>
       </div>
 
       <h2>Prospects</h2>
@@ -333,8 +364,8 @@ ul.claims li.badc b{color:var(--neg)}
   </div>
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
-<script src="/lib/edgedesk_admin_session.js?v=20261005a"></script>
-<script src="/admin/growth/outbound.js?v=20261007d"></script>
+<script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
+<script src="/admin/growth/outbound.js?v=20261007f"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
