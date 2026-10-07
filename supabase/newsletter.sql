@@ -900,18 +900,13 @@ $$;
 revoke all on function public.newsletter_unsubscribe(text, text, text) from public;
 grant execute on function public.newsletter_unsubscribe(text, text, text) to anon, authenticated;
 
--- THE TOKEN DOORS, stated rather than inherited from PUBLIC. The newsletter
--- Edge Function calls them with the service role; they stay callable by the
--- client roles too because the secret manage/confirm token — not the caller's
--- role — is what authorizes them, and each changes only the row it names.
-revoke all on function public.newsletter_confirm(text) from public;
-revoke all on function public.newsletter_preferences_get(text) from public;
-revoke all on function public.newsletter_preferences_set(text, boolean, boolean) from public;
-revoke all on function public.newsletter_unsubscribe(text, text, text) from public;
-grant execute on function public.newsletter_confirm(text) to anon, authenticated, service_role;
-grant execute on function public.newsletter_preferences_get(text) to anon, authenticated, service_role;
-grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to anon, authenticated, service_role;
-grant execute on function public.newsletter_unsubscribe(text, text, text) to anon, authenticated, service_role;
+-- The token doors' client grants are stated beside each door above. The
+-- newsletter Edge Function calls all four with the service role, so that is
+-- stated too rather than left to the platform's defaults.
+grant execute on function public.newsletter_confirm(text) to service_role;
+grant execute on function public.newsletter_preferences_get(text) to service_role;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to service_role;
+grant execute on function public.newsletter_unsubscribe(text, text, text) to service_role;
 
 -- ------------------------------------------------------ the signed-in door --
 -- An account holder managing their own preference, without ever exposing the
@@ -1063,6 +1058,14 @@ begin
 end;
 $$;
 revoke all on function public.newsletter_suppress(text, text, text, text) from public, anon, authenticated;
+-- The service role is the one caller (the webhook in functions/newsletter and
+-- tools/newsletter/runtime.js). The function runs with the CALLER'S rights,
+-- so what the service role writes through it is granted here, stated rather
+-- than assumed from the platform's default privileges; the client roles stay
+-- revoked from both tables below.
+grant execute on function public.newsletter_suppress(text, text, text, text) to service_role;
+grant select, insert, update on public.newsletter_suppressions to service_role;
+grant select, update on public.newsletter_subscribers to service_role;
 
 
 -- ------------------------------------------------------------ eligibility --
