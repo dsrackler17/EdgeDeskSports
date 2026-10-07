@@ -1,6 +1,6 @@
 # CFB Model Lab — 2026 season to date
 
-Generated 2026-10-07T16:08:21.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
+Generated 2026-10-07T17:07:28.000Z from the immutable ledger (LIVE origin only). Definitions: docs/cfb-lab/METRICS.md.
 
 ## Comparison on the common official set (n = 57, provisional)
 
@@ -27,4 +27,4 @@ Generated 2026-10-07T16:08:21.000Z from the immutable ledger (LIVE origin only).
 
 ## Alerts
 
-- **market_source_stale** 34% of snapshots within 72 h fail odds_freshness
+- **market_source_stale** 29% of snapshots within 72 h fail odds_freshness
