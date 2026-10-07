@@ -62,14 +62,18 @@ function weak(o) {
     ${evaluate(id)}`;
 }
 
-/* A draft whose one personalised claim cites the prospect's project evidence. */
+/* A draft whose one personalised claim cites the prospect's project evidence,
+   and says it in the email — a cited claim must appear in the words. */
 function draft(o) {
   return `
     insert into growth_outbound.drafts (id, prospect_id, sequence_number, is_test, subject, body_text, claims)
-    values (${lit(o.id)}, ${lit(o.prospect)}, ${o.seq || 1}, ${o.test ? 'true' : 'false'}, ${lit(o.subject)}, ${lit(o.body)},
-            coalesce((select jsonb_build_array(jsonb_build_object('text', 'your ' || claim, 'evidence_id', id))
-                        from growth_outbound.evidence where prospect_id = ${lit(o.prospect)} and field_name = 'project'
-                       order by id limit 1), '[]'::jsonb));
+    select ${lit(o.id)}, ${lit(o.prospect)}, ${o.seq || 1}, ${o.test ? 'true' : 'false'}, ${lit(o.subject)},
+           ${lit(o.body)} || coalesce(' I read your ' || e.claim || '.', ''),
+           case when e.id is null then '[]'::jsonb
+                else jsonb_build_array(jsonb_build_object('text', 'your ' || e.claim, 'evidence_id', e.id)) end
+      from (select 1) one
+      left join lateral (select id, claim from growth_outbound.evidence where prospect_id = ${lit(o.prospect)} and field_name = 'project'
+                          order by id limit 1) e on true;
     ${evaluate(o.prospect)}`;
 }
 

@@ -188,6 +188,10 @@ jobs:
       # is computed from it and no statement may write one. One person, one row.
       - name: Prospect research is evidence; confidences are computed, never written; one person is one row
         run: node tools/growth/outbound_research_sql.test.js
+      # Only the owner approves, within the content rules, for the exact count
+      # they confirm (all or nothing); approving sends nothing.
+      - name: The review queue approves only what the owner confirms, within the content rules
+        run: node tools/growth/outbound_review_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

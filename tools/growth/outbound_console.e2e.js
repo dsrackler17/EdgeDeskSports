@@ -32,7 +32,21 @@
     16  adding a prospect sends the email, the URLs one per line, the sports
         and the first fact; a suppressed person is reported, not added
     17  before the Phase 3 SQL is applied (no fit catalogue), a prospect still
-        opens; one with no assessment is never shown as clearing the gates
+        opens; one with no assessment is never shown as clearing the gates;
+        before the Phase 4 SQL, the queue says so instead of failing
+    18  THE REVIEW QUEUE (Phase 4): each card is the message as it would be
+        sent (TEST to the test inbox, footer included), what it says about the
+        person with the evidence behind it; text from the web stays text; a
+        blocked draft cannot be selected or approved, and says why
+    19  approving one asks first and sends the content hash on screen
+    20  a batch: the count must be TYPED; a wrong number sends nothing; the
+        typed number goes to the database with exactly the selected drafts;
+        a refusal says that nothing was approved, and why
+    21  edit inline, against the version on screen
+    22  reject asks first
+    23  approved, not sent: withdraw the approval; no batch there
+    24  the test-draft button, and its refusal without a test inbox
+    25  write a draft from a prospect: claims with their evidence and words
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -102,6 +116,23 @@ const DETAIL = { ok: true,
   drafts: [{ sequence_number: 1, subject: 'Your ratings', status: 'pending_review', claims: [{ evidence_id: 9 }] }], sends: [], activity: [] };
 const CATALOG = [{ code: 'quant_analysis', label: 'publishes quantitative sports analysis', points: 18, needs_evidence: true },
                  { code: 'touting', label: 'sells picks or promises winnings', points: -40, needs_evidence: false }];
+const MAILFOOT = '--\nDavis, EdgeDesk Sports\n[no postal address is set: sending is blocked until there is one]\nNot for you? Reply "stop", or opt out in one click: [your personal opt-out link is added when this is sent]';
+const card = (o) => ({
+  draft: { id: o.id, prospect_id: o.pid, sequence_number: 1, status: o.status || 'pending_review', subject: o.subject, body_text: o.body, content_hash: 'h-' + o.id, approved_at: o.status === 'approved' ? '2026-10-07T10:00:00Z' : null },
+  prospect: { id: o.pid, full_name: o.name, organization: o.org || null, fit_score: o.fit == null ? null : o.fit, status: o.pstatus || 'ready_for_review', is_test: !!o.test, gates: o.gates || [], email: o.email },
+  lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [],
+  preview: { test: true, from: 'Davis <davis@edgedesksports.com>', to: 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject, body: o.body, footer: MAILFOOT } });
+const QPENDING = { ok: true, status: 'pending_review', total: 3, rows: [
+  card({ id: 'dt', pid: 'pt', name: 'EdgeDesk Test Prospect', test: true, email: 'owner-test@edgedesk.test', subject: '[TEST] EdgeDesk outbound check', body: 'Hi,\n\nThis message is the EdgeDesk outbound pipeline check.' }),
+  card({ id: 'd1', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Your CFB ratings',
+    body: '<script>window.__pwned2=1</script>Hi Pat, I read your CFB power ratings against the market.',
+    claims: [{ text: 'your CFB power ratings against the market', evidence_id: 9, confidence: 0.91,
+      evidence: { id: 9, field_name: 'project', claim: 'CFB power ratings against the market', source_url: 'https://cfbnumbers.test/ratings', source_kind: 'own_site', source_excerpt: 'Week 5 power ratings against the closing line', current: true, own: true } }] }),
+  card({ id: 'd2', pid: 'p2', name: 'Lo Confidence', fit: 0, pstatus: 'needs_research', email: 'lo@maybe.test', subject: 'A lock for you', body: 'Hi, a lock.',
+    gates: ['fit 0 < 80', 'identity 0.2500 < 0.90'], lint: ['promises winnings, a lock or a guarantee'], missing: ['your show'],
+    claims: [{ text: 'your show', evidence_id: null, confidence: 0, evidence: null }] })] };
+const QAPPROVED = { ok: true, status: 'approved', total: 1, rows: [
+  card({ id: 'd9', pid: 'p1', name: 'Pat Analyst', status: 'approved', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Approved one', body: 'Hi Pat.' })] };
 const PROSPECTS = { total: 2, rows: [
   { id: 'p1', full_name: 'Pat Analyst', organization: 'CFB Numbers', prospect_type: 'cfb_analyst', sports_focus: ['CFB'], fit_score: 88, identity_confidence: 0.95, role_confidence: 0.9,
     email_confidence: 0.95, research_confidence: 0.9, email: 'pat@cfbnumbers.test', email_status: 'verified', status: 'ready_for_review', updated_at: '2026-10-05T12:00:00Z', is_test: false, suppressed: false },
@@ -129,6 +160,7 @@ const PROSPECTS = { total: 2, rows: [
     await ctx.addInitScript(([k, v]) => { try { if (!sessionStorage.getItem('__seeded')) { localStorage.setItem(k, v); sessionStorage.setItem('__seeded', '1'); } } catch (_) {} },
       [SKEY, JSON.stringify({ access_token: T, refresh_token: 'rt', expires_at: nowSec() + 3600, user: { id: o.role + '-id', email: o.role + '@edgedesk.test' } })]);
     const calls = [];
+    const state = { batchRefuse: false, noInbox: false };
     let st = freshSettings(), outboundData = 0;
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
@@ -153,6 +185,23 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_suppressions') return reply(200, [{ created_at: '2026-10-05T11:00:00Z', scope: 'address', target: 'no@thanks.test', kind: 'unsubscribe', source: 'owner', reason: 'asked' }]);
         if (name === 'growth_outbound_activity') return reply(200, [{ at: '2026-10-05T11:00:00Z', actor_kind: 'owner', action: 'settings_changed', entity: 'settings', entity_id: '1', detail: { x: 1 } }]);
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
+        if (name === 'growth_outbound_review_queue') {
+          if (o.noQueue) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, body.p_status === 'approved' ? QAPPROVED : QPENDING);
+        }
+        if (name === 'growth_outbound_draft_approve') return reply(200, { ok: true, draft_id: body.p_draft_id, approved_hash: body.p_content_hash });
+        if (name === 'growth_outbound_drafts_approve_batch') {
+          if (state.batchRefuse) return reply(200, { ok: false, reason: 'not_all_approvable', refused: [{ draft_id: 'd1', reason: 'below_gate', gates: ['fit score below minimum'] }] });
+          return reply(200, { ok: true, approved: body.p_items.length, drafts: body.p_items.map((x) => x.draft_id) });
+        }
+        if (name === 'growth_outbound_draft_edit') return reply(200, { ok: true, content_hash: 'h-new', status: 'pending_review' });
+        if (name === 'growth_outbound_draft_reject') return reply(200, { ok: true });
+        if (name === 'growth_outbound_draft_unapprove') return reply(200, { ok: true, status: 'pending_review' });
+        if (name === 'growth_outbound_test_fixture') return reply(200, state.noInbox ? { ok: false, reason: 'test_inbox_missing' } : { ok: true, prospect_id: 'pt', draft_id: 'dt', created: true });
+        if (name === 'growth_outbound_draft_create') {
+          if (/guaranteed/i.test(body.p.body_text)) return reply(200, { ok: false, reason: 'content', problems: ['promises winnings, a lock or a guarantee'] });
+          return reply(200, { ok: true, draft_id: 'd77', content_hash: 'h-d77', status: 'ready_for_review' });
+        }
         if (name === 'growth_outbound_fit_catalog') return o.noCatalog ? reply(404, { code: 'PGRST202', message: 'Could not find the function' }) : reply(200, CATALOG);
         if (name === 'growth_outbound_prospect') {
           if (body.p_id === 'p1') return reply(200, DETAIL);
@@ -196,7 +245,7 @@ const PROSPECTS = { total: 2, rows: [
     await page.goto(BASE + '/admin/growth/', { waitUntil: 'load' });
     await page.waitForSelector('#app:not(.hide)', { timeout: 8000 }).catch(() => {});
     await page.waitForTimeout(500);
-    return { ctx, page, calls, errors, dialogs, setAnswers: (a) => { answer = a; }, settings: () => st };
+    return { ctx, page, calls, errors, dialogs, state, setAnswers: (a) => { answer = a; }, settings: () => st };
   }
   const visible = (page, sel) => page.evaluate((s) => { const e = document.querySelector(s); return !!e && !e.closest('.hide') && e.getBoundingClientRect().height > 0; }, sel);
   const text = (page, sel) => page.evaluate((s) => (document.querySelector(s) || {}).textContent || '', sel);
@@ -382,10 +431,130 @@ const PROSPECTS = { total: 2, rows: [
     await t.ctx.close();
   }
 
+  /* ── 18–25. the review queue ────────────────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    const last = (n) => t.calls.filter((c) => c[0] === n).slice(-1)[0];
+    const countOf = (n) => t.calls.filter((c) => c[0] === n).length;
+    chk('18 the queue is not loaded before the tab is opened', countOf('growth_outbound_review_queue') === 0);
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    chk('18 opening the tab loads the drafts waiting for review', last('growth_outbound_review_queue') && last('growth_outbound_review_queue')[1].p_status === 'pending_review'
+      && /3 waiting for review/.test(await text(t.page, '#rqTotal')));
+    const c1 = await text(t.page, '[data-draft="d1"]');
+    chk('18 a card is the message as it would be sent: from, to (the test inbox, not the person), subject, body, footer',
+      /FromDavis <davis@edgedesksports\.com>/.test(c1) && /Toowner-test@edgedesk\.test \(test: not pat@cfbnumbers\.test\)/.test(c1)
+      && /SubjectYour CFB ratings/.test(c1) && /Not for you\? Reply "stop"/.test(c1), c1.slice(0, 300));
+    chk('18 … marked TEST', /^TEST/.test((await text(t.page, '[data-draft="d1"] .rqh .pill'))));
+    chk('18 … what it says about them, with the evidence, source and words behind it', /“your CFB power ratings against the market” rests on #9 · Project · Their own site · cfbnumbers\.test · confidence 0\.91/.test(c1)
+      && /Week 5 power ratings against the closing line/.test(c1));
+    const x = await t.page.evaluate(() => ({ pwned: window.__pwned2 === 1, script: !!document.querySelector('#rqCards script') }));
+    chk('18 text in a draft is shown as text: no markup in it runs', !x.pwned && !x.script && c1.indexOf('<script>') >= 0, x);
+    const c2 = await text(t.page, '[data-draft="d2"]');
+    chk('18 a blocked draft says why: the gates, the content rules, the claim no longer in its words, the claim with no evidence',
+      /Not approvable yet\. fit 0 < 80 · identity 0\.2500 < 0\.90 · the email no longer says "your show"/.test(c2)
+      && /Breaks the content rules: promises winnings, a lock or a guarantee/.test(c2) && /cites no evidence/.test(c2), c2.slice(0, 400));
+    chk('18 … and cannot be selected or approved', await t.page.evaluate(() => document.querySelector('[data-pick="d2"]').disabled && document.querySelector('[data-approve="d2"]').disabled));
+    chk('18 the batch button starts empty and disabled', /Approve selected \(0\)/.test(await text(t.page, '#rqBatch')) && await t.page.evaluate(() => document.querySelector('#rqBatch').disabled));
+    if (SHOTS) await (await t.page.$('#rqCards')).screenshot({ path: path.join(SHOTS, 'outbound-queue.png') });
+
+    /* 19. approve one */
+    t.setAnswers([false]);
+    await t.page.click('[data-approve="d1"]'); await settle(t.page);
+    const dlg = t.dialogs.slice(-1)[0].msg;
+    chk('19 approving asks first, saying it sends nothing and that it is a test', /Approve this message to owner-test@edgedesk\.test\?/.test(dlg)
+      && /Approving sends nothing/.test(dlg) && /TEST/.test(dlg) && countOf('growth_outbound_draft_approve') === 0, dlg);
+    t.setAnswers([true]);
+    await t.page.click('[data-approve="d1"]'); await settle(t.page, 600);
+    const ap = last('growth_outbound_draft_approve');
+    chk('19 accepted, it approves exactly the content on screen', ap && ap[1].p_draft_id === 'd1' && ap[1].p_content_hash === 'h-d1', ap);
+    chk('19 … and says nothing was sent', /Approved\. Nothing was sent\./.test(await text(t.page, '#rqMsg')));
+
+    /* 20. batch */
+    await t.page.check('[data-pick="d1"]'); await t.page.check('[data-pick="dt"]');
+    chk('20 two approvable drafts selected', /Approve selected \(2\)/.test(await text(t.page, '#rqBatch')));
+    await t.page.evaluate(() => { const b = document.querySelector('[data-pick="d2"]'); b.disabled = false; b.checked = true; b.dispatchEvent(new Event('change', { bubbles: true })); });
+    chk('20 a blocked draft cannot be forced into the batch from the page', /Approve selected \(2\)/.test(await text(t.page, '#rqBatch')));
+    t.setAnswers(['3']);
+    await t.page.click('#rqBatch'); await settle(t.page);
+    chk('20 the count must be typed; a wrong number sends nothing', countOf('growth_outbound_drafts_approve_batch') === 0 && /you typed "3" for 2 selected/.test(await text(t.page, '#rqMsg'))
+      && /Type the number 2 to confirm/.test(t.dialogs.slice(-1)[0].msg) && /If any one of them cannot be approved, none is/.test(t.dialogs.slice(-1)[0].msg));
+    t.setAnswers([false]);
+    await t.page.click('#rqBatch'); await settle(t.page);
+    chk('20 cancelling sends nothing', countOf('growth_outbound_drafts_approve_batch') === 0);
+    t.state.batchRefuse = true;
+    t.setAnswers([' 2 ']);
+    await t.page.click('#rqBatch'); await settle(t.page, 600);
+    const b1 = last('growth_outbound_drafts_approve_batch');
+    chk('20 the typed number goes to the database with exactly the selected drafts and the content on screen', b1 && b1[1].p_confirm_count === 2
+      && JSON.stringify(b1[1].p_items.map((i) => i.draft_id + ':' + i.content_hash).sort()) === JSON.stringify(['d1:h-d1', 'dt:h-dt']), b1 && b1[1]);
+    chk('20 a refusal says nothing was approved, and why', /Nothing was approved: Pat Analyst — fit score below minimum/.test(await text(t.page, '#rqMsg')));
+    t.state.batchRefuse = false;
+    t.setAnswers(['2']);
+    await t.page.click('#rqBatch'); await settle(t.page, 600);
+    chk('20 accepted: "Approved 2 drafts. Nothing was sent."', /Approved 2 drafts\. Nothing was sent\./.test(await text(t.page, '#rqMsg')));
+    chk('20 the selection is cleared after the queue reloads', /Approve selected \(0\)/.test(await text(t.page, '#rqBatch')));
+
+    /* 21. edit */
+    chk('21 the editor starts hidden', !(await visible(t.page, '#rqe_d1')));
+    await t.page.click('[data-edit="d1"]'); await settle(t.page, 200);
+    chk('21 Edit opens it with the current words', await visible(t.page, '#rqe_d1') && (await t.page.inputValue('[data-esubj="d1"]')) === 'Your CFB ratings');
+    await t.page.fill('[data-ebody="d1"]', 'Hi Pat, I read your CFB power ratings against the market. Edited.');
+    await t.page.click('[data-esave="d1"]'); await settle(t.page, 600);
+    const ed = last('growth_outbound_draft_edit');
+    chk('21 saving sends the new words against the version on screen', ed && ed[1].p_draft_id === 'd1' && ed[1].p_expected_hash === 'h-d1'
+      && ed[1].p_body_text === 'Hi Pat, I read your CFB power ratings against the market. Edited.' && ed[1].p_subject === 'Your CFB ratings', ed && ed[1]);
+
+    /* 22. reject */
+    t.setAnswers([false]);
+    await t.page.click('[data-reject="d2"]'); await settle(t.page);
+    chk('22 reject asks first; cancelling sends nothing', countOf('growth_outbound_draft_reject') === 0);
+    t.setAnswers(['not a fit']);
+    await t.page.click('[data-reject="d2"]'); await settle(t.page, 600);
+    chk('22 … with a reason, it is rejected', last('growth_outbound_draft_reject')[1].p_draft_id === 'd2' && last('growth_outbound_draft_reject')[1].p_reason === 'not a fit');
+
+    /* 23. approved, not sent */
+    await t.page.click('#rqSeg [data-q="approved"]'); await settle(t.page, 600);
+    chk('23 the approved list is asked for', last('growth_outbound_review_queue')[1].p_status === 'approved' && /1 approved, not sent/.test(await text(t.page, '#rqTotal')));
+    chk('23 an approved card can be withdrawn, cannot be selected, and there is no batch here', await visible(t.page, '[data-unapprove="d9"]')
+      && !(await t.page.$('[data-pick="d9"]')) && !(await visible(t.page, '#rqBatch')) && /Nothing has been sent/.test(await text(t.page, '[data-draft="d9"]')));
+    t.setAnswers([true]);
+    await t.page.click('[data-unapprove="d9"]'); await settle(t.page, 600);
+    chk('23 withdrawing asks, then takes the approval back', /Withdraw this approval\?/.test(t.dialogs.slice(-1)[0].msg) && last('growth_outbound_draft_unapprove')[1].p_draft_id === 'd9');
+
+    /* 24. the test fixture */
+    await t.page.click('#rqFixture'); await settle(t.page, 600);
+    chk('24 the test-draft button makes one for the owner\'s own inbox, and goes back to the waiting list', countOf('growth_outbound_test_fixture') === 1
+      && /A test draft for your own inbox is in the queue/.test(await text(t.page, '#rqMsg')) && last('growth_outbound_review_queue')[1].p_status === 'pending_review');
+    t.state.noInbox = true;
+    await t.page.click('#rqFixture'); await settle(t.page, 400);
+    chk('24 … and says to set a test inbox when there is none', /Set a test inbox in the outbound settings first/.test(await text(t.page, '#rqMsg')));
+
+    /* 25. write a draft */
+    await t.page.click('#obProspects [data-open="p1"]'); await settle(t.page, 600);
+    chk('25 a prospect offers to write a draft, citing its current evidence (never the email)', await visible(t.page, '#wdCreate')
+      && !!(await t.page.$('#wdEv1 option[value="9"]')) && !(await t.page.$('#wdEv1 option[value="5"]')));
+    await t.page.click('#wdCreate'); await settle(t.page);
+    chk('25 a subject and the email are needed; nothing is sent without', countOf('growth_outbound_draft_create') === 0 && /both needed/.test(await text(t.page, '#wdMsg')));
+    await t.page.fill('#wdSubject', 'Your CFB ratings'); await t.page.fill('#wdBody', 'Hi Pat, I read your ratings. Guaranteed edge.');
+    await t.page.selectOption('#wdEv1', '9'); await t.page.fill('#wdTxt1', 'your ratings');
+    await t.page.click('#wdCreate'); await settle(t.page, 500);
+    const wd = last('growth_outbound_draft_create');
+    chk('25 the draft is sent with its claims and the evidence each rests on', wd && wd[1].p_prospect === 'p1' && JSON.stringify(wd[1].p) === JSON.stringify({ sequence_number: 1,
+      subject: 'Your CFB ratings', body_text: 'Hi Pat, I read your ratings. Guaranteed edge.', claims: [{ text: 'your ratings', evidence_id: 9 }] }), wd && wd[1]);
+    chk('25 a broken content rule is said in words', /Not queued: promises winnings, a lock or a guarantee/.test(await text(t.page, '#wdMsg')));
+    await t.page.fill('#wdBody', 'Hi Pat, I read your ratings.');
+    await t.page.click('#wdCreate'); await settle(t.page, 700);
+    chk('25 accepted, it is in the review queue', countOf('growth_outbound_draft_create') === 2 && /Your draft is in the review queue/.test(await text(t.page, '#rqMsg')));
+    chk('18-25 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
   /* ── 17. the page ahead of its migration ─────────────────────────────── */
   {
-    const t = await open({ role: 'owner', noCatalog: true });
+    const t = await open({ role: 'owner', noCatalog: true, noQueue: true });
     await t.page.click('#tabBtnOutbound'); await settle(t.page);
+    chk('17 before the Phase 4 SQL, the queue says what to run instead of failing', /arrives with the Phase 4 SQL/.test(await text(t.page, '#rqCards'))
+      && !(await visible(t.page, '#obMsg')));
     await t.page.click('[data-open="p1"]'); await settle(t.page, 600);
     chk('17 without the Phase 3 fit catalogue, a prospect still opens', /Pat Analyst/.test(await text(t.page, '#obDetail')) && !/not installed/.test(await text(t.page, '#obDetailMsg')));
     chk('17 no page errors', t.errors.length === 0, t.errors);

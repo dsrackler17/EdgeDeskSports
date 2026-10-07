@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-07 — Growth console: the review queue (outbound engine, phase 4)
+
+**Software may draft and queue; only the owner approves, and approving sends nothing.**
+
+**`supabase/growth_outbound.sql`** adds:
+- **content rules** (`draft_lint`), enforced at approval for every draft: no promised winnings, locks or guarantees; $49.99/month only; a 7-day free trial only; edgedesksports.com links only; nothing unfilled; no fake "RE:";
+- **a cited claim must be in the email's words**, so an edit that drops it cannot be approved;
+- **one approve implementation** (`approve_one`) behind both approve doors. It re-evaluates the prospect, and refuses any session that is not the signed-in owner;
+- **batch approve with a typed count:** the count must equal the selection, 1–25 drafts, all or nothing, every reason returned;
+- **withdraw** an approval before sending;
+- **owner-written drafts:** every claim cites current evidence of that prospect and appears in the words;
+- **the queue door,** with fresh assessments and the message exactly as `compose()` builds it (footer included, the test inbox in test mode);
+- **a test prospect and draft** at the owner's own test inbox, idempotently.
+
+**`/admin/growth/` → Outbound** opens on the review queue. Each card shows:
+- the message as sent;
+- each claim with the evidence, source and words behind it;
+- the gates and broken rules in words.
+
+**Actions:**
+- approve (asked first);
+- approve selected (the count is typed);
+- edit inline, reject, withdraw;
+- the test-draft button;
+- "Write a draft" in the prospect panel.
+
+Disabled buttons now look disabled.
+
+**Tests:**
+- `outbound_review_sql.test.js` (85, 16 mutations all caught);
+- `outbound_sql.test.js` (269);
+- `outbound_research_sql.test.js` (162);
+- `outbound_console.e2e.js` (110).
+
 ## 2026-10-07 — Growth console: who a prospect is, what is known, and how sure (outbound engine, phase 3)
 
 **A fact about a person is evidence; every number the gates read is computed from it.**
