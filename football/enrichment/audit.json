@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-07T23:13:54.787Z",
+ "generated_at": "2026-10-07T23:32:52.302Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-07T23:13:54.787Z",
-  "reliability_generated_at": "2026-10-07T23:13:54.787Z",
-  "enrichment_generated_at": "2026-10-07T23:13:46.482Z",
+  "at": "2026-10-07T23:32:52.302Z",
+  "reliability_generated_at": "2026-10-07T23:32:52.302Z",
+  "enrichment_generated_at": "2026-10-07T23:32:44.963Z",
   "counts": {
-   "games": 116,
-   "mean": 85.4,
+   "games": 117,
+   "mean": 85.1,
    "median": 87,
    "by_band": {
     "STRONG": 92,
     "ADEQUATE": 18,
-    "LOW": 2,
+    "LOW": 3,
     "VERY_STRONG": 2,
     "CAUTION": 2
    },
-   "missing_qb_status": 228,
+   "missing_qb_status": 230,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 37,
+   "games_lacking_injury_information": 39,
    "unrated_meaningful_absences": 30,
-   "fcs_games_thin_data": 2,
-   "games_under_two_market_sources": 116,
+   "fcs_games_thin_data": 3,
+   "games_under_two_market_sources": 117,
    "stale_evidence_records": 16,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
@@ -113,12 +113,12 @@
   "games": {
    "401856712": {
     "game": "Georgia @ Alabama",
-    "score": 89,
+    "score": 87,
     "grade": "STRONG",
     "fam": {
-     "availability": 4.6,
+     "availability": 6,
+     "qb_status": 4,
      "stability": 1.3,
-     "qb_status": 2,
      "qb_identity": 1.1,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
@@ -128,8 +128,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401856713": {
@@ -894,6 +894,31 @@
      "away": "NO_SOURCE"
     }
    },
+   "401858262": {
+    "game": "Elon @ Stanford",
+    "score": 59,
+    "grade": "LOW",
+    "fam": {
+     "stability": 14,
+     "fcs_rating": 6.3,
+     "matchup_profile": 4.2,
+     "availability": 5.5,
+     "qb_status": 3.5,
+     "attribution": 1,
+     "starters": 0.7,
+     "qb_identity": 0.8,
+     "rating_sample": 0.3,
+     "transfer_turnover": 0.3
+    },
+    "qb": {
+     "home": "EXPECTED",
+     "away": "EXPECTED"
+    },
+    "avail": {
+     "home": "NOT_REQUIRED",
+     "away": "NO_SOURCE"
+    }
+   },
    "401858263": {
     "game": "Florida State @ Miami",
     "score": 89,
@@ -1154,12 +1179,12 @@
    },
    "401858485": {
     "game": "USC @ Penn State",
-    "score": 89,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
+     "availability": 6,
      "stability": 2.7,
-     "availability": 4.6,
-     "qb_status": 2,
+     "qb_status": 4,
      "qb_identity": 0.8,
      "rating_sample": 0.3,
      "transfer_turnover": 0.3
@@ -1169,8 +1194,8 @@
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "PROVIDER_FAILED",
+     "away": "PROVIDER_FAILED"
     }
    },
    "401858486": {
@@ -2527,7 +2552,7 @@
    },
    "401871054": {
     "game": "Kennesaw State @ Missouri State",
-    "score": 81,
+    "score": 82,
     "grade": "STRONG",
     "fam": {
      "availability": 6,
@@ -2640,68 +2665,43 @@
   }
  },
  "previous": {
-  "at": "2026-10-07T20:33:48.534Z",
+  "at": "2026-10-07T23:13:54.787Z",
   "counts": {
-   "games": 114,
+   "games": 116,
    "mean": 85.4,
-   "median": 88,
+   "median": 87,
    "by_band": {
-    "STRONG": 90,
+    "STRONG": 92,
     "ADEQUATE": 18,
     "LOW": 2,
     "VERY_STRONG": 2,
     "CAUTION": 2
    },
-   "missing_qb_status": 224,
+   "missing_qb_status": 228,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 34,
+   "games_lacking_injury_information": 37,
    "unrated_meaningful_absences": 30,
    "fcs_games_thin_data": 2,
-   "games_under_two_market_sources": 114,
-   "stale_evidence_records": 35,
+   "games_under_two_market_sources": 116,
+   "stale_evidence_records": 16,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "-19 stale evidence records (35 → 16)"
- ],
+ "what_improved": [],
  "what_degraded": [
-  "-1 median reliability (88 → 87)",
-  "+4 QB statuses missing (224 → 228)",
-  "+3 games lacking injury information (34 → 37)",
-  "+2 games under two market sources (114 → 116)"
+  "-0.3 mean reliability (85.4 → 85.1)",
+  "+2 QB statuses missing (228 → 230)",
+  "+2 games lacking injury information (37 → 39)",
+  "+1 FCS games at THIN DATA (2 → 3)",
+  "+1 games under two market sources (116 → 117)"
  ],
  "why": [
-  "the slate itself changed: 2 games entered the window, 0 left it (kicked off or rolled out)"
+  "the slate itself changed: 1 game entered the window, 0 left it (kicked off or rolled out)"
  ],
  "history": [
-  {
-   "at": "2026-09-29T23:53:08.440Z",
-   "counts": {
-    "games": 67,
-    "mean": 84,
-    "median": 87,
-    "by_band": {
-     "STRONG": 52,
-     "LOW": 3,
-     "ADEQUATE": 11,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 133,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 67,
-    "stale_evidence_records": 70,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-30T00:06:38.916Z",
    "counts": {
@@ -4125,6 +4125,31 @@
     "unrated_meaningful_absences": 30,
     "fcs_games_thin_data": 2,
     "games_under_two_market_sources": 116,
+    "stale_evidence_records": 16,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-07T23:32:52.302Z",
+   "counts": {
+    "games": 117,
+    "mean": 85.1,
+    "median": 87,
+    "by_band": {
+     "STRONG": 92,
+     "ADEQUATE": 18,
+     "LOW": 3,
+     "VERY_STRONG": 2,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 230,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 39,
+    "unrated_meaningful_absences": 30,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
     "stale_evidence_records": 16,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
