@@ -19,7 +19,7 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
 const CORE_FILE = path.join(__dirname, 'outbound_auth.js');
-const TARGETS = [path.join(ROOT, 'supabase', 'functions', 'growth_outbound_send', 'index.ts')];
+const TARGETS = ['growth_outbound_send', 'growth_outbound_research'].map((f) => path.join(ROOT, 'supabase', 'functions', f, 'index.ts'));
 const BEGIN = '// ── BEGIN OUTBOUND AUTH';
 const END = '// ── END OUTBOUND AUTH';
 

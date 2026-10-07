@@ -64,6 +64,19 @@
         stops follow-ups without suppressing
     34  "They replied: stop emailing them" asks, naming the address, then
         suppresses; neither is offered where it no longer applies
+    35  DISCOVER AND RESEARCH (Phase 7): which providers are set up and today's
+        use of each; the saved searches and budget; the runs; the queue counts;
+        opening the page searches and researches nothing
+    36  candidates: web text stays text, only https: links; a short search is
+        refused here; a search is tidied and its result said; saved searches;
+        a missing search key named
+    37  Research one candidate: what was recorded, dropped (could not be
+        quoted), the address and the status; not a fit; the next one
+    38  Dismiss asks, with a reason
+    39  Research again, from a prospect
+    40  saving the searches and the budget; a refused budget in the database's
+        words
+    41  the research function not deployed: said, the queue still shown
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -113,6 +126,17 @@ function freshSettings() {
     today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 }, webhook: { secret_set: false, last_event_at: null, events_24h: 0 } };
 }
 const XSS = '<img src=x onerror="window.__pwned=1">';
+const RESEARCH_OV = { budget: { search: { cap: 20, used: 3, left: 17 }, fetch: { cap: 150, used: 40, left: 110 }, llm: { cap: 30, used: 2, left: 28 },
+    email_finder: { cap: 15, used: 0, left: 15 }, email_verifier: { cap: 30, used: 1, left: 29 } },
+  queries: ['college football betting model newsletter', 'cfb power ratings substack'], shared_sites: [], daily_prospect_target: 15,
+  candidates: { new: 2, researched: 4, failed: 1 },
+  runs: [{ id: 9, kind: 'discover', started_by: 'owner', started_at: '2026-10-07T09:00:00Z', finished_at: '2026-10-07T09:00:05Z', status: 'done',
+           input: { query: 'cfb models' }, counts: { new: 5, results: 18, spent: { search: 1 } }, error: null },
+         { id: 10, kind: 'research', started_by: 'owner', started_at: '2026-10-07T09:05:00Z', finished_at: '2026-10-07T09:05:40Z', status: 'failed',
+           input: { candidate_id: 70 }, counts: { pages: 0, spent: { fetch: 2 } }, error: 'robots.txt disallows it' }] };
+const CANDS = [
+  { id: 71, url: 'https://cfbnumbers.test', title: 'CFB Numbers', snippet: 'Ratings ' + XSS, query: 'cfb models', times_seen: 2, status: 'new', last_seen_at: '2026-10-07T09:00:00Z' },
+  { id: 72, url: 'javascript:alert(1)', title: XSS, snippet: null, query: 'cfb models', times_seen: 1, status: 'new', last_seen_at: '2026-10-07T09:00:00Z' }];
 const DETAIL = { ok: true,
   prospect: { id: 'p1', full_name: 'Pat Analyst', first_name: 'Pat', organization: 'CFB Numbers', job_title: 'Founder', prospect_type: 'cfb_analyst', is_test: false, suppressed: false,
     email: 'pat@cfbnumbers.test', email_status: 'verified', email_confidence: 0.99, identity_confidence: 0.91, role_confidence: 0.35, research_confidence: 0.91, fit_score: 89,
@@ -193,6 +217,24 @@ const PROSPECTS = { total: 2, rows: [
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       const reply = (s, b) => route.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(b) });
       if (/auth\/v1\/logout/.test(url)) { calls.push(['logout']); return route.fulfill({ status: 204, body: '' }); }
+      if (/functions\/v1\/growth_outbound_research/.test(url)) {
+        const body = JSON.parse(req.postData() || '{}');
+        calls.push(['fn:growth_outbound_research', body]);
+        if (state.research === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
+        if (body.action === 'status') return reply(200, { ok: true, providers: { search: true, email: false, llm: true, fetch: true, model: 'claude-opus-5-5' }, overview: RESEARCH_OV });
+        if (body.action === 'discover') {
+          if (state.research === 'nobrave') return reply(503, { ok: false, reason: 'search_not_configured', code: 'search_not_configured' });
+          return reply(200, { ok: true, run_id: 9, queries: body.query ? 1 : 2, results: 18, new: 5, seen_again: 3, duplicates: 1, suppressed: 0, invalid: 0, per_query: [], notes: [] });
+        }
+        if (body.action === 'research') {
+          if (body.next) return reply(200, { ok: false, reason: 'queue_empty', code: 'queue_empty' });
+          if (body.candidate_id === 72) return reply(200, { ok: true, outcome: 'not_a_fit', reason: 'a tout selling picks', pages: 1 });
+          return reply(200, { ok: true, outcome: body.prospect_id ? 'added' : 'created', prospect_id: body.prospect_id || 'p1', status: 'needs_research', evidence: 7, pages: 3,
+            dropped: [{ field: 'job_title', why: 'quote not on the page' }, { field: 'organization', why: 'claim not in the quote' }],
+            email: { address: 'pat@cfbnumbers.test', from: 'their own page', verdict: 'valid' }, urls_left_out: [], spent: { fetch: 4, llm: 1 }, notes: [] });
+        }
+        return reply(400, { ok: false, reason: 'bad_request' });
+      }
       if (/functions\/v1\/growth_outbound_send/.test(url)) {
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_send', body, req.headers().authorization]);
@@ -224,6 +266,9 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, body.p_status === 'approved' ? QAPPROVED : QPENDING);
         }
         if (name === 'growth_outbound_sends') return reply(200, SENDS);
+        if (name === 'growth_outbound_research_overview') return reply(200, RESEARCH_OV);
+        if (name === 'growth_outbound_candidates') return reply(200, body.p_status === 'new' ? CANDS : []);
+        if (name === 'growth_outbound_candidate_set') return reply(200, { ok: true, status: body.p_status });
         if (name === 'growth_outbound_draft_approve') return reply(200, { ok: true, draft_id: body.p_draft_id, approved_hash: body.p_content_hash });
         if (name === 'growth_outbound_drafts_approve_batch') {
           if (state.batchRefuse) return reply(200, { ok: false, reason: 'not_all_approvable', refused: [{ draft_id: 'd1', reason: 'below_gate', gates: ['fit score below minimum'] }] });
@@ -274,6 +319,9 @@ const PROSPECTS = { total: 2, rows: [
           if (p.max_sends_per_day > st.max_sends_per_day && !p.confirm_cap_increase) return reply(200, { ok: false, reason: 'cap_increase_needs_confirmation' });
           if (p.test_mode === false && st.test_mode && !p.confirm_live) return reply(200, { ok: false, reason: 'going_live_needs_confirmation' });
           const changed = {};
+          if (p.discovery_config && p.discovery_config.budget && typeof p.discovery_config.budget.llm !== 'number' && p.discovery_config.budget.llm != null) {
+            return reply(200, { ok: false, reason: 'invalid_value', detail: 'budget: llm must be a whole number' });
+          }
           Object.keys(p).filter((k) => k.indexOf('confirm_') !== 0).forEach((k) => { changed[k] = { from: st[k], to: p[k] }; st[k] = p[k]; });
           return reply(200, { ok: true, changed, settings: st });
         }
@@ -701,6 +749,83 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#pdReplyStop'); await settle(t.page, 700);
     chk('34 before the Phase 6 SQL, it says what to run', /arrive with the Phase 6 SQL/.test(await text(t.page, '#obDetailMsg')) && await visible(t.page, '#tabOutbound'));
     chk('31-34 no page errors (third view)', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 35–40. discover and research (Phase 7) ───────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    const rcalls = () => t.calls.filter((c) => c[0] === 'fn:growth_outbound_research');
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const prov = await text(t.page, '#dvProviders');
+    chk('35 which providers are set up, and today\'s use of each', /Search: Brave · 3 \/ 20 today/.test(prov) && /Reading: Claude · 2 \/ 30 today/.test(prov)
+      && /Email: not set up \(HUNTER_API_KEY\)/.test(prov) && /pages read today 40 \/ 150/.test(prov), prov);
+    chk('35 the saved searches and the budget fill the form', (await t.page.inputValue('#dvQueries')) === RESEARCH_OV.queries.join('\n')
+      && (await t.page.inputValue('#dvB_llm')) === '30' && (await t.page.inputValue('#dvB_search')) === '20');
+    chk('35 the runs: what each did, what it spent, why one failed', /search\s*cfb models/.test(await text(t.page, '#dvRuns')) && /5 new of 18/.test(await text(t.page, '#dvRuns'))
+      && /robots\.txt disallows it/.test(await text(t.page, '#dvRuns')) && /fetch 2/.test(await text(t.page, '#dvRuns')));
+    chk('35 the queue counts by status', /New \(2\)/.test(await text(t.page, '#dvSeg')) && /Researched \(4\)/.test(await text(t.page, '#dvSeg')));
+    chk('35 opening the page researches nothing and searches nothing', !rcalls().some((c) => c[1].action !== 'status'));
+    const cands = await text(t.page, '#dvCands');
+    chk('36 candidates: text from the web stays text, and only an https: address is a link', await t.page.evaluate(() => !document.querySelector('#dvCands img') && !window.__pwned)
+      && cands.includes('<img src=x') && await t.page.evaluate(() => [...document.querySelectorAll('#dvCands a')].every((a) => a.href.startsWith('https:') && /noopener/.test(a.rel) && /nofollow/.test(a.rel)))
+      && await t.page.evaluate(() => !document.querySelector('#dvCands a[href^="javascript"]')));
+    await t.page.fill('#dvQuery', 'cf'); await t.page.click('#dvSearch'); await settle(t.page);
+    chk('36 a search too short is refused here, without a call', /at least 3 characters/.test(await text(t.page, '#dvMsg')) && !rcalls().some((c) => c[1].action === 'discover'));
+    await t.page.fill('#dvQuery', '  college   football models '); await t.page.click('#dvSearch'); await settle(t.page, 700);
+    const dc = rcalls().find((c) => c[1].action === 'discover');
+    chk('36 a search goes to the research function, tidied', !!dc && dc[1].query === 'college football models', dc);
+    chk('36 … and what it found is said: candidates, not prospects', /Searched 1 time: 18 results, 5 new candidates, 3 seen before, 1 already prospects\./.test(await text(t.page, '#dvMsg')), await text(t.page, '#dvMsg'));
+    await t.page.click('#dvSaved'); await settle(t.page, 700);
+    chk('36 "Run saved searches" sends no query (the server uses the saved ones)', rcalls().filter((c) => c[1].action === 'discover').slice(-1)[0][1].query === undefined);
+    t.state.research = 'nobrave';
+    await t.page.fill('#dvQuery', 'cfb models'); await t.page.click('#dvSearch'); await settle(t.page, 700);
+    chk('36 no search key: said, naming the secret to set', /BRAVE_SEARCH_API_KEY/.test(await text(t.page, '#dvMsg')));
+    t.state.research = 'ok';
+    await t.page.click('[data-research="71"]'); await settle(t.page, 700);
+    const rc = rcalls().find((c) => c[1].action === 'research');
+    chk('37 Research reads exactly that candidate', !!rc && rc[1].candidate_id === 71 && !('prospect_id' in rc[1]), rc);
+    const rm = await text(t.page, '#dvMsg');
+    chk('37 … and says what it recorded, what it dropped (could not be quoted), the address and the status',
+      /New prospect: 7 facts recorded from 3 pages; 2 dropped because they could not be quoted; address pat@cfbnumbers\.test \(their own page, verifier: valid\)\. Status: Needs research\./.test(rm), rm);
+    chk('37 … with a way to open them', await visible(t.page, '#dvMsg [data-open="p1"]'));
+    await t.page.click('[data-research="72"]'); await settle(t.page, 700);
+    chk('37 not a fit: said, and nothing recorded', /Not a fit: a tout selling picks\. Nothing was recorded about them\./.test(await text(t.page, '#dvMsg')));
+    await t.page.click('#dvNext'); await settle(t.page, 700);
+    const lastResearch = () => rcalls().filter((c) => c[1].action === 'research').slice(-1)[0][1];
+    chk('37 "Research the next one": the server picks; an empty queue is said', lastResearch().next === true && /No new candidates are waiting/.test(await text(t.page, '#dvMsg')));
+    const before = t.calls.filter((c) => c[0] === 'growth_outbound_candidate_set').length;
+    t.setAnswers([false]);
+    await t.page.click('[data-cdismiss="71"]'); await settle(t.page);
+    chk('38 Dismiss asks first; declining changes nothing', t.calls.filter((c) => c[0] === 'growth_outbound_candidate_set').length === before);
+    t.setAnswers(['a listicle']);
+    await t.page.click('[data-cdismiss="71"]'); await settle(t.page, 600);
+    const cs = t.calls.filter((c) => c[0] === 'growth_outbound_candidate_set').slice(-1)[0];
+    chk('38 … accepted, it is dismissed with the reason', !!cs && JSON.stringify(cs[1]) === JSON.stringify({ p_id: 71, p_status: 'dismissed', p_reason: 'a listicle' }), cs);
+    await t.page.evaluate(() => window.EDOutbound.open('p1')); await settle(t.page, 700);
+    await t.page.click('#pdResearchAgain'); await settle(t.page, 900);
+    chk('39 "Research again" reads the prospect again, and the answer stays above the refreshed prospect', lastResearch().prospect_id === 'p1'
+      && /Added to the prospect: 7 facts/.test(await text(t.page, '#obDetailMsg')), await text(t.page, '#obDetailMsg'));
+    await t.page.fill('#dvQueries', 'cfb totals model\n\n  nfl ratings newsletter  ');
+    await t.page.fill('#dvB_llm', '45');
+    await t.page.click('#dvSave'); await settle(t.page, 600);
+    const su = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('40 saving sends the searches (tidied) and the budget, in the discovery settings', !!su && JSON.stringify(su[1].p.discovery_config.queries) === JSON.stringify(['cfb totals model', 'nfl ratings newsletter'])
+      && su[1].p.discovery_config.budget.llm === 45 && su[1].p.discovery_config.budget.search === 20, su && su[1]);
+    await t.page.fill('#dvB_llm', 'lots'); await t.page.click('#dvSave'); await settle(t.page, 600);
+    chk('40 a refused budget is said in the database\'s words', /Not saved: budget: llm must be a whole number/.test(await text(t.page, '#dvMsg')));
+    chk('35-40 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.research = 'missing';
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    chk('41 the research function not deployed: said, and the queue still shows from the database', /not deployed/.test(await text(t.page, '#dvProviders'))
+      && /CFB Numbers/.test(await text(t.page, '#dvCands')) && await visible(t.page, '#tabOutbound'));
+    await t.page.click('[data-research="71"]'); await settle(t.page, 700);
+    chk('41 … and Research says so too', /The research function is not deployed yet/.test(await text(t.page, '#dvMsg')));
+    chk('41 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

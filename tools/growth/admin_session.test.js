@@ -377,6 +377,22 @@ setTimeout(() => { console.log('FAIL — admin session: the suite did not finish
     })()));
   }
 
+  /* a slow function (the research engine) may be given longer, call by call */
+  {
+    const A = jwt('a', sec() + 3600);
+    let seenInit = null;
+    const hang = { f: (url, init) => { seenInit = init; return new Promise((_, rej) => init.signal.addEventListener('abort', () => rej(new Error('aborted')))); } };
+    const S = make(memStore({ [SKEY]: JSON.stringify(stored(A, 'rt', sec() + 3600)) }), hang, { timeoutMs: 40 });
+    let t0 = Date.now();
+    let e = await S.invoke('growth_outbound_research', {}).catch((x) => x);
+    const short = Date.now() - t0;
+    t0 = Date.now();
+    e = await S.invoke('growth_outbound_research', {}, { timeoutMs: 250 }).catch((x) => x);
+    const long = Date.now() - t0;
+    chk('invoke(…, { timeoutMs }) waits longer for that call only; the default stays', short < 200 && long >= 240 && e && e.kind === 'network', [short, long, e && e.kind]);
+    chk('… and the timeout is not sent to the server', !!seenInit && !('timeoutMs' in seenInit));
+  }
+
   /* ===================================================================== */
   /* 11. CLASSIFY / DESCRIBE — every error is a sentence without secrets    */
   /* ===================================================================== */

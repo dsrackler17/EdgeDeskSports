@@ -55,9 +55,9 @@ function weak(o) {
   return `
     insert into growth_outbound.prospects (id, email, prospect_type) values (${lit(id)}, ${lit(o.email)}, 'other');
     insert into growth_outbound.evidence (prospect_id, field_name, claim, source_url, source_kind, source_excerpt, collected_by) values
-      (${lit(id)}, 'full_name', ${lit(o.name)}, 'https://directory.test/people/1', 'directory', ${lit(o.name + ', media')}, 'research_engine'),
-      (${lit(id)}, 'email', ${lit(o.email)}, 'https://directory.test/people/1', 'pattern_guess', null, 'research_engine'),
-      (${lit(id)}, 'project', 'a sports show', 'https://directory.test/people/1', 'directory', 'hosts a sports show', 'research_engine');
+      (${lit(id)}, 'full_name', ${lit(o.name)}, 'https://directory.test/people/1', 'directory', ${lit(o.name + ', media')}, 'owner'),
+      (${lit(id)}, 'email', ${lit(o.email)}, 'https://directory.test/people/1', 'pattern_guess', null, 'owner'),
+      (${lit(id)}, 'project', 'a sports show', 'https://directory.test/people/1', 'directory', 'hosts a sports show', 'owner');
     update growth_outbound.prospects set fit_factors = '[{"code": "generic_content"}]'::jsonb where id = ${lit(id)};
     ${evaluate(id)}`;
 }

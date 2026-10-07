@@ -222,7 +222,9 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **What comes back (Phase 6).** Resend's events arrive through `growth_outbound_webhook`; the database checks the Svix signature itself (HMAC-SHA256 in SQL, checked against RFC 4231 on every run) with a secret set only from the SQL editor (`select growth_outbound.set_webhook_secret('whsec_...');`) and never returned. A hard bounce or a spam complaint suppresses the address; an opt-out (`growth_outbound_optout`, RFC 8058 one-click) does too; a test send never does. Provider events are append-only and deduplicated.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-26 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js` and `outbound_events_sql.test.js`; see `docs/growth-outbound.md`.
+- **Discovery and research (Phase 7).** Search results are candidates; research stores every page it reads (append-only) and records facts only as quotes from those pages. The database checks each quote against the stored page and each claim against its quote, decides itself which pages are the prospect's own (never a publisher's), and enforces a daily budget on every provider call. Nothing here approves or sends.
+
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-29 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js`, `outbound_events_sql.test.js`, `outbound_engine_sql.test.js` and `outbound_research.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,

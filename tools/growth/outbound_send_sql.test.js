@@ -135,7 +135,7 @@ try {
 
   /* ══ G. GATES AT SEND TIME ════════════════════════════════════════════ */
   one(`insert into growth_outbound.evidence (prospect_id, field_name, claim, source_url, source_kind, source_excerpt, collected_by)
-       values ('${pid(4)}', 'full_name', 'Anna Belle', 'https://people-directory.test/ab', 'directory', 'Anna Belle', 'research_engine');`);
+       values ('${pid(4)}', 'full_name', 'Anna Belle', 'https://people-directory.test/ab', 'directory', 'Anna Belle', 'owner');`);
   r = claim(did(4));
   chk('G an approval the prospect no longer earns is not sent (re-evaluated at send time) and goes back to review', r.ok === false
     && r.reason === 'approval_withdrawn' && dstatus(did(4)) === 'pending_review' && nsends(`draft_id = '${did(4)}'`) === 0, r);
