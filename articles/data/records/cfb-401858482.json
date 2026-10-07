@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:30:00.000Z",
   "game_when_label": "2026-10-10 16:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1402,6 +1402,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Ball State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1528,9 +1534,9 @@
       "difference_n": 0.7207862103881411,
       "total_model": "49.7",
       "total_market": "52.5",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1545,10 +1551,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.7 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1568,9 +1574,9 @@
         "market_line_text": "Northwestern -37.0",
         "market_home_margin": 37,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1610,7 +1616,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1633,8 +1639,8 @@
         "next_actions": [
           {
             "action": "Confirm Ball State’s starting QB (Keldric Luster)",
-            "potential_gain": 6,
-            "text": "up to +6"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Register a school availability release for Northwestern",
@@ -1680,28 +1686,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Northwestern",
-          "side": "home",
-          "line": -37,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Northwestern -37.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "Ball State",
-          "side": "away",
-          "line": 37,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Ball State +37.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1903,7 +1889,7 @@
       "EdgeDesk’s line is Northwestern -37.7 on a neutral read of the two teams, before any book is consulted. Projected total 49.7.",
       "Northwestern wins 99% of the time in EdgeDesk’s simulation, Ball State 1%.",
       "Eight games in ten land between +15.7 and +57.7 for Northwestern. A single result inside that band tells you nothing new about either team.",
-      "The market has Northwestern -37.0 at captured consensus · 1 book · best at Pinnacle, 0.7 points from EdgeDesk’s number.",
+      "The market has Northwestern -37.0 at captured consensus (stale) · 1 book · best at Pinnacle, 0.7 points from EdgeDesk’s number.",
       "Northwestern quarterback: Aidan Chiles — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1918,6 +1904,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

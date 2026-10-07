@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1425,6 +1425,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Houston — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1533,9 +1539,9 @@
       "difference_n": 0.38689507964655334,
       "total_model": "56.2",
       "total_market": "56.0",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1550,10 +1556,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.4 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1573,9 +1579,9 @@
         "market_line_text": "Kansas State -2.5",
         "market_home_margin": 2.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1585,11 +1591,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "87 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: Houston’s availability report is not due yet",
-        "score": 87,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1615,7 +1621,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1636,16 +1642,16 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Houston)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Re-read availability inside the filing window (Kansas State)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
-            "action": "Fetch the venue forecast",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1671,28 +1677,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Houston",
-          "side": "away",
-          "line": 2.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Houston +2.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Kansas State",
-          "side": "home",
-          "line": -2.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Kansas State -2.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1894,7 +1880,7 @@
       "EdgeDesk’s line is Kansas State -2.1 on a neutral read of the two teams, before any book is consulted. Projected total 56.2.",
       "Kansas State wins 56% of the time in EdgeDesk’s simulation, Houston 44%.",
       "Eight games in ten land between -19.9 and +22.1 for Kansas State. A single result inside that band tells you nothing new about either team.",
-      "The market has Kansas State -2.5 at captured consensus · 1 book · best at FanDuel, 0.4 points from EdgeDesk’s number.",
+      "The market has Kansas State -2.5 at captured consensus (stale) · 1 book · best at FanDuel, 0.4 points from EdgeDesk’s number.",
       "Houston quarterback: Conner Weigman — started the last game; no announcement for this one.",
       "Kansas State quarterback: Avery Johnson — started the last game; no announcement for this one."
     ],
@@ -1909,6 +1895,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

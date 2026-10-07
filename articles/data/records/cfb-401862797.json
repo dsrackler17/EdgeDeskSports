@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T20:00:00.000Z",
   "game_when_label": "2026-10-10 20:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1420,6 +1420,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Rice — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1540,9 +1546,9 @@
       "difference_n": 4.382121375679043,
       "total_model": "50.6",
       "total_market": "47.0",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1557,10 +1563,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 4.4 pts toward East Carolina, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1580,9 +1586,9 @@
         "market_line_text": "East Carolina -9.5",
         "market_home_margin": 9.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1592,11 +1598,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: Rice’s availability report is not due yet",
-        "score": 88,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1622,7 +1628,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1643,18 +1649,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Rice)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Re-read availability inside the filing window (East Carolina)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Confirm East Carolina’s starting QB (Emory Williams)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1690,28 +1696,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "East Carolina",
-          "side": "home",
-          "line": -9.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "East Carolina -9.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Rice",
-          "side": "away",
-          "line": 9.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Rice +9.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1913,7 +1899,7 @@
       "EdgeDesk’s line is East Carolina -13.9 on a neutral read of the two teams, before any book is consulted. Projected total 50.6.",
       "East Carolina wins 83% of the time in EdgeDesk’s simulation, Rice 17%.",
       "Eight games in ten land between -8.1 and +33.9 for East Carolina. A single result inside that band tells you nothing new about either team.",
-      "The market has East Carolina -9.5 at captured consensus · 1 book · best at FanDuel, 4.4 points from EdgeDesk’s number.",
+      "The market has East Carolina -9.5 at captured consensus (stale) · 1 book · best at FanDuel, 4.4 points from EdgeDesk’s number.",
       "Rice quarterback: Jacurri Brown — started the last game; no announcement for this one.",
       "East Carolina quarterback: Emory Williams — started the last game; no announcement for this one."
     ],
@@ -1928,6 +1914,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

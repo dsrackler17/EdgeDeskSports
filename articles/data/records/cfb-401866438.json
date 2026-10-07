@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1446,6 +1446,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Central Michigan — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1572,9 +1578,9 @@
       "difference_n": 5.045301479628401,
       "total_model": "47.0",
       "total_market": "47.0",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1589,10 +1595,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 5.0 pts toward Ohio. REGIME CHANGE: Ohio (new head coach; returning production at the 18th percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1612,9 +1618,9 @@
         "market_line_text": "Ohio -3.0",
         "market_home_margin": 3,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1654,7 +1660,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1677,8 +1683,18 @@
         "next_actions": [
           {
             "action": "Confirm Central Michigan’s starting QB (Angel Flores)",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "potential_gain": 8,
+            "text": "up to +8"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Central Michigan)",
+            "potential_gain": 2,
+            "text": "up to +2 once confirm Central Michigan’s starting QB (Angel Flores) is done"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Ohio)",
+            "potential_gain": 2,
+            "text": "up to +2 once confirm Central Michigan’s starting QB (Angel Flores) is done"
           }
         ],
         "stability": {
@@ -1714,28 +1730,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Ohio",
-          "side": "home",
-          "line": -3,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Ohio -3.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "Central Michigan",
-          "side": "away",
-          "line": 3,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Central Michigan +3.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1937,7 +1933,7 @@
       "EdgeDesk’s line is Ohio -8.0 on a neutral read of the two teams, before any book is consulted. Projected total 47.0.",
       "Ohio wins 71% of the time in EdgeDesk’s simulation, Central Michigan 29%.",
       "Eight games in ten land between -14.0 and +28.0 for Ohio. A single result inside that band tells you nothing new about either team.",
-      "The market has Ohio -3.0 at captured consensus · 1 book · best at Pinnacle, 5.0 points from EdgeDesk’s number.",
+      "The market has Ohio -3.0 at captured consensus (stale) · 1 book · best at Pinnacle, 5.0 points from EdgeDesk’s number.",
       "Ohio quarterback: Matt Vezza — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1952,6 +1948,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

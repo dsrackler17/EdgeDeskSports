@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1457,6 +1457,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Ole Miss — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1519,12 +1525,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "REGIME CHANGE (Ole Miss): REGIME CHANGE: new head coach; returning roster share at the 28th percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played.",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "low confidence",
-          "text": "rivalry situational effect is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1589,9 +1589,9 @@
       "difference_n": 9.909168969319278,
       "total_model": "58.1",
       "total_market": "59.0",
-      "book": "captured consensus · 1 book · best at Hard Rock Bet",
+      "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1606,10 +1606,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_FAULT",
-        "label": "MARKET FAULT",
-        "rule": "market",
-        "means": "EdgeDesk and the market are 9.9 pts toward Vanderbilt, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1617,8 +1617,9 @@
         "raw_market_gap": 9.91,
         "verified_market_gap": null,
         "calibrated_gap": 8.54,
-        "root_cause": "THIN_MARKET",
+        "root_cause": "STALE_MARKET",
         "failed": [
+          "MARKET.quote_fresh",
           "MARKET.book_count",
           "QB.home_starter",
           "MODEL.ensemble_favorite"
@@ -1644,9 +1645,9 @@
         "market_line_text": "Ole Miss -9.5",
         "market_home_margin": -9.5,
         "favorite_differs": true,
-        "source": "captured consensus · 1 book · best at Hard Rock Bet",
+        "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": "Measured from the raw margin (Vanderbilt -0.41), not from the one-point display line."
       },
@@ -1686,13 +1687,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 11.2,
+            "score": 11.3,
             "max": 15
           },
           {
@@ -1709,18 +1710,18 @@
         "next_actions": [
           {
             "action": "Resolve Vanderbilt’s starter conflict",
-            "potential_gain": 8,
-            "text": "up to +8"
+            "potential_gain": 6,
+            "text": "up to +6"
           },
           {
             "action": "Re-read availability inside the filing window (Ole Miss)",
-            "potential_gain": 2,
-            "text": "up to +2 once resolve Vanderbilt’s starter conflict is done"
+            "potential_gain": 3,
+            "text": "up to +3 once resolve Vanderbilt’s starter conflict is done"
           },
           {
             "action": "Re-read availability inside the filing window (Vanderbilt)",
-            "potential_gain": 2,
-            "text": "up to +2 once resolve Vanderbilt’s starter conflict is done"
+            "potential_gain": 3,
+            "text": "up to +3 once resolve Vanderbilt’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1750,28 +1751,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Vanderbilt",
-          "side": "home",
-          "line": 9.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Vanderbilt +9.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "Ole Miss",
-          "side": "away",
-          "line": -9.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Ole Miss -9.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1973,7 +1954,7 @@
       "EdgeDesk’s line is Vanderbilt -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Vanderbilt +0.41, and the one-point line is a display floor. Projected total 58.1.",
       "Vanderbilt wins 51% of the time in EdgeDesk’s simulation, Ole Miss 49%.",
       "Eight games in ten land between -21.6 and +20.4 for Vanderbilt. A single result inside that band tells you nothing new about either team.",
-      "The market has Vanderbilt +9.5 at captured consensus · 1 book · best at Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
+      "The market has Vanderbilt +9.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet, 9.9 points from EdgeDesk’s number.",
       "Ole Miss quarterback: Trinidad Chambliss — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1988,6 +1969,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

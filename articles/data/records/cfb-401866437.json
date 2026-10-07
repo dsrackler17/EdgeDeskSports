@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1420,6 +1420,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Buffalo — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1528,9 +1534,9 @@
       "difference_n": 1.7424919056885066,
       "total_model": "53.5",
       "total_market": "54.5",
-      "book": "captured consensus · 1 book · best at Hard Rock Bet",
+      "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1545,10 +1551,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.7 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1568,9 +1574,9 @@
         "market_line_text": "Toledo -20.5",
         "market_home_margin": 20.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Hard Rock Bet",
+        "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1580,11 +1586,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Toledo or Buffalo’s starting QB can play",
-        "score": 89,
+        "text": "87 · STRONG",
+        "sub": "main deduction: Buffalo’s availability report is not due yet",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1610,7 +1616,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1626,15 +1632,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Toledo or Buffalo’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Buffalo’s availability report is not due yet; the impact of Buffalo’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Toledo) and Re-read availability inside the filing window (Buffalo) is done"
+            "action": "Re-read availability inside the filing window (Buffalo)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Toledo)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1670,28 +1684,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Toledo",
-          "side": "home",
-          "line": -20.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Toledo -20.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "Buffalo",
-          "side": "away",
-          "line": 20.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Buffalo +20.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1893,7 +1887,7 @@
       "EdgeDesk’s line is Toledo -22.2 on a neutral read of the two teams, before any book is consulted. Projected total 53.5.",
       "Toledo wins 94% of the time in EdgeDesk’s simulation, Buffalo 6%.",
       "Eight games in ten land between +0.2 and +42.2 for Toledo. A single result inside that band tells you nothing new about either team.",
-      "The market has Toledo -20.5 at captured consensus · 1 book · best at Hard Rock Bet, 1.7 points from EdgeDesk’s number.",
+      "The market has Toledo -20.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet, 1.7 points from EdgeDesk’s number.",
       "Buffalo quarterback: Jason Wright — started the last game; no announcement for this one.",
       "Toledo quarterback: John Alan Richter — started the last game; no announcement for this one."
     ],
@@ -1908,6 +1902,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

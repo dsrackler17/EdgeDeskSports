@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1426,6 +1426,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Wake Forest — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1528,9 +1534,9 @@
       "difference_n": 1.0078911247647806,
       "total_model": "58.2",
       "total_market": "59.5",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1545,10 +1551,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.0 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1568,9 +1574,9 @@
         "market_line_text": "Wake Forest -3.5",
         "market_home_margin": -3.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1580,11 +1586,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 86,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "86 · STRONG",
         "sub": "main deduction: Wake Forest’s availability report is not due yet",
-        "score": 88,
+        "score": 86,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1610,7 +1616,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1631,18 +1637,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Wake Forest)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Re-read availability inside the filing window (NC State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
-            "action": "Add another market source",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1672,28 +1678,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "NC State",
-          "side": "home",
-          "line": 3.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "NC State +3.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Wake Forest",
-          "side": "away",
-          "line": -3.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Wake Forest -3.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1895,7 +1881,7 @@
       "EdgeDesk’s line is NC State +2.5 on a neutral read of the two teams, before any book is consulted. Projected total 58.2.",
       "NC State wins 43% of the time in EdgeDesk’s simulation, Wake Forest 57%.",
       "Eight games in ten land between -24.5 and +17.5 for NC State. A single result inside that band tells you nothing new about either team.",
-      "The market has NC State +3.5 at captured consensus · 1 book · best at FanDuel, 1.0 points from EdgeDesk’s number.",
+      "The market has NC State +3.5 at captured consensus (stale) · 1 book · best at FanDuel, 1.0 points from EdgeDesk’s number.",
       "Wake Forest quarterback: Gio Lopez — started the last game; no announcement for this one.",
       "NC State quarterback: CJ Bailey — started the last game; no announcement for this one."
     ],
@@ -1910,6 +1896,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

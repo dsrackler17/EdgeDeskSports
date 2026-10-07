@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1432,6 +1432,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Stanford — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1546,9 +1552,9 @@
       "difference_n": 0.006367247572917734,
       "total_model": "54.0",
       "total_market": "55.0",
-      "book": "captured consensus · 1 book · best at DraftKings",
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1563,10 +1569,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.0 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1586,9 +1592,9 @@
         "market_line_text": "Notre Dame -38.5",
         "market_home_margin": 38.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at DraftKings",
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1598,11 +1604,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "85 · STRONG",
+        "text": "82 · STRONG",
         "sub": "main deduction: Notre Dame’s availability sources refused",
-        "score": 85,
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1628,7 +1634,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.6,
             "max": 15
           },
           {
@@ -1648,19 +1654,19 @@
         "capped_by": [],
         "next_actions": [
           {
+            "action": "Restore an injury/availability source for Notre Dame",
+            "potential_gain": 5,
+            "text": "up to +5"
+          },
+          {
             "action": "Register a school availability release for Stanford",
             "potential_gain": 4,
             "text": "up to +4"
           },
           {
-            "action": "Restore an injury/availability source for Notre Dame",
-            "potential_gain": 4,
-            "text": "up to +4"
-          },
-          {
-            "action": "Confirm Notre Dame’s starting QB (CJ Carr)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1696,28 +1702,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Notre Dame",
-          "side": "home",
-          "line": -38.5,
-          "price_american": null,
-          "book": "DraftKings",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Notre Dame -38.5 (price not captured) at DraftKings"
-        },
-        "other": {
-          "team": "Stanford",
-          "side": "away",
-          "line": 38.5,
-          "price_american": null,
-          "book": "DraftKings",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Stanford +38.5 (price not captured) at DraftKings"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1919,7 +1905,7 @@
       "EdgeDesk’s line is Notre Dame -38.5 on a neutral read of the two teams, before any book is consulted. Projected total 54.0.",
       "Notre Dame wins >99% of the time in EdgeDesk’s simulation, Stanford <1%. Neither side is certain: one side rounds past the boundary, so it is shown bounded: a projection built on a continuous margin distribution cannot mean 100% or 0%",
       "Eight games in ten land between +16.5 and +58.5 for Notre Dame. A single result inside that band tells you nothing new about either team.",
-      "The market has Notre Dame -38.5 at captured consensus · 1 book · best at DraftKings, 0.0 points from EdgeDesk’s number.",
+      "The market has Notre Dame -38.5 at captured consensus (stale) · 1 book · best at DraftKings, 0.0 points from EdgeDesk’s number.",
       "Stanford quarterback: Davis Warren — started the last game; no announcement for this one.",
       "Notre Dame quarterback: CJ Carr — started the last game; no announcement for this one."
     ],
@@ -1934,6 +1920,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

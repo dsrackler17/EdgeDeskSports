@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1456,6 +1456,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Georgia — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1570,9 +1576,9 @@
       "difference_n": 3.346403980052359,
       "total_model": "57.8",
       "total_market": "52.5",
-      "book": "captured consensus · 1 book · best at BetMGM",
+      "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1587,10 +1593,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 3.3 pts toward Alabama, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1610,9 +1616,9 @@
         "market_line_text": "Alabama -2.0",
         "market_home_margin": 2,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetMGM",
+        "source": "captured consensus (stale) · 1 book · best at BetMGM",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1622,11 +1628,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Georgia’s availability report is not due yet",
-        "score": 89,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1652,7 +1658,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1670,7 +1676,23 @@
         ],
         "main_deduction": "Georgia’s availability report is not due yet; the impact of Georgia’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Georgia)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Alabama)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
         "stability": {
           "tier": "STABLE",
           "sd": 1.86,
@@ -1704,28 +1726,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Alabama",
-          "side": "home",
-          "line": -2,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Alabama -2.0 (price not captured) at BetMGM"
-        },
-        "other": {
-          "team": "Georgia",
-          "side": "away",
-          "line": 2,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Georgia +2.0 (price not captured) at BetMGM"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1927,7 +1929,7 @@
       "EdgeDesk’s line is Alabama -5.3 on a neutral read of the two teams, before any book is consulted. Projected total 57.8.",
       "Alabama wins 64% of the time in EdgeDesk’s simulation, Georgia 36%.",
       "Eight games in ten land between -16.7 and +25.3 for Alabama. A single result inside that band tells you nothing new about either team.",
-      "The market has Alabama -2.0 at captured consensus · 1 book · best at BetMGM, 3.3 points from EdgeDesk’s number.",
+      "The market has Alabama -2.0 at captured consensus (stale) · 1 book · best at BetMGM, 3.3 points from EdgeDesk’s number.",
       "Georgia quarterback: Gunner Stockton — started the last game; no announcement for this one.",
       "Alabama quarterback: Keelon Russell — started the last game; no announcement for this one."
     ],
@@ -1942,6 +1944,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

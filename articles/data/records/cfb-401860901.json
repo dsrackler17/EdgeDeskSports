@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1435,6 +1435,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Boise State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1549,9 +1555,9 @@
       "difference_n": 6.095842316585621,
       "total_model": "48.8",
       "total_market": "48.5",
-      "book": "captured consensus · 1 book · best at BetRivers",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1566,10 +1572,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 6.1 pts toward Fresno State, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1589,9 +1595,9 @@
         "market_line_text": "Boise State -6.0",
         "market_home_margin": -6,
         "favorite_differs": true,
-        "source": "captured consensus · 1 book · best at BetRivers",
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": "Measured from the raw margin (Fresno State -0.10), not from the one-point display line."
       },
@@ -1631,7 +1637,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 11.8,
             "max": 15
           },
           {
@@ -1654,8 +1660,8 @@
         "next_actions": [
           {
             "action": "Identify Boise State’s starting QB",
-            "potential_gain": 11,
-            "text": "up to +11"
+            "potential_gain": 9,
+            "text": "up to +9"
           },
           {
             "action": "Re-read availability inside the filing window (Boise State)",
@@ -1695,28 +1701,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Fresno State",
-          "side": "home",
-          "line": 6,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Fresno State +6.0 (price not captured) at BetRivers"
-        },
-        "other": {
-          "team": "Boise State",
-          "side": "away",
-          "line": -6,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Boise State -6.0 (price not captured) at BetRivers"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1918,7 +1904,7 @@
       "EdgeDesk’s line is Fresno State -1.0 on a neutral read of the two teams, before any book is consulted. It is a near pick’em: the raw projected margin is Fresno State +0.10, and the one-point line is a display floor. Projected total 48.8.",
       "Fresno State wins 50% of the time in EdgeDesk’s simulation, Boise State 50%.",
       "Eight games in ten land between -21.9 and +20.1 for Fresno State. A single result inside that band tells you nothing new about either team.",
-      "The market has Fresno State +6.0 at captured consensus · 1 book · best at BetRivers, 6.1 points from EdgeDesk’s number.",
+      "The market has Fresno State +6.0 at captured consensus (stale) · 1 book · best at BetRivers, 6.1 points from EdgeDesk’s number.",
       "Fresno State quarterback: Jayden Mandal — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1932,6 +1918,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

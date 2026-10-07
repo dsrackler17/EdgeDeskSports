@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T01:00:00.000Z",
   "game_when_label": "2026-10-10 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Utah State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Washington State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -1400,6 +1424,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Washington State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1508,9 +1538,9 @@
       "difference_n": 1.2640180548693944,
       "total_model": "47.4",
       "total_market": "44.5",
-      "book": "captured consensus · 1 book · best at BetOnline.ag",
+      "book": "captured consensus (stale) · 1 book · best at BetOnline.ag",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1525,10 +1555,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.3 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1548,9 +1578,9 @@
         "market_line_text": "Utah State -6.0",
         "market_home_margin": 6,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetOnline.ag",
+        "source": "captured consensus (stale) · 1 book · best at BetOnline.ag",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1560,13 +1590,13 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
-        "tier": "STRONG",
-        "text": "85 · STRONG",
-        "sub": "main deduction: the projected spread moves ±2.17 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 85,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "pct": 79,
+        "tier": "ADEQUATE",
+        "text": "79 · ADEQUATE",
+        "sub": "main deduction: Washington State’s availability sources refused",
+        "score": 79,
+        "grade": "ADEQUATE",
+        "grade_label": "ADEQUATE",
         "gate_label": null,
         "components": [
           {
@@ -1578,7 +1608,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.6,
+            "score": 8.1,
             "max": 20
           },
           {
@@ -1590,13 +1620,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1606,23 +1636,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the projected spread moves ±2.17 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.42 pts)",
+        "main_deduction": "Washington State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Washington State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Washington State)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "action": "Restore an injury/availability source for Washington State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Utah State)",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "action": "Restore an injury/availability source for Utah State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Resolve Utah State’s starter conflict",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1646,28 +1676,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Washington State",
-          "side": "away",
-          "line": 6,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Washington State +6.0 (price not captured) at BetOnline.ag"
-        },
-        "other": {
-          "team": "Utah State",
-          "side": "home",
-          "line": -6,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Utah State -6.0 (price not captured) at BetOnline.ag"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1869,7 +1879,7 @@
       "EdgeDesk’s line is Utah State -4.7 on a neutral read of the two teams, before any book is consulted. Projected total 47.4.",
       "Utah State wins 63% of the time in EdgeDesk’s simulation, Washington State 37%.",
       "Eight games in ten land between -17.3 and +24.7 for Utah State. A single result inside that band tells you nothing new about either team.",
-      "The market has Utah State -6.0 at captured consensus · 1 book · best at BetOnline.ag, 1.3 points from EdgeDesk’s number.",
+      "The market has Utah State -6.0 at captured consensus (stale) · 1 book · best at BetOnline.ag, 1.3 points from EdgeDesk’s number.",
       "Washington State quarterback: Caden Pinnick — started the last game; no announcement for this one.",
       "Utah State quarterback: Grady Brosterhous — started the last game; no announcement for this one."
     ],
@@ -1884,6 +1894,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

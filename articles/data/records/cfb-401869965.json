@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1462,6 +1462,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Louisiana — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1576,9 +1582,9 @@
       "difference_n": 0.6227155296499456,
       "total_model": "53.3",
       "total_market": "48.5",
-      "book": "captured consensus · 1 book · best at theScore Bet",
+      "book": "captured consensus (stale) · 1 book · best at theScore Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1593,10 +1599,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.6 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1616,9 +1622,9 @@
         "market_line_text": "Louisiana Tech -2.5",
         "market_home_margin": 2.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at theScore Bet",
+        "source": "captured consensus (stale) · 1 book · best at theScore Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1628,11 +1634,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 83,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "83 · STRONG",
         "sub": "main deduction: Louisiana’s availability sources refused",
-        "score": 86,
+        "score": 83,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1658,7 +1664,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1679,18 +1685,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for Louisiana",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Restore an injury/availability source for Louisiana Tech",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1720,28 +1726,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Louisiana Tech",
-          "side": "home",
-          "line": -2.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Louisiana Tech -2.5 (price not captured) at theScore Bet"
-        },
-        "other": {
-          "team": "Louisiana",
-          "side": "away",
-          "line": 2.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Louisiana +2.5 (price not captured) at theScore Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1943,7 +1929,7 @@
       "EdgeDesk’s line is Louisiana Tech -3.1 on a neutral read of the two teams, before any book is consulted. Projected total 53.3.",
       "Louisiana Tech wins 58% of the time in EdgeDesk’s simulation, Louisiana 42%.",
       "Eight games in ten land between -18.9 and +23.1 for Louisiana Tech. A single result inside that band tells you nothing new about either team.",
-      "The market has Louisiana Tech -2.5 at captured consensus · 1 book · best at theScore Bet, 0.6 points from EdgeDesk’s number.",
+      "The market has Louisiana Tech -2.5 at captured consensus (stale) · 1 book · best at theScore Bet, 0.6 points from EdgeDesk’s number.",
       "Louisiana quarterback: Lunch Winfield — started the last game; no announcement for this one.",
       "Louisiana Tech quarterback: Trey Kukuk — started the last game; no announcement for this one."
     ],
@@ -1958,6 +1944,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

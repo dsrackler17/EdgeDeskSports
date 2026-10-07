@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1395,6 +1395,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Kent State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1491,9 +1497,9 @@
       "difference_n": 1.9313381386016744,
       "total_model": "46.6",
       "total_market": "43.5",
-      "book": "captured consensus · 1 book · best at Hard Rock Bet",
+      "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1508,10 +1514,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.9 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1531,9 +1537,9 @@
         "market_line_text": "Western Michigan -13.5",
         "market_home_margin": 13.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Hard Rock Bet",
+        "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1543,11 +1549,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Kent State’s availability report is not due yet",
-        "score": 89,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1573,7 +1579,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1591,7 +1597,23 @@
         ],
         "main_deduction": "Kent State’s availability report is not due yet; the impact of Kent State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Kent State)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Western Michigan)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
         "stability": {
           "tier": "STABLE",
           "sd": 1.88,
@@ -1625,28 +1647,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Western Michigan",
-          "side": "home",
-          "line": -13.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Western Michigan -13.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "Kent State",
-          "side": "away",
-          "line": 13.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Kent State +13.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1848,7 +1850,7 @@
       "EdgeDesk’s line is Western Michigan -15.4 on a neutral read of the two teams, before any book is consulted. Projected total 46.6.",
       "Western Michigan wins 85% of the time in EdgeDesk’s simulation, Kent State 15%.",
       "Eight games in ten land between -6.6 and +35.4 for Western Michigan. A single result inside that band tells you nothing new about either team.",
-      "The market has Western Michigan -13.5 at captured consensus · 1 book · best at Hard Rock Bet, 1.9 points from EdgeDesk’s number.",
+      "The market has Western Michigan -13.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet, 1.9 points from EdgeDesk’s number.",
       "Kent State quarterback: Dru DeShields — started the last game; no announcement for this one.",
       "Western Michigan quarterback: Broc Lowry — started the last game; no announcement for this one."
     ],
@@ -1863,6 +1865,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

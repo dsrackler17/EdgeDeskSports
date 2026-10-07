@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1454,6 +1454,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "UCF — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1580,9 +1586,9 @@
       "difference_n": 6.516874668931713,
       "total_model": "50.9",
       "total_market": "52.5",
-      "book": "captured consensus · 1 book · best at theScore Bet",
+      "book": "captured consensus (stale) · 1 book · best at theScore Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1597,10 +1603,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 6.5 pts toward UCF. REGIME CHANGE: Oklahoma State (new head coach; returning roster share at the 2nd percentile; returning production at the 1st percentile; transfers out at the 100th percentile; 4 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1620,9 +1626,9 @@
         "market_line_text": "Oklahoma State -10.5",
         "market_home_margin": 10.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at theScore Bet",
+        "source": "captured consensus (stale) · 1 book · best at theScore Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1632,11 +1638,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Oklahoma State or UCF’s starting QB can play",
-        "score": 89,
+        "text": "87 · STRONG",
+        "sub": "main deduction: UCF’s availability report is not due yet",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1662,7 +1668,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1678,15 +1684,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Oklahoma State or UCF’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "UCF’s availability report is not due yet; the impact of UCF’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Oklahoma State) and Re-read availability inside the filing window (UCF) is done"
+            "action": "Re-read availability inside the filing window (UCF)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Oklahoma State)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1716,28 +1730,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "UCF",
-          "side": "away",
-          "line": 10.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "UCF +10.5 (price not captured) at theScore Bet"
-        },
-        "other": {
-          "team": "Oklahoma State",
-          "side": "home",
-          "line": -10.5,
-          "price_american": null,
-          "book": "theScore Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Oklahoma State -10.5 (price not captured) at theScore Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1939,7 +1933,7 @@
       "EdgeDesk’s line is Oklahoma State -4.0 on a neutral read of the two teams, before any book is consulted. Projected total 50.9.",
       "Oklahoma State wins 61% of the time in EdgeDesk’s simulation, UCF 39%.",
       "Eight games in ten land between -18.0 and +24.0 for Oklahoma State. A single result inside that band tells you nothing new about either team.",
-      "The market has Oklahoma State -10.5 at captured consensus · 1 book · best at theScore Bet, 6.5 points from EdgeDesk’s number.",
+      "The market has Oklahoma State -10.5 at captured consensus (stale) · 1 book · best at theScore Bet, 6.5 points from EdgeDesk’s number.",
       "UCF quarterback: Keyone Jenkins — started the last game; no announcement for this one.",
       "Oklahoma State quarterback: Drew Mestemaker — started the last game; no announcement for this one."
     ],
@@ -1954,6 +1948,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

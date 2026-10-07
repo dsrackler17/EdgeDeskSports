@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1424,6 +1424,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Tulsa — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1550,9 +1556,9 @@
       "difference_n": 7.494093633868593,
       "total_model": "52.2",
       "total_market": "49.0",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1567,10 +1573,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_FAULT",
-        "label": "MARKET FAULT",
-        "rule": "market",
-        "means": "EdgeDesk and the market are 7.5 pts toward Navy, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1578,8 +1584,9 @@
         "raw_market_gap": 7.49,
         "verified_market_gap": null,
         "calibrated_gap": 5.78,
-        "root_cause": "THIN_MARKET",
+        "root_cause": "STALE_MARKET",
         "failed": [
+          "MARKET.quote_fresh",
           "MARKET.book_count",
           "MODEL.calibration"
         ],
@@ -1604,9 +1611,9 @@
         "market_line_text": "Navy -2.5",
         "market_home_margin": 2.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1646,13 +1653,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 11.8,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 11.2,
+            "score": 11.3,
             "max": 15
           },
           {
@@ -1674,8 +1681,8 @@
           },
           {
             "action": "Confirm Tulsa’s starting QB (Baylor Hayes)",
-            "potential_gain": 6,
-            "text": "up to +6 once identify Navy’s starting QB is done"
+            "potential_gain": 4,
+            "text": "up to +4 once identify Navy’s starting QB is done"
           }
         ],
         "stability": {
@@ -1711,28 +1718,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Navy",
-          "side": "home",
-          "line": -2.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Navy -2.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Tulsa",
-          "side": "away",
-          "line": 2.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Tulsa +2.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1934,7 +1921,7 @@
       "EdgeDesk’s line is Navy -10.0 on a neutral read of the two teams, before any book is consulted. Projected total 52.2.",
       "Navy wins 75% of the time in EdgeDesk’s simulation, Tulsa 25%.",
       "Eight games in ten land between -12.0 and +30.0 for Navy. A single result inside that band tells you nothing new about either team.",
-      "The market has Navy -2.5 at captured consensus · 1 book · best at FanDuel, 7.5 points from EdgeDesk’s number."
+      "The market has Navy -2.5 at captured consensus (stale) · 1 book · best at FanDuel, 7.5 points from EdgeDesk’s number."
     ],
     "missing": [
       "Tulsa quarterback unresolved: unresolved: Baylor Hayes 57% of recent dropbacks and Dexter Williams II 43% of recent dropbacks.",
@@ -1948,6 +1935,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

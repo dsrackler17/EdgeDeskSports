@@ -21,8 +21,8 @@
   "game_time": "2026-10-08T23:30:00.000Z",
   "game_when_label": "2026-10-08 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1450,6 +1450,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "South Alabama — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1552,9 +1558,9 @@
       "difference_n": 5.160409782511738,
       "total_model": "56.4",
       "total_market": "58.5",
-      "book": "captured consensus · 1 book · best at Caesars",
+      "book": "captured consensus (stale) · 1 book · best at Caesars",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1569,10 +1575,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 5.2 pts toward Arkansas State, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1592,9 +1598,9 @@
         "market_line_text": "Arkansas State -1.5",
         "market_home_margin": 1.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Caesars",
+        "source": "captured consensus (stale) · 1 book · best at Caesars",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1604,11 +1610,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 85,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "85 · STRONG",
+        "text": "82 · STRONG",
         "sub": "main deduction: South Alabama’s availability sources refused",
-        "score": 85,
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1634,13 +1640,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1655,18 +1661,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for South Alabama",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Restore an injury/availability source for Arkansas State",
-            "potential_gain": 4,
-            "text": "up to +4"
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Resolve South Alabama’s starter conflict",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1702,28 +1708,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Arkansas State",
-          "side": "home",
-          "line": -1.5,
-          "price_american": null,
-          "book": "Caesars",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Arkansas State -1.5 (price not captured) at Caesars"
-        },
-        "other": {
-          "team": "South Alabama",
-          "side": "away",
-          "line": 1.5,
-          "price_american": null,
-          "book": "Caesars",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "South Alabama +1.5 (price not captured) at Caesars"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1925,7 +1911,7 @@
       "EdgeDesk’s line is Arkansas State -6.7 on a neutral read of the two teams, before any book is consulted. Projected total 56.4.",
       "Arkansas State wins 68% of the time in EdgeDesk’s simulation, South Alabama 32%.",
       "Eight games in ten land between -15.3 and +26.7 for Arkansas State. A single result inside that band tells you nothing new about either team.",
-      "The market has Arkansas State -1.5 at captured consensus · 1 book · best at Caesars, 5.2 points from EdgeDesk’s number.",
+      "The market has Arkansas State -1.5 at captured consensus (stale) · 1 book · best at Caesars, 5.2 points from EdgeDesk’s number.",
       "South Alabama quarterback: Jared Hollins — started the last game; no announcement for this one.",
       "Arkansas State quarterback: Trey Owens — started the last game; no announcement for this one."
     ],
@@ -1940,6 +1926,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

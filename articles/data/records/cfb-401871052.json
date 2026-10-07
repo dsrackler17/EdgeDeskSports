@@ -21,8 +21,8 @@
   "game_time": "2026-10-08T23:00:00.000Z",
   "game_when_label": "2026-10-08 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1462,6 +1462,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Missouri State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1594,9 +1600,9 @@
       "difference_n": 1.354126097278325,
       "total_model": "55.1",
       "total_market": "56.5",
-      "book": "captured consensus · 1 book · best at BetRivers",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1611,10 +1617,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.4 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1634,9 +1640,9 @@
         "market_line_text": "Western Kentucky -3.0",
         "market_home_margin": 3,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetRivers",
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1646,11 +1652,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
+        "pct": 76,
         "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
+        "text": "76 · ADEQUATE",
         "sub": "main deduction: the projection flips favorite in 14% of sensitivity runs",
-        "score": 79,
+        "score": 76,
         "grade": "ADEQUATE",
         "grade_label": "ADEQUATE",
         "gate_label": null,
@@ -1676,7 +1682,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1706,9 +1712,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Confirm Missouri State’s starting QB (Skyler Locklear)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1738,28 +1744,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Missouri State",
-          "side": "away",
-          "line": 3,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Missouri State +3.0 (price not captured) at BetRivers"
-        },
-        "other": {
-          "team": "Western Kentucky",
-          "side": "home",
-          "line": -3,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Western Kentucky -3.0 (price not captured) at BetRivers"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1961,7 +1947,7 @@
       "EdgeDesk’s line is Western Kentucky -1.6 on a neutral read of the two teams, before any book is consulted. Projected total 55.1.",
       "Western Kentucky wins 54% of the time in EdgeDesk’s simulation, Missouri State 46%.",
       "Eight games in ten land between -20.4 and +21.6 for Western Kentucky. A single result inside that band tells you nothing new about either team.",
-      "The market has Western Kentucky -3.0 at captured consensus · 1 book · best at BetRivers, 1.4 points from EdgeDesk’s number.",
+      "The market has Western Kentucky -3.0 at captured consensus (stale) · 1 book · best at BetRivers, 1.4 points from EdgeDesk’s number.",
       "Missouri State quarterback: Skyler Locklear — started the last game; no announcement for this one.",
       "Western Kentucky quarterback: Rodney Tisdale Jr. — started the last game; no announcement for this one."
     ],
@@ -1976,6 +1962,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

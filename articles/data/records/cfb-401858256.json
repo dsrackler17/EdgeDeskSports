@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1438,6 +1438,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "North Carolina — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1564,9 +1570,9 @@
       "difference_n": 9.024673440248261,
       "total_model": "50.5",
       "total_market": "47.0",
-      "book": "captured consensus · 1 book · best at BetMGM",
+      "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1581,10 +1587,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_FAULT",
-        "label": "MARKET FAULT",
-        "rule": "market",
-        "means": "EdgeDesk and the market are 9.0 pts toward Pittsburgh, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1592,8 +1598,9 @@
         "raw_market_gap": 9.02,
         "verified_market_gap": null,
         "calibrated_gap": 7.24,
-        "root_cause": "THIN_MARKET",
+        "root_cause": "STALE_MARKET",
         "failed": [
+          "MARKET.quote_fresh",
           "MARKET.book_count"
         ],
         "incomplete": [],
@@ -1617,9 +1624,9 @@
         "market_line_text": "Pittsburgh -3.0",
         "market_home_margin": 3,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetMGM",
+        "source": "captured consensus (stale) · 1 book · best at BetMGM",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1629,11 +1636,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Pittsburgh or North Carolina’s starting QB can play",
-        "score": 89,
+        "text": "87 · STRONG",
+        "sub": "main deduction: North Carolina’s availability report is not due yet",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1659,7 +1666,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1675,15 +1682,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Pittsburgh or North Carolina’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "North Carolina’s availability report is not due yet; the impact of North Carolina’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Pittsburgh) and Re-read availability inside the filing window (North Carolina) is done"
+            "action": "Re-read availability inside the filing window (North Carolina)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Pittsburgh)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1719,28 +1734,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Pittsburgh",
-          "side": "home",
-          "line": -3,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Pittsburgh -3.0 (price not captured) at BetMGM"
-        },
-        "other": {
-          "team": "North Carolina",
-          "side": "away",
-          "line": 3,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "North Carolina +3.0 (price not captured) at BetMGM"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1942,7 +1937,7 @@
       "EdgeDesk’s line is Pittsburgh -12.0 on a neutral read of the two teams, before any book is consulted. Projected total 50.5.",
       "Pittsburgh wins 79% of the time in EdgeDesk’s simulation, North Carolina 21%.",
       "Eight games in ten land between -10.0 and +32.0 for Pittsburgh. A single result inside that band tells you nothing new about either team.",
-      "The market has Pittsburgh -3.0 at captured consensus · 1 book · best at BetMGM, 9.0 points from EdgeDesk’s number.",
+      "The market has Pittsburgh -3.0 at captured consensus (stale) · 1 book · best at BetMGM, 9.0 points from EdgeDesk’s number.",
       "North Carolina quarterback: Billy Edwards Jr. — started the last game; no announcement for this one.",
       "Pittsburgh quarterback: Mason Heintschel — started the last game; no announcement for this one."
     ],
@@ -1957,6 +1952,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

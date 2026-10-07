@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1446,6 +1446,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Texas A&M — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1548,9 +1554,9 @@
       "difference_n": 5.2004553850671424,
       "total_model": "51.3",
       "total_market": "48.5",
-      "book": "captured consensus · 1 book · best at BetRivers",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1565,10 +1571,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "WORTH_RESEARCHING",
-        "label": "WORTH RESEARCHING",
-        "rule": "research_gap",
-        "means": "EdgeDesk differs from the market by 5.2 pts toward Missouri, past the 2-point research threshold, with usable confidence and reliability. A question worth opening — not a validated edge."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1588,9 +1594,9 @@
         "market_line_text": "Missouri -3.5",
         "market_home_margin": 3.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetRivers",
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1600,11 +1606,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Texas A&M’s availability report is not due yet",
-        "score": 89,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1630,7 +1636,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1648,7 +1654,23 @@
         ],
         "main_deduction": "Texas A&M’s availability report is not due yet; the impact of Texas A&M’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
-        "next_actions": [],
+        "next_actions": [
+          {
+            "action": "Re-read availability inside the filing window (Texas A&M)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Missouri)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
+          }
+        ],
         "stability": {
           "tier": "STABLE",
           "sd": 1.96,
@@ -1682,28 +1704,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Missouri",
-          "side": "home",
-          "line": -3.5,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Missouri -3.5 (price not captured) at BetRivers"
-        },
-        "other": {
-          "team": "Texas A&M",
-          "side": "away",
-          "line": 3.5,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Texas A&M +3.5 (price not captured) at BetRivers"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1905,7 +1907,7 @@
       "EdgeDesk’s line is Missouri -8.7 on a neutral read of the two teams, before any book is consulted. Projected total 51.3.",
       "Missouri wins 72% of the time in EdgeDesk’s simulation, Texas A&M 28%.",
       "Eight games in ten land between -13.3 and +28.7 for Missouri. A single result inside that band tells you nothing new about either team.",
-      "The market has Missouri -3.5 at captured consensus · 1 book · best at BetRivers, 5.2 points from EdgeDesk’s number.",
+      "The market has Missouri -3.5 at captured consensus (stale) · 1 book · best at BetRivers, 5.2 points from EdgeDesk’s number.",
       "Texas A&M quarterback: Marcel Reed — started the last game; no announcement for this one.",
       "Missouri quarterback: Austin Simmons — started the last game; no announcement for this one."
     ],
@@ -1920,6 +1922,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

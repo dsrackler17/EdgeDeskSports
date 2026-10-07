@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:45:00.000Z",
   "game_when_label": "2026-10-10 16:45 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1444,6 +1444,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "South Carolina — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1552,9 +1558,9 @@
       "difference_n": 6.129236997141704,
       "total_model": "57.9",
       "total_market": "62.0",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1569,10 +1575,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 6.1 pts toward South Carolina. REGIME CHANGE: Florida (new head coach; transfers out at the 93rd percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1592,9 +1598,9 @@
         "market_line_text": "Florida -13.5",
         "market_home_margin": 13.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1604,11 +1610,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Florida or South Carolina’s starting QB can play",
-        "score": 89,
+        "text": "87 · STRONG",
+        "sub": "main deduction: South Carolina’s availability report is not due yet",
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1634,7 +1640,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1650,15 +1656,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Florida or South Carolina’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "South Carolina’s availability report is not due yet; the impact of South Carolina’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Florida) and Re-read availability inside the filing window (South Carolina) is done"
+            "action": "Re-read availability inside the filing window (South Carolina)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Florida)",
+            "potential_gain": 2,
+            "text": "up to +2"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1688,28 +1702,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "South Carolina",
-          "side": "away",
-          "line": 13.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "South Carolina +13.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Florida",
-          "side": "home",
-          "line": -13.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Florida -13.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1911,7 +1905,7 @@
       "EdgeDesk’s line is Florida -7.4 on a neutral read of the two teams, before any book is consulted. Projected total 57.9.",
       "Florida wins 69% of the time in EdgeDesk’s simulation, South Carolina 31%.",
       "Eight games in ten land between -14.6 and +27.4 for Florida. A single result inside that band tells you nothing new about either team.",
-      "The market has Florida -13.5 at captured consensus · 1 book · best at FanDuel, 6.1 points from EdgeDesk’s number.",
+      "The market has Florida -13.5 at captured consensus (stale) · 1 book · best at FanDuel, 6.1 points from EdgeDesk’s number.",
       "South Carolina quarterback: LaNorris Sellers — started the last game; no announcement for this one.",
       "Florida quarterback: Aaron Philo — started the last game; no announcement for this one."
     ],
@@ -1926,6 +1920,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

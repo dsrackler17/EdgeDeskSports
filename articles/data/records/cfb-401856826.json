@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T02:15:00.000Z",
   "game_when_label": "2026-10-10 02:15 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for BYU and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Iowa State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -1446,6 +1470,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Iowa State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1566,9 +1596,9 @@
       "difference_n": 3.851701213939579,
       "total_model": "51.6",
       "total_market": "47.5",
-      "book": "captured consensus · 1 book · best at Bovada",
+      "book": "captured consensus (stale) · 1 book · best at Bovada",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1583,10 +1613,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 3.9 pts toward BYU. REGIME CHANGE: Iowa State (new head coach; returning roster share at the 14th percentile; returning production at the 4th percentile; transfers out at the 99th percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1606,9 +1636,9 @@
         "market_line_text": "BYU -10.0",
         "market_home_margin": 10,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Bovada",
+        "source": "captured consensus (stale) · 1 book · best at Bovada",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1618,11 +1648,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Iowa State’s availability report is not due yet",
-        "score": 88,
+        "text": "82 · STRONG",
+        "sub": "main deduction: Iowa State’s availability sources refused",
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1636,7 +1666,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.5,
+            "score": 9,
             "max": 20
           },
           {
@@ -1648,7 +1678,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1664,23 +1694,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Iowa State’s availability report is not due yet; the impact of Iowa State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Iowa State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Iowa State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Iowa State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Iowa State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (BYU)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for BYU",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Confirm BYU’s starting QB (Bear Bachmeier)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1716,28 +1746,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "BYU",
-          "side": "home",
-          "line": -10,
-          "price_american": null,
-          "book": "Bovada",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "BYU -10.0 (price not captured) at Bovada"
-        },
-        "other": {
-          "team": "Iowa State",
-          "side": "away",
-          "line": 10,
-          "price_american": null,
-          "book": "Bovada",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Iowa State +10.0 (price not captured) at Bovada"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1939,7 +1949,7 @@
       "EdgeDesk’s line is BYU -13.9 on a neutral read of the two teams, before any book is consulted. Projected total 51.6.",
       "BYU wins 82% of the time in EdgeDesk’s simulation, Iowa State 18%.",
       "Eight games in ten land between -8.1 and +33.9 for BYU. A single result inside that band tells you nothing new about either team.",
-      "The market has BYU -10.0 at captured consensus · 1 book · best at Bovada, 3.9 points from EdgeDesk’s number.",
+      "The market has BYU -10.0 at captured consensus (stale) · 1 book · best at Bovada, 3.9 points from EdgeDesk’s number.",
       "Iowa State quarterback: Jaylen Raynor — started the last game; no announcement for this one.",
       "BYU quarterback: Bear Bachmeier — started the last game; no announcement for this one."
     ],
@@ -1954,6 +1964,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

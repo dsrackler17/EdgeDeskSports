@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1432,6 +1432,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Eastern Michigan — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1546,9 +1552,9 @@
       "difference_n": 0.5185362152506325,
       "total_model": "50.3",
       "total_market": "51.5",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1563,10 +1569,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.5 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1586,9 +1592,9 @@
         "market_line_text": "Eastern Michigan -6.5",
         "market_home_margin": -6.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1598,11 +1604,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Akron or Eastern Michigan’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: Eastern Michigan’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1628,7 +1634,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1644,15 +1650,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Akron or Eastern Michigan’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Eastern Michigan’s availability report is not due yet; the impact of Eastern Michigan’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
+            "action": "Re-read availability inside the filing window (Eastern Michigan)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Akron) and Re-read availability inside the filing window (Eastern Michigan) is done"
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Akron)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1682,28 +1696,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Eastern Michigan",
-          "side": "away",
-          "line": -6.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Eastern Michigan -6.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Akron",
-          "side": "home",
-          "line": 6.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Akron +6.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1905,7 +1899,7 @@
       "EdgeDesk’s line is Akron +7.0 on a neutral read of the two teams, before any book is consulted. Projected total 50.3.",
       "Akron wins 32% of the time in EdgeDesk’s simulation, Eastern Michigan 68%.",
       "Eight games in ten land between -29.0 and +13.0 for Akron. A single result inside that band tells you nothing new about either team.",
-      "The market has Akron +6.5 at captured consensus · 1 book · best at FanDuel, 0.5 points from EdgeDesk’s number.",
+      "The market has Akron +6.5 at captured consensus (stale) · 1 book · best at FanDuel, 0.5 points from EdgeDesk’s number.",
       "Eastern Michigan quarterback: Noah Kim — started the last game; no announcement for this one.",
       "Akron quarterback: Brayden Roggow — started the last game; no announcement for this one."
     ],
@@ -1920,6 +1914,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

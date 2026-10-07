@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1440,6 +1440,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "UCLA — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1502,12 +1508,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "REGIME CHANGE (UCLA): REGIME CHANGE: new head coach; returning roster share at the 16th percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played.",
           "widening": null
         }
       ],
@@ -1572,9 +1572,9 @@
       "difference_n": 4.616595530182706,
       "total_model": "58.9",
       "total_market": "58.0",
-      "book": "captured consensus · 1 book · best at BetOnline.ag",
+      "book": "captured consensus (stale) · 1 book · best at BetOnline.ag",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1589,10 +1589,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 4.6 pts toward UCLA. REGIME CHANGE: UCLA (new head coach; returning roster share at the 16th percentile; 4 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1612,9 +1612,9 @@
         "market_line_text": "Oregon -12.0",
         "market_home_margin": 12,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetOnline.ag",
+        "source": "captured consensus (stale) · 1 book · best at BetOnline.ag",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1654,13 +1654,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 11.8,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 11.2,
+            "score": 11.3,
             "max": 15
           },
           {
@@ -1682,8 +1682,8 @@
           },
           {
             "action": "Confirm Oregon’s starting QB (Dylan Raiola)",
-            "potential_gain": 7,
-            "text": "up to +7 once resolve Oregon’s starter conflict is done"
+            "potential_gain": 5,
+            "text": "up to +5 once resolve Oregon’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1719,28 +1719,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "UCLA",
-          "side": "away",
-          "line": 12,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "UCLA +12.0 (price not captured) at BetOnline.ag"
-        },
-        "other": {
-          "team": "Oregon",
-          "side": "home",
-          "line": -12,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Oregon -12.0 (price not captured) at BetOnline.ag"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "LINE_MOVING",
@@ -1942,7 +1922,7 @@
       "EdgeDesk’s line is Oregon -7.4 on a neutral read of the two teams, before any book is consulted. Projected total 58.9.",
       "Oregon wins 69% of the time in EdgeDesk’s simulation, UCLA 31%.",
       "Eight games in ten land between -14.6 and +27.4 for Oregon. A single result inside that band tells you nothing new about either team.",
-      "The market has Oregon -12.0 at captured consensus · 1 book · best at BetOnline.ag, 4.6 points from EdgeDesk’s number.",
+      "The market has Oregon -12.0 at captured consensus (stale) · 1 book · best at BetOnline.ag, 4.6 points from EdgeDesk’s number.",
       "UCLA quarterback: Nico Iamaleava — started the last game; no announcement for this one."
     ],
     "missing": [
@@ -1957,6 +1937,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

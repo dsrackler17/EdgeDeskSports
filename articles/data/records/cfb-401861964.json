@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:45:00.000Z",
   "game_when_label": "2026-10-10 19:45 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1448,6 +1448,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "UConn — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1562,9 +1568,9 @@
       "difference_n": 2.1197140267958305,
       "total_model": "57.3",
       "total_market": "53.5",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1579,10 +1585,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 2.1 pts toward Temple. REGIME CHANGE: UConn (new head coach; returning roster share at the 4th percentile; returning production at the 2nd percentile; transfers out at the 96th percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1602,9 +1608,9 @@
         "market_line_text": "Temple -4.0",
         "market_home_margin": 4,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1614,11 +1620,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: UConn’s availability sources refused",
-        "score": 88,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1644,7 +1650,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.6,
             "max": 15
           },
           {
@@ -1665,18 +1671,18 @@
         "next_actions": [
           {
             "action": "Restore an injury/availability source for UConn",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Register a school availability release for Temple",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1712,28 +1718,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Temple",
-          "side": "home",
-          "line": -4,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Temple -4.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "UConn",
-          "side": "away",
-          "line": 4,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "UConn +4.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1935,7 +1921,7 @@
       "EdgeDesk’s line is Temple -6.1 on a neutral read of the two teams, before any book is consulted. Projected total 57.3.",
       "Temple wins 66% of the time in EdgeDesk’s simulation, UConn 34%.",
       "Eight games in ten land between -15.9 and +26.1 for Temple. A single result inside that band tells you nothing new about either team.",
-      "The market has Temple -4.0 at captured consensus · 1 book · best at Pinnacle, 2.1 points from EdgeDesk’s number.",
+      "The market has Temple -4.0 at captured consensus (stale) · 1 book · best at Pinnacle, 2.1 points from EdgeDesk’s number.",
       "UConn quarterback: Kalieb Osborne — started the last game; no announcement for this one.",
       "Temple quarterback: Ajani Sheppard — started the last game; no announcement for this one."
     ],
@@ -1951,6 +1937,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

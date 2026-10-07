@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T01:30:00.000Z",
   "game_when_label": "2026-10-11 01:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1452,6 +1452,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Hawai'i — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1566,9 +1572,9 @@
       "difference_n": 9.055245514336633,
       "total_model": "52.7",
       "total_market": "49.5",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1583,10 +1589,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_FAULT",
-        "label": "MARKET FAULT",
-        "rule": "market",
-        "means": "EdgeDesk and the market are 9.1 pts toward Hawai'i, but the market data cannot carry a verified disagreement: 0 books behind the consensus (at least 2 required at this size)."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": {
         "status": "MARKET_FAULT",
@@ -1594,8 +1600,9 @@
         "raw_market_gap": -9.06,
         "verified_market_gap": null,
         "calibrated_gap": -10.84,
-        "root_cause": "THIN_MARKET",
+        "root_cause": "STALE_MARKET",
         "failed": [
+          "MARKET.quote_fresh",
           "MARKET.book_count",
           "MODEL.submodel_support"
         ],
@@ -1620,9 +1627,9 @@
         "market_line_text": "Arizona State -21.0",
         "market_home_margin": 21,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1632,11 +1639,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.25 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 86,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1662,7 +1669,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1683,18 +1690,18 @@
         "next_actions": [
           {
             "action": "Register a school availability release for Hawai'i",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Register a school availability release for Arizona State",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1730,28 +1737,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Hawai'i",
-          "side": "away",
-          "line": 21,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Hawai'i +21.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "Arizona State",
-          "side": "home",
-          "line": -21,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Arizona State -21.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1953,7 +1940,7 @@
       "EdgeDesk’s line is Arizona State -11.9 on a neutral read of the two teams, before any book is consulted. Projected total 52.7.",
       "Arizona State wins 79% of the time in EdgeDesk’s simulation, Hawai'i 21%.",
       "Eight games in ten land between -10.1 and +31.9 for Arizona State. A single result inside that band tells you nothing new about either team.",
-      "The market has Arizona State -21.0 at captured consensus · 1 book · best at Pinnacle, 9.1 points from EdgeDesk’s number.",
+      "The market has Arizona State -21.0 at captured consensus (stale) · 1 book · best at Pinnacle, 9.1 points from EdgeDesk’s number.",
       "Hawai'i quarterback: Micah Alejado — started the last game; no announcement for this one.",
       "Arizona State quarterback: Cutter Boley — started the last game; no announcement for this one."
     ],
@@ -1968,6 +1955,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

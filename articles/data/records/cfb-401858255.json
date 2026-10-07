@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1443,6 +1443,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Duke — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1575,9 +1581,9 @@
       "difference_n": 0.756813579977945,
       "total_model": "56.2",
       "total_market": "48.5",
-      "book": "captured consensus · 1 book · best at BetMGM",
+      "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1592,10 +1598,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.8 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1615,9 +1621,9 @@
         "market_line_text": "Duke -7.0",
         "market_home_margin": -7,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetMGM",
+        "source": "captured consensus (stale) · 1 book · best at BetMGM",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1627,11 +1633,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 84,
+        "pct": 82,
         "tier": "STRONG",
-        "text": "84 · STRONG",
+        "text": "82 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.24 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 84,
+        "score": 82,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1657,7 +1663,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 13.9,
+            "score": 11.8,
             "max": 15
           },
           {
@@ -1687,7 +1693,7 @@
             "text": "up to +4"
           },
           {
-            "action": "Confirm Duke’s starting QB (Walker Eget)",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1713,28 +1719,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Georgia Tech",
-          "side": "home",
-          "line": 7,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Georgia Tech +7.0 (price not captured) at BetMGM"
-        },
-        "other": {
-          "team": "Duke",
-          "side": "away",
-          "line": -7,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Duke -7.0 (price not captured) at BetMGM"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1936,7 +1922,7 @@
       "EdgeDesk’s line is Georgia Tech +6.2 on a neutral read of the two teams, before any book is consulted. Projected total 56.2.",
       "Georgia Tech wins 34% of the time in EdgeDesk’s simulation, Duke 66%.",
       "Eight games in ten land between -28.2 and +13.8 for Georgia Tech. A single result inside that band tells you nothing new about either team.",
-      "The market has Georgia Tech +7.0 at captured consensus · 1 book · best at BetMGM, 0.8 points from EdgeDesk’s number.",
+      "The market has Georgia Tech +7.0 at captured consensus (stale) · 1 book · best at BetMGM, 0.8 points from EdgeDesk’s number.",
       "Duke quarterback: Walker Eget — started the last game; no announcement for this one.",
       "Georgia Tech quarterback: Alberto Mendoza — started the last game; no announcement for this one."
     ],
@@ -1951,6 +1937,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

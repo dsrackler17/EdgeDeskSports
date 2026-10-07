@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1444,6 +1444,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Air Force — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1570,9 +1576,9 @@
       "difference_n": 4.592256028003165,
       "total_model": "49.2",
       "total_market": "46.0",
-      "book": "captured consensus · 1 book · best at BetOnline.ag",
+      "book": "captured consensus (stale) · 1 book · best at BetOnline.ag",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1587,10 +1593,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 4.6 pts toward Air Force. REGIME CHANGE: Northern Illinois (new head coach; returning roster share at the 43rd percentile; 4 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1610,9 +1616,9 @@
         "market_line_text": "Air Force -7.0",
         "market_home_margin": -7,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetOnline.ag",
+        "source": "captured consensus (stale) · 1 book · best at BetOnline.ag",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1622,11 +1628,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: Air Force’s availability report is not due yet",
-        "score": 88,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1652,7 +1658,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1673,18 +1679,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Air Force)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
             "action": "Re-read availability inside the filing window (Northern Illinois)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 4,
+            "text": "up to +4"
           },
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1720,28 +1726,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Air Force",
-          "side": "away",
-          "line": -7,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Air Force -7.0 (price not captured) at BetOnline.ag"
-        },
-        "other": {
-          "team": "Northern Illinois",
-          "side": "home",
-          "line": 7,
-          "price_american": null,
-          "book": "BetOnline.ag",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Northern Illinois +7.0 (price not captured) at BetOnline.ag"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1943,7 +1929,7 @@
       "EdgeDesk’s line is Northern Illinois +11.6 on a neutral read of the two teams, before any book is consulted. Projected total 49.2.",
       "Northern Illinois wins 22% of the time in EdgeDesk’s simulation, Air Force 78%.",
       "Eight games in ten land between -33.6 and +8.4 for Northern Illinois. A single result inside that band tells you nothing new about either team.",
-      "The market has Northern Illinois +7.0 at captured consensus · 1 book · best at BetOnline.ag, 4.6 points from EdgeDesk’s number.",
+      "The market has Northern Illinois +7.0 at captured consensus (stale) · 1 book · best at BetOnline.ag, 4.6 points from EdgeDesk’s number.",
       "Air Force quarterback: Liam Szarka — started the last game; no announcement for this one.",
       "Northern Illinois quarterback: Taron Dickens — started the last game; no announcement for this one."
     ],
@@ -1958,6 +1944,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

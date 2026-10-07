@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1432,6 +1432,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Tulane — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1494,12 +1500,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "REGIME CHANGE (Tulane): REGIME CHANGE: new head coach; returning production at the 25th percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played.",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "low confidence",
-          "text": "rivalry situational effect is in the number but rests on a thin sample",
           "widening": null
         }
       ],
@@ -1564,9 +1564,9 @@
       "difference_n": 5.083386146943164,
       "total_model": "48.3",
       "total_market": "47.5",
-      "book": "captured consensus · 1 book · best at FanDuel",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1581,10 +1581,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 5.1 pts toward Army. REGIME CHANGE: Tulane (new head coach; returning production at the 25th percentile; 4 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1604,9 +1604,9 @@
         "market_line_text": "Army -3.5",
         "market_home_margin": 3.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at FanDuel",
+        "source": "captured consensus (stale) · 1 book · best at FanDuel",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1616,11 +1616,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "86 · STRONG",
+        "text": "84 · STRONG",
         "sub": "main deduction: the projected spread moves ±2.27 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 86,
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1646,7 +1646,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1676,7 +1676,7 @@
             "text": "up to +3"
           },
           {
-            "action": "Fetch the venue forecast",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1714,28 +1714,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Army",
-          "side": "home",
-          "line": -3.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Army -3.5 (price not captured) at FanDuel"
-        },
-        "other": {
-          "team": "Tulane",
-          "side": "away",
-          "line": 3.5,
-          "price_american": null,
-          "book": "FanDuel",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Tulane +3.5 (price not captured) at FanDuel"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1937,7 +1917,7 @@
       "EdgeDesk’s line is Army -8.6 on a neutral read of the two teams, before any book is consulted. Projected total 48.3.",
       "Army wins 72% of the time in EdgeDesk’s simulation, Tulane 28%.",
       "Eight games in ten land between -13.4 and +28.6 for Army. A single result inside that band tells you nothing new about either team.",
-      "The market has Army -3.5 at captured consensus · 1 book · best at FanDuel, 5.1 points from EdgeDesk’s number.",
+      "The market has Army -3.5 at captured consensus (stale) · 1 book · best at FanDuel, 5.1 points from EdgeDesk’s number.",
       "Tulane quarterback: Kadin Semonza — started the last game; no announcement for this one.",
       "Army quarterback: Cale Hellums — started the last game; no announcement for this one."
     ],
@@ -1952,6 +1932,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T16:00:00.000Z",
   "game_when_label": "2026-10-10 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1423,6 +1423,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Sacramento State — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1543,9 +1549,9 @@
       "difference_n": 0.3106433939974167,
       "total_model": "47.0",
       "total_market": "44.5",
-      "book": "captured consensus · 1 book · best at Hard Rock Bet",
+      "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1560,10 +1566,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 0.3 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1583,9 +1589,9 @@
         "market_line_text": "Bowling Green -8.5",
         "market_home_margin": 8.5,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Hard Rock Bet",
+        "source": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1595,11 +1601,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Bowling Green or Sacramento State’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: Sacramento State’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1625,7 +1631,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 14.5,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1641,25 +1647,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Bowling Green or Sacramento State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "Sacramento State’s availability report is not due yet; the impact of Sacramento State’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
-            "potential_gain": 2,
-            "text": "up to +2 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+            "action": "Re-read availability inside the filing window (Sacramento State)",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Add another market source",
+            "action": "Re-read availability inside the filing window (Bowling Green)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+            "text": "up to +1"
           },
           {
-            "action": "Confirm Sacramento State’s starting QB (Jackson Sharman)",
+            "action": "Refresh the market quote",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Bowling Green) and Re-read availability inside the filing window (Sacramento State) is done"
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1689,28 +1693,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Sacramento State",
-          "side": "away",
-          "line": 8.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Sacramento State +8.5 (price not captured) at Hard Rock Bet"
-        },
-        "other": {
-          "team": "Bowling Green",
-          "side": "home",
-          "line": -8.5,
-          "price_american": null,
-          "book": "Hard Rock Bet",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Bowling Green -8.5 (price not captured) at Hard Rock Bet"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1912,7 +1896,7 @@
       "EdgeDesk’s line is Bowling Green -8.2 on a neutral read of the two teams, before any book is consulted. Projected total 47.0.",
       "Bowling Green wins 71% of the time in EdgeDesk’s simulation, Sacramento State 29%.",
       "Eight games in ten land between -13.8 and +28.2 for Bowling Green. A single result inside that band tells you nothing new about either team.",
-      "The market has Bowling Green -8.5 at captured consensus · 1 book · best at Hard Rock Bet, 0.3 points from EdgeDesk’s number.",
+      "The market has Bowling Green -8.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet, 0.3 points from EdgeDesk’s number.",
       "Sacramento State quarterback: Jackson Sharman — started the last game; no announcement for this one.",
       "Bowling Green quarterback: Jay Kastantin — started the last game; no announcement for this one."
     ],
@@ -1927,6 +1911,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

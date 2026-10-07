@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1438,6 +1438,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "UAB — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1552,9 +1558,9 @@
       "difference_n": 1.608705738735134,
       "total_model": "56.7",
       "total_market": "56.0",
-      "book": "captured consensus · 1 book · best at Pinnacle",
+      "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1569,10 +1575,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "MARKET_ALIGNED",
-        "label": "MARKET ALIGNED",
-        "rule": "aligned",
-        "means": "EdgeDesk and the market are 1.6 points apart, inside the 2-point research threshold: there is not enough disagreement to research the price."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1592,9 +1598,9 @@
         "market_line_text": "Memphis -14.0",
         "market_home_margin": 14,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at Pinnacle",
+        "source": "captured consensus (stale) · 1 book · best at Pinnacle",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1604,11 +1610,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 89,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "89 · STRONG",
-        "sub": "main deduction: no source has established whether Memphis or UAB’s starting QB can play",
-        "score": 89,
+        "text": "88 · STRONG",
+        "sub": "main deduction: UAB’s availability report is not due yet",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1634,7 +1640,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
@@ -1650,15 +1656,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "no source has established whether Memphis or UAB’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-        "capped_by": [
-          "QB_STATUS_UNCONFIRMED"
-        ],
+        "main_deduction": "UAB’s availability report is not due yet; the impact of UAB’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
-            "action": "Fetch the venue forecast",
+            "action": "Re-read availability inside the filing window (UAB)",
             "potential_gain": 1,
-            "text": "up to +1 once re-read availability inside the filing window (Memphis) and Re-read availability inside the filing window (UAB) is done"
+            "text": "up to +1"
+          },
+          {
+            "action": "Re-read availability inside the filing window (Memphis)",
+            "potential_gain": 1,
+            "text": "up to +1"
+          },
+          {
+            "action": "Refresh the market quote",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1694,28 +1708,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Memphis",
-          "side": "home",
-          "line": -14,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Memphis -14.0 (price not captured) at Pinnacle"
-        },
-        "other": {
-          "team": "UAB",
-          "side": "away",
-          "line": 14,
-          "price_american": null,
-          "book": "Pinnacle",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "UAB +14.0 (price not captured) at Pinnacle"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1917,7 +1911,7 @@
       "EdgeDesk’s line is Memphis -15.6 on a neutral read of the two teams, before any book is consulted. Projected total 56.7.",
       "Memphis wins 86% of the time in EdgeDesk’s simulation, UAB 14%.",
       "Eight games in ten land between -6.4 and +35.6 for Memphis. A single result inside that band tells you nothing new about either team.",
-      "The market has Memphis -14.0 at captured consensus · 1 book · best at Pinnacle, 1.6 points from EdgeDesk’s number.",
+      "The market has Memphis -14.0 at captured consensus (stale) · 1 book · best at Pinnacle, 1.6 points from EdgeDesk’s number.",
       "UAB quarterback: Ryder Burton — started the last game; no announcement for this one.",
       "Memphis quarterback: Marcus Stokes — started the last game; no announcement for this one."
     ],
@@ -1932,6 +1926,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

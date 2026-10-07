@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1482,6 +1482,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Coastal Carolina — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1590,9 +1596,9 @@
       "difference_n": 4.3890402547362,
       "total_model": "55.3",
       "total_market": "58.5",
-      "book": "captured consensus · 1 book · best at BetMGM",
+      "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1607,10 +1613,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 4.4 pts toward Marshall. REGIME CHANGE: Coastal Carolina (new head coach; returning roster share at the 11th percentile; returning production at the 30th percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1630,9 +1636,9 @@
         "market_line_text": "Marshall -3.0",
         "market_home_margin": 3,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetMGM",
+        "source": "captured consensus (stale) · 1 book · best at BetMGM",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1642,11 +1648,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 84,
+        "pct": 81,
         "tier": "STRONG",
-        "text": "84 · STRONG",
+        "text": "81 · STRONG",
         "sub": "main deduction: Coastal Carolina’s availability sources refused",
-        "score": 84,
+        "score": 81,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1672,13 +1678,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.3,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1702,9 +1708,9 @@
             "text": "up to +5"
           },
           {
-            "action": "Resolve Marshall’s starter conflict",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1740,28 +1746,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "Marshall",
-          "side": "home",
-          "line": -3,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Marshall -3.0 (price not captured) at BetMGM"
-        },
-        "other": {
-          "team": "Coastal Carolina",
-          "side": "away",
-          "line": 3,
-          "price_american": null,
-          "book": "BetMGM",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Coastal Carolina +3.0 (price not captured) at BetMGM"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1963,7 +1949,7 @@
       "EdgeDesk’s line is Marshall -7.4 on a neutral read of the two teams, before any book is consulted. Projected total 55.3.",
       "Marshall wins 69% of the time in EdgeDesk’s simulation, Coastal Carolina 31%.",
       "Eight games in ten land between -14.6 and +27.4 for Marshall. A single result inside that band tells you nothing new about either team.",
-      "The market has Marshall -3.0 at captured consensus · 1 book · best at BetMGM, 4.4 points from EdgeDesk’s number.",
+      "The market has Marshall -3.0 at captured consensus (stale) · 1 book · best at BetMGM, 4.4 points from EdgeDesk’s number.",
       "Coastal Carolina quarterback: Deuce Bailey — started the last game; no announcement for this one.",
       "Marshall quarterback: Zion Turner — started the last game; no announcement for this one."
     ],
@@ -1978,6 +1964,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }

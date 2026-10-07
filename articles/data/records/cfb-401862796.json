@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-06T23:03:07.900Z",
-  "generated_at": "2026-10-06T23:03:07.900Z",
+  "updated_at": "2026-10-07T05:46:53.343Z",
+  "generated_at": "2026-10-07T05:46:53.343Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1426,6 +1426,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 7h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Charlotte — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1540,9 +1546,9 @@
       "difference_n": 4.14508340694217,
       "total_model": "63.5",
       "total_market": "58.0",
-      "book": "captured consensus · 1 book · best at BetRivers",
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "0 hours old",
+      "capture_age": "7 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1557,10 +1563,10 @@
       "projected": true,
       "engine_status": "PREDICTED",
       "label": {
-        "key": "INVESTIGATE",
-        "label": "INVESTIGATE",
-        "rule": "regime_change",
-        "means": "EdgeDesk differs from the market by 4.1 pts toward North Texas. REGIME CHANGE: North Texas (new head coach; returning roster share at the 8th percentile; returning production at the 1st percentile; transfers out at the 87th percentile; 5 of 6 games needed this season). Its long-run rating describes a programme that turned over, so the disagreement is not yet a research lead. This blocks WORTH RESEARCHING until the programme has played enough games this season."
+        "key": "NO_MARKET",
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1580,9 +1586,9 @@
         "market_line_text": "North Texas -28.0",
         "market_home_margin": 28,
         "favorite_differs": false,
-        "source": "captured consensus · 1 book · best at BetRivers",
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
         "as_of": "2026-10-06T23:00:13.589+00:00",
-        "stale": false,
+        "stale": true,
         "measured_from": "raw",
         "note": null
       },
@@ -1592,11 +1598,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 85,
         "tier": "STRONG",
-        "text": "87 · STRONG",
+        "text": "85 · STRONG",
         "sub": "main deduction: Charlotte’s availability report is not due yet",
-        "score": 87,
+        "score": 85,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1622,13 +1628,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 15,
+            "score": 12.9,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.2,
+            "score": 13.3,
             "max": 15
           },
           {
@@ -1643,16 +1649,16 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Charlotte)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
             "action": "Re-read availability inside the filing window (North Texas)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
-            "action": "Resolve Charlotte’s starter conflict",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1690,28 +1696,8 @@
         ]
       },
       "best_available_line": {
-        "available": true,
-        "single_book": true,
-        "n_books": 1,
-        "focus": {
-          "team": "North Texas",
-          "side": "home",
-          "line": -28,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "North Texas -28.0 (price not captured) at BetRivers"
-        },
-        "other": {
-          "team": "Charlotte",
-          "side": "away",
-          "line": 28,
-          "price_american": null,
-          "book": "BetRivers",
-          "captured_at": "2026-10-06T23:00:13.589+00:00",
-          "text": "Charlotte +28.0 (price not captured) at BetRivers"
-        },
-        "note": "Only one sportsbook has a current quote, so there is no line shopping to compare — this is that book’s number, not a best line."
+        "available": false,
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1913,7 +1899,7 @@
       "EdgeDesk’s line is North Texas -32.1 on a neutral read of the two teams, before any book is consulted. Projected total 63.5.",
       "North Texas wins 99% of the time in EdgeDesk’s simulation, Charlotte 1%.",
       "Eight games in ten land between +10.1 and +52.1 for North Texas. A single result inside that band tells you nothing new about either team.",
-      "The market has North Texas -28.0 at captured consensus · 1 book · best at BetRivers, 4.1 points from EdgeDesk’s number.",
+      "The market has North Texas -28.0 at captured consensus (stale) · 1 book · best at BetRivers, 4.1 points from EdgeDesk’s number.",
       "Charlotte quarterback: Cole Gonzales — started the last game; no announcement for this one.",
       "North Texas quarterback: Tayven Jackson — started the last game; no announcement for this one."
     ],
@@ -1928,6 +1914,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-06T23:03:07.900Z"
+    "at": "2026-10-07T05:46:53.343Z"
   }
 }
