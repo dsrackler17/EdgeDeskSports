@@ -47,6 +47,7 @@
 const fs = require('fs');
 const path = require('path');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
+const SEED = require(path.join(__dirname, '_outbound_seed.js'));
 
 const T = PG.kit('growth outbound SQL');
 const chk = T.chk;
@@ -131,37 +132,36 @@ try {
   chk('A … and if it were ever granted by mistake, an API caller is still refused', !!be && /SQL editor only|permission denied/.test(be), be);
   one(`revoke execute on function growth_outbound.grant_owner(text, text) from authenticated; revoke usage on schema growth_outbound from authenticated;`);
 
-  /* seed: prospects, evidence, drafts (as the research/draft pipeline would, server-side) */
-  one(`insert into growth_outbound.prospects (id, full_name, first_name, organization, email, email_status, email_source_url, prospect_type, sports_focus,
-         fit_score, identity_confidence, role_confidence, email_confidence, research_confidence, status, research_summary) values
-    ('10000000-0000-0000-0000-000000000001', 'Pat Analyst', 'Pat', 'CFB Numbers', 'pat@cfbnumbers.test', 'verified', 'https://cfbnumbers.test/contact', 'cfb_analyst', '{CFB}',
-       88, 0.95, 0.9, 0.95, 0.9, 'ready_for_review', 'Publishes weekly CFB power ratings against the market.'),
-    ('10000000-0000-0000-0000-000000000002', 'Lo Confidence', null, 'Maybe Media', 'lo@maybe.test', 'unverified', null, 'other', '{NFL}',
-       60, 0.5, 0.4, 0.5, 0.5, 'ready_for_review', null),
-    ('10000000-0000-0000-0000-000000000003', 'Sam Spare', 'Sam', 'Props Lab', 'sam@propslab.test', 'verified', 'https://propslab.test/about', 'props_analyst', '{NFL}',
-       91, 0.95, 0.9, 0.95, 0.9, 'ready_for_review', null),
-    ('10000000-0000-0000-0000-000000000004', 'Twin Row', 'Twin', 'CFB Numbers', 'PAT@cfbnumbers.test', 'verified', 'https://cfbnumbers.test/contact', 'cfb_analyst', '{CFB}',
-       88, 0.95, 0.9, 0.95, 0.9, 'ready_for_review', null),
-    ('10000000-0000-0000-0000-000000000005', 'Domain Mate', 'Dee', 'Props Lab', 'dee@propslab.test', 'verified', 'https://propslab.test/about', 'props_analyst', '{NFL}',
-       90, 0.95, 0.9, 0.95, 0.9, 'ready_for_review', null);
-    insert into growth_outbound.prospects (id, is_test, full_name, email, email_status, status) values
-    ('10000000-0000-0000-0000-0000000000f0', true, 'TEST PROSPECT', 'owner-test@edgedesk.test', 'verified', 'ready_for_review');
-    insert into growth_outbound.evidence (prospect_id, field_name, claim, source_url, source_title, confidence) values
-    ('10000000-0000-0000-0000-000000000001', 'project', 'CFB power ratings vs market', 'https://cfbnumbers.test/ratings', 'Week 5 ratings', 0.95);
-    insert into growth_outbound.drafts (id, prospect_id, subject, body_text) values
-    ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'Your CFB ratings work', 'Hey Pat, saw your CFB power ratings...'),
-    ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'Hello', 'Hey there, ...'),
-    ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'Props research', 'Hey Sam, ...'),
-    ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'Same address', 'Hey Twin, ...'),
-    ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'Domain mate', 'Hey Dee, ...');
-    insert into growth_outbound.drafts (id, prospect_id, is_test, subject, body_text) values
-    ('20000000-0000-0000-0000-0000000000f0', '10000000-0000-0000-0000-0000000000f0', true, '[TEST] outbound smoke', 'Hey there, this is a test.');`);
+  /* seed: prospects, evidence, drafts — as the research and draft pipeline
+     would, server-side. Since Phase 3 nothing computed can be written
+     directly: each prospect is built from evidence and evaluated. */
+  const pid = (n) => '10000000-0000-0000-0000-' + String(n).padStart(12, '0');
+  const did = (n) => '20000000-0000-0000-0000-' + String(n).padStart(12, '0');
+  one(SEED.strong({ id: pid(1), name: 'Pat Analyst', org: 'CFB Numbers', email: 'pat@cfbnumbers.test', domain: 'cfbnumbers.test', handle: 'patanalyst' })
+    + SEED.weak({ id: pid(2), name: 'Lo Confidence', email: 'lo@maybe.test' })
+    + SEED.strong({ id: pid(3), name: 'Sam Spare', org: 'Props Lab', email: 'sam@propslab.test', domain: 'propslab.test', handle: 'samspare', type: 'props_analyst', project: 'weekly player prop projections' })
+    // the same address as Pat, found again under another name: a duplicate
+    + SEED.strong({ id: pid(4), name: 'Twin Row', org: 'Twin Media', email: 'PAT@cfbnumbers.test', domain: 'twinrow.test', handle: 'twinrow' })
+    + SEED.strong({ id: pid(5), name: 'Domain Mate', org: 'Props Lab', email: 'dee@propslab.test', domain: 'propslab.test', handle: 'deemate', type: 'props_analyst' })
+    + SEED.strong({ id: pid(7), name: 'Lee Live', org: 'Lee Lab', email: 'lee@leelab.test', domain: 'leelab.test', handle: 'leelab' })
+    + `insert into growth_outbound.prospects (id, is_test, email) values ('10000000-0000-0000-0000-0000000000f0', true, 'owner-test@edgedesk.test');`
+    + SEED.draft({ id: did(1), prospect: pid(1), subject: 'Your CFB ratings work', body: 'Hey Pat, saw your CFB power ratings...' })
+    + SEED.draft({ id: did(2), prospect: pid(2), subject: 'Hello', body: 'Hey there, ...' })
+    + SEED.draft({ id: did(3), prospect: pid(3), subject: 'Props research', body: 'Hey Sam, ...' })
+    + SEED.draft({ id: did(4), prospect: pid(4), subject: 'Same address', body: 'Hey Twin, ...' })
+    + SEED.draft({ id: did(5), prospect: pid(5), subject: 'Domain mate', body: 'Hey Dee, ...' })
+    + SEED.draft({ id: did(7), prospect: pid(7), subject: 'Lee, your models', body: 'Hey Lee, ...' })
+    + SEED.draft({ id: '20000000-0000-0000-0000-0000000000f0', prospect: '10000000-0000-0000-0000-0000000000f0', test: true, subject: '[TEST] outbound smoke', body: 'Hey there, this is a test.' }));
+  const statusOf = (n) => one(`select status from growth_outbound.prospects where id = '${pid(n)}';`);
+  chk('A (seed) evidence-backed prospects are ready for review; the weak one and the duplicate are not',
+    [1, 3, 5, 7].every((n) => statusOf(n) === 'ready_for_review') && statusOf(2) === 'needs_research' && statusOf(4) === 'needs_research',
+    [1, 2, 3, 4, 5, 7].map(statusOf));
   const P1 = '10000000-0000-0000-0000-000000000001', D1 = '20000000-0000-0000-0000-000000000001';
   const hashOf = (d) => one(`select content_hash from growth_outbound.drafts where id = '${d}';`);
 
   /* ══ B. CATALOGUE ═════════════════════════════════════════════════════ */
   const tables = one(`select string_agg(relname, ',' order by relname) from pg_class where relnamespace = 'growth_outbound'::regnamespace and relkind = 'r';`).split(',');
-  chk('B nine outbound tables', tables.length === 9, tables);
+  chk('B eleven outbound tables', tables.length === 11, tables);
   for (const r of ['anon', 'authenticated', 'service_role']) {
     chk('B ' + r + ' has no USAGE on the schema', one(`select has_schema_privilege('${r}', 'growth_outbound', 'usage');`) === 'f');
     const held = one(`select coalesce(string_agg(c.relname || ':' || p, ','), '') from pg_class c, unnest(array['select','insert','update','delete','truncate','references','trigger']) p
@@ -170,7 +170,7 @@ try {
   }
   chk('B every table has RLS on and the restrictive deny policy, and no permissive policy exists',
     one(`select count(*) from pg_class c where c.relnamespace = 'growth_outbound'::regnamespace and c.relkind = 'r' and c.relrowsecurity
-          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '9'
+          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '11'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and permissive = 'PERMISSIVE';`) === '0');
 
   /* direct reads of every table, as every non-owner role (the owner too: no direct path for anyone) */
@@ -248,11 +248,11 @@ try {
 
   /* ══ F. THE OWNER ═════════════════════════════════════════════════════ */
   const ov = j(db.as(U.owner, `select public.growth_outbound_overview();`));
-  chk('F the owner reads the overview', ov.settings && ov.settings.test_mode === true && ov.prospects_by_status.ready_for_review === 6, ov.prospects_by_status);
+  chk('F the owner reads the overview', ov.settings && ov.settings.test_mode === true && ov.prospects_by_status.ready_for_review === 4, ov.prospects_by_status);
   const list = j(db.as(U.owner, `select public.growth_outbound_prospects('ready_for_review', null, 50, 0);`));
-  chk('F the owner reads prospects with their emails', list.total === 6 && list.rows.some((r) => r.email === 'pat@cfbnumbers.test'));
+  chk('F the owner reads prospects with their emails', list.total === 4 && list.rows.some((r) => r.email === 'pat@cfbnumbers.test'));
   const det = j(db.as(U.owner, `select public.growth_outbound_prospect('${P1}');`));
-  chk('F … and one prospect\'s evidence and drafts', det.ok && det.evidence.length === 1 && det.drafts.length === 1 && det.prospect.email === 'pat@cfbnumbers.test');
+  chk('F … and one prospect\'s evidence and drafts', det.ok && det.evidence.length === 9 && det.drafts.length === 1 && det.prospect.email === 'pat@cfbnumbers.test');
   chk('F search works', j(db.as(U.owner, `select public.growth_outbound_prospects(null, 'props', 50, 0);`)).total === 2);
 
   let r = j(db.as(U.owner, `select public.growth_outbound_settings_update('{"max_sends_per_day": 30}'::jsonb);`));
@@ -359,28 +359,35 @@ try {
   chk('I (setup) the owner leaves test mode with confirmation', r.ok === true && r.settings.test_mode === false);
   e = db.mustFail(() => one(`insert into growth_outbound.drafts (prospect_id, subject, body_text) values ('${P1}', 'Second step-1 draft', 'Hey Pat');`));
   chk('I a prospect never has two live drafts for the same step', !!e && /drafts_one_live_uk/.test(e), e);
-  const D4 = '20000000-0000-0000-0000-000000000004';
+  const D4 = did(4), D7 = did(7);
   r = j(db.as(U.owner, `select public.growth_outbound_draft_approve('${D4}', ${lit(hashOf(D4))});`));
-  chk('I (setup) a live draft for the twin row at pat@ is approved', r.ok === true, r);
-  e = db.mustFail(() => one(send({ draft: D4, test: true, intended: 'pat@cfbnumbers.test', recipient: 'owner-test@edgedesk.test' })));
+  chk('I a draft for a duplicate row (the same address as Pat) cannot be approved', r.ok === false && r.reason === 'below_gate'
+    && r.gates.includes('duplicate of another prospect'), r);
+  r = j(db.as(U.owner, `select public.growth_outbound_draft_approve('${D7}', ${lit(hashOf(D7))});`));
+  chk('I (setup) a live draft for Lee is approved', r.ok === true, r);
+  e = db.mustFail(() => one(send({ draft: D7, test: true, intended: 'lee@leelab.test', recipient: 'owner-test@edgedesk.test' })));
   chk('I live, a send cannot be diverted or marked test', !!e && /approved recipient only/.test(e), e);
-  e = db.mustFail(() => one(send({ draft: D4, intended: 'someone@else.test', recipient: 'someone@else.test' })));
+  e = db.mustFail(() => one(send({ draft: D7, intended: 'someone@else.test', recipient: 'someone@else.test' })));
   chk('I a send to any address but the approved one is refused', !!e && /not the one that was approved/.test(e), e);
-  one(send({ draft: D4, intended: 'pat@cfbnumbers.test', recipient: 'pat@cfbnumbers.test', key: 'live-1' }));
+  one(send({ draft: D7, intended: 'lee@leelab.test', recipient: 'lee@leelab.test', key: 'live-1' }));
   chk('I the approved live send is claimed', one(`select delivery_status || '|' || is_test from growth_outbound.sends where idempotency_key = 'live-1';`) === 'claimed|false');
 
-  // the same address, another prospect row (a duplicate discovery), same step
-  one(`insert into growth_outbound.prospects (id, full_name, email, email_status, prospect_type, fit_score, identity_confidence, role_confidence, email_confidence, research_confidence, status)
-       values ('10000000-0000-0000-0000-000000000009', 'Pat Again', 'pat@cfbnumbers.test', 'verified', 'cfb_analyst', 90, 0.95, 0.9, 0.95, 0.9, 'ready_for_review');
-       insert into growth_outbound.drafts (id, prospect_id, subject, body_text) values ('20000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000009', 'Hi again', 'Hey Pat');`);
-  r = j(db.as(U.owner, `select public.growth_outbound_draft_approve('20000000-0000-0000-0000-000000000009', ${lit(hashOf('20000000-0000-0000-0000-000000000009'))});`));
-  e = db.mustFail(() => one(send({ draft: '20000000-0000-0000-0000-000000000009', intended: 'pat@cfbnumbers.test', recipient: 'pat@cfbnumbers.test' })));
-  chk('I an address never receives the same step twice, whatever prospect row it is on', r.ok === true && !!e && /already received step 1/.test(e), e);
+  // the same address on another prospect row (a duplicate discovery), same
+  // step. The approve door refuses it; even an approval that slipped past
+  // (a door with a bug, simulated here) does not send.
+  one(SEED.strong({ id: pid(9), name: 'Lee Again', org: 'Lee Again Media', email: 'lee@leelab.test', domain: 'leeagain.test', handle: 'leeagain' })
+    + SEED.draft({ id: did(9), prospect: pid(9), subject: 'Hi again', body: 'Hey Lee' }));
+  r = j(db.as(U.owner, `select public.growth_outbound_draft_approve('${did(9)}', ${lit(hashOf(did(9)))});`));
+  chk('I the duplicate row\'s draft is refused at approval', r.ok === false && r.gates.includes('duplicate of another prospect'), r);
+  one(`begin; select set_config('request.jwt.claim.sub', '${U.owner}', true); select set_config('growth_outbound.door', 'approve', true);
+       update growth_outbound.drafts set status = 'approved', approved_at = now(), approved_by = '${U.owner}', approved_hash = content_hash,
+              approved_recipient = 'lee@leelab.test' where id = '${did(9)}'; commit;`);
+  e = db.mustFail(() => one(send({ draft: did(9), intended: 'lee@leelab.test', recipient: 'lee@leelab.test' })));
+  chk('I an address never receives the same step twice, whatever prospect row it is on', !!e && /already received step 1/.test(e), e);
 
   // the daily cap
-  one(`insert into growth_outbound.prospects (id, full_name, email, email_status, prospect_type, fit_score, identity_confidence, role_confidence, email_confidence, research_confidence, status)
-       values ('10000000-0000-0000-0000-00000000000a', 'Cap Test', 'cap@captest.test', 'verified', 'other', 90, 0.95, 0.9, 0.95, 0.9, 'ready_for_review');
-       insert into growth_outbound.drafts (id, prospect_id, subject, body_text) values ('20000000-0000-0000-0000-00000000000a', '10000000-0000-0000-0000-00000000000a', 'Cap', 'Hey there');`);
+  one(SEED.strong({ id: '10000000-0000-0000-0000-00000000000a', name: 'Cap Test', org: 'Cap Test Media', email: 'cap@captest.test', domain: 'captest.test', handle: 'captest' })
+    + SEED.draft({ id: '20000000-0000-0000-0000-00000000000a', prospect: '10000000-0000-0000-0000-00000000000a', subject: 'Cap', body: 'Hey there' }));
   db.as(U.owner, `select public.growth_outbound_draft_approve('20000000-0000-0000-0000-00000000000a', ${lit(hashOf('20000000-0000-0000-0000-00000000000a'))});`);
   db.as(U.owner, `select public.growth_outbound_settings_update('{"max_sends_per_day": 1}'::jsonb);`);
   e = db.mustFail(() => one(send({ draft: '20000000-0000-0000-0000-00000000000a', intended: 'cap@captest.test', recipient: 'cap@captest.test' })));
@@ -393,9 +400,8 @@ try {
   // the approving owner demoted: their approvals no longer send
   one(`insert into public.affiliate_admins (user_id) values ('${U.stranger}') on conflict do nothing;
        insert into growth_outbound.owners (user_id, note) values ('${U.stranger}', 'temp owner');`);
-  one(`insert into growth_outbound.prospects (id, full_name, email, email_status, prospect_type, fit_score, identity_confidence, role_confidence, email_confidence, research_confidence, status)
-       values ('10000000-0000-0000-0000-00000000000b', 'Demote Test', 'demote@demote.test', 'verified', 'other', 90, 0.95, 0.9, 0.95, 0.9, 'ready_for_review');
-       insert into growth_outbound.drafts (id, prospect_id, subject, body_text) values ('20000000-0000-0000-0000-00000000000b', '10000000-0000-0000-0000-00000000000b', 'Demote', 'Hey there');`);
+  one(SEED.strong({ id: '10000000-0000-0000-0000-00000000000b', name: 'Demote Test', org: 'Demote Media', email: 'demote@demote.test', domain: 'demote.test', handle: 'demotetest' })
+    + SEED.draft({ id: '20000000-0000-0000-0000-00000000000b', prospect: '10000000-0000-0000-0000-00000000000b', subject: 'Demote', body: 'Hey there' }));
   r = j(db.as(U.stranger, `select public.growth_outbound_draft_approve('20000000-0000-0000-0000-00000000000b', ${lit(hashOf('20000000-0000-0000-0000-00000000000b'))});`));
   one(`delete from growth_outbound.owners where user_id = '${U.stranger}';`);
   e = db.mustFail(() => one(send({ draft: '20000000-0000-0000-0000-00000000000b', intended: 'demote@demote.test', recipient: 'demote@demote.test' })));

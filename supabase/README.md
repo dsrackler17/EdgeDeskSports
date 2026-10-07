@@ -214,8 +214,9 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
   - a send row can exist only for such a draft, to the approved recipient (only the test inbox in test mode), once, under the daily cap, and only while the compliance configuration is complete;
   - suppressions and the activity log are append-only.
 - **Defaults:** test mode on, automation off, cap 20.
+- **Research (Phase 3).** A fact about a prospect is stored only as evidence (claim, page, kind of source, the words on it), checked on the way in. Every name, confidence, fit score, email status and research status is computed from it by `evaluate()`: a trigger refuses any other writer, the superuser included. An email or profile handle names one prospect (`identifiers`), so rediscovery finds the same row.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-14 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`; see `docs/growth-outbound.md`.
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-18 should say `ok`. Tested by `tools/growth/outbound_sql.test.js` and `tools/growth/outbound_research_sql.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,

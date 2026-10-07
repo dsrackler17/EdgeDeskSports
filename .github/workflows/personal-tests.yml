@@ -184,6 +184,10 @@ jobs:
       # approves, only an approved draft can become a send.
       - name: Only an explicit outbound owner reaches prospect data, approves or triggers a send
         run: node tools/growth/outbound_sql.test.js
+      # A fact about a prospect is evidence; every confidence, score and status
+      # is computed from it and no statement may write one. One person, one row.
+      - name: Prospect research is evidence; confidences are computed, never written; one person is one row
+        run: node tools/growth/outbound_research_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

@@ -101,9 +101,22 @@ td.r,th.r{text-align:right}
 fieldset{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 0 10px}
 legend{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:0 4px}
 .chk{display:flex;gap:7px;align-items:center;font-size:12.5px;font-weight:500;color:var(--text)}
-td.wrap{white-space:normal;max-width:360px}
+td.wrap{white-space:normal;max-width:360px;min-width:120px;margin:0;padding:6px 7px}
 #tabOutbound td{vertical-align:top}
 #obSettings .f{min-width:200px}
+textarea{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 12.5px 'JetBrains Mono',monospace;resize:vertical;min-height:58px;width:100%}
+.lnk{background:none;border:none;color:var(--text);padding:0;font:inherit;font-weight:600;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-align:left}
+.sub{font-size:11px;color:var(--dim);margin-top:2px;white-space:normal}
+.okb{border:1px solid rgba(118,189,62,.5);color:var(--pos);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-top:10px;background:rgba(118,189,62,.06)}
+.kpi.pass b{color:var(--pos)}.kpi.short b{color:var(--warn)}
+.chip.warn{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.pname{font-size:17px;font-weight:700;overflow-wrap:anywhere}
+.pill.st{font-size:11px;color:var(--text)}
+h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:18px 0 6px;font-weight:700}
+tr.old td{color:var(--faint)}
+td.quote{font-style:italic;color:var(--dim)}
+.dim{color:var(--faint)}
+#tabOutbound a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -209,6 +222,54 @@ td.wrap{white-space:normal;max-width:360px}
           <button class="g" id="obFind" type="button">Search</button>
         </div>
         <div class="tw" style="margin-top:12px"><table id="obProspects"></table></div>
+        <div class="note">Open a prospect to see what is known about them, from which sources, and how sure.</div>
+      </div>
+
+      <div id="obDetailWrap" class="hide">
+        <h2>Prospect</h2>
+        <div class="card">
+          <div class="row"><span class="sp"></span><button class="g sm" id="obDetailClose" type="button">Close</button></div>
+          <div class="msg" id="obDetailMsg" role="status" aria-live="polite"></div>
+          <div id="obDetail"></div>
+        </div>
+      </div>
+
+      <h2>Add a prospect</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f"><label for="obLook">Have we seen them? An email address or a web address</label><input id="obLook" maxlength="2000" autocomplete="off"></div>
+          <button class="g" id="obLookBtn" type="button">Look up</button>
+        </div>
+        <div class="msg" id="obLookMsg"></div>
+        <div id="obLookOut"></div>
+        <div class="row" style="margin-top:12px">
+          <div class="f"><label for="apEmail">Business email address (as published)</label><input id="apEmail" type="email" maxlength="254" autocomplete="off"></div>
+          <div class="f" style="max-width:190px"><label for="apType">Type</label><select id="apType">
+            <option value="other">Other</option><option value="analytics_creator">Analytics creator</option><option value="football_analyst">Football analyst</option>
+            <option value="cfb_analyst">CFB analyst</option><option value="nfl_analyst">NFL analyst</option><option value="quant_researcher">Quant researcher</option>
+            <option value="modeling_creator">Modeling creator</option><option value="newsletter_writer">Newsletter writer</option><option value="analytics_newsletter">Analytics newsletter</option>
+            <option value="fantasy_analyst">Fantasy analyst</option><option value="props_analyst">Props analyst</option><option value="podcast">Podcast</option>
+            <option value="media_founder">Media founder</option><option value="youtube_creator">YouTube creator</option><option value="community_operator">Community operator</option>
+            <option value="betting_educator">Betting educator</option><option value="handicapper_modeler">Handicapper / modeler</option></select></div>
+          <div class="f" style="max-width:150px"><label for="apCampaign">Campaign</label><select id="apCampaign"><option value="customer">Customer</option><option value="partnership">Partnership</option></select></div>
+          <div class="f" style="max-width:170px"><label for="apSports">Sports (comma-separated)</label><input id="apSports" maxlength="80" placeholder="CFB, NFL"></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="f"><label for="apUrls">Profiles and website, one per line</label><textarea id="apUrls" rows="2" autocomplete="off"></textarea></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="f" style="max-width:170px"><label for="apField">A first fact (optional)</label><select id="apField"></select></div>
+          <div class="f"><label for="apClaim">Claim</label><input id="apClaim" maxlength="500"></div>
+          <div class="f"><label for="apSrc">Source page (https://…)</label><input id="apSrc" class="mono" maxlength="2000"></div>
+          <div class="f" style="max-width:210px"><label for="apKind">Kind of source</label><select id="apKind"></select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="f"><label for="apQuote">The words on the page that say it</label><input id="apQuote" maxlength="2000"></div>
+          <label class="chk" style="margin-bottom:9px"><input type="checkbox" id="apTest"> Test prospect (its sends only ever reach your test inbox)</label>
+          <button id="apAdd" type="button">Add prospect</button>
+        </div>
+        <div class="msg" id="apMsg" role="status" aria-live="polite"></div>
+        <div class="note">Finding someone again — any casing of their address, a profile link with tracking tags or a mobile host — adds to the same record. Names, confidences, scores and status are worked out by the database from the evidence: nothing typed here is taken as certain.</div>
       </div>
 
       <h2>Suppressions</h2>
@@ -240,7 +301,7 @@ td.wrap{white-space:normal;max-width:360px}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261005a"></script>
-<script src="/admin/growth/outbound.js?v=20261005a"></script>
+<script src="/admin/growth/outbound.js?v=20261007a"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
