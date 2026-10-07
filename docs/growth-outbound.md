@@ -356,7 +356,7 @@ Everything shown came from the open web, so all of it is escaped and only an `ht
 | Suite | Checks | What it proves |
 |---|---|---|
 | `tools/growth/outbound_research_sql.test.js` (`npm run growth:sql`) | 162 | **Canonical URLs:** 20 cases. **Identity keys:** 17 URLs. **Dedupe:** rediscovery, `identity_conflict` writing nothing, suppressed people staying out, weak keys flagged and never merged, release. **Evidence rules:** 17 refusals, including the employer-from-email-domain rule, forged attestations and a collector's confidence; all or nothing. **The confidence arithmetic:** repetition, independence, rivals, stale roles, old content. **Computed columns** refused even to the superuser, and a faked door. **Names, fit, the status machine, approval withdrawal, the fresh approve, one person one step, lookup.** **Mutation-checked:** 18 deliberate breaks, every one caught. |
-| `tools/growth/outbound_sql.test.js` | 239 | the Phase 2 suite. Its prospects are now built from evidence and evaluated (the old direct writes are refused). The duplicate row is refused at approval, and its send is refused even when an approval is forced past the door. |
+| `tools/growth/outbound_sql.test.js` | 239 (at Phase 3) | the Phase 2 suite. Its prospects are now built from evidence and evaluated (the old direct writes are refused). The duplicate row is refused at approval, and its send is refused even when an approval is forced past the door. |
 | `tools/growth/outbound_console.e2e.js` (`npm run growth:e2e`) | 73 | adds the prospect panel, injected markup shown as text, no `javascript:` link, supersede, add evidence, fit reasons, release, status, lookup and add prospect. A non-owner forcing `EDOutbound.open()` still gets nothing. An unassessed prospect is never shown as clearing the gates, and the page still opens a prospect before the Phase 3 SQL is applied; 390 px with a prospect open. |
 
 ### Deploy
@@ -378,9 +378,92 @@ drop function if exists public.growth_outbound_prospect_upsert(jsonb), public.gr
 notify pgrst, 'reload schema';
 ```
 
+## Phase 4: the review queue
+
+**Software may draft and queue; only the owner approves, and approving sends nothing.** The Outbound tab now opens on a **Review queue** where every draft waiting for the owner is a card.
+
+### A card
+
+- **The message exactly as it would be sent** (`growth_outbound.compose()`): sender, recipient, subject, the words, and the footer. The footer carries the sender, the business name, the postal address, and a "reply stop / opt out" line; the personal opt-out link itself is made at send time (Phase 5/6). In test mode, and always for a test prospect, the recipient is the test inbox, and the card names the real address it is *not* going to.
+- **Who it is for and how sure:** the prospect's status, fit and gates, from an assessment re-evaluated as the queue is opened.
+- **What it says about them, and why we believe it:** each claim the draft cites, with the evidence it rests on (field, kind of source, link, the words on the page, its current confidence). A claim citing nothing, superseded evidence or another person's evidence is marked.
+- **Why it cannot be approved yet,** in words: unmet gates, a cited claim no longer in the email's words, broken content rules.
+
+### The content rules (`growth_outbound.draft_lint()`, enforced at approval, for every draft, test or not)
+
+| Rule | Refused, for example |
+|---|---|
+| no promised winnings, locks or guarantees | "a lock", "guaranteed", "can't lose", "risk-free", "winnings" |
+| one price | any dollar amount other than $49.99 |
+| one trial | any trial other than 7 days (or "one week") |
+| EdgeDesk links only | any link not on edgedesksports.com |
+| nothing unfilled | `{{…}}`, `[First Name]`, "lorem ipsum" |
+| no fake reply | a subject starting "RE:" or "Fwd:" |
+
+The rules err strict on purpose: "we never promise winnings" is refused too. Say what EdgeDesk does instead.
+
+**A cited claim must be in the email, in its words** (any casing or punctuation). An edit that drops it cannot be approved until it says it again.
+
+### Approving
+
+- **One:** the console asks first, saying that approving sends nothing and whether it is a test. It sends the content hash on screen, so a draft changed in the meantime is refused.
+- **Several** (`growth_outbound_drafts_approve_batch(items, confirm_count)`): the owner selects drafts and **types how many**. The database approves exactly that count or nothing:
+  - the typed count must equal the selection;
+  - 1 to 25 drafts, each once;
+  - **all or nothing:** if any one cannot be approved (a gate, a content rule, a changed draft), none is, and every reason comes back.
+- **One implementation:** both doors call `growth_outbound.approve_one()`, which re-evaluates the prospect and checks every gate. No client can call it, and it refuses any session that is not the signed-in owner, the superuser's included.
+- **Withdraw** (`growth_outbound_draft_unapprove`): an approved draft goes back to review before it is sent.
+
+### Writing a draft (`growth_outbound_draft_create`)
+
+The owner can write a draft from a prospect's panel. Each thing it says about them is a claim that:
+- cites **current evidence of that prospect** (never an email address, never superseded, never someone else's);
+- appears in the email's words.
+
+A real prospect's draft makes at least one claim. The content rules apply at once. There is one live draft per step. The draft then waits in the queue like any other.
+
+### A test draft for your own inbox (`growth_outbound_test_fixture`)
+
+One button makes (once) a **test prospect at the owner's test inbox**, with owner-verified evidence and a draft that keeps the content rules, so the whole path can be tried without touching a real person. Without a test inbox it says to set one.
+
+### New owner doors
+
+- `growth_outbound_review_queue(status, limit)`: pending or approved, with fresh assessments.
+- `growth_outbound_drafts_approve_batch(items, confirm_count)`
+- `growth_outbound_draft_unapprove(id, reason)`
+- `growth_outbound_draft_create(prospect, p)`
+- `growth_outbound_test_fixture()`
+
+`growth_outbound_draft_approve` now calls the shared `approve_one()`, and adds the content rules and the words check to its gates. The Phase 2 catalogue loop refuses all five new doors to every non-owner role automatically.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_review_sql.test.js` (`npm run growth:sql`) | 85 | the cards (claims with evidence, preview, fresh gates); 14 refused and 3 clean content cases; approval refused for broken rules and for a dropped claim; every way to write a bad draft; the batch's count, size, uniqueness and all-or-nothing behaviour, with nothing logged from a refused batch; withdraw; the fixture (idempotent, test-only, approvable); the preview in test and live mode; the private approve implementation. **Mutation-checked:** 16 deliberate breaks, every one caught. |
+| `tools/growth/outbound_sql.test.js` | 269 | the Phase 2 suite; its catalogue loop now covers the new doors |
+| `tools/growth/outbound_research_sql.test.js` | 162 | unchanged and passing |
+| `tools/growth/outbound_console.e2e.js` (`npm run growth:e2e`) | 110 | adds the queue: the card as sent, text from the web shown as text, a blocked draft unselectable even when forced from the page, approve asking first, the typed batch count (a wrong number sends nothing), a refused batch, inline edit, reject, withdraw, the fixture, writing a draft, and the page before the Phase 4 SQL |
+
+### Deploy
+
+1. Merge the Phase 4 PR. Until step 2, the queue says which SQL to run.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. Report rows 1–20 should say `ok`; row 20 counts the queue.
+3. In **Settings**, set the test inbox. Press **Test draft for my inbox**, then approve it from the queue. Nothing is sent: sending is Phase 5.
+
+### Rollback
+
+- **The page:** revert the merge commit.
+- **The database:** drop the five new doors and re-run the Phase 3 version of the file (`git show 3d6d37fb:supabase/growth_outbound.sql`). That restores the Phase 3 approve door. The new index is harmless.
+
+```sql
+drop function if exists public.growth_outbound_review_queue(text, int), public.growth_outbound_drafts_approve_batch(jsonb, int),
+  public.growth_outbound_draft_unapprove(uuid, text), public.growth_outbound_draft_create(uuid, jsonb), public.growth_outbound_test_fixture();
+notify pgrst, 'reload schema';
+```
+
 ## Next
 
-- **Phase 4:** the review queue (cards, batch approve with an explicit count confirmation, a test-prospect fixture).
-- **Phase 5:** the claim door and the `growth-send-approved` Edge Function, built on `requireOutboundOwner`.
+- **Phase 5:** the claim door and the `growth-send-approved` Edge Function. It is built on `requireOutboundOwner`, sends through Resend from `Davis <davis@edgedesksports.com>` with an idempotency key, and uses the same `compose()` the queue previews.
 - **Phase 6:** the Resend webhook, the opt-out endpoint, bounces and complaints into suppressions.
 - **Phase 7:** discovery and research providers (interface first; nothing faked).

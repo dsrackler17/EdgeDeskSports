@@ -297,7 +297,7 @@ try {
   chk('G a draft cannot be born approved', !!e && /only an owner approves/.test(e), e);
   e = db.mustFail(() => one(`update growth_outbound.drafts set body_text = 'changed after approval' where id = '${D1}';`));
   chk('G an approved draft cannot be changed', !!e && /cannot change/.test(e), e);
-  r = j(db.as(U.owner, `select public.growth_outbound_draft_edit('${D1}', 'Your CFB power ratings', 'Hey Pat, edited by me.', ${lit(hashOf(D1))});`));
+  r = j(db.as(U.owner, `select public.growth_outbound_draft_edit('${D1}', 'Your CFB power ratings', 'Hey Pat, edited by me. I read your CFB power ratings against the market.', ${lit(hashOf(D1))});`));
   chk('G the owner\'s edit returns the draft to review and clears the approval', r.ok === true && r.status === 'pending_review'
     && one(`select (approved_by is null and approved_at is null and edited_by_owner)::text from growth_outbound.drafts where id = '${D1}';`) === 'true');
   r = j(db.as(U.owner, `select public.growth_outbound_draft_edit('${D1}', 'x', 'y', 'stale-hash');`));

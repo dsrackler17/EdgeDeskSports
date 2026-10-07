@@ -49,7 +49,12 @@
 --          evaluate() — no statement writes them, the superuser's included —
 --          so uncertain information never becomes confident because somebody
 --          (or some model) repeated it; evidence is never rewritten, only
---          superseded; an email address or profile names one prospect.
+--          superseded; an email address or profile names one prospect;
+--        a draft is approved only within the content rules (no promised
+--          winnings, locks or guarantees; $49.99/month; a 7-day free trial;
+--          EdgeDesk links only) and only while every claim it cites is in
+--          its words and backed by current evidence; a batch is approved
+--          only for the exact count the owner confirms, all or nothing.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -2013,56 +2018,16 @@ begin
 end $$;
 
 -- APPROVE: the owner's explicit act, for the exact content they reviewed.
--- It sends nothing. Every gate is re-checked here, server-side.
+-- It sends nothing. Every gate — the assessment, re-evaluated now, and the
+-- content rules — is re-checked server-side, in growth_outbound.approve_one().
 create or replace function public.growth_outbound_draft_approve(p_draft_id uuid, p_content_hash text)
 returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_owner uuid;
-  d growth_outbound.drafts;
-  p growth_outbound.prospects;
-  s growth_outbound.settings;
-  v_gates text[] := '{}';
 begin
   v_owner := growth_outbound.require_owner();
-  select * into d from growth_outbound.drafts where id = p_draft_id for update;
-  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
-  if d.status <> 'pending_review' then return jsonb_build_object('ok', false, 'reason', 'not_pending_review', 'status', d.status); end if;
-  if p_content_hash is distinct from d.content_hash then
-    return jsonb_build_object('ok', false, 'reason', 'content_changed',
-      'detail', 'the draft changed after you loaded it; review the current version');
-  end if;
-  -- the gates read a fresh assessment, never a stored one
-  perform growth_outbound.evaluate(d.prospect_id);
-  select * into p from growth_outbound.prospects where id = d.prospect_id for update;
-  select * into s from growth_outbound.settings where id = 1;
-  if p.status in ('rejected', 'suppressed') then return jsonb_build_object('ok', false, 'reason', 'prospect_' || p.status); end if;
-  if p.email is null or not growth_outbound.valid_email(growth_outbound.norm_email(p.email)) or p.email_status = 'invalid' then
-    return jsonb_build_object('ok', false, 'reason', 'no_valid_email');
-  end if;
-  if growth_outbound.is_suppressed(p.email) then return jsonb_build_object('ok', false, 'reason', 'suppressed'); end if;
-  if d.is_test is distinct from p.is_test then return jsonb_build_object('ok', false, 'reason', 'test_flag_mismatch'); end if;
-  if not p.is_test then
-    if d.sequence_number = 1 and p.status <> 'ready_for_review' then v_gates := array_append(v_gates, ('status is ' || p.status)::text); end if;
-    if p.duplicate_of is not null then v_gates := array_append(v_gates, 'duplicate of another prospect'::text); end if;
-    if coalesce(p.fit_score, -1) < s.min_fit_score then v_gates := array_append(v_gates, 'fit score below minimum'::text); end if;
-    if coalesce(p.identity_confidence, 0) < s.min_identity_confidence then v_gates := array_append(v_gates, 'identity confidence below minimum'::text); end if;
-    if coalesce(p.research_confidence, 0) < s.min_research_confidence then v_gates := array_append(v_gates, 'research confidence below minimum'::text); end if;
-    if coalesce(p.email_confidence, 0) < s.min_email_confidence then v_gates := array_append(v_gates, 'email confidence below minimum'::text); end if;
-    if p.email_status <> 'verified' then v_gates := array_append(v_gates, ('email is ' || p.email_status)::text); end if;
-  end if;
-  if array_length(v_gates, 1) > 0 then
-    return jsonb_build_object('ok', false, 'reason', 'below_gate', 'gates', to_jsonb(v_gates));
-  end if;
-  perform set_config('growth_outbound.door', 'approve', true);
-  update growth_outbound.drafts
-     set status = 'approved', approved_at = now(), approved_by = v_owner,
-         approved_hash = content_hash, approved_recipient = growth_outbound.norm_email(p.email)
-   where id = d.id;
-  perform set_config('growth_outbound.door', '', true);
-  perform growth_outbound.log('draft_approved', d.prospect_id, 'draft', d.id::text,
-    jsonb_build_object('sequence', d.sequence_number, 'content_hash', d.content_hash, 'test', d.is_test));
-  return jsonb_build_object('ok', true, 'draft_id', d.id, 'approved_hash', d.content_hash);
+  return growth_outbound.approve_one(v_owner, p_draft_id, p_content_hash);
 end $$;
 
 create or replace function public.growth_outbound_draft_reject(p_draft_id uuid, p_reason text)
@@ -2568,6 +2533,424 @@ begin
   return jsonb_build_object('ok', true, 'cleared', to_jsonb(v_cols), 'status', v_res->>'status');
 end $$;
 
+-- ── review: the queue, the content rules, the preview, approving ─────────────
+
+create index if not exists drafts_status_idx on growth_outbound.drafts (status, generated_at desc);
+
+-- THE CONTENT RULES every draft is approved within, test or not. EdgeDesk is
+-- a research platform, not picks: no promised winnings, locks or guarantees;
+-- one price ($49.99 a month); one trial (7 days, free); links to EdgeDesk
+-- only; nothing left unfilled; no subject that pretends to be a reply.
+-- Erring strict on purpose: "we never promise winnings" is refused too —
+-- say what EdgeDesk does instead.
+create or replace function growth_outbound.draft_lint(p_subject text, p_body text)
+returns text[] language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  t text := lower(coalesce(p_subject, '') || E'\n' || coalesce(p_body, ''));
+  v text[] := '{}';
+  m text[];
+begin
+  if t ~ ('\m(locks?|guarantee[sd]?|can''?t lose|cannot lose|sure thing|free money|easy money|risk[- ]free|no[- ]risk|'
+          || 'winnings|get rich|guaranteed profits?|beat the (books|sportsbooks) every)\M') then
+    v := array_append(v, 'promises winnings, a lock or a guarantee'::text);
+  end if;
+  for m in select regexp_matches(t, '\$\s?([0-9][0-9,]*(\.[0-9]{1,2})?)', 'g') loop
+    if replace(m[1], ',', '') <> '49.99' then
+      v := array_append(v, ('the price is $49.99/month, not $' || m[1])::text);
+      exit;
+    end if;
+  end loop;
+  for m in select regexp_matches(t, '\m([0-9]+|a|an|one|two|three|five|seven|ten|fourteen|thirty)[- ]?(day|week|month)s?[- ](free[- ])?trial', 'g') loop
+    if not ((m[1] in ('7', 'seven') and m[2] = 'day') or (m[1] in ('1', 'a', 'one') and m[2] = 'week')) then
+      v := array_append(v, 'the free trial is 7 days'::text);
+      exit;
+    end if;
+  end loop;
+  for m in select regexp_matches(t, '(https?://|www\.)([a-z0-9.-]+)', 'g') loop
+    if m[2] !~ '(^|\.)edgedesksports\.com$' then
+      v := array_append(v, ('links go to edgedesksports.com only, not ' || m[2])::text);
+      exit;
+    end if;
+  end loop;
+  if t ~ '\{\{|\}\}|\[(first ?name|last ?name|name|company|organization|org|todo|tbd|insert[^]]*)\]|lorem ipsum' then
+    v := array_append(v, 'something is left unfilled'::text);
+  end if;
+  if coalesce(p_subject, '') ~* '^\s*(re|fw|fwd)\s*:' then
+    v := array_append(v, 'the subject pretends to be a reply or a forward'::text);
+  end if;
+  return array(select distinct x from unnest(v) x order by 1);
+end $$;
+
+-- A cited claim must be IN the email, in its words: the claims list is what
+-- the message actually says about the person, each statement backed.
+create or replace function growth_outbound.claims_missing(d growth_outbound.drafts)
+returns text[] language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(array_agg(c->>'text' order by n), '{}')
+    from jsonb_array_elements(case when jsonb_typeof(d.claims) = 'array' then d.claims else '[]'::jsonb end) with ordinality x(c, n)
+   where growth_outbound.norm_text(c->>'text') is null
+      or position(growth_outbound.norm_text(c->>'text') in
+                  coalesce(growth_outbound.norm_text(coalesce(d.subject, '') || ' ' || coalesce(d.body_text, '')), '')) = 0;
+$$;
+
+-- The footer every message carries: who sent it, the postal address, and how
+-- to stop. The personal opt-out link is made at send time (Phase 5/6).
+create or replace function growth_outbound.footer_text(p_link text)
+returns text language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select '--' || E'\n' || s.sender_name || ', ' || s.business_name || E'\n'
+      || coalesce(nullif(btrim(s.postal_address), ''), '[no postal address is set: sending is blocked until there is one]') || E'\n'
+      || 'Not for you? Reply "stop", or opt out in one click: ' || coalesce(p_link, '')
+    from growth_outbound.settings s where s.id = 1;
+$$;
+
+-- EXACTLY what would go out for a draft, as the owner reviews it: sender,
+-- recipient (the test inbox in test mode or for a test prospect), subject,
+-- the words, the footer.
+create or replace function growth_outbound.compose(p_draft uuid)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object(
+    'test', s.test_mode or d.is_test,
+    'from', s.sender_name || ' <' || s.sender_email || '>',
+    'reply_to', coalesce(s.reply_to_email, s.sender_email),
+    'to', case when s.test_mode or d.is_test then s.test_inbox else growth_outbound.norm_email(p.email) end,
+    'intended_recipient', growth_outbound.norm_email(p.email),
+    'subject', d.subject,
+    'body', d.body_text,
+    'footer', growth_outbound.footer_text('[your personal opt-out link is added when this is sent]'),
+    'text', d.body_text || E'\n\n' || growth_outbound.footer_text('[your personal opt-out link is added when this is sent]'))
+  from growth_outbound.drafts d
+  join growth_outbound.prospects p on p.id = d.prospect_id
+  cross join growth_outbound.settings s
+  where d.id = p_draft and s.id = 1;
+$$;
+
+-- One card in the review queue: the draft, who it is for and how sure we
+-- are, every claim with the evidence it rests on, the content rules, and
+-- the message exactly as it would be sent.
+create or replace function growth_outbound.review_card(d growth_outbound.drafts)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object(
+    'draft', to_jsonb(d),
+    'prospect', growth_outbound.prospect_card(p)
+                || jsonb_build_object('thresholds', p.assessment->'thresholds', 'fields', p.assessment->'fields'),
+    'lint', to_jsonb(growth_outbound.draft_lint(d.subject, d.body_text)),
+    'claims_missing', to_jsonb(growth_outbound.claims_missing(d)),
+    'claims', coalesce((
+      select jsonb_agg(jsonb_build_object(
+               'text', x.c->>'text',
+               'evidence_id', x.c->'evidence_id',
+               'confidence', case when coalesce(x.c->>'evidence_id', '') ~ '^[0-9]{1,18}$'
+                                  then growth_outbound.evidence_confidence((x.c->>'evidence_id')::bigint, d.prospect_id) else 0 end,
+               'evidence', (select jsonb_build_object('id', e.id, 'field_name', e.field_name, 'claim', e.claim, 'source_url', e.source_url,
+                                     'source_kind', e.source_kind, 'source_excerpt', e.source_excerpt,
+                                     'source_published_at', e.source_published_at, 'observed_at', e.observed_at,
+                                     'current', e.superseded_at is null, 'own', e.prospect_id = d.prospect_id)
+                              from growth_outbound.evidence e
+                             where coalesce(x.c->>'evidence_id', '') ~ '^[0-9]{1,18}$' and e.id = (x.c->>'evidence_id')::bigint))
+             order by x.n)
+        from jsonb_array_elements(case when jsonb_typeof(d.claims) = 'array' then d.claims else '[]'::jsonb end) with ordinality x(c, n)),
+      '[]'::jsonb),
+    'preview', growth_outbound.compose(d.id))
+  from growth_outbound.prospects p where p.id = d.prospect_id;
+$$;
+
+-- APPROVE ONE DRAFT — the single implementation behind both approve doors.
+-- Private; called only by a door that has just run require_owner().
+create or replace function growth_outbound.approve_one(p_owner uuid, p_draft_id uuid, p_content_hash text)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  d growth_outbound.drafts;
+  p growth_outbound.prospects;
+  s growth_outbound.settings;
+  v_gates text[] := '{}';
+  x text;
+begin
+  if p_owner is null or p_owner is distinct from auth.uid() or not growth_outbound.owner_active(p_owner) then
+    raise exception 'outbound owner only' using errcode = 'insufficient_privilege';
+  end if;
+  select * into d from growth_outbound.drafts where id = p_draft_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if d.status <> 'pending_review' then return jsonb_build_object('ok', false, 'reason', 'not_pending_review', 'status', d.status); end if;
+  if p_content_hash is distinct from d.content_hash then
+    return jsonb_build_object('ok', false, 'reason', 'content_changed',
+      'detail', 'the draft changed after you loaded it; review the current version');
+  end if;
+  -- the gates read a fresh assessment, never a stored one
+  perform growth_outbound.evaluate(d.prospect_id);
+  select * into p from growth_outbound.prospects where id = d.prospect_id for update;
+  select * into s from growth_outbound.settings where id = 1;
+  if p.status in ('rejected', 'suppressed') then return jsonb_build_object('ok', false, 'reason', 'prospect_' || p.status); end if;
+  if p.email is null or not growth_outbound.valid_email(growth_outbound.norm_email(p.email)) or p.email_status = 'invalid' then
+    return jsonb_build_object('ok', false, 'reason', 'no_valid_email');
+  end if;
+  if growth_outbound.is_suppressed(p.email) then return jsonb_build_object('ok', false, 'reason', 'suppressed'); end if;
+  if d.is_test is distinct from p.is_test then return jsonb_build_object('ok', false, 'reason', 'test_flag_mismatch'); end if;
+  if not p.is_test then
+    if d.sequence_number = 1 and p.status <> 'ready_for_review' then v_gates := array_append(v_gates, ('status is ' || p.status)::text); end if;
+    if p.duplicate_of is not null then v_gates := array_append(v_gates, 'duplicate of another prospect'::text); end if;
+    if coalesce(p.fit_score, -1) < s.min_fit_score then v_gates := array_append(v_gates, 'fit score below minimum'::text); end if;
+    if coalesce(p.identity_confidence, 0) < s.min_identity_confidence then v_gates := array_append(v_gates, 'identity confidence below minimum'::text); end if;
+    if coalesce(p.research_confidence, 0) < s.min_research_confidence then v_gates := array_append(v_gates, 'research confidence below minimum'::text); end if;
+    if coalesce(p.email_confidence, 0) < s.min_email_confidence then v_gates := array_append(v_gates, 'email confidence below minimum'::text); end if;
+    if p.email_status <> 'verified' then v_gates := array_append(v_gates, ('email is ' || p.email_status)::text); end if;
+    foreach x in array growth_outbound.claims_missing(d) loop
+      v_gates := array_append(v_gates, ('a cited claim is not in the email: "' || left(coalesce(x, ''), 80) || '"')::text);
+    end loop;
+  end if;
+  -- the content rules hold for every draft, test or not
+  foreach x in array growth_outbound.draft_lint(d.subject, d.body_text) loop
+    v_gates := array_append(v_gates, ('content: ' || x)::text);
+  end loop;
+  if array_length(v_gates, 1) > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'below_gate', 'gates', to_jsonb(v_gates));
+  end if;
+  perform set_config('growth_outbound.door', 'approve', true);
+  update growth_outbound.drafts
+     set status = 'approved', approved_at = now(), approved_by = p_owner,
+         approved_hash = content_hash, approved_recipient = growth_outbound.norm_email(p.email)
+   where id = d.id;
+  perform set_config('growth_outbound.door', '', true);
+  perform growth_outbound.log('draft_approved', d.prospect_id, 'draft', d.id::text,
+    jsonb_build_object('sequence', d.sequence_number, 'content_hash', d.content_hash, 'test', d.is_test));
+  return jsonb_build_object('ok', true, 'draft_id', d.id, 'approved_hash', d.content_hash);
+end $$;
+
+-- APPROVE SEVERAL — the owner names the drafts AND says how many. The count
+-- must match exactly, and it is all or nothing: if any one of them cannot be
+-- approved, none is, and the reasons come back. It sends nothing.
+create or replace function public.growth_outbound_drafts_approve_batch(p_items jsonb, p_confirm_count int)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  v_n int;
+  it jsonb;
+  r jsonb;
+  v_ok jsonb := '[]'::jsonb;
+  v_bad jsonb := '[]'::jsonb;
+begin
+  v_owner := growth_outbound.require_owner();
+  if p_items is null or jsonb_typeof(p_items) <> 'array' then return jsonb_build_object('ok', false, 'reason', 'not_a_list'); end if;
+  v_n := jsonb_array_length(p_items);
+  if v_n < 1 or v_n > 25 then
+    return jsonb_build_object('ok', false, 'reason', 'batch_size', 'detail', 'approve 1 to 25 drafts at a time');
+  end if;
+  if p_confirm_count is distinct from v_n then
+    return jsonb_build_object('ok', false, 'reason', 'count_mismatch',
+      'detail', format('you confirmed %s but %s draft(s) were selected; nothing was approved', coalesce(p_confirm_count::text, 'no number'), v_n));
+  end if;
+  if exists (select 1 from jsonb_array_elements(p_items) x where jsonb_typeof(x) <> 'object'
+              or coalesce(x->>'draft_id', '') !~ '^[0-9a-fA-F-]{36}$')
+     or (select count(distinct lower(x->>'draft_id')) from jsonb_array_elements(p_items) x) <> v_n then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'each item is {draft_id, content_hash}, each draft once');
+  end if;
+  begin
+    for it in select x from jsonb_array_elements(p_items) x loop
+      r := growth_outbound.approve_one(v_owner, (it->>'draft_id')::uuid, it->>'content_hash');
+      if coalesce((r->>'ok')::boolean, false) then
+        v_ok := v_ok || jsonb_build_array(it->'draft_id');
+      else
+        v_bad := v_bad || jsonb_build_array(r || jsonb_build_object('draft_id', it->'draft_id'));
+      end if;
+    end loop;
+    if jsonb_array_length(v_bad) > 0 then
+      raise exception 'not every draft in the batch can be approved' using errcode = 'OB001';
+    end if;
+  exception when sqlstate 'OB001' then
+    return jsonb_build_object('ok', false, 'reason', 'not_all_approvable', 'refused', v_bad,
+      'detail', format('%s of %s cannot be approved, so none was', jsonb_array_length(v_bad), v_n));
+  end;
+  perform growth_outbound.log('drafts_batch_approved', null, 'draft', null,
+    jsonb_build_object('count', v_n, 'drafts', v_ok));
+  return jsonb_build_object('ok', true, 'approved', v_n, 'drafts', v_ok);
+end $$;
+
+-- WITHDRAW an approval before it is sent: back to review, approval cleared.
+create or replace function public.growth_outbound_draft_unapprove(p_draft_id uuid, p_reason text default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  d growth_outbound.drafts;
+begin
+  v_owner := growth_outbound.require_owner();
+  select * into d from growth_outbound.drafts where id = p_draft_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if d.status <> 'approved' then return jsonb_build_object('ok', false, 'reason', 'not_approved', 'status', d.status); end if;
+  update growth_outbound.drafts set status = 'pending_review' where id = d.id;
+  perform growth_outbound.evaluate(d.prospect_id);
+  perform growth_outbound.log('draft_unapproved', d.prospect_id, 'draft', d.id::text,
+    jsonb_build_object('reason', left(nullif(btrim(coalesce(p_reason, '')), ''), 300), 'content_hash', d.content_hash));
+  return jsonb_build_object('ok', true, 'status', 'pending_review');
+end $$;
+
+-- WRITE A DRAFT yourself. Every personal statement is a claim that cites
+-- current evidence of this prospect and appears in the email in its words;
+-- a real prospect's draft makes at least one. The content rules apply now,
+-- not only at approval. It goes into the queue for review like any other.
+create or replace function public.growth_outbound_draft_create(p_prospect uuid, p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  v_p growth_outbound.prospects;
+  v_seq int;
+  v_subject text := btrim(coalesce(p->>'subject', ''));
+  v_body text := btrim(coalesce(p->>'body_text', ''));
+  v_claims jsonb := '[]'::jsonb;
+  c jsonb;
+  v_text text;
+  v_lint text[];
+  v_existing uuid;
+  d growth_outbound.drafts;
+begin
+  v_owner := growth_outbound.require_owner();
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'not_an_object'); end if;
+  if exists (select 1 from jsonb_object_keys(p) k where k not in ('subject', 'body_text', 'claims', 'sequence_number')) then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_field');
+  end if;
+  select * into v_p from growth_outbound.prospects where id = p_prospect for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if v_p.status in ('suppressed', 'rejected') or growth_outbound.is_suppressed(v_p.email) then
+    return jsonb_build_object('ok', false, 'reason', 'prospect_' || case when v_p.status = 'rejected' then 'rejected' else 'suppressed' end);
+  end if;
+  v_seq := case when coalesce(p->>'sequence_number', '1') ~ '^[1-3]$' then (coalesce(p->>'sequence_number', '1'))::int end;
+  if v_seq is null then return jsonb_build_object('ok', false, 'reason', 'invalid_sequence'); end if;
+  if length(v_subject) not between 1 and 150 or length(v_body) not between 1 and 5000 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_content', 'detail', 'a subject of 1–150 characters and a body of 1–5000 are required');
+  end if;
+  select id into v_existing from growth_outbound.drafts
+   where prospect_id = v_p.id and sequence_number = v_seq and status in ('pending_review', 'approved');
+  if v_existing is not null then
+    return jsonb_build_object('ok', false, 'reason', 'draft_exists', 'draft_id', v_existing,
+      'detail', 'this step already has a draft waiting; edit or reject that one');
+  end if;
+  if p ? 'claims' and (jsonb_typeof(p->'claims') <> 'array' or jsonb_array_length(p->'claims') > 10) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'at most 10 claims');
+  end if;
+  for c in select x from jsonb_array_elements(coalesce(p->'claims', '[]'::jsonb)) x loop
+    v_text := nullif(btrim(coalesce(c->>'text', '')), '');
+    if jsonb_typeof(c) <> 'object' or v_text is null or length(v_text) > 300 or coalesce(c->>'evidence_id', '') !~ '^[0-9]{1,18}$' then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'each claim is {text, evidence_id}');
+    end if;
+    if not exists (select 1 from growth_outbound.evidence e where e.id = (c->>'evidence_id')::bigint and e.prospect_id = v_p.id
+                     and e.superseded_at is null and e.claim_norm is not null and e.field_name <> 'email') then
+      return jsonb_build_object('ok', false, 'reason', 'claim_without_evidence',
+        'detail', format('"%s" cites evidence that is not current evidence about this prospect', left(v_text, 80)));
+    end if;
+    if position(coalesce(growth_outbound.norm_text(v_text), '') in coalesce(growth_outbound.norm_text(v_subject || ' ' || v_body), '')) = 0 then
+      return jsonb_build_object('ok', false, 'reason', 'claim_not_in_email',
+        'detail', format('"%s" is cited but the email does not say it', left(v_text, 80)));
+    end if;
+    v_claims := v_claims || jsonb_build_array(jsonb_build_object('text', v_text, 'evidence_id', (c->>'evidence_id')::bigint));
+  end loop;
+  if not v_p.is_test and jsonb_array_length(v_claims) = 0 then
+    return jsonb_build_object('ok', false, 'reason', 'no_claims',
+      'detail', 'an individual email says at least one thing about them, backed by evidence');
+  end if;
+  v_lint := growth_outbound.draft_lint(v_subject, v_body);
+  if cardinality(v_lint) > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'content', 'problems', to_jsonb(v_lint));
+  end if;
+  insert into growth_outbound.drafts (prospect_id, sequence_number, campaign_type, is_test, subject, body_text, claims, generator_version, edited_by_owner)
+  values (v_p.id, v_seq, v_p.campaign_type, v_p.is_test, v_subject, v_body, v_claims, 'owner', true)
+  returning * into d;
+  perform growth_outbound.evaluate(v_p.id);
+  perform growth_outbound.log('draft_created', v_p.id, 'draft', d.id::text,
+    jsonb_build_object('sequence', v_seq, 'claims', jsonb_array_length(v_claims), 'by', 'owner'));
+  return jsonb_build_object('ok', true, 'draft_id', d.id, 'content_hash', d.content_hash,
+    'status', (select status from growth_outbound.prospects where id = v_p.id));
+end $$;
+
+-- THE REVIEW QUEUE: drafts waiting for the owner (or approved and not yet
+-- sent), each prospect re-evaluated first so the gates shown are current.
+create or replace function public.growth_outbound_review_queue(p_status text default 'pending_review', p_limit int default 50)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_status text := coalesce(p_status, 'pending_review');
+  v_limit int := least(greatest(coalesce(p_limit, 50), 1), 100);
+  v_pid uuid;
+begin
+  perform growth_outbound.require_owner();
+  if v_status not in ('pending_review', 'approved') then return jsonb_build_object('ok', false, 'reason', 'not_a_queue'); end if;
+  for v_pid in
+    select distinct x.prospect_id from (
+      select d.prospect_id from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
+       where d.status = v_status order by p.is_test desc, p.fit_score desc nulls last, d.generated_at limit v_limit) x
+  loop
+    perform growth_outbound.evaluate(v_pid);
+  end loop;
+  return jsonb_build_object('ok', true, 'status', v_status,
+    'total', (select count(*) from growth_outbound.drafts where status = v_status),
+    'rows', coalesce((
+      select jsonb_agg(growth_outbound.review_card(x.d) order by x.ord)
+        from (select d, row_number() over (order by p.is_test desc, p.fit_score desc nulls last, d.generated_at) as ord
+                from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
+               where d.status = v_status
+               order by 2 limit v_limit) x), '[]'::jsonb));
+end $$;
+
+-- A TEST PROSPECT AT THE OWNER'S OWN TEST INBOX, with a draft to review, so
+-- the whole path can be tried without touching a real person. Idempotent.
+create or replace function public.growth_outbound_test_fixture()
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  v_res jsonb;
+  v_pid uuid;
+  v_eid bigint;
+  v_did uuid;
+  v_created boolean := false;
+begin
+  perform growth_outbound.require_owner();
+  select * into s from growth_outbound.settings where id = 1;
+  if s.test_inbox is null then
+    return jsonb_build_object('ok', false, 'reason', 'test_inbox_missing', 'detail', 'set a test inbox in the outbound settings first');
+  end if;
+  select id into v_pid from growth_outbound.prospects
+   where is_test and growth_outbound.norm_email(email) = growth_outbound.norm_email(s.test_inbox)
+   order by created_at limit 1;
+  if v_pid is null then
+    v_res := growth_outbound.ingest(null, jsonb_build_object('email', s.test_inbox, 'is_test', true, 'discovered_via', 'test_fixture',
+      'evidence', jsonb_build_array(
+        jsonb_build_object('field_name', 'full_name', 'claim', 'EdgeDesk Test Prospect', 'source_url', s.cta_url, 'source_kind', 'owner_verified'),
+        jsonb_build_object('field_name', 'email', 'claim', s.test_inbox, 'source_url', s.cta_url, 'source_kind', 'owner_verified'),
+        jsonb_build_object('field_name', 'project', 'claim', 'the EdgeDesk outbound pipeline check', 'source_url', s.cta_url,
+                           'source_kind', 'owner_verified'))));
+    if not coalesce((v_res->>'ok')::boolean, false) then return v_res; end if;
+    v_pid := (v_res->>'prospect_id')::uuid;
+  end if;
+  select id into v_did from growth_outbound.drafts
+   where prospect_id = v_pid and sequence_number = 1 and status in ('pending_review', 'approved');
+  if v_did is null then
+    select id into v_eid from growth_outbound.evidence
+     where prospect_id = v_pid and field_name = 'project' and superseded_at is null order by id desc limit 1;
+    insert into growth_outbound.drafts (prospect_id, sequence_number, is_test, subject, body_text, claims, generator_version)
+    values (v_pid, 1, true, '[TEST] EdgeDesk outbound check',
+      'Hi,' || E'\n\n'
+      || 'This message is the EdgeDesk outbound pipeline check. It goes only to your own test inbox, and shows exactly how an approved '
+      || 'message is put together: these words, then the footer every message carries.' || E'\n\n'
+      || 'EdgeDesk is a research platform for football bettors and analysts, not a picks service: fair lines, market gaps and the '
+      || 'reasons behind them. A 7-day free trial, then $49.99/month.' || E'\n\n'
+      || s.sender_name,
+      case when v_eid is null then '[]'::jsonb
+           else jsonb_build_array(jsonb_build_object('text', 'the EdgeDesk outbound pipeline check', 'evidence_id', v_eid)) end,
+      'test_fixture')
+    returning id into v_did;
+    v_created := true;
+    perform growth_outbound.evaluate(v_pid);
+    perform growth_outbound.log('test_fixture_created', v_pid, 'draft', v_did::text, jsonb_build_object('to', s.test_inbox));
+  end if;
+  return jsonb_build_object('ok', true, 'prospect_id', v_pid, 'draft_id', v_did, 'created', v_created);
+end $$;
+
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
 -- rule change reaches existing rows). Oldest first, so the first row to claim
 -- an address keeps it.
@@ -2694,6 +3077,15 @@ select 17, 'fit reasons in the catalogue: ' || (select count(*) from growth_outb
   case when (select count(*) from growth_outbound.fit_factor_catalog) >= 21
         and not exists (select 1 from growth_outbound.fit_factor_catalog where needs_evidence <> (points > 0))
        then 'ok' else 'CHECK THIS' end
+union all
+select 19, 'drafts are approved only within the content rules (no promised winnings or locks, $49.99/month, a 7-day free trial, EdgeDesk links only)',
+  case when cardinality(growth_outbound.draft_lint('Guaranteed lock', 'Win big for $19 with a 14-day free trial: https://evil.test/x')) = 4
+        and cardinality(growth_outbound.draft_lint('Your CFB ratings', 'A 7-day free trial, then $49.99/month: https://edgedesksports.com/')) = 0
+       then 'ok' else 'CHECK THIS' end
+union all
+select 20, 'review queue: ' || (select count(*) from growth_outbound.drafts where status = 'pending_review')::text || ' waiting, '
+  || (select count(*) from growth_outbound.drafts where status = 'approved')::text || ' approved and not sent',
+  'ok'
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),

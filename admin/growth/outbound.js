@@ -23,11 +23,19 @@
    all come back from the database, which derives them from the evidence.
    Everything shown here was found on the open web, so all of it is escaped,
    and only an https: address ever becomes a link.
+
+   THE REVIEW QUEUE (Phase 4). Every draft waiting for the owner, as a card:
+   who it is for and how sure, each thing it says about them with the
+   evidence behind it, the content rules, and the message exactly as it
+   would be sent (in test mode, to the test inbox). Approve one (asked
+   first), or several: the count is TYPED and sent to the database, which
+   approves exactly that many or none. Approving sends nothing.
    =========================================================================== */
 (function (root) {
   'use strict';
 
   var S = null, OWNER = false, LOADED = false, SETTINGS = null, DETAIL = null, CATALOG = null;
+  var QUEUE = 'pending_review', QROWS = [], PICKED = {};
   var BLOCKERS = {
     postal_address_missing: 'no postal address is configured (required in every commercial email)',
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
@@ -104,8 +112,8 @@
     if ($('tabs')) $('tabs').classList.add('hide');
     if ($('obModeTag')) $('obModeTag').classList.add('hide');
     show('growth');
-    DETAIL = null; CATALOG = null;
-    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
+    DETAIL = null; CATALOG = null; QROWS = []; PICKED = {};
+    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
   function show(which) {
@@ -151,7 +159,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadQueue(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -363,14 +371,46 @@
     h += '<h3>Drafts</h3><div class="tw"><table><tr><th>Step</th><th>Subject</th><th>Status</th><th class="r">Claims cited</th></tr>'
       + ((d.drafts || []).length ? d.drafts.map(function (x) {
         return '<tr><td>' + esc(x.sequence_number) + '</td><td class="wrap">' + esc(clip(x.subject, 150)) + '</td><td>' + esc(x.status) + '</td><td class="r">' + esc((x.claims || []).length) + '</td></tr>';
-      }).join('') : '<tr><td colspan="4" class="dim">No drafts. Drafting arrives in a later phase.</td></tr>') + '</table></div>';
+      }).join('') : '<tr><td colspan="4" class="dim">No drafts yet.</td></tr>') + '</table></div>';
+
+    var citeable = current.filter(function (e) { return e.field_name !== 'email'; });
+    h += '<h3>Write a draft</h3><div class="row">'
+      + '<div class="f" style="max-width:110px"><label for="wdSeq">Step</label><select id="wdSeq"><option value="1">1 · first</option><option value="2">2 · follow-up</option><option value="3">3 · final</option></select></div>'
+      + '<div class="f"><label for="wdSubject">Subject</label><input id="wdSubject" maxlength="150"></div></div>'
+      + '<div class="row" style="margin-top:8px"><div class="f"><label for="wdBody">The email (the footer with the postal address and opt-out is added for you)</label><textarea id="wdBody" rows="7" maxlength="5000"></textarea></div></div>'
+      + [1, 2, 3].map(function (i) {
+        return '<div class="row" style="margin-top:8px"><div class="f"><label for="wdEv' + i + '">' + (i === 1 ? 'What it says about them rests on' : 'And on') + '</label><select id="wdEv' + i + '"><option value="">—</option>'
+          + citeable.map(function (e) { return '<option value="' + esc(e.id) + '">#' + esc(e.id) + ' ' + esc(label(EV_FIELDS, e.field_name)) + ': ' + esc(clip(e.claim, 60)) + '</option>'; }).join('')
+          + '</select></div><div class="f"><label for="wdTxt' + i + '">…in the email\'s exact words</label><input id="wdTxt' + i + '" maxlength="300"></div></div>';
+      }).join('')
+      + '<div class="row" style="margin-top:8px"><span class="sp"></span><button type="button" id="wdCreate">Put it in the review queue</button></div><div class="msg" id="wdMsg"></div>'
+      + '<div class="note">Each thing the email says about them must be in its words and rest on current evidence; a real prospect\'s email says at least one. No promised winnings or locks, $49.99/month, a 7-day free trial, links to edgedesksports.com only.</div>';
 
     h += '<div class="row" style="margin-top:12px"><span class="sp"></span><button type="button" class="g" id="pdEval">Re-evaluate</button>'
       + '<button type="button" class="g" id="pdResearch">Needs more research</button><button type="button" class="g" id="pdReject">Reject</button></div>';
     $('obDetail').innerHTML = h;
   }
   function refreshAfter(id) {
-    return Promise.all([openProspect(id), loadProspects(), loadOverview(), loadActivity()]).catch(function (e) { fail('obDetailMsg', e); });
+    return Promise.all([openProspect(id), loadQueue(), loadProspects(), loadOverview(), loadActivity()]).catch(function (e) { fail('obDetailMsg', e); });
+  }
+  function writeDraft() {
+    if (!DETAIL) return Promise.resolve();
+    var id = DETAIL.prospect.id, claims = [];
+    [1, 2, 3].forEach(function (i) {
+      var ev = $('wdEv' + i).value, t = $('wdTxt' + i).value.trim();
+      if (ev || t) claims.push({ text: t, evidence_id: Number(ev) || null });
+    });
+    var p = { sequence_number: Number($('wdSeq').value), subject: $('wdSubject').value.trim(), body_text: $('wdBody').value.trim(), claims: claims };
+    if (!p.subject || !p.body_text) { say('wdMsg', 'err', 'A subject and the email are both needed.'); return Promise.resolve(); }
+    $('wdCreate').disabled = true;
+    return S.rpc('growth_outbound_draft_create', { p_prospect: id, p: p }).then(function (r) {
+      $('wdCreate').disabled = false;
+      if (!r || r.ok === false) {
+        say('wdMsg', 'err', 'Not queued: ' + (r && r.problems ? r.problems.join('; ') : why(r)));
+        return;
+      }
+      return refreshAfter(id).then(function () { say('rqMsg', 'ok', 'Your draft is in the review queue.'); });
+    }, function (e) { $('wdCreate').disabled = false; fail('wdMsg', e); });
   }
   function why(r) { return (r && (r.detail || r.reason)) || 'refused'; }
   function addEvidence() {
@@ -428,6 +468,144 @@
     if (!DETAIL) return Promise.resolve();
     var id = DETAIL.prospect.id;
     return S.rpc('growth_outbound_prospect_evaluate', { p_id: id }).then(function () { return refreshAfter(id); }, function (e) { fail('obDetailMsg', e); });
+  }
+
+  /* ── the review queue ─────────────────────────────────────────────── */
+  function loadQueue() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_review_queue', { p_status: QUEUE, p_limit: 50 }).then(function (r) {
+      QROWS = (r && r.rows) || []; PICKED = {}; paintQueue(r || {});
+    }, function (e) {
+      if (e && e.kind === 'not_installed') {
+        QROWS = []; PICKED = {};
+        $('rqCards').innerHTML = '<div class="note">The review queue arrives with the Phase 4 SQL: run supabase/growth_outbound.sql again.</div>';
+        pickCount(); return;
+      }
+      throw e;
+    });
+  }
+  /* Approvable as far as the page can tell; the database decides. */
+  function approvable(c) {
+    var p = c.prospect || {};
+    if (c.draft.status !== 'pending_review' || (c.lint || []).length) return false;
+    if (p.is_test) return true;
+    return !(p.gates || []).length && !(c.claims_missing || []).length && p.status === 'ready_for_review';
+  }
+  function paintQueue(r) {
+    $('rqSeg').querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-q') === QUEUE); });
+    $('rqTotal').textContent = QUEUE === 'approved' ? (r.total || 0) + ' approved, not sent' : (r.total || 0) + ' waiting for review';
+    $('rqCards').innerHTML = QROWS.length ? QROWS.map(card).join('')
+      : '<div class="note">' + (QUEUE === 'approved' ? 'Nothing approved is waiting to be sent.' : 'Nothing is waiting for review. Write a draft from a prospect, or make a test one for your own inbox.') + '</div>';
+    pickCount();
+  }
+  function card(c) {
+    var d = c.draft, p = c.prospect || {}, pv = c.preview || {}, gates = p.is_test ? [] : (p.gates || []), lint = c.lint || [], miss = p.is_test ? [] : (c.claims_missing || []);
+    var ok = approvable(c), id = esc(d.id);
+    var h = '<div class="rq" data-draft="' + id + '"><div class="row rqh">'
+      + (d.status === 'pending_review' ? '<label class="chk" title="' + (ok ? 'Select for a batch' : 'Not approvable yet') + '"><input type="checkbox" data-pick="' + id + '"' + (ok ? '' : ' disabled') + '></label>' : '')
+      + '<span class="pill ' + (pv.test ? 'test' : 'bad') + '">' + (pv.test ? 'TEST' : 'LIVE') + '</span>'
+      + '<button type="button" class="lnk" data-open="' + esc(p.id) + '">' + esc(p.full_name || '(name not established)') + '</button>'
+      + '<span class="sub">' + esc([p.organization, 'step ' + d.sequence_number, p.fit_score == null ? 'fit —' : 'fit ' + p.fit_score].filter(Boolean).join(' · ')) + '</span>'
+      + '<span class="sp"></span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
+    if (gates.length || miss.length) h += '<div class="block"><b>Not approvable yet.</b> ' + gates.concat(miss.map(function (m) { return 'the email no longer says "' + m + '"'; })).map(esc).join(' · ') + '</div>';
+    if (lint.length) h += '<div class="block"><b>Breaks the content rules:</b> ' + lint.map(esc).join(' · ') + '</div>';
+    h += '<div class="mail"><div class="mh"><i>From</i>' + esc(pv.from || '') + '</div>'
+      + '<div class="mh"><i>To</i>' + (pv.to ? '<span class="mono">' + esc(pv.to) + '</span>' : '<span class="dim">no test inbox set</span>')
+      + (pv.test && pv.intended_recipient && pv.intended_recipient !== pv.to ? ' <span class="dim">(test: not ' + esc(pv.intended_recipient) + ')</span>' : '') + '</div>'
+      + '<div class="mh"><i>Subject</i><b>' + esc(d.subject) + '</b></div>'
+      + '<div class="mb">' + esc(d.body_text) + '</div><div class="mf">' + esc(pv.footer || '') + '</div></div>';
+    h += '<h3>What it says about them, and why we believe it</h3>' + ((c.claims || []).length ? '<ul class="claims">' + c.claims.map(function (k) {
+      var e = k.evidence || null, bad = !e || !e.current || !e.own || Number(k.confidence) === 0;
+      return '<li class="' + (bad ? 'badc' : '') + '"><b>“' + esc(k.text) + '”</b> '
+        + (e ? '<span class="sub">rests on #' + esc(e.id) + ' · ' + esc(label(EV_FIELDS, e.field_name)) + ' · ' + esc(label(EV_KINDS, e.source_kind)) + ' · ' + link(e.source_url, hostOf(e.source_url))
+          + ' · confidence <span class="mono">' + num(k.confidence) + '</span>' + (e.current ? '' : ' · <b>superseded</b>') + (e.own ? '' : ' · <b>not this person\'s evidence</b>') + '</span>'
+          + (e.source_excerpt ? '<div class="quote">' + esc(clip(e.source_excerpt, 240)) + '</div>' : '')
+          : '<span class="sub"><b>cites no evidence</b></span>') + '</li>';
+    }).join('') + '</ul>' : '<div class="note">' + (p.is_test ? 'A test message: it says nothing about a real person.' : '<b>It says nothing about them, backed by evidence.</b> It cannot be approved.') + '</div>');
+    h += '<div class="row" style="margin-top:10px">';
+    if (d.status === 'pending_review') {
+      h += '<button type="button" data-approve="' + id + '"' + (ok ? '' : ' disabled') + '>Approve</button>'
+        + '<button type="button" class="g" data-edit="' + id + '">Edit</button><button type="button" class="g" data-reject="' + id + '">Reject</button>';
+    } else {
+      h += '<span class="note" style="margin:0">Approved ' + esc(when(d.approved_at)) + '. Nothing has been sent; sending arrives in the next phase.</span>'
+        + '<span class="sp"></span><button type="button" class="g" data-unapprove="' + id + '">Withdraw approval</button>';
+    }
+    h += '</div><div class="hide rqedit" id="rqe_' + id + '"><div class="f"><label>Subject</label><input data-esubj="' + id + '" maxlength="150" value="' + esc(d.subject) + '"></div>'
+      + '<div class="f" style="margin-top:8px"><label>The email</label><textarea data-ebody="' + id + '" rows="8" maxlength="5000">' + esc(d.body_text) + '</textarea></div>'
+      + '<div class="row" style="margin-top:8px"><span class="sp"></span><button type="button" class="g" data-ecancel="' + id + '">Cancel</button><button type="button" data-esave="' + id + '">Save — back to review</button></div></div>'
+      + '<div class="msg" id="rqm_' + id + '"></div></div>';
+    return h;
+  }
+  function byId(id) { for (var i = 0; i < QROWS.length; i++) if (QROWS[i].draft.id === id) return QROWS[i]; return null; }
+  function pickCount() {
+    var n = Object.keys(PICKED).length;
+    $('rqBatch').textContent = 'Approve selected (' + n + ')';
+    $('rqBatch').disabled = n === 0;
+    $('rqBatch').classList.toggle('hide', QUEUE !== 'pending_review');
+  }
+  function approveOne(id) {
+    var c = byId(id); if (!c) return Promise.resolve();
+    var pv = c.preview || {};
+    if (!root.confirm('Approve this message to ' + (pv.to || 'the test inbox') + '?\n\n"' + c.draft.subject + '"\n\nApproving sends nothing. ' + (pv.test ? 'It is a TEST: it can only ever reach your test inbox.' : 'Once sending is built, it will go to this real person.'))) return Promise.resolve();
+    return S.rpc('growth_outbound_draft_approve', { p_draft_id: id, p_content_hash: c.draft.content_hash }).then(function (r) {
+      if (!r || r.ok === false) { say('rqm_' + id, 'err', 'Not approved: ' + (r && r.gates ? r.gates.join('; ') : why(r))); return; }
+      say('rqMsg', 'ok', 'Approved. Nothing was sent.');
+      return Promise.all([loadQueue(), loadOverview(), loadActivity()]);
+    }, function (e) { fail('rqMsg', e); });
+  }
+  /* THE BATCH: the count is typed, and the database approves exactly that many or none. */
+  function approveBatch() {
+    var ids = Object.keys(PICKED), n = ids.length;
+    if (!n) return Promise.resolve();
+    var typed = root.prompt('You are approving ' + n + ' draft' + (n === 1 ? '' : 's') + '.\n\nApproving sends nothing. If any one of them cannot be approved, none is.\n\nType the number ' + n + ' to confirm.');
+    if (typed == null) return Promise.resolve();
+    if (String(typed).trim() !== String(n)) { say('rqMsg', 'err', 'Not approved: you typed "' + String(typed).trim() + '" for ' + n + ' selected.'); return Promise.resolve(); }
+    var items = ids.map(function (id) { return { draft_id: id, content_hash: byId(id).draft.content_hash }; });
+    $('rqBatch').disabled = true;
+    return S.rpc('growth_outbound_drafts_approve_batch', { p_items: items, p_confirm_count: Number(String(typed).trim()) }).then(function (r) {
+      if (!r || r.ok === false) {
+        say('rqMsg', 'err', 'Nothing was approved: ' + (r && r.refused ? r.refused.map(function (x) {
+          var c = byId(x.draft_id); return ((c && c.prospect.full_name) || 'a draft') + ' — ' + (x.gates ? x.gates.join('; ') : x.reason);
+        }).join(' · ') : why(r)));
+        pickCount(); return;
+      }
+      say('rqMsg', 'ok', 'Approved ' + r.approved + ' draft' + (r.approved === 1 ? '' : 's') + '. Nothing was sent.');
+      return Promise.all([loadQueue(), loadOverview(), loadActivity()]);
+    }, function (e) { pickCount(); fail('rqMsg', e); });
+  }
+  function rejectOne(id) {
+    var reason = root.prompt('Reject this draft? Why (optional)?');
+    if (reason == null) return Promise.resolve();
+    return S.rpc('growth_outbound_draft_reject', { p_draft_id: id, p_reason: String(reason).trim() || null }).then(function (r) {
+      if (!r || r.ok === false) { say('rqm_' + id, 'err', 'Not rejected: ' + why(r)); return; }
+      return Promise.all([loadQueue(), loadOverview(), loadActivity()]);
+    }, function (e) { fail('rqMsg', e); });
+  }
+  function unapprove(id) {
+    if (!root.confirm('Withdraw this approval? The draft goes back to review.')) return Promise.resolve();
+    return S.rpc('growth_outbound_draft_unapprove', { p_draft_id: id, p_reason: null }).then(function (r) {
+      if (!r || r.ok === false) { say('rqm_' + id, 'err', 'Not withdrawn: ' + why(r)); return; }
+      return Promise.all([loadQueue(), loadOverview(), loadActivity()]);
+    }, function (e) { fail('rqMsg', e); });
+  }
+  function saveEdit(id) {
+    var c = byId(id); if (!c) return Promise.resolve();
+    var subj = document.querySelector('[data-esubj="' + id + '"]').value.trim(), body = document.querySelector('[data-ebody="' + id + '"]').value.trim();
+    return S.rpc('growth_outbound_draft_edit', { p_draft_id: id, p_subject: subj, p_body_text: body, p_expected_hash: c.draft.content_hash }).then(function (r) {
+      if (!r || r.ok === false) { say('rqm_' + id, 'err', 'Not saved: ' + why(r)); return; }
+      say('rqMsg', 'ok', 'Saved. It is back in review.');
+      return Promise.all([loadQueue(), loadActivity()]);
+    }, function (e) { fail('rqMsg', e); });
+  }
+  function fixture() {
+    return S.rpc('growth_outbound_test_fixture', {}).then(function (r) {
+      if (!r || r.ok === false) {
+        say('rqMsg', 'err', r && r.reason === 'test_inbox_missing' ? 'Set a test inbox in the outbound settings first.' : 'No test prospect: ' + why(r)); return;
+      }
+      say('rqMsg', 'ok', r.created ? 'A test draft for your own inbox is in the queue.' : 'Your test draft is already in the queue.');
+      QUEUE = 'pending_review';
+      return Promise.all([loadQueue(), loadProspects(), loadOverview()]);
+    }, function (e) { fail('rqMsg', e); });
   }
 
   /* ── have we seen them? and: add a prospect ─────────────────────────── */
@@ -517,6 +695,25 @@
       else if (b.id === 'pdEval') reevaluate();
       else if (b.id === 'pdResearch') setStatus('needs_research');
       else if (b.id === 'pdReject') setStatus('rejected');
+      else if (b.id === 'wdCreate') writeDraft();
+      else if (b.getAttribute('data-approve')) approveOne(b.getAttribute('data-approve'));
+      else if (b.getAttribute('data-reject')) rejectOne(b.getAttribute('data-reject'));
+      else if (b.getAttribute('data-unapprove')) unapprove(b.getAttribute('data-unapprove'));
+      else if (b.getAttribute('data-esave')) saveEdit(b.getAttribute('data-esave'));
+      else if (b.getAttribute('data-edit') || b.getAttribute('data-ecancel')) {
+        var eid = b.getAttribute('data-edit') || b.getAttribute('data-ecancel'), box = $('rqe_' + eid);
+        if (box) box.classList.toggle('hide', !b.getAttribute('data-edit'));
+      }
+      else if (b.getAttribute('data-q')) { QUEUE = b.getAttribute('data-q'); loadQueue().catch(function (er) { fail('rqMsg', er); }); }
+      else if (b.id === 'rqBatch') approveBatch();
+      else if (b.id === 'rqFixture') fixture();
+    });
+    $('tabOutbound').addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.getAttribute || !t.getAttribute('data-pick') || !OWNER) return;
+      var id = t.getAttribute('data-pick');
+      if (t.checked && byId(id) && approvable(byId(id))) PICKED[id] = true; else { delete PICKED[id]; t.checked = false; }
+      pickCount();
     });
   }
 

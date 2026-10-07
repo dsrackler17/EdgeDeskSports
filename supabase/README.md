@@ -216,7 +216,9 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 - **Defaults:** test mode on, automation off, cap 20.
 - **Research (Phase 3).** A fact about a prospect is stored only as evidence (claim, page, kind of source, the words on it), checked on the way in. Every name, confidence, fit score, email status and research status is computed from it by `evaluate()`: a trigger refuses any other writer, the superuser included. An email or profile handle names one prospect (`identifiers`), so rediscovery finds the same row.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-18 should say `ok`. Tested by `tools/growth/outbound_sql.test.js` and `tools/growth/outbound_research_sql.test.js`; see `docs/growth-outbound.md`.
+- **Review (Phase 4).** Approval re-checks the content rules (no promised winnings or locks, $49.99/month, a 7-day free trial, EdgeDesk links only) and that every cited claim is in the email's words. A batch is approved only for the exact count the owner confirms, all or nothing. The queue previews each message as `compose()` builds it.
+
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-20 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js` and `outbound_review_sql.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,
