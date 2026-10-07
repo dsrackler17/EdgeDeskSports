@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-07T20:33:48.534Z",
+ "generated_at": "2026-10-07T23:13:54.787Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,14 +119,14 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 114,
+  "total": 116,
   "by_group": {
-   "other": 58,
+   "other": 60,
    "p4": 58,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 106,
+   "conference": 108,
    "non_conference": 6,
    "fbs_fcs": 2
   },
@@ -136,8 +136,8 @@
    "sunbelt": 11,
    "acc": 15,
    "bigten": 15,
-   "pac12": 4,
-   "mwc": 8,
+   "pac12": 5,
+   "mwc": 9,
    "big12": 13,
    "sec": 15,
    "mac": 14,
@@ -196,24 +196,22 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 114
+  "PREDICTED": 116
  },
  "weather": {
-  "requested": 109,
-  "answered": 108,
-  "dome": 4,
+  "requested": 110,
+  "answered": 110,
+  "dome": 5,
   "no_venue": 0,
-  "failed": 1,
-  "carried": 1,
+  "failed": 0,
+  "carried": 0,
   "carry_dropped": 0,
-  "failures": {
-   "HTTP 429": 1
-  },
+  "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "108 of 109 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
+  "summary": "110 of 110 outdoor game(s) got a forecast; 5 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 114
+  "NO_MARKET": 116
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -282,8 +280,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 56,
-    "total": 114,
+    "non_power_games": 58,
+    "total": 116,
     "example": [
      "Jacksonville State @ Kennesaw State",
      "New Mexico State @ Florida International",
@@ -302,7 +300,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 106,
+    "conference_games": 108,
     "wrong": 0
    }
   },
@@ -336,8 +334,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 114,
-    "audit_total": 114
+    "slate": 116,
+    "audit_total": 116
    }
   },
   {
