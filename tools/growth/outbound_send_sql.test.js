@@ -69,13 +69,13 @@ try {
   /* ══ B. BLOCKERS ══════════════════════════════════════════════════════ */
   let st = j(db.as(OWNER, `select public.growth_outbound_settings();`));
   chk('B a fresh install says what blocks a test send and what blocks a live one', JSON.stringify(st.test_send_blockers) === JSON.stringify(['postal_address_missing', 'test_inbox_missing'])
-    && JSON.stringify(st.live_send_blockers) === JSON.stringify(['postal_address_missing', 'unsubscribe_endpoint_missing']), st);
+    && JSON.stringify(st.live_send_blockers) === JSON.stringify(['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing']), st);
   let r = claim(did(1));
   chk('B nothing is claimed while a test send is blocked, and nothing is written', r.ok === false && r.reason === 'refused'
     && /sending is blocked: postal_address_missing, test_inbox_missing/.test(r.detail) && nsends() === 0 && dstatus(did(1)) === 'approved', r);
   r = settings({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701', test_inbox: 'Owner-Test@EdgeDesk.test' });
-  chk('B with the postal address and the test inbox, test sends are clear — live ones still need the opt-out endpoint', r.ok
-    && r.settings.send_blockers.length === 0 && JSON.stringify(r.settings.live_send_blockers) === JSON.stringify(['unsubscribe_endpoint_missing']), r.settings);
+  chk('B with the postal address and the test inbox, test sends are clear — live ones still need the opt-out endpoint and the webhook secret', r.ok
+    && r.settings.send_blockers.length === 0 && JSON.stringify(r.settings.live_send_blockers) === JSON.stringify(['unsubscribe_endpoint_missing', 'webhook_secret_missing']), r.settings);
 
   /* ══ C. CLAIM ═════════════════════════════════════════════════════════ */
   r = claim(did(1));
@@ -149,6 +149,10 @@ try {
   chk('B live, nothing goes out until the opt-out endpoint is configured — and nothing is written', r.ok === false
     && /sending is blocked: unsubscribe_endpoint_missing/.test(r.detail) && nsends(`draft_id = '${did(6)}'`) === 0 && dstatus(did(6)) === 'approved', r);
   settings({ unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
+  r = claim(did(6));
+  chk('B live, nothing goes out until the webhook signing secret is set (a bounce or a complaint must reach us) — and nothing is written', r.ok === false
+    && /sending is blocked: webhook_secret_missing/.test(r.detail) && nsends(`draft_id = '${did(6)}'`) === 0 && dstatus(did(6)) === 'approved', r);
+  one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
   r = claim(did(6));
   const S6 = r.send_id;
   const tok = one(`select optout_token from growth_outbound.sends where id = '${S6}';`);

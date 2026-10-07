@@ -451,6 +451,7 @@ try {
   db.as(OWNER, `select public.growth_outbound_settings_update('{"min_fit_score": 80}'::jsonb);`);
 
   /* ══ W. ONE PERSON, ONE STEP ══════════════════════════════════════════ */
+  one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
   r = j(db.as(OWNER, `select public.growth_outbound_settings_update(${lit(JSON.stringify({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/', test_inbox: 'owner-test@edgedesk.test', test_mode: false, confirm_live: true }))}::jsonb);`));
   chk('W (setup) live, compliance configured', r.ok === true && r.settings.test_mode === false && r.settings.send_blockers.length === 0, r);

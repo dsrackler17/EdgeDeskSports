@@ -208,7 +208,7 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **Private schema.** Everything lives in `growth_outbound`, which PostgREST does not serve and no client role can use.
 - **Owners.** Access is limited to `growth_outbound.owners`, an explicit list of accounts. Each owner must also be in `affiliate_admins` (a cascading FK), but being an affiliate admin grants nothing here.
-- **Doors only.** Every read and write goes through a `public.growth_outbound_*` door whose first statement is the owner check.
+- **Doors only.** Every read and write goes through a `public.growth_outbound_*` door whose first statement is the owner check. The two exceptions (Phase 6), callable by `anon` only, open with their own proof instead: the webhook door (Resend's signature, checked in SQL) and the opt-out door (a send's 64-hex token).
 - **Table triggers enforce three rules:**
   - only an owner approves a draft, for the content they reviewed;
   - a send row can exist only for such a draft, to the approved recipient (only the test inbox in test mode), once, under the daily cap, and only while the compliance configuration is complete;
@@ -218,9 +218,11 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **Review (Phase 4).** Approval re-checks the content rules (no promised winnings or locks, $49.99/month, a 7-day free trial, EdgeDesk links only) and that every cited claim is in the email's words. A batch is approved only for the exact count the owner confirms, all or nothing. The queue previews each message as `compose()` builds it.
 
-- **Sending (Phase 5).** The `growth_outbound_send` Edge Function, as the owner, claims each send in the database first (`growth_outbound_send_claim`: one idempotency key per draft, every send rule re-checked by the table trigger), sends through Resend, then records the answer (`growth_outbound_send_result`). A test send needs the postal address and test inbox; a live one also the opt-out endpoint.
+- **Sending (Phase 5).** The `growth_outbound_send` Edge Function, as the owner, claims each send in the database first (`growth_outbound_send_claim`: one idempotency key per draft, every send rule re-checked by the table trigger), sends through Resend, then records the answer (`growth_outbound_send_result`). A test send needs the postal address and test inbox; a live one also the opt-out endpoint and the webhook secret.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-22 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js` and `outbound_send_sql.test.js`; see `docs/growth-outbound.md`.
+- **What comes back (Phase 6).** Resend's events arrive through `growth_outbound_webhook`; the database checks the Svix signature itself (HMAC-SHA256 in SQL, checked against RFC 4231 on every run) with a secret set only from the SQL editor (`select growth_outbound.set_webhook_secret('whsec_...');`) and never returned. A hard bounce or a spam complaint suppresses the address; an opt-out (`growth_outbound_optout`, RFC 8058 one-click) does too; a test send never does. Provider events are append-only and deduplicated.
+
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-26 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js` and `outbound_events_sql.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,

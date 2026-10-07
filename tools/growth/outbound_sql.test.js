@@ -66,8 +66,16 @@ chk('no pgcrypto dependency (portable under a pinned search_path)', !/gen_random
   /* one chunk per function; a plpgsql door's first statement after `begin` must be the owner check */
   const chunks = SRC.split(/\ncreate or replace function /).slice(1).map((c) => ({ name: (c.match(/^public\.(growth_outbound_[a-z_]+)\(/) || [])[1], body: c.split(/\nend \$\$;/)[0] }))
     .filter((c) => c.name && /language plpgsql/.test(c.body));
-  const notFirst = chunks.filter((c) => !/\nbegin\n\s*(perform growth_outbound\.require_owner\(\);|v_owner := growth_outbound\.require_owner\(\);)/.test(c.body)).map((c) => c.name);
-  chk('every plpgsql door\'s FIRST statement is the owner check', chunks.length >= 12 && notFirst.length === 0, { n: chunks.length, notFirst });
+  /* the two public doors (no account at all) open with their own proof instead: Resend's signature; a send's token */
+  const PROOF = {
+    growth_outbound_webhook: /\nbegin\n\s*v_bad := growth_outbound\.svix_check\(p_id, p_timestamp, p_signature, p_body\);\n\s*if v_bad is not null then return /,
+    growth_outbound_optout: /\nbegin\n\s*if coalesce\(p_token, ''\) !~ '\^\[0-9a-f\]\{64\}\$' then return /,
+  };
+  const notFirst = chunks.filter((c) => !(PROOF[c.name] || /\nbegin\n\s*(perform growth_outbound\.require_owner\(\);|v_owner := growth_outbound\.require_owner\(\);)/).test(c.body)).map((c) => c.name);
+  chk('every plpgsql door\'s FIRST statement is the owner check (the two public doors: their own proof)', chunks.length >= 12 && notFirst.length === 0, { n: chunks.length, notFirst });
+  chk('exactly two public doors, both granted to anon only by name', Object.keys(PROOF).every((n) => chunks.some((c) => c.name === n))
+    && /if f::text like 'growth_outbound_webhook\(%' or f::text like 'growth_outbound_optout\(%' then\n\s*execute format\('grant execute on function %s to anon', f\);/.test(SRC)
+    && (SRC.match(/grant [a-z ,]+ to anon\b|to anon'/g) || []).length === 1);
 }
 
 const db = PG.start('gobound');
@@ -161,7 +169,7 @@ try {
 
   /* ══ B. CATALOGUE ═════════════════════════════════════════════════════ */
   const tables = one(`select string_agg(relname, ',' order by relname) from pg_class where relnamespace = 'growth_outbound'::regnamespace and relkind = 'r';`).split(',');
-  chk('B eleven outbound tables', tables.length === 11, tables);
+  chk('B thirteen outbound tables', tables.length === 13, tables);
   for (const r of ['anon', 'authenticated', 'service_role']) {
     chk('B ' + r + ' has no USAGE on the schema', one(`select has_schema_privilege('${r}', 'growth_outbound', 'usage');`) === 'f');
     const held = one(`select coalesce(string_agg(c.relname || ':' || p, ','), '') from pg_class c, unnest(array['select','insert','update','delete','truncate','references','trigger']) p
@@ -170,7 +178,7 @@ try {
   }
   chk('B every table has RLS on and the restrictive deny policy, and no permissive policy exists',
     one(`select count(*) from pg_class c where c.relnamespace = 'growth_outbound'::regnamespace and c.relkind = 'r' and c.relrowsecurity
-          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '11'
+          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '13'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and permissive = 'PERMISSIVE';`) === '0');
 
   /* direct reads of every table, as every non-owner role (the owner too: no direct path for anyone) */
@@ -186,11 +194,26 @@ try {
   chk('B every door is security definer with a pinned search_path', one(`select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace
       and p.proname like 'growth\\_outbound\\_%' and (not p.prosecdef or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%'));`) === '0');
   const call = (d) => `select public.${d.n}(${Array(d.a).fill('null').join(', ')});`;
+  const PUBLIC = ['growth_outbound_optout', 'growth_outbound_webhook'];
+  chk('B the two public doors exist', PUBLIC.every((n) => doors.some((d) => d.n === n)));
   for (const d of doors) {
-    const anonE = db.mustFail(() => db.anon(call(d)));
     const svcE = db.mustFail(() => db.service(call(d)));
-    chk('B anon cannot call ' + d.n, !!anonE && /permission denied/.test(anonE), anonE);
     chk('B the service role cannot call ' + d.n, !!svcE && /permission denied/.test(svcE), svcE);
+    if (PUBLIC.includes(d.n)) {
+      /* anon may knock — and without its proof gets a refusal and nothing else; signed-in callers may not knock at all */
+      const before = one(`select (select count(*) from growth_outbound.provider_events) || '|' || (select count(*) from growth_outbound.suppressions) || '|' || (select count(*) from growth_outbound.activity);`);
+      const r0 = j(db.anon(call(d)));
+      chk('B anon is refused by ' + d.n + ' without its proof', r0.ok === false && (d.n === 'growth_outbound_optout' ? r0.reason === 'invalid' : r0.verified === false), r0);
+      chk('B … and nothing was read out or written', Object.keys(r0).sort().join() === (d.n === 'growth_outbound_optout' ? 'ok,reason' : 'ok,reason,verified')
+        && one(`select (select count(*) from growth_outbound.provider_events) || '|' || (select count(*) from growth_outbound.suppressions) || '|' || (select count(*) from growth_outbound.activity);`) === before, r0);
+      for (const [who, uid] of [['subscriber', U.sub], ['partner', U.partner], ['affiliate admin', U.admin], ['stranger', U.stranger], ['owner', U.owner]]) {
+        const e = db.mustFail(() => db.as(uid, call(d)));
+        chk('B a signed-in ' + who + ' cannot call ' + d.n + ' (anon only)', !!e && /permission denied/.test(e), e);
+      }
+      continue;
+    }
+    const anonE = db.mustFail(() => db.anon(call(d)));
+    chk('B anon cannot call ' + d.n, !!anonE && /permission denied/.test(anonE), anonE);
     if (d.n === 'growth_outbound_is_owner') continue;
     for (const [who, uid] of [['subscriber', U.sub], ['partner', U.partner], ['affiliate admin', U.admin], ['stranger', U.stranger]]) {
       const e = db.mustFail(() => db.as(uid, call(d)));
@@ -354,7 +377,8 @@ try {
   one(`update growth_outbound.sends set delivery_status = 'delivered', delivered_at = now(), resend_message_id = 'msg_1' where idempotency_key = 'test-1';`);
   chk('I … its delivery state can be', one(`select delivery_status from growth_outbound.sends where idempotency_key = 'test-1';`) === 'delivered');
 
-  // go live, deliberately
+  // go live, deliberately (a live send also needs the webhook's signing secret: bounces and complaints must reach us)
+  one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
   r = j(db.as(U.owner, `select public.growth_outbound_settings_update('{"test_mode": false, "confirm_live": true}'::jsonb);`));
   chk('I (setup) the owner leaves test mode with confirmation', r.ok === true && r.settings.test_mode === false);
   e = db.mustFail(() => one(`insert into growth_outbound.drafts (prospect_id, subject, body_text) values ('${P1}', 'Second step-1 draft', 'Hey Pat');`));

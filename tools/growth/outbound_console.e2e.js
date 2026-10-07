@@ -56,6 +56,14 @@
     29  the function's refusals are said in words: the database's reason, a
         function not deployed, no Resend key
     30  "Try again" asks, and resends the same draft (the same key)
+    31  WHAT COMES BACK (Phase 6): whether Resend's events can arrive (the
+        signing secret), how many and when the last did; going live is said
+        to need the secret
+    32  opened and clicked, with when, on the send Resend reported
+    33  a contacted prospect: "They replied" asks, then records the note and
+        stops follow-ups without suppressing
+    34  "They replied: stop emailing them" asks, naming the address, then
+        suppresses; neither is offered where it no longer applies
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -101,7 +109,8 @@ function freshSettings() {
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
-    send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 } };
+    send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing'],
+    today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 }, webhook: { secret_set: false, last_event_at: null, events_24h: 0 } };
 }
 const XSS = '<img src=x onerror="window.__pwned=1">';
 const DETAIL = { ok: true,
@@ -133,7 +142,8 @@ const card = (o) => ({
   preview: { test: true, from: 'Davis <davis@edgedesksports.com>', to: 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject, body: o.body, footer: MAILFOOT } });
 const SENDS = [
   { id: 's1', draft_id: 'd7', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'pat@cfbnumbers.test',
-    subject: 'Your CFB ratings', delivery_status: 'sent', claimed_at: '2026-10-07T10:00:00Z', sent_at: '2026-10-07T10:00:02Z', attempts: 1 },
+    subject: 'Your CFB ratings', delivery_status: 'delivered', claimed_at: '2026-10-07T10:00:00Z', sent_at: '2026-10-07T10:00:02Z', attempts: 1,
+    opened_at: '2026-10-07T10:30:00Z', clicked_at: '2026-10-07T10:31:00Z' },
   { id: 's2', draft_id: 'd8', prospect_id: 'p2', full_name: 'Lo Confidence', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'lo@maybe.test',
     subject: 'Hello', delivery_status: 'claimed', claimed_at: '2026-10-07T10:05:00Z', last_error: 'Resend answered 503', attempts: 2 },
   { id: 's3', draft_id: 'd6', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: false, sequence_number: 1, recipient: 'pat@cfbnumbers.test', intended_recipient: 'pat@cfbnumbers.test',
@@ -177,7 +187,7 @@ const PROSPECTS = { total: 2, rows: [
       [SKEY, JSON.stringify({ access_token: T, refresh_token: 'rt', expires_at: nowSec() + 3600, user: { id: o.role + '-id', email: o.role + '@edgedesk.test' } })]);
     const calls = [];
     const state = { batchRefuse: false, noInbox: false, fn: 'ok' };
-    let st = freshSettings(), outboundData = 0;
+    let st = Object.assign(freshSettings(), o.settings || {}), outboundData = 0;
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
@@ -228,8 +238,16 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, { ok: true, draft_id: 'd77', content_hash: 'h-d77', status: 'ready_for_review' });
         }
         if (name === 'growth_outbound_fit_catalog') return o.noCatalog ? reply(404, { code: 'PGRST202', message: 'Could not find the function' }) : reply(200, CATALOG);
+        if (name === 'growth_outbound_prospect_replied') {
+          if (o.noReplied) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, { ok: true, status: 'replied', drafts_cancelled: 1, suppressed: !!body.p_stop });
+        }
         if (name === 'growth_outbound_prospect') {
           if (body.p_id === 'p1') return reply(200, DETAIL);
+          if (body.p_id === 'pc') {
+            return reply(200, Object.assign({}, DETAIL, { prospect: Object.assign({}, DETAIL.prospect, { id: 'pc', full_name: 'Cam Contacted', status: o.pcStatus || 'contacted',
+              email: 'cam@contacted.test', suppressed: !!o.pcSuppressed }) }));
+          }
           return reply(200, { ok: true, prospect: { id: body.p_id, full_name: null, prospect_type: 'other', status: 'discovered', warnings: [], assessment: { gates: [] } },
             evidence: [], identifiers: [], related: [], drafts: [], sends: [], activity: [] });
         }
@@ -581,7 +599,7 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
     const sends = await text(t.page, '#obSends');
     chk('26 the Sends table: test sends to the test inbox, for whom, with their status and why', /owner-test@edgedesk\.testfor pat@cfbnumbers\.test/.test(sends)
-      && /sent/.test(sends) && /Resend answered 503/.test(sends) && /refused by Resend \(422\): Invalid `to` field/.test(sends), sends.slice(0, 400));
+      && /delivered/.test(sends) && /Resend answered 503/.test(sends) && /refused by Resend \(422\): Invalid `to` field/.test(sends), sends.slice(0, 400));
     chk('26 … text from a subject stays text', await t.page.evaluate(() => !document.querySelector('#obSends b')) && /<b>bold<\/b>/.test(sends));
     chk('26 "Try again" only for a send still waiting for an answer', await visible(t.page, '[data-resend="d8"]') && !(await t.page.$('[data-resend="d7"]')) && !(await t.page.$('[data-resend="d6"]')));
     chk('26 in test mode, what live sending still needs is said', /Before going live, sending to real people also needs: no postal address is configured.*the opt-out endpoint is not configured yet/.test(await text(t.page, '#obLiveNote')));
@@ -629,6 +647,60 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('[data-resend="d8"]'); await settle(t.page, 700);
     chk('30 … accepted, the same draft is sent again (the same key, server-side)', JSON.stringify(fnCalls().slice(-1)[0][1]) === JSON.stringify({ draft_ids: ['d8'] }));
     chk('26-30 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 31–34. what comes back (Phase 6) ───────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    chk('31 no webhook secret: the header says Resend\'s events cannot arrive', /Resend events: signing secret not set/.test(await text(t.page, '#obChips')));
+    chk('31 … and going live is said to need it, with the line to run', /webhook signing secret is not set.*set_webhook_secret/.test(await text(t.page, '#obLiveNote')), await text(t.page, '#obLiveNote'));
+    const sends = await text(t.page, '#obSends');
+    chk('32 a send Resend reported opened and clicked says so, with when', /delivered/.test(sends) && /opened 2026-10-07 10:30Z · clicked 2026-10-07 10:31Z/.test(sends), sends.slice(0, 300));
+    chk('32 … only on that send', (await t.page.$$('[data-seen]')).length === 1);
+
+    await t.page.evaluate(() => window.EDOutbound.open('p1')); await settle(t.page, 600);
+    chk('33 a prospect never emailed offers no "replied"', !(await t.page.$('#pdReplied')) && !(await t.page.$('#pdReplyStop')));
+    await t.page.evaluate(() => window.EDOutbound.open('pc')); await settle(t.page, 600);
+    chk('33 a contacted prospect offers "They replied" and "They replied: stop emailing them"', await visible(t.page, '#pdReplied') && await visible(t.page, '#pdReplyStop'));
+    const repl = () => t.calls.filter((c) => c[0] === 'growth_outbound_prospect_replied');
+    t.setAnswers([false]);
+    await t.page.click('#pdReplied'); await settle(t.page);
+    chk('33 "They replied" asks first, saying follow-ups stop; declining changes nothing', /follow-up still waiting is cancelled/.test(t.dialogs.slice(-1)[0].msg) && repl().length === 0);
+    t.setAnswers(['Wants a demo']);
+    await t.page.click('#pdReplied'); await settle(t.page, 700);
+    chk('33 accepted: the reply is recorded with the note, and does NOT suppress', repl().length === 1 && JSON.stringify(repl()[0][1]) === JSON.stringify({ p_id: 'pc', p_note: 'Wants a demo', p_stop: false }), repl());
+    chk('33 … and the answer is said', /Marked replied; 1 follow-up\(s\) cancelled\./.test(await text(t.page, '#obDetailMsg')), await text(t.page, '#obDetailMsg'));
+    t.setAnswers([false]);
+    await t.page.click('#pdReplyStop'); await settle(t.page);
+    chk('34 "stop emailing them" asks first, naming the address and that it is for good; declining changes nothing',
+      /cam@contacted\.test is suppressed for good/.test(t.dialogs.slice(-1)[0].msg) && repl().length === 1);
+    t.setAnswers(['']);
+    await t.page.click('#pdReplyStop'); await settle(t.page, 700);
+    chk('34 accepted: recorded as a stop, which suppresses', repl().length === 2 && repl()[1][1].p_stop === true && repl()[1][1].p_note === null
+      && /the address is suppressed/.test(await text(t.page, '#obDetailMsg')));
+    chk('31-34 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner', settings: { webhook: { secret_set: true, last_event_at: '2026-10-07T10:00:00Z', events_24h: 3 } }, pcSuppressed: true, pcStatus: 'replied', noReplied: true });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    chk('31 with the secret set, the header counts the events and says when the last arrived', /Resend events: 3 in 24 h · last 2026-10-07 10:00Z/.test(await text(t.page, '#obChips')), await text(t.page, '#obChips'));
+    await t.page.evaluate(() => window.EDOutbound.open('pc')); await settle(t.page, 600);
+    chk('34 already replied and suppressed: neither button is offered again', !(await t.page.$('#pdReplied')) && !(await t.page.$('#pdReplyStop')));
+    chk('31-34 no page errors (second view)', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner', pcStatus: 'replied', noReplied: true });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    await t.page.evaluate(() => window.EDOutbound.open('pc')); await settle(t.page, 600);
+    chk('34 replied but not suppressed: only "stop emailing them" remains', !(await t.page.$('#pdReplied')) && await visible(t.page, '#pdReplyStop'));
+    t.setAnswers(['']);
+    await t.page.click('#pdReplyStop'); await settle(t.page, 700);
+    chk('34 before the Phase 6 SQL, it says what to run', /arrive with the Phase 6 SQL/.test(await text(t.page, '#obDetailMsg')) && await visible(t.page, '#tabOutbound'));
+    chk('31-34 no page errors (third view)', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

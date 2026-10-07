@@ -539,7 +539,131 @@ notify pgrst, 'reload schema';
 - **The page:** revert the merge commit.
 - **The database:** additive. To stop all sending at once without touching code, keep test mode on, or clear the postal address: every send is then refused at the claim.
 
+## Phase 6: what comes back (Resend's events, opt-outs, replies)
+
+**A hard bounce, a spam complaint, an opt-out or "please stop" ends email to that address for good. Nothing from outside changes a send unless it proves where it came from.**
+
+### Resend's events (`growth_outbound_webhook`)
+
+1. Resend posts each event to the **`growth_outbound_webhook`** Edge Function (an endpoint of its own in Resend, with its own signing secret).
+2. **The function holds no secret.** It passes the raw body, byte for byte, and the three Svix headers to `public.growth_outbound_webhook()` with the public anon key. Without the headers it answers 401 and asks the database nothing.
+3. **The database checks the signature first**, before anything is read:
+   - HMAC-SHA256 over `id.timestamp.body` with the secret in `growth_outbound.secrets`, any one of the `v1,` signatures matching (Svix sends several while a secret rotates);
+   - the timestamp within five minutes either way (a captured delivery replayed later must not re-apply a bounce);
+   - HMAC is written in SQL on core `sha256()` (no extension). Report row 25 checks it against RFC 4231's published vectors on every run.
+4. A delivery that fails is a **401, and nothing is read or kept**. The reason goes to the function's log for you; the caller learns nothing.
+5. **A repeat** of an event already seen (the same Svix id) is acknowledged and not applied twice.
+6. Then:
+
+| Resend says | The send | The address |
+|---|---|---|
+| `email.delivered` | delivered | — |
+| `email.delivery_delayed` | delayed (never moves a delivered send back) | — |
+| `email.bounced`, permanent (or of unknown kind: fail closed) | bounced, with the reason | **suppressed**, the prospect's address marked invalid, every unsent follow-up cancelled |
+| `email.bounced`, transient (a full mailbox) | noted as a soft bounce | not suppressed |
+| `email.complained` (marked as spam) | complained | **suppressed**, follow-ups cancelled |
+| `email.opened` / `email.clicked` | first time noted (a hint only: opens are unreliable) | — |
+| `email.failed` | failed | — |
+| `email.suppressed` (Resend refused: the address is on its own suppression list) | failed, never sent | **suppressed** here too (fail closed), follow-ups cancelled |
+| any event about a **test** send | recorded on the send | **never suppressed** (it went to your own inbox) |
+| an event about an email this engine did not send (the newsletter) | — | acknowledged; only the event id is kept (for repeats), no address, no message id |
+
+Nothing a later event says moves a send backwards: a "delivered" arriving after a bounce leaves it bounced.
+
+**The newsletter's own webhook now ignores outbound email.** Resend sends every event on the account to every endpoint. The `newsletter` function acknowledges an event tagged `edgedesk=outbound` (every outbound email is) and keeps nothing about it, so a prospect's address never lands in the newsletter's tables. Its signature is still checked first.
+
+### The signing secret
+
+- Set once, in the Supabase **SQL editor**: `select growth_outbound.set_webhook_secret('whsec_...');`
+- Refused through the API, by the function and by a trigger on the table, each alone; a later security-definer function written by mistake would be refused too.
+- Never returned by any door. The console sees only whether it is set, how many events arrived in 24 hours, and when the last did.
+- **Live sending is blocked until it is set** (`webhook_secret_missing`): a bounce or a complaint must be able to stop the next email.
+
+### Opting out (`growth_outbound_optout`)
+
+Every outbound email carries its own link, `…/functions/v1/growth_outbound_optout?t=<64 hex>`, in the footer and in the `List-Unsubscribe` header. The token belongs to that one send. Its only power is to stop email to that address.
+
+- **POST** (the RFC 8058 one-click that Gmail, Yahoo and Apple Mail send from their own unsubscribe button): the address is suppressed for good and every unsent draft cancelled. No cookie, no session, no JavaScript.
+- **GET** (a person following the footer link, or a mail scanner prefetching it) **changes nothing.** Supabase serves an Edge Function's HTML as plain text on GET, so the function 303-redirects to **`https://edgedesksports.com/email/stop/#t=…`**. The token rides in the fragment, which is never sent to a server or in a Referer. That page asks the door without confirming (a masked address, `p•••@domain`, and one button), and stops email only when the button is pressed. Inside another site's frame it shows no button.
+- A malformed token and one no send carries get the same answer: "not valid".
+- **A test send's link changes nothing**, confirmed or not.
+- Twice is once: an address already stopped (by an opt-out, a bounce, a complaint) gets "done" and nothing new is written.
+
+### Replies
+
+Replies reach `davis@` and a person reads them. A contacted prospect's detail now offers:
+- **They replied** (asks first, with an optional note): the prospect becomes `replied`, every follow-up still waiting is cancelled, the address is **not** suppressed;
+- **They replied: stop emailing them**: the same, and the address is suppressed for good.
+
+A follow-up written after a reply can never be sent (a follow-up goes only to a `contacted` prospect).
+
+### Exactly two public doors
+
+- `growth_outbound_webhook` and `growth_outbound_optout` are the only outbound doors `anon` may call. Signed-in users and the service role cannot call them at all.
+- Each opens with its own proof instead of the owner check: Resend's signature; a send's token. Without it, the answer is a refusal and nothing is read, written or revealed.
+- Every other door is unchanged: signed in, and an owner, or refused at the first statement.
+
+### New in the database
+
+- `public.growth_outbound_webhook(id, timestamp, signature, body)`: anon only.
+- `public.growth_outbound_optout(token, confirm)`: anon only.
+- `public.growth_outbound_prospect_replied(id, note, stop)`: owner.
+- `public.growth_outbound_provider_events(limit)`: owner (what Resend reported, with whose send it was).
+- `growth_outbound.set_webhook_secret(secret)`: the SQL editor only.
+- Tables `provider_events` (append-only, one row per event id) and `secrets` (the webhook secret and nothing else).
+- `sends.opened_at`, `sends.clicked_at`; the sends list returns them and `complained_at`.
+- `settings` returns `webhook: {secret_set, last_event_at, events_24h}`.
+- Report rows 23–26: the two public doors, the secret, the HMAC vectors, the events.
+
+### The console
+
+- The header says whether Resend's events can arrive ("signing secret not set", or how many in 24 hours and when the last came).
+- In test mode, what live sending still needs now includes the webhook secret, with the line to run.
+- The Sends table shows when a send was opened and clicked.
+- A contacted prospect has **They replied** and **They replied: stop emailing them**.
+
+### Deploy (in order)
+
+1. Merge the Phase 6 PR. The site gets `/email/stop/` with it.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. Report rows 1–26 should say `ok` (row 24 says the secret is not set yet).
+3. **Deploy the two new functions** (the send function is unchanged):
+   - GitHub → Actions → **Deploy outbound Edge Functions** → Run. It runs the tests first and deploys all three.
+   - Or from a terminal: `supabase functions deploy growth_outbound_webhook --no-verify-jwt` and `supabase functions deploy growth_outbound_optout --no-verify-jwt`.
+4. **Redeploy the newsletter function** so it ignores outbound email: `supabase functions deploy newsletter --no-verify-jwt`.
+5. In **Resend → Webhooks → Add endpoint**:
+   - URL: `https://iattxbkbufslbauoumga.supabase.co/functions/v1/growth_outbound_webhook`
+   - events: `email.sent`, `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.opened`, `email.clicked`, `email.failed`, `email.suppressed`.
+   - Copy this endpoint's **signing secret** (`whsec_…`).
+6. In the SQL editor: `select growth_outbound.set_webhook_secret('whsec_...');` (paste the secret between the quotes, without `< >`). Row 24 now says it is set.
+7. In the console's **Settings**, set the opt-out base URL to `https://iattxbkbufslbauoumga.supabase.co/functions/v1/`.
+8. **Check it with a test send:** Test draft for my inbox → approve → Send test. Within a minute the Sends table says `delivered` and the header counts an event. Open the email's opt-out link: the page says it was a test email and nothing changed.
+9. **Live sending stays off** until you leave test mode (typed `LIVE`). Opens and clicks are reported only if open and click tracking is on for the domain in Resend; nothing depends on them.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_events_sql.test.js` (`npm run growth:sql`) | 124 | HMAC-SHA256 against RFC 4231 and Node's crypto at every key and message edge; the secret set from the SQL editor only (each layer alone), never echoed, malformed ones refused; a wrong secret, a tampered body, a lifted signature, stale and future timestamps, missing headers all refused with nothing kept; rotation; repeats applied once; every event type; hard vs soft vs unknown bounces; complaints; Resend's own suppression; test sends never suppress; nothing moves backwards; the newsletter's events leave no trace; opt-out (malformed, unknown, preview, confirm, twice, already bounced, test); replies (owner only, not contacted, stop); live blocked without the secret; exactly two anon doors; append-only events. **Mutation-checked:** 34 deliberate breaks, every one caught. |
+| `tools/growth/outbound_events.test.js` (`npm run growth:test`) | 65 | the **deployed** webhook and opt-out functions and the newsletter's skip: only a POST with the headers reaches the database, the body byte for byte, as anon; 401 says nothing more; 503 when the door is missing or the database is down; 413 over 256 KB; no CORS; a GET only redirects (the token in the fragment); the one-click POST, from the URL or the form; a bad token never reaches the database; the newsletter keeps nothing about an outbound email (both tag shapes) and still handles its own. **Mutation-checked:** 13 deliberate breaks, every one caught. |
+| `tools/growth/outbound_stop_page.e2e.js` (`npm run growth:e2e`) | 25 | `/email/stop/` in Chromium: asks without confirming, the token leaves the address bar, the button confirms, every refusal and failure in words, the door's words as text, no button inside a frame, a phone. **Mutation-checked:** 6 deliberate breaks, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 146 | adds the webhook status, the live blocker, opened/clicked, They replied / stop (asked first, declining sends nothing) |
+| earlier suites | 317 + 162 + 85 + 47 + 48 + 83 + 37 + 34 + 42 | all passing (updated for the two public doors and the live-send secret) |
+
+### Rollback
+
+- **Stop believing Resend:** in the SQL editor, `delete from growth_outbound.secrets;`. Every event is then refused, and live sending is blocked again.
+- **The functions:** `supabase functions delete growth_outbound_webhook` (Resend retries, then reports the endpoint failing; nothing changes in the database), `supabase functions delete growth_outbound_optout` (the links stop working, so also clear the opt-out base URL in Settings, which blocks live sending; "reply STOP" still reaches you).
+- **The page and the newsletter change:** revert the merge commit, and redeploy the newsletter function.
+- **The database:** additive. Suppressions and provider events are history and are not deleted.
+
+### What Phase 6 does not do
+
+- **Read replies automatically.** A person reads `davis@` and marks the reply. Reading the mailbox would need an inbound-mail provider (Resend inbound, or a mailbox API) and its credentials; it is not faked.
+- **Attribute conversions** (a reply that becomes a trial or a subscriber): Phase 10.
+
 ## Next
 
-- **Phase 6:** the opt-out endpoint (one click, RFC 8058), the Resend webhook (delivered, bounced, complained, verified with Svix) into delivery state and suppressions, and replies.
 - **Phase 7:** discovery and research providers (interface first; nothing faked).
+- **Phase 8:** personalization from stored evidence only.
+- **Phase 9:** the scheduled morning run (find, research, score, draft, queue; never approve or send).
+- **Phase 10:** analytics and attribution.

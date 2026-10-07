@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://iattxbkbufslbauoumga.supabase.co; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Email from EdgeDesk</title>
+<!-- ===========================================================================
+     STOP EMAIL FROM EDGEDESK — where the opt-out link in an email from Davis
+     lands (supabase/functions/growth_outbound_optout redirects a GET here,
+     the token in the #fragment, so it never reaches a server log).
+
+     The token is 64 hex characters and belongs to one email. This page asks
+     public.growth_outbound_optout() first WITHOUT confirming — which changes
+     nothing and returns only a masked address — and stops email only when
+     the button is pressed. A mail scanner that opens the link stops nothing.
+     The answer never says whose token it was; a wrong token gets the same
+     "not valid" as a made-up one.
+     =========================================================================== -->
+<style>
+:root{--ink:#0d1117;--panel:#141a22;--line:#26303c;--text:#eef2f6;--dim:#9aa7b4;--faint:#6b7885;--accent:#2fa79a;--on-accent:#042320;--neg:#e2604a}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:480px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+.ey{font:700 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:22px;line-height:1.25;letter-spacing:-.02em;margin:10px 0 10px;overflow-wrap:anywhere}
+p{color:var(--dim);font-size:14.5px;margin-top:10px}
+p.err{color:var(--neg)}
+.btn{display:inline-block;margin-top:18px;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:14px;border-radius:10px;padding:11px 16px;border:0;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+small{display:block;margin-top:18px;color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+<main class="card" aria-live="polite">
+  <span class="ey">EdgeDesk · Email</span>
+  <h1 id="h">Checking your link…</h1>
+  <p id="m">One moment.</p>
+  <button class="btn" id="go" type="button" hidden>Stop emailing me</button>
+  <small>EdgeDesk Sports · research, not picks. 21+.</small>
+</main>
+<script>
+(function(){
+  var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go');
+  function say(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; }
+  var FALLBACK='Reply STOP to the email you received and we will take care of it by hand.';
+  var t='';
+  try{
+    var frag=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    t=(frag.get('t')||new URLSearchParams(location.search).get('t')||'').trim().toLowerCase();
+  }catch(_){}
+  /* the token leaves the address bar before anything else happens */
+  try{ history.replaceState(null,'',location.pathname); }catch(_){}
+  if(!/^[0-9a-f]{64}$/.test(t)){ say('That link is incomplete.', FALLBACK, true); return; }
+  /* inside someone else's frame, no button: nobody can be tricked into pressing it */
+  var framed=false; try{ framed=window.top!==window.self; }catch(_){ framed=true; }
+
+  function call(confirm){
+    return fetch(SB_URL+'/rest/v1/rpc/growth_outbound_optout',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},
+      body:JSON.stringify({p_token:t,p_confirm:!!confirm})})
+      .then(function(r){ if(r.status===404||r.status>=500) throw new Error('unavailable'); return r.ok?r.json():null; });
+  }
+  function masked(j){ return String((j&&j.masked)||'this address'); }
+  function show(j){
+    if(!j||j.ok!==true){ say('That link is not valid.', FALLBACK, true); go.hidden=true; return; }
+    if(j.test){ say('That was a test email.', 'Nothing was changed.'); go.hidden=true; return; }
+    if(j.done){ say('Done. You will not hear from us again.', 'EdgeDesk will not email '+masked(j)+' again.'); go.hidden=true; return; }
+    say('Stop email to '+masked(j)+'?', 'One click and EdgeDesk will never email this address again.');
+    go.hidden=framed;
+  }
+  function failed(){ say('We could not reach EdgeDesk.', 'Check your connection and open the link again, or: '+FALLBACK, true); go.disabled=false; }
+  go.addEventListener('click', function(){
+    go.disabled=true;
+    call(true).then(function(j){ go.disabled=false; show(j); }, failed);
+  });
+  call(false).then(show, failed);
+})();
+</script>
+</body>
+</html>

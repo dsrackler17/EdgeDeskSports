@@ -47,7 +47,8 @@
     postal_address_missing: 'no postal address is configured (required in every commercial email)',
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
     test_inbox_missing: 'test mode is on but no test inbox is set',
-    no_outbound_owner: 'no outbound owner is configured'
+    no_outbound_owner: 'no outbound owner is configured',
+    webhook_secret_missing: 'Resend\'s webhook signing secret is not set, so bounces and spam complaints could not reach EdgeDesk (in the Supabase SQL editor: select growth_outbound.set_webhook_secret(\'whsec_…\'))'
   };
   var SEND_WHY = {
     resend_unreachable: 'Resend did not answer; press Send again (the same draft can never be sent twice)',
@@ -165,13 +166,22 @@
                    : '<span class="chip live" data-mode="live">LIVE — approved drafts reach real prospects</span>')
       + '<span class="chip ' + (s.automation_enabled ? 'ok' : 'off') + '">automation ' + (s.automation_enabled ? 'on' : 'off') + ' · never approves or sends</span>'
       + '<span class="chip">live sends today ' + esc(t.live_sends || 0) + ' / ' + esc(s.max_sends_per_day) + '</span>'
-      + '<span class="chip">test sends today ' + esc(t.test_sends || 0) + ' / ' + esc(s.max_test_sends_per_day) + '</span>';
+      + '<span class="chip">test sends today ' + esc(t.test_sends || 0) + ' / ' + esc(s.max_test_sends_per_day) + '</span>'
+      + webhookChip(s.webhook);
     var b = s.send_blockers || [];
     $('obBlock').classList.toggle('hide', !b.length);
     $('obBlock').innerHTML = b.length ? '<b>Sending is blocked</b> until this is fixed: ' + b.map(function (x) { return esc(BLOCKERS[x] || x); }).join(' · ') : '';
     var lb = s.test_mode ? (s.live_send_blockers || []) : [];
     $('obLiveNote').classList.toggle('hide', !lb.length);
     $('obLiveNote').textContent = lb.length ? 'Before going live, sending to real people also needs: ' + lb.map(function (x) { return BLOCKERS[x] || x; }).join(' · ') + '.' : '';
+  }
+
+  /* what Resend has told us: the bounces and complaints that stop sending */
+  function webhookChip(w) {
+    if (!w) return '';
+    if (!w.secret_set) return '<span class="chip off" data-webhook="unset">Resend events: signing secret not set</span>';
+    return '<span class="chip ' + (w.last_event_at ? 'ok' : 'off') + '" data-webhook="set">Resend events: '
+      + (w.last_event_at ? esc(w.events_24h || 0) + ' in 24 h · last ' + esc(when(w.last_event_at)) : 'none received yet') + '</span>';
   }
 
   /* ── loading ────────────────────────────────────────────────────────── */
@@ -408,6 +418,12 @@
 
     h += '<div class="row" style="margin-top:12px"><span class="sp"></span><button type="button" class="g" id="pdEval">Re-evaluate</button>'
       + '<button type="button" class="g" id="pdResearch">Needs more research</button><button type="button" class="g" id="pdReject">Reject</button></div>';
+    if (p.status === 'contacted' || p.status === 'replied') {
+      h += '<div class="row" style="margin-top:8px"><span class="sp"></span>'
+        + (p.status === 'contacted' ? '<button type="button" class="g" id="pdReplied">They replied</button>' : '')
+        + (p.suppressed ? '' : '<button type="button" class="g" id="pdReplyStop">They replied: stop emailing them</button>') + '</div>'
+        + '<div class="note">A reply reaches davis@ and is read by a person. Marking it stops every follow-up still waiting; "stop emailing them" also suppresses the address for good.</div>';
+    }
     $('obDetail').innerHTML = h;
   }
   function refreshAfter(id) {
@@ -483,6 +499,21 @@
       if (!r || r.ok === false) { say('obDetailMsg', 'err', 'Not changed: ' + why(r)); return; }
       return refreshAfter(id);
     }, function (e) { fail('obDetailMsg', e); });
+  }
+  function replied(stop) {
+    if (!DETAIL) return Promise.resolve();
+    var id = DETAIL.prospect.id;
+    var note = root.prompt(stop ? 'They asked to stop. Every follow-up is cancelled and ' + (DETAIL.prospect.email || 'the address') + ' is suppressed for good. A note (optional):'
+                                : 'They replied. Every follow-up still waiting is cancelled. A note (optional):');
+    if (note == null) return Promise.resolve();
+    return S.rpc('growth_outbound_prospect_replied', { p_id: id, p_note: String(note).trim() || null, p_stop: !!stop }).then(function (r) {
+      if (!r || r.ok === false) { say('obDetailMsg', 'err', r && r.reason === 'not_contacted' ? 'Only a prospect who was emailed can have replied.' : 'Not changed: ' + why(r)); return; }
+      var done = 'Marked replied' + (r.drafts_cancelled ? '; ' + r.drafts_cancelled + ' follow-up(s) cancelled' : '') + (r.suppressed ? '; the address is suppressed' : '') + '.';
+      return refreshAfter(id).then(loadSupp).then(function () { say('obDetailMsg', 'ok', done); });
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { say('obDetailMsg', 'err', 'Replies arrive with the Phase 6 SQL: run supabase/growth_outbound.sql again.'); return; }
+      fail('obDetailMsg', e);
+    });
   }
   function reevaluate() {
     if (!DETAIL) return Promise.resolve();
@@ -672,11 +703,12 @@
       $('obSends').innerHTML = '<tr><th>When</th><th></th><th>To</th><th>Prospect</th><th>Subject</th><th>Status</th><th>Detail</th><th class="r">Tries</th><th></th></tr>'
         + (rows.length ? rows.map(function (x) {
           var bad = x.delivery_status === 'failed' || x.delivery_status === 'bounced' || x.delivery_status === 'complained';
+          var seen = [x.opened_at ? 'opened ' + when(x.opened_at) : '', x.clicked_at ? 'clicked ' + when(x.clicked_at) : ''].filter(Boolean).join(' · ');
           return '<tr><td>' + when(x.sent_at || x.claimed_at) + '</td><td><span class="pill ' + (x.is_test ? 'test' : 'bad') + '">' + (x.is_test ? 'TEST' : 'LIVE') + '</span></td>'
             + '<td class="mono">' + esc(x.recipient) + (x.is_test && x.intended_recipient && x.intended_recipient !== x.recipient ? '<div class="sub">for ' + esc(x.intended_recipient) + '</div>' : '') + '</td>'
             + '<td><button type="button" class="lnk" data-open="' + esc(x.prospect_id) + '">' + esc(x.full_name || '(no name)') + '</button>' + (x.sequence_number > 1 ? ' <span class="sub">step ' + esc(x.sequence_number) + '</span>' : '') + '</td>'
             + '<td class="wrap">' + esc(clip(x.subject, 90)) + '</td><td><span class="pill ' + (bad ? 'bad' : x.delivery_status === 'claimed' ? 'test' : 'on') + '">' + esc(x.delivery_status) + '</span></td>'
-            + '<td class="wrap">' + esc(clip(x.failure_reason || x.last_error || '', 160)) + '</td><td class="r">' + esc(x.attempts) + '</td>'
+            + '<td class="wrap">' + esc(clip(x.failure_reason || x.last_error || '', 160)) + (seen ? '<div class="sub" data-seen="' + esc(x.id) + '">' + esc(seen) + '</div>' : '') + '</td><td class="r">' + esc(x.attempts) + '</td>'
             + '<td>' + (x.delivery_status === 'claimed' ? '<button type="button" class="g sm" data-resend="' + esc(x.draft_id) + '">Try again</button>' : '') + '</td></tr>';
         }).join('') : '<tr><td colspan="9">Nothing has been sent.</td></tr>');
     }, function (e) {
@@ -782,6 +814,8 @@
       else if (b.id === 'pdEval') reevaluate();
       else if (b.id === 'pdResearch') setStatus('needs_research');
       else if (b.id === 'pdReject') setStatus('rejected');
+      else if (b.id === 'pdReplied') replied(false);
+      else if (b.id === 'pdReplyStop') replied(true);
       else if (b.id === 'wdCreate') writeDraft();
       else if (b.getAttribute('data-approve')) approveOne(b.getAttribute('data-approve'));
       else if (b.getAttribute('data-reject')) rejectOne(b.getAttribute('data-reject'));

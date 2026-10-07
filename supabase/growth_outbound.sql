@@ -32,6 +32,10 @@
 --      — auth.uid() must be in owners and still in affiliate_admins. A
 --      subscriber, a partner, an affiliate admin and the service role (which
 --      has no auth.uid()) are refused before anything else runs.
+--      TWO EXCEPTIONS, callable by anon only and by nobody signed in: the
+--      webhook door, whose first statement checks Resend's signature, and
+--      the opt-out door, whose first statement checks a send's 64-hex token.
+--      Without its proof each refuses and reads, writes and reveals nothing.
 --   5  INVARIANTS ON THE TABLES THEMSELVES (triggers no code path can skip):
 --        an owner row cannot be written by anything that arrived through the
 --          API — not even a security-definer function someone adds later;
@@ -57,7 +61,10 @@
 --          only for the exact count the owner confirms, all or nothing;
 --        a send is claimed (written) before the provider is called, with one
 --          idempotency key per draft, so a retry can never send twice, and
---          an outcome unknown after 23 hours is marked failed, not retried.
+--          an outcome unknown after 23 hours is marked failed, not retried;
+--        a provider event is believed only with Resend's signature, checked
+--          in SQL; an opt-out only with the send's own token; a hard bounce
+--          or a spam complaint suppresses the address for good.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -100,7 +107,8 @@ begin
     'growth_outbound.owners', 'growth_outbound.owner_audit', 'growth_outbound.settings',
     'growth_outbound.prospects', 'growth_outbound.evidence', 'growth_outbound.drafts',
     'growth_outbound.sends', 'growth_outbound.suppressions', 'growth_outbound.activity',
-    'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog']) t
+    'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog', 'growth_outbound.secrets',
+    'growth_outbound.provider_events']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -362,17 +370,23 @@ insert into growth_outbound.settings (id) values (1) on conflict (id) do nothing
 -- ever to the owner's own test inbox) needs the postal address and the test
 -- inbox; a LIVE send also needs the opt-out endpoint, because a real person
 -- must be able to stop with one click.
+-- (plpgsql, resolved when called: it reads tables created further down)
+-- A LIVE send also needs the Resend webhook, so that a bounce or a spam
+-- complaint suppresses the address before any follow-up could go.
 create or replace function growth_outbound.send_blockers_for(p_test boolean)
-returns text[] language sql stable
+returns text[] language plpgsql stable
 set search_path = pg_catalog, public, pg_temp as $$
-  select array_remove(array[
+begin
+  return (select array_remove(array[
     case when s.postal_address is null or btrim(s.postal_address) = '' then 'postal_address_missing' end,
     case when not coalesce(p_test, false) and s.unsubscribe_url_base is null then 'unsubscribe_endpoint_missing' end,
+    case when not coalesce(p_test, false) and not exists (select 1 from growth_outbound.secrets where name = 'resend_webhook')
+         then 'webhook_secret_missing' end,
     case when coalesce(p_test, true) and s.test_inbox is null then 'test_inbox_missing' end,
     case when not exists (select 1 from growth_outbound.owners) then 'no_outbound_owner' end
   ], null)
-  from growth_outbound.settings s where s.id = 1;
-$$;
+  from growth_outbound.settings s where s.id = 1);
+end $$;
 
 -- What stops the next send in the CURRENT mode.
 create or replace function growth_outbound.send_blockers()
@@ -1306,6 +1320,57 @@ begin
 end $$;
 
 -- =============================================================================
+-- 4c. WHAT ARRIVES FROM OUTSIDE: the provider's events, and the one secret
+--     needed to believe them
+--
+--   Resend reports what happened to each email (delivered, bounced, marked
+--   as spam, opened) to a webhook, signed with a secret only Resend and this
+--   database hold. The SIGNATURE IS CHECKED HERE, in SQL, before anything is
+--   read: the Edge Function that relays the delivery holds no secret at all,
+--   so it cannot be the weak link. An event about an email this engine did
+--   not send (the newsletter shares the Resend account) is acknowledged and
+--   nothing about it is kept.
+-- =============================================================================
+create table if not exists growth_outbound.secrets (
+  name    text primary key,
+  value   text not null,
+  set_at  timestamptz not null default now(),
+  set_by  text not null default session_user
+);
+comment on table growth_outbound.secrets is
+  'Verification secrets (the Resend webhook signing secret). Written only from the SQL editor '
+  '(growth_outbound.set_webhook_secret); no door ever returns a value.';
+do $c$ begin
+  alter table growth_outbound.secrets drop constraint if exists secrets_name_ck;
+  alter table growth_outbound.secrets add constraint secrets_name_ck check (name in ('resend_webhook'));
+end $c$;
+
+create table if not exists growth_outbound.provider_events (
+  id           bigint generated always as identity primary key,
+  received_at  timestamptz not null default now(),
+  provider     text not null default 'resend',
+  event_id     text not null,
+  event_type   text not null,
+  message_id   text,
+  send_id      uuid references growth_outbound.sends (id) on delete set null,
+  outcome      text not null,
+  detail       jsonb not null default '{}'::jsonb
+);
+do $c$ begin
+  alter table growth_outbound.provider_events drop constraint if exists provider_events_shape_ck;
+  alter table growth_outbound.provider_events add constraint provider_events_shape_ck check (
+        provider = 'resend' and length(event_id) between 1 and 200 and length(event_type) between 0 and 100
+    and jsonb_typeof(detail) = 'object');
+end $c$;
+-- every provider retries: the second delivery of one event is a no-op
+create unique index if not exists provider_events_uk on growth_outbound.provider_events (provider, event_id);
+create index if not exists provider_events_at_idx on growth_outbound.provider_events (received_at desc);
+
+-- what the recipient did, first time only (opens are unreliable; kept as a hint)
+alter table growth_outbound.sends add column if not exists opened_at timestamptz;
+alter table growth_outbound.sends add column if not exists clicked_at timestamptz;
+
+-- =============================================================================
 -- 5. THE INVARIANTS (triggers)
 -- =============================================================================
 
@@ -1326,6 +1391,24 @@ create trigger activity_append_only_t before update or delete on growth_outbound
 drop trigger if exists owner_audit_append_only_t on growth_outbound.owner_audit;
 create trigger owner_audit_append_only_t before update or delete on growth_outbound.owner_audit
   for each row execute function growth_outbound.append_only();
+drop trigger if exists provider_events_append_only_t on growth_outbound.provider_events;
+create trigger provider_events_append_only_t before update or delete on growth_outbound.provider_events
+  for each row execute function growth_outbound.append_only();
+
+-- A secret is written from the SQL editor only — never through the API, not
+-- even by a security-definer function added later by mistake.
+create or replace function growth_outbound.secrets_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if growth_outbound.api_origin() then
+    raise exception 'secrets are set in the Supabase SQL editor only' using errcode = 'insufficient_privilege';
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists secrets_guard_t on growth_outbound.secrets;
+create trigger secrets_guard_t before insert or update or delete on growth_outbound.secrets
+  for each row execute function growth_outbound.secrets_guard();
 
 -- never deleted: prospects, evidence, drafts, sends (status, not removal)
 create or replace function growth_outbound.never_delete()
@@ -1758,7 +1841,8 @@ do $rls$
 declare t text;
 begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
-                           'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog'] loop
+                           'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog', 'secrets',
+                           'provider_events'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -1787,6 +1871,10 @@ set search_path = pg_catalog, public, pg_temp as $$
     'send_blockers', to_jsonb(growth_outbound.send_blockers()),
     'test_send_blockers', to_jsonb(growth_outbound.send_blockers_for(true)),
     'live_send_blockers', to_jsonb(growth_outbound.send_blockers_for(false)),
+    'webhook', jsonb_build_object(
+      'secret_set', exists (select 1 from growth_outbound.secrets where name = 'resend_webhook'),
+      'last_event_at', (select max(received_at) from growth_outbound.provider_events where outcome <> 'not_outbound'),
+      'events_24h', (select count(*) from growth_outbound.provider_events where outcome <> 'not_outbound' and received_at >= now() - interval '24 hours')),
     'today', jsonb_build_object(
       'live_sends', (select count(*) from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now())),
       'test_sends', (select count(*) from growth_outbound.sends where is_test and claimed_at >= date_trunc('day', now())),
@@ -2006,42 +2094,25 @@ begin
 end $$;
 
 -- SUPPRESS an address or a whole domain. Recorded forever; every matching
--- prospect is marked suppressed and every unsent draft of theirs cancelled.
+-- prospect is marked suppressed and every unsent draft of theirs cancelled
+-- (growth_outbound.apply_suppression: the same for a bounce, a complaint, an
+-- opt-out and a reply).
 create or replace function public.growth_outbound_suppress(
   p_target text, p_kind text default 'manual', p_reason text default null, p_scope text default 'address')
 returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
 declare
   v_owner uuid;
-  v_target text := growth_outbound.norm_email(p_target);
-  v_scope text := coalesce(p_scope, 'address');
-  v_id bigint;
-  v_p uuid;
-  v_np int := 0;
-  v_nd int := 0;
+  r jsonb;
 begin
   v_owner := growth_outbound.require_owner();
-  if v_scope = 'domain' and v_target like '%@%' then v_target := growth_outbound.email_domain(v_target); end if;
-  begin
-    insert into growth_outbound.suppressions (scope, target, kind, reason, source, created_by)
-    values (v_scope, v_target, coalesce(p_kind, 'manual'), left(nullif(btrim(p_reason), ''), 500), 'owner', v_owner)
-    returning id into v_id;
-  exception when check_violation or not_null_violation then
-    return jsonb_build_object('ok', false, 'reason', 'invalid_target_or_kind');
-  end;
-  for v_p in
-    select id from growth_outbound.prospects x
-     where (v_scope = 'address' and growth_outbound.norm_email(x.email) = v_target)
-        or (v_scope = 'domain' and growth_outbound.email_domain(growth_outbound.norm_email(x.email)) = v_target)
-  loop
-    update growth_outbound.prospects set status = 'suppressed', status_reason = 'suppressed: ' || coalesce(p_kind, 'manual')
-     where id = v_p and status <> 'suppressed';
-    v_np := v_np + 1;
-    v_nd := v_nd + growth_outbound.cancel_live_drafts(v_p, 'suppressed');
-  end loop;
-  perform growth_outbound.log('suppression_created', null, 'suppression', v_id::text,
-    jsonb_build_object('scope', v_scope, 'kind', coalesce(p_kind, 'manual'), 'prospects', v_np, 'drafts_cancelled', v_nd));
-  return jsonb_build_object('ok', true, 'id', v_id, 'prospects_suppressed', v_np, 'drafts_cancelled', v_nd);
+  r := growth_outbound.apply_suppression(coalesce(p_scope, 'address'), p_target, coalesce(p_kind, 'manual'), p_reason, 'owner', v_owner, null);
+  if coalesce((r->>'ok')::boolean, false) then
+    perform growth_outbound.log('suppression_created', null, 'suppression', r->>'id',
+      jsonb_build_object('scope', coalesce(p_scope, 'address'), 'kind', coalesce(p_kind, 'manual'),
+                         'prospects', r->'prospects_suppressed', 'drafts_cancelled', r->'drafts_cancelled'));
+  end if;
+  return r;
 end $$;
 
 -- APPROVE: the owner's explicit act, for the exact content they reviewed.
@@ -3160,9 +3231,365 @@ begin
       'is_test', x.is_test, 'sequence_number', x.sequence_number, 'recipient', x.recipient, 'intended_recipient', x.intended_recipient,
       'subject', x.subject, 'delivery_status', x.delivery_status, 'claimed_at', x.claimed_at, 'sent_at', x.sent_at,
       'delivered_at', x.delivered_at, 'bounced_at', x.bounced_at, 'failed_at', x.failed_at, 'failure_reason', x.failure_reason,
-      'last_error', x.last_error, 'attempts', x.attempts, 'resend_message_id', x.resend_message_id) order by x.claimed_at desc)
+      'last_error', x.last_error, 'attempts', x.attempts, 'resend_message_id', x.resend_message_id,
+      'complained_at', x.complained_at, 'opened_at', x.opened_at, 'clicked_at', x.clicked_at) order by x.claimed_at desc)
     from (select * from growth_outbound.sends order by claimed_at desc limit least(greatest(coalesce(p_limit, 100), 1), 500)) x
     join growth_outbound.prospects p on p.id = x.prospect_id), '[]'::jsonb);
+end $$;
+
+-- ── what happened next: the provider's events, opt-outs, replies ────────────
+
+-- HMAC-SHA256 (RFC 2104) on core sha256(), so the signature check needs no
+-- extension under a pinned search_path. Report row 25 checks it against
+-- RFC 4231's published vectors on every run.
+create or replace function growth_outbound.hmac_sha256(p_key bytea, p_msg bytea)
+returns bytea language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  k bytea := p_key;
+  ipad bytea;
+  opad bytea;
+  i int;
+begin
+  if length(k) > 64 then k := sha256(k); end if;
+  k := k || decode(repeat('00', 64 - length(k)), 'hex');
+  ipad := k;
+  opad := k;
+  for i in 0..63 loop
+    ipad := set_byte(ipad, i, get_byte(k, i) # 54);   -- 0x36
+    opad := set_byte(opad, i, get_byte(k, i) # 92);   -- 0x5c
+  end loop;
+  return sha256(opad || sha256(ipad || p_msg));
+end $$;
+
+-- THE WEBHOOK SECRET, set once, in the Supabase SQL editor:
+--   select growth_outbound.set_webhook_secret('whsec_...');
+-- (Resend → Webhooks → your endpoint → Signing secret.) It is never echoed.
+create or replace function growth_outbound.set_webhook_secret(p_secret text)
+returns text language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare v text := btrim(coalesce(p_secret, ''));
+begin
+  if growth_outbound.api_origin() then
+    raise exception 'secrets are set in the Supabase SQL editor only' using errcode = 'insufficient_privilege';
+  end if;
+  if v ~ '[<>]' then raise exception 'remove the < > around the secret'; end if;
+  if v !~ '^whsec_[A-Za-z0-9+/]{16,}={0,2}$' then
+    raise exception 'that is not a Resend webhook signing secret (it starts whsec_, followed by base64)';
+  end if;
+  begin
+    perform decode(substr(v, 7), 'base64');
+  exception when others then
+    raise exception 'the part after whsec_ is not valid base64';
+  end;
+  insert into growth_outbound.secrets (name, value) values ('resend_webhook', v)
+  on conflict (name) do update set value = excluded.value, set_at = now(), set_by = session_user;
+  return 'ok — the Resend webhook signing secret is set';
+end $$;
+
+-- Is this delivery Resend's? Svix's scheme: HMAC-SHA256 over
+-- "<id>.<timestamp>.<raw body>" with the secret, base64, under "v1,"; a
+-- timestamp more than five minutes off is refused (a captured delivery
+-- replayed later must not re-apply a bounce). NULL means it is Resend's.
+create or replace function growth_outbound.svix_check(p_id text, p_ts text, p_sig text, p_body text)
+returns text language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_secret text;
+  v_expected text;
+  g text;
+begin
+  select value into v_secret from growth_outbound.secrets where name = 'resend_webhook';
+  if v_secret is null then return 'no_secret_configured'; end if;
+  if nullif(btrim(coalesce(p_id, '')), '') is null or nullif(btrim(coalesce(p_ts, '')), '') is null
+     or nullif(btrim(coalesce(p_sig, '')), '') is null or p_body is null then
+    return 'missing_signature_headers';
+  end if;
+  if p_ts !~ '^[0-9]{1,12}$' then return 'unreadable_timestamp'; end if;
+  if abs(floor(extract(epoch from now()))::bigint - p_ts::bigint) > 300 then return 'timestamp_outside_tolerance'; end if;
+  v_expected := encode(growth_outbound.hmac_sha256(decode(substr(v_secret, 7), 'base64'),
+                                                   convert_to(p_id || '.' || p_ts || '.' || p_body, 'UTF8')), 'base64');
+  foreach g in array string_to_array(btrim(p_sig), ' ') loop
+    if split_part(g, ',', 1) = 'v1' and split_part(g, ',', 2) = v_expected then return null; end if;
+  end loop;
+  return 'signature_mismatch';
+end $$;
+
+-- the order of a send's states: an event that arrives late never moves it back
+create or replace function growth_outbound.delivery_rank(p text)
+returns int language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case p when 'claimed' then 0 when 'sent' then 1 when 'delayed' then 2 when 'delivered' then 3
+                when 'failed' then 4 when 'bounced' then 5 when 'complained' then 6 else -1 end;
+$$;
+
+create or replace function growth_outbound.mask_email(p text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when p is null or position('@' in p) < 2 then null
+              else left(p, 1) || '•••@' || split_part(p, '@', 2) end;
+$$;
+
+create or replace function growth_outbound.log_as(p_kind text, p_action text, p_prospect uuid, p_entity text, p_entity_id text, p_detail jsonb)
+returns void language sql
+set search_path = pg_catalog, public, pg_temp as $$
+  insert into growth_outbound.activity (actor_user_id, actor_kind, action, prospect_id, entity, entity_id, detail)
+  values (null, p_kind, p_action, p_prospect, p_entity, p_entity_id, coalesce(p_detail, '{}'::jsonb));
+$$;
+
+-- SUPPRESS: the one implementation, for the owner's door, a bounce, a
+-- complaint, an opt-out and a reply alike. Recorded forever; every prospect
+-- at the address (or domain) is marked suppressed, every unsent draft of
+-- theirs cancelled. Already suppressed exactly so: nothing new is written.
+create or replace function growth_outbound.apply_suppression(
+  p_scope text, p_target text, p_kind text, p_reason text, p_source text, p_by uuid, p_prospect uuid default null)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_target text := growth_outbound.norm_email(p_target);
+  v_scope text := coalesce(p_scope, 'address');
+  v_id bigint;
+  v_p uuid;
+  v_np int := 0;
+  v_nd int := 0;
+begin
+  if v_scope = 'domain' and v_target like '%@%' then v_target := growth_outbound.email_domain(v_target); end if;
+  begin
+    insert into growth_outbound.suppressions (scope, target, kind, reason, source, prospect_id, created_by)
+    values (v_scope, v_target, coalesce(p_kind, 'manual'), left(nullif(btrim(coalesce(p_reason, '')), ''), 500),
+            coalesce(p_source, 'owner'), p_prospect, p_by)
+    returning id into v_id;
+  exception when check_violation or not_null_violation then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_target_or_kind');
+  end;
+  for v_p in
+    select id from growth_outbound.prospects x
+     where (v_scope = 'address' and growth_outbound.norm_email(x.email) = v_target)
+        or (v_scope = 'domain' and growth_outbound.email_domain(growth_outbound.norm_email(x.email)) = v_target)
+  loop
+    update growth_outbound.prospects set status = 'suppressed', status_reason = 'suppressed: ' || coalesce(p_kind, 'manual')
+     where id = v_p and status <> 'suppressed';
+    v_np := v_np + 1;
+    v_nd := v_nd + growth_outbound.cancel_live_drafts(v_p, 'suppressed');
+  end loop;
+  return jsonb_build_object('ok', true, 'id', v_id, 'prospects_suppressed', v_np, 'drafts_cancelled', v_nd);
+end $$;
+
+-- THE WEBHOOK DOOR — one of the two doors a caller with no account may knock
+-- on. Its proof is Resend's signature, checked FIRST; without it nothing is
+-- read, stored or changed. With it:
+--   delivered / delayed       the send's state (never moved backwards)
+--   bounced, permanent        bounced; the address suppressed and marked
+--                             invalid; follow-ups cancelled (not for a test)
+--   bounced, transient        noted only: a full mailbox is not a dead address
+--   complained (spam)         complained; the address suppressed (not a test)
+--   suppressed (by Resend)    failed, never sent; the address suppressed
+--                             (not for a test)
+--   opened / clicked          first time noted
+--   about any other email     acknowledged; nothing about it kept
+create or replace function public.growth_outbound_webhook(p_id text, p_timestamp text, p_signature text, p_body text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_bad text;
+  v jsonb;
+  d jsonb;
+  v_type text;
+  v_msg text;
+  x growth_outbound.sends;
+  v_outcome text := 'noted';
+  v_detail jsonb := '{}'::jsonb;
+  v_perm boolean;
+begin
+  v_bad := growth_outbound.svix_check(p_id, p_timestamp, p_signature, p_body);
+  if v_bad is not null then return jsonb_build_object('ok', false, 'verified', false, 'reason', v_bad); end if;
+  if length(p_body) > 262144 then return jsonb_build_object('ok', false, 'verified', true, 'reason', 'too_large'); end if;
+  begin
+    v := p_body::jsonb;
+  exception when others then
+    return jsonb_build_object('ok', false, 'verified', true, 'reason', 'unparseable');
+  end;
+  if jsonb_typeof(v) <> 'object' then return jsonb_build_object('ok', false, 'verified', true, 'reason', 'unparseable'); end if;
+  v_type := left(coalesce(v->>'type', ''), 100);
+  d := case when jsonb_typeof(v->'data') = 'object' then v->'data' else '{}'::jsonb end;
+  v_msg := nullif(left(coalesce(d->>'email_id', ''), 200), '');
+
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.provider_event:' || p_id));
+  if exists (select 1 from growth_outbound.provider_events where provider = 'resend' and event_id = left(p_id, 200)) then
+    return jsonb_build_object('ok', true, 'duplicate', true);
+  end if;
+  if v_msg is not null then
+    select * into x from growth_outbound.sends where resend_message_id = v_msg for update;
+  end if;
+  if x.id is null then
+    insert into growth_outbound.provider_events (event_id, event_type, outcome) values (left(p_id, 200), v_type, 'not_outbound');
+    return jsonb_build_object('ok', true, 'outcome', 'not_outbound');
+  end if;
+
+  if v_type = 'email.delivered' then
+    update growth_outbound.sends set delivered_at = coalesce(delivered_at, now()),
+           delivery_status = case when growth_outbound.delivery_rank('delivered') > growth_outbound.delivery_rank(delivery_status) then 'delivered' else delivery_status end
+     where id = x.id;
+    v_outcome := 'delivered';
+  elsif v_type = 'email.delivery_delayed' then
+    update growth_outbound.sends
+       set delivery_status = case when growth_outbound.delivery_rank('delayed') > growth_outbound.delivery_rank(delivery_status) then 'delayed' else delivery_status end
+     where id = x.id;
+    v_outcome := 'delayed';
+  elsif v_type = 'email.bounced' then
+    v_perm := coalesce(d#>>'{bounce,type}', d->>'bounce_type', 'permanent') !~* '(transient|soft)';
+    v_detail := jsonb_build_object('bounce', jsonb_strip_nulls(jsonb_build_object(
+      'type', left(d#>>'{bounce,type}', 40), 'subType', left(d#>>'{bounce,subType}', 60))));
+    if v_perm then
+      update growth_outbound.sends set bounced_at = coalesce(bounced_at, now()),
+             delivery_status = case when growth_outbound.delivery_rank('bounced') > growth_outbound.delivery_rank(delivery_status) then 'bounced' else delivery_status end,
+             failure_reason = coalesce(failure_reason, 'hard bounce' || coalesce(': ' || left(d#>>'{bounce,subType}', 60), ''))
+       where id = x.id;
+      if x.is_test then
+        v_outcome := 'bounced_test';
+      else
+        update growth_outbound.prospects set email_invalid_at = coalesce(email_invalid_at, now())
+         where growth_outbound.norm_email(email) = x.recipient;
+        if not growth_outbound.is_suppressed(x.recipient) then
+          perform growth_outbound.apply_suppression('address', x.recipient, 'bounce',
+            'hard bounce' || coalesce(': ' || left(d#>>'{bounce,subType}', 60), ''), 'webhook', null, x.prospect_id);
+        end if;
+        v_outcome := 'bounced_suppressed';
+      end if;
+    else
+      update growth_outbound.sends
+         set delivery_status = case when growth_outbound.delivery_rank('delayed') > growth_outbound.delivery_rank(delivery_status) then 'delayed' else delivery_status end,
+             last_error = 'soft bounce' || coalesce(': ' || left(d#>>'{bounce,subType}', 60), '')
+       where id = x.id;
+      v_outcome := 'soft_bounce';
+    end if;
+  elsif v_type = 'email.complained' then
+    update growth_outbound.sends set complained_at = coalesce(complained_at, now()),
+           delivery_status = case when growth_outbound.delivery_rank('complained') > growth_outbound.delivery_rank(delivery_status) then 'complained' else delivery_status end
+     where id = x.id;
+    if x.is_test then
+      v_outcome := 'complained_test';
+    else
+      if not growth_outbound.is_suppressed(x.recipient) then
+        perform growth_outbound.apply_suppression('address', x.recipient, 'complaint', 'marked as spam', 'webhook', null, x.prospect_id);
+      end if;
+      v_outcome := 'complained_suppressed';
+    end if;
+  elsif v_type = 'email.opened' then
+    update growth_outbound.sends set opened_at = coalesce(opened_at, now()) where id = x.id;
+    v_outcome := 'opened';
+  elsif v_type = 'email.clicked' then
+    update growth_outbound.sends set clicked_at = coalesce(clicked_at, now()) where id = x.id;
+    v_outcome := 'clicked';
+  elsif v_type = 'email.failed' then
+    update growth_outbound.sends set failed_at = coalesce(failed_at, now()),
+           delivery_status = case when growth_outbound.delivery_rank('failed') > growth_outbound.delivery_rank(delivery_status) then 'failed' else delivery_status end,
+           failure_reason = coalesce(failure_reason, 'failed at the provider')
+     where id = x.id;
+    v_outcome := 'failed';
+  elsif v_type = 'email.suppressed' then
+    -- Resend did not send it: the address is on Resend's own suppression list
+    -- (an earlier hard bounce or complaint, perhaps from another EdgeDesk
+    -- email). Fail closed: that address is never tried again.
+    v_detail := jsonb_build_object('suppressed', jsonb_strip_nulls(jsonb_build_object('type', left(d#>>'{suppressed,type}', 60))));
+    update growth_outbound.sends set failed_at = coalesce(failed_at, now()),
+           delivery_status = case when growth_outbound.delivery_rank('failed') > growth_outbound.delivery_rank(delivery_status) then 'failed' else delivery_status end,
+           failure_reason = coalesce(failure_reason, 'not sent: the address is on Resend''s suppression list'
+                                     || coalesce(' (' || left(d#>>'{suppressed,type}', 60) || ')', ''))
+     where id = x.id;
+    if x.is_test then
+      v_outcome := 'suppressed_test';
+    else
+      if not growth_outbound.is_suppressed(x.recipient) then
+        perform growth_outbound.apply_suppression('address', x.recipient, 'bounce', 'on Resend''s suppression list', 'webhook', null, x.prospect_id);
+      end if;
+      v_outcome := 'provider_suppressed';
+    end if;
+  elsif v_type = 'email.sent' then
+    v_outcome := 'accepted';
+  else
+    v_outcome := 'ignored';
+  end if;
+
+  insert into growth_outbound.provider_events (event_id, event_type, message_id, send_id, outcome, detail)
+  values (left(p_id, 200), v_type, v_msg, x.id, v_outcome, v_detail);
+  if v_outcome not in ('opened', 'clicked', 'accepted', 'noted', 'ignored') then
+    perform growth_outbound.log_as('webhook', 'provider_' || v_outcome, x.prospect_id, 'send', x.id::text,
+      jsonb_build_object('event', v_type, 'test', x.is_test));
+  end if;
+  return jsonb_build_object('ok', true, 'outcome', v_outcome);
+end $$;
+
+-- THE OPT-OUT DOOR — the other door a caller with no account may knock on.
+-- Its proof is a send's own 256-bit token (in the link of that one email);
+-- its only power is to stop all email to the address that send was for.
+-- p_confirm false (the page a link opens) changes nothing and shows only a
+-- masked address; p_confirm true (the button, or a mail client's RFC 8058
+-- one-click POST) suppresses. A test send's link changes nothing.
+create or replace function public.growth_outbound_optout(p_token text, p_confirm boolean default false)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  x growth_outbound.sends;
+  v_already boolean;
+begin
+  if coalesce(p_token, '') !~ '^[0-9a-f]{64}$' then return jsonb_build_object('ok', false, 'reason', 'invalid'); end if;
+  select * into x from growth_outbound.sends where optout_token = p_token;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'invalid'); end if;
+  if x.is_test then
+    return jsonb_build_object('ok', true, 'test', true, 'masked', growth_outbound.mask_email(x.recipient), 'done', false);
+  end if;
+  v_already := growth_outbound.is_suppressed(x.intended_recipient);
+  if not coalesce(p_confirm, false) or v_already then
+    return jsonb_build_object('ok', true, 'masked', growth_outbound.mask_email(x.intended_recipient),
+      'already', v_already, 'done', v_already);
+  end if;
+  perform growth_outbound.apply_suppression('address', x.intended_recipient, 'unsubscribe', 'opt-out link',
+    'unsubscribe_link', null, x.prospect_id);
+  perform growth_outbound.log_as('system', 'opted_out', x.prospect_id, 'send', x.id::text, '{}'::jsonb);
+  return jsonb_build_object('ok', true, 'masked', growth_outbound.mask_email(x.intended_recipient), 'already', false, 'done', true);
+end $$;
+
+-- THEY REPLIED (the reply reaches davis@ — a person reads it). Follow-ups
+-- stop at once; "and asked to stop" suppresses the address for good.
+create or replace function public.growth_outbound_prospect_replied(p_id uuid, p_note text default null, p_stop boolean default false)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  p growth_outbound.prospects;
+  n int;
+  r jsonb;
+begin
+  v_owner := growth_outbound.require_owner();
+  select * into p from growth_outbound.prospects where id = p_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if p.status not in ('contacted', 'replied') then
+    return jsonb_build_object('ok', false, 'reason', 'not_contacted', 'status', p.status);
+  end if;
+  update growth_outbound.prospects set status = 'replied', status_reason = left(nullif(btrim(coalesce(p_note, '')), ''), 500)
+   where id = p.id;
+  n := growth_outbound.cancel_live_drafts(p.id, 'they replied');
+  if coalesce(p_stop, false) and growth_outbound.norm_email(p.email) is not null and not growth_outbound.is_suppressed(p.email) then
+    r := growth_outbound.apply_suppression('address', p.email, 'replied', coalesce(nullif(btrim(coalesce(p_note, '')), ''), 'asked to stop'),
+                                           'reply', v_owner, p.id);
+  end if;
+  perform growth_outbound.log('prospect_replied', p.id, 'prospect', p.id::text,
+    jsonb_build_object('stop', coalesce(p_stop, false), 'drafts_cancelled', n));
+  return jsonb_build_object('ok', true, 'status', 'replied', 'drafts_cancelled', n,
+    'suppressed', coalesce((r->>'ok')::boolean, false) or (coalesce(p_stop, false) and growth_outbound.is_suppressed(p.email)));
+end $$;
+
+-- The last provider events, for the console: what Resend has told us.
+create or replace function public.growth_outbound_provider_events(p_limit int default 50)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return coalesce((select jsonb_agg(to_jsonb(e) || jsonb_build_object('recipient', x.recipient, 'is_test', x.is_test) order by e.received_at desc)
+    from (select * from growth_outbound.provider_events where outcome <> 'not_outbound'
+           order by received_at desc limit least(greatest(coalesce(p_limit, 50), 1), 500)) e
+    left join growth_outbound.sends x on x.id = e.send_id), '[]'::jsonb);
 end $$;
 
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
@@ -3186,7 +3613,14 @@ begin
   for f in select p.oid::regprocedure from pg_proc p
             where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%' loop
     execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
-    execute format('grant execute on function %s to authenticated', f);
+    -- TWO PUBLIC DOORS, each refusing anything without its own proof (Resend's
+    -- signature; a send's opt-out token). Every other door: signed-in callers,
+    -- and then only an owner gets past its first statement.
+    if f::text like 'growth_outbound_webhook(%' or f::text like 'growth_outbound_optout(%' then
+      execute format('grant execute on function %s to anon', f);
+    else
+      execute format('grant execute on function %s to authenticated', f);
+    end if;
   end loop;
 end
 $grants$;
@@ -3200,7 +3634,7 @@ notify pgrst, 'reload schema';
 select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
-     'identifiers', 'fit_factor_catalog')) = 11
+     'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events')) = 13
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -3234,7 +3668,8 @@ select 6, 'every outbound door is security definer with a pinned search_path, an
   case when not exists (
     select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%'
        and (not p.prosecdef or p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%')
-            or has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('service_role', p.oid, 'execute')))
+            or (has_function_privilege('anon', p.oid, 'execute') and p.proname not in ('growth_outbound_webhook', 'growth_outbound_optout'))
+            or has_function_privilege('service_role', p.oid, 'execute')))
        then 'ok' else 'CHECK THIS' end
 union all
 select 7, 'no helper inside the private schema is callable by a client role',
@@ -3311,6 +3746,31 @@ select 19, 'drafts are approved only within the content rules (no promised winni
 union all
 select 20, 'review queue: ' || (select count(*) from growth_outbound.drafts where status = 'pending_review')::text || ' waiting, '
   || (select count(*) from growth_outbound.drafts where status = 'approved')::text || ' approved and not sent',
+  'ok'
+union all
+select 23, 'two public doors and only two: the webhook (needs Resend''s signature) and the opt-out (needs a send''s token)',
+  case when (select string_agg(p.proname, ',' order by p.proname) from pg_proc p
+              where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%'
+                and has_function_privilege('anon', p.oid, 'execute')) = 'growth_outbound_optout,growth_outbound_webhook'
+        and not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace
+                          and p.proname in ('growth_outbound_webhook', 'growth_outbound_optout')
+                          and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('service_role', p.oid, 'execute')))
+       then 'ok' else 'CHECK THIS' end
+union all
+select 24, 'Resend webhook signing secret: ' || coalesce((select 'set ' || to_char(set_at, 'YYYY-MM-DD HH24:MI') || ' UTC'
+                                                         from growth_outbound.secrets where name = 'resend_webhook'), 'not set'),
+  case when exists (select 1 from growth_outbound.secrets where name = 'resend_webhook') then 'ok'
+       else 'ok — not yet: in the SQL editor run  select growth_outbound.set_webhook_secret(''whsec_...'');' end
+union all
+select 25, 'the signature check is HMAC-SHA256 to the letter (RFC 4231 test vectors)',
+  case when encode(growth_outbound.hmac_sha256('Jefe'::bytea, 'what do ya want for nothing?'::bytea), 'hex')
+            = '5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843'
+        and encode(growth_outbound.hmac_sha256(decode(repeat('aa', 131), 'hex'), 'Test Using Larger Than Block-Size Key - Hash Key First'::bytea), 'hex')
+            = '60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54'
+       then 'ok' else 'CHECK THIS' end
+union all
+select 26, 'provider events: ' || (select count(*) from growth_outbound.provider_events where received_at >= now() - interval '24 hours')::text
+  || ' in 24 hours; last ' || coalesce((select to_char(max(received_at), 'YYYY-MM-DD HH24:MI') || ' UTC' from growth_outbound.provider_events), 'never'),
   'ok'
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
