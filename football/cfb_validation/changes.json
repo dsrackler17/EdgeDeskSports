@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-07T17:07:39.131Z",
+ "generated_at": "2026-10-07T18:08:46.272Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-01T17:07:36.803Z",
+  "since": "2026-10-01T18:07:36.462Z",
   "changes": [
    {
     "what": "pricing code",
@@ -23,16 +23,22 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-01T16:43:35.726Z",
-    "to": "2026-10-07T15:27:18.871Z"
+    "to": "2026-10-07T17:45:36.876Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 90,
-    "to": 85
+    "to": 84
+   },
+   {
+    "what": "market coverage (% of slate games with a fresh quote)",
+    "kind": "MARKET",
+    "from": 22,
+    "to": 15
    }
   ],
-  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved)"
+  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -876,7 +882,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-07T13:40:54.483Z",
+   "to_at": "2026-10-07T17:45:36.876Z",
    "old_fair": 6.21,
    "new_fair": 8.7,
    "change": 2.49,
@@ -903,7 +909,7 @@
    "market_now": -3.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1012,7 +1018,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-07T13:40:54.483Z",
+   "to_at": "2026-10-07T17:45:36.876Z",
    "old_fair": -14.31,
    "new_fair": -12.17,
    "change": 2.14,
@@ -1039,7 +1045,7 @@
    "market_now": 7.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {

@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-07T17:07:36.792Z",
+ "as_of": "2026-10-07T18:08:43.027Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "ece90130e9deea6f",
+ "inputs_key": "c531debdb1d1a72c",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 1544,
+   "rows": 1550,
    "mode": "LIVE",
-   "sha1": "fa0f2f1445fb"
+   "sha1": "b7f9ddf750a5"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "a07a9840a3be"
+   "sha1": "3ddca3ebaa4f"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "1544 decision snapshots issued before kickoff; 67 settled"
+   "note": "1550 decision snapshots issued before kickoff; 67 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 1544,
+  "issued_snapshots": 1550,
   "issued_by_decision": {
-   "NO_DECISION": 783,
-   "PASS": 715,
-   "WATCH": 46
+   "NO_DECISION": 786,
+   "PASS": 716,
+   "WATCH": 48
   },
   "graded_rows": 69,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -15607,7 +15607,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-07T08:54:47.556Z",
+  "generated_at": "2026-10-07T17:46:43.091Z",
   "sports": {
    "nfl": {
     "versions": [
