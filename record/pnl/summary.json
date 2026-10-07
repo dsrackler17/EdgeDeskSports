@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-07T04:47:49.722Z",
+ "generated_at": "2026-10-07T05:02:24.628Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -13,7 +13,7 @@
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 4759,
+  "rows": 4766,
   "bets": 235,
   "verified_bets": 217,
   "priced_decisions": 292,
@@ -1117,24 +1117,24 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 4759,
-  "PENDING": 428,
+  "total": 4766,
+  "PENDING": 435,
   "VERIFIED": 3314,
   "RECORD_ONLY": 867,
   "VOID": 150,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 428,
+  "total": 435,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 373
+    "n": 380
    },
    {
-    "key": "IN_PROGRESS",
-    "label": "Game in progress",
+    "key": "MISSING_FINAL",
+    "label": "Missing final",
     "n": 55
    }
   ]
@@ -1738,7 +1738,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-07T04:47:49.722Z",
+  "as_of": "2026-10-07T05:02:24.628Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -6246,7 +6246,7 @@
       {
        "key": "Lean",
        "n": 2953,
-       "rows": 3437,
+       "rows": 3444,
        "wins": 1516,
        "losses": 1437,
        "pushes": 0,
@@ -11199,7 +11199,7 @@
       {
        "key": "Lean",
        "n": 2953,
-       "rows": 3437,
+       "rows": 3444,
        "wins": 1516,
        "losses": 1437,
        "pushes": 0,
@@ -11665,9 +11665,9 @@
     }
    },
    "data_quality": {
-    "total": 4759,
+    "total": 4766,
     "verified": 3314,
-    "pending": 428,
+    "pending": 435,
     "voids": 150,
     "missing_entry_odds": 867,
     "simulated_price": 0,
@@ -17469,9 +17469,9 @@
     }
    },
    "data_quality": {
-    "total": 3672,
+    "total": 3679,
     "verified": 3170,
-    "pending": 352,
+    "pending": 359,
     "voids": 150,
     "missing_entry_odds": 0,
     "simulated_price": 0,
@@ -19192,7 +19192,7 @@
    "source": "player_props",
    "league": "CFB",
    "file": "football/props/cfb/2026/evaluations.jsonl",
-   "rows": 1566,
+   "rows": 1573,
    "results_file": "football/props/cfb/2026/results.jsonl",
    "results": 3968
   },
