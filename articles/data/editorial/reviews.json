@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-07T03:40:24.895Z",
+  "generated_at": "2026-10-07T03:50:25.823Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -71,6 +71,59 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:scoring:general",
+      "sport": "CFB",
+      "category": "scoring",
+      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-02T05:20:25.196Z",
+      "updated_at": "2026-10-07T03:50:25.823Z",
+      "evidence": [
+        {
+          "lesson_id": "401862786:total_miss",
+          "game_id": "401862786",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 60.1.",
+          "result": "The game finished with 89 points, an error of 28.9.",
+          "severity": "high",
+          "at": "2026-10-02T05:20:25.196Z"
+        },
+        {
+          "lesson_id": "401862792:total_miss",
+          "game_id": "401862792",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 55.1.",
+          "result": "The game finished with 30 points, an error of 25.1.",
+          "severity": "high",
+          "at": "2026-10-06T18:25:23.283Z"
+        },
+        {
+          "lesson_id": "401871090:total_miss",
+          "game_id": "401871090",
+          "season": 2026,
+          "week": 6,
+          "team": null,
+          "expectation": "EdgeDesk published a fair total of 50.1.",
+          "result": "The game finished with 89 points, an error of 38.9.",
+          "severity": "high",
+          "at": "2026-10-07T03:50:25.823Z"
+        }
+      ],
+      "occurrences": 3,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:variance:general",
       "sport": "NFL",
       "category": "variance",
@@ -100,46 +153,6 @@
           "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
           "severity": "high",
           "at": "2026-09-29T03:20:22.190Z"
-        }
-      ],
-      "occurrences": 2,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:scoring:general",
-      "sport": "CFB",
-      "category": "scoring",
-      "question": "Does EdgeDesk’s scoring handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-02T05:20:25.196Z",
-      "updated_at": "2026-10-06T18:25:23.283Z",
-      "evidence": [
-        {
-          "lesson_id": "401862786:total_miss",
-          "game_id": "401862786",
-          "season": 2026,
-          "week": 5,
-          "team": null,
-          "expectation": "EdgeDesk published a fair total of 60.1.",
-          "result": "The game finished with 89 points, an error of 28.9.",
-          "severity": "high",
-          "at": "2026-10-02T05:20:25.196Z"
-        },
-        {
-          "lesson_id": "401862792:total_miss",
-          "game_id": "401862792",
-          "season": 2026,
-          "week": 5,
-          "team": null,
-          "expectation": "EdgeDesk published a fair total of 55.1.",
-          "result": "The game finished with 30 points, an error of 25.1.",
-          "severity": "high",
-          "at": "2026-10-06T18:25:23.283Z"
         }
       ],
       "occurrences": 2,
