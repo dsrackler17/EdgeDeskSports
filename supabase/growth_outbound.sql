@@ -43,7 +43,13 @@
 --          once per draft, once per address per step, under the daily cap,
 --          and only while the compliance configuration is complete;
 --        suppressions, the activity log and the owner audit are append-only;
---          prospects, evidence and drafts are never deleted.
+--          prospects, evidence and drafts are never deleted;
+--        a prospect's name, organization, confidences, fit score, email
+--          status and research status are COMPUTED from stored evidence by
+--          evaluate() — no statement writes them, the superuser's included —
+--          so uncertain information never becomes confident because somebody
+--          (or some model) repeated it; evidence is never rewritten, only
+--          superseded; an email address or profile names one prospect.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -85,7 +91,8 @@ begin
   select string_agg(t, ', ') into v_list from unnest(array[
     'growth_outbound.owners', 'growth_outbound.owner_audit', 'growth_outbound.settings',
     'growth_outbound.prospects', 'growth_outbound.evidence', 'growth_outbound.drafts',
-    'growth_outbound.sends', 'growth_outbound.suppressions', 'growth_outbound.activity']) t
+    'growth_outbound.sends', 'growth_outbound.suppressions', 'growth_outbound.activity',
+    'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -580,6 +587,699 @@ set search_path = pg_catalog, public, pg_temp as $$
 $$;
 
 -- =============================================================================
+-- 4b. RESEARCH: who a prospect is, what is known about them, and how sure
+--
+--   * A FACT ABOUT A PERSON IS STORED ONLY AS EVIDENCE: a claim, the page it
+--     came from, what kind of source that page is, and the words on it.
+--   * EVERY NUMBER THE GATES READ (identity, role, email, research, fit) and
+--     every displayed fact (name, organization, title, email status, status)
+--     is COMPUTED from current evidence by growth_outbound.evaluate(). A
+--     trigger refuses any other writer — the superuser's included — and under
+--     the evaluate door it recomputes instead of trusting what it was handed.
+--   * REPETITION IS NOT CORROBORATION. A source's weight is the server's,
+--     never the collector's; one site counts once however many pages say it;
+--     two sources that disagree halve the confidence; old facts weigh less.
+--   * A PERSON IS ONE ROW. Email addresses and profile handles are STRONG
+--     identifiers, unique across prospects, so rediscovering someone through
+--     a URL with tracking parameters, another casing or a mobile host finds
+--     the same row. Websites and name+organization are WEAK: they flag a
+--     possible duplicate for the owner, and block a second live send.
+-- =============================================================================
+
+-- A URL reduced to the form two discoveries of the same page share: https,
+-- lower-case host without userinfo, default port, www./m./mobile.; twitter.com
+-- is x.com; youtu.be/<id> is youtube.com/watch?v=<id>; no fragment, no
+-- trailing slash, no tracking parameters, the rest sorted. Path case is kept.
+-- NULL for anything that is not an http(s) web address.
+create or replace function growth_outbound.canonical_url(p text)
+returns text language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  v text := btrim(coalesce(p, ''));
+  m text[];
+  v_host text;
+  v_port text := '';
+  v_path text;
+  v_query text;
+  v_keep text[] := '{}';
+  kv text;
+  k text;
+begin
+  if v = '' or length(v) > 2000 or v ~ '\s' then return null; end if;
+  if v !~* '^https?://' then
+    -- another scheme (javascript:, mailto:, ftp:) is not a web source
+    if v ~* '^[a-z][a-z0-9+.-]*:' and v !~* '^[a-z0-9.-]+:[0-9]+(/|$)' then return null; end if;
+    v := 'https://' || ltrim(v, '/');
+  end if;
+  m := regexp_match(v, '^https?://([^/?#]*)([^?#]*)(\?[^#]*)?', 'i');
+  if m is null then return null; end if;
+  v_host := lower(regexp_replace(m[1], '^.*@', ''));
+  if v_host ~ ':' then
+    v_port := split_part(v_host, ':', 2);
+    v_host := split_part(v_host, ':', 1);
+    if v_port !~ '^[0-9]{0,5}$' then return null; end if;
+  end if;
+  v_host := rtrim(v_host, '.');
+  v_host := regexp_replace(v_host, '^(www|m|mobile)\.(?=[^.]+\.[^.]+)', '');
+  if v_host !~ '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$' then return null; end if;
+  if v_host = 'twitter.com' then v_host := 'x.com'; end if;
+  v_path := regexp_replace(coalesce(m[2], ''), '/{2,}', '/', 'g');
+  v_path := regexp_replace(v_path, '/+$', '');
+  v_query := substr(coalesce(m[3], ''), 2);
+  if v_host = 'youtu.be' and v_path ~ '^/[A-Za-z0-9_-]{6,}$' then
+    v_query := 'v=' || substr(v_path, 2) || case when v_query <> '' then '&' || v_query else '' end;
+    v_host := 'youtube.com';
+    v_path := '/watch';
+  end if;
+  if v_query <> '' then
+    foreach kv in array string_to_array(v_query, '&') loop
+      continue when kv = '';
+      k := lower(split_part(kv, '=', 1));
+      continue when k ~ '^(utm_|mc_|_hs|pk_|mtm_)'
+        or k in ('fbclid', 'gclid', 'dclid', 'gbraid', 'wbraid', 'msclkid', 'yclid', 'igshid', 'igsh', 'si', 's', 't',
+                 'ref', 'ref_src', 'ref_url', 'referrer', 'source', 'src', 'feature', 'app', 'mkt_tok', 'trk', 'cmpid',
+                 'share', 'r', 'hl');
+      v_keep := array_append(v_keep, kv);
+    end loop;
+  end if;
+  return 'https://' || v_host || case when v_port not in ('', '80', '443') then ':' || v_port else '' end
+      || v_path
+      || case when cardinality(v_keep) > 0
+              then '?' || (select string_agg(x, '&' order by x collate "C") from unnest(v_keep) x) else '' end;
+end $$;
+
+create or replace function growth_outbound.url_host(p text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select split_part(substring(growth_outbound.canonical_url(p) from '^https://([^/?]+)'), ':', 1);
+$$;
+
+-- Hosts where every account lives under one domain: a page there names its
+-- account by path or subdomain, never by the host alone.
+create or replace function growth_outbound.is_platform_host(p_host text)
+returns boolean language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(p_host, '') ~ ('(^|\.)(x\.com|youtube\.com|youtu\.be|substack\.com|beehiiv\.com|medium\.com|linkedin\.com|'
+    || 'instagram\.com|tiktok\.com|threads\.net|threads\.com|bsky\.app|github\.com|twitch\.tv|patreon\.com|apple\.com|'
+    || 'spotify\.com|linktr\.ee|reddit\.com|facebook\.com|discord\.com|discord\.gg|t\.me|google\.com|rumble\.com|kick\.com)$');
+$$;
+
+-- One publisher, for counting independent sources: the registrable domain
+-- (blog.example.com and example.com are one), except on multi-tenant hosts
+-- where each subdomain is somebody else (pat.substack.com, sam.github.io).
+create or replace function growth_outbound.site_key(p_host text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case
+    when p_host is null or p_host = '' then null
+    when p_host ~ ('\.(substack\.com|beehiiv\.com|medium\.com|wordpress\.com|blogspot\.com|github\.io|netlify\.app|vercel\.app|'
+                   || 'wixsite\.com|carrd\.co|notion\.site|ghost\.io|tumblr\.com|squarespace\.com|webflow\.io|pages\.dev|buttondown\.email)$')
+      then p_host
+    when p_host ~ '\.(co|com|org|net|ac|gov|edu)\.[a-z]{2}$' then substring(p_host from '([^.]+\.[^.]+\.[^.]+)$')
+    else coalesce(substring(p_host from '([^.]+\.[^.]+)$'), p_host) end;
+$$;
+
+-- Letters and digits only, single-spaced, lower-case: how two spellings of
+-- one claim ("Pat  Analyst", "pat analyst.") are recognised as the same.
+create or replace function growth_outbound.norm_text(p text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select nullif(btrim(regexp_replace(lower(coalesce(p, '')), '[^[:alnum:]]+', ' ', 'g')), '');
+$$;
+
+-- What a URL says about WHO it belongs to. A profile on a known platform is a
+-- STRONG handle (x:pat, youtube:@pat, substack:pat, linkedin:in:pat, …); any
+-- other site is a WEAK site key (colleagues share a company site), and any
+-- page that is not a profile is also a WEAK page key.
+create or replace function growth_outbound.url_identity(p_url text)
+returns table (kind text, value text, strength text) language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  c text := growth_outbound.canonical_url(p_url);
+  h text;
+  v_path text;
+  seg text[];
+  s1 text;
+  s2 text;
+  v_handle text;
+begin
+  if c is null then return; end if;
+  h := growth_outbound.url_host(c);
+  v_path := coalesce(substring(c from '^https://[^/?]+(/[^?]*)'), '');
+  seg := array_remove(string_to_array(v_path, '/'), '');
+  s1 := lower(seg[1]);
+  s2 := seg[2];
+  v_handle := case
+    when h = 'x.com' and s1 ~ '^[a-z0-9_]{1,15}$' and s1 not in ('home', 'explore', 'search', 'i', 'intent', 'share', 'hashtag',
+         'settings', 'messages', 'notifications', 'login', 'signup', 'tos', 'privacy', 'compose', 'about', 'jobs') then 'x:' || s1
+    when h = 'youtube.com' and s1 ~ '^@[a-z0-9._-]{3,30}$' then 'youtube:' || s1
+    when h = 'youtube.com' and s1 = 'channel' and s2 ~ '^UC[A-Za-z0-9_-]{22}$' then 'youtube:channel:' || s2
+    when h = 'youtube.com' and s1 in ('c', 'user') and s2 ~ '^[A-Za-z0-9._-]{1,100}$' then 'youtube:' || s1 || ':' || lower(s2)
+    when h ~ '^[a-z0-9-]+\.substack\.com$' and h !~ '^(www|open|on|support|blog)\.' then 'substack:' || split_part(h, '.', 1)
+    when h = 'substack.com' and s1 ~ '^@[a-z0-9_-]{1,60}$' then 'substack:' || s1
+    when h ~ '^[a-z0-9-]+\.beehiiv\.com$' and h !~ '^(www|app|blog|support)\.' then 'beehiiv:' || split_part(h, '.', 1)
+    when h = 'medium.com' and s1 ~ '^@[a-z0-9._-]{1,60}$' then 'medium:' || s1
+    when h ~ '^[a-z0-9-]+\.medium\.com$' and h !~ '^(www|help|policy|blog)\.' then 'medium:@' || split_part(h, '.', 1)
+    when h = 'linkedin.com' and s1 in ('in', 'company') and s2 ~ '^[A-Za-z0-9_%-]{2,100}$' then 'linkedin:' || s1 || ':' || lower(s2)
+    when h = 'instagram.com' and s1 ~ '^[a-z0-9._]{1,30}$' and s1 not in ('p', 'reel', 'reels', 'explore', 'stories', 'accounts',
+         'direct', 'about', 'developer', 'legal', 'tv') then 'instagram:' || s1
+    when h = 'tiktok.com' and s1 ~ '^@[a-z0-9._]{2,24}$' then 'tiktok:' || s1
+    when h in ('threads.net', 'threads.com') and s1 ~ '^@[a-z0-9._]{1,30}$' then 'threads:' || s1
+    when h = 'bsky.app' and s1 = 'profile' and s2 ~ '^[A-Za-z0-9.:-]{3,253}$' then 'bluesky:' || lower(s2)
+    when h = 'github.com' and s1 ~ '^[a-z0-9-]{1,39}$' and s1 not in ('orgs', 'features', 'about', 'topics', 'marketplace', 'sponsors',
+         'settings', 'login', 'explore', 'pricing', 'enterprise', 'collections', 'trending', 'events', 'site', 'security', 'team',
+         'customer-stories', 'readme', 'join', 'new', 'notifications', 'pulls', 'issues', 'search') then 'github:' || s1
+    when h = 'twitch.tv' and s1 ~ '^[a-z0-9_]{3,25}$' and s1 not in ('directory', 'videos', 'p', 'search', 'settings', 'downloads',
+         'jobs', 'turbo') then 'twitch:' || s1
+    when h = 'patreon.com' and s1 = 'c' and lower(s2) ~ '^[a-z0-9_-]{1,64}$' then 'patreon:' || lower(s2)
+    when h = 'patreon.com' and s1 ~ '^[a-z0-9_-]{1,64}$' and s1 not in ('posts', 'login', 'signup', 'search', 'home', 'about',
+         'pricing', 'explore', 'messages', 'settings', 'c', 'join', 'checkout') then 'patreon:' || s1
+    when h = 'podcasts.apple.com' and v_path ~ '/id[0-9]{5,15}$' then 'apple_podcast:' || substring(v_path from '/id([0-9]{5,15})$')
+    when h = 'open.spotify.com' and s1 = 'show' and s2 ~ '^[A-Za-z0-9]{22}$' then 'spotify_show:' || s2
+    when h = 'linktr.ee' and s1 ~ '^[a-z0-9._]{1,60}$' and s1 not in ('s', 'login', 'register', 'admin', 'marketplace', 'blog', 'help')
+      then 'linktree:' || s1
+    when h = 'reddit.com' and s1 in ('user', 'u') and lower(s2) ~ '^[a-z0-9_-]{3,20}$' then 'reddit:' || lower(s2)
+    else null end;
+  if v_handle is not null then
+    kind := 'handle'; value := v_handle; strength := 'strong'; return next;
+    return;
+  end if;
+  if not growth_outbound.is_platform_host(h) then
+    kind := 'site'; value := growth_outbound.site_key(h); strength := 'weak'; return next;
+  end if;
+  kind := 'url'; value := c; strength := 'weak'; return next;
+end $$;
+
+-- ── who a prospect is: the identifiers (one person, one row) ─────────────────
+create table if not exists growth_outbound.identifiers (
+  id           bigint generated always as identity primary key,
+  prospect_id  uuid not null references growth_outbound.prospects (id) on delete restrict,
+  kind         text not null,
+  value        text not null,
+  strength     text not null,
+  source       text,
+  first_seen   timestamptz not null default now(),
+  last_seen    timestamptz not null default now(),
+  released_at  timestamptz,
+  released_reason text
+);
+do $c$ begin
+  alter table growth_outbound.identifiers drop constraint if exists identifiers_shape_ck;
+  alter table growth_outbound.identifiers add constraint identifiers_shape_ck check (
+        kind in ('email', 'handle', 'site', 'url', 'name_org')
+    and strength = case when kind in ('email', 'handle') then 'strong' else 'weak' end
+    and length(value) between 1 and 2000);
+end $c$;
+-- a strong identifier names ONE prospect, ever (until the owner releases it)
+create unique index if not exists identifiers_strong_uk on growth_outbound.identifiers (kind, value)
+  where strength = 'strong' and released_at is null;
+create unique index if not exists identifiers_prospect_uk on growth_outbound.identifiers (prospect_id, kind, value);
+create index if not exists identifiers_lookup_idx on growth_outbound.identifiers (kind, value);
+
+-- ── what is known: evidence, sharpened ────────────────────────────────────────
+alter table growth_outbound.evidence add column if not exists source_kind text not null default 'directory';
+alter table growth_outbound.evidence add column if not exists source_domain text;
+alter table growth_outbound.evidence add column if not exists source_key text;
+alter table growth_outbound.evidence add column if not exists claim_norm text;
+alter table growth_outbound.evidence add column if not exists superseded_reason text;
+do $c$ begin
+  alter table growth_outbound.evidence drop constraint if exists evidence_kind_ck;
+  alter table growth_outbound.evidence add constraint evidence_kind_ck check (
+    source_kind in ('owner_verified', 'own_site', 'own_profile', 'publication', 'interview', 'directory',
+                    'provider_verified', 'provider_found', 'pattern_guess'));
+end $c$;
+create index if not exists evidence_field_idx on growth_outbound.evidence (prospect_id, field_name) where superseded_at is null;
+
+alter table growth_outbound.prospects add column if not exists research_requested_at timestamptz;
+alter table growth_outbound.prospects add column if not exists email_invalid_at timestamptz;
+alter table growth_outbound.prospects add column if not exists assessment jsonb not null default '{}'::jsonb;
+alter table growth_outbound.prospects add column if not exists duplicate_of uuid references growth_outbound.prospects (id) on delete restrict;
+do $c$ begin
+  alter table growth_outbound.prospects drop constraint if exists prospects_assessment_ck;
+  alter table growth_outbound.prospects add constraint prospects_assessment_ck check (
+    jsonb_typeof(assessment) = 'object' and duplicate_of is distinct from id);
+end $c$;
+
+-- The fields evidence may speak to, and how each behaves:
+--   identity, role, audience  ONE true value: two different claims conflict
+--   email, content, signal    many values
+create or replace function growth_outbound.evidence_field_class(p_field text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case p_field
+    when 'full_name' then 'identity'
+    when 'job_title' then 'role'
+    when 'organization' then 'role'
+    when 'email' then 'email'
+    when 'audience_size' then 'audience'
+    when 'project' then 'content'
+    when 'article' then 'content'
+    when 'podcast' then 'content'
+    when 'newsletter' then 'content'
+    when 'model' then 'content'
+    when 'topic' then 'content'
+    when 'sports_focus' then 'content'
+    when 'fit_signal' then 'signal'
+    else null end;
+$$;
+
+-- THE SERVER'S WEIGHT for one source of one claim. The collector never sets
+-- it. Email-only kinds (a verification provider, a provider's guess, a
+-- pattern guess) carry no weight for anything but an email address.
+create or replace function growth_outbound.source_weight(p_kind text, p_field text)
+returns numeric language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select (case when p_field = 'email' then
+    case p_kind when 'owner_verified' then 0.90 when 'own_site' then 0.90 when 'own_profile' then 0.85
+                when 'provider_verified' then 0.85 when 'publication' then 0.70 when 'interview' then 0.50
+                when 'provider_found' then 0.50 when 'directory' then 0.40 when 'pattern_guess' then 0.10 else 0 end
+  else
+    case p_kind when 'owner_verified' then 0.80 when 'own_site' then 0.70 when 'own_profile' then 0.70
+                when 'publication' then 0.55 when 'interview' then 0.40 when 'directory' then 0.25 else 0 end
+  end)::numeric;
+$$;
+
+-- Old facts weigh less: a role more than a year old, content more than
+-- eighteen months old, an audience figure more than a year old.
+create or replace function growth_outbound.freshness(p_field text, p_at timestamptz)
+returns numeric language sql stable
+set search_path = pg_catalog, pg_temp as $$
+  select (case growth_outbound.evidence_field_class(p_field)
+    when 'role' then case when p_at < now() - interval '730 days' then 0.5 when p_at < now() - interval '365 days' then 0.75 else 1 end
+    when 'content' then case when p_at < now() - interval '540 days' then 0.7 else 1 end
+    when 'signal' then case when p_at < now() - interval '540 days' then 0.7 else 1 end
+    when 'audience' then case when p_at < now() - interval '365 days' then 0.6 else 1 end
+    else 1 end)::numeric;
+$$;
+
+-- What the current evidence says about one field of one prospect, claim by
+-- claim. Confidence is a noisy-OR over INDEPENDENT sources: the best weight
+-- per publisher (or per verifier), so the same site repeating itself counts
+-- once. Evidence recorded before these rules (no claim_norm) counts for
+-- nothing.
+create or replace function growth_outbound.claim_stats(p_prospect uuid, p_field text)
+returns table (claim_norm text, claim text, confidence numeric, sources int, stale boolean, kinds text[],
+               evidence_ids bigint[], best_url text, best_kind text, latest_at timestamptz)
+language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  with e as (
+    select x.*, growth_outbound.source_weight(x.source_kind, x.field_name) as w0,
+           growth_outbound.freshness(x.field_name, coalesce(x.source_published_at, x.observed_at)) as f
+      from growth_outbound.evidence x
+     where x.prospect_id = p_prospect and x.field_name = p_field
+       and x.superseded_at is null and x.claim_norm is not null
+  ), per_source as (
+    select e.claim_norm, e.source_key, max(e.w0 * e.f) as w
+      from e group by e.claim_norm, e.source_key
+  ), agg as (
+    select k.claim_norm, 1 - exp(sum(ln(greatest(1 - k.w, 1e-9)))) as conf, count(*)::int as n
+      from per_source k group by k.claim_norm
+  )
+  select a.claim_norm,
+         (select e.claim from e where e.claim_norm = a.claim_norm order by e.observed_at desc, e.id desc limit 1),
+         round(a.conf::numeric, 4),
+         a.n,
+         (select bool_and(e.f < 1) from e where e.claim_norm = a.claim_norm),
+         (select array_agg(distinct e.source_kind order by e.source_kind) from e where e.claim_norm = a.claim_norm),
+         (select array_agg(e.id order by e.id) from e where e.claim_norm = a.claim_norm),
+         (select e.source_url from e where e.claim_norm = a.claim_norm order by e.w0 * e.f desc, e.observed_at desc limit 1),
+         (select e.source_kind from e where e.claim_norm = a.claim_norm order by e.w0 * e.f desc, e.observed_at desc limit 1),
+         (select max(e.observed_at) from e where e.claim_norm = a.claim_norm)
+    from agg a;
+$$;
+
+-- The field's answer: the best-supported claim, its confidence (HALVED when a
+-- one-value field has a rival claim), and why it is not higher.
+create or replace function growth_outbound.field_assessment(p_prospect uuid, p_field text)
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r record;
+  v_best record;
+  v_n int := 0;
+  v_class text := growth_outbound.evidence_field_class(p_field);
+  v_single boolean := growth_outbound.evidence_field_class(p_field) in ('identity', 'role', 'audience');
+  v_alts jsonb := '[]'::jsonb;
+  v_conf numeric;
+  v_reasons text[] := '{}';
+begin
+  for r in select * from growth_outbound.claim_stats(p_prospect, p_field) s order by s.confidence desc, s.latest_at desc loop
+    v_n := v_n + 1;
+    if v_n = 1 then
+      v_best := r;
+    else
+      v_alts := v_alts || jsonb_build_array(jsonb_build_object('claim', r.claim, 'confidence', r.confidence, 'sources', r.sources));
+    end if;
+  end loop;
+  if v_n = 0 then return null; end if;
+  v_conf := v_best.confidence;
+  if v_single and v_n > 1 then
+    v_conf := round(v_conf * 0.5, 4);
+    v_reasons := array_append(v_reasons, 'conflicting_sources'::text);
+  end if;
+  if v_best.stale then
+    v_reasons := array_append(v_reasons, (case v_class when 'role' then 'stale_role' when 'audience' then 'stale_audience' else 'old_content' end)::text);
+  end if;
+  if v_best.sources = 1 then v_reasons := array_append(v_reasons, 'single_source'::text); end if;
+  return jsonb_build_object('field', p_field, 'claim', v_best.claim, 'claim_norm', v_best.claim_norm, 'confidence', v_conf,
+    'sources', v_best.sources, 'kinds', to_jsonb(v_best.kinds), 'conflict', v_single and v_n > 1, 'stale', v_best.stale,
+    'reasons', to_jsonb(v_reasons), 'evidence_ids', to_jsonb(v_best.evidence_ids), 'source_url', v_best.best_url,
+    'source_kind', v_best.best_kind, 'alternatives', v_alts);
+end $$;
+
+-- How sure we are of the claim ONE piece of evidence makes, for this prospect
+-- (zero if it is superseded, unknown, or somebody else's).
+create or replace function growth_outbound.evidence_confidence(p_evidence_id bigint, p_prospect uuid)
+returns numeric language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  e growth_outbound.evidence;
+  v numeric;
+  v_n int;
+begin
+  select * into e from growth_outbound.evidence where id = p_evidence_id;
+  if not found or e.prospect_id is distinct from p_prospect or e.superseded_at is not null or e.claim_norm is null then
+    return 0;
+  end if;
+  select s.confidence into v from growth_outbound.claim_stats(e.prospect_id, e.field_name) s where s.claim_norm = e.claim_norm;
+  if growth_outbound.evidence_field_class(e.field_name) in ('identity', 'role', 'audience') then
+    select count(*) into v_n from growth_outbound.claim_stats(e.prospect_id, e.field_name);
+    if v_n > 1 then v := v * 0.5; end if;
+  end if;
+  return round(coalesce(v, 0), 4);
+end $$;
+
+-- ── fit: a catalogue of reasons, each worth fixed points ─────────────────────
+-- A positive reason counts only while it cites current evidence; a negative
+-- one counts on the owner's (or the engine's) word alone — lowering a score
+-- needs no proof. The catalogue is edited here, in this file, not by any page.
+create table if not exists growth_outbound.fit_factor_catalog (
+  code            text primary key,
+  label           text not null,
+  points          int not null,
+  needs_evidence  boolean not null
+);
+do $c$ begin
+  alter table growth_outbound.fit_factor_catalog drop constraint if exists fit_factor_catalog_ck;
+  alter table growth_outbound.fit_factor_catalog add constraint fit_factor_catalog_ck check (
+    code ~ '^[a-z_]{2,40}$' and points between -100 and 50 and points <> 0 and needs_evidence = (points > 0));
+end $c$;
+insert into growth_outbound.fit_factor_catalog (code, label, points, needs_evidence) values
+  ('quant_analysis',             'publishes quantitative sports analysis',          18, true),
+  ('publishes_models',           'builds or publishes predictive models',           15, true),
+  ('odds_markets_probability',   'writes about odds, markets or probability',       14, true),
+  ('ev_fair_pricing',            'discusses expected value or fair pricing',        14, true),
+  ('discusses_clv',              'tracks closing-line value',                       12, true),
+  ('clear_workflow_fit',         'a research workflow EdgeDesk clearly serves',     12, true),
+  ('covers_cfb',                 'covers college football',                          8, true),
+  ('covers_nfl',                 'covers the NFL',                                   8, true),
+  ('runs_newsletter_or_channel', 'runs a newsletter, podcast or channel',            8, true),
+  ('props_research',             'researches player props',                          6, true),
+  ('uses_analytics_tools',       'uses analytics tools or data',                     6, true),
+  ('engaged_audience',           'has an engaged audience',                          6, true),
+  ('consistent_publishing',      'publishes consistently',                           5, true),
+  ('generic_content',            'generic content',                                -15, false),
+  ('entertainment_only',         'entertainment only',                             -20, false),
+  ('inactive',                   'inactive',                                       -25, false),
+  ('no_analytics_interest',      'no interest in analytics',                       -30, false),
+  ('poor_fit',                   'poor fit',                                       -30, false),
+  ('anonymous_no_contact',       'anonymous, no public business contact',         -40, false),
+  ('touting',                    'sells picks or promises winnings',               -40, false),
+  ('spam',                       'spam',                                          -100, false)
+on conflict (code) do update set label = excluded.label, points = excluded.points, needs_evidence = excluded.needs_evidence;
+
+-- The keys a prospect row claims, from its own columns: its email, its profile
+-- URLs, and (weak) its computed name with its organization.
+create or replace function growth_outbound.prospect_keys(p growth_outbound.prospects)
+returns table (kind text, value text, strength text) language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select 'email'::text, growth_outbound.norm_email(p.email), 'strong'::text
+   where growth_outbound.valid_email(growth_outbound.norm_email(p.email))
+  union
+  select k.kind, k.value, k.strength
+    from unnest(array[p.website_url, p.x_url, p.youtube_url, p.newsletter_url, p.other_profile_url]) u(url),
+         lateral growth_outbound.url_identity(u.url) k
+   where u.url is not null
+  union
+  select 'name_org'::text, growth_outbound.norm_text(p.full_name) || '|' || growth_outbound.norm_text(p.organization), 'weak'::text
+   where growth_outbound.norm_text(p.full_name) is not null and growth_outbound.norm_text(p.organization) is not null;
+$$;
+
+-- THE ASSESSMENT. Everything the gates read, computed from current evidence,
+-- the drafts' cited claims, the identifiers and the settings — never from
+-- what a row already says. Called only by the prospects trigger.
+create or replace function growth_outbound.compute(r growth_outbound.prospects)
+returns growth_outbound.prospects language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  a_name jsonb;
+  a_org jsonb;
+  a_title jsonb;
+  a_aud jsonb;
+  a jsonb;
+  e_email record;
+  v_email text := growth_outbound.norm_email(r.email);
+  v_warn text[] := '{}';
+  v_gates text[] := '{}';
+  v_tokens text[];
+  v_has_evidence boolean;
+  f jsonb;
+  c growth_outbound.fit_factor_catalog;
+  v_seen text[] := '{}';
+  v_ids bigint[];
+  v_valid bigint[];
+  v_fc numeric;
+  v_factors jsonb := '[]'::jsonb;
+  v_reason text[] := '{}';
+  v_score int := 0;
+  v_any_factor boolean := false;
+  v_fitconf numeric;
+  v_live int;
+  d record;
+  cl jsonb;
+  v_cc numeric;
+  v_research numeric;
+  v_dup uuid;
+  v_maybe jsonb;
+  v_email_a jsonb;
+begin
+  select * into s from growth_outbound.settings where id = 1;
+  select exists (select 1 from growth_outbound.evidence e where e.prospect_id = r.id and e.superseded_at is null and e.claim_norm is not null)
+    into v_has_evidence;
+
+  -- WHO: the name, and a first name only when the identity is certain and the
+  -- name plainly has one (never guessed from a handle, an initial or a title)
+  a_name := growth_outbound.field_assessment(r.id, 'full_name');
+  r.full_name := a_name->>'claim';
+  r.identity_confidence := (a_name->>'confidence')::numeric;
+  r.first_name := null;
+  r.last_name := null;
+  if r.full_name is not null then
+    v_tokens := regexp_split_to_array(r.full_name, '\s+');
+    if r.identity_confidence >= s.min_identity_confidence and cardinality(v_tokens) >= 2
+       and v_tokens[1] ~ '^[[:alpha:]][[:alpha:]''’-]+$' then
+      r.first_name := v_tokens[1];
+      r.last_name := array_to_string(v_tokens[2:], ' ');
+    else
+      v_warn := array_append(v_warn, 'first_name_withheld'::text);
+    end if;
+  end if;
+
+  -- ROLE: organization and title, each from sources that SAY so (an email
+  -- domain is never evidence of an employer: see evidence_prepare)
+  a_org := growth_outbound.field_assessment(r.id, 'organization');
+  a_title := growth_outbound.field_assessment(r.id, 'job_title');
+  r.organization := a_org->>'claim';
+  r.job_title := a_title->>'claim';
+  r.role_confidence := case when a_org is null and a_title is null then null
+    else least(coalesce((a_org->>'confidence')::numeric, 1), coalesce((a_title->>'confidence')::numeric, 1)) end;
+  if r.role_confidence < s.min_role_confidence then v_warn := array_append(v_warn, 'role_unconfirmed'::text); end if;
+
+  a_aud := growth_outbound.field_assessment(r.id, 'audience_size');
+  r.audience_size_estimate := least((a_aud->>'claim_norm')::bigint, 2000000000)::int;
+  r.audience_source_url := a_aud->>'source_url';
+
+  foreach a in array array[a_name, a_org, a_title, a_aud] loop
+    continue when a is null;
+    if (a->>'conflict')::boolean then v_warn := array_append(v_warn, ('conflict:' || (a->>'field'))::text); end if;
+    if (a->>'stale')::boolean then v_warn := array_append(v_warn, ('stale:' || (a->>'field'))::text); end if;
+  end loop;
+
+  -- THE EMAIL: verified only by the owner's own check or a verification
+  -- provider; published-but-unchecked is 'unverified'; a guess is 'risky'
+  if v_email is null then
+    r.email_status := 'none';
+    r.email_confidence := null;
+    r.email_source_url := null;
+    r.email_source_kind := null;
+  else
+    select x.* into e_email from growth_outbound.claim_stats(r.id, 'email') x where x.claim_norm = v_email;
+    if not found then
+      r.email_status := 'unverified';
+      r.email_confidence := 0;
+      r.email_source_url := null;
+      r.email_source_kind := null;
+      v_warn := array_append(v_warn, 'email_unsourced'::text);
+    else
+      r.email_confidence := e_email.confidence;
+      r.email_source_url := e_email.best_url;
+      r.email_source_kind := e_email.best_kind;
+      r.email_status := case
+        when e_email.kinds && array['owner_verified', 'provider_verified'] then 'verified'
+        when e_email.kinds && array['own_site', 'own_profile', 'publication', 'interview', 'directory'] then 'unverified'
+        else 'risky' end;
+    end if;
+    if r.email_invalid_at is not null then
+      r.email_status := 'invalid';
+      r.email_confidence := 0;
+    end if;
+    v_email_a := jsonb_build_object('address', v_email, 'status', r.email_status, 'confidence', r.email_confidence,
+      'source_url', r.email_source_url, 'source_kind', r.email_source_kind,
+      'kinds', coalesce((select to_jsonb(x.kinds) from growth_outbound.claim_stats(r.id, 'email') x where x.claim_norm = v_email), '[]'::jsonb));
+  end if;
+
+  -- FIT: catalogue points; a positive reason only with current, cited evidence
+  for f in select x from jsonb_array_elements(case when jsonb_typeof(r.fit_factors) = 'array' then r.fit_factors else '[]'::jsonb end) x loop
+    continue when jsonb_typeof(f) <> 'object' or (f->>'code') = any (v_seen);
+    select * into c from growth_outbound.fit_factor_catalog where code = f->>'code';
+    if not found then
+      v_warn := array_append(v_warn, ('unknown_fit_factor:' || left(coalesce(f->>'code', '?'), 40))::text);
+      continue;
+    end if;
+    v_seen := array_append(v_seen, c.code);
+    v_valid := null;
+    v_fc := null;
+    if c.needs_evidence then
+      v_ids := array(select x::bigint from jsonb_array_elements_text(case when jsonb_typeof(f->'evidence') = 'array' then f->'evidence' else '[]'::jsonb end) x
+                      where x ~ '^[0-9]{1,18}$');
+      select array_agg(e.id order by e.id), max(growth_outbound.evidence_confidence(e.id, r.id))
+        into v_valid, v_fc
+        from growth_outbound.evidence e
+       where e.id = any (v_ids) and e.prospect_id = r.id and e.superseded_at is null
+         and e.claim_norm is not null and e.field_name <> 'email';
+      if v_valid is null then
+        v_warn := array_append(v_warn, ('unsupported_fit_factor:' || c.code)::text);
+        continue;
+      end if;
+      v_fitconf := least(coalesce(v_fitconf, 1), v_fc);
+    end if;
+    v_any_factor := true;
+    v_score := v_score + c.points;
+    v_factors := v_factors || jsonb_build_array(jsonb_build_object('code', c.code, 'label', c.label, 'points', c.points,
+      'evidence', coalesce(to_jsonb(v_valid), '[]'::jsonb), 'confidence', v_fc));
+    v_reason := array_append(v_reason, (c.label || ' (' || case when c.points > 0 then '+' else '' end || c.points || ')')::text);
+  end loop;
+  r.fit_score := case when v_any_factor then greatest(0, least(100, v_score)) end;
+  r.fit_reason := nullif(array_to_string(v_reason, '; '), '');
+  r.fit_confidence := v_fitconf;
+
+  -- RESEARCH: with a draft waiting, as sure as its LEAST-supported cited
+  -- claim (a claim citing nothing, or someone else's evidence, is zero);
+  -- before any draft, the best-supported fact there is to write from
+  select count(*) into v_live from growth_outbound.drafts dd where dd.prospect_id = r.id and dd.status in ('pending_review', 'approved');
+  if v_live > 0 then
+    for d in select dd.id, dd.claims from growth_outbound.drafts dd where dd.prospect_id = r.id and dd.status in ('pending_review', 'approved') loop
+      if jsonb_typeof(d.claims) <> 'array' or jsonb_array_length(d.claims) = 0 then
+        v_research := 0;
+        v_warn := array_append(v_warn, 'draft_cites_no_evidence'::text);
+        continue;
+      end if;
+      for cl in select x from jsonb_array_elements(d.claims) x loop
+        v_cc := case when jsonb_typeof(cl) = 'object' and coalesce(cl->>'evidence_id', '') ~ '^[0-9]{1,18}$'
+                     then growth_outbound.evidence_confidence((cl->>'evidence_id')::bigint, r.id) else 0 end;
+        if v_cc = 0 then v_warn := array_append(v_warn, 'unsupported_claim'::text); end if;
+        v_research := least(coalesce(v_research, 1), v_cc);
+      end loop;
+    end loop;
+  else
+    select max(growth_outbound.evidence_confidence(e.id, r.id)) into v_research
+      from growth_outbound.evidence e
+     where e.prospect_id = r.id and e.superseded_at is null and e.claim_norm is not null
+       and growth_outbound.evidence_field_class(e.field_name) = 'content';
+  end if;
+  r.research_confidence := v_research;
+
+  -- ONE PERSON, ONE ROW: a strong key another row already holds makes this a
+  -- duplicate (which blocks it); shared weak keys are flagged for the owner
+  select i.prospect_id into v_dup
+    from growth_outbound.prospect_keys(r) k
+    join growth_outbound.identifiers i on i.kind = k.kind and i.value = k.value and i.strength = 'strong'
+                                     and i.released_at is null and i.prospect_id <> r.id
+    join growth_outbound.prospects o on o.id = i.prospect_id
+   order by o.created_at, o.id
+   limit 1;
+  r.duplicate_of := v_dup;
+  if v_dup is not null then v_warn := array_append(v_warn, 'duplicate'::text); end if;
+  select coalesce(jsonb_agg(distinct i.prospect_id), '[]'::jsonb) into v_maybe
+    from growth_outbound.prospect_keys(r) k
+    join growth_outbound.identifiers i on i.kind = k.kind and i.value = k.value and i.kind in ('site', 'name_org')
+                                     and i.released_at is null and i.prospect_id <> r.id;
+  if jsonb_array_length(v_maybe) > 0 then v_warn := array_append(v_warn, 'possible_duplicate'::text); end if;
+
+  -- STATUS. The owner's and the pipeline's decisions stand; the rest follows
+  -- from the gates, recomputed every time.
+  if r.status in ('rejected', 'contacted', 'replied', 'converted', 'suppressed') then
+    null;
+  elsif growth_outbound.is_suppressed(r.email) then
+    r.status := 'suppressed';
+    r.status_reason := 'this address is suppressed';
+  elsif not v_has_evidence then
+    r.status := 'discovered';
+    r.status_reason := null;
+  elsif r.research_requested_at is not null
+        and not exists (select 1 from growth_outbound.evidence e where e.prospect_id = r.id and e.observed_at > r.research_requested_at) then
+    r.status := 'needs_research';
+    r.status_reason := coalesce(r.status_reason, 'more research requested');
+  else
+    if not r.is_test then
+      if r.duplicate_of is not null then v_gates := array_append(v_gates, 'duplicate of another prospect'::text); end if;
+      if coalesce(r.fit_score, -1) < s.min_fit_score then
+        v_gates := array_append(v_gates, ('fit ' || coalesce(r.fit_score::text, 'unscored') || ' < ' || s.min_fit_score)::text);
+      end if;
+      if coalesce(r.identity_confidence, 0) < s.min_identity_confidence then
+        v_gates := array_append(v_gates, ('identity ' || coalesce(r.identity_confidence, 0) || ' < ' || s.min_identity_confidence)::text);
+      end if;
+      if v_email is null then
+        v_gates := array_append(v_gates, 'no email address'::text);
+      else
+        if r.email_status <> 'verified' then v_gates := array_append(v_gates, ('email ' || r.email_status)::text); end if;
+        if coalesce(r.email_confidence, 0) < s.min_email_confidence then
+          v_gates := array_append(v_gates, ('email confidence ' || coalesce(r.email_confidence, 0) || ' < ' || s.min_email_confidence)::text);
+        end if;
+      end if;
+      if coalesce(r.research_confidence, 0) < s.min_research_confidence then
+        v_gates := array_append(v_gates, ('research ' || coalesce(r.research_confidence, 0) || ' < ' || s.min_research_confidence)::text);
+      end if;
+    end if;
+    if cardinality(v_gates) = 0 then
+      r.status := case when exists (select 1 from growth_outbound.drafts dd where dd.prospect_id = r.id and dd.sequence_number = 1
+                                      and dd.status in ('pending_review', 'approved'))
+                       then 'ready_for_review' else 'qualified' end;
+      r.status_reason := null;
+    else
+      r.status := 'needs_research';
+      r.status_reason := left(array_to_string(v_gates, '; '), 500);
+    end if;
+  end if;
+
+  r.warnings := coalesce((select jsonb_agg(distinct x) from unnest(v_warn) x), '[]'::jsonb);
+  r.last_researched_at := (select max(e.observed_at) from growth_outbound.evidence e where e.prospect_id = r.id);
+  r.assessment := jsonb_build_object(
+    'evaluated_at', now(),
+    'fields', jsonb_strip_nulls(jsonb_build_object('full_name', a_name, 'organization', a_org, 'job_title', a_title, 'audience_size', a_aud)),
+    'email', v_email_a,
+    'fit', jsonb_build_object('score', r.fit_score, 'confidence', v_fitconf, 'factors', v_factors),
+    'research', jsonb_build_object('confidence', v_research, 'from', case when v_live > 0 then 'draft_claims' else 'best_content_claim' end),
+    'gates', to_jsonb(v_gates),
+    'duplicate_of', v_dup,
+    'possible_duplicates', v_maybe,
+    'thresholds', jsonb_build_object('fit', s.min_fit_score, 'identity', s.min_identity_confidence,
+                                     'role', s.min_role_confidence, 'email', s.min_email_confidence, 'research', s.min_research_confidence));
+  return r;
+end $$;
+
+-- =============================================================================
 -- 5. THE INVARIANTS (triggers)
 -- =============================================================================
 
@@ -622,17 +1322,127 @@ drop trigger if exists sends_never_delete_t on growth_outbound.sends;
 create trigger sends_never_delete_t before delete on growth_outbound.sends
   for each row execute function growth_outbound.never_delete();
 
--- evidence is an observation: it can be marked superseded, never rewritten
+-- EVIDENCE COMES IN ONLY IN A FORM THAT CAN BE CHECKED. Whoever writes the
+-- row — the owner's form, the research engine, a provider — it must name a
+-- known field, a web page, the kind of source that page is and (for a page)
+-- the words on it. The weight is the server's; what the collector thought of
+-- its own find is discarded.
+create or replace function growth_outbound.evidence_prepare()
+returns trigger language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_class text := growth_outbound.evidence_field_class(new.field_name);
+  v_c text := growth_outbound.canonical_url(new.source_url);
+  v_raw text;
+  v_n numeric;
+begin
+  if v_class is null then
+    raise exception 'unknown evidence field "%"', left(coalesce(new.field_name, ''), 60) using errcode = 'check_violation';
+  end if;
+  if new.source_kind is null or new.source_kind not in ('owner_verified', 'own_site', 'own_profile', 'publication', 'interview',
+                                                         'directory', 'provider_verified', 'provider_found', 'pattern_guess') then
+    raise exception 'unknown source kind "%"', left(coalesce(new.source_kind, ''), 60) using errcode = 'check_violation';
+  end if;
+  if new.source_kind in ('provider_verified', 'provider_found', 'pattern_guess') and new.field_name <> 'email' then
+    raise exception 'a % source can only support an email address', new.source_kind using errcode = 'check_violation';
+  end if;
+  if new.source_kind in ('provider_verified', 'provider_found') and coalesce(new.collected_by, '') !~ '^provider:[a-z0-9_-]{1,40}$' then
+    raise exception 'only a verification provider records % evidence', new.source_kind using errcode = 'check_violation';
+  end if;
+  if new.source_kind = 'owner_verified' and coalesce(new.collected_by, '') <> 'owner' then
+    raise exception 'only the owner records owner-verified evidence' using errcode = 'check_violation';
+  end if;
+  if new.collected_by is not null and new.collected_by !~ '^(owner|research_engine|provider:[a-z0-9_-]{1,40})$' then
+    raise exception 'unknown collector "%"', left(new.collected_by, 60) using errcode = 'check_violation';
+  end if;
+  if v_c is null then
+    raise exception 'the source must be a web page (https://…)' using errcode = 'check_violation';
+  end if;
+
+  new.claim := nullif(btrim(regexp_replace(coalesce(new.claim, ''), '\s+', ' ', 'g')), '');
+  if new.claim is null or length(new.claim) > 500 then
+    raise exception 'a claim of 1–500 characters is required' using errcode = 'check_violation';
+  end if;
+  new.source_excerpt := nullif(btrim(coalesce(new.source_excerpt, '')), '');
+  if new.source_excerpt is null and new.source_kind not in ('owner_verified', 'provider_verified', 'provider_found', 'pattern_guess') then
+    raise exception 'quote the words on the page that say this (source_excerpt)' using errcode = 'check_violation';
+  end if;
+  if length(new.source_excerpt) > 2000 then
+    raise exception 'the excerpt is longer than 2000 characters' using errcode = 'check_violation';
+  end if;
+  new.source_title := left(nullif(btrim(coalesce(new.source_title, '')), ''), 300);
+  if new.source_published_at > now() + interval '1 day' then
+    raise exception 'a source cannot be published in the future' using errcode = 'check_violation';
+  end if;
+  new.observed_at := coalesce(new.observed_at, now());
+  if new.observed_at > now() + interval '5 minutes' then
+    raise exception 'evidence cannot be observed in the future' using errcode = 'check_violation';
+  end if;
+
+  if new.field_name = 'email' then
+    new.claim_norm := growth_outbound.norm_email(new.claim);
+    if not growth_outbound.valid_email(new.claim_norm) then
+      raise exception '"%" is not an email address', left(new.claim, 80) using errcode = 'check_violation';
+    end if;
+  elsif new.field_name = 'audience_size' then
+    v_raw := lower(regexp_replace(new.claim, '[,\s_]', '', 'g'));
+    if v_raw !~ '^[0-9]{1,10}(\.[0-9]{1,3})?[km]?$' then
+      raise exception 'an audience size is a number such as 12500, 12.5k or 1.2m' using errcode = 'check_violation';
+    end if;
+    v_n := regexp_replace(v_raw, '[km]$', '')::numeric * case when v_raw ~ 'k$' then 1000 when v_raw ~ 'm$' then 1000000 else 1 end;
+    if v_n > 2000000000 then
+      raise exception 'that audience size is not plausible' using errcode = 'check_violation';
+    end if;
+    new.claim_norm := round(v_n)::bigint::text;
+  else
+    new.claim_norm := growth_outbound.norm_text(new.claim);
+    if new.claim_norm is null then
+      raise exception 'the claim has no letters or digits' using errcode = 'check_violation';
+    end if;
+  end if;
+  -- NEVER AN EMPLOYER FROM AN EMAIL DOMAIN: an organization is the name a
+  -- source gives, not a domain; and a name is a name, not an address or handle
+  if new.field_name = 'organization' and lower(new.claim) ~ '^@?[a-z0-9-]+(\.[a-z0-9-]+)+$' then
+    raise exception 'an organization is the name a source gives, never an email or web domain (employer_from_email_domain)'
+      using errcode = 'check_violation';
+  end if;
+  if new.field_name = 'full_name' and (new.claim ~ '[@/:]' or new.claim ~ '^\S+\.\S+$') then
+    raise exception 'a name is a person''s name, not an address or a handle' using errcode = 'check_violation';
+  end if;
+
+  new.source_url := v_c;
+  new.source_domain := growth_outbound.url_host(v_c);
+  -- independent sources: the owner's own check, each provider, each publisher
+  new.source_key := case
+    when new.source_kind = 'owner_verified' then 'owner'
+    when new.source_kind in ('provider_verified', 'provider_found') then new.collected_by
+    when new.source_kind = 'pattern_guess' then 'guess'
+    else growth_outbound.site_key(new.source_domain) end;
+  new.confidence := growth_outbound.source_weight(new.source_kind, new.field_name);
+  new.superseded_at := null;
+  new.superseded_reason := null;
+  return new;
+end $$;
+drop trigger if exists evidence_prepare_t on growth_outbound.evidence;
+create trigger evidence_prepare_t before insert on growth_outbound.evidence
+  for each row execute function growth_outbound.evidence_prepare();
+
+-- evidence is an observation: it can be marked superseded (once, with a
+-- reason), never rewritten
 create or replace function growth_outbound.evidence_guard()
 returns trigger language plpgsql
 set search_path = pg_catalog, pg_temp as $$
 begin
-  if (new.prospect_id, new.field_name, new.claim, new.source_url, new.source_title, new.source_excerpt,
-      new.source_published_at, new.observed_at, new.confidence, new.collected_by)
+  if (new.prospect_id, new.field_name, new.claim, new.claim_norm, new.source_url, new.source_kind, new.source_domain,
+      new.source_key, new.source_title, new.source_excerpt, new.source_published_at, new.observed_at, new.confidence,
+      new.collected_by)
      is distinct from
-     (old.prospect_id, old.field_name, old.claim, old.source_url, old.source_title, old.source_excerpt,
-      old.source_published_at, old.observed_at, old.confidence, old.collected_by)
-     or (old.superseded_at is not null and new.superseded_at is distinct from old.superseded_at) then
+     (old.prospect_id, old.field_name, old.claim, old.claim_norm, old.source_url, old.source_kind, old.source_domain,
+      old.source_key, old.source_title, old.source_excerpt, old.source_published_at, old.observed_at, old.confidence,
+      old.collected_by)
+     or (old.superseded_at is not null
+         and (new.superseded_at, new.superseded_reason) is distinct from (old.superseded_at, old.superseded_reason))
+     or (old.superseded_at is null and new.superseded_at is null and new.superseded_reason is not null) then
     raise exception 'evidence is an observation and is never rewritten; record a new one and supersede this'
       using errcode = 'insufficient_privilege';
   end if;
@@ -641,6 +1451,81 @@ end $$;
 drop trigger if exists evidence_guard_t on growth_outbound.evidence;
 create trigger evidence_guard_t before update on growth_outbound.evidence
   for each row execute function growth_outbound.evidence_guard();
+
+-- an identifier is a fact about who someone is: it is seen again, or released
+-- by the owner, never moved to another prospect or reworded
+create or replace function growth_outbound.identifiers_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if (new.prospect_id, new.kind, new.value, new.strength, new.first_seen)
+     is distinct from (old.prospect_id, old.kind, old.value, old.strength, old.first_seen) then
+    raise exception 'an identifier is never moved or reworded; release it instead' using errcode = 'insufficient_privilege';
+  end if;
+  return new;
+end $$;
+drop trigger if exists identifiers_guard_t on growth_outbound.identifiers;
+create trigger identifiers_guard_t before update on growth_outbound.identifiers
+  for each row execute function growth_outbound.identifiers_guard();
+drop trigger if exists identifiers_never_delete_t on growth_outbound.identifiers;
+create trigger identifiers_never_delete_t before delete on growth_outbound.identifiers
+  for each row execute function growth_outbound.never_delete();
+
+-- THE ASSESSMENT INVARIANT. Names, confidences, scores, email status and the
+-- research statuses are what growth_outbound.compute() says they are. No
+-- statement may write them — not a door, not the research engine, not the
+-- superuser in the SQL editor. Under the evaluate door the row is recomputed
+-- from evidence here, so even a faked door yields only the true values.
+create or replace function growth_outbound.prospects_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if tg_op = 'INSERT' then
+    if (new.full_name, new.first_name, new.last_name, new.organization, new.job_title, new.email_source_url,
+        new.email_source_kind, new.audience_size_estimate, new.audience_source_url, new.fit_score, new.fit_reason,
+        new.identity_confidence, new.role_confidence, new.email_confidence, new.research_confidence, new.fit_confidence,
+        new.last_researched_at, new.duplicate_of) is distinct from
+       (null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::int, null::text,
+        null::int, null::text, null::numeric, null::numeric, null::numeric, null::numeric, null::numeric,
+        null::timestamptz, null::uuid)
+       or new.email_status <> 'none' or new.warnings <> '[]'::jsonb or new.assessment <> '{}'::jsonb
+       or new.status <> 'discovered' then
+      raise exception 'a prospect starts as discovered with nothing computed: names, confidences, scores and status come from evidence, through evaluate()'
+        using errcode = 'insufficient_privilege';
+    end if;
+    return growth_outbound.compute(new);
+  end if;
+
+  if new.id <> old.id or new.attribution_token <> old.attribution_token or new.is_test <> old.is_test
+     or new.created_at <> old.created_at or new.discovered_at <> old.discovered_at then
+    raise exception 'a prospect''s id, test flag, discovery time and attribution token never change'
+      using errcode = 'insufficient_privilege';
+  end if;
+
+  if coalesce(current_setting('growth_outbound.door', true), '') = 'evaluate' then
+    return growth_outbound.compute(new);
+  end if;
+
+  if (new.full_name, new.first_name, new.last_name, new.organization, new.job_title, new.email_status, new.email_source_url,
+      new.email_source_kind, new.audience_size_estimate, new.audience_source_url, new.fit_score, new.fit_reason,
+      new.identity_confidence, new.role_confidence, new.email_confidence, new.research_confidence, new.fit_confidence,
+      new.warnings, new.assessment, new.last_researched_at, new.duplicate_of)
+     is distinct from
+     (old.full_name, old.first_name, old.last_name, old.organization, old.job_title, old.email_status, old.email_source_url,
+      old.email_source_kind, old.audience_size_estimate, old.audience_source_url, old.fit_score, old.fit_reason,
+      old.identity_confidence, old.role_confidence, old.email_confidence, old.research_confidence, old.fit_confidence,
+      old.warnings, old.assessment, old.last_researched_at, old.duplicate_of) then
+    raise exception 'names, confidences, scores and email status are computed from evidence by evaluate() only'
+      using errcode = 'insufficient_privilege';
+  end if;
+  if new.status is distinct from old.status and new.status in ('discovered', 'qualified', 'ready_for_review') then
+    raise exception 'only evaluate() decides that a prospect is %', new.status using errcode = 'insufficient_privilege';
+  end if;
+  return new;
+end $$;
+drop trigger if exists prospects_guard_t on growth_outbound.prospects;
+create trigger prospects_guard_t before insert or update on growth_outbound.prospects
+  for each row execute function growth_outbound.prospects_guard();
 
 create or replace function growth_outbound.touch()
 returns trigger language plpgsql
@@ -798,6 +1683,22 @@ begin
                 and x.intended_recipient = new.intended_recipient and x.sequence_number = new.sequence_number) then
       raise exception 'this address already received step %', new.sequence_number using errcode = 'unique_violation';
     end if;
+    -- nor has the person behind it, under another row or another address
+    if p.duplicate_of is not null then
+      raise exception 'this prospect duplicates another; resolve that first' using errcode = 'insufficient_privilege';
+    end if;
+    if exists (select 1 from growth_outbound.identifiers a
+                 join growth_outbound.identifiers b on b.kind = a.kind and b.value = a.value and b.prospect_id <> a.prospect_id
+                                                  and b.released_at is null
+                 join growth_outbound.sends x on x.prospect_id = b.prospect_id and not x.is_test and x.sequence_number = new.sequence_number
+                where a.prospect_id = new.prospect_id and a.kind = 'name_org' and a.released_at is null) then
+      raise exception 'someone with the same name and organization already received step %', new.sequence_number
+        using errcode = 'unique_violation';
+    end if;
+    -- and the prospect still qualifies, as of its latest evaluation
+    if (new.sequence_number = 1 and p.status <> 'ready_for_review') or (new.sequence_number > 1 and p.status <> 'contacted') then
+      raise exception 'this prospect is %, not ready for step %', p.status, new.sequence_number using errcode = 'insufficient_privilege';
+    end if;
     select count(*) into v_n from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now());
     if v_n >= s.max_sends_per_day then
       raise exception 'the daily send cap (%) is reached', s.max_sends_per_day using errcode = 'insufficient_privilege';
@@ -827,7 +1728,7 @@ do $rls$
 declare t text;
 begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
-                           'sends', 'suppressions', 'activity'] loop
+                           'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -971,7 +1872,8 @@ end $$;
 create or replace function growth_outbound.prospect_card(p growth_outbound.prospects)
 returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
-  select to_jsonb(p) || jsonb_build_object('suppressed', growth_outbound.is_suppressed(p.email));
+  select (to_jsonb(p) - 'assessment') || jsonb_build_object('suppressed', growth_outbound.is_suppressed(p.email),
+                                                             'gates', coalesce(p.assessment->'gates', '[]'::jsonb));
 $$;
 
 create or replace function public.growth_outbound_prospects(
@@ -1002,8 +1904,20 @@ begin
   select * into p from growth_outbound.prospects where id = p_id;
   if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
   return jsonb_build_object('ok', true,
-    'prospect', growth_outbound.prospect_card(p),
-    'evidence', coalesce((select jsonb_agg(to_jsonb(e) order by e.observed_at desc) from growth_outbound.evidence e where e.prospect_id = p.id), '[]'::jsonb),
+    'prospect', growth_outbound.prospect_card(p) || jsonb_build_object('assessment', p.assessment),
+    -- every observation, current and superseded: "previously … currently …"
+    'evidence', coalesce((select jsonb_agg(to_jsonb(e) || jsonb_build_object('current', e.superseded_at is null,
+                            'claim_confidence', case when e.superseded_at is null then growth_outbound.evidence_confidence(e.id, p.id) end)
+                          order by e.field_name, e.observed_at desc, e.id desc)
+                           from growth_outbound.evidence e where e.prospect_id = p.id), '[]'::jsonb),
+    'identifiers', coalesce((select jsonb_agg(to_jsonb(i) order by i.strength, i.kind, i.value)
+                              from growth_outbound.identifiers i where i.prospect_id = p.id), '[]'::jsonb),
+    'related', coalesce((select jsonb_agg(jsonb_build_object('id', o.id, 'full_name', o.full_name, 'organization', o.organization,
+                            'email', o.email, 'status', o.status, 'relation', case when o.id = p.duplicate_of then 'duplicate_of' else 'possible_duplicate' end))
+                           from growth_outbound.prospects o
+                          where o.id = p.duplicate_of
+                             or o.id in (select (x #>> '{}')::uuid from jsonb_array_elements(coalesce(p.assessment->'possible_duplicates', '[]'::jsonb)) x)),
+                         '[]'::jsonb),
     'drafts', coalesce((select jsonb_agg(to_jsonb(d) order by d.sequence_number, d.generated_at desc) from growth_outbound.drafts d where d.prospect_id = p.id), '[]'::jsonb),
     'sends', coalesce((select jsonb_agg(to_jsonb(s) order by s.claimed_at desc) from growth_outbound.sends s where s.prospect_id = p.id), '[]'::jsonb),
     'activity', coalesce((select jsonb_agg(to_jsonb(a) order by a.at desc) from (
@@ -1040,7 +1954,9 @@ begin
   if p.status in ('suppressed', 'contacted', 'replied', 'converted') and p_status = 'needs_research' then
     return jsonb_build_object('ok', false, 'reason', 'prospect_' || p.status);
   end if;
-  update growth_outbound.prospects set status = p_status, status_reason = left(nullif(btrim(p_reason), ''), 500) where id = p_id;
+  update growth_outbound.prospects set status = p_status, status_reason = left(nullif(btrim(p_reason), ''), 500),
+         research_requested_at = case when p_status = 'needs_research' then now() else research_requested_at end
+   where id = p_id;
   n := growth_outbound.cancel_live_drafts(p_id, 'prospect ' || p_status);
   perform growth_outbound.log('prospect_' || p_status, p_id, 'prospect', p_id::text,
     jsonb_build_object('from', p.status, 'reason', p_reason, 'drafts_cancelled', n));
@@ -1116,6 +2032,8 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'content_changed',
       'detail', 'the draft changed after you loaded it; review the current version');
   end if;
+  -- the gates read a fresh assessment, never a stored one
+  perform growth_outbound.evaluate(d.prospect_id);
   select * into p from growth_outbound.prospects where id = d.prospect_id for update;
   select * into s from growth_outbound.settings where id = 1;
   if p.status in ('rejected', 'suppressed') then return jsonb_build_object('ok', false, 'reason', 'prospect_' || p.status); end if;
@@ -1126,6 +2044,7 @@ begin
   if d.is_test is distinct from p.is_test then return jsonb_build_object('ok', false, 'reason', 'test_flag_mismatch'); end if;
   if not p.is_test then
     if d.sequence_number = 1 and p.status <> 'ready_for_review' then v_gates := array_append(v_gates, ('status is ' || p.status)::text); end if;
+    if p.duplicate_of is not null then v_gates := array_append(v_gates, 'duplicate of another prospect'::text); end if;
     if coalesce(p.fit_score, -1) < s.min_fit_score then v_gates := array_append(v_gates, 'fit score below minimum'::text); end if;
     if coalesce(p.identity_confidence, 0) < s.min_identity_confidence then v_gates := array_append(v_gates, 'identity confidence below minimum'::text); end if;
     if coalesce(p.research_confidence, 0) < s.min_research_confidence then v_gates := array_append(v_gates, 'research confidence below minimum'::text); end if;
@@ -1160,6 +2079,7 @@ begin
   update growth_outbound.drafts
      set status = 'rejected', rejected_at = now(), rejected_by = v_owner, rejection_reason = left(nullif(btrim(p_reason), ''), 500)
    where id = d.id;
+  perform growth_outbound.evaluate(d.prospect_id);
   perform growth_outbound.log('draft_rejected', d.prospect_id, 'draft', d.id::text,
     jsonb_build_object('from', d.status, 'reason', p_reason));
   return jsonb_build_object('ok', true);
@@ -1193,6 +2113,7 @@ begin
     return jsonb_build_object('ok', false, 'reason', 'invalid_content',
       'detail', 'a subject of 1–150 characters and a body of 1–5000 are required');
   end;
+  perform growth_outbound.evaluate(d.prospect_id);
   perform growth_outbound.log('draft_edited', d.prospect_id, 'draft', d.id::text,
     jsonb_build_object('from_hash', d.content_hash, 'to_hash', v_new.content_hash, 'was', d.status));
   return jsonb_build_object('ok', true, 'content_hash', v_new.content_hash, 'status', v_new.status);
@@ -1208,6 +2129,456 @@ begin
      where p_prospect is null or a.prospect_id = p_prospect
      order by a.at desc limit least(greatest(coalesce(p_limit, 100), 1), 500)) a), '[]'::jsonb);
 end $$;
+
+-- ── research: identity, evidence, the assessment ─────────────────────────────
+
+-- Which prospect column a URL fills, and the profile link stored there.
+create or replace function growth_outbound.url_column(p_url text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case
+    when k.kind = 'handle' and k.value like 'x:%' then 'x_url'
+    when k.kind = 'handle' and k.value like 'youtube:%' then 'youtube_url'
+    when k.kind = 'handle' and (k.value like 'substack:%' or k.value like 'beehiiv:%') then 'newsletter_url'
+    when k.kind = 'handle' then 'other_profile_url'
+    else 'website_url' end
+  from growth_outbound.url_identity(p_url) k where k.kind in ('handle', 'site') limit 1;
+$$;
+
+create or replace function growth_outbound.profile_url(p_url text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case
+    when k.kind = 'handle' and k.value like 'x:%' then 'https://x.com/' || substr(k.value, 3)
+    when k.kind = 'site' then 'https://' || growth_outbound.url_host(p_url)
+    else growth_outbound.canonical_url(p_url) end
+  from growth_outbound.url_identity(p_url) k where k.kind in ('handle', 'site') limit 1;
+$$;
+
+-- Record the keys a prospect claims (its columns, plus any other URLs it was
+-- found under). A strong key another prospect already holds stays with them:
+-- compute() then marks this row a duplicate.
+create or replace function growth_outbound.claim_keys(p_id uuid, p_extra_urls text[], p_source text)
+returns int language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  p growth_outbound.prospects;
+  k record;
+  n int := 0;
+begin
+  select * into p from growth_outbound.prospects where id = p_id;
+  if not found then return 0; end if;
+  -- one identity decision at a time, so two discoveries of one person race to
+  -- a single row instead of two
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.identity'));
+  for k in
+    select x.kind, x.value, x.strength from growth_outbound.prospect_keys(p) x
+    union
+    select y.kind, y.value, y.strength
+      from unnest(coalesce(p_extra_urls, '{}'::text[])) u(url), lateral growth_outbound.url_identity(u.url) y
+  loop
+    continue when k.value is null;
+    if k.strength = 'strong' and exists (select 1 from growth_outbound.identifiers i where i.kind = k.kind and i.value = k.value
+          and i.strength = 'strong' and i.released_at is null and i.prospect_id <> p_id) then
+      continue;
+    end if;
+    insert into growth_outbound.identifiers (prospect_id, kind, value, strength, source)
+    values (p_id, k.kind, k.value, k.strength, left(p_source, 60))
+    on conflict (prospect_id, kind, value) do update set last_seen = now();
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- EVALUATE: the one writer of everything computed. Recomputes the row from
+-- evidence (inside the prospects trigger), records its keys, and takes back
+-- any approval the prospect no longer earns. Returns the assessment.
+create or replace function growth_outbound.evaluate(p_id uuid)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_prev text := coalesce(current_setting('growth_outbound.door', true), '');
+  p0 growth_outbound.prospects;
+  p1 growth_outbound.prospects;
+  n int := 0;
+begin
+  select * into p0 from growth_outbound.prospects where id = p_id for update;
+  if not found then return null; end if;
+  perform growth_outbound.claim_keys(p_id, null, 'evaluate');
+  perform set_config('growth_outbound.door', 'evaluate', true);
+  update growth_outbound.prospects set updated_at = now() where id = p_id returning * into p1;
+  perform set_config('growth_outbound.door', v_prev, true);
+  -- the computed name and organization may now give it a weak key
+  perform growth_outbound.claim_keys(p_id, null, 'evaluate');
+  -- an approval stands only while the prospect still passes every gate
+  if not p1.is_test and p1.status not in ('qualified', 'ready_for_review', 'contacted', 'replied', 'converted') then
+    update growth_outbound.drafts set status = 'pending_review' where prospect_id = p_id and status = 'approved';
+    get diagnostics n = row_count;
+  end if;
+  if p1.status is distinct from p0.status or n > 0 then
+    perform growth_outbound.log('prospect_evaluated', p_id, 'prospect', p_id::text,
+      jsonb_build_object('from', p0.status, 'to', p1.status, 'reason', p1.status_reason, 'approvals_revoked', n));
+  end if;
+  return jsonb_build_object('status', p1.status, 'status_reason', p1.status_reason, 'approvals_revoked', n,
+    'warnings', p1.warnings, 'assessment', p1.assessment);
+end $$;
+
+-- INGEST: a prospect found (or found again), with what was found about them.
+-- All or nothing. Shared by the owner's form and, later, the research engine
+-- (which calls the same doors, as the owner, with collected_by set).
+--   { email, set_primary_email, urls[], prospect_type, campaign_type,
+--     sports_focus[], is_test, discovered_via, collected_by,
+--     evidence[{field_name, claim, source_url, source_kind, source_title,
+--               source_excerpt, source_published_at, supersedes}],
+--     fit_factors[{code, evidence[ids], evidence_index[positions], remove}] }
+create or replace function growth_outbound.ingest(p_prospect uuid, p jsonb)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_keys text[] := array['email', 'set_primary_email', 'urls', 'prospect_type', 'campaign_type', 'sports_focus', 'is_test',
+                         'discovered_via', 'evidence', 'fit_factors', 'collected_by'];
+  v_ev_keys text[] := array['field_name', 'claim', 'source_url', 'source_kind', 'source_title', 'source_excerpt',
+                            'source_published_at', 'supersedes'];
+  v_bad text;
+  v_collector text := coalesce(nullif(btrim(coalesce(p->>'collected_by', '')), ''), 'owner');
+  v_email text;
+  v_urls text[] := '{}';
+  v_raw text;
+  v_u text;
+  v_col text;
+  v_sports text[];
+  v_id uuid := p_prospect;
+  v_p growth_outbound.prospects;
+  v_matches uuid[];
+  v_created boolean := false;
+  v_eids bigint[] := '{}';
+  v_eid bigint;
+  v_item jsonb;
+  v_i int := 0;
+  v_ff jsonb;
+  v_f jsonb;
+  v_refs bigint[];
+  v_where text := 'input';
+  v_res jsonb;
+begin
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'not_an_object'); end if;
+  select string_agg(x, ', ') into v_bad from jsonb_object_keys(p) x where x <> all (v_keys);
+  if v_bad is not null then return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', v_bad); end if;
+  if v_collector !~ '^(owner|research_engine|provider:[a-z0-9_-]{1,40})$' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_collector');
+  end if;
+  if p ? 'email' and jsonb_typeof(p->'email') not in ('string', 'null') then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_email');
+  end if;
+  if nullif(btrim(coalesce(p->>'email', '')), '') is not null then
+    v_email := growth_outbound.norm_email(p->>'email');
+    if not growth_outbound.valid_email(v_email) then return jsonb_build_object('ok', false, 'reason', 'invalid_email'); end if;
+  end if;
+  if p ? 'urls' then
+    if jsonb_typeof(p->'urls') <> 'array' or jsonb_array_length(p->'urls') > 20 then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_urls', 'detail', 'a list of at most 20 URLs');
+    end if;
+    for v_raw in select x from jsonb_array_elements_text(p->'urls') x loop
+      v_u := growth_outbound.canonical_url(v_raw);
+      if v_u is null then return jsonb_build_object('ok', false, 'reason', 'invalid_url', 'detail', left(v_raw, 200)); end if;
+      v_urls := array_append(v_urls, v_u);
+    end loop;
+  end if;
+  if p ? 'sports_focus' then
+    if jsonb_typeof(p->'sports_focus') <> 'array' or jsonb_array_length(p->'sports_focus') > 10 then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_sports_focus');
+    end if;
+    v_sports := array(select upper(btrim(x)) from jsonb_array_elements_text(p->'sports_focus') x);
+    if exists (select 1 from unnest(v_sports) x where x !~ '^[A-Z0-9 _-]{2,20}$') then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_sports_focus');
+    end if;
+  end if;
+  if p ? 'is_test' and jsonb_typeof(p->'is_test') <> 'boolean' then return jsonb_build_object('ok', false, 'reason', 'invalid_is_test'); end if;
+  if p ? 'set_primary_email' and jsonb_typeof(p->'set_primary_email') <> 'boolean' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_set_primary_email');
+  end if;
+  if p ? 'evidence' and (jsonb_typeof(p->'evidence') <> 'array' or jsonb_array_length(p->'evidence') > 100) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_evidence', 'detail', 'a list of at most 100 items');
+  end if;
+  if p ? 'fit_factors' and (jsonb_typeof(p->'fit_factors') <> 'array' or jsonb_array_length(p->'fit_factors') > 30) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_fit_factors');
+  end if;
+  if v_id is null and v_email is null and cardinality(v_urls) = 0 then
+    return jsonb_build_object('ok', false, 'reason', 'no_identifier',
+      'detail', 'give an email address or a profile or website URL: a prospect must be someone we can recognise again');
+  end if;
+
+  -- WHO IS THIS? Every strong key given, against every prospect.
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.identity'));
+  select coalesce(array_agg(distinct i.prospect_id), '{}'::uuid[]) into v_matches
+    from growth_outbound.identifiers i
+   where i.strength = 'strong' and i.released_at is null
+     and ((i.kind = 'email' and i.value = v_email)
+       or (i.kind, i.value) in (select k.kind, k.value from unnest(v_urls) u(url), lateral growth_outbound.url_identity(u.url) k
+                                 where k.strength = 'strong'));
+  if v_id is not null then
+    select * into v_p from growth_outbound.prospects where id = v_id for update;
+    if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+    v_matches := array_remove(v_matches, v_id);
+    if cardinality(v_matches) > 0 then
+      return jsonb_build_object('ok', false, 'reason', 'identity_conflict', 'prospects', to_jsonb(v_matches),
+        'detail', 'an email address or profile given here belongs to another prospect');
+    end if;
+  else
+    if cardinality(v_matches) > 1 then
+      return jsonb_build_object('ok', false, 'reason', 'identity_conflict', 'prospects', to_jsonb(v_matches),
+        'detail', 'these identifiers belong to different prospects; release the wrong one before adding more');
+    end if;
+    v_id := v_matches[1];
+    if v_id is not null then select * into v_p from growth_outbound.prospects where id = v_id for update; end if;
+  end if;
+  -- an address or a domain that opted out stays out: no new row, no new research
+  if (v_email is not null and growth_outbound.is_suppressed(v_email)) or (v_id is not null and v_p.status = 'suppressed') then
+    return jsonb_build_object('ok', false, 'reason', 'suppressed', 'prospect_id', v_id);
+  end if;
+  if v_id is not null and p ? 'is_test' and (p->>'is_test')::boolean is distinct from v_p.is_test then
+    return jsonb_build_object('ok', false, 'reason', 'test_flag_is_fixed');
+  end if;
+
+  begin
+    v_where := 'prospect';
+    if v_id is null then
+      insert into growth_outbound.prospects (is_test, email, prospect_type, campaign_type, sports_focus, discovered_via)
+      values (coalesce((p->>'is_test')::boolean, false), v_email, coalesce(p->>'prospect_type', 'other'),
+              coalesce(p->>'campaign_type', 'customer'), coalesce(v_sports, '{}'::text[]),
+              left(coalesce(nullif(btrim(coalesce(p->>'discovered_via', '')), ''), v_collector), 200))
+      returning * into v_p;
+      v_id := v_p.id;
+      v_created := true;
+    else
+      update growth_outbound.prospects set
+        email = case when v_email is not null and (email is null or coalesce((p->>'set_primary_email')::boolean, false))
+                     then v_email else email end,
+        prospect_type = coalesce(p->>'prospect_type', prospect_type),
+        campaign_type = coalesce(p->>'campaign_type', campaign_type),
+        sports_focus = coalesce(v_sports, sports_focus)
+      where id = v_id;
+    end if;
+
+    v_where := 'urls';
+    foreach v_u in array v_urls loop
+      v_col := growth_outbound.url_column(v_u);
+      continue when v_col is null;
+      execute format('update growth_outbound.prospects set %I = coalesce(%I, $1) where id = $2', v_col, v_col)
+        using growth_outbound.profile_url(v_u), v_id;
+    end loop;
+    perform growth_outbound.claim_keys(v_id, v_urls, v_collector);
+
+    -- evidence, in order; "supersedes" retires the older observation it replaces
+    for v_item in select x from jsonb_array_elements(coalesce(p->'evidence', '[]'::jsonb)) x loop
+      v_i := v_i + 1;
+      v_where := 'evidence ' || v_i;
+      if jsonb_typeof(v_item) <> 'object' then
+        raise exception 'each evidence item is an object' using errcode = 'check_violation';
+      end if;
+      select string_agg(x, ', ') into v_bad from jsonb_object_keys(v_item) x where x <> all (v_ev_keys);
+      if v_bad is not null then
+        raise exception 'unknown evidence key %', v_bad using errcode = 'check_violation';
+      end if;
+      insert into growth_outbound.evidence (prospect_id, field_name, claim, source_url, source_kind, source_title,
+                                            source_excerpt, source_published_at, collected_by)
+      values (v_id, v_item->>'field_name', v_item->>'claim', v_item->>'source_url', coalesce(v_item->>'source_kind', 'directory'),
+              v_item->>'source_title', v_item->>'source_excerpt', (v_item->>'source_published_at')::timestamptz, v_collector)
+      returning id into v_eid;
+      v_eids := array_append(v_eids, v_eid);
+      if v_item ? 'supersedes' then
+        update growth_outbound.evidence set superseded_at = now(), superseded_reason = 'replaced by evidence ' || v_eid
+         where id = (v_item->>'supersedes')::bigint and prospect_id = v_id and field_name = v_item->>'field_name'
+           and superseded_at is null and id <> v_eid;
+        if not found then
+          raise exception 'evidence % is not current % evidence of this prospect', v_item->>'supersedes', v_item->>'field_name'
+            using errcode = 'check_violation';
+        end if;
+      end if;
+    end loop;
+
+    if p ? 'fit_factors' then
+      v_where := 'fit_factors';
+      select fit_factors into v_ff from growth_outbound.prospects where id = v_id;
+      for v_f in select x from jsonb_array_elements(p->'fit_factors') x loop
+        if jsonb_typeof(v_f) <> 'object' or not exists (select 1 from growth_outbound.fit_factor_catalog c where c.code = v_f->>'code') then
+          raise exception 'unknown fit factor %', left(coalesce(v_f->>'code', '?'), 40) using errcode = 'check_violation';
+        end if;
+        v_ff := coalesce((select jsonb_agg(x) from jsonb_array_elements(v_ff) x where x->>'code' is distinct from v_f->>'code'), '[]'::jsonb);
+        continue when coalesce((v_f->>'remove')::boolean, false);
+        v_refs := array(select x::bigint from jsonb_array_elements_text(case when jsonb_typeof(v_f->'evidence') = 'array'
+                                                                           then v_f->'evidence' else '[]'::jsonb end) x)
+               || array(select v_eids[x::int + 1] from jsonb_array_elements_text(case when jsonb_typeof(v_f->'evidence_index') = 'array'
+                                                                                    then v_f->'evidence_index' else '[]'::jsonb end) x);
+        if array_position(v_refs, null) is not null then
+          raise exception 'fit factor % cites an evidence position that is not in this request', v_f->>'code' using errcode = 'check_violation';
+        end if;
+        if exists (select 1 from unnest(v_refs) ref where not exists (
+                     select 1 from growth_outbound.evidence e where e.id = ref and e.prospect_id = v_id)) then
+          raise exception 'fit factor % cites evidence that is not this prospect''s', v_f->>'code' using errcode = 'check_violation';
+        end if;
+        v_ff := v_ff || jsonb_build_array(jsonb_build_object('code', v_f->>'code', 'evidence', to_jsonb(v_refs)));
+      end loop;
+      update growth_outbound.prospects set fit_factors = v_ff where id = v_id;
+    end if;
+  exception
+    when check_violation or not_null_violation or invalid_text_representation or invalid_datetime_format
+         or datetime_field_overflow or numeric_value_out_of_range or foreign_key_violation
+         or string_data_right_truncation or invalid_parameter_value or array_subscript_error then
+      return jsonb_build_object('ok', false, 'reason', 'invalid', 'at', v_where, 'detail', sqlerrm);
+    when unique_violation then
+      return jsonb_build_object('ok', false, 'reason', 'identity_conflict', 'at', v_where, 'detail', sqlerrm);
+  end;
+
+  v_res := growth_outbound.evaluate(v_id);
+  perform growth_outbound.log(case when v_created then 'prospect_created' else 'prospect_researched' end, v_id, 'prospect', v_id::text,
+    jsonb_build_object('evidence', cardinality(v_eids), 'urls', cardinality(v_urls), 'collected_by', v_collector,
+                       'status', v_res->>'status'));
+  return jsonb_build_object('ok', true, 'prospect_id', v_id, 'created', v_created, 'evidence_ids', to_jsonb(v_eids),
+    'status', v_res->>'status', 'status_reason', v_res->>'status_reason', 'warnings', v_res->'warnings',
+    'possible_duplicates', coalesce(v_res->'assessment'->'possible_duplicates', '[]'::jsonb));
+end $$;
+
+-- ADD OR FIND A PROSPECT, with what was found about them. Rediscovering
+-- someone (any casing, a tracking-tagged or mobile URL) adds to their row.
+create or replace function public.growth_outbound_prospect_upsert(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return growth_outbound.ingest(null, p);
+end $$;
+
+-- MORE EVIDENCE about a known prospect (the same shape, minus who they are)
+create or replace function public.growth_outbound_evidence_add(p_prospect uuid, p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  if p_prospect is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  return growth_outbound.ingest(p_prospect, p);
+end $$;
+
+-- RETIRE an observation that is wrong or out of date. It stays on the record
+-- ("previously"), and stops counting.
+create or replace function public.growth_outbound_evidence_supersede(p_evidence_id bigint, p_reason text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  e growth_outbound.evidence;
+  v_reason text := left(nullif(btrim(coalesce(p_reason, '')), ''), 300);
+  v_res jsonb;
+begin
+  perform growth_outbound.require_owner();
+  select * into e from growth_outbound.evidence where id = p_evidence_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if e.superseded_at is not null then return jsonb_build_object('ok', false, 'reason', 'already_superseded'); end if;
+  if v_reason is null then return jsonb_build_object('ok', false, 'reason', 'reason_required'); end if;
+  update growth_outbound.evidence set superseded_at = now(), superseded_reason = v_reason where id = e.id;
+  v_res := growth_outbound.evaluate(e.prospect_id);
+  perform growth_outbound.log('evidence_superseded', e.prospect_id, 'evidence', e.id::text,
+    jsonb_build_object('field', e.field_name, 'claim', left(e.claim, 200), 'reason', v_reason, 'status', v_res->>'status'));
+  return jsonb_build_object('ok', true, 'status', v_res->>'status', 'warnings', v_res->'warnings');
+end $$;
+
+-- RE-EVALUATE now (after a settings change, say). Nothing is trusted from before.
+create or replace function public.growth_outbound_prospect_evaluate(p_id uuid)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  if p_id is null or not exists (select 1 from growth_outbound.prospects where id = p_id) then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+  return jsonb_build_object('ok', true) || growth_outbound.evaluate(p_id);
+end $$;
+
+-- HAVE WE SEEN THIS PERSON? An email or URL in, its identity keys and any
+-- prospect holding them out — before anyone researches them again.
+create or replace function public.growth_outbound_identity_lookup(p_text text)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_email text := growth_outbound.norm_email(p_text);
+  v_url text := growth_outbound.canonical_url(p_text);
+  v_keys jsonb;
+begin
+  perform growth_outbound.require_owner();
+  if growth_outbound.valid_email(v_email) then
+    v_keys := jsonb_build_array(jsonb_build_object('kind', 'email', 'value', v_email, 'strength', 'strong'));
+  elsif v_url is not null then
+    select coalesce(jsonb_agg(jsonb_build_object('kind', k.kind, 'value', k.value, 'strength', k.strength)), '[]'::jsonb)
+      into v_keys from growth_outbound.url_identity(v_url) k;
+  else
+    return jsonb_build_object('ok', false, 'reason', 'not_an_email_or_url');
+  end if;
+  return jsonb_build_object('ok', true,
+    'canonical', case when growth_outbound.valid_email(v_email) then v_email else v_url end,
+    'suppressed', growth_outbound.valid_email(v_email) and growth_outbound.is_suppressed(v_email),
+    'keys', (select jsonb_agg(k || jsonb_build_object('matches', coalesce((
+        select jsonb_agg(jsonb_build_object('prospect_id', i.prospect_id, 'full_name', p.full_name, 'status', p.status,
+                                            'released', i.released_at is not null) order by i.first_seen)
+          from growth_outbound.identifiers i join growth_outbound.prospects p on p.id = i.prospect_id
+         where i.kind = k->>'kind' and i.value = k->>'value'), '[]'::jsonb)))
+      from jsonb_array_elements(v_keys) k));
+end $$;
+
+create or replace function public.growth_outbound_fit_catalog()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return coalesce((select jsonb_agg(to_jsonb(c) order by c.points desc, c.code) from growth_outbound.fit_factor_catalog c), '[]'::jsonb);
+end $$;
+
+-- RELEASE an identifier that was attached to the wrong person. It stays on
+-- the record, stops identifying them, and its column is cleared; another
+-- prospect may then hold it.
+create or replace function public.growth_outbound_identifier_release(p_identifier_id bigint, p_reason text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  i growth_outbound.identifiers;
+  p growth_outbound.prospects;
+  v_reason text := left(nullif(btrim(coalesce(p_reason, '')), ''), 300);
+  v_cols text[] := '{}';
+  c text;
+  v_res jsonb;
+begin
+  perform growth_outbound.require_owner();
+  select * into i from growth_outbound.identifiers where id = p_identifier_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if i.released_at is not null then return jsonb_build_object('ok', false, 'reason', 'already_released'); end if;
+  if v_reason is null then return jsonb_build_object('ok', false, 'reason', 'reason_required'); end if;
+  select * into p from growth_outbound.prospects where id = i.prospect_id for update;
+  update growth_outbound.identifiers set released_at = now(), released_reason = v_reason where id = i.id;
+  if i.kind = 'email' and growth_outbound.norm_email(p.email) = i.value then
+    update growth_outbound.prospects set email = null where id = p.id;
+    v_cols := array_append(v_cols, 'email'::text);
+  end if;
+  foreach c in array array['website_url', 'x_url', 'youtube_url', 'newsletter_url', 'other_profile_url'] loop
+    if exists (select 1 from growth_outbound.url_identity(to_jsonb(p) ->> c) k where k.kind = i.kind and k.value = i.value) then
+      execute format('update growth_outbound.prospects set %I = null where id = $1', c) using p.id;
+      v_cols := array_append(v_cols, c);
+    end if;
+  end loop;
+  v_res := growth_outbound.evaluate(p.id);
+  perform growth_outbound.log('identifier_released', p.id, 'identifier', i.id::text,
+    jsonb_build_object('kind', i.kind, 'value', i.value, 'reason', v_reason, 'cleared', to_jsonb(v_cols), 'status', v_res->>'status'));
+  return jsonb_build_object('ok', true, 'cleared', to_jsonb(v_cols), 'status', v_res->>'status');
+end $$;
+
+-- Every prospect re-evaluated under the rules in this file (a re-run is how a
+-- rule change reaches existing rows). Oldest first, so the first row to claim
+-- an address keeps it.
+do $reevaluate$
+declare r record;
+begin
+  for r in select id from growth_outbound.prospects order by created_at, id loop
+    perform growth_outbound.evaluate(r.id);
+  end loop;
+end
+$reevaluate$;
 
 -- ── who may call the doors ───────────────────────────────────────────────────
 -- Supabase grants EXECUTE on every new public function to anon, authenticated
@@ -1231,7 +2602,8 @@ notify pgrst, 'reload schema';
 -- =============================================================================
 select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
-    ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity')) = 9
+    ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
+     'identifiers', 'fit_factor_catalog')) = 11
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -1295,7 +2667,8 @@ union all
 select 12, 'history is append-only and nothing is deleted',
   case when (select count(*) from pg_trigger where not tgisinternal and tgname in
     ('suppressions_append_only_t', 'activity_append_only_t', 'owner_audit_append_only_t', 'prospects_never_delete_t',
-     'evidence_never_delete_t', 'drafts_never_delete_t', 'sends_never_delete_t', 'evidence_guard_t')) = 8
+     'evidence_never_delete_t', 'drafts_never_delete_t', 'sends_never_delete_t', 'evidence_guard_t',
+     'identifiers_never_delete_t', 'identifiers_guard_t')) = 10
        then 'ok' else 'CHECK THIS' end
 union all
 select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 'off' end from growth_outbound.settings where id = 1)
@@ -1304,5 +2677,25 @@ select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 
   'ok'
 union all
 select 14, 'sending blocked until configured: ' || coalesce(nullif(array_to_string(growth_outbound.send_blockers(), ', '), ''), 'nothing'),
+  'ok'
+union all
+select 15, 'names, confidences, scores and research status are computed from evidence only, and evidence is checked on the way in',
+  case when (select count(*) from pg_trigger where not tgisinternal and tgname in ('prospects_guard_t', 'evidence_prepare_t')) = 2
+       then 'ok' else 'CHECK THIS' end
+union all
+select 16, 'an email address or a profile names one prospect (rediscovery finds the same row)',
+  case when exists (select 1 from pg_indexes where schemaname = 'growth_outbound' and indexname = 'identifiers_strong_uk')
+        and growth_outbound.canonical_url('HTTP://WWW.Example.COM:443/a//b/?utm_source=x&b=2&a=1#top') = 'https://example.com/a/b?a=1&b=2'
+        and (select value from growth_outbound.url_identity('https://mobile.twitter.com/PatAnalyst/status/1?s=20') where kind = 'handle') = 'x:patanalyst'
+       then 'ok' else 'CHECK THIS' end
+union all
+select 17, 'fit reasons in the catalogue: ' || (select count(*) from growth_outbound.fit_factor_catalog)::text
+  || ' (a positive one counts only with current evidence)',
+  case when (select count(*) from growth_outbound.fit_factor_catalog) >= 21
+        and not exists (select 1 from growth_outbound.fit_factor_catalog where needs_evidence <> (points > 0))
+       then 'ok' else 'CHECK THIS' end
+union all
+select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
+                                                from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),
   'ok'
 order by 1;

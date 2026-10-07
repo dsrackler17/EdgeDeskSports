@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-10-07 — Growth console: who a prospect is, what is known, and how sure (outbound engine, phase 3)
+
+**A fact about a person is evidence; every number the gates read is computed from it.**
+
+**`supabase/growth_outbound.sql`** adds:
+- **identity:** `identifiers`. An email address or a profile handle (x, YouTube, Substack, LinkedIn, GitHub, podcasts, …) names one prospect. `canonical_url()` strips tracking parameters, `www.`/`m.`/`mobile.`, casing and the rest, so rediscovery finds the same row. Keys belonging to two prospects return `identity_conflict` and write nothing. A suppressed address, domain or prospect is never re-added or re-researched. Websites and name+organization are weak keys: they flag a possible duplicate, never merge, and block a second live send of the same step. A key on the wrong person can be released, and stays on the record;
+- **evidence that can be checked:** a known field, a web page, the kind of source and the words on it. Email-only kinds stay email-only; provider and owner attestations come only from a provider or the owner. An employer is never read off an email domain. The collector's own confidence is discarded. Evidence is superseded once, with a reason, and never rewritten;
+- **the arithmetic:**
+  - independent publishers combine (1 − ∏(1 − weight)); the same site repeating itself is one source;
+  - a rival claim halves the confidence;
+  - old roles and old content weigh less;
+  - a first name is used only when identity clears its bar and the name plainly has one;
+  - "verified" email means the owner or a provider checked it;
+  - research confidence is the weakest claim a draft cites;
+  - fit comes from a fixed catalogue, and a positive reason counts only with current evidence;
+- **computed means computed:** a trigger refuses any write to a name, confidence, score, email status or research status, the superuser's included. Under the evaluate door it recomputes, so a faked door yields only the true values. An approval the prospect no longer earns is withdrawn, and the approve door re-evaluates first;
+- **seven owner doors:** upsert, add evidence, supersede, release an identifier, re-evaluate, "have we seen them?" lookup, and the fit catalogue.
+
+**`/admin/growth/` → Outbound** opens a prospect into:
+- each number beside its bar, and the unmet gates;
+- the facts with their sources and rivals, and warnings in words;
+- the full "previously / currently" evidence history;
+- the fit reasons, the identifiers and the drafts.
+
+The owner can add evidence, supersede, add or remove fit reasons, release an identifier, re-evaluate, ask for more research or reject. The panel also has "Have we seen them?" and "Add a prospect". Text from the web is escaped and only `https:` sources are links. Table cells that wrap no longer inherit the page container's padding.
+
+**Tests:**
+- `outbound_research_sql.test.js` (162, 18 mutations all caught);
+- `outbound_sql.test.js` (239, seeds now built from evidence);
+- `outbound_console.e2e.js` (73).
+
 ## 2026-10-05 — Growth console: the owner-only outbound layer (outbound engine, phase 2)
 
 **normal user < affiliate_admin < outbound owner.**

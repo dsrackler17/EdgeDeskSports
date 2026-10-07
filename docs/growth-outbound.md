@@ -232,8 +232,155 @@ notify pgrst, 'reload schema';
 
 `affiliate_admins` and every existing console are unaffected either way.
 
-### Next
+## Phase 3: who a prospect is, what is known, and how sure
 
-- **Phase 3:** identifiers and dedupe (canonical URLs, handles, aliases), research history, and the evidence-gated confidence model.
+**The rule:** a fact about a person is stored only as **evidence**, meaning a claim, the page it came from, what kind of source that page is, and the words on it. **Every number the gates read is computed from that evidence by the database.** This covers identity, role, email, research and fit, plus the displayed name, organization, title, email status and research status. Nothing typed, scraped or generated is taken as certain. Uncertain information cannot become confident because someone, or some model, repeated it.
+
+### One person, one row (`growth_outbound.identifiers`)
+
+| Key | Strength | Example | Effect |
+|---|---|---|---|
+| email | strong | `pat@cfbnumbers.test` | names **one** prospect, ever (a unique index) |
+| handle | strong | `x:patanalyst`, `youtube:@patanalyst`, `substack:pat`, `linkedin:in:pat`, `github:pat`, `apple_podcast:123…`, `spotify_show:…` | names one prospect |
+| site | weak | `cfbnumbers.test` (registrable domain; the full host on multi-tenant hosts such as `pat.wordpress.com`) | colleagues share it: a *possible duplicate*, flagged |
+| url | weak | a non-profile page | flagged |
+| name_org | weak | `pat analyst\|cfb numbers` | flagged, **and** blocks a second live send of the same step |
+
+**Canonical URLs.** Before any comparison, `canonical_url()`:
+- forces https and lower-cases the host;
+- drops userinfo, default ports, `www.`/`m.`/`mobile.`, fragments, trailing and doubled slashes, and every tracking parameter (`utm_*`, `fbclid`, `gclid`, `si`, `s`, `t`, `ref`, …);
+- maps `twitter.com` → `x.com` and `youtu.be/<id>` → `youtube.com/watch?v=<id>`;
+- sorts what remains.
+
+Reserved platform paths (`x.com/home`, `instagram.com/p/…`, `github.com/features`) name nobody. Anything that is not an http(s) page is refused.
+
+**Rediscovery** under any casing, or a tagged or mobile link, adds to the same row. Keys that point at two different prospects return `identity_conflict` and write nothing. A suppressed address, domain or prospect is **never re-added or re-researched**. A key attached to the wrong person is **released** (kept on the record, cleared from the row) so it can belong to someone else.
+
+### Evidence comes in checkable (trigger `evidence_prepare`)
+
+- **The fact:** the field must be one of the catalogue (name, organization, title, email, project, article, podcast, newsletter, model, topic, sport covered, audience size, fit signal).
+- **The source** is a web page with a kind: their own site, their own profile, a publication, an interview, a directory, or the owner's own check.
+- **Email-only kinds:**
+  - a pattern guess can only support an email address;
+  - a provider verification or lookup can only be recorded by a provider;
+  - an owner verification only by the owner.
+- **A page claim needs the words on the page** that say it, and nothing can be published in the future.
+- **Never an employer from an email domain:** an organization claim that is a domain is refused. A name that is a handle or an address is refused.
+- **The weight is the server's.** Whatever confidence a collector hands in is discarded, tracking parameters are stripped from the stored URL, and an evidence row is never rewritten. It is *superseded* once, with a reason, and stays on the record.
+
+### How sure (`claim_stats`, `field_assessment`, `compute`)
+
+| Source | Weight for a fact | Weight for an email |
+|---|---|---|
+| the owner's own check | 0.80 | 0.90 |
+| their own site / their own profile | 0.70 / 0.70 | 0.90 / 0.85 |
+| a publication | 0.55 | 0.70 |
+| an interview | 0.40 | 0.50 |
+| a directory | 0.25 | 0.40 |
+| a verification provider / provider lookup / pattern guess | — | 0.85 / 0.50 / 0.10 |
+
+- **Independent sources combine:** confidence = 1 − ∏(1 − weight), taking the best weight per **publisher**. The same site saying it on three pages is one source. Two independent first-party sources give 0.91, just over the identity bar of 0.90.
+- **Rivals halve it.** A name, title, organization or audience figure with another current claim is halved, and the rival is shown.
+- **Old facts weigh less:**
+  - a role over a year old ×0.75, over two years ×0.5;
+  - content over 18 months old ×0.7, marked old (never to be called "recent");
+  - an audience figure over a year old ×0.6.
+- **First name:** used only when identity clears its bar **and** the name plainly has one. No first name is guessed from a single word, an initial or a title.
+- **Email status:**
+  - `verified` only after the owner's own check or a verification provider;
+  - `unverified` if published;
+  - `risky` if only guessed;
+  - `invalid` after a bounce (Phase 6).
+- **Research confidence:** with a draft waiting, it is that draft's *weakest* cited claim. A claim citing nothing, superseded evidence or another prospect's evidence counts as 0. Before any draft, it is the best-supported fact there is to write from.
+- **Fit** comes from a fixed catalogue (`fit_factor_catalog`, edited in the file, not from a page):
+  - a positive reason counts only while it cites current, non-email evidence of the same prospect;
+  - penalties count unproven;
+  - the score is clamped to 0–100.
+
+### Computed means computed (trigger `prospects_guard`)
+
+- **No statement writes a computed column.** Not a door, not the research engine, not the superuser in the SQL editor.
+- **Under the evaluate door** the row is recomputed from evidence inside the trigger, so a faked door yields only the true values.
+- **Only `evaluate()`** declares a prospect qualified or ready for review.
+- **Status follows the gates:**
+  - `discovered` when nothing is known;
+  - `needs_research` with every unmet gate named;
+  - `qualified` when every gate clears;
+  - `ready_for_review` once a step-1 draft is waiting.
+- **The owner's decisions stand:** rejected, contacted, replied, converted, suppressed. "Needs more research" holds until something newer is found.
+- **An approval the prospect no longer earns is withdrawn** (back to review, logged).
+- **The approve door re-evaluates first**, so it always reads a fresh assessment. The send trigger also refuses a duplicate row, the same person under another address, and a prospect that is no longer ready.
+
+### New owner doors
+
+- `growth_outbound_prospect_upsert(p)`: add or find a prospect, with evidence and fit reasons, all or nothing.
+- `growth_outbound_evidence_add(prospect, p)`
+- `growth_outbound_evidence_supersede(evidence_id, reason)`
+- `growth_outbound_identifier_release(identifier_id, reason)`
+- `growth_outbound_prospect_evaluate(id)`
+- `growth_outbound_identity_lookup(text)`: "have we seen this email or URL?"
+- `growth_outbound_fit_catalog()`
+
+`growth_outbound_prospect(id)` now also returns the assessment, every observation (current and superseded, with its present confidence), the identifiers and related prospects. Every door starts with the owner check. The Phase 2 suite's catalogue loop refuses all seven new doors to anon, the service role, a subscriber, a partner, a non-owner affiliate admin and a stranger, with no new test needed.
+
+### The console
+
+The Outbound tab can now **open a prospect** to show:
+- each number beside its bar;
+- the gates still unmet;
+- every fact with its sources, why it is not more certain, and its rivals;
+- warnings in words;
+- the evidence history ("previously … superseded: why");
+- the fit reasons and what they rest on;
+- the identifiers, and the drafts.
+
+**The owner can:**
+- add evidence;
+- supersede an observation;
+- add or remove a fit reason;
+- release an identifier ("not theirs");
+- re-evaluate;
+- send the prospect back for research, or reject it.
+
+**Have we seen them?** looks up an email or URL before anyone researches it, and **Add a prospect** takes an email, profile URLs and a first fact.
+
+Everything shown came from the open web, so all of it is escaped and only an `https:` source becomes a link (`noopener noreferrer nofollow`). The page computes nothing.
+
+### What Phase 3 does not do (and what each later piece needs)
+
+- **No automatic discovery or research yet.** Phase 7 adds a provider interface; it needs a search API (for example Brave Search, Bing Web Search or SerpAPI) and an LLM key for extraction, kept as Edge Function secrets. Nothing is faked in the meantime: the table holds only what the owner enters.
+- **No email verification provider yet.** Until one is connected (for example ZeroBounce, NeverBounce or Kickbox), an email is `verified` only by the owner's own check, recorded as `owner_verified` evidence.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_research_sql.test.js` (`npm run growth:sql`) | 162 | **Canonical URLs:** 20 cases. **Identity keys:** 17 URLs. **Dedupe:** rediscovery, `identity_conflict` writing nothing, suppressed people staying out, weak keys flagged and never merged, release. **Evidence rules:** 17 refusals, including the employer-from-email-domain rule, forged attestations and a collector's confidence; all or nothing. **The confidence arithmetic:** repetition, independence, rivals, stale roles, old content. **Computed columns** refused even to the superuser, and a faked door. **Names, fit, the status machine, approval withdrawal, the fresh approve, one person one step, lookup.** **Mutation-checked:** 18 deliberate breaks, every one caught. |
+| `tools/growth/outbound_sql.test.js` | 239 | the Phase 2 suite. Its prospects are now built from evidence and evaluated (the old direct writes are refused). The duplicate row is refused at approval, and its send is refused even when an approval is forced past the door. |
+| `tools/growth/outbound_console.e2e.js` (`npm run growth:e2e`) | 73 | adds the prospect panel, injected markup shown as text, no `javascript:` link, supersede, add evidence, fit reasons, release, status, lookup and add prospect. A non-owner forcing `EDOutbound.open()` still gets nothing. An unassessed prospect is never shown as clearing the gates, and the page still opens a prospect before the Phase 3 SQL is applied; 390 px with a prospect open. |
+
+### Deploy
+
+1. Merge the Phase 3 PR. The page works against the Phase 2 schema until step 2: opening a prospect shows what Phase 2 stored, and adding one says the door is missing.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. It is idempotent and additive, and it re-evaluates every existing prospect under the new rules. Report rows 1–18 should say `ok`; row 18 lists prospects by status.
+
+### Rollback
+
+- **The page:** revert the merge commit.
+- **The database:** drop the two Phase 3 triggers and the seven new doors, then re-run the Phase 2 version of the file (`git show 3cd88938:supabase/growth_outbound.sql`). That restores the Phase 2 versions of the replaced functions. The new tables and columns stay; they are harmless and hold no client privilege.
+
+```sql
+drop trigger if exists prospects_guard_t on growth_outbound.prospects;
+drop trigger if exists evidence_prepare_t on growth_outbound.evidence;
+drop function if exists public.growth_outbound_prospect_upsert(jsonb), public.growth_outbound_evidence_add(uuid, jsonb),
+  public.growth_outbound_evidence_supersede(bigint, text), public.growth_outbound_identifier_release(bigint, text),
+  public.growth_outbound_prospect_evaluate(uuid), public.growth_outbound_identity_lookup(text), public.growth_outbound_fit_catalog();
+notify pgrst, 'reload schema';
+```
+
+## Next
+
 - **Phase 4:** the review queue (cards, batch approve with an explicit count confirmation, a test-prospect fixture).
 - **Phase 5:** the claim door and the `growth-send-approved` Edge Function, built on `requireOutboundOwner`.
+- **Phase 6:** the Resend webhook, the opt-out endpoint, bounces and complaints into suppressions.
+- **Phase 7:** discovery and research providers (interface first; nothing faked).

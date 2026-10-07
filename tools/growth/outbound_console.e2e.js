@@ -18,6 +18,21 @@
         disappears
      7  sign-out removes the tab and the mode tag
      8  at 390 px the tab fits the screen; no page errors anywhere
+     9  RESEARCH (Phase 3): a prospect opens into each number beside its bar,
+        the gates, the facts with their sources and rivals, the warnings in
+        words, and the evidence history ("previously … superseded: why");
+        text from the web is shown as text (no markup runs) and only an
+        https: source becomes a link (noopener, noreferrer, nofollow)
+    10  superseding asks why; no reason sends nothing
+    11  adding evidence sends exactly what was typed; a refusal is shown
+    12  fit reasons: added resting on evidence, or removed
+    13  "not theirs" releases an identifier, with a reason
+    14  "needs more research" and "reject" ask first
+    15  "have we seen them?" finds the existing record and opens it
+    16  adding a prospect sends the email, the URLs one per line, the sports
+        and the first fact; a suppressed person is reported, not added
+    17  before the Phase 3 SQL is applied (no fit catalogue), a prospect still
+        opens; one with no assessment is never shown as clearing the gates
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -65,6 +80,28 @@ function freshSettings() {
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
     send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25 } };
 }
+const XSS = '<img src=x onerror="window.__pwned=1">';
+const DETAIL = { ok: true,
+  prospect: { id: 'p1', full_name: 'Pat Analyst', first_name: 'Pat', organization: 'CFB Numbers', job_title: 'Founder', prospect_type: 'cfb_analyst', is_test: false, suppressed: false,
+    email: 'pat@cfbnumbers.test', email_status: 'verified', email_confidence: 0.99, identity_confidence: 0.91, role_confidence: 0.35, research_confidence: 0.91, fit_score: 89,
+    status: 'ready_for_review', warnings: ['stale:job_title', 'possible_duplicate'], gates: [],
+    assessment: { evaluated_at: '2026-10-07T09:00:00Z', gates: [], thresholds: { fit: 80, identity: 0.9, role: 0.85, email: 0.9, research: 0.85 },
+      fields: { full_name: { claim: 'Pat Analyst', confidence: 0.91, sources: 2, reasons: [], alternatives: [] },
+                job_title: { claim: 'Founder', confidence: 0.35, sources: 1, reasons: ['conflicting_sources', 'single_source'], alternatives: [{ claim: 'Head of Data', confidence: 0.35 }] } },
+      email: { kinds: ['own_site', 'owner_verified'] }, research: { from: 'draft_claims' },
+      fit: { factors: [{ code: 'quant_analysis', label: 'publishes quantitative sports analysis', points: 18, evidence: [9], confidence: 0.7 },
+                       { code: 'touting', label: 'sells picks or promises winnings', points: -40, evidence: [], confidence: null }] } } },
+  evidence: [
+    { id: 7, field_name: 'job_title', claim: 'Founder', source_url: 'https://cfbnumbers.test/about', source_kind: 'own_site', source_excerpt: 'Founder of CFB Numbers', observed_at: '2026-10-06T00:00:00Z', current: true, claim_confidence: 0.35 },
+    { id: 5, field_name: 'job_title', claim: 'Head of Data', source_url: 'https://cfbnumbers.test/about', source_kind: 'own_site', source_excerpt: 'Head of Data', source_published_at: '2024-01-01T00:00:00Z',
+      observed_at: '2026-10-01T00:00:00Z', current: false, superseded_at: '2026-10-06T00:00:00Z', superseded_reason: 'replaced by evidence 7', claim_confidence: null },
+    { id: 9, field_name: 'project', claim: XSS, source_url: 'javascript:alert(1)', source_kind: 'publication', source_excerpt: XSS, observed_at: '2026-10-06T00:00:00Z', current: true, claim_confidence: 0.55 }],
+  identifiers: [{ id: 31, kind: 'email', value: 'pat@cfbnumbers.test', strength: 'strong', first_seen: '2026-10-01T00:00:00Z' },
+                { id: 32, kind: 'name_org', value: 'pat analyst|cfb numbers', strength: 'weak', first_seen: '2026-10-01T00:00:00Z' }],
+  related: [{ id: 'p2', full_name: 'Ed Itor', organization: 'CFB Numbers', relation: 'possible_duplicate' }],
+  drafts: [{ sequence_number: 1, subject: 'Your ratings', status: 'pending_review', claims: [{ evidence_id: 9 }] }], sends: [], activity: [] };
+const CATALOG = [{ code: 'quant_analysis', label: 'publishes quantitative sports analysis', points: 18, needs_evidence: true },
+                 { code: 'touting', label: 'sells picks or promises winnings', points: -40, needs_evidence: false }];
 const PROSPECTS = { total: 2, rows: [
   { id: 'p1', full_name: 'Pat Analyst', organization: 'CFB Numbers', prospect_type: 'cfb_analyst', sports_focus: ['CFB'], fit_score: 88, identity_confidence: 0.95, role_confidence: 0.9,
     email_confidence: 0.95, research_confidence: 0.9, email: 'pat@cfbnumbers.test', email_status: 'verified', status: 'ready_for_review', updated_at: '2026-10-05T12:00:00Z', is_test: false, suppressed: false },
@@ -116,6 +153,30 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_suppressions') return reply(200, [{ created_at: '2026-10-05T11:00:00Z', scope: 'address', target: 'no@thanks.test', kind: 'unsubscribe', source: 'owner', reason: 'asked' }]);
         if (name === 'growth_outbound_activity') return reply(200, [{ at: '2026-10-05T11:00:00Z', actor_kind: 'owner', action: 'settings_changed', entity: 'settings', entity_id: '1', detail: { x: 1 } }]);
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
+        if (name === 'growth_outbound_fit_catalog') return o.noCatalog ? reply(404, { code: 'PGRST202', message: 'Could not find the function' }) : reply(200, CATALOG);
+        if (name === 'growth_outbound_prospect') {
+          if (body.p_id === 'p1') return reply(200, DETAIL);
+          return reply(200, { ok: true, prospect: { id: body.p_id, full_name: null, prospect_type: 'other', status: 'discovered', warnings: [], assessment: { gates: [] } },
+            evidence: [], identifiers: [], related: [], drafts: [], sends: [], activity: [] });
+        }
+        if (name === 'growth_outbound_evidence_add') {
+          const ev = (body.p && body.p.evidence) || [];
+          if (ev.length && !/^https:/.test(ev[0].source_url)) return reply(200, { ok: false, reason: 'invalid', at: 'evidence 1', detail: 'the source must be a web page (https://…)' });
+          return reply(200, { ok: true, prospect_id: body.p_prospect, created: false, evidence_ids: [99], status: 'ready_for_review', warnings: [], possible_duplicates: [] });
+        }
+        if (name === 'growth_outbound_evidence_supersede') return reply(200, { ok: true, status: 'ready_for_review', warnings: [] });
+        if (name === 'growth_outbound_identifier_release') return reply(200, { ok: true, cleared: ['email'], status: 'needs_research' });
+        if (name === 'growth_outbound_prospect_set_status') return reply(200, { ok: true, status: body.p_status, drafts_cancelled: 1 });
+        if (name === 'growth_outbound_prospect_evaluate') return reply(200, { ok: true, status: 'ready_for_review' });
+        if (name === 'growth_outbound_identity_lookup') {
+          if (!/[@/.]/.test(body.p_text)) return reply(200, { ok: false, reason: 'not_an_email_or_url' });
+          return reply(200, { ok: true, canonical: 'https://x.com/PatAnalyst', suppressed: false,
+            keys: [{ kind: 'handle', value: 'x:patanalyst', strength: 'strong', matches: [{ prospect_id: 'p1', full_name: 'Pat Analyst', status: 'ready_for_review', released: false }] }] });
+        }
+        if (name === 'growth_outbound_prospect_upsert') {
+          if (/gone@/.test(body.p && body.p.email)) return reply(200, { ok: false, reason: 'suppressed', prospect_id: null });
+          return reply(200, { ok: true, prospect_id: 'p9', created: true, evidence_ids: [100], status: 'discovered', warnings: [], possible_duplicates: [] });
+        }
         if (name === 'growth_outbound_settings_update') {
           const p = body.p || {};
           if (p.max_sends_per_day > st.max_sends_per_day && !p.confirm_cap_increase) return reply(200, { ok: false, reason: 'cap_increase_needs_confirmation' });
@@ -210,13 +271,134 @@ const PROSPECTS = { total: 2, rows: [
     await t.ctx.close();
   }
 
+  /* ── 9–16. research ─────────────────────────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    const last = (n) => t.calls.filter((c) => c[0] === n).slice(-1)[0];
+    const countOf = (n) => t.calls.filter((c) => c[0] === n).length;
+    await t.page.click('#tabBtnOutbound'); await settle(t.page);
+    chk('9 no prospect is fetched until one is opened', countOf('growth_outbound_prospect') === 0);
+    await t.page.click('[data-open="p1"]'); await settle(t.page, 600);
+    chk('9 opening a prospect asks for exactly that one', countOf('growth_outbound_prospect') === 1 && last('growth_outbound_prospect')[1].p_id === 'p1');
+    const dt = await text(t.page, '#obDetail');
+    chk('9 the detail is shown, every gate clearing', await visible(t.page, '#obDetail') && /Every gate clears/.test(dt), dt.slice(0, 200));
+    chk('9 each number beside its bar', /Identity0\.91needs 0\.9/.test(dt) && /Role0\.35aim 0\.85 · a gate only when a draft cites it/.test(dt) && /Fit89needs 80/.test(dt), dt.slice(0, 400));
+    chk('9 a weak bar is marked short, a met one passing', await t.page.evaluate(() => !!document.querySelector('#obDetail .kpi.short') && !!document.querySelector('#obDetail .kpi.pass')));
+    chk('9 why a fact is not more certain, and its rival claim', /sources disagree; only one independent source/.test(dt) && /Head of Data \(0\.35\)/.test(dt));
+    chk('9 warnings in words', /the title or role is old/.test(dt) && /may be the same person as another prospect/.test(dt));
+    chk('9 a possible duplicate is named and can be opened', /Possibly the same person as Ed Itor/.test(dt) && await visible(t.page, '#obDetail [data-open="p2"]'));
+    chk('9 history: previously, superseded, and why', /previously — superseded 2026-10-06: replaced by evidence 7/.test(dt));
+    chk('9 a penalty shows it needs no evidence; a positive reason cites its evidence', /\+18#9/.test(dt) && /-40— \(a penalty needs none\)/.test(dt));
+    const xss = await t.page.evaluate(() => ({ pwned: window.__pwned === 1, img: !!document.querySelector('#obDetail img'), js: !!document.querySelector('a[href^="javascript"]') }));
+    chk('9 text from the web is shown as text: no markup from it runs', !xss.pwned && !xss.img && dt.indexOf('<img src=x') >= 0, xss);
+    chk('9 a non-https source is never a link', !xss.js);
+    const a = await t.page.evaluate(() => { const x = document.querySelector('#obDetail a[href="https://cfbnumbers.test/about"]'); return x && [x.target, x.rel]; });
+    chk('9 an https source is a link that opens apart, with no referrer', a && a[0] === '_blank' && /noopener/.test(a[1]) && /noreferrer/.test(a[1]) && /nofollow/.test(a[1]), a);
+    await t.page.click('[data-open="pt"]'); await settle(t.page, 600);
+    chk('9 a prospect the database has not assessed is never shown as clearing the gates', /Not assessed yet/.test(await text(t.page, '#obDetail'))
+      && !/Every gate clears/.test(await text(t.page, '#obDetail')));
+    await t.page.click('[data-open="p1"]'); await settle(t.page, 600);
+    chk('9 an email can be released; the name+organization key cannot', await visible(t.page, '[data-release="31"]') && !(await t.page.$('[data-release="32"]')));
+    if (SHOTS) await (await t.page.$('#obDetailWrap')).screenshot({ path: path.join(SHOTS, 'outbound-prospect.png') });
+
+    /* 10. supersede */
+    t.setAnswers(['  ']);
+    await t.page.click('[data-supersede="7"]'); await settle(t.page);
+    chk('10 superseding asks why; no reason sends nothing', countOf('growth_outbound_evidence_supersede') === 0 && /stays on the record as "previously"/.test(t.dialogs.slice(-1)[0].msg));
+    t.setAnswers(['the site changed it']);
+    await t.page.click('[data-supersede="7"]'); await settle(t.page, 600);
+    const sup = last('growth_outbound_evidence_supersede');
+    chk('10 with a reason, that observation is superseded, and the prospect re-read', sup && sup[1].p_evidence_id === 7 && sup[1].p_reason === 'the site changed it'
+      && countOf('growth_outbound_prospect') === 4, sup);
+
+    /* 11. add evidence */
+    await t.page.click('#evAdd'); await settle(t.page);
+    chk('11 a claim and its page are both needed; nothing is sent without them', countOf('growth_outbound_evidence_add') === 0 && /both needed/.test(await text(t.page, '#evMsg')));
+    await t.page.selectOption('#evField', 'job_title'); await t.page.fill('#evClaim', 'Head of Research');
+    await t.page.fill('#evUrl', 'ftp://cfbnumbers.test/x'); await t.page.selectOption('#evKind', 'own_profile'); await t.page.fill('#evQuote', 'Head of Research at CFB Numbers');
+    await t.page.fill('#evDate', '2026-09-30');
+    await t.page.click('#evAdd'); await settle(t.page);
+    const ea = last('growth_outbound_evidence_add');
+    chk('11 exactly what was typed is sent, to that prospect', ea && ea[1].p_prospect === 'p1' && JSON.stringify(ea[1].p) === JSON.stringify({ evidence: [{ field_name: 'job_title',
+      claim: 'Head of Research', source_url: 'ftp://cfbnumbers.test/x', source_kind: 'own_profile', source_excerpt: 'Head of Research at CFB Numbers', source_published_at: '2026-09-30T00:00:00Z' }] }), ea && ea[1]);
+    chk('11 the database\'s refusal is shown', /Not added: the source must be a web page/.test(await text(t.page, '#evMsg')));
+    await t.page.fill('#evUrl', 'https://x.com/patanalyst'); await t.page.click('#evAdd'); await settle(t.page, 600);
+    chk('11 accepted, the prospect is re-read', countOf('growth_outbound_evidence_add') === 2 && countOf('growth_outbound_prospect') === 5);
+
+    /* 12. fit reasons */
+    await t.page.selectOption('#fitCode', 'quant_analysis'); await t.page.selectOption('#fitEv', '9');
+    await t.page.click('#fitAdd'); await settle(t.page, 600);
+    chk('12 a reason is added resting on the chosen evidence', JSON.stringify(last('growth_outbound_evidence_add')[1].p) === JSON.stringify({ fit_factors: [{ code: 'quant_analysis', evidence: [9] }] }));
+    await t.page.selectOption('#fitCode', 'touting'); await t.page.click('#fitDrop'); await settle(t.page, 600);
+    chk('12 … or removed', JSON.stringify(last('growth_outbound_evidence_add')[1].p) === JSON.stringify({ fit_factors: [{ code: 'touting', remove: true }] }));
+    chk('12 the email address is never offered as fit evidence', !(await t.page.$('#fitEv option[value="31"]')));
+
+    /* 13. release */
+    t.setAnswers([false]);
+    await t.page.click('[data-release="31"]'); await settle(t.page);
+    chk('13 "not theirs" asks first; cancelling sends nothing', countOf('growth_outbound_identifier_release') === 0);
+    t.setAnswers(['belongs to the editor']);
+    await t.page.click('[data-release="31"]'); await settle(t.page, 600);
+    const rl = last('growth_outbound_identifier_release');
+    chk('13 with a reason, that identifier is released', rl && rl[1].p_identifier_id === 31 && rl[1].p_reason === 'belongs to the editor', rl);
+
+    /* 14. status */
+    t.setAnswers(['confirm the title']);
+    await t.page.click('#pdResearch'); await settle(t.page, 600);
+    const ss = last('growth_outbound_prospect_set_status');
+    chk('14 "needs more research" asks what, then says so to the database', ss && ss[1].p_id === 'p1' && ss[1].p_status === 'needs_research' && ss[1].p_reason === 'confirm the title', ss);
+    t.setAnswers([false]);
+    await t.page.click('#pdReject'); await settle(t.page);
+    chk('14 "reject" asks first; cancelling sends nothing', countOf('growth_outbound_prospect_set_status') === 1);
+    await t.page.click('#pdEval'); await settle(t.page, 600);
+    chk('14 re-evaluate asks the database, which does the arithmetic', countOf('growth_outbound_prospect_evaluate') === 1);
+
+    /* 15. have we seen them? */
+    await t.page.fill('#obLook', 'hello'); await t.page.click('#obLookBtn'); await settle(t.page);
+    chk('15 anything but an email or a web address is said to be so', /not an email address or a web address/.test(await text(t.page, '#obLookOut')));
+    await t.page.fill('#obLook', 'https://m.twitter.com/PatAnalyst?s=20'); await t.page.press('#obLook', 'Enter'); await settle(t.page);
+    const lo = await text(t.page, '#obLookOut');
+    chk('15 a tagged mobile link is recognised as Pat, already known', /https:\/\/x\.com\/PatAnalyst/.test(lo) && /Already known: Pat Analyst \(Ready for review, by handle\)/.test(lo), lo);
+    const before = countOf('growth_outbound_prospect');
+    await t.page.click('#obLookOut [data-open="p1"]'); await settle(t.page, 600);
+    chk('15 … and opens their record', countOf('growth_outbound_prospect') === before + 1);
+
+    /* 16. add a prospect */
+    await t.page.click('#apAdd'); await settle(t.page);
+    chk('16 a prospect needs an email or a URL; nothing is sent without', countOf('growth_outbound_prospect_upsert') === 0 && /recognise again/.test(await text(t.page, '#apMsg')));
+    await t.page.fill('#apEmail', 'new@new.test'); await t.page.fill('#apUrls', 'https://x.com/newperson\n https://new.test ');
+    await t.page.selectOption('#apType', 'nfl_analyst'); await t.page.fill('#apSports', 'NFL, props');
+    await t.page.selectOption('#apField', 'full_name'); await t.page.fill('#apClaim', 'New Person'); await t.page.fill('#apSrc', 'https://new.test/about');
+    await t.page.selectOption('#apKind', 'own_site'); await t.page.fill('#apQuote', 'I am New Person');
+    await t.page.click('#apAdd'); await settle(t.page, 700);
+    const ap = last('growth_outbound_prospect_upsert');
+    chk('16 the email, each URL, the sports and the first fact are sent — and no test flag', ap && JSON.stringify(ap[1].p) === JSON.stringify({ email: 'new@new.test',
+      urls: ['https://x.com/newperson', 'https://new.test'], prospect_type: 'nfl_analyst', campaign_type: 'customer', sports_focus: ['NFL', 'props'],
+      evidence: [{ field_name: 'full_name', claim: 'New Person', source_url: 'https://new.test/about', source_kind: 'own_site', source_excerpt: 'I am New Person' }] }), ap && ap[1]);
+    chk('16 it says what happened and opens the new record', /Added\. Status: Discovered\./.test(await text(t.page, '#apMsg')) && last('growth_outbound_prospect')[1].p_id === 'p9');
+    await t.page.fill('#apEmail', 'gone@optout.test'); await t.page.click('#apAdd'); await settle(t.page);
+    chk('16 a suppressed person is reported, not added', /suppressed/.test(await text(t.page, '#apMsg')));
+    chk('9-16 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 17. the page ahead of its migration ─────────────────────────────── */
+  {
+    const t = await open({ role: 'owner', noCatalog: true });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page);
+    await t.page.click('[data-open="p1"]'); await settle(t.page, 600);
+    chk('17 without the Phase 3 fit catalogue, a prospect still opens', /Pat Analyst/.test(await text(t.page, '#obDetail')) && !/not installed/.test(await text(t.page, '#obDetailMsg')));
+    chk('17 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
   /* ── 5. an affiliate admin who is NOT an owner ─────────────────────── */
   {
     const t = await open({ role: 'admin' });
     chk('5 a non-owner admin gets the growth console', await visible(t.page, '#actKpis'));
     chk('5 … with no Outbound tab and no mode tag', !(await visible(t.page, '#tabs')) && !(await visible(t.page, '#tabBtnOutbound')) && !(await visible(t.page, '#obModeTag')));
-    await t.page.evaluate(() => window.EDOutbound.show('outbound')); await settle(t.page);
-    chk('5 even forcing the tab from the console shows nothing', !(await visible(t.page, '#tabOutbound')));
+    await t.page.evaluate(() => { window.EDOutbound.show('outbound'); window.EDOutbound.open('p1'); }); await settle(t.page);
+    chk('5 even forcing the tab, or a prospect, from the console shows nothing', !(await visible(t.page, '#tabOutbound')) && !(await visible(t.page, '#obDetailWrap')));
     const ob = outboundCalls(t.calls);
     chk('5 the ONLY outbound call ever made is the owner question', ob.length === 1 && ob[0] === 'growth_outbound_is_owner', ob);
     chk('5 no page errors', t.errors.length === 0, t.errors);
@@ -238,6 +420,9 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#tabBtnOutbound'); await settle(t.page);
     const sw = await t.page.evaluate(() => document.documentElement.scrollWidth);
     chk('8 at 390 px the Outbound tab is not wider than the screen', sw <= 391, sw);
+    await t.page.click('[data-open="p1"]'); await settle(t.page, 600);
+    const sw2 = await t.page.evaluate(() => document.documentElement.scrollWidth);
+    chk('8 … nor is an open prospect (its tables scroll inside their card)', sw2 <= 391, sw2);
     if (SHOTS) await t.page.screenshot({ path: path.join(SHOTS, 'outbound-phone.png'), fullPage: false });
     chk('8 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
