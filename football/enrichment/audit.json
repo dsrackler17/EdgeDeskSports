@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-07T06:15:25.756Z",
+ "generated_at": "2026-10-07T08:53:31.431Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-07T06:15:25.756Z",
-  "reliability_generated_at": "2026-10-07T06:15:25.756Z",
-  "enrichment_generated_at": "2026-10-07T06:15:17.981Z",
+  "at": "2026-10-07T08:53:31.431Z",
+  "reliability_generated_at": "2026-10-07T08:53:31.431Z",
+  "enrichment_generated_at": "2026-10-07T08:53:22.509Z",
   "counts": {
    "games": 110,
    "mean": 85.8,
@@ -1461,6 +1461,7 @@
      "qb_identity": 2.1,
      "qb_conflict": 1,
      "qb_status": 2,
+     "starters": 0.6,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
     },
@@ -1704,6 +1705,7 @@
      "qb_status": 2.5,
      "stability": 1.3,
      "qb_conflict": 1,
+     "starters": 0.6,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
     },
@@ -2504,72 +2506,35 @@
   }
  },
  "previous": {
-  "at": "2026-10-06T18:31:37.573Z",
+  "at": "2026-10-07T06:15:25.756Z",
   "counts": {
-   "games": 65,
-   "mean": 86,
+   "games": 110,
+   "mean": 85.8,
    "median": 88,
    "by_band": {
-    "STRONG": 55,
-    "ADEQUATE": 9,
-    "CAUTION": 1
+    "STRONG": 87,
+    "ADEQUATE": 18,
+    "VERY_STRONG": 2,
+    "LOW": 1,
+    "CAUTION": 2
    },
-   "missing_qb_status": 130,
-   "qb_conflicts_open": 4,
+   "missing_qb_status": 216,
+   "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 17,
-   "unrated_meaningful_absences": 0,
-   "fcs_games_thin_data": 0,
-   "games_under_two_market_sources": 65,
-   "stale_evidence_records": 81,
+   "games_lacking_injury_information": 22,
+   "unrated_meaningful_absences": 36,
+   "fcs_games_thin_data": 1,
+   "games_under_two_market_sources": 110,
+   "stale_evidence_records": 76,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
- "what_improved": [
-  "-5 stale evidence records (81 → 76)",
-  "2 games moved STRONG → VERY STRONG"
- ],
- "what_degraded": [
-  "-0.2 mean reliability (86 → 85.8)",
-  "+86 QB statuses missing (130 → 216)",
-  "+2 open QB conflicts (4 → 6)",
-  "+5 games lacking injury information (17 → 22)",
-  "+36 unrated meaningful absences (0 → 36)",
-  "+1 FCS games at THIN DATA (0 → 1)",
-  "+45 games under two market sources (65 → 110)"
- ],
- "why": [
-  "the slate itself changed: 46 games entered the window, 1 left it (kicked off or rolled out)",
-  "Iowa State @ BYU: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
-  "Iowa @ Washington: STRONG → VERY STRONG (84 → 91); largest change: availability +4.6 pts; away QB EXPECTED → UNCERTAIN, home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
- ],
+ "what_improved": [],
+ "what_degraded": [],
+ "why": [],
  "history": [
-  {
-   "at": "2026-09-29T10:25:23.510Z",
-   "counts": {
-    "games": 66,
-    "mean": 83.9,
-    "median": 86.5,
-    "by_band": {
-     "STRONG": 51,
-     "LOW": 3,
-     "ADEQUATE": 11,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 131,
-    "qb_conflicts_open": 3,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 15,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 66,
-    "stale_evidence_records": 75,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-29T12:43:30.620Z",
    "counts": {
@@ -3967,6 +3932,31 @@
   },
   {
    "at": "2026-10-07T06:15:25.756Z",
+   "counts": {
+    "games": 110,
+    "mean": 85.8,
+    "median": 88,
+    "by_band": {
+     "STRONG": 87,
+     "ADEQUATE": 18,
+     "VERY_STRONG": 2,
+     "LOW": 1,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 216,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 22,
+    "unrated_meaningful_absences": 36,
+    "fcs_games_thin_data": 1,
+    "games_under_two_market_sources": 110,
+    "stale_evidence_records": 76,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-07T08:53:31.431Z",
    "counts": {
     "games": 110,
     "mean": 85.8,
