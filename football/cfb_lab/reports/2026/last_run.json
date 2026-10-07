@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-07T06:07:32.000Z",
+ "started_at": "2026-10-07T07:07:33.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,12 +7,12 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 1
+   "ms": 0
   },
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 773
+   "ms": 711
   },
   "market": {
    "ok": true,
@@ -34,15 +34,15 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-07T06:07:32.000Z",
+      "last_success_at": "2026-10-07T07:07:33.000Z",
       "last_failure_at": null,
-      "calls": 5854,
+      "calls": 5877,
       "failures": 0
      }
     },
     "cfbd": {
      "ledger_rows": 359,
-     "candidates": 1240,
+     "candidates": 1276,
      "schema_rejected": 0,
      "schema_problems": []
     },
@@ -59,8 +59,8 @@
       "cfb_market_quote_integrity_v1",
       "cfb_market_outlier_v1"
      ],
-     "candidates": 1522,
-     "accepted": 1522,
+     "candidates": 1558,
+     "accepted": 1558,
      "rejected": 0,
      "quarantined": 0,
      "quarantine_written": 0,
@@ -69,33 +69,37 @@
     }
    },
    "dedupe": {
-    "received": 1522,
-    "written": 70,
-    "duplicates": 1452,
+    "received": 1558,
+    "written": 90,
+    "duplicates": 1468,
     "refused": 0,
     "refusals": {}
    },
-   "written": 70,
+   "written": 90,
    "conflicts": [],
    "schedule_games": 68,
-   "ms": 1176
+   "ms": 1015
   },
   "freeze_import": {
    "ok": true,
    "files": 2,
    "imported": 0,
    "skipped": [],
-   "ms": 379
+   "ms": 261
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-07T06:07:32.000Z",
+   "now": "2026-10-07T07:07:33.000Z",
    "season": 2026,
-   "due": 0,
-   "taken": 0,
+   "due": 46,
+   "taken": 46,
    "skipped_no_projection": 0,
-   "by_model": {},
-   "by_checkpoint": {},
+   "by_model": {
+    "edgedesk_cfb_p4_v1.0.0": 46
+   },
+   "by_checkpoint": {
+    "OPEN": 46
+   },
    "skipped_schedule": {},
    "kickoff_moved": [
     {
@@ -114,16 +118,16 @@
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 884
+   "ms": 1285
   },
   "audit": {
    "ok": true,
    "events": 0,
-   "ms": 1
+   "ms": 0
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-07T06:07:32.000Z",
+   "now": "2026-10-07T07:07:33.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -139,9 +143,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-07T06:07:32.000Z",
+     "last_success_at": "2026-10-07T07:07:33.000Z",
      "last_failure_at": null,
-     "calls": 255,
+     "calls": 256,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -152,9 +156,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-07T06:07:32.000Z",
+     "last_success_at": "2026-10-07T07:07:33.000Z",
      "last_failure_at": null,
-     "calls": 5865,
+     "calls": 5888,
      "failures": 0
     }
    },
@@ -173,50 +177,50 @@
    },
    "evaluations": 0,
    "miss_reviews": 0,
-   "ms": 1005
+   "ms": 883
   },
   "report": {
    "ok": true,
-   "now": "2026-10-07T06:07:32.000Z",
+   "now": "2026-10-07T07:07:33.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 1,
    "public_graded": 60,
-   "ms": 434
+   "ms": 190
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 766
+   "ms": 532
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-07T06:07:32.000Z",
+  "at": "2026-10-07T07:07:33.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 2638
+   "upcoming_quotes": 2710
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 11.18,
+   "age_h": 0.87,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 17.99,
+   "age_h": 18.99,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
   "results_newest": "2026-10-07T04:07:30.000Z"
  },
- "finished_at": "2026-10-07T06:07:37.820Z",
+ "finished_at": "2026-10-07T07:07:38.230Z",
  "ok": true
 }
