@@ -10,16 +10,13 @@
   },
   {
    "evidence": {
-    "games": [
-     401870766,
-     401871052,
-     401862794,
-     401869933
-    ]
+    "noise_q99": 0.285,
+    "psi": 0.327,
+    "reference_weeks": "week5"
    },
-   "kind": "stale_odds",
+   "kind": "feature_drift",
    "level": "info",
-   "message": "4 games within 72 h have no line observation"
+   "message": "sigma differs from the 2024-25 reference at week5 (PSI 0.33; sampling noise alone reaches 0.29)"
   }
  ],
  "bet_enabled": false,
@@ -66,27 +63,50 @@
    "week": 5
   },
   {
+   "ats_at_close": 0.0,
+   "ats_at_freeze_line": 0.0,
+   "bias": -11.663,
+   "brier": 0.0758,
+   "clv_mean": 0.0,
    "disagreement_c_d_mean": 1.482,
-   "final": 0,
+   "final": 1,
    "frozen_games": 58,
+   "largest_misses": [
+    {
+     "abs_error": 11.7,
+     "final": 21.0,
+     "game": "Southern Miss @ Troy",
+     "v2": 9.3
+    }
+   ],
+   "mae": 11.663,
+   "mae_candidate_001_same_games": 11.676,
+   "mae_close": 11.5,
+   "mae_line_at_freeze": 11.5,
+   "mae_v1_same_games": 11.28,
+   "mae_v2_same_close_games": 11.663,
+   "mae_v2_same_line_at_freeze_games": 11.663,
+   "mae_v2_vs_candidate_001_games": 11.663,
+   "mae_v2_vs_v1_games": 11.663,
+   "rmse": 11.663,
    "week": 6
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
   "ens_pred": 0.222,
-  "ens_pred_noise_q99": 0.33,
-  "ens_sd": 0.292,
-  "ens_sd_noise_q99": 0.33,
-  "pred_total": 0.089,
-  "pred_total_noise_q99": 0.33,
+  "ens_pred_noise_q99": 0.285,
+  "ens_sd": 0.259,
+  "ens_sd_noise_q99": 0.285,
+  "pred_total": 0.149,
+  "pred_total_noise_q99": 0.285,
   "reference_weeks": "week5",
-  "sigma": 0.266,
-  "sigma_noise_q99": 0.33
+  "sigma": 0.327,
+  "sigma_noise_q99": 0.285
  },
- "generated_at": "2026-10-06T12:10:17Z",
+ "generated_at": "2026-10-07T10:49:09Z",
  "learning": {
-  "bias": -1.2345714285714287,
+  "bias": -1.4175263157894737,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -99,20 +119,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.2345714285714287,
+    "bias": -1.4175263157894737,
     "fcs_not_priced_games": 3,
-    "games_scored": 56,
-    "mae": 13.588892857142858,
-    "major_miss_share": 0.19642857142857142,
+    "games_scored": 57,
+    "mae": 13.555105263157897,
+    "major_miss_share": 0.19298245614035087,
     "sources": {
-     "FROZEN": 56
+     "FROZEN": 57
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 56,
-  "mae": 13.588892857142858,
-  "major_miss_share": 0.19642857142857142,
+  "games_scored": 57,
+  "mae": 13.555105263157897,
+  "major_miss_share": 0.19298245614035087,
   "miss_classes": {
    "explosive_variance": 2,
    "garbage_time": 2,
@@ -123,7 +143,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 56
+   "FROZEN": 57
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1805,8 +1825,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 56,
+  "final": 57,
   "frozen_games": 114,
-  "mae": 13.589
+  "mae": 13.555
  }
 }

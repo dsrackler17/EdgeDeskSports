@@ -1,119 +1,10 @@
 {
  "champion": "V1",
- "generated_at": "2026-10-06T12:08:07Z",
+ "generated_at": "2026-10-07T10:47:52Z",
  "mode": "shadow",
  "model_version": "edgedesk_cfb_v2.1.0",
  "note": "V2 runs in SHADOW beside V1. Pure projections only; the market decision is computed at read time by engine.decide() from live prices.",
  "rows": [
-  {
-   "away": "Southern Miss",
-   "away_id": 2572,
-   "build": {
-    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
-    "feature_version": "cfb_v2_fv2",
-    "finality_rule": "cfb_v2_finality_v2",
-    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
-    "model_version": "edgedesk_cfb_v2.1.0"
-   },
-   "components": {
-    "C_ridge": 7.93,
-    "D_gbm": 10.744
-   },
-   "drivers": [
-    {
-     "feature": "elo_diff",
-     "points": 1.51
-    },
-    {
-     "feature": "edge_epa",
-     "points": 1.28
-    },
-    {
-     "feature": "match_mix_edge",
-     "points": -1.15
-    }
-   ],
-   "early_season": false,
-   "ens_pred": 9.337,
-   "ens_sd": 1.99,
-   "fair_total": 48.7,
-   "fcs_game": false,
-   "feature_ts": "2026-10-06T12:00:00Z",
-   "game_id": 401871090,
-   "home": "Troy",
-   "home_id": 2653,
-   "kickoff": "2026-10-07T00:00:00Z",
-   "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
-   "model_version": "edgedesk_cfb_v2.1.0",
-   "neutral_site": false,
-   "not_priced_reason": null,
-   "p_home": 0.7247,
-   "prediction_ts": "2026-10-06T12:00:00Z",
-   "priced": true,
-   "qb": {
-    "away": {
-     "backup_rating": -0.0621,
-     "exp_rating": -0.052,
-     "qb_id": 4833635,
-     "team_rating": -0.0584
-    },
-    "home": {
-     "backup_rating": -0.0982,
-     "exp_rating": -0.0161,
-     "qb_id": 4431633,
-     "team_rating": -0.0168
-    }
-   },
-   "qb_missing_any": 0.0,
-   "qb_unsettled_any": 1.0,
-   "rating_sd_sum": 1.1474,
-   "reliability_base": 75.0,
-   "season": 2026,
-   "shadow": {
-    "candidate_001": {
-     "components": {
-      "A_adj_eff": 11.8,
-      "B_elo": 9.092,
-      "C_ridge": 7.802,
-      "D_gbm": 11.25,
-      "E_drive": 13.014
-     },
-     "ens_pred": 9.324,
-     "ens_sd": 2.109,
-     "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 15.78
-    },
-    "captured_at": "2026-10-06T12:08:07Z",
-    "market_at_freeze": {
-     "current_home_line": -9.5,
-     "open_home_line": -8.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
-     "source": "cfbd_lines_provider_mean",
-     "total_current": 48.5,
-     "total_open": 48.5
-    },
-    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
-    "v1": {
-     "home_win_prob": 0.7438215768521904,
-     "margin": 9.72,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
-     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
-     "status": "PREDICTED"
-    }
-   },
-   "sigma": 15.752,
-   "state": "FROZEN",
-   "uncertainty_drivers": [
-    "turnover-dependent teams",
-    "uncertain team ratings"
-   ],
-   "week": 6,
-   "weeks_in": 5.29
-  },
   {
    "away": "Jacksonville State",
    "away_id": 55,
@@ -153,10 +44,6 @@
    "home_id": 338,
    "kickoff": "2026-10-07T23:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -196,20 +83,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.811
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": 2.5,
-     "open_home_line": 2.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 2.75,
+     "open_home_line": 2.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 48.5,
-     "total_open": 48.5
+     "total_current": 49.5,
+     "total_open": 49.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.447737036422026,
      "margin": -1.95,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -262,10 +149,6 @@
    "home_id": 2229,
    "kickoff": "2026-10-07T23:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -305,20 +188,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.721
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -3.5,
-     "open_home_line": -3.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -6.5,
+     "open_home_line": -4.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 47.5,
-     "total_open": 47.5
+     "total_current": 46.5,
+     "total_open": 47.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6528640768484308,
      "margin": 5.83,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -371,11 +254,6 @@
    "home_id": 2335,
    "kickoff": "2026-10-08T23:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -415,20 +293,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.92
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -13.5,
+     "open_home_line": -13.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 52.5,
+     "total_open": 52.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8979501983903305,
      "margin": 18.85,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -481,11 +359,6 @@
    "home_id": 98,
    "kickoff": "2026-10-08T23:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -525,20 +398,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.227
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -2.5,
+     "open_home_line": -2.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 56.25,
+     "total_open": 56.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5441452375945551,
      "margin": 1.65,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -591,11 +464,6 @@
    "home_id": 2636,
    "kickoff": "2026-10-08T23:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -635,20 +503,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.081
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -7.25,
+     "open_home_line": -6.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 49.75,
+     "total_open": 51.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.545620258257482,
      "margin": 1.68,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -701,11 +569,6 @@
    "home_id": 2032,
    "kickoff": "2026-10-08T23:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -745,20 +608,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.367
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -1.5,
+     "open_home_line": -1.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 58.75,
+     "total_open": 58.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6755042248597649,
      "margin": 6.66,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -811,11 +674,6 @@
    "home_id": 97,
    "kickoff": "2026-10-09T23:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -855,20 +713,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.167
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.5,
+     "open_home_line": -4.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 59.5,
+     "total_open": 58.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.557507374428988,
      "margin": 2.12,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -921,10 +779,6 @@
    "home_id": 264,
    "kickoff": "2026-10-10T01:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -964,20 +818,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.181
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -1.5,
-     "open_home_line": -1.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.5,
+     "open_home_line": -2.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 41.5,
-     "total_open": 41.5
+     "total_current": 41.75,
+     "total_open": 42.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
-     "home_win_prob": 0.5352953654934227,
-     "margin": 1.3,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "home_win_prob": 0.5878106004271484,
+     "margin": 3.25,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1030,11 +884,6 @@
    "home_id": 328,
    "kickoff": "2026-10-10T01:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1074,20 +923,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.934
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -5.25,
+     "open_home_line": -4.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 44.25,
+     "total_open": 43.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6268987141750207,
      "margin": 4.74,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1140,11 +989,6 @@
    "home_id": 23,
    "kickoff": "2026-10-10T01:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1184,20 +1028,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.434
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -6.25,
+     "open_home_line": -6.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 43.5,
+     "total_open": 43.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6575286563833839,
      "margin": 5.94,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1250,10 +1094,6 @@
    "home_id": 252,
    "kickoff": "2026-10-10T02:15:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1293,20 +1133,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.697
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -14.5,
-     "open_home_line": -14.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -10.25,
+     "open_home_line": -12.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 50.5,
-     "total_open": 50.5
+     "total_current": 46.75,
+     "total_open": 49.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8246385169029615,
      "margin": 13.85,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1359,10 +1199,6 @@
    "home_id": 142,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1402,20 +1238,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.468
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -1.5,
-     "open_home_line": -1.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.5,
+     "open_home_line": -3.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 50.5,
-     "total_open": 50.5
+     "total_current": 48.5,
+     "total_open": 49.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7239371487521782,
      "margin": 8.7,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1468,11 +1304,6 @@
    "home_id": 277,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1512,20 +1343,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.048
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 3.0,
+     "open_home_line": 3.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 61.25,
+     "total_open": 60.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.30583979971252806,
      "margin": -7.43,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1578,11 +1409,6 @@
    "home_id": 197,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1622,20 +1448,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.967
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -9.75,
+     "open_home_line": -10.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 52.75,
+     "total_open": 53.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6057821999064099,
      "margin": 3.98,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1688,11 +1514,6 @@
    "home_id": 221,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1732,20 +1553,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.718
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.75,
+     "open_home_line": -3.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.25,
+     "total_open": 47.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7910590315336006,
      "margin": 12.02,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1798,11 +1619,6 @@
    "home_id": 152,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1842,20 +1658,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.297
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 3.5,
+     "open_home_line": 3.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 59.5,
+     "total_open": 59.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.4323841780140777,
      "margin": -2.49,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -1908,10 +1724,6 @@
    "home_id": 158,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -1951,20 +1763,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.323
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": 8.5,
-     "open_home_line": 9.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 7.5,
+     "open_home_line": 9.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 50.5,
-     "total_open": 50.5
+     "total_current": 49.75,
+     "total_open": 51.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.24903200482134397,
      "margin": -9.91,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2017,11 +1829,6 @@
    "home_id": 349,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2061,20 +1868,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.777
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.0,
+     "open_home_line": -3.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 48.5,
+     "total_open": 47.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7184563927335414,
      "margin": 8.58,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2127,11 +1934,6 @@
    "home_id": 189,
    "kickoff": "2026-10-10T16:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2171,20 +1973,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.501
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -7.75,
+     "open_home_line": -7.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 44.5,
+     "total_open": 44.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7121408919425994,
      "margin": 8.19,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2237,11 +2039,6 @@
    "home_id": 77,
    "kickoff": "2026-10-10T16:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2281,20 +2078,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.831
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -36.75,
+     "open_home_line": -36.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 52.5,
+     "total_open": 52.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.9944770662817002,
      "margin": 37.72,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2347,10 +2144,6 @@
    "home_id": 57,
    "kickoff": "2026-10-10T16:45:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2390,20 +2183,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.675
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -14.5,
-     "open_home_line": -14.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -12.0,
+     "open_home_line": -14.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 57.5,
-     "total_open": 57.5
+     "total_current": 60.75,
+     "total_open": 59.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6927668027332412,
      "margin": 7.37,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2456,11 +2249,6 @@
    "home_id": 2026,
    "kickoff": "2026-10-10T17:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2500,20 +2288,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.146
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -9.5,
+     "open_home_line": -9.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 50.25,
+     "total_open": 50.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.667985439805175,
      "margin": 6.45,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2566,11 +2354,6 @@
    "home_id": 113,
    "kickoff": "2026-10-10T18:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2610,20 +2393,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.122
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 2.5,
+     "open_home_line": 2.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.25,
+     "total_open": 47.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.39851525259858783,
      "margin": -3.76,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2676,10 +2459,6 @@
    "home_id": 201,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": true,
    "not_priced_reason": null,
@@ -2719,20 +2498,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 14.561
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": 9.5,
-     "open_home_line": 6.0,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 7.5,
+     "open_home_line": 7.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 41.5,
-     "total_open": 48.5
+     "total_current": 39.25,
+     "total_open": 44.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.25567193266784605,
      "margin": -9.75,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2785,11 +2564,6 @@
    "home_id": 238,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2829,20 +2603,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.051
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 9.75,
+     "open_home_line": 10.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 59.5,
+     "total_open": 58.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5109957713745098,
      "margin": 0.41,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -2895,11 +2669,6 @@
    "home_id": 2306,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -2939,20 +2708,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.233
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -2.5,
+     "open_home_line": -2.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 55.5,
+     "total_open": 55.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.556602070647924,
      "margin": 2.11,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3005,11 +2774,6 @@
    "home_id": 59,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3049,20 +2813,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.979
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 6.75,
+     "open_home_line": 7.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 48.5,
+     "total_open": 48.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.33702258157892717,
      "margin": -6.24,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3115,11 +2879,6 @@
    "home_id": 87,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3159,20 +2918,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.494
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -38.25,
+     "open_home_line": -38.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 54.0,
+     "total_open": 54.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.9957383003379381,
      "margin": 38.49,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3225,11 +2984,6 @@
    "home_id": 25,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3269,20 +3023,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.99
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 10.0,
+     "open_home_line": 9.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 53.25,
+     "total_open": 53.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.3227423520525901,
      "margin": -6.73,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3335,11 +3089,6 @@
    "home_id": 127,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3379,20 +3128,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.738
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 2.5,
+     "open_home_line": 3.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.75,
+     "total_open": 48.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5216298269846944,
      "margin": 0.79,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3445,10 +3194,6 @@
    "home_id": 2483,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3488,20 +3233,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.006
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": -12.5,
-     "open_home_line": -12.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -11.25,
+     "open_home_line": -12.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 60.5,
-     "total_open": 60.5
+     "total_current": 58.25,
+     "total_open": 60.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6905532918990765,
      "margin": 7.38,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3554,11 +3299,6 @@
    "home_id": 249,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3598,20 +3338,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.514
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -28.25,
+     "open_home_line": -27.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 57.75,
+     "total_open": 58.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.9859809950081969,
      "margin": 32.15,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3664,11 +3404,6 @@
    "home_id": 2426,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3708,20 +3443,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.884
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -2.5,
+     "open_home_line": -2.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 48.75,
+     "total_open": 49.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7496222093096203,
      "margin": 9.99,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3774,11 +3509,6 @@
    "home_id": 2006,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3818,20 +3548,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.931
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 6.75,
+     "open_home_line": 6.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 51.5,
+     "total_open": 51.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.3157425813530881,
      "margin": -7.02,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3884,11 +3614,6 @@
    "home_id": 2649,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -3928,20 +3653,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.115
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -21.0,
+     "open_home_line": -20.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 54.75,
+     "total_open": 54.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.9357473385689288,
      "margin": 22.24,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -3994,11 +3719,6 @@
    "home_id": 195,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4038,20 +3758,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.845
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.0,
+     "open_home_line": -3.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 46.75,
+     "total_open": 46.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.7087735776859025,
      "margin": 8.05,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4104,11 +3824,6 @@
    "home_id": 2711,
    "kickoff": "2026-10-10T19:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4148,20 +3863,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.733
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -13.5,
+     "open_home_line": -13.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 43.5,
+     "total_open": 44.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.854186067633253,
      "margin": 15.43,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4214,11 +3929,6 @@
    "home_id": 218,
    "kickoff": "2026-10-10T19:45:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4258,20 +3968,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.468
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.75,
+     "open_home_line": -3.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 54.5,
+     "total_open": 53.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6621043427501745,
      "margin": 6.12,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4324,11 +4034,6 @@
    "home_id": 151,
    "kickoff": "2026-10-10T20:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4368,20 +4073,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.91
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -10.0,
+     "open_home_line": -10.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.5,
+     "total_open": 48.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8251669876423029,
      "margin": 13.88,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4434,11 +4139,6 @@
    "home_id": 8,
    "kickoff": "2026-10-10T20:15:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4478,20 +4178,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.588
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 13.5,
+     "open_home_line": 13.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 51.5,
+     "total_open": 50.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.1677340156820848,
      "margin": -14.09,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4544,11 +4244,6 @@
    "home_id": 194,
    "kickoff": "2026-10-10T20:15:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4588,20 +4283,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.096
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -34.5,
+     "open_home_line": -34.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 56.25,
+     "total_open": 56.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.9939644162006418,
      "margin": 36.73,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4654,11 +4349,6 @@
    "home_id": 204,
    "kickoff": "2026-10-10T22:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4698,20 +4388,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.051
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -14.5,
+     "open_home_line": -14.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 53.5,
+     "total_open": 54.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.80463742601104,
      "margin": 12.56,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4764,10 +4454,6 @@
    "home_id": 96,
    "kickoff": "2026-10-10T23:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4807,20 +4493,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.729
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": 10.0,
-     "open_home_line": 10.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 8.5,
+     "open_home_line": 10.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 50.5,
-     "total_open": 49.5
+     "total_current": 52.75,
+     "total_open": 52.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.35793372523947986,
      "margin": -5.33,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4873,11 +4559,6 @@
    "home_id": 235,
    "kickoff": "2026-10-10T23:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -4917,20 +4598,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.19
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -14.0,
+     "open_home_line": -14.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 56.5,
+     "total_open": 58.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8569414348848825,
      "margin": 15.61,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -4983,11 +4664,6 @@
    "home_id": 2638,
    "kickoff": "2026-10-10T23:00:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5027,20 +4703,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.166
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 9.5,
+     "open_home_line": 9.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 49.5,
+     "total_open": 49.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.35371641893003103,
      "margin": -5.57,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5093,11 +4769,6 @@
    "home_id": 2439,
    "kickoff": "2026-10-10T23:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5137,20 +4808,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.89
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 3.0,
+     "open_home_line": 3.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.75,
+     "total_open": 48.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5327949249308668,
      "margin": 1.2,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5203,11 +4874,6 @@
    "home_id": 276,
    "kickoff": "2026-10-10T23:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5247,20 +4913,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.245
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.0,
+     "open_home_line": -3.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 58.5,
+     "total_open": 58.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6932055925001044,
      "margin": 7.39,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5313,10 +4979,6 @@
    "home_id": 333,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5356,20 +5018,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.501
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": 2.5,
-     "open_home_line": 3.0,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -1.5,
+     "open_home_line": 2.0,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 56.5,
-     "total_open": 50.5
+     "total_current": 52.75,
+     "total_open": 53.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.642580913995275,
      "margin": 5.35,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5422,11 +5084,6 @@
    "home_id": 258,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5466,20 +5123,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.013
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -9.5,
+     "open_home_line": -9.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 49.75,
+     "total_open": 50.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8049635994411648,
      "margin": 12.76,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5532,10 +5189,6 @@
    "home_id": 213,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5575,20 +5228,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.584
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": -1.5,
-     "open_home_line": -1.5,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "open_home_line": -0.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": 58.5,
-     "total_open": 56.5
+     "total_current": 54.75,
+     "total_open": 56.25
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.6387974700899456,
      "margin": 5.2,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5641,11 +5294,6 @@
    "home_id": 2459,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5685,20 +5333,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.182
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 7.5,
+     "open_home_line": 9.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 46.75,
+     "total_open": 47.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.21741023725015152,
      "margin": -11.59,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5751,11 +5399,6 @@
    "home_id": 290,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5795,20 +5438,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.546
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 7.5,
+     "open_home_line": 8.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 54.0,
+     "total_open": 54.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.2028884127786642,
      "margin": -12.17,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5861,11 +5504,6 @@
    "home_id": 2348,
    "kickoff": "2026-10-10T23:30:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -5905,20 +5543,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.192
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -3.0,
+     "open_home_line": -2.75,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 47.75,
+     "total_open": 49.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5833132682262323,
      "margin": 3.12,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -5971,11 +5609,6 @@
    "home_id": 2509,
    "kickoff": "2026-10-11T00:00:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -6015,20 +5648,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.999
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 2.5,
+     "open_home_line": 2.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 50.75,
+     "total_open": 51.0
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.3735430712081501,
      "margin": -4.72,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -6038,6 +5671,111 @@
    "uncertainty_drivers": [
     "uncertain team ratings",
     "model disagreement"
+   ],
+   "week": 6,
+   "weeks_in": 5.29
+  },
+  {
+   "away": "Hawai'i",
+   "away_id": 62,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": 20.491,
+    "D_gbm": 17.611
+   },
+   "drivers": [
+    {
+     "feature": "elo_diff",
+     "points": 3.06
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": -2.28
+    },
+    {
+     "feature": "edge_epa",
+     "points": 2.26
+    }
+   ],
+   "early_season": false,
+   "ens_pred": 19.051,
+   "ens_sd": 2.036,
+   "fair_total": 49.4,
+   "fcs_game": false,
+   "feature_ts": "2026-10-06T12:00:00Z",
+   "game_id": 401856808,
+   "home": "Arizona State",
+   "home_id": 9,
+   "kickoff": "2026-10-11T01:30:00Z",
+   "min_games": 4.0,
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.8914,
+   "prediction_ts": "2026-10-06T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.089,
+     "exp_rating": 0.1437,
+     "qb_id": 5101124,
+     "team_rating": 0.1381
+    },
+    "home": {
+     "backup_rating": -0.0716,
+     "exp_rating": 0.0611,
+     "qb_id": 5141378,
+     "team_rating": 0.0588
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.1023,
+   "reliability_base": 94.2,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": 16.134,
+      "B_elo": 14.201,
+      "C_ridge": 20.737,
+      "D_gbm": 17.21,
+      "E_drive": 20.692
+     },
+     "ens_pred": 19.287,
+     "ens_sd": 2.875,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.513
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": -20.75,
+     "open_home_line": -21.25,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 50.0,
+     "total_open": 50.75
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.7895103215073633,
+     "margin": 11.94,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.494,
+   "state": "FROZEN",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
+    "turnover-dependent teams"
    ],
    "week": 6,
    "weeks_in": 5.29
@@ -6081,11 +5819,6 @@
    "home_id": 254,
    "kickoff": "2026-10-11T02:15:00Z",
    "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -6125,20 +5858,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.974
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": -15.5,
+     "open_home_line": -15.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 51.5,
+     "total_open": 51.75
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.8985871635367726,
      "margin": 18.9,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -6148,116 +5881,6 @@
    "uncertainty_drivers": [
     "turnover-dependent teams",
     "uncertain team ratings"
-   ],
-   "week": 6,
-   "weeks_in": 5.29
-  },
-  {
-   "away": "Hawai'i",
-   "away_id": 62,
-   "build": {
-    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
-    "feature_version": "cfb_v2_fv2",
-    "finality_rule": "cfb_v2_finality_v2",
-    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
-    "model_version": "edgedesk_cfb_v2.1.0"
-   },
-   "components": {
-    "C_ridge": 20.491,
-    "D_gbm": 17.611
-   },
-   "drivers": [
-    {
-     "feature": "elo_diff",
-     "points": 3.06
-    },
-    {
-     "feature": "match_mix_edge",
-     "points": -2.28
-    },
-    {
-     "feature": "edge_epa",
-     "points": 2.26
-    }
-   ],
-   "early_season": false,
-   "ens_pred": 19.051,
-   "ens_sd": 2.036,
-   "fair_total": 49.4,
-   "fcs_game": false,
-   "feature_ts": "2026-10-06T12:00:00Z",
-   "game_id": 401856808,
-   "home": "Arizona State",
-   "home_id": 9,
-   "kickoff": "2026-10-11T02:30:00Z",
-   "min_games": 4.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
-   "model_version": "edgedesk_cfb_v2.1.0",
-   "neutral_site": false,
-   "not_priced_reason": null,
-   "p_home": 0.8914,
-   "prediction_ts": "2026-10-06T12:00:00Z",
-   "priced": true,
-   "qb": {
-    "away": {
-     "backup_rating": -0.089,
-     "exp_rating": 0.1437,
-     "qb_id": 5101124,
-     "team_rating": 0.1381
-    },
-    "home": {
-     "backup_rating": -0.0716,
-     "exp_rating": 0.0611,
-     "qb_id": 5141378,
-     "team_rating": 0.0588
-    }
-   },
-   "qb_missing_any": 0.0,
-   "qb_unsettled_any": 0.0,
-   "rating_sd_sum": 1.1023,
-   "reliability_base": 94.2,
-   "season": 2026,
-   "shadow": {
-    "candidate_001": {
-     "components": {
-      "A_adj_eff": 16.134,
-      "B_elo": 14.201,
-      "C_ridge": 20.737,
-      "D_gbm": 17.21,
-      "E_drive": 20.692
-     },
-     "ens_pred": 19.287,
-     "ens_sd": 2.875,
-     "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 15.513
-    },
-    "captured_at": "2026-10-06T12:08:07Z",
-    "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
-     "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
-    },
-    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
-    "v1": {
-     "home_win_prob": 0.7895103215073633,
-     "margin": 11.94,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
-     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
-     "status": "PREDICTED"
-    }
-   },
-   "sigma": 15.494,
-   "state": "FROZEN",
-   "uncertainty_drivers": [
-    "uncertain team ratings",
-    "turnover-dependent teams"
    ],
    "week": 6,
    "weeks_in": 5.29
@@ -6301,11 +5924,6 @@
    "home_id": 278,
    "kickoff": "2026-10-11T02:30:00Z",
    "min_games": 5.0,
-   "model_mode": "DEGRADED_AVAILABILITY",
-   "model_modes": [
-    "DEGRADED_AVAILABILITY",
-    "DEGRADED_MARKET"
-   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -6345,20 +5963,20 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 15.88
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
-     "current_home_line": null,
-     "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "current_home_line": 6.5,
+     "open_home_line": 6.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
-     "total_current": null,
-     "total_open": null
+     "total_current": 48.25,
+     "total_open": 48.5
     },
     "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
     "v1": {
      "home_win_prob": 0.5026129646603088,
      "margin": 0.1,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
@@ -6383,8 +6001,8 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": 0.29,
-    "D_gbm": -0.387
+    "C_ridge": 0.303,
+    "D_gbm": -0.225
    },
    "drivers": [
     {
@@ -6401,9 +6019,9 @@
     }
    ],
    "early_season": false,
-   "ens_pred": -0.048,
-   "ens_sd": 0.479,
-   "fair_total": 50.9,
+   "ens_pred": 0.039,
+   "ens_sd": 0.374,
+   "fair_total": 51.0,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401871067,
@@ -6411,18 +6029,23 @@
    "home_id": 2393,
    "kickoff": "2026-10-13T23:00:00Z",
    "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
-   "p_home": 0.4988,
+   "p_home": 0.501,
    "prediction_ts": "2026-10-13T12:00:00Z",
    "priced": true,
    "qb": {
     "away": {
-     "backup_rating": 0.0535,
-     "exp_rating": -0.0401,
+     "backup_rating": 0.0536,
+     "exp_rating": -0.04,
      "qb_id": 5296312,
-     "team_rating": 0.0171
+     "team_rating": 0.0172
     },
     "home": {
      "backup_rating": -0.0736,
@@ -6439,22 +6062,22 @@
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": 4.659,
+      "A_adj_eff": 4.648,
       "B_elo": -2.956,
-      "C_ridge": 0.756,
-      "D_gbm": -0.688,
-      "E_drive": 2.609
+      "C_ridge": 0.77,
+      "D_gbm": -0.385,
+      "E_drive": 2.663
      },
-     "ens_pred": 0.216,
-     "ens_sd": 2.935,
+     "ens_pred": 0.34,
+     "ens_sd": 2.902,
      "model_version": "edgedesk_cfb_v2.0.0",
      "sigma": 16.025
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6463,12 +6086,12 @@
     "v1": {
      "home_win_prob": 0.4789569934243887,
      "margin": -0.77,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 16.071,
+   "sigma": 16.084,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
@@ -6488,7 +6111,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": 7.605,
+    "C_ridge": 7.6,
     "D_gbm": 4.785
    },
    "drivers": [
@@ -6506,9 +6129,9 @@
     }
    ],
    "early_season": false,
-   "ens_pred": 6.195,
-   "ens_sd": 1.994,
-   "fair_total": 47.6,
+   "ens_pred": 6.193,
+   "ens_sd": 1.991,
+   "fair_total": 47.7,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401871053,
@@ -6516,50 +6139,55 @@
    "home_id": 55,
    "kickoff": "2026-10-14T00:00:00Z",
    "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
-   "p_home": 0.6542,
+   "p_home": 0.6541,
    "prediction_ts": "2026-10-13T12:00:00Z",
    "priced": true,
    "qb": {
     "away": {
-     "backup_rating": -0.0845,
+     "backup_rating": -0.0844,
      "exp_rating": 0.0496,
      "qb_id": 4870883,
      "team_rating": 0.0402
     },
     "home": {
      "backup_rating": -0.0639,
-     "exp_rating": 0.0363,
+     "exp_rating": 0.0364,
      "qb_id": 5122157,
-     "team_rating": 0.0348
+     "team_rating": 0.0349
     }
    },
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.109,
-   "reliability_base": 87.0,
+   "reliability_base": 86.9,
    "season": 2026,
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": 5.789,
+      "A_adj_eff": 5.781,
       "B_elo": 6.217,
-      "C_ridge": 7.677,
+      "C_ridge": 7.673,
       "D_gbm": 5.232,
-      "E_drive": 6.914
+      "E_drive": 6.958
      },
-     "ens_pred": 6.704,
-     "ens_sd": 0.957,
+     "ens_pred": 6.703,
+     "ens_sd": 0.963,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 15.702
+     "sigma": 15.706
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6568,12 +6196,12 @@
     "v1": {
      "home_win_prob": 0.7066182234016141,
      "margin": 8.07,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 15.726,
+   "sigma": 15.73,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
@@ -6593,7 +6221,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": 1.842,
+    "C_ridge": 1.843,
     "D_gbm": -0.955
    },
    "drivers": [
@@ -6613,7 +6241,7 @@
    "early_season": false,
    "ens_pred": 0.444,
    "ens_sd": 1.978,
-   "fair_total": 53.4,
+   "fair_total": 53.5,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401871054,
@@ -6621,6 +6249,11 @@
    "home_id": 2623,
    "kickoff": "2026-10-14T23:30:00Z",
    "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -6630,9 +6263,9 @@
    "qb": {
     "away": {
      "backup_rating": -0.0736,
-     "exp_rating": -0.0637,
+     "exp_rating": -0.0636,
      "qb_id": 4870645,
-     "team_rating": -0.0637
+     "team_rating": -0.0636
     },
     "home": {
      "backup_rating": -0.024,
@@ -6644,27 +6277,27 @@
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 0.0,
    "rating_sd_sum": 1.168,
-   "reliability_base": 84.5,
+   "reliability_base": 84.4,
    "season": 2026,
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": -1.7,
+      "A_adj_eff": -1.709,
       "B_elo": 2.254,
       "C_ridge": 1.374,
       "D_gbm": -1.016,
-      "E_drive": 2.293
+      "E_drive": 2.342
      },
-     "ens_pred": 0.535,
-     "ens_sd": 1.877,
+     "ens_pred": 0.537,
+     "ens_sd": 1.891,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 15.85
+     "sigma": 15.855
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6673,12 +6306,12 @@
     "v1": {
      "home_win_prob": 0.6092535098744398,
      "margin": 4.12,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 15.805,
+   "sigma": 15.81,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "uncertain team ratings",
@@ -6698,7 +6331,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": 6.307,
+    "C_ridge": 6.469,
     "D_gbm": 6.883
    },
    "drivers": [
@@ -6708,17 +6341,17 @@
     },
     {
      "feature": "edge_epa",
-     "points": 1.1
+     "points": 1.08
     },
     {
      "feature": "match_mix_edge",
-     "points": 0.16
+     "points": 0.15
     }
    ],
    "early_season": false,
-   "ens_pred": 6.595,
-   "ens_sd": 0.408,
-   "fair_total": 51.3,
+   "ens_pred": 6.676,
+   "ens_sd": 0.293,
+   "fair_total": 51.0,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401871068,
@@ -6726,10 +6359,15 @@
    "home_id": 2534,
    "kickoff": "2026-10-15T00:00:00Z",
    "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
-   "p_home": 0.6597,
+   "p_home": 0.6616,
    "prediction_ts": "2026-10-13T12:00:00Z",
    "priced": true,
    "qb": {
@@ -6741,35 +6379,35 @@
     },
     "home": {
      "backup_rating": -0.112,
-     "exp_rating": -0.0628,
+     "exp_rating": -0.0638,
      "qb_id": 5148427,
-     "team_rating": -0.0631
+     "team_rating": -0.0641
     }
    },
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
-   "rating_sd_sum": 1.1369,
-   "reliability_base": 74.0,
+   "rating_sd_sum": 1.1365,
+   "reliability_base": 74.3,
    "season": 2026,
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": 10.156,
+      "A_adj_eff": 10.024,
       "B_elo": -3.443,
-      "C_ridge": 6.378,
-      "D_gbm": 6.923,
-      "E_drive": 8.173
+      "C_ridge": 6.548,
+      "D_gbm": 6.966,
+      "E_drive": 8.33
      },
-     "ens_pred": 6.458,
+     "ens_pred": 6.576,
      "ens_sd": 5.28,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 16.177
+     "sigma": 16.157
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6778,12 +6416,12 @@
     "v1": {
      "home_win_prob": 0.5757255937969222,
      "margin": 2.83,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 16.139,
+   "sigma": 16.13,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
@@ -6803,7 +6441,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": -8.26,
+    "C_ridge": -8.266,
     "D_gbm": -5.098
    },
    "drivers": [
@@ -6821,9 +6459,9 @@
     }
    ],
    "early_season": false,
-   "ens_pred": -6.679,
-   "ens_sd": 2.236,
-   "fair_total": 51.7,
+   "ens_pred": -6.682,
+   "ens_sd": 2.24,
+   "fair_total": 51.8,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401862800,
@@ -6831,22 +6469,27 @@
    "home_id": 5,
    "kickoff": "2026-10-15T23:30:00Z",
    "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
-   "p_home": 0.337,
+   "p_home": 0.3369,
    "prediction_ts": "2026-10-13T12:00:00Z",
    "priced": true,
    "qb": {
     "away": {
      "backup_rating": -0.0077,
-     "exp_rating": -0.0405,
+     "exp_rating": -0.0404,
      "qb_id": 5075800,
-     "team_rating": -0.0182
+     "team_rating": -0.0181
     },
     "home": {
      "backup_rating": -0.0778,
-     "exp_rating": -0.0041,
+     "exp_rating": -0.004,
      "qb_id": 5057381,
      "team_rating": -0.0053
     }
@@ -6859,22 +6502,22 @@
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": -0.063,
+      "A_adj_eff": -0.077,
       "B_elo": -5.87,
-      "C_ridge": -8.476,
+      "C_ridge": -8.483,
       "D_gbm": -5.045,
-      "E_drive": -6.022
+      "E_drive": -5.975
      },
-     "ens_pred": -7.044,
-     "ens_sd": 3.091,
+     "ens_pred": -7.046,
+     "ens_sd": 3.084,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 16.084
+     "sigma": 16.087
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6883,12 +6526,12 @@
     "v1": {
      "home_win_prob": 0.38052737704042133,
      "margin": -4.51,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 15.989,
+   "sigma": 15.992,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
@@ -6908,7 +6551,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": -5.469,
+    "C_ridge": -5.486,
     "D_gbm": -7.079
    },
    "drivers": [
@@ -6926,9 +6569,9 @@
     }
    ],
    "early_season": false,
-   "ens_pred": -6.274,
-   "ens_sd": 1.138,
-   "fair_total": 51.5,
+   "ens_pred": -6.282,
+   "ens_sd": 1.126,
+   "fair_total": 51.6,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
    "game_id": 401869950,
@@ -6936,24 +6579,29 @@
    "home_id": 295,
    "kickoff": "2026-10-15T23:30:00Z",
    "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
-   "p_home": 0.3466,
+   "p_home": 0.3465,
    "prediction_ts": "2026-10-13T12:00:00Z",
    "priced": true,
    "qb": {
     "away": {
      "backup_rating": -0.0565,
-     "exp_rating": 0.1213,
+     "exp_rating": 0.1214,
      "qb_id": 4685740,
-     "team_rating": 0.1176
+     "team_rating": 0.1177
     },
     "home": {
-     "backup_rating": -0.125,
+     "backup_rating": -0.1249,
      "exp_rating": -0.1693,
      "qb_id": 5193346,
-     "team_rating": -0.1503
+     "team_rating": -0.1502
     }
    },
    "qb_missing_any": 0.0,
@@ -6964,22 +6612,22 @@
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": -9.668,
+      "A_adj_eff": -9.673,
       "B_elo": 1.017,
-      "C_ridge": -5.731,
+      "C_ridge": -5.748,
       "D_gbm": -6.682,
-      "E_drive": -1.956
+      "E_drive": -1.919
      },
-     "ens_pred": -5.801,
-     "ens_sd": 4.178,
+     "ens_pred": -5.81,
+     "ens_sd": 4.187,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 16.085
+     "sigma": 16.089
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -6988,12 +6636,12 @@
     "v1": {
      "home_win_prob": 0.4790883733641498,
      "margin": -0.77,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 16.023,
+   "sigma": 16.028,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "turnover-dependent teams",
@@ -7013,7 +6661,7 @@
     "model_version": "edgedesk_cfb_v2.1.0"
    },
    "components": {
-    "C_ridge": 15.727,
+    "C_ridge": 15.728,
     "D_gbm": 15.552
    },
    "drivers": [
@@ -7023,16 +6671,16 @@
     },
     {
      "feature": "match_mix_edge",
-     "points": -1.35
+     "points": -1.34
     },
     {
      "feature": "edge_epa",
-     "points": 0.84
+     "points": 0.83
     }
    ],
    "early_season": false,
-   "ens_pred": 15.639,
-   "ens_sd": 0.123,
+   "ens_pred": 15.64,
+   "ens_sd": 0.124,
    "fair_total": 69.9,
    "fcs_game": false,
    "feature_ts": "2026-10-13T12:00:00Z",
@@ -7041,6 +6689,11 @@
    "home_id": 326,
    "kickoff": "2026-10-16T00:00:00Z",
    "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
    "model_version": "edgedesk_cfb_v2.1.0",
    "neutral_site": false,
    "not_priced_reason": null,
@@ -7049,42 +6702,42 @@
    "priced": true,
    "qb": {
     "away": {
-     "backup_rating": 0.0622,
+     "backup_rating": 0.0625,
      "exp_rating": 0.0319,
      "qb_id": 5212610,
-     "team_rating": 0.0445
+     "team_rating": 0.0446
     },
     "home": {
      "backup_rating": -0.0736,
-     "exp_rating": 0.1507,
+     "exp_rating": 0.1508,
      "qb_id": 5148803,
-     "team_rating": 0.1507
+     "team_rating": 0.1508
     }
    },
    "qb_missing_any": 0.0,
    "qb_unsettled_any": 1.0,
    "rating_sd_sum": 1.0894,
-   "reliability_base": 42.1,
+   "reliability_base": 42.0,
    "season": 2026,
    "shadow": {
     "candidate_001": {
      "components": {
-      "A_adj_eff": 9.661,
+      "A_adj_eff": 9.648,
       "B_elo": 18.143,
-      "C_ridge": 15.996,
+      "C_ridge": 15.997,
       "D_gbm": 15.972,
-      "E_drive": 14.673
+      "E_drive": 14.722
      },
-     "ens_pred": 15.977,
-     "ens_sd": 3.177,
+     "ens_pred": 15.98,
+     "ens_sd": 3.182,
      "model_version": "edgedesk_cfb_v2.0.0",
-     "sigma": 16.979
+     "sigma": 16.983
     },
-    "captured_at": "2026-10-06T12:08:07Z",
+    "captured_at": "2026-10-07T10:47:52Z",
     "market_at_freeze": {
      "current_home_line": null,
      "open_home_line": null,
-     "retrieved_at": "2026-10-06T12:08:09Z",
+     "retrieved_at": "2026-10-07T10:47:54Z",
      "source": "cfbd_lines_provider_mean",
      "total_current": null,
      "total_open": null
@@ -7093,15 +6746,893 @@
     "v1": {
      "home_win_prob": 0.9169856359356059,
      "margin": 20.27,
-     "slate_generated_at": "2026-10-06T06:38:25.946Z",
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
      "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
      "status": "PREDICTED"
     }
    },
-   "sigma": 17.156,
+   "sigma": 17.16,
    "state": "PROVISIONAL",
    "uncertainty_drivers": [
     "high-scoring environment",
+    "turnover-dependent teams"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Memphis",
+   "away_id": 235,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": -4.91,
+    "D_gbm": -4.785
+   },
+   "drivers": [
+    {
+     "feature": "edge_epa",
+     "points": -2.36
+    },
+    {
+     "feature": "elo_diff",
+     "points": 0.87
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 0.27
+    }
+   ],
+   "early_season": false,
+   "ens_pred": -4.847,
+   "ens_sd": 0.088,
+   "fair_total": 51.4,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401862801,
+   "home": "Tulane",
+   "home_id": 2655,
+   "kickoff": "2026-10-16T23:30:00Z",
+   "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.3813,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.072,
+     "exp_rating": 0.1298,
+     "qb_id": 5165807,
+     "team_rating": 0.1253
+    },
+    "home": {
+     "backup_rating": -0.0238,
+     "exp_rating": -0.0162,
+     "qb_id": 5091890,
+     "team_rating": -0.0183
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.1054,
+   "reliability_base": 73.0,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": -5.035,
+      "B_elo": 6.996,
+      "C_ridge": -4.976,
+      "D_gbm": -4.956,
+      "E_drive": -2.214
+     },
+     "ens_pred": -4.62,
+     "ens_sd": 5.19,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.2
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.4139820389945624,
+     "margin": -3.23,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.17,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "turnover-dependent teams",
+    "uncertain team ratings"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Washington",
+   "away_id": 264,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": -7.845,
+    "D_gbm": -6.126
+   },
+   "drivers": [
+    {
+     "feature": "elo_diff",
+     "points": -4.01
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 2.53
+    },
+    {
+     "feature": "edge_epa",
+     "points": -1.49
+    }
+   ],
+   "early_season": false,
+   "ens_pred": -6.985,
+   "ens_sd": 1.216,
+   "fair_total": 53.9,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401858493,
+   "home": "Purdue",
+   "home_id": 2509,
+   "kickoff": "2026-10-17T00:00:00Z",
+   "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.3281,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0593,
+     "exp_rating": 0.1468,
+     "qb_id": 5079653,
+     "team_rating": 0.1457
+    },
+    "home": {
+     "backup_rating": -0.0736,
+     "exp_rating": 0.1415,
+     "qb_id": 5104738,
+     "team_rating": 0.1415
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.0961,
+   "reliability_base": 84.4,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": -1.344,
+      "B_elo": -9.043,
+      "C_ridge": -7.664,
+      "D_gbm": -5.952,
+      "E_drive": -5.446
+     },
+     "ens_pred": -6.963,
+     "ens_sd": 2.914,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.811
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.34676409045713896,
+     "margin": -5.77,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.808,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
+    "lopsided matchup (blowout variance)"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "App State",
+   "away_id": 2026,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": -5.917,
+    "D_gbm": -5.645
+   },
+   "drivers": [
+    {
+     "feature": "edge_epa",
+     "points": -2.23
+    },
+    {
+     "feature": "elo_diff",
+     "points": -2.17
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 0.43
+    }
+   ],
+   "early_season": false,
+   "ens_pred": -5.781,
+   "ens_sd": 0.192,
+   "fair_total": 53.9,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401869844,
+   "home": "Coastal Carolina",
+   "home_id": 324,
+   "kickoff": "2026-10-17T00:00:00Z",
+   "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.3605,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0648,
+     "exp_rating": 0.1349,
+     "qb_id": 4870999,
+     "team_rating": 0.1334
+    },
+    "home": {
+     "backup_rating": -0.0987,
+     "exp_rating": -0.0186,
+     "qb_id": 5296439,
+     "team_rating": -0.02
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.1045,
+   "reliability_base": 68.9,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": -5.249,
+      "B_elo": -2.98,
+      "C_ridge": -6.497,
+      "D_gbm": -6.01,
+      "E_drive": -3.177
+     },
+     "ens_pred": -6.113,
+     "ens_sd": 1.62,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 16.128
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.4650260946516481,
+     "margin": -1.3,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.303,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "turnover-dependent teams",
+    "uncertain team ratings"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Utah",
+   "away_id": 254,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": -14.809,
+    "D_gbm": -15.333
+   },
+   "drivers": [
+    {
+     "feature": "elo_diff",
+     "points": -7.07
+    },
+    {
+     "feature": "edge_epa",
+     "points": -3.03
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 1.38
+    }
+   ],
+   "early_season": false,
+   "ens_pred": -15.071,
+   "ens_sd": 0.37,
+   "fair_total": 52.9,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401856833,
+   "home": "Colorado",
+   "home_id": 38,
+   "kickoff": "2026-10-17T04:00:00Z",
+   "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.1707,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0264,
+     "exp_rating": 0.2511,
+     "qb_id": 5105849,
+     "team_rating": 0.2455
+    },
+    "home": {
+     "backup_rating": -0.0352,
+     "exp_rating": -0.0833,
+     "qb_id": 5214655,
+     "team_rating": -0.0178
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 1.0,
+   "rating_sd_sum": 1.1331,
+   "reliability_base": 75.0,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": -9.184,
+      "B_elo": -19.112,
+      "C_ridge": -15.154,
+      "D_gbm": -15.336,
+      "E_drive": -14.454
+     },
+     "ens_pred": -15.273,
+     "ens_sd": 3.555,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.835
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.06483711781087387,
+     "margin": -22.49,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.925,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
+    "model disagreement"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Wake Forest",
+   "away_id": 154,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": -12.477,
+    "D_gbm": -14.639
+   },
+   "drivers": [
+    {
+     "feature": "elo_diff",
+     "points": -4.34
+    },
+    {
+     "feature": "edge_epa",
+     "points": -3.86
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 2.17
+    }
+   ],
+   "early_season": false,
+   "ens_pred": -13.558,
+   "ens_sd": 1.528,
+   "fair_total": 53.8,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401858269,
+   "home": "California",
+   "home_id": 25,
+   "kickoff": "2026-10-17T04:00:00Z",
+   "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.1956,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0853,
+     "exp_rating": 0.1711,
+     "qb_id": 4920227,
+     "team_rating": 0.1694
+    },
+    "home": {
+     "backup_rating": 0.0294,
+     "exp_rating": 0.0607,
+     "qb_id": 5164313,
+     "team_rating": 0.0537
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.0714,
+   "reliability_base": 81.4,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": -12.622,
+      "B_elo": -10.136,
+      "C_ridge": -12.463,
+      "D_gbm": -14.425,
+      "E_drive": -8.285
+     },
+     "ens_pred": -12.983,
+     "ens_sd": 2.393,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.891
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.2181300592017119,
+     "margin": -11.39,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.905,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
+    "turnover-dependent teams"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Penn State",
+   "away_id": 213,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": 8.29,
+    "D_gbm": 5.851
+   },
+   "drivers": [
+    {
+     "feature": "match_mix_edge",
+     "points": -1.23
+    },
+    {
+     "feature": "elo_diff",
+     "points": 0.71
+    },
+    {
+     "feature": "edge_epa",
+     "points": 0.59
+    }
+   ],
+   "early_season": false,
+   "ens_pred": 7.071,
+   "ens_sd": 1.724,
+   "fair_total": 47.3,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401858490,
+   "home": "Michigan",
+   "home_id": 130,
+   "kickoff": "2026-10-17T04:00:00Z",
+   "min_games": 5.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.6815,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0736,
+     "exp_rating": 0.1932,
+     "qb_id": 4801299,
+     "team_rating": 0.1932
+    },
+    "home": {
+     "backup_rating": -0.0736,
+     "exp_rating": 0.127,
+     "qb_id": 5141741,
+     "team_rating": 0.127
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.0977,
+   "reliability_base": 100.0,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": 8.557,
+      "B_elo": 6.468,
+      "C_ridge": 8.252,
+      "D_gbm": 6.275,
+      "E_drive": 4.627
+     },
+     "ens_pred": 7.333,
+     "ens_sd": 1.604,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.078
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": -6.5,
+     "open_home_line": -6.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 51.5,
+     "total_open": 51.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.5974457359169376,
+     "margin": 3.61,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.085,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
+    "lopsided matchup (blowout variance)"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Nebraska",
+   "away_id": 158,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": 12.496,
+    "D_gbm": 10.253
+   },
+   "drivers": [
+    {
+     "feature": "elo_diff",
+     "points": 2.72
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": -1.67
+    },
+    {
+     "feature": "edge_epa",
+     "points": 0.97
+    }
+   ],
+   "early_season": false,
+   "ens_pred": 11.375,
+   "ens_sd": 1.586,
+   "fair_total": 60.7,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401858492,
+   "home": "Oregon",
+   "home_id": 2483,
+   "kickoff": "2026-10-17T04:00:00Z",
+   "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.7668,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.0736,
+     "exp_rating": 0.156,
+     "qb_id": 5044387,
+     "team_rating": 0.156
+    },
+    "home": {
+     "backup_rating": 0.169,
+     "exp_rating": 0.2591,
+     "qb_id": 4870921,
+     "team_rating": 0.2391
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.1227,
+   "reliability_base": 87.3,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": 10.338,
+      "B_elo": 13.098,
+      "C_ridge": 12.958,
+      "D_gbm": 10.11,
+      "E_drive": 16.236
+     },
+     "ens_pred": 12.027,
+     "ens_sd": 2.495,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.682
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": -21.5,
+     "open_home_line": -21.5,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": 51.5,
+     "total_open": 51.5
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.6642497630172036,
+     "margin": 6.29,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 15.715,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "high-scoring environment",
+    "uncertain team ratings"
+   ],
+   "week": 7,
+   "weeks_in": 6.29
+  },
+  {
+   "away": "Wisconsin",
+   "away_id": 275,
+   "build": {
+    "artifact_manifest_sha256": "356bd0f994fd6fc60934d92df9c7090f1c53b77ecd75008daa363f7bb9d633eb",
+    "feature_version": "cfb_v2_fv2",
+    "finality_rule": "cfb_v2_finality_v2",
+    "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)",
+    "model_version": "edgedesk_cfb_v2.1.0"
+   },
+   "components": {
+    "C_ridge": 1.856,
+    "D_gbm": -0.338
+   },
+   "drivers": [
+    {
+     "feature": "edge_epa",
+     "points": -0.86
+    },
+    {
+     "feature": "elo_diff",
+     "points": -0.72
+    },
+    {
+     "feature": "match_mix_edge",
+     "points": 0.09
+    }
+   ],
+   "early_season": false,
+   "ens_pred": 0.759,
+   "ens_sd": 1.551,
+   "fair_total": 52.7,
+   "fcs_game": false,
+   "feature_ts": "2026-10-13T12:00:00Z",
+   "game_id": 401858494,
+   "home": "UCLA",
+   "home_id": 26,
+   "kickoff": "2026-10-17T04:00:00Z",
+   "min_games": 4.0,
+   "model_mode": "DEGRADED_AVAILABILITY",
+   "model_modes": [
+    "DEGRADED_AVAILABILITY",
+    "DEGRADED_MARKET"
+   ],
+   "model_version": "edgedesk_cfb_v2.1.0",
+   "neutral_site": false,
+   "not_priced_reason": null,
+   "p_home": 0.519,
+   "prediction_ts": "2026-10-13T12:00:00Z",
+   "priced": true,
+   "qb": {
+    "away": {
+     "backup_rating": -0.1605,
+     "exp_rating": 0.1268,
+     "qb_id": 5125715,
+     "team_rating": 0.1246
+    },
+    "home": {
+     "backup_rating": -0.0782,
+     "exp_rating": 0.0663,
+     "qb_id": 4870799,
+     "team_rating": 0.0635
+    }
+   },
+   "qb_missing_any": 0.0,
+   "qb_unsettled_any": 0.0,
+   "rating_sd_sum": 1.1197,
+   "reliability_base": 77.9,
+   "season": 2026,
+   "shadow": {
+    "candidate_001": {
+     "components": {
+      "A_adj_eff": 0.694,
+      "B_elo": 1.782,
+      "C_ridge": 1.581,
+      "D_gbm": 0.335,
+      "E_drive": 0.428
+     },
+     "ens_pred": 1.074,
+     "ens_sd": 0.672,
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "sigma": 15.924
+    },
+    "captured_at": "2026-10-07T10:47:52Z",
+    "market_at_freeze": {
+     "current_home_line": null,
+     "open_home_line": null,
+     "retrieved_at": "2026-10-07T10:47:54Z",
+     "source": "cfbd_lines_provider_mean",
+     "total_current": null,
+     "total_open": null
+    },
+    "note": "captured by the run that froze this row (at or after the freeze time); BOOK home lines (- = home favoured); V1 and candidate 001 are home margins",
+    "v1": {
+     "home_win_prob": 0.649502950951295,
+     "margin": 5.7,
+     "slate_generated_at": "2026-10-07T08:53:31.431Z",
+     "source": "football/fbs/slate.json (V1, cfb_p4 engine)",
+     "status": "PREDICTED"
+    }
+   },
+   "sigma": 16.016,
+   "state": "PROVISIONAL",
+   "uncertainty_drivers": [
+    "uncertain team ratings",
     "turnover-dependent teams"
    ],
    "week": 7,
