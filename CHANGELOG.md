@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-07 — Growth console: what comes back (outbound engine, phase 6)
+
+**A hard bounce, a spam complaint, an opt-out or "please stop" ends email to that address for good. Nothing from outside changes a send unless it proves where it came from.**
+
+**`supabase/growth_outbound.sql`** adds:
+- **Resend's events, verified in the database** (`growth_outbound_webhook`): the Svix signature (HMAC-SHA256 written in SQL, checked against RFC 4231 on every run) within five minutes, before anything is read. Repeats are applied once. Delivered, delayed, opened and clicked are recorded and never move a send backwards; a hard bounce, a complaint or Resend's own suppression suppresses the address and cancels follow-ups; a soft bounce does not; a test send never suppresses; an event about any other email leaves only its id;
+- **the signing secret**, set in the SQL editor only (`select growth_outbound.set_webhook_secret('whsec_...');`), refused through the API by the function and by a table trigger, never returned. **Live sending is blocked until it is set**;
+- **the opt-out door** (`growth_outbound_optout`): a send's 64-hex token, a masked address, nothing changed without confirmation, nothing changed for a test send, twice is once;
+- **replies** (`growth_outbound_prospect_replied`): follow-ups stop; "asked to stop" also suppresses;
+- **exactly two doors anon may call** (the webhook and the opt-out), each opening with its own proof; signed-in callers cannot call them. Every other door is unchanged;
+- append-only `provider_events`, `sends.opened_at` / `clicked_at`, the webhook's status in settings, and report rows 23–26.
+
+**New Edge Functions** (neither holds a secret; both deployed by the manual outbound workflow, now "Deploy outbound Edge Functions"):
+- **`growth_outbound_webhook`** relays Resend's raw body and signature headers to the database; unsigned → 401, database down → 503;
+- **`growth_outbound_optout`**: the RFC 8058 one-click POST stops email; a GET changes nothing and redirects to **`/email/stop/`** (new static page), the token in the fragment, which asks before stopping.
+
+**`supabase/functions/newsletter`**: its webhook now acknowledges and keeps nothing about an outbound email (tagged `edgedesk=outbound`), so a prospect's address never lands in the newsletter's tables. Redeploy it.
+
+**`/admin/growth/` → Outbound:** whether Resend's events can arrive and when the last did; the webhook secret among what live sending needs; opened and clicked on each send; **They replied** and **They replied: stop emailing them** on a contacted prospect (asked first).
+
+**Tests:**
+- `outbound_events_sql.test.js`: 124 checks; 34 mutations, all caught;
+- `outbound_events.test.js`: 65 checks on the deployed functions and the newsletter's skip; 13 mutations, all caught;
+- `outbound_stop_page.e2e.js`: 25 checks in Chromium; 6 mutations, all caught;
+- console e2e: 146;
+- earlier suites updated for the two public doors and the live-send secret: all passing.
+
 ## 2026-10-07 — Growth console: sending (outbound engine, phase 5)
 
 **Only an approved draft, only when the owner presses Send.**

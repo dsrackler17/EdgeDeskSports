@@ -1,26 +1,36 @@
-# Deploy the outbound send function: supabase/functions/growth_outbound_send.
+# Deploy the outbound Edge Functions:
+#   growth_outbound_send     sends APPROVED drafts, when the owner asks
+#   growth_outbound_webhook  relays Resend's events (the DATABASE checks the
+#                            signature; the function holds no secret)
+#   growth_outbound_optout   every email's opt-out link and its RFC 8058
+#                            one-click endpoint (a GET changes nothing)
 #
 # MANUAL ON PURPOSE (workflow_dispatch). Shipping the code that can send email
 # to real people is a decision a person makes. This workflow never touches the
 # database: supabase/growth_outbound.sql is applied by hand in the SQL editor.
 #
 # WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
-#   1. the function's own tests — the DEPLOYED file, imported under Node's type
-#      stripping against a mocked GoTrue, PostgREST and Resend
-#      (tools/growth/outbound_send.test.js) — and the owner check it carries
+#   1. the functions' own tests — the DEPLOYED files, imported under Node's
+#      type stripping against a mocked GoTrue, PostgREST and Resend
+#      (tools/growth/outbound_send.test.js, tools/growth/outbound_events.test.js)
+#      — and the owner check the send function carries
 #      (tools/growth/outbound_auth.test.js), which must be a verbatim copy of
 #      tools/growth/outbound_auth.js (tools/growth/inline_outbound_auth.js --check);
-#   2. deploys growth_outbound_send with --no-verify-jwt: the function verifies
-#      the owner itself (GoTrue, then growth_outbound_is_owner() asked as the
-#      caller), and the browser's CORS preflight carries no token.
+#   2. deploys all three with --no-verify-jwt: the send function verifies the
+#      owner itself (GoTrue, then growth_outbound_is_owner() asked as the
+#      caller) and the browser's CORS preflight carries no token; Resend and a
+#      person opting out have no Supabase token at all — their proofs are
+#      Resend's signature and the send's own token, checked in the database.
 #
 # SECRETS (the ones the other deploy workflows already use):
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
 # And on the Supabase side, usually already set for the newsletter (Supabase
 # secrets are shared by every function in the project):
-#   RESEND_API_KEY
-# The function holds NO service-role key and needs none.
-name: Deploy outbound send function
+#   RESEND_API_KEY   (the send function only)
+# None of the three holds a service-role key, and none needs one. The webhook
+# signing secret is NOT a function secret: it lives in the database
+# (select growth_outbound.set_webhook_secret('whsec_...'), in the SQL editor).
+name: Deploy outbound Edge Functions
 
 on:
   workflow_dispatch:
@@ -44,11 +54,12 @@ jobs:
         with:
           node-version: '22'
 
-      - name: The function and the owner check it carries must pass before it ships
+      - name: The functions and the owner check must pass before they ship
         run: |
           node tools/growth/inline_outbound_auth.js --check
           node tools/growth/outbound_auth.test.js
           node tools/growth/outbound_send.test.js
+          node tools/growth/outbound_events.test.js
 
       - name: Check the credentials exist before claiming anything
         id: creds
@@ -60,7 +71,7 @@ jobs:
           echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
           echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
           if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
-            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — growth_outbound_send cannot be deployed from CI. Deploy it from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt"
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the outbound functions cannot be deployed from CI. Deploy them from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt (and growth_outbound_webhook, growth_outbound_optout)"
             exit 1
           fi
 
@@ -69,11 +80,13 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy growth_outbound_send
+      - name: Deploy growth_outbound_send, growth_outbound_webhook and growth_outbound_optout
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          supabase functions deploy growth_outbound_send \
-            --project-ref "$PROJECT_REF" \
-            --no-verify-jwt
+          for fn in growth_outbound_send growth_outbound_webhook growth_outbound_optout; do
+            supabase functions deploy "$fn" \
+              --project-ref "$PROJECT_REF" \
+              --no-verify-jwt
+          done

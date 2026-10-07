@@ -244,6 +244,18 @@ export async function verifySignature(raw: string, headers: Headers, secret: str
     ? { ok: true } : { ok: false, reason: 'signature_mismatch' };
 }
 
+// The outbound engine tags every email it sends edgedesk=outbound. Resend's
+// events carry the tags as an object ({ edgedesk: 'outbound' }) or, in older
+// payloads, as a list of { name, value }.
+export function isOutboundEvent(data: Record<string, unknown> | null | undefined): boolean {
+  const tags = data ? (data as Record<string, unknown>).tags : null;
+  if (Array.isArray(tags)) {
+    return tags.some((t) => !!t && typeof t === 'object'
+      && (t as Record<string, unknown>).name === 'edgedesk' && (t as Record<string, unknown>).value === 'outbound');
+  }
+  return !!tags && typeof tags === 'object' && (tags as Record<string, unknown>).edgedesk === 'outbound';
+}
+
 // The provider's vocabulary mapped onto the five states this system tracks.
 // An unknown type is STORED and not acted on.
 const EVENTS: Record<string, { status: string | null; suppress: string | null }> = {
@@ -422,6 +434,12 @@ async function handleWebhook(c: Cfg, req: Request): Promise<Response> {
 
   const type = String(payload.type ?? '');
   const data = (payload.data ?? {}) as Record<string, unknown>;
+  // AN OUTBOUND EMAIL IS NOT THE NEWSLETTER'S. Resend sends every event on the
+  // account to every endpoint; the outbound engine's own webhook
+  // (growth_outbound_webhook) handles those. Nothing about them is kept here,
+  // and nothing is suppressed from here: the address, the event, the bounce
+  // all stay out of the newsletter's tables.
+  if (isOutboundEvent(data)) return json({ ok: true, state: 'not_newsletter' });
   const to = Array.isArray(data.to) ? String(data.to[0]) : (data.to ? String(data.to) : null);
   const messageId = String(data.email_id ?? data.id ?? '') || null;
   const eventId = req.headers.get('svix-id') ?? req.headers.get('webhook-id');
