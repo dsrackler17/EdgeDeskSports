@@ -218,7 +218,9 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **Review (Phase 4).** Approval re-checks the content rules (no promised winnings or locks, $49.99/month, a 7-day free trial, EdgeDesk links only) and that every cited claim is in the email's words. A batch is approved only for the exact count the owner confirms, all or nothing. The queue previews each message as `compose()` builds it.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-20 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js` and `outbound_review_sql.test.js`; see `docs/growth-outbound.md`.
+- **Sending (Phase 5).** The `growth_outbound_send` Edge Function, as the owner, claims each send in the database first (`growth_outbound_send_claim`: one idempotency key per draft, every send rule re-checked by the table trigger), sends through Resend, then records the answer (`growth_outbound_send_result`). A test send needs the postal address and test inbox; a live one also the opt-out endpoint.
+
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-22 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js` and `outbound_send_sql.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,

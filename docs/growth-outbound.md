@@ -462,8 +462,84 @@ drop function if exists public.growth_outbound_review_queue(text, int), public.g
 notify pgrst, 'reload schema';
 ```
 
+## Phase 5: sending
+
+**Only an approved draft, only when the owner presses Send.** Nothing sends on a schedule, on approval, or from a page alone.
+
+### The path, for each draft
+
+1. **The owner presses Send** (asked first, naming the inbox; several at once need the count typed). The page calls the **`growth_outbound_send`** Edge Function with the owner's own session.
+2. **The function checks the owner itself** (`requireOutboundOwner`, copied verbatim from `tools/growth/outbound_auth.js`; a test fails on drift):
+   - GoTrue must accept the token;
+   - `growth_outbound_is_owner()`, asked **as the caller**, must answer exactly `true`;
+   - otherwise 401/403/503, and nothing else happens.
+3. **The database claims the send first** (`growth_outbound_send_claim`, as the caller):
+   - it re-evaluates the prospect, so an approval no longer earned goes back to review, unsent;
+   - it writes the send row, and the send trigger re-checks every rule: approved and unchanged, current owner, the approved recipient (only the test inbox in test mode or for a test prospect), unsuppressed, once per draft and once per address per step, a follow-up only to a contacted prospect, the daily cap, the compliance configuration;
+   - it marks the draft sent;
+   - it returns the message exactly as it must go out, with **one Idempotency-Key per draft** (`edgedesk-outbound-<draft id>`).
+4. **Resend** gets that key and exactly that message: `Davis <davis@edgedesksports.com>`, one recipient, the approved words, then the footer (sender, business, postal address, this send's own opt-out link) and the RFC 8058 one-click `List-Unsubscribe` headers. The function first checks the message is one EdgeDesk email to one person (sender and reply-to on edgedesksports.com, no header injection, no extra headers).
+5. **The answer is recorded** (`growth_outbound_send_result`, as the caller):
+
+| Resend answers | The send becomes | What happens next |
+|---|---|---|
+| an id | `sent` | a real step-1 prospect becomes **contacted** |
+| 400/422 | `failed`, with Resend's words | never retried |
+| 5xx, 429, 409, timeout | still `claimed` | "Try again" reuses the same key, so it cannot send twice |
+| 401/403 (the API key) | still `claimed` | the batch stops; nothing is marked failed |
+
+**No second send, ever.** A draft claimed before returns the same key. A sent or failed one is never sent again. A claim whose outcome is still unknown after **23 hours** (Resend keeps idempotency keys for 24) is **abandoned**: it is marked failed and not retried. An email is never sent twice to find out whether it was sent once.
+
+**The function holds no service-role key.** It has the project URL, the public anon key (to reach the API as the caller) and `RESEND_API_KEY`. Every database call is made with the owner's own token, so the database checks the owner again at every step. Nothing it returns contains a key or a token.
+
+### Test sends before the opt-out endpoint
+
+- **A test send** (only ever to the owner's own test inbox) needs the postal address and the test inbox.
+- **A live send** also needs the opt-out endpoint (Phase 6). Until then the footer of a test send says where the link will be, and the `List-Unsubscribe` header offers reply-to-stop only.
+- The console shows both lists: what blocks the next send in the current mode, and, in test mode, what live sending still needs.
+
+### New doors
+
+- `growth_outbound_send_claim(draft)`
+- `growth_outbound_send_result(send, resend_id, error, permanent)`
+- `growth_outbound_sends(limit)`
+
+`settings` now also returns `test_send_blockers` and `live_send_blockers`. Report rows 21–22 cover live blockers and the sends.
+
+### The console
+
+- Approved cards have **Send test** / **Send now**, both asked first.
+- **Send all shown** needs the count typed.
+- The **Sends** table lists every send: TEST/LIVE, recipient (and whom a test was for), status, the reason, tries, and **Try again** only for one still waiting for an answer.
+- A function not yet deployed, or a missing Resend key, is said in words.
+
+### Deploy
+
+1. Merge the Phase 5 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. Report rows 1–22 should say `ok`.
+3. **Deploy the function**, either way:
+   - GitHub → Actions → **Deploy outbound send function** → Run. It runs the function's tests first and uses the `SUPABASE_ACCESS_TOKEN` / `SUPABASE_PROJECT_REF` secrets the other deploy workflows already use.
+   - Or from a terminal: `supabase functions deploy growth_outbound_send --no-verify-jwt`. JWT verification is off because the function verifies the owner itself, and the browser's CORS preflight carries no token.
+4. `RESEND_API_KEY` is already a Supabase secret (the newsletter uses it, and secrets are shared by every function). Resend must have `edgedesksports.com` verified as a sending domain; it does if the newsletter sends.
+5. In **Settings**, set the postal address and your test inbox. Then: **Test draft for my inbox** → approve → **Approved, not sent** → **Send test**. Check your inbox; the Sends table shows `sent`.
+6. **Live sending stays off** until the opt-out endpoint exists (Phase 6), you set its base URL, and you leave test mode (typed `LIVE`).
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_send.test.js` (`npm run growth:test`) | 48 | the **deployed** function, imported under Node's type stripping with a Deno shim and a mocked GoTrue/PostgREST/Resend. It covers: the verbatim owner check; CORS for EdgeDesk only; nothing claimed without a verified owner, a valid body and the Resend key; claim, then Resend with the claim's key and exactly its message, then record; refused, already-sent and retried claims; every Resend answer; eight malformed messages never sent; every database call as the caller, no service-role key. **Mutation-checked:** 9 deliberate breaks, every one caught. |
+| `tools/growth/outbound_send_sql.test.js` (`npm run growth:sql`) | 46 | blockers for test and live; the claim (written first, the message, the footer, the token, the headers); retry with the same key; transient, permanent and stale outcomes; ids validated and never replaced; contacted; send-time re-evaluation; suppression; the follow-up path; the cap; the immutable record; owner only. **Mutation-checked:** 10 deliberate breaks, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 128 | adds the Sends table, Send (asked first), Send all (typed count), the function's refusals, Try again |
+| earlier suites | 287 + 162 + 85 + 83 + 37 + 34 + 42 | all passing |
+
+### Rollback
+
+- **The function:** `supabase functions delete growth_outbound_send`. Without it nothing can be sent; the console says it is not deployed.
+- **The page:** revert the merge commit.
+- **The database:** additive. To stop all sending at once without touching code, keep test mode on, or clear the postal address: every send is then refused at the claim.
+
 ## Next
 
-- **Phase 5:** the claim door and the `growth-send-approved` Edge Function. It is built on `requireOutboundOwner`, sends through Resend from `Davis <davis@edgedesksports.com>` with an idempotency key, and uses the same `compose()` the queue previews.
-- **Phase 6:** the Resend webhook, the opt-out endpoint, bounces and complaints into suppressions.
+- **Phase 6:** the opt-out endpoint (one click, RFC 8058), the Resend webhook (delivered, bounced, complained, verified with Svix) into delivery state and suppressions, and replies.
 - **Phase 7:** discovery and research providers (interface first; nothing faked).

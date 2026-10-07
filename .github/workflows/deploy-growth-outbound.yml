@@ -1,0 +1,79 @@
+# Deploy the outbound send function: supabase/functions/growth_outbound_send.
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Shipping the code that can send email
+# to real people is a decision a person makes. This workflow never touches the
+# database: supabase/growth_outbound.sql is applied by hand in the SQL editor.
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the function's own tests — the DEPLOYED file, imported under Node's type
+#      stripping against a mocked GoTrue, PostgREST and Resend
+#      (tools/growth/outbound_send.test.js) — and the owner check it carries
+#      (tools/growth/outbound_auth.test.js), which must be a verbatim copy of
+#      tools/growth/outbound_auth.js (tools/growth/inline_outbound_auth.js --check);
+#   2. deploys growth_outbound_send with --no-verify-jwt: the function verifies
+#      the owner itself (GoTrue, then growth_outbound_is_owner() asked as the
+#      caller), and the browser's CORS preflight carries no token.
+#
+# SECRETS (the ones the other deploy workflows already use):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
+# And on the Supabase side, usually already set for the newsletter (Supabase
+# secrets are shared by every function in the project):
+#   RESEND_API_KEY
+# The function holds NO service-role key and needs none.
+name: Deploy outbound send function
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-growth-outbound
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The function and the owner check it carries must pass before it ships
+        run: |
+          node tools/growth/inline_outbound_auth.js --check
+          node tools/growth/outbound_auth.test.js
+          node tools/growth/outbound_send.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — growth_outbound_send cannot be deployed from CI. Deploy it from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt"
+            exit 1
+          fi
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy growth_outbound_send
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy growth_outbound_send \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt

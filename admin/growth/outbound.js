@@ -30,6 +30,13 @@
    would be sent (in test mode, to the test inbox). Approve one (asked
    first), or several: the count is TYPED and sent to the database, which
    approves exactly that many or none. Approving sends nothing.
+
+   SENDING (Phase 5). Only an approved draft, only when the owner presses
+   Send (asked first; several at once need the count typed). The page asks
+   the growth_outbound_send Edge Function, which checks the owner itself,
+   claims the send in the database, hands Resend exactly what the database
+   composed with one key per draft (a retry can never send twice), and
+   records the answer. The Sends table shows every one, and how it went.
    =========================================================================== */
 (function (root) {
   'use strict';
@@ -41,6 +48,16 @@
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
     test_inbox_missing: 'test mode is on but no test inbox is set',
     no_outbound_owner: 'no outbound owner is configured'
+  };
+  var SEND_WHY = {
+    resend_unreachable: 'Resend did not answer; press Send again (the same draft can never be sent twice)',
+    resend_key_refused: 'Resend refused the API key: check RESEND_API_KEY in the Edge Function secrets',
+    message_check_failed: 'not sent: the message failed the last check',
+    resend_rejected: 'Resend refused it',
+    not_an_owner: 'this account is not an outbound owner',
+    database_unreachable: 'the database did not answer; try again',
+    claim_failed: 'the database did not answer; try again',
+    not_approved: 'it is no longer approved'
   };
   var STATUS = { discovered: 'Discovered', needs_research: 'Needs research', qualified: 'Qualified', ready_for_review: 'Ready for review',
     contacted: 'Contacted', replied: 'Replied', converted: 'Converted', rejected: 'Rejected', suppressed: 'Suppressed' };
@@ -113,7 +130,7 @@
     if ($('obModeTag')) $('obModeTag').classList.add('hide');
     show('growth');
     DETAIL = null; CATALOG = null; QROWS = []; PICKED = {};
-    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
+    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
   function show(which) {
@@ -152,6 +169,9 @@
     var b = s.send_blockers || [];
     $('obBlock').classList.toggle('hide', !b.length);
     $('obBlock').innerHTML = b.length ? '<b>Sending is blocked</b> until this is fixed: ' + b.map(function (x) { return esc(BLOCKERS[x] || x); }).join(' · ') : '';
+    var lb = s.test_mode ? (s.live_send_blockers || []) : [];
+    $('obLiveNote').classList.toggle('hide', !lb.length);
+    $('obLiveNote').textContent = lb.length ? 'Before going live, sending to real people also needs: ' + lb.map(function (x) { return BLOCKERS[x] || x; }).join(' · ') + '.' : '';
   }
 
   /* ── loading ────────────────────────────────────────────────────────── */
@@ -159,7 +179,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadQueue(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadQueue(), loadSends(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -527,7 +547,8 @@
       h += '<button type="button" data-approve="' + id + '"' + (ok ? '' : ' disabled') + '>Approve</button>'
         + '<button type="button" class="g" data-edit="' + id + '">Edit</button><button type="button" class="g" data-reject="' + id + '">Reject</button>';
     } else {
-      h += '<span class="note" style="margin:0">Approved ' + esc(when(d.approved_at)) + '. Nothing has been sent; sending arrives in the next phase.</span>'
+      h += '<button type="button" data-send="' + id + '">' + (pv.test ? 'Send test' : 'Send now') + '</button>'
+        + '<span class="note" style="margin:0">Approved ' + esc(when(d.approved_at)) + '. Not sent yet.</span>'
         + '<span class="sp"></span><button type="button" class="g" data-unapprove="' + id + '">Withdraw approval</button>';
     }
     h += '</div><div class="hide rqedit" id="rqe_' + id + '"><div class="f"><label>Subject</label><input data-esubj="' + id + '" maxlength="150" value="' + esc(d.subject) + '"></div>'
@@ -542,6 +563,9 @@
     $('rqBatch').textContent = 'Approve selected (' + n + ')';
     $('rqBatch').disabled = n === 0;
     $('rqBatch').classList.toggle('hide', QUEUE !== 'pending_review');
+    var m = QUEUE === 'approved' ? Math.min(QROWS.length, 25) : 0;
+    $('rqSendAll').classList.toggle('hide', !m);
+    $('rqSendAll').textContent = 'Send all shown (' + m + ')';
   }
   function approveOne(id) {
     var c = byId(id); if (!c) return Promise.resolve();
@@ -596,6 +620,69 @@
       say('rqMsg', 'ok', 'Saved. It is back in review.');
       return Promise.all([loadQueue(), loadActivity()]);
     }, function (e) { fail('rqMsg', e); });
+  }
+  /* ── sending ─────────────────────────────────────────────────────────── */
+  function nameOf(draftId) { var c = byId(draftId); return (c && c.prospect && c.prospect.full_name) || 'a draft'; }
+  function sendWhy(x) {
+    if (x.reason === 'refused' || x.reason === 'stale_claim' || x.reason === 'approval_withdrawn') return x.detail || x.reason;
+    if (x.reason === 'content') return 'breaks the content rules: ' + (x.problems || []).join('; ');
+    if (/^resend_\d+$/.test(x.reason || '')) return 'Resend answered ' + x.reason.slice(7) + '; press Send again (the same draft can never be sent twice)';
+    return (SEND_WHY[x.reason] || x.reason || 'not sent') + (x.reason === 'resend_rejected' && x.detail ? ': ' + x.detail : '');
+  }
+  function sendDrafts(ids) {
+    if (!ids.length) return Promise.resolve();
+    return S.invoke('growth_outbound_send', { draft_ids: ids }).then(function (r) {
+      var res = (r && r.results) || [];
+      var sent = res.filter(function (x) { return x.state === 'sent' && !x.already; });
+      var bad = res.filter(function (x) { return x.state !== 'sent'; });
+      var warn = res.filter(function (x) { return x.warning; });
+      say('rqMsg', bad.length || warn.length ? 'err' : 'ok',
+        (sent.length ? 'Sent ' + sent.length + (sent.length === 1 ? ' email' : ' emails') + (sent.every(function (x) { return x.test; }) ? ' to your test inbox' : '') + '.' : 'Nothing was sent.')
+        + (bad.length ? ' ' + bad.map(function (x) { return nameOf(x.draft_id) + ' — ' + sendWhy(x); }).join(' · ') : '')
+        + (warn.length ? ' ' + warn.map(function (x) { return x.warning; }).join(' · ') : ''));
+      return Promise.all([loadQueue(), loadSends(), loadOverview(), loadActivity()]);
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { say('rqMsg', 'err', 'The send function is not deployed yet: deploy supabase/functions/growth_outbound_send (docs/growth-outbound.md, Phase 5).'); return; }
+      if (e && e.code === 'resend_not_configured') { say('rqMsg', 'err', 'Nothing was sent: RESEND_API_KEY is not set in the Edge Function secrets.'); return; }
+      fail('rqMsg', e);
+    });
+  }
+  function sendOne(id) {
+    var c = byId(id); if (!c) return Promise.resolve();
+    var pv = c.preview || {};
+    var ask = pv.test
+      ? 'Send this TEST email to your test inbox, ' + (pv.to || '(no test inbox set)') + '?\n\n"' + c.draft.subject + '"'
+      : 'Send this email to ' + pv.to + ' — a real person?\n\n"' + c.draft.subject + '"\n\nIt cannot be unsent.';
+    if (!root.confirm(ask)) return Promise.resolve();
+    return sendDrafts([id]);
+  }
+  function sendAll() {
+    var rows = QROWS.slice(0, 25), ids = rows.map(function (c) { return c.draft.id; }), n = ids.length;
+    if (!n) return Promise.resolve();
+    var live = rows.filter(function (c) { return !(c.preview || {}).test; }).length;
+    var typed = root.prompt('You are sending ' + n + ' approved email' + (n === 1 ? '' : 's') + (live ? ', ' + live + ' of them to REAL people' : ', all to your test inbox') + '.\n\nType the number ' + n + ' to send.');
+    if (typed == null) return Promise.resolve();
+    if (String(typed).trim() !== String(n)) { say('rqMsg', 'err', 'Nothing was sent: you typed "' + String(typed).trim() + '" for ' + n + '.'); return Promise.resolve(); }
+    return sendDrafts(ids);
+  }
+  function loadSends() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_sends', { p_limit: 100 }).then(function (rows) {
+      rows = rows || [];
+      $('obSends').innerHTML = '<tr><th>When</th><th></th><th>To</th><th>Prospect</th><th>Subject</th><th>Status</th><th>Detail</th><th class="r">Tries</th><th></th></tr>'
+        + (rows.length ? rows.map(function (x) {
+          var bad = x.delivery_status === 'failed' || x.delivery_status === 'bounced' || x.delivery_status === 'complained';
+          return '<tr><td>' + when(x.sent_at || x.claimed_at) + '</td><td><span class="pill ' + (x.is_test ? 'test' : 'bad') + '">' + (x.is_test ? 'TEST' : 'LIVE') + '</span></td>'
+            + '<td class="mono">' + esc(x.recipient) + (x.is_test && x.intended_recipient && x.intended_recipient !== x.recipient ? '<div class="sub">for ' + esc(x.intended_recipient) + '</div>' : '') + '</td>'
+            + '<td><button type="button" class="lnk" data-open="' + esc(x.prospect_id) + '">' + esc(x.full_name || '(no name)') + '</button>' + (x.sequence_number > 1 ? ' <span class="sub">step ' + esc(x.sequence_number) + '</span>' : '') + '</td>'
+            + '<td class="wrap">' + esc(clip(x.subject, 90)) + '</td><td><span class="pill ' + (bad ? 'bad' : x.delivery_status === 'claimed' ? 'test' : 'on') + '">' + esc(x.delivery_status) + '</span></td>'
+            + '<td class="wrap">' + esc(clip(x.failure_reason || x.last_error || '', 160)) + '</td><td class="r">' + esc(x.attempts) + '</td>'
+            + '<td>' + (x.delivery_status === 'claimed' ? '<button type="button" class="g sm" data-resend="' + esc(x.draft_id) + '">Try again</button>' : '') + '</td></tr>';
+        }).join('') : '<tr><td colspan="9">Nothing has been sent.</td></tr>');
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { $('obSends').innerHTML = '<tr><td>Sending arrives with the Phase 5 SQL: run supabase/growth_outbound.sql again.</td></tr>'; return; }
+      throw e;
+    });
   }
   function fixture() {
     return S.rpc('growth_outbound_test_fixture', {}).then(function (r) {
@@ -706,6 +793,11 @@
       }
       else if (b.getAttribute('data-q')) { QUEUE = b.getAttribute('data-q'); loadQueue().catch(function (er) { fail('rqMsg', er); }); }
       else if (b.id === 'rqBatch') approveBatch();
+      else if (b.id === 'rqSendAll') sendAll();
+      else if (b.getAttribute('data-send')) sendOne(b.getAttribute('data-send'));
+      else if (b.getAttribute('data-resend')) {
+        if (root.confirm('Try this send again? It reuses the same key, so it can never go out twice.')) sendDrafts([b.getAttribute('data-resend')]);
+      }
       else if (b.id === 'rqFixture') fixture();
     });
     $('tabOutbound').addEventListener('change', function (e) {

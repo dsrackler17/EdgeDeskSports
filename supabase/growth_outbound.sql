@@ -54,7 +54,10 @@
 --          winnings, locks or guarantees; $49.99/month; a 7-day free trial;
 --          EdgeDesk links only) and only while every claim it cites is in
 --          its words and backed by current evidence; a batch is approved
---          only for the exact count the owner confirms, all or nothing.
+--          only for the exact count the owner confirms, all or nothing;
+--        a send is claimed (written) before the provider is called, with one
+--          idempotency key per draft, so a retry can never send twice, and
+--          an outcome unknown after 23 hours is marked failed, not retried.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -355,16 +358,27 @@ end $c$;
 insert into growth_outbound.settings (id) values (1) on conflict (id) do nothing;
 
 -- What stops a real send right now, in words. Empty means nothing does.
-create or replace function growth_outbound.send_blockers()
+-- What stops a send, in words. Empty means nothing does. A TEST send (only
+-- ever to the owner's own test inbox) needs the postal address and the test
+-- inbox; a LIVE send also needs the opt-out endpoint, because a real person
+-- must be able to stop with one click.
+create or replace function growth_outbound.send_blockers_for(p_test boolean)
 returns text[] language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
   select array_remove(array[
     case when s.postal_address is null or btrim(s.postal_address) = '' then 'postal_address_missing' end,
-    case when s.unsubscribe_url_base is null then 'unsubscribe_endpoint_missing' end,
-    case when s.test_mode and s.test_inbox is null then 'test_inbox_missing' end,
+    case when not coalesce(p_test, false) and s.unsubscribe_url_base is null then 'unsubscribe_endpoint_missing' end,
+    case when coalesce(p_test, true) and s.test_inbox is null then 'test_inbox_missing' end,
     case when not exists (select 1 from growth_outbound.owners) then 'no_outbound_owner' end
   ], null)
   from growth_outbound.settings s where s.id = 1;
+$$;
+
+-- What stops the next send in the CURRENT mode.
+create or replace function growth_outbound.send_blockers()
+returns text[] language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select growth_outbound.send_blockers_for(s.test_mode) from growth_outbound.settings s where s.id = 1;
 $$;
 
 -- =============================================================================
@@ -537,6 +551,13 @@ create unique index if not exists sends_message_uk on growth_outbound.sends (res
 -- a real prospect never receives the same step twice
 create unique index if not exists sends_step_once_uk on growth_outbound.sends (prospect_id, sequence_number) where not is_test;
 create index if not exists sends_day_idx on growth_outbound.sends (claimed_at) where not is_test;
+-- each send carries its own opt-out token (made by the send trigger), and the
+-- record of every attempt to hand it to the provider
+alter table growth_outbound.sends add column if not exists optout_token text;
+alter table growth_outbound.sends add column if not exists attempts int not null default 1;
+alter table growth_outbound.sends add column if not exists last_attempt_at timestamptz;
+alter table growth_outbound.sends add column if not exists last_error text;
+create unique index if not exists sends_optout_token_uk on growth_outbound.sends (optout_token) where optout_token is not null;
 
 create table if not exists growth_outbound.suppressions (
   id           bigint generated always as identity primary key,
@@ -1620,10 +1641,10 @@ declare
 begin
   if tg_op = 'UPDATE' then
     if (new.prospect_id, new.draft_id, new.sequence_number, new.is_test, new.idempotency_key, new.sender,
-        new.intended_recipient, new.recipient, new.subject, new.content_hash, new.claimed_at, new.claimed_by)
+        new.intended_recipient, new.recipient, new.subject, new.content_hash, new.claimed_at, new.claimed_by, new.optout_token)
        is distinct from
        (old.prospect_id, old.draft_id, old.sequence_number, old.is_test, old.idempotency_key, old.sender,
-        old.intended_recipient, old.recipient, old.subject, old.content_hash, old.claimed_at, old.claimed_by)
+        old.intended_recipient, old.recipient, old.subject, old.content_hash, old.claimed_at, old.claimed_by, old.optout_token)
        or (old.resend_message_id is not null and new.resend_message_id is distinct from old.resend_message_id) then
       raise exception 'a send records what was sent; only its delivery state may change'
         using errcode = 'insufficient_privilege';
@@ -1664,7 +1685,7 @@ begin
     raise exception 'this address is suppressed' using errcode = 'insufficient_privilege';
   end if;
   select * into s from growth_outbound.settings where id = 1;
-  v_blockers := growth_outbound.send_blockers();
+  v_blockers := growth_outbound.send_blockers_for(s.test_mode or p.is_test or d.is_test);
   if coalesce(array_length(v_blockers, 1), 0) > 0 then
     raise exception 'sending is blocked: %', array_to_string(v_blockers, ', ') using errcode = 'insufficient_privilege';
   end if;
@@ -1712,6 +1733,10 @@ begin
   new.claimed_at := now();
   new.delivery_status := 'claimed';
   new.sender := s.sender_name || ' <' || s.sender_email || '>';
+  -- this send's own opt-out token: 128 random bits, hex
+  new.optout_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  new.attempts := 1;
+  new.last_attempt_at := now();
   return new;
 end $$;
 drop trigger if exists sends_guard_t on growth_outbound.sends;
@@ -1760,6 +1785,8 @@ returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
   select to_jsonb(s) - 'id' || jsonb_build_object(
     'send_blockers', to_jsonb(growth_outbound.send_blockers()),
+    'test_send_blockers', to_jsonb(growth_outbound.send_blockers_for(true)),
+    'live_send_blockers', to_jsonb(growth_outbound.send_blockers_for(false)),
     'today', jsonb_build_object(
       'live_sends', (select count(*) from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now())),
       'test_sends', (select count(*) from growth_outbound.sends where is_test and claimed_at >= date_trunc('day', now())),
@@ -2951,6 +2978,193 @@ begin
   return jsonb_build_object('ok', true, 'prospect_id', v_pid, 'draft_id', v_did, 'created', v_created);
 end $$;
 
+-- ── sending: claim, compose, record ──────────────────────────────────────────
+--
+-- THE SEND PATH (Phase 5). The owner presses Send; the growth_outbound_send
+-- Edge Function, running AS THE OWNER (requireOutboundOwner), calls:
+--   1  growth_outbound_send_claim(draft)   — writes the send row FIRST (the
+--      table trigger re-checks every rule: approved, unchanged, current owner,
+--      approved recipient or only the test inbox, unsuppressed, once per
+--      draft, once per address per step, the daily cap, the compliance
+--      configuration) and returns the message exactly as it must go out,
+--      with a deterministic Idempotency-Key;
+--   2  Resend, with that Idempotency-Key;
+--   3  growth_outbound_send_result(send)   — records Resend's answer.
+-- A crash between 1 and 3 leaves a claimed row; claiming the same draft again
+-- returns the SAME key, so Resend's idempotency makes the retry harmless.
+-- After 23 hours that guarantee lapses (Resend keeps keys 24 hours), so an
+-- unresolved claim is then marked failed and never retried: an email is never
+-- sent twice to find out whether it was sent once.
+
+-- The personal opt-out link of one send (Phase 6 serves it).
+create or replace function growth_outbound.optout_url(p_token text)
+returns text language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select case when s.unsubscribe_url_base is null or p_token is null then null
+              else rtrim(s.unsubscribe_url_base, '/') || '/growth_outbound_optout?t=' || p_token end
+    from growth_outbound.settings s where s.id = 1;
+$$;
+
+-- The message for one claimed send, exactly as Resend receives it: the
+-- recipient and sender recorded on the send row, the approved words, the
+-- footer with the postal address and this send's own opt-out link, and the
+-- RFC 8058 one-click List-Unsubscribe headers.
+create or replace function growth_outbound.compose_for_send(p_send uuid)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object(
+    'from', x.sender,
+    'to', x.recipient,
+    'reply_to', coalesce(s.reply_to_email, s.sender_email),
+    'subject', x.subject,
+    'text', d.body_text || E'\n\n' || growth_outbound.footer_text(coalesce(growth_outbound.optout_url(x.optout_token),
+              '[test send: your personal opt-out link appears here once the opt-out endpoint is configured]')),
+    'headers', jsonb_strip_nulls(jsonb_build_object(
+      'List-Unsubscribe', concat_ws(', ',
+          case when growth_outbound.optout_url(x.optout_token) is not null then '<' || growth_outbound.optout_url(x.optout_token) || '>' end,
+          '<mailto:' || coalesce(s.reply_to_email, s.sender_email) || '?subject=stop>'),
+      'List-Unsubscribe-Post', case when growth_outbound.optout_url(x.optout_token) is not null then 'List-Unsubscribe=One-Click' end)))
+  from growth_outbound.sends x
+  join growth_outbound.drafts d on d.id = x.draft_id
+  cross join growth_outbound.settings s
+  where x.id = p_send and s.id = 1;
+$$;
+
+-- CLAIM a send for an approved draft. Called by the Edge Function as the
+-- owner. Nothing leaves here but the message to send and its key.
+create or replace function public.growth_outbound_send_claim(p_draft_id uuid)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  d growth_outbound.drafts;
+  x growth_outbound.sends;
+  s growth_outbound.settings;
+  v_test boolean;
+begin
+  v_owner := growth_outbound.require_owner();
+  select * into d from growth_outbound.drafts where id = p_draft_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+
+  -- this draft was claimed before: never a second send, at most a safe retry
+  select * into x from growth_outbound.sends where draft_id = d.id for update;
+  if found then
+    if x.resend_message_id is not null or x.delivery_status <> 'claimed' then
+      return jsonb_build_object('ok', true, 'already', true, 'send_id', x.id, 'state', x.delivery_status,
+        'resend_message_id', x.resend_message_id);
+    end if;
+    if x.claimed_at < now() - interval '23 hours' then
+      update growth_outbound.sends
+         set delivery_status = 'failed', failed_at = now(),
+             failure_reason = 'the first attempt''s outcome is unknown and too old to retry safely: never sent twice'
+       where id = x.id;
+      perform growth_outbound.log('send_abandoned', x.prospect_id, 'send', x.id::text, jsonb_build_object('claimed_at', x.claimed_at));
+      return jsonb_build_object('ok', false, 'reason', 'stale_claim', 'send_id', x.id,
+        'detail', 'an earlier attempt did not report back within 23 hours; it is marked failed and will not be retried');
+    end if;
+    update growth_outbound.sends set attempts = attempts + 1, last_attempt_at = now() where id = x.id;
+    perform growth_outbound.log('send_retried', x.prospect_id, 'send', x.id::text, jsonb_build_object('attempt', x.attempts + 1));
+    return jsonb_build_object('ok', true, 'retry', true, 'send_id', x.id, 'idempotency_key', x.idempotency_key,
+      'test', x.is_test, 'message', growth_outbound.compose_for_send(x.id));
+  end if;
+
+  if d.status <> 'approved' then return jsonb_build_object('ok', false, 'reason', 'not_approved', 'status', d.status); end if;
+  -- the approval must still be earned, now: a prospect that no longer passes
+  -- loses it (evaluate() puts the draft back in review)
+  perform growth_outbound.evaluate(d.prospect_id);
+  select * into d from growth_outbound.drafts where id = p_draft_id for update;
+  if d.status <> 'approved' then
+    return jsonb_build_object('ok', false, 'reason', 'approval_withdrawn',
+      'detail', 'the prospect no longer passes every gate, so the draft is back in review');
+  end if;
+  if cardinality(growth_outbound.draft_lint(d.subject, d.body_text)) > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'content', 'problems', to_jsonb(growth_outbound.draft_lint(d.subject, d.body_text)));
+  end if;
+  select * into s from growth_outbound.settings where id = 1;
+  v_test := s.test_mode or d.is_test;
+  begin
+    perform set_config('growth_outbound.door', 'claim_send', true);
+    insert into growth_outbound.sends (prospect_id, draft_id, sequence_number, is_test, idempotency_key, sender,
+                                       intended_recipient, recipient, subject, content_hash, claimed_by)
+    values (d.prospect_id, d.id, d.sequence_number, v_test, 'edgedesk-outbound-' || d.id, 'set by the send trigger',
+            d.approved_recipient, case when v_test then growth_outbound.norm_email(s.test_inbox) else d.approved_recipient end,
+            d.subject, d.content_hash, v_owner)
+    returning * into x;
+    update growth_outbound.drafts set status = 'sent' where id = d.id;
+    perform set_config('growth_outbound.door', '', true);
+  exception when insufficient_privilege or unique_violation or not_null_violation then
+    -- the send trigger said no: the cap, a suppression, the configuration…
+    return jsonb_build_object('ok', false, 'reason', 'refused', 'detail', sqlerrm);
+  end;
+  perform growth_outbound.log('send_claimed', d.prospect_id, 'send', x.id::text,
+    jsonb_build_object('draft', d.id, 'test', x.is_test, 'to', x.recipient, 'sequence', x.sequence_number));
+  return jsonb_build_object('ok', true, 'send_id', x.id, 'idempotency_key', x.idempotency_key, 'test', x.is_test,
+    'message', growth_outbound.compose_for_send(x.id));
+end $$;
+
+-- RECORD what Resend answered for a claimed send. Called by the Edge Function
+-- as the owner. A message id makes it 'sent' (and a real step-1 prospect
+-- 'contacted'); a permanent refusal makes it 'failed'; anything else is
+-- noted, and the claim stays open for a retry with the same key.
+create or replace function public.growth_outbound_send_result(
+  p_send_id uuid, p_resend_id text, p_error text default null, p_permanent boolean default false)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  x growth_outbound.sends;
+  v_err text := left(nullif(btrim(coalesce(p_error, '')), ''), 500);
+begin
+  perform growth_outbound.require_owner();
+  select * into x from growth_outbound.sends where id = p_send_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if p_resend_id is not null then
+    if p_resend_id !~ '^[A-Za-z0-9_-]{6,100}$' then return jsonb_build_object('ok', false, 'reason', 'invalid_message_id'); end if;
+    if x.resend_message_id is not null then
+      if x.resend_message_id = p_resend_id then return jsonb_build_object('ok', true, 'already', true); end if;
+      return jsonb_build_object('ok', false, 'reason', 'different_message_id');
+    end if;
+    update growth_outbound.sends
+       set resend_message_id = p_resend_id, sent_at = now(), last_error = null,
+           delivery_status = case when delivery_status in ('claimed', 'failed') then 'sent' else delivery_status end,
+           failed_at = null, failure_reason = null
+     where id = x.id;
+    if not x.is_test and x.sequence_number = 1 then
+      update growth_outbound.prospects set status = 'contacted', status_reason = null
+       where id = x.prospect_id and status in ('discovered', 'needs_research', 'qualified', 'ready_for_review');
+    end if;
+    perform growth_outbound.log('sent', x.prospect_id, 'send', x.id::text,
+      jsonb_build_object('test', x.is_test, 'to', x.recipient, 'resend_id', p_resend_id, 'sequence', x.sequence_number));
+    return jsonb_build_object('ok', true, 'state', 'sent');
+  end if;
+  if x.resend_message_id is not null then return jsonb_build_object('ok', false, 'reason', 'already_sent'); end if;
+  if coalesce(p_permanent, false) then
+    update growth_outbound.sends
+       set delivery_status = 'failed', failed_at = now(), failure_reason = coalesce(v_err, 'refused by the provider'), last_error = v_err
+     where id = x.id;
+    perform growth_outbound.log('send_failed', x.prospect_id, 'send', x.id::text, jsonb_build_object('error', v_err));
+    return jsonb_build_object('ok', true, 'state', 'failed');
+  end if;
+  update growth_outbound.sends set last_error = coalesce(v_err, 'no answer'), last_attempt_at = now() where id = x.id;
+  perform growth_outbound.log('send_attempt_failed', x.prospect_id, 'send', x.id::text, jsonb_build_object('error', v_err));
+  return jsonb_build_object('ok', true, 'state', 'claimed', 'retry', true);
+end $$;
+
+-- What was sent: newest first, with who it went to and how it went.
+create or replace function public.growth_outbound_sends(p_limit int default 100)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return coalesce((select jsonb_agg(jsonb_build_object(
+      'id', x.id, 'draft_id', x.draft_id, 'prospect_id', x.prospect_id, 'full_name', p.full_name, 'organization', p.organization,
+      'is_test', x.is_test, 'sequence_number', x.sequence_number, 'recipient', x.recipient, 'intended_recipient', x.intended_recipient,
+      'subject', x.subject, 'delivery_status', x.delivery_status, 'claimed_at', x.claimed_at, 'sent_at', x.sent_at,
+      'delivered_at', x.delivered_at, 'bounced_at', x.bounced_at, 'failed_at', x.failed_at, 'failure_reason', x.failure_reason,
+      'last_error', x.last_error, 'attempts', x.attempts, 'resend_message_id', x.resend_message_id) order by x.claimed_at desc)
+    from (select * from growth_outbound.sends order by claimed_at desc limit least(greatest(coalesce(p_limit, 100), 1), 500)) x
+    join growth_outbound.prospects p on p.id = x.prospect_id), '[]'::jsonb);
+end $$;
+
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
 -- rule change reaches existing rows). Oldest first, so the first row to claim
 -- an address keeps it.
@@ -3058,6 +3272,18 @@ select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 
   || ', automation ' || (select case when automation_enabled then 'on' else 'OFF' end from growth_outbound.settings where id = 1)
   || ', daily cap ' || (select max_sends_per_day::text from growth_outbound.settings where id = 1),
   'ok'
+union all
+select 21, 'live sending also needs: ' || coalesce(nullif(array_to_string(growth_outbound.send_blockers_for(false), ', '), ''), 'nothing'),
+  'ok'
+union all
+select 22, 'sends: ' || (select count(*) from growth_outbound.sends where not is_test)::text || ' live, '
+  || (select count(*) from growth_outbound.sends where is_test)::text || ' test; '
+  || (select count(*) from growth_outbound.sends where delivery_status = 'claimed' and claimed_at < now() - interval '1 hour')::text
+  || ' claimed over an hour ago without an answer',
+  case when exists (select 1 from pg_trigger where not tgisinternal and tgname = 'sends_guard_t')
+        and exists (select 1 from pg_indexes where schemaname = 'growth_outbound' and indexname in ('sends_draft_uk'))
+        and exists (select 1 from pg_indexes where schemaname = 'growth_outbound' and indexname in ('sends_idempotency_uk'))
+       then 'ok' else 'CHECK THIS' end
 union all
 select 14, 'sending blocked until configured: ' || coalesce(nullif(array_to_string(growth_outbound.send_blockers(), ', '), ''), 'nothing'),
   'ok'

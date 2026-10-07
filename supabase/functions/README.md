@@ -69,6 +69,16 @@ off in `portfolio_platform_registry` until its live smoke test passes:
 |---|---|---|
 | `portfolio_connect` | `app.html` (Portfolio → Accounts), pg_cron (`supabase/portfolio_sync_cron.sql`, every 10 minutes), `tools/portfolio/connector_smoke.js` | connect a read-only Kalshi key or a public Polymarket wallet (validated against the platform, the key sealed with AES-256-GCM, never returned), a reader's rate-limited sync, disconnect (deletes the key, says how to revoke it at the platform), and the scheduler's `sweep` of due accounts. Read-only: it never places, changes or cancels anything. A sportsbook is refused. JWT verification OFF (`--no-verify-jwt`); every reader action verifies the token inside, the sweep takes no identity and answers counts only. Secrets: `PORTFOLIO_CREDENTIAL_KEYS`, `PORTFOLIO_CREDENTIAL_KEY_VERSION`. |
 
+**Outbound** (`docs/growth-outbound.md`) — one single-file function carrying
+the owner check (`tools/growth/outbound_auth.js`, copied in by
+`tools/growth/inline_outbound_auth.js`; `tools/growth/outbound_send.test.js`
+imports the deployed file and fails on drift). Deployed by
+`.github/workflows/deploy-growth-outbound.yml` (manual):
+
+| function | called by | what for |
+|---|---|---|
+| `growth_outbound_send` | `admin/growth/` (Outbound → Review queue → Send) | sends an APPROVED outbound draft, only when the owner presses Send: the owner verified (GoTrue, then `growth_outbound_is_owner()` as the caller), the send claimed in the database first, Resend called with one Idempotency-Key per draft, the answer recorded. Holds no service-role key: every database call is the caller's. JWT verification OFF (`--no-verify-jwt`); the owner is verified inside. Secret: `RESEND_API_KEY`. |
+
 **Called directly by `newsletter/index.html` and `admin/newsletter/index.html`**
 
 | function | what for |
