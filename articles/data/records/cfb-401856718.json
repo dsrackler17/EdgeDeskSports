@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-07T13:12:10.163Z",
-  "generated_at": "2026-10-07T13:12:10.163Z",
+  "updated_at": "2026-10-07T20:34:36.502Z",
+  "generated_at": "2026-10-07T20:34:36.502Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Vanderbilt and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Ole Miss and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -231,7 +255,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T19:30:00.000Z",
-        "retrieved_at": "2026-10-07T08:52:03.299Z"
+        "retrieved_at": "2026-10-07T19:21:24.814Z"
       },
       "home": {
         "team": "Vanderbilt",
@@ -321,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T16:45:00.000Z",
-        "retrieved_at": "2026-10-07T08:52:03.299Z"
+        "retrieved_at": "2026-10-07T19:21:24.814Z"
       },
-      "generated_at": "2026-10-07T08:52:49.992Z",
+      "generated_at": "2026-10-07T19:21:23.831Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1458,7 +1482,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 14h old",
+          "text": "odds is 22h old",
           "widening": null
         },
         {
@@ -1591,7 +1615,7 @@
       "total_market": "59.0",
       "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "14 hours old",
+      "capture_age": "22 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1622,6 +1646,8 @@
           "MARKET.quote_fresh",
           "MARKET.book_count",
           "QB.home_starter",
+          "ROSTER.home_availability",
+          "ROSTER.away_availability",
           "MODEL.ensemble_favorite"
         ],
         "incomplete": [],
@@ -1657,11 +1683,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 69,
+        "pct": 68,
         "tier": "ADEQUATE",
-        "text": "69 · CAUTION",
-        "sub": "main deduction: unresolved roster conflict",
-        "score": 69,
+        "text": "68 · CAUTION",
+        "sub": "main deduction: the projection flips favorite in 28% of sensitivity runs",
+        "score": 68,
         "grade": "CAUTION",
         "grade_label": "CAUTION",
         "gate_label": null,
@@ -1675,7 +1701,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 11.4,
+            "score": 7.9,
             "max": 20
           },
           {
@@ -1687,7 +1713,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1703,25 +1729,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for Vanderbilt",
-        "capped_by": [
-          "ROSTER_CONFLICT"
-        ],
+        "main_deduction": "the projection flips favorite in 28% of sensitivity runs",
+        "capped_by": [],
         "next_actions": [
           {
             "action": "Resolve Vanderbilt’s starter conflict",
-            "potential_gain": 6,
-            "text": "up to +6"
+            "potential_gain": 3,
+            "text": "up to +3"
           },
           {
-            "action": "Re-read availability inside the filing window (Ole Miss)",
-            "potential_gain": 3,
-            "text": "up to +3 once resolve Vanderbilt’s starter conflict is done"
+            "action": "Restore an injury/availability source for Ole Miss",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Re-read availability inside the filing window (Vanderbilt)",
-            "potential_gain": 3,
-            "text": "up to +3 once resolve Vanderbilt’s starter conflict is done"
+            "action": "Restore an injury/availability source for Vanderbilt",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1969,6 +1993,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-07T13:12:10.163Z"
+    "at": "2026-10-07T20:34:36.502Z"
   }
 }

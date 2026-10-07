@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-07T13:12:10.163Z",
-  "generated_at": "2026-10-07T13:12:10.163Z",
+  "updated_at": "2026-10-07T20:34:36.502Z",
+  "generated_at": "2026-10-07T20:34:36.502Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Oregon and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UCLA and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -237,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T17:30:00.000Z",
-        "retrieved_at": "2026-10-07T08:52:03.299Z"
+        "retrieved_at": "2026-10-07T19:21:24.814Z"
       },
       "home": {
         "team": "Oregon",
@@ -323,9 +347,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T23:30:00.000Z",
-        "retrieved_at": "2026-10-07T08:52:03.299Z"
+        "retrieved_at": "2026-10-07T19:21:24.814Z"
       },
-      "generated_at": "2026-10-07T08:52:49.992Z",
+      "generated_at": "2026-10-07T19:21:23.831Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1441,7 +1465,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 14h old",
+          "text": "odds is 22h old",
           "widening": null
         },
         {
@@ -1574,7 +1598,7 @@
       "total_market": "58.0",
       "book": "captured consensus (stale) · 1 book · best at BetOnline.ag",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "14 hours old",
+      "capture_age": "22 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1642,7 +1666,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 10.6,
+            "score": 7.1,
             "max": 20
           },
           {
@@ -1654,7 +1678,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 11.8,
+            "score": 10.9,
             "max": 15
           },
           {
@@ -1677,13 +1701,18 @@
         "next_actions": [
           {
             "action": "Resolve Oregon’s starter conflict",
-            "potential_gain": 10,
-            "text": "up to +10"
+            "potential_gain": 8,
+            "text": "up to +8"
           },
           {
-            "action": "Confirm Oregon’s starting QB (Dylan Raiola)",
-            "potential_gain": 5,
-            "text": "up to +5 once resolve Oregon’s starter conflict is done"
+            "action": "Restore an injury/availability source for UCLA",
+            "potential_gain": 2,
+            "text": "up to +2 once resolve Oregon’s starter conflict is done"
+          },
+          {
+            "action": "Restore an injury/availability source for Oregon",
+            "potential_gain": 2,
+            "text": "up to +2 once resolve Oregon’s starter conflict is done"
           }
         ],
         "stability": {
@@ -1937,6 +1966,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-07T13:12:10.163Z"
+    "at": "2026-10-07T20:34:36.502Z"
   }
 }
