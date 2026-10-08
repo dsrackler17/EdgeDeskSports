@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Content Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- =========================================================================
+     THE CONTENT ENGINE — owner only.
+
+     Discover sports stories with real audience potential, research them with
+     EdgeDesk's own models, draft SEO-focused articles, review them, and export
+     publisher-ready copy. Research, not picks.
+
+     WHO: the outbound OWNER list (growth_outbound.owners ∩ affiliate_admins).
+     Sign-in is the shared operator session (lib/edgedesk_admin_session.js);
+     the gate is content_engine_is_owner(), and EVERY read and write is a
+     public.content_engine_* door that checks the owner again in the database
+     (supabase/content_engine.sql). This page holds only the public anon key.
+
+     WHAT RUNS WHERE
+       · research + discovery + the deterministic draft + every check run HERE,
+         in lib/content_engine.js, over the research files EdgeDesk already
+         publishes (the same code the weekly job and the Edge Function run);
+       · the AI rewrite and the trending-news fetch run in the content_engine
+         Edge Function (the Anthropic key and the feeds never touch a browser);
+       · approval, the send record and publication are database doors that
+         only an owner reaches. Nothing here emails or publishes anything.
+     ========================================================================= -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 16px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:16px 0 6px;font-weight:700}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:140px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif;max-width:100%}
+textarea{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px/1.5 Inter,system-ui,sans-serif;resize:vertical;min-height:70px;width:100%}
+textarea.mono{font:500 12px/1.5 'JetBrains Mono',monospace}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.d{background:transparent;color:var(--neg);border:1px solid rgba(226,96,68,.45)}
+button.sm{padding:5px 9px;font-size:11.5px}
+button:disabled{opacity:.4;cursor:not-allowed}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);vertical-align:top}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td.r,th.r{text-align:right}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px;white-space:pre-wrap}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px}
+.kpi small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.pill{display:inline-block;font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim);white-space:nowrap}
+.pill.ok{color:var(--pos);border-color:rgba(118,189,62,.5)}
+.pill.warn{color:var(--warn);border-color:rgba(217,154,43,.5)}
+.pill.bad{color:var(--neg);border-color:rgba(226,96,68,.5)}
+.pill.est{color:var(--warn);border-color:var(--warn);border-style:dashed}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-top:14px;flex-wrap:wrap}
+.tabs button{background:none;color:var(--dim);border:none;border-bottom:2px solid transparent;border-radius:0;padding:9px 12px;font-size:13px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--warn)}
+.tabs button .n{font-size:10px;color:var(--faint);margin-left:4px}
+.opp{border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:10px;background:var(--bg)}
+.opp .top{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.prio{font:800 22px 'JetBrains Mono',monospace;min-width:42px;text-align:center;border:1px solid var(--border);border-radius:8px;padding:4px 6px}
+.prio.hi{color:var(--pos);border-color:rgba(118,189,62,.5)}.prio.mid{color:var(--warn)}.prio.lo{color:var(--faint)}
+.otitle{font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.sub{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45;overflow-wrap:anywhere}
+.scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px;margin-top:10px}
+.sc{border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;color:var(--dim)}
+.sc b{float:right;color:var(--text)}
+.meter{height:4px;border-radius:2px;background:var(--surface2);margin-top:5px;overflow:hidden}
+.meter span{display:block;height:4px;background:var(--accent)}
+.sc .basis{margin-top:4px;font-size:10.5px;color:var(--faint);line-height:1.35}
+.srcs{margin-top:8px;font-size:11px;color:var(--dim);line-height:1.6}
+.srcs a{color:var(--accent)}
+.checks{list-style:none;padding:0;margin:8px 0 0}
+.checks li{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--border);font-size:12px;align-items:flex-start}
+.checks li .d{color:var(--dim);font-size:11px;overflow-wrap:anywhere}
+.sec{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:10px;background:var(--bg)}
+.sec .sh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.sec .sh input{flex:1;min-width:200px}
+.sec textarea{min-height:140px}
+.preview{background:#fff;color:#1d1d1f;border-radius:10px;padding:22px 26px;font:16px/1.6 Georgia,serif;max-height:720px;overflow:auto}
+.preview h1{font:700 26px/1.2 system-ui,sans-serif;margin:0 0 10px}
+.preview h2{font:700 19px/1.3 system-ui,sans-serif;margin:24px 0 8px}
+.preview h3{font:600 16px/1.35 system-ui,sans-serif;margin:18px 0 6px;color:#1d1d1f;text-transform:none;letter-spacing:0}
+.preview p,.preview ul{margin:0 0 12px}.preview a{color:#0b6e63}.preview hr{border:0;border-top:1px solid #ddd;margin:20px 0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.col{border:1px solid var(--border);border-radius:10px;padding:10px;background:var(--bg);min-height:80px}
+.col h4{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:0 0 8px}
+.item{border-top:1px solid var(--border);padding:8px 0;font-size:12.5px}
+.item:first-of-type{border-top:none}
+.lnk{background:none;border:none;color:var(--text);padding:0;font:inherit;font-weight:600;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px;text-align:left}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.cbs{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px}
+.cbs label,.chk{display:flex;gap:6px;align-items:center;font-weight:500;color:var(--text);font-size:12.5px}
+fieldset{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:0 0 10px}
+legend{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:0 4px}
+.banner{border:1px solid rgba(217,154,43,.5);color:var(--warn);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-top:10px;background:rgba(217,154,43,.06);line-height:1.5}
+.dim{color:var(--faint)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">content engine</span>
+  <nav><a href="/admin/growth/">Growth console</a><a href="/admin/acquisition/">Acquisition</a><a href="/admin/seo/">SEO report</a><a href="/admin/articles/">Articles</a></nav>
+  <span class="sp"></span><span class="who" id="who"></span><button class="g sm hide" id="signOut" type="button">Sign out</button></div></header>
+<div class="wrap">
+  <form id="gate" class="card" style="max-width:420px;margin:40px auto" autocomplete="on">
+    <h2 style="margin-top:0">Owner sign-in</h2>
+    <div id="gFields">
+      <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username" required></div>
+      <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password" required></div>
+      <div class="row" style="margin-top:12px"><button id="gGo" type="submit">Sign in</button></div>
+    </div>
+    <div class="row hide" id="gSwitch" style="margin-top:4px"><button class="g" id="gOut" type="button">Sign out and use another account</button></div>
+    <div class="msg" id="gMsg" role="status" aria-live="polite"></div>
+  </form>
+
+  <div id="app" class="hide">
+    <div class="msg err hide" id="appMsg" role="alert"></div>
+    <div class="kpis" id="kpis" style="margin-top:16px"></div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="opps" class="on">Opportunities</button>
+      <button type="button" role="tab" data-tab="gen">Article generator</button>
+      <button type="button" role="tab" data-tab="review">Editorial review</button>
+      <button type="button" role="tab" data-tab="pub">Publishing queue</button>
+      <button type="button" role="tab" data-tab="perf">Performance</button>
+      <button type="button" role="tab" data-tab="pubs">Publishers</button>
+      <button type="button" role="tab" data-tab="set">Settings &amp; log</button>
+    </div>
+
+    <!-- ── OPPORTUNITIES ─────────────────────────────────────────────── -->
+    <section id="tab-opps" role="tabpanel">
+      <h2>Discover</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f" style="max-width:240px"><label for="dPub">Score for publisher</label><select id="dPub"></select></div>
+          <div class="f" style="max-width:220px"><label>Sources</label>
+            <div class="cbs"><label><input type="checkbox" id="dNews" checked> trending headlines (RSS)</label><label><input type="checkbox" id="dGsc" checked> Search Console</label></div></div>
+          <div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button id="dGo" type="button">Discover now</button></div>
+        </div>
+        <p class="note">Reads EdgeDesk’s committed research (the CFB terminal, rankings, NFL slate, injury report and captured prices), adds attributed headlines from public RSS feeds through the Edge Function, and scores each opportunity on seven parts. Search demand is an <b>estimate</b> unless Search Console shows EdgeDesk’s own measured impressions. The weekly job does the same on a schedule.</p>
+        <div class="msg" id="dMsg" role="status" aria-live="polite"></div>
+      </div>
+      <h2>Opportunity queue</h2>
+      <div class="row" style="margin-bottom:6px">
+        <div class="f" style="max-width:200px"><label for="oFilter">Show</label>
+          <select id="oFilter"><option value="">Open</option><option value="shortlisted">Shortlisted</option><option value="assigned">Assigned</option><option value="dismissed">Dismissed</option></select></div>
+        <div class="f" style="max-width:160px"><label for="oLeague">League</label><select id="oLeague"><option value="">Both</option><option value="cfb">College football</option><option value="nfl">NFL</option></select></div>
+      </div>
+      <div id="oList"><p class="note">Loading…</p></div>
+    </section>
+
+    <!-- ── GENERATOR ─────────────────────────────────────────────────── -->
+    <section id="tab-gen" role="tabpanel" class="hide">
+      <h2>Choose</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f" style="min-width:300px;flex:2"><label for="gOpp">Topic (opportunity)</label><select id="gOpp"></select></div>
+          <div class="f"><label for="gPubSel">Publisher</label><select id="gPubSel"></select></div>
+          <div class="f"><label for="gFormat">Format</label><select id="gFormat"></select></div>
+          <div class="f"><label for="gAngle">Angle</label>
+            <select id="gAngle"><option value="full_slate">Full slate (headline game first)</option><option value="upsets_first">Upsets first</option></select></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="gOutline" type="button" class="g">Generate outline</button>
+          <button id="gDraft" type="button">Generate full draft</button>
+        </div>
+        <p class="note">The outline and the first draft are written by EdgeDesk’s deterministic writer from the opportunity’s frozen research: every number is EdgeDesk’s. “Rewrite with AI” (below, once a draft exists) sends the same research to Claude through the Edge Function; its version is kept only if it passes every check.</p>
+        <div class="msg" id="gMsgGen" role="status" aria-live="polite"></div>
+      </div>
+      <div id="gOutlineOut" class="hide"></div>
+      <div id="gEditor" class="hide"></div>
+    </section>
+
+    <!-- ── REVIEW ────────────────────────────────────────────────────── -->
+    <section id="tab-review" role="tabpanel" class="hide">
+      <h2>Waiting for review</h2>
+      <div id="rList"><p class="note">Loading…</p></div>
+      <div id="rDetail"></div>
+    </section>
+
+    <!-- ── PUBLISHING QUEUE ──────────────────────────────────────────── -->
+    <section id="tab-pub" role="tabpanel" class="hide">
+      <h2>Publishing queue</h2>
+      <p class="note">Every external send is the owner’s, by hand: export an approved article, send it yourself, then record the send here. The engine never emails a publisher and never publishes.</p>
+      <div class="cols" id="pCols"><p class="note">Loading…</p></div>
+      <div id="pDetail"></div>
+    </section>
+
+    <!-- ── PERFORMANCE ───────────────────────────────────────────────── -->
+    <section id="tab-perf" role="tabpanel" class="hide">
+      <h2>Performance</h2>
+      <div class="banner">Three kinds of numbers, never mixed: <b>first-party</b> (EdgeDesk’s own measurement of visits, sign-ups, trials and paid conversions that arrived through each article’s tagged link), <b>publisher-reported</b> (figures a publisher gave you, as entered), and <b>benchmarks</b> (user-reported reference values, not live analytics). A dash means not measured.</div>
+      <div id="perfOut"><p class="note">Loading…</p></div>
+      <h2>Add a publisher-reported figure</h2>
+      <div class="card">
+        <div class="row">
+          <div class="f" style="min-width:260px;flex:2"><label for="pfArt">Article</label><select id="pfArt"></select></div>
+          <div class="f"><label for="pfMetric">Metric</label><select id="pfMetric"><option value="page_views">Page views</option><option value="unique_visitors">Unique visitors</option><option value="referral_clicks">Referral clicks</option><option value="social_shares">Social shares</option><option value="comments">Comments</option><option value="other">Other</option></select></div>
+          <div class="f" style="max-width:120px"><label for="pfValue">Value</label><input id="pfValue" type="number" min="0" step="1"></div>
+          <div class="f"><label for="pfSource">Source</label><select id="pfSource"><option value="publisher_reported">Publisher-reported</option><option value="owner_observed">Owner-observed</option></select></div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="f"><label for="pfStart">Period start</label><input id="pfStart" type="date"></div>
+          <div class="f"><label for="pfEnd">Period end</label><input id="pfEnd" type="date"></div>
+          <div class="f" style="flex:2"><label for="pfNote">Note</label><input id="pfNote" maxlength="400" placeholder="e.g. from the editor’s weekly email"></div>
+          <div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button id="pfAdd" type="button">Add</button></div>
+        </div>
+        <div class="msg" id="pfMsg"></div>
+      </div>
+    </section>
+
+    <!-- ── PUBLISHERS ────────────────────────────────────────────────── -->
+    <section id="tab-pubs" role="tabpanel" class="hide">
+      <h2>Publishers</h2>
+      <div class="row" style="margin-bottom:8px"><button id="pbNew" type="button" class="g sm">Add a publisher</button></div>
+      <div id="pbList"><p class="note">Loading…</p></div>
+      <div id="pbEdit"></div>
+    </section>
+
+    <!-- ── SETTINGS ──────────────────────────────────────────────────── -->
+    <section id="tab-set" role="tabpanel" class="hide">
+      <h2>Automation &amp; budget</h2>
+      <div class="card" id="setForm"></div>
+      <h2>AI</h2>
+      <div class="card"><div id="aiStatus" class="note">Checking the Edge Function…</div></div>
+      <h2>Recent runs</h2>
+      <div class="card tw" id="runs"></div>
+      <h2>Problems</h2>
+      <div class="card tw" id="problems"></div>
+    </section>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+</script>
+<script src="/lib/edgedesk_auth.js?v=20261005a"></script>
+<script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
+<script src="/lib/content_engine.js?v=20261008a"></script>
+<script src="/admin/content/content.js?v=20261008a"></script>
+</body>
+</html>

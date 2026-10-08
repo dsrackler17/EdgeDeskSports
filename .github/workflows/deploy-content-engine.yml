@@ -1,0 +1,77 @@
+# Deploy the Content Engine's Edge Function (content_engine): the AI editorial
+# pass and the trending-news fetch for the owner's /admin/content/ page.
+#
+# MANUAL ON PURPOSE (workflow_dispatch), like every deploy here. This workflow
+# never touches the database: supabase/content_engine.sql is applied by hand in
+# the SQL editor (docs/content-engine/README.md).
+#
+# WHAT IT DOES, IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the function's own tests — the DEPLOYED file, imported under Node's type
+#      stripping, against the real SQL on a throwaway PostgreSQL — and a check
+#      that it carries tools/growth/outbound_auth.js and lib/content_engine.js
+#      verbatim (tools/content/inline.js --check);
+#   2. deploys it with --no-verify-jwt: the function verifies the owner itself
+#      (GoTrue, then growth_outbound_is_owner() asked as the caller), and the
+#      browser's CORS preflight carries no token.
+#
+# SECRETS (the ones the other deploy workflows already use):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
+# And on the Supabase side (Edge Functions → Secrets; shared by every function):
+#   ANTHROPIC_API_KEY        optional — without it the page's AI buttons say
+#                            "not configured" and the deterministic draft stands
+#   CONTENT_ENGINE_MODEL     optional — defaults to claude-opus-5-5
+# The function holds no service-role key and needs none.
+name: Deploy content engine function
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-content-engine
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The function, the core and the owner check must pass before they ship
+        run: |
+          node tools/content/inline.js --check
+          node tools/content/content.test.js
+          CONTENT_PG_REQUIRED=1 node tools/content/content_engine_sql.test.js
+          CONTENT_PG_REQUIRED=1 node tools/content/content_engine_fn.test.js
+
+      - name: Check the credentials exist before claiming anything
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — deploy from a terminal instead: supabase functions deploy content_engine --no-verify-jwt"
+            exit 1
+          fi
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy content_engine
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy content_engine --project-ref "$PROJECT_REF" --no-verify-jwt
+          echo "**content_engine** deployed. Set ANTHROPIC_API_KEY on the project to enable AI rewrites." >> "$GITHUB_STEP_SUMMARY"

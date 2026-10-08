@@ -378,6 +378,16 @@
     "growth:engine:e2e": "node tools/growth/public_pages.e2e.js",
     "site:test": "node tools/site/nav.test.js && node tools/site/free_access.test.js",
     "seo:audit": "node tools/seo/audit.js",
-    "growth:gsc": "node tools/growth/gsc_import.js"
+    "growth:gsc": "node tools/growth/gsc_import.js",
+    "content:test": "node tools/content/content.test.js && node tools/content/inline.js --check",
+    "content:sql": "node tools/content/content_engine_sql.test.js",
+    "content:fn": "node tools/content/content_engine_fn.test.js",
+    "content:job:test": "node tools/content/run.test.js",
+    "content:e2e": "node tools/content/content_engine.e2e.js",
+    "content:all": "npm run -s content:test && npm run -s content:sql && npm run -s content:fn && npm run -s content:job:test && npm run -s content:e2e",
+    "content:inline": "node tools/content/inline.js",
+    "content:discover": "node tools/content/run.js discover",
+    "content:weekly": "node tools/content/run.js weekly --network",
+    "content:example": "node tools/content/run.js example --out content-example"
   }
 }
