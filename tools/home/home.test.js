@@ -363,6 +363,44 @@ const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
   const noRead = BH.build({ now: S.generated_at, read: () => null });
   chk('with no artifacts it writes an empty board, not an invented one', noRead.props.top.length === 0 && Object.keys(noRead.props.items).length === 0 && Object.keys(noRead.game_ev).length === 0);
 
+  /* ── THE WEEK'S SLATE (football/home/schedule.json, for /today/) ──────── */
+  {
+    const T = '2026-10-08T12:00:00Z', t = Date.parse(T), at = (h) => new Date(t + h * 3600e3).toISOString();
+    const nfl = { generated_at: at(-2), games: [
+      { game_id: '2026_05_TB_DAL', week: 5, kickoff: at(12), home_team: 'Dallas Cowboys', away_team: 'Tampa Bay Buccaneers', home_code: 'DAL', away_code: 'TB',
+        venue: 'AT&T Stadium', model_home_line: -3.1, model_home_win_prob: 0.6, model_fair_home_ml: -150, contributions: [1], cover_curve: [1] },
+      { game_id: '2026_05_OLD_GONE', week: 5, kickoff: at(-9), home_team: 'A', away_team: 'B' },
+      { game_id: '2026_07_FAR_AWAY', week: 7, kickoff: at(24 * 9), home_team: 'C', away_team: 'D' },
+      { game_id: '2026_05_NO_TEAMS', week: 5, kickoff: at(5) }
+    ] };
+    const cfb = { generated_at: at(-1), rows: [
+      { game_id: '401', week: 6, kickoff: at(30), home: 'East Carolina', away: 'Rice', conf: ['American', 'American'], fcs: false,
+        fair: 'ECU -4', fair_home_margin: 4, market: 'ECU -2', gap: 2, edge: 0.03, status: 'RESEARCH', decision_status: 'LEAN' },
+      { game_id: '402', week: 6, kickoff: at(-3), home: 'Northwestern', away: 'Ball State', conf: ['MAC', 'Big Ten'], fcs: true },
+      { game_id: '403', week: 6, kickoff: 'not a date', home: 'X', away: 'Y' }
+    ] };
+    const reads = { 'football/nfl/slate.json': nfl, 'football/cfb_terminal/board.json': cfb };
+    const S2 = BH.buildSchedule({ now: T, read: (rel) => reads[rel] || null });
+    chk('schedule: its own schema', S2.schema === 'edgedesk_home_schedule/1');
+    chk('schedule: games inside the window only, a game kicked off in the last hours included, soonest first',
+      JSON.stringify(S2.games.map((g) => g.key)) === JSON.stringify(['cfb|402', 'nfl|2026_05_TB_DAL', 'cfb|401']), S2.games.map((g) => g.key));
+    chk('schedule: a game with no teams or no readable kickoff is left out, not guessed', !S2.games.some((g) => /NO_TEAMS|403/.test(g.key)));
+    chk('schedule: the counts are the list', S2.counts.nfl === 1 && S2.counts.cfb === 2);
+    chk('schedule: the NFL game keeps its venue and codes', S2.games[1].venue === 'AT&T Stadium' && S2.games[1].home_code === 'DAL');
+    chk('schedule: a college game keeps its conferences, away first', S2.games[0].away_conf === 'MAC' && S2.games[0].home_conf === 'Big Ten' && S2.games[0].fcs === true);
+    const ALLOWED = ['key', 'league', 'week', 'kickoff', 'away', 'home', 'away_code', 'home_code', 'venue', 'away_conf', 'home_conf', 'fcs'];
+    chk('schedule: NO MODEL NUMBER — no fair line, probability, market, gap, edge, EV or decision on any game',
+      S2.games.every((g) => Object.keys(g).every((k) => ALLOWED.indexOf(k) >= 0)), S2.games.map((g) => Object.keys(g)));
+    chk('schedule: the sources\' times are carried', S2.sources.nfl === nfl.generated_at && S2.sources.cfb === cfb.generated_at);
+    const none = BH.buildSchedule({ now: T, read: () => null });
+    chk('schedule: with no artifacts it is an empty slate, not an invented one', none.games.length === 0 && none.counts.nfl === 0 && none.counts.cfb === 0);
+    /* the committed file is the same shape, and stays small enough for a phone */
+    const committed = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'home', 'schedule.json'), 'utf8'));
+    chk('schedule: the committed file has the schema and only schedule fields',
+      committed.schema === 'edgedesk_home_schedule/1' && committed.games.every((g) => Object.keys(g).every((k) => ALLOWED.indexOf(k) >= 0)));
+    chk('schedule: the committed file is under 48 KB', Buffer.byteLength(JSON.stringify(committed)) < 48 * 1024);
+  }
+
   failures.forEach((f) => console.log('FAIL | ' + f));
   console.log((fail ? 'FAILED' : 'ALL GREEN') + ' home view model + tracker — ' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
