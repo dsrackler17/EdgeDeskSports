@@ -127,6 +127,7 @@ try {
   settings({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701', test_inbox: 'owner-test@edgedesk.test',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
   chk('(setup) tagging is on by default', own(`select public.growth_outbound_settings();`).attribution_links === true);
 
   /* ══ L. LINKS ═════════════════════════════════════════════════════════ */

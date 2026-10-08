@@ -57,7 +57,9 @@
   var CSTATUS = 'new', BUSY = false, WRITING = false;
   var BLOCKERS = {
     postal_address_missing: 'no postal address is configured (required in every commercial email)',
-    unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
+    unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet (deploy growth_outbound_optout, then System check → Check the opt-out endpoint)',
+    unsubscribe_endpoint_unverified: 'the opt-out endpoint has not been checked at its address (System check → Check the opt-out endpoint)',
+    webhook_unproven: 'no signed event has reached EdgeDesk from Resend since the webhook secret was set: send yourself a test email to prove bounces and complaints arrive',
     test_inbox_missing: 'test mode is on but no test inbox is set',
     no_outbound_owner: 'no outbound owner is configured',
     webhook_secret_missing: 'Resend\'s webhook signing secret is not set, so bounces and spam complaints could not reach EdgeDesk (in the Supabase SQL editor: select growth_outbound.set_webhook_secret(\'whsec_…\'))',
@@ -67,8 +69,28 @@
     ['business_partner', 'Business partner'], ['partnership', 'Partnership (other)']];
   var PARTS = [['relevance', 'Product relevance'], ['analytics', 'Analytics interest'], ['purchase', 'Purchase signals'],
     ['contact', 'Contact quality'], ['personalization', 'Personalization']];
-  var PROVIDERS = [['brave', 'Brave', 'search'], ['apollo_search', 'Apollo people search', 'search'], ['hunter', 'Hunter', 'email lookup and verification'],
+  var PROVIDERS = [['brave', 'Brave', 'search'], ['podcastindex', 'Podcast Index', 'search'], ['apollo_search', 'Apollo people search', 'search'],
+    ['apollo_org', 'Apollo organization lookup', 'search'], ['hunter', 'Hunter', 'email lookup and verification'],
     ['apollo', 'Apollo email match', 'email lookup'], ['clay', 'Clay', 'enrichment']];
+  // (Phase 13) the switches an older database knows; the ones that cost money stay off until switched on
+  var P12_SWITCHES = ['brave', 'apollo_search', 'hunter', 'apollo', 'clay'];
+  var PAID = ['apollo_search', 'apollo_org', 'apollo', 'clay'];
+  // what each provider's state means, and how to set each one up (no key is ever shown)
+  var PSTATE = { connected: ['Connected and working', 'on'], credential_missing: ['Credential missing', 'off'], unauthorized: ['Unauthorized', 'bad'],
+    insufficient_plan: ['Not on the current plan', 'bad'], quota_exhausted: ['Free credit used up', 'bad'], unavailable: ['Temporarily unavailable', 'test'],
+    not_checked: ['Key set, not checked yet', 'test'], switched_off: ['Switched off', 'off'] };
+  var HEALTH_ROWS = [['podcastindex', 'Podcast Index', 'finds podcasts and their own sites for your saved searches', 'free'],
+    ['hunter', 'Hunter', 'finds and verifies business addresses', 'free tier'], ['anthropic', 'Claude', 'reads pages and writes drafts', 'per use'],
+    ['resend', 'Resend', 'sends the emails you approve', 'existing plan'], ['apollo', 'Apollo', 'organization lookup, people search, email match', 'plan-dependent'],
+    ['brave', 'Brave Search', 'web search (optional, not needed)', 'paid'], ['clay', 'Clay', 'enrichment (optional)', 'paid']];
+  var SETUP = {
+    podcastindex: 'Free: sign up at https://api.podcastindex.org/signup, then add PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET in Supabase → Edge Functions → Secrets.',
+    hunter: 'hunter.io → Dashboard → API → copy the key, then add HUNTER_API_KEY in Supabase → Edge Functions → Secrets. Its free allowance is read from Hunter itself before any credit is spent.',
+    anthropic: 'console.anthropic.com → API keys, then ANTHROPIC_API_KEY in Supabase → Edge Functions → Secrets (already set if the AI desk works).',
+    resend: 'resend.com → API Keys, then RESEND_API_KEY in Supabase → Edge Functions → Secrets (already set for the newsletter).',
+    apollo: 'Optional. apollo.io → Settings → Integrations → API, a key with the endpoints your plan allows, then APOLLO_API_KEY; switch each Apollo use on below. Apollo says a free account must be registered with a work email for its people and organization endpoints. A plan that does not include an endpoint is said here, never worked around.',
+    brave: 'Optional and not needed: your lists, directories and Podcast Index do the finding. BRAVE_SEARCH_API_KEY only if you ever want it.',
+    clay: 'Optional: CLAY_WEBHOOK_URL (your Clay table\'s webhook) and CLAY_WEBHOOK_TOKEN.' };
   var SEND_WHY = {
     resend_unreachable: 'Resend did not answer; press Send again (the same draft can never be sent twice)',
     resend_key_refused: 'Resend refused the API key: check RESEND_API_KEY in the Edge Function secrets',
@@ -97,7 +119,7 @@
     ['Mode', [['test_mode', 'bool', 'Test mode — every send goes only to the test inbox'],
               ['automation_enabled', 'bool', 'Automation — discover, research and draft on schedule (never approve, never send)'],
               ['test_inbox', 'email', 'Test inbox']]],
-    ['Morning run', [['automation_timezone', 'text', 'Your time zone (e.g. America/New_York)'], ['automation_start_hour', 'int', 'Starts at (hour, 0–23)', 0, 23],
+    ['Morning run', [['automation_timezone', 'text', 'Your time zone (e.g. America/Chicago)'], ['automation_start_hour', 'int', 'Starts at (hour, 0–23)', 0, 23],
                      ['automation_hours', 'int', 'For how many hours', 1, 12],
                      ['digest_enabled', 'bool', 'Email me once the morning run is done, if drafts are waiting for review (to my own address only; never to a prospect)']]],
     ['Limits', [['max_sends_per_day', 'int', 'Daily send cap (live)', 1, 200], ['max_test_sends_per_day', 'int', 'Daily test-send cap', 1, 100],
@@ -115,7 +137,8 @@
     ['Sender and compliance', [['sender_name', 'text', 'Sender name'], ['sender_email', 'email', 'Sender email (@edgedesksports.com)'],
                                ['reply_to_email', 'email', 'Reply-to (@edgedesksports.com, optional)'], ['cta_url', 'text', 'Call-to-action URL (edgedesksports.com)'],
                                ['business_name', 'text', 'Business name in the footer'], ['postal_address', 'text', 'Postal address in the footer (required to send)'],
-                               ['unsubscribe_url_base', 'text', 'Opt-out endpoint base URL']]],
+                               ['unsubscribe_url_base', 'text', 'Opt-out endpoint base URL (System check → Check the opt-out endpoint fills it in)']]],
+    ['Campaigns', [['partner_outreach_enabled', 'bool', 'Partner outreach — the engine also writes partnership notes to partner leads: only what the partners page offers, never money, terms or a subscription pitch. Every note still waits for your approval.']]],
     ['Results', [['attribution_links', 'bool', 'Tag EdgeDesk links in live emails with the prospect\'s campaign code (utm_campaign=ob_…), so a visit or signup can be matched']]]
   ];
 
@@ -264,18 +287,35 @@
     if (da.ok === false) return '<span class="chip warn" data-domain="failed">' + esc(da.domain) + ': ' + esc(bad.join(', ') || 'a record') + ' missing — live sending blocked</span>';
     return '<span class="chip off" data-domain="unknown">' + esc(da.domain) + ': DNS could not be read · ' + esc(when(at)) + '</span>';
   }
+  // (Phase 13) where today's candidates came from, the providers that need you, the opt-out endpoint, partner outreach
+  function morningP13(m) {
+    if (!('discovery_sources' in m)) return '';
+    var ds = m.discovery_sources || {}, ft = m.found_today || {}, fk = Object.keys(ft);
+    var h = '<span class="chip ' + (ds.saved_searches || ds.directories ? '' : 'warn') + '" data-mn="sources">Discovery: ' + esc(ds.saved_searches || 0) + ' saved search(es), '
+      + esc(ds.directories || 0) + ' director' + (ds.directories === 1 ? 'y' : 'ies') + ', plus your own lists</span>';
+    h += '<span class="chip" data-mn="found">Found today: ' + (fk.length ? fk.map(function (k) { return esc((SOURCE_NAMES[k] || k) + ' ' + ft[k]); }).join(', ') : 'none yet') + '</span>';
+    var hh = m.health || {}, trouble = Object.keys(hh).filter(function (k) { return ['unauthorized', 'quota_exhausted', 'insufficient_plan', 'unavailable'].indexOf(hh[k].state) >= 0; });
+    trouble.forEach(function (k) { h += '<span class="chip warn" data-mn="provider-' + esc(k) + '">' + esc(k) + ': ' + esc(((PSTATE[hh[k].state] || [hh[k].state])[0]).toLowerCase()) + '</span>'; });
+    var oc = m.optout_check;
+    h += oc ? '<span class="chip ' + (oc.ok ? 'ok' : 'warn') + '" data-mn="optout">Opt-out endpoint: ' + (oc.ok ? 'checked, working' : 'check failed') + ' · ' + esc(when(m.optout_checked_at)) + '</span>'
+      : '<span class="chip off" data-mn="optout">Opt-out endpoint: not checked yet (System check → Check the opt-out endpoint)</span>';
+    h += '<span class="chip" data-mn="partners">Partner outreach: ' + (m.partner_outreach ? 'on (partnership notes, never the subscription pitch)' : 'off') + '</span>';
+    return h;
+  }
   function paintMorning(m, partners) {
     var cap = m.live_cap || {};
-    var on = PROVIDERS.filter(function (x) { return (m.providers || {})[x[0]] === true; }).map(function (x) { return x[1]; });
+    var on = PROVIDERS.filter(function (x) { return PAID.indexOf(x[0]) >= 0 && (m.providers || {})[x[0]] === true; }).map(function (x) { return x[1]; });
     $('mnChips').innerHTML = '<span class="chip" data-mn="day">' + esc(m.day) + ' · ' + esc(m.timezone) + '</span>'
       + domainChip(m.domain_auth, m.domain_auth_checked_at)
       + '<span class="chip ' + (cap.warming ? 'warn' : '') + '" data-mn="cap">Today\'s live cap ' + esc(cap.cap) + (cap.warming ? ' (warming up, week ' + esc(cap.week) + ' of the ramp to ' + esc(cap.max) + ')' : '') + '</span>'
-      + (on.length ? '<span class="chip ok" data-mn="paid">Paid providers on: ' + esc(on.join(', ')) + '</span>' : '');
+      + (on.length ? '<span class="chip ok" data-mn="paid">Paid providers on: ' + esc(on.join(', ')) + '</span>' : '')
+      + morningP13(m);
     $('mnKpis').innerHTML = kpi('Qualified today', (m.qualified_today || 0) + ' of ' + (m.qualified_target || 0), 'new potential subscribers at ' + (m.min_qualification_score != null ? m.min_qualification_score + '+' : 'the bar'))
       + kpi('Waiting for review', m.review || 0, 'drafts for you') + kpi('Approved, not sent', m.approved_unsent || 0)
       + kpi('Sent today', (m.sent_today || 0) + ' / ' + (cap.cap != null ? cap.cap : '—'), m.test_mode ? 'test mode: only to your inbox' : 'live')
       + kpi('Researched today', m.researched_today || 0) + kpi('Addresses to verify', m.verification_waiting || 0)
-      + kpi('Waiting for enrichment', m.enrichment_waiting || 0, 'only an address is missing') + kpi('Partner leads, 7 days', m.partner_leads_7d || 0);
+      + kpi('Waiting for enrichment', m.enrichment_waiting || 0, 'only an address is missing') + kpi('Partner leads, 7 days', m.partner_leads_7d || 0)
+      + ('candidates_waiting' in m ? kpi('Candidates waiting', m.candidates_waiting || 0, 'found, not yet read') + kpi('Turned away today', m.rejected_today || 0, 'not a fit, or nothing to read: see Discover and research') : '');
     $('mnPartnersSum').textContent = 'Partner leads (' + partners.length + ')';
     $('mnPartners').innerHTML = '<tr><th>Lead</th><th>Kind</th><th>Organization</th><th class="r">Score</th><th>Address</th><th>Status</th></tr>'
       + (partners.length ? partners.map(function (x) {
@@ -659,7 +699,10 @@
 
   /* ── discover and research (Phase 7) ─────────────────────────────── */
   var RESEARCH_WHY = {
-    search_not_configured: 'Discovery needs a Brave Search API key: set BRAVE_SEARCH_API_KEY in Supabase → Edge Functions → Secrets.',
+    search_not_configured: 'No search provider is on — and none is needed: add your own list under "Add candidates", save a directory page, or set the free Podcast Index key (PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET). Brave (BRAVE_SEARCH_API_KEY) is optional.',
+    permission_unconfirmed: 'Tick the box to confirm this page\'s terms allow reusing its links.',
+    apollo_org_not_configured: 'Apollo\'s organization lookup is not on: APOLLO_API_KEY in the Edge Function secrets, and "Apollo organization lookup" switched on under Providers.',
+    nothing_found: 'nothing came back for those domains',
     no_queries: 'Type a search, or save some searches below.',
     search_failed: 'The search provider refused or did not answer.',
     too_many_running: 'Three research runs are already going; wait for one to finish.',
@@ -689,15 +732,17 @@
       return on.length ? on.join(' + ') : null;
     };
     $('dvProviders').innerHTML = prov
-      ? provChip(prov.search, 'Search', named('search') || 'Brave', 'BRAVE_SEARCH_API_KEY', b.search) + provChip(prov.llm, 'Reading', 'Claude', 'ANTHROPIC_API_KEY', b.llm)
+      ? (p13() ? '<span class="chip ok" data-prov="Lists">Your lists and directories: always on, free</span>' : '')
+        + provChip(prov.search, 'Search', named('search') || 'Brave', p13() ? 'PODCASTINDEX_API_KEY is free; Brave is optional' : 'BRAVE_SEARCH_API_KEY', b.search)
+        + provChip(prov.llm, 'Reading', 'Claude', 'ANTHROPIC_API_KEY', b.llm)
         + provChip(prov.email, 'Email', named('email') || 'Hunter', 'HUNTER_API_KEY', b.email_finder, b.email_verifier)
         + (det && det.clay && det.clay.on ? '<span class="chip ok" data-prov="Enrichment">Enrichment: Clay · ' + used(b.enrichment) + ' today</span>' : '')
         + '<span class="chip">pages read today ' + used(b.fetch) + '</span>'
       : '';
     /* each provider: its key set or not, and the owner's switch */
     var sw = ov.providers || {};
-    $('dvSwitches').innerHTML = PROVIDERS.map(function (x) {
-      var d = det ? det[x[0]] : null, paid = x[0] === 'apollo' || x[0] === 'apollo_search' || x[0] === 'clay';
+    $('dvSwitches').innerHTML = PROVIDERS.filter(function (x) { return p13() || P12_SWITCHES.indexOf(x[0]) >= 0; }).map(function (x) {
+      var d = det ? det[x[0]] : null, paid = PAID.indexOf(x[0]) >= 0;
       var checked = paid ? sw[x[0]] === true : sw[x[0]] !== false;
       return '<div class="f" style="min-width:230px"><label class="chk"><input type="checkbox" data-sw="' + esc(x[0]) + '"' + (checked ? ' checked' : '') + '> ' + esc(x[1])
         + ' <span class="sub">(' + esc(x[2]) + ')</span></label><div class="sub" data-swkey="' + esc(x[0]) + '">'
@@ -725,6 +770,203 @@
           + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td><td>' + esc(did) + '</td>'
           + '<td>' + esc(Object.keys(sp).map(function (k) { return k + ' ' + sp[k]; }).join(', ')) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
       }).join('') : '<tr><td colspan="6">No research has run yet.</td></tr>');
+    paintFreeFirst(prov, ov);
+  }
+
+  /* ── free-first discovery and provider health (Phase 13) ──────────── */
+  function p13() { return !!SETTINGS && 'partner_outreach_enabled' in SETTINGS; }
+  var SOURCE_NAMES = { brave: 'Brave', podcastindex: 'Podcast Index', apollo: 'Apollo people search', apollo_org: 'Apollo organization lookup',
+    directory: 'Directories', manual: 'Your list (typed or pasted)', csv_import: 'Your CSV', domain_list: 'Your company domains', pasted_results: 'Search results you pasted' };
+  var SPEND_NAMES = { anthropic: 'Claude', hunter: 'Hunter', apollo: 'Apollo', podcastindex: 'Podcast Index', brave: 'Brave', clay: 'Clay', resend: 'Resend' };
+  function stateOf(k, prov, ov) {
+    var h = ((prov && prov.health) || (ov && ov.health) || {})[k];
+    if (h && h.state) return h;
+    var det = prov && prov.detail ? prov.detail : null;
+    var d = det && (k === 'apollo' ? (det.apollo || det.apollo_search) : det[k]);
+    if (k === 'anthropic' && prov) return { state: prov.llm ? 'not_checked' : 'credential_missing' };
+    if (d) return { state: d.configured ? 'not_checked' : 'credential_missing' };
+    return null;
+  }
+  function paintFreeFirst(prov, ov) {
+    if (!$('dvHealth')) return;
+    if (!p13()) { $('dvHealth').innerHTML = '<tr><td>Provider health arrives with the Phase 13 SQL: run supabase/growth_outbound.sql again.</td></tr>'; return; }
+    $('dvHealth').innerHTML = '<tr><th>Provider</th><th>What it does</th><th>Cost</th><th>State</th><th>What it last said</th><th>Checked</th><th>To set it up</th></tr>'
+      + HEALTH_ROWS.map(function (r) {
+        var h = stateOf(r[0], prov, ov), st = h ? PSTATE[h.state] || [h.state, ''] : ['—', ''];
+        var eps = h && h.endpoints ? Object.keys(h.endpoints).map(function (e) { return e + ': ' + ((PSTATE[h.endpoints[e]] || [h.endpoints[e]])[0]); }).join('; ') : '';
+        return '<tr data-health="' + esc(r[0]) + '" data-state="' + esc(h ? h.state : '') + '"><td>' + esc(r[1]) + '</td><td class="wrap">' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td>'
+          + '<td><span class="pill ' + st[1] + '">' + esc(st[0]) + '</span></td><td class="wrap">' + esc(clip(((h && h.detail) || '') + (eps ? ' (' + eps + ')' : ''), 260)) + '</td>'
+          + '<td>' + (h && h.checked_at ? when(h.checked_at) : '—') + '</td><td class="wrap sub">' + esc(h && h.state === 'connected' ? '' : SETUP[r[0]] || '') + '</td></tr>';
+      }).join('');
+    var src = ov.sources || {}, keys = Object.keys(src);
+    $('dvSources').innerHTML = '<tr><th>Source</th><th class="r">Found</th><th class="r">Waiting</th><th class="r">Researched</th><th class="r">Not a fit</th><th class="r">Failed</th><th class="r">Prospects</th><th class="r">Qualified</th></tr>'
+      + (keys.length ? keys.sort(function (a, b) { return (src[b].found || 0) - (src[a].found || 0); }).map(function (k) {
+        var x = src[k];
+        return '<tr data-source="' + esc(k) + '"><td>' + esc(SOURCE_NAMES[k] || k) + '</td><td class="r">' + esc(x.found) + '</td><td class="r">' + esc(x.waiting) + '</td><td class="r">' + esc(x.researched)
+          + '</td><td class="r">' + esc(x.not_a_fit) + '</td><td class="r">' + esc(x.failed) + '</td><td class="r">' + esc(x.prospects) + '</td><td class="r">' + esc(x.qualified) + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" class="dim">Nothing found in the last 30 days. Add your own list above, save a directory, or set the free Podcast Index key.</td></tr>');
+    var sp = ov.spend || {}, pv = sp.providers || {}, pk = Object.keys(pv);
+    var money = function (v) { return v == null ? '—' : '$' + Number(v).toFixed(2); };
+    $('dvSpend').innerHTML = '<tr><th>Provider</th><th class="r">Calls today</th><th class="r">Credits today</th><th class="r">Cost today</th><th class="r">Calls, 30 days</th><th class="r">Credits, 30 days</th><th class="r">Cost, 30 days</th></tr>'
+      + (pk.length ? pk.map(function (k) {
+        var x = pv[k];
+        return '<tr data-spend="' + esc(k) + '"><td>' + esc(SPEND_NAMES[k] || SOURCE_NAMES[k] || k) + '</td><td class="r">' + esc(x.calls_today) + '</td><td class="r">' + esc(x.units_today)
+          + '</td><td class="r">' + money(x.usd_today) + '</td><td class="r">' + esc(x.calls_30d) + '</td><td class="r">' + esc(x.units_30d) + '</td><td class="r">' + money(x.usd_30d) + '</td></tr>';
+      }).join('') + '<tr><td colspan="3"><b>Total</b></td><td class="r"><b>' + money(sp.usd_today) + '</b></td><td colspan="2" class="sub">a month at the last 7 days\' pace: ' + money(sp.usd_month_at_7d_pace) + '</td><td class="r"><b>' + money(sp.usd_30d) + '</b></td></tr>'
+        : '<tr><td colspan="7" class="dim">No provider has been called yet.</td></tr>');
+    var rj = ov.rejected || [];
+    $('dvRejected').innerHTML = '<tr><th>When</th><th>Who or what</th><th>Source</th><th>Why</th></tr>' + (rj.length ? rj.map(function (x) {
+      return '<tr><td>' + when(x.at) + '</td><td class="wrap">' + (x.kind === 'prospect' ? '<button type="button" class="lnk" data-open="' + esc(x.id) + '">' + esc(x.title || 'a prospect') + '</button>' : link(x.url, clip(x.title || x.url, 80)))
+        + ' <span class="pill">' + esc(String(x.status || '').replace(/_/g, ' ')) + '</span></td><td>' + esc(SOURCE_NAMES[x.source] || clip(x.source || '', 40)) + '</td><td class="wrap">' + esc(clip(x.reason || '—', 240)) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4" class="dim">Nobody has been turned away yet.</td></tr>');
+    var dirs = ov.directories || [];
+    if (document.activeElement !== $('dvDirs')) $('dvDirs').value = dirs.map(function (d) { return d.url; }).join('\n');
+    if (dirs.length) $('dvDirsOk').checked = true;
+    var due = (ov.directories_due || []).length;
+    $('dvDirNote').textContent = dirs.length ? dirs.length + ' director' + (dirs.length === 1 ? 'y' : 'ies') + ' saved; ' + due + ' due a read (each is re-read weekly by the morning run, or by Run saved searches).' : '';
+    var orgOn = !!(prov && prov.organizations);
+    $('dvOrgFind').disabled = BUSY || !orgOn;
+    $('dvOrgFind').title = orgOn ? 'Ask Apollo for the organization and its top people (only if your plan allows it)' : 'Apollo\'s organization lookup is off: APOLLO_API_KEY, and switch it on under Providers';
+  }
+  // the addresses in a pasted search-results page: the results only, never the search engine's own pages
+  var ENGINES = /(^|\.)(google\.[a-z.]+|gstatic\.com|googleusercontent\.com|bing\.com|duckduckgo\.com|yahoo\.com|brave\.com|yandex\.[a-z]+|baidu\.com|startpage\.com|ecosia\.org)$/i;
+  function urlsIn(text) {
+    var out = [], seen = {};
+    (String(text || '').match(/https?:\/\/[^\s<>"'`{}|\\^\[\]]+/gi) || []).forEach(function (u) {
+      u = u.replace(/[).,;:!?»”’]+$/, '');
+      try {
+        var x = new URL(u);
+        // a search engine's redirect carries the result in its own parameter
+        if (ENGINES.test(x.hostname) && (x.searchParams.get('q') || x.searchParams.get('url') || x.searchParams.get('uddg'))) {
+          var inner = x.searchParams.get('url') || x.searchParams.get('uddg') || x.searchParams.get('q');
+          if (/^https?:\/\//i.test(inner)) x = new URL(inner); else return;
+        }
+        if (ENGINES.test(x.hostname)) return;
+        var k = x.toString();
+        if (!seen[k]) { seen[k] = 1; out.push(k); }
+      } catch (_) { /* not an address */ }
+    });
+    return out;
+  }
+  var IMPORT_COLS = { url: 'url', link: 'url', website: 'url', site: 'url', 'web address': 'url', homepage: 'url', domain: 'domain', 'company domain': 'domain',
+    name: 'title', title: 'title', 'company name': 'title', organization: 'title', note: 'note', notes: 'note', description: 'note', why: 'note',
+    segment: 'segment', type: 'segment', kind: 'segment', campaign: 'segment' };
+  var SEG_WORDS = { customer: 'customer', subscriber: 'customer', 'potential subscriber': 'customer', partner: 'media_partner', media: 'media_partner',
+    media_partner: 'media_partner', newsletter: 'media_partner', podcast: 'media_partner', affiliate: 'affiliate', business: 'business_partner',
+    business_partner: 'business_partner', partnership: 'partnership' };
+  function importItems(source, text, seg) {
+    var withSeg = function (o) { if (seg && !o.segment) o.segment = seg; return o; };
+    if (source === 'search_results') return urlsIn(text).map(function (u) { return withSeg({ url: u }); });
+    if (source === 'domains') return String(text || '').split(/[\s,;]+/).map(function (x) { return x.trim(); }).filter(Boolean).map(function (d) { return withSeg({ domain: d }); });
+    if (source === 'csv') {
+      var t = parseCsv(text);
+      if (t.length < 2) return [];
+      var head = t[0].map(function (h) { return IMPORT_COLS[String(h).trim().toLowerCase()] || null; });
+      return t.slice(1).map(function (r) {
+        var o = {};
+        head.forEach(function (k, i) { var v = String(r[i] == null ? '' : r[i]).trim(); if (k && v && !o[k]) o[k] = v.slice(0, 400); });
+        if (o.segment) o.segment = SEG_WORDS[String(o.segment).toLowerCase()] || null;
+        if (!o.segment) delete o.segment;
+        return withSeg(o);
+      }).filter(function (o) { return o.url || o.domain; });
+    }
+    // one address per line, with an optional note after it
+    return String(text || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var m = /^(\S+)\s+(.+)$/.exec(l);
+      return withSeg(m ? { url: m[1], note: m[2].slice(0, 400) } : { url: l });
+    });
+  }
+  var IMPORT_FILE_TEXT = '';
+  function importCandidates() {
+    if (BUSY) return Promise.resolve();
+    var source = $('dvImportSource').value, seg = $('dvImportSeg').value || null;
+    var text = source === 'csv' ? IMPORT_FILE_TEXT : $('dvImportText').value;
+    var items = importItems(source, text, seg);
+    if (!items.length) {
+      say('dvImportMsg', 'err', source === 'csv' ? 'Nothing to add: choose a CSV with a url (or website, or domain) column.' : 'Nothing to add: paste at least one web address.');
+      return Promise.resolve();
+    }
+    var chunks = [];
+    for (var i = 0; i < items.length; i += 500) chunks.push(items.slice(i, i + 500));
+    var tot = { new: 0, seen_again: 0, duplicates: 0, suppressed: 0, refused: [] };
+    setBusy(true); say('dvImportMsg', '', 'Adding ' + items.length + ' address' + (items.length === 1 ? '' : 'es') + '…');
+    var step = chunks.reduce(function (pr, ch) {
+      return pr.then(function () {
+        return S.rpc('growth_outbound_candidates_import', { p_source: source, p_items: ch }).then(function (r) {
+          if (!r || r.ok === false) { tot.refused = tot.refused.concat((r && r.refused) || []); if (r && r.reason !== 'nothing_to_import') tot.error = why(r); return; }
+          ['new', 'seen_again', 'duplicates', 'suppressed'].forEach(function (k) { tot[k] += r[k] || 0; });
+          tot.refused = tot.refused.concat(r.refused || []);
+        });
+      });
+    }, Promise.resolve());
+    return step.then(function () {
+      var bits = [tot.new + ' new candidate' + (tot.new === 1 ? '' : 's')];
+      if (tot.seen_again) bits.push(tot.seen_again + ' seen before');
+      if (tot.duplicates) bits.push(tot.duplicates + ' already prospects');
+      if (tot.suppressed) bits.push(tot.suppressed + ' on domains that asked not to be contacted');
+      if (tot.refused.length) bits.push(tot.refused.length + ' left out (' + tot.refused.slice(0, 3).map(function (x) { return (x.value ? x.value + ': ' : '') + x.why; }).join('; ') + (tot.refused.length > 3 ? '; …' : '') + ')');
+      say('dvImportMsg', tot.error ? 'err' : tot.new ? 'ok' : '', (tot.error ? 'Not added: ' + tot.error + '. ' : 'Added from your list: ') + bits.join(', ') + '. Research reads them next, under the daily budget.');
+      if (tot.new) { $('dvImportText').value = ''; CSTATUS = 'new'; }
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { say('dvImportMsg', 'err', 'Adding your own lists arrives with the Phase 13 SQL: run supabase/growth_outbound.sql again.'); return; }
+      fail('dvImportMsg', e);
+    }).then(function () { setBusy(false); return Promise.all([loadResearch(), loadMorning()]); });
+  }
+  function importFile(file) {
+    if (!file) return Promise.resolve();
+    return new Promise(function (ok, no) { var fr = new FileReader(); fr.onload = function () { ok(fr.result); }; fr.onerror = no; fr.readAsText(file); }).then(function (text) {
+      IMPORT_FILE_TEXT = String(text || '');
+      $('dvImportSource').value = 'csv';
+      var n = importItems('csv', IMPORT_FILE_TEXT, null).length;
+      $('dvImportPreview').textContent = file.name + ': ' + n + ' row' + (n === 1 ? '' : 's') + ' with an address';
+    }, function (e) { fail('dvImportMsg', e); });
+  }
+  function readDirectory() {
+    if (BUSY) return Promise.resolve();
+    var url = $('dvDirUrl').value.trim();
+    if (!/^https:\/\/\S+\.\S+/.test(url)) { say('dvDirMsg', 'err', 'Give one https:// page address.'); return Promise.resolve(); }
+    if (!$('dvDirsOk').checked) { say('dvDirMsg', 'err', RESEARCH_WHY.permission_unconfirmed); return Promise.resolve(); }
+    setBusy(true); say('dvDirMsg', '', 'Reading the page (robots.txt respected)…');
+    return S.invoke('growth_outbound_research', { action: 'expand', url: url, permitted: true, segment: $('dvDirSeg').value || undefined }, { timeoutMs: 120000 }).then(function (r) {
+      var d = r && r.per_query && r.per_query[0];
+      if (!r || r.ok === false) { say('dvDirMsg', 'err', 'Nothing added: ' + ((d && d.error) || researchWhy(r)) + '.'); return; }
+      say('dvDirMsg', 'ok', 'Read it: ' + (r.results || 0) + ' independent site' + (r.results === 1 ? '' : 's') + ' linked, ' + (r.new || 0) + ' new candidate' + (r.new === 1 ? '' : 's')
+        + (r.seen_again ? ', ' + r.seen_again + ' seen before' : '') + (r.duplicates ? ', ' + r.duplicates + ' already prospects' : '') + (d && d.note ? ' (' + d.note + ')' : '') + '.');
+      CSTATUS = 'new';
+    }, function (e) { researchFail('dvDirMsg', e); }).then(function () { setBusy(false); return loadResearch(); });
+  }
+  function apolloOrgs() {
+    if (BUSY) return Promise.resolve();
+    var domains = $('dvOrgDomains').value.split(/[\s,;]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!domains.length || domains.length > 10) { say('dvOrgMsg', 'err', 'One to ten company domains.'); return Promise.resolve(); }
+    if (!root.confirm('Ask Apollo about ' + domains.length + ' organization' + (domains.length === 1 ? '' : 's') + '?\n\nIt may use Apollo credits under your plan. An endpoint your plan does not include is said, never worked around.')) return Promise.resolve();
+    setBusy(true); say('dvOrgMsg', '', 'Asking Apollo…');
+    return S.invoke('growth_outbound_research', { action: 'apollo_org', domains: domains, segment: $('dvImportSeg').value || undefined }, { timeoutMs: 120000 }).then(function (r) {
+      if (!r || r.ok === false) { say('dvOrgMsg', 'err', 'Nothing added: ' + researchWhy(r) + (r && r.notes && r.notes.length ? ' — ' + r.notes.join('; ') : '') + '.'); return; }
+      say('dvOrgMsg', 'ok', 'Apollo answered for ' + (r.per_domain || []).filter(function (p) { return p.found; }).length + ' of ' + (r.per_domain || []).length + ': ' + (r.new || 0) + ' new candidate' + (r.new === 1 ? '' : 's')
+        + (r.notes && r.notes.length ? ' (' + r.notes.join('; ') + ')' : '') + '.');
+      CSTATUS = 'new';
+    }, function (e) { researchFail('dvOrgMsg', e); }).then(function () { setBusy(false); return loadResearch(); });
+  }
+  function checkProviders() {
+    if (BUSY) return Promise.resolve();
+    setBusy(true); say('dvHealthMsg', '', 'Asking each provider whose key is set (free checks only; nothing is sent)…');
+    return Promise.all([
+      S.invoke('growth_outbound_research', { action: 'health' }, { timeoutMs: 90000 }).then(function (r) { return r; }, function (e) { return { error: e }; }),
+      S.invoke('growth_outbound_send', { action: 'health' }, { timeoutMs: 30000 }).then(function (r) { return r; }, function (e) { return { error: e }; })
+    ]).then(function (rs) {
+      var h = Object.assign({}, (rs[0] && rs[0].health) || {}, (rs[1] && rs[1].health) || {});
+      var names = Object.keys(h);
+      if (!names.length) {
+        var e = rs[0] && rs[0].error;
+        if (e && e.kind === 'not_installed') say('dvHealthMsg', 'err', 'The research function is not deployed yet: deploy supabase/functions/growth_outbound_research.');
+        else say('dvHealthMsg', 'err', 'The providers could not be asked' + (e ? ': ' + (e.message || e.kind || 'error') : '') + '.');
+        return;
+      }
+      var good = names.filter(function (k) { return h[k].state === 'connected'; }).length;
+      say('dvHealthMsg', good ? 'ok' : 'err', good + ' of ' + names.length + ' connected and working. ' + names.filter(function (k) { return h[k].state !== 'connected'; }).map(function (k) {
+        return k + ': ' + ((PSTATE[h[k].state] || [h[k].state])[0]).toLowerCase(); }).join(' · '));
+    }).then(function () { setBusy(false); return Promise.all([loadResearch(), loadMorning()]); });
   }
   function loadResearch() {
     if (!OWNER) return Promise.resolve();
@@ -764,7 +1006,7 @@
   }
   function setBusy(on) {
     BUSY = !!on;
-    ['dvSearch', 'dvSaved', 'dvNext', 'dvVerify', 'dvClayPush'].forEach(function (id) { if ($(id)) $(id).disabled = BUSY; });
+    ['dvSearch', 'dvSaved', 'dvNext', 'dvVerify', 'dvClayPush', 'dvImport', 'dvDirRead', 'dvHealthBtn'].forEach(function (id) { if ($(id)) $(id).disabled = BUSY; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-research],#pdResearchAgain'), function (x) { x.disabled = BUSY; });
   }
   function researchFail(id, e) {
@@ -828,15 +1070,25 @@
     var budget = {};
     BUDGET_KEYS.forEach(function (k) { var v = String($('dvB_' + k).value || '').trim(); if (v !== '') budget[k] = /^\d+$/.test(v) ? Number(v) : v; });
     var switches = {};
-    Array.prototype.forEach.call(document.querySelectorAll('[data-sw]'), function (el) { switches[el.getAttribute('data-sw')] = !!el.checked; });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sw]'), function (el) {
+      var k = el.getAttribute('data-sw');
+      if (p13() || P12_SWITCHES.indexOf(k) >= 0) switches[k] = !!el.checked;
+    });
     var cfg = Object.assign({}, (SETTINGS && SETTINGS.discovery_config) || {}, { queries: qs, budget: budget });
+    // (Phase 13) the directories, re-read weekly: only pages whose terms the owner checked
+    if (p13() && $('dvDirs')) {
+      var dirs = $('dvDirs').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      if (dirs.length && !$('dvDirsOk').checked) { say('dvMsg', 'err', 'Not saved: ' + RESEARCH_WHY.permission_unconfirmed); return Promise.resolve(); }
+      var dseg = $('dvDirSeg').value || null;
+      cfg.directories = dirs.map(function (u) { var o = { url: u, permitted: true }; if (dseg) o.segment = dseg; return o; });
+    }
     // the switches (and the enrichment budget) only to a database that has them
     if (Object.keys(switches).length && p12()) cfg.providers = switches;
     if (!p12()) delete budget.enrichment;
     return S.rpc('growth_outbound_settings_update', { p: { discovery_config: cfg } }).then(function (r) {
       if (!r || r.ok === false) { say('dvMsg', 'err', 'Not saved: ' + ((r && (r.detail || r.reason)) || 'refused') + '.'); return; }
       SETTINGS = r.settings || SETTINGS;
-      say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ', the daily budget and the providers.');
+      say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + (cfg.directories ? ', ' + cfg.directories.length + ' director' + (cfg.directories.length === 1 ? 'y' : 'ies') : '') + ', the daily budget and the providers.');
       return loadResearch();
     }, function (e) { fail('dvMsg', e); });
   }
@@ -980,6 +1232,21 @@
       fail('hcMsg', e);
     }).then(function () { $('hcDomain').disabled = false; });
   }
+  /* the opt-out endpoint, checked end to end (Phase 13): it sends nothing and changes nothing */
+  function checkOptout() {
+    say('hcMsg', '', 'Asking the opt-out endpoint (a GET and a one-click POST with a token no email carries)…');
+    $('hcOptout').disabled = true;
+    return S.invoke('growth_outbound_send', { action: 'optout_check' }, { timeoutMs: 60000 }).then(function (r) {
+      var c = (r && r.check) || null;
+      if (!r || r.ok === false || !c) { say('hcMsg', 'err', 'Not checked: ' + ((c && c.detail) || why(r)) + '.'); return; }
+      say('hcMsg', c.ok ? 'ok' : 'err', c.ok ? 'The opt-out endpoint works at ' + c.base + ': its link redirects to the stop page and the one-click POST reaches the database.'
+        + (r.unsubscribe_url_base ? ' Opt-out base: ' + r.unsubscribe_url_base + '.' : '') : 'The opt-out endpoint does not work yet: ' + (c.detail || 'see the check') + '. Live sending stays blocked.');
+      return Promise.all([loadHealth(), loadMorning(), loadOverview()]);
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { say('hcMsg', 'err', 'The send function is not deployed yet: deploy supabase/functions/growth_outbound_send.'); return; }
+      fail('hcMsg', e);
+    }).then(function () { $('hcOptout').disabled = false; });
+  }
   function loadHealth() {
     if (!OWNER) return Promise.resolve();
     return S.rpc('growth_outbound_health', {}).then(paintHealth, function (e) {
@@ -1020,7 +1287,9 @@
     $('rsSends').innerHTML = kpi('Emails sent', x.sent || 0, (pl.approved || 0) + ' approved · ' + (pl.drafted || 0) + ' drafted · ' + (pl.prospects || 0) + ' new prospects')
       + kpi('Delivered', x.delivered || 0, pct(x.delivery_rate)) + kpi('Bounced', x.bounced || 0, pct(x.bounce_rate))
       + kpi('Spam complaints', x.complained || 0, pct(x.complaint_rate)) + kpi('Opened', x.opened || 0, 'a hint only: many clients hide opens')
-      + kpi('Clicked', x.clicked || 0, 'as Resend saw it');
+      + kpi('Clicked', x.clicked || 0, 'as Resend saw it')
+      + (r.revenue ? kpi('Collected', '$' + (Number(r.revenue.paid_cents || 0) / 100).toFixed(2), (r.revenue.paying_accounts || 0) + ' paying account(s) traced to an email; gross, before refunds') : '')
+      + (r.spend ? kpi('Provider cost, 30 days', '$' + Number(r.spend.usd_30d || 0).toFixed(2), 'Claude by tokens; free-tier credits cost $0') : '');
     var sig = r.signals || [];
     $('rsSignals').innerHTML = sig.length ? '<ul class="claims">' + sig.map(function (g) {
       return '<li data-signal="' + esc(g.dimension + ':' + g.group + ':' + g.metric) + '"><b>' + esc(label(DIMS, g.dimension)) + ': ' + esc(groupName(g.dimension, g.group)) + '</b> '
@@ -1592,7 +1861,12 @@
       else if (b.id === 'rqFixture') fixture();
       else if (b.id === 'hcRun') { b.disabled = true; loadHealth().catch(function (er) { fail('obMsg', er); }).then(function () { b.disabled = false; }); }
       else if (b.id === 'hcDomain') checkDomain();
+      else if (b.id === 'hcOptout') checkOptout();
       else if (b.id === 'dvVerify') verifyWaiting();
+      else if (b.id === 'dvImport') importCandidates();
+      else if (b.id === 'dvDirRead') readDirectory();
+      else if (b.id === 'dvOrgFind') apolloOrgs();
+      else if (b.id === 'dvHealthBtn') checkProviders();
       else if (b.id === 'dvClayPush') clayPush();
       else if (b.id === 'dvClayExport') clayExport();
       else if (b.id === 'pdSegSave') setSegment();
@@ -1600,6 +1874,8 @@
       else if (b.getAttribute('data-rdim')) { RDIM = b.getAttribute('data-rdim'); if (RES) paintResults(RES); }
     });
     $('dvClayFile').addEventListener('change', function () { if (OWNER && this.files && this.files[0]) clayImport(this.files[0]); });
+    $('dvImportFile').addEventListener('change', function () { if (OWNER && this.files && this.files[0]) importFile(this.files[0]); });
+    $('dvImportSource').addEventListener('change', function () { $('dvImportPreview').textContent = this.value === 'csv' && !IMPORT_FILE_TEXT ? 'Choose a CSV file' : ''; });
     $('tabOutbound').addEventListener('change', function (e) {
       var t = e.target;
       if (!t || !t.getAttribute || !t.getAttribute('data-pick') || !OWNER) return;

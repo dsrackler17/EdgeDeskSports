@@ -37,6 +37,22 @@
 //        (its table's webhook), each once in 14 days. Clay's answers come
 //        back through the console's import.
 //
+//   POST { action: 'health' }   (Phase 13)
+//        asks every provider whose key is set whether it works, with the
+//        free calls each offers (Claude's model lookup, Hunter's account,
+//        Apollo's key check, a one-result Podcast Index search) and records
+//        the answer: connected, credential missing, unauthorized, not on the
+//        plan, out of free credit, or unavailable. A key that is merely set
+//        is never called "connected".
+//   POST { action: 'expand', url, segment?, permitted: true }   (Phase 13)
+//        reads ONE public directory page the owner chose (robots.txt
+//        honoured) and records its outbound links to independent sites and
+//        newsletters as candidates. The owner confirms its terms allow it.
+//   POST { action: 'apollo_org', domains: [...] }   (Phase 13)
+//        for company domains the owner names, asks Apollo for the
+//        organization and its top people (only if the plan allows it); the
+//        candidate is the organization's own site, Apollo's names a note.
+//
 //   POST { action: 'scheduled', ticket }   (pg_cron, through pg_net: the
 //        morning run, Phase 9) — no owner token; ONE step the database
 //        planned (a search of the saved searches, the next new candidate, or
@@ -50,6 +66,16 @@
 // provider is used when its key is set and it is not switched off; Apollo and
 // Clay cost money per call, so they are used only when switched ON.
 //
+// FREE FIRST (Phase 13). No paid search is needed: the owner's own lists
+// (imported in the database), the directories they chose, and the free
+// Podcast Index API feed the same candidate queue as Brave. A missing
+// optional key is a status, never a broken pipeline. Every provider answer is
+// classified (unauthorized, not on the plan, out of free credit,
+// unavailable) and recorded; a provider that refused stops being asked for
+// the rest of the run; Hunter's free credit is read from its account (a free
+// call) before any is spent, and a provider error is NEVER recorded as a
+// verifier's verdict. What each call cost is recorded by day.
+//
 // WHAT IT NEVER DOES: approve, draft, send, guess an address, take a name
 // from an email address, infer an employer from a domain, or keep a fact it
 // could not quote.
@@ -61,8 +87,12 @@
 //
 // ENVIRONMENT (Supabase → Edge Functions → Secrets; never in a page)
 //   SUPABASE_URL, SUPABASE_ANON_KEY   provided by the platform
-//   BRAVE_SEARCH_API_KEY   discovery (Brave Search API, X-Subscription-Token).
-//                          Without it, discovery says so and finds nothing.
+//   BRAVE_SEARCH_API_KEY   optional: discovery (Brave Search API,
+//                          X-Subscription-Token). Not needed: without it the
+//                          other sources still run.
+//   PODCASTINDEX_API_KEY   optional, free (https://api.podcastindex.org/signup):
+//   PODCASTINDEX_API_SECRET  the saved searches also find podcasts and their
+//                          own websites. On once both are set.
 //   HUNTER_API_KEY         email finding (domain search) and verification.
 //                          Without it, only an address published on the
 //                          prospect's own pages is used, unverified.
@@ -223,7 +253,7 @@ const ROLE_SKIP = /^(no-?reply|do-?not-?reply|abuse|postmaster|hostmaster|webmas
 
 type Cfg = {
   url: string; anonKey: string; braveKey: string; hunterKey: string; anthropicKey: string; model: string; origins: string[];
-  apolloKey?: string; clayWebhookUrl?: string; clayToken?: string;
+  apolloKey?: string; clayWebhookUrl?: string; clayToken?: string; podcastIndexKey?: string; podcastIndexSecret?: string;
   fetch: typeof fetch; timeoutMs?: number; fetchTimeoutMs?: number; deadlineMs?: number;
   resolveDns?: ((host: string, type: string) => Promise<string[]>) | null;
 };
@@ -238,6 +268,7 @@ function config(): Cfg {
     url: env('SUPABASE_URL'), anonKey: env('SUPABASE_ANON_KEY'), braveKey: env('BRAVE_SEARCH_API_KEY'), hunterKey: env('HUNTER_API_KEY'),
     anthropicKey: env('ANTHROPIC_API_KEY'), model: env('OUTBOUND_RESEARCH_MODEL') || 'claude-opus-5-5', origins,
     apolloKey: env('APOLLO_API_KEY'), clayWebhookUrl: env('CLAY_WEBHOOK_URL'), clayToken: env('CLAY_WEBHOOK_TOKEN'),
+    podcastIndexKey: env('PODCASTINDEX_API_KEY'), podcastIndexSecret: env('PODCASTINDEX_API_SECRET'),
     fetch: globalThis.fetch.bind(globalThis),
     resolveDns: D && typeof D.resolveDns === 'function' ? (h: string, t: string) => D.resolveDns(h, t) : null,
   };
@@ -429,7 +460,11 @@ export function robotsAllows(robots: string, path: string): boolean {
 
 // ── the database, as the owner ──────────────────────────────────────────────
 type Ctx = { c: Cfg; authz: string; run: number | null; spent: Record<string, number>; notes: string[]; started: number; sw?: Switches;
-  robots: Map<string, string | null>; shared: Set<string>; ticket?: string };
+  robots: Map<string, string | null>; shared: Set<string>; ticket?: string;
+  // (Phase 13) what Hunter's account said this run, the providers that
+  // refused (never asked again this run), and whether partner leads are
+  // being written to (then they get address lookups too)
+  hunter?: HunterState; refused?: Set<string>; partnerOutreach?: boolean; budgetOut?: Set<string> };
 async function db(x: Ctx, fn: string, args: Record<string, unknown>): Promise<any> {
   // the morning run reaches the database only through the ticket door, which
   // lets its ticket open the doors that run's kind needs, for its run alone
@@ -449,7 +484,12 @@ class Refused extends Error { reason: string; detail: string; constructor(reason
 async function spend(x: Ctx, provider: string, n = 1): Promise<boolean> {
   const r = await db(x, 'growth_outbound_research_spend', { p_run: x.run, p_provider: provider, p_n: n });
   if (r && r.ok === true) { x.spent[provider] = (x.spent[provider] || 0) + n; return true; }
-  if (r && r.reason === 'budget_exhausted') { x.notes.push('daily ' + provider + ' budget reached (' + r.cap + ')'); return false; }
+  if (r && r.reason === 'budget_exhausted') {
+    const note = 'daily ' + provider + ' budget reached (' + r.cap + ')';
+    if (!x.notes.includes(note)) x.notes.push(note);
+    (x.budgetOut || (x.budgetOut = new Set())).add(provider);
+    return false;
+  }
   throw new Refused(r?.reason || 'spend_refused', 'the budget door refused: ' + (r?.reason || '?'));
 }
 const timeLeft = (x: Ctx) => (x.c.deadlineMs ?? 110_000) - (Date.now() - x.started);
@@ -528,17 +568,97 @@ export async function fetchPage(x: Ctx, startUrl: string): Promise<Fetched> {
 }
 
 // ── providers ───────────────────────────────────────────────────────────────
-export async function braveSearch(c: Cfg, q: string): Promise<{ ok: boolean; results: { url: string; title: string; snippet: string }[]; why?: string }> {
+// WHAT AN ANSWER MEANS (Phase 13). Every provider answer is put in one of a
+// few words, so the console can say what is wrong and the run can stop asking
+// a provider that will only refuse again:
+//   ok                 it answered
+//   unauthorized       the key was refused (401)
+//   insufficient_plan  the key works, but this endpoint is not on the plan
+//   quota_exhausted    the plan's free (or paid) allowance is spent
+//   unavailable        down, slow, or rate-limited for now: later
+//   pending            asked, no verdict yet (Hunter's 202)
+//   restricted         the person asked the provider not to process them
+//   bad_request        our request was wrong (a bug, never the person's fault)
+export type Verdict = 'ok' | 'unauthorized' | 'insufficient_plan' | 'quota_exhausted' | 'unavailable' | 'pending' | 'restricted' | 'bad_request';
+export function classify(provider: string, status: number, body: unknown): Verdict {
+  if (status === 202) return 'pending';
+  if (status >= 200 && status < 300) return 'ok';
+  if (status === 0 || status >= 500) return 'unavailable';
+  if (status === 401) return 'unauthorized';
+  let msg = '';
+  try { msg = JSON.stringify(body ?? '').toLowerCase().slice(0, 3000); } catch (_) { msg = ''; }
+  if (provider === 'hunter') {
+    if (status === 429) return 'quota_exhausted';     // the period's allowance is spent
+    if (status === 403) return 'unavailable';         // too many requests a second or a minute
+    if (status === 451) return 'restricted';          // the address's owner asked Hunter not to process it
+    if (status === 400 || status === 404 || status === 422) return 'bad_request';
+    return 'unavailable';
+  }
+  if (provider === 'apollo') {
+    if (/free plan|upgrade|not accessible|api_inaccessible|inaccessible|plan does not|not available on your plan|master api key|insufficient/.test(msg)) return 'insufficient_plan';
+    if (status === 403) return 'insufficient_plan';
+    if (status === 429) return /credit/.test(msg) ? 'quota_exhausted' : 'unavailable';
+    if (status === 400 || status === 404 || status === 422) return 'bad_request';
+    return 'unavailable';
+  }
+  if (status === 402) return 'quota_exhausted';
+  if (status === 403) return 'insufficient_plan';
+  if (status === 429) return /quota|credit|limit exceeded|monthly/.test(msg) ? 'quota_exhausted' : 'unavailable';
+  if (status === 400 || status === 404 || status === 422) return 'bad_request';
+  return 'unavailable';
+}
+// a verdict as the state the console shows (bad requests and the person's
+// own restriction say nothing about the provider)
+const HEALTH_OF: Partial<Record<Verdict, string>> = { ok: 'connected', unauthorized: 'unauthorized', insufficient_plan: 'insufficient_plan',
+  quota_exhausted: 'quota_exhausted', unavailable: 'unavailable' };
+const SAID: Record<Verdict, string> = { ok: 'answered', unauthorized: 'refused the key', insufficient_plan: 'says this is not on the plan',
+  quota_exhausted: 'says the allowance is used up', unavailable: 'did not answer usefully (down or rate-limited)', pending: 'has no answer yet',
+  restricted: 'may not process this address', bad_request: 'refused the request' };
+
+// What a provider said, on the record (best effort: an older database, or a
+// ticket door without the room, never stops the work itself).
+export async function health(x: Ctx, provider: string, state: string, detail?: string | null, extra?: { endpoint?: string; quota?: unknown }) {
+  try {
+    const p: Record<string, unknown> = { provider, state };
+    if (detail) p.detail = String(detail).slice(0, 480);
+    if (extra && extra.endpoint) p.endpoint = extra.endpoint;
+    if (extra && extra.quota && typeof extra.quota === 'object') p.quota = extra.quota;
+    await db(x, 'growth_outbound_provider_health_record', { p_run: x.run, p });
+  } catch (_) { /* recorded next time */ }
+}
+// What a call cost, on the record (best effort, like health)
+export async function ledger(x: Ctx, items: Record<string, unknown>[]) {
+  if (!items.length) return;
+  try { await db(x, 'growth_outbound_provider_record', { p_run: x.run, p_items: items.slice(0, 20) }); } catch (_) { /* counted next time */ }
+}
+// A provider that refused: said once, recorded, and not asked again this run.
+async function providerFailed(x: Ctx, provider: string, v: Verdict, status: number, endpoint?: string) {
+  const state = HEALTH_OF[v];
+  if (!state || v === 'ok') return;
+  const name = provider === 'podcastindex' ? 'Podcast Index' : provider.charAt(0).toUpperCase() + provider.slice(1);
+  const why = name + ' ' + SAID[v] + (status ? ' (' + status + ')' : '') + (endpoint ? ' for ' + endpoint : '');
+  if (!x.notes.includes(why)) x.notes.push(why);
+  await health(x, provider, state, why, endpoint ? { endpoint } : undefined);
+  // a key refused, or no more allowance: nothing more to ask this run; an
+  // endpoint off the plan: only that endpoint is left alone
+  if (v === 'unauthorized' || v === 'quota_exhausted' || v === 'unavailable') (x.refused || (x.refused = new Set())).add(provider);
+  if (v === 'insufficient_plan' && endpoint) (x.refused || (x.refused = new Set())).add(provider + ':' + endpoint);
+}
+const isRefused = (x: Ctx, provider: string, endpoint?: string) =>
+  !!x.refused && (x.refused.has(provider) || (!!endpoint && x.refused.has(provider + ':' + endpoint)));
+
+export async function braveSearch(c: Cfg, q: string): Promise<{ ok: boolean; results: { url: string; title: string; snippet: string }[]; why?: string; verdict?: Verdict; status?: number }> {
   try {
     const r = await timed(c, 'https://api.search.brave.com/res/v1/web/search?count=20&q=' + encodeURIComponent(q),
       { headers: { accept: 'application/json', 'x-subscription-token': c.braveKey } }, c.timeoutMs ?? 15000);
-    if (r.status === 401 || r.status === 403) return { ok: false, results: [], why: 'Brave refused the key' };
-    if (!r.ok) return { ok: false, results: [], why: 'Brave answered ' + r.status };
     const b: any = await r.json().catch(() => null);
+    const v = classify('brave', r.status, b);
+    if (v === 'unauthorized' || (r.status === 403)) return { ok: false, results: [], why: 'Brave refused the key', verdict: 'unauthorized', status: r.status };
+    if (v !== 'ok') return { ok: false, results: [], why: 'Brave answered ' + r.status, verdict: v, status: r.status };
     const list = Array.isArray(b?.web?.results) ? b.web.results : [];
-    return { ok: true, results: list.filter((x: any) => typeof x?.url === 'string').slice(0, 20).map((x: any) => ({
+    return { ok: true, verdict: 'ok', status: r.status, results: list.filter((x: any) => typeof x?.url === 'string').slice(0, 20).map((x: any) => ({
       url: x.url, title: oneLine(String(x.title ?? '')).slice(0, 300), snippet: oneLine(String(x.description ?? '')).slice(0, 1000) })) };
-  } catch (_) { return { ok: false, results: [], why: 'Brave did not answer' }; }
+  } catch (_) { return { ok: false, results: [], why: 'Brave did not answer', verdict: 'unavailable', status: 0 }; }
 }
 async function hunter(c: Cfg, path: string, params: Record<string, string>): Promise<{ status: number; body: any }> {
   const qs = new URLSearchParams({ ...params, api_key: c.hunterKey }).toString();
@@ -548,60 +668,149 @@ async function hunter(c: Cfg, path: string, params: Record<string, string>): Pro
   } catch (_) { return { status: 0, body: null }; }
 }
 
+// ── Hunter's free credit (Phase 13) ─────────────────────────────────────────
+// GET /v2/account costs nothing and says the plan, what is used and what the
+// plan allows this period, and when it resets. It is read once a run, before
+// any credit is spent; nothing is asked of Hunter once the allowance is used
+// up. (A plan reporting one pool of credits is read as that pool.)
+export type HunterQuota = { plan: string | null; reset_date: string | null; searches: { used: number | null; available: number | null };
+  verifications: { used: number | null; available: number | null }; credits: { used: number | null; available: number | null } | null };
+export type HunterState = { checked: boolean; searches: number | null; verifications: number | null; stopped: string | null; quota?: HunterQuota | null };
+const numOrNull = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : null);
+export async function hunterAccount(c: Cfg): Promise<{ status: number; verdict: Verdict; quota: HunterQuota | null }> {
+  const r = await hunter(c, 'account', {});
+  const v = classify('hunter', r.status, r.body);
+  if (v !== 'ok' || !r.body || typeof r.body.data !== 'object' || !r.body.data) return { status: r.status, verdict: v === 'ok' ? 'bad_request' : v, quota: null };
+  const d = r.body.data, req = d.requests || {};
+  const pair = (o: any) => ({ used: numOrNull(o && o.used), available: numOrNull(o && o.available) });
+  const quota: HunterQuota = { plan: (String(d.plan_name ?? '').trim() || null)?.slice(0, 60) ?? null,
+    reset_date: typeof d.reset_date === 'string' ? d.reset_date.slice(0, 10) : null,
+    searches: pair(req.searches), verifications: pair(req.verifications),
+    credits: d.credits && typeof d.credits === 'object' ? pair(d.credits)
+      : req.credits && typeof req.credits === 'object' ? pair(req.credits) : null };
+  return { status: r.status, verdict: 'ok', quota };
+}
+// what is left of an allowance: available is the period's allowance, used what is spent
+export function remaining(q: { used: number | null; available: number | null } | null | undefined): number | null {
+  if (!q || q.available == null) return null;
+  return Math.max(0, q.available - (q.used ?? 0));
+}
+export function describeQuota(q: HunterQuota | null | undefined): string {
+  if (!q) return 'Hunter answered';
+  const part = (name: string, p: { used: number | null; available: number | null } | null) =>
+    p && p.available != null ? name + ' ' + (p.used ?? 0) + ' of ' + p.available + ' used' : '';
+  return ['Hunter' + (q.plan ? ' (' + q.plan + ')' : '') + ':', q.credits ? part('credits', q.credits) : [part('searches', q.searches), part('verifications', q.verifications)].filter(Boolean).join(', '),
+    q.reset_date ? '— resets ' + q.reset_date : ''].filter(Boolean).join(' ');
+}
+async function hunterReady(x: Ctx, kind: 'searches' | 'verifications'): Promise<boolean> {
+  const h = x.hunter || (x.hunter = { checked: false, searches: null, verifications: null, stopped: null });
+  if (h.stopped || isRefused(x, 'hunter')) return false;
+  if (!h.checked) {
+    h.checked = true;
+    const a = await hunterAccount(x.c);
+    await ledger(x, [{ provider: 'hunter', operation: 'account', calls: 1, units: 0 }]);
+    if (a.verdict === 'unauthorized') {
+      h.stopped = 'Hunter refused the key (HUNTER_API_KEY)';
+      await providerFailed(x, 'hunter', 'unauthorized', a.status);
+      return false;
+    }
+    if (a.verdict === 'ok' && a.quota) {
+      h.quota = a.quota;
+      h.searches = remaining(a.quota.credits || a.quota.searches);
+      h.verifications = remaining(a.quota.credits || a.quota.verifications);
+      const out = h.searches === 0 && h.verifications === 0;
+      await health(x, 'hunter', out ? 'quota_exhausted' : 'connected', describeQuota(a.quota), { quota: a.quota });
+    }
+    // anything else (Hunter unreachable for a moment): the allowance is not
+    // known, and the calls themselves will say if it is used up
+  }
+  const n = kind === 'searches' ? h.searches : h.verifications;
+  if (n !== null && n <= 0) {
+    const why = 'Hunter\'s ' + (h.quota && h.quota.credits ? 'credits are' : kind + ' are') + ' used up for this period'
+      + (h.quota && h.quota.reset_date ? ' (resets ' + h.quota.reset_date + ')' : '') + ': nothing more asked of Hunter';
+    if (!x.notes.includes(why)) x.notes.push(why);
+    return false;
+  }
+  return true;
+}
+function hunterSpent(x: Ctx, kind: 'searches' | 'verifications') {
+  const h = x.hunter;
+  if (!h) return;
+  if (h.quota && h.quota.credits) {
+    if (h.searches != null) h.searches = Math.max(0, h.searches - 1);
+    if (h.verifications != null) h.verifications = Math.max(0, h.verifications - 1);
+  } else if (h[kind] != null) h[kind] = Math.max(0, (h[kind] as number) - 1);
+}
+
 // ── the provider interfaces (Phase 12) ──────────────────────────────────────
 // Each provider is one small object behind one of four interfaces, and the
 // pipeline asks only "which are on": a key set, and not switched off in the
 // console (discovery_config.providers). Apollo and Clay cost money per call,
-// so they are on only when switched on.
-export type Switches = Partial<Record<'brave' | 'apollo_search' | 'hunter' | 'apollo' | 'clay', boolean>>;
+// so they are on only when switched on. (Phase 13) Podcast Index is free and
+// on once its key and secret are set; Apollo's organization lookup is on
+// only when switched on.
+export type Switches = Partial<Record<'brave' | 'apollo_search' | 'apollo_org' | 'podcastindex' | 'hunter' | 'apollo' | 'clay', boolean>>;
 export type SearchHit = { url: string; title: string; snippet: string };
-export type Searcher = { id: string; search: (c: Cfg, q: string) => Promise<{ ok: boolean; results: SearchHit[]; why?: string }> };
+export type SearchAnswer = { ok: boolean; results: SearchHit[]; why?: string; verdict?: Verdict; status?: number; units?: number };
+export type Searcher = { id: string; provider: string; endpoint?: string; search: (c: Cfg, q: string) => Promise<SearchAnswer> };
 export type Person = { first: string; last: string; full: string; domain: string | null; linkedin: string | null };
 export type Finding = { address: string; verified: boolean; sourceUrl: string | null };
-export type Finder = { id: string; find: (c: Cfg, who: Person) => Promise<{ found: Finding | null; note?: string }> };
-export type Verifier = { id: string; verify: (c: Cfg, email: string) => Promise<string> };
+export type Finder = { id: string; find: (x: Ctx, who: Person) => Promise<{ found: Finding | null; note?: string }> };
+export type VerifierAnswer = { verdict: string | null; v: Verdict; status: number };
+export type Verifier = { id: string; verify: (c: Cfg, email: string) => Promise<VerifierAnswer> };
 export type Enricher = { id: string; push: (c: Cfg, row: Record<string, unknown>) => Promise<{ ok: boolean; why?: string }> };
 
 export function providersOn(c: Cfg, sw: Switches | null | undefined) {
   const s: Switches = sw && typeof sw === 'object' ? sw : {};
   return {
     brave: !!c.braveKey && s.brave !== false,
+    podcastindex: !!c.podcastIndexKey && !!c.podcastIndexSecret && s.podcastindex !== false,
     apollo_search: !!c.apolloKey && s.apollo_search === true,
+    apollo_org: !!c.apolloKey && s.apollo_org === true,
     hunter: !!c.hunterKey && s.hunter !== false,
     apollo: !!c.apolloKey && s.apollo === true,
     clay: !!c.clayWebhookUrl && clayUrlOk(c.clayWebhookUrl) && s.clay === true,
   };
 }
-// what the console shows: each provider, whether its key is set, whether it is on
+// what the console shows: each provider, whether its key is set, whether it
+// is on, and (Phase 13) where to get a key — never the key itself
 export function providerStatus(c: Cfg, sw: Switches | null | undefined) {
   const on = providersOn(c, sw);
   return {
-    brave: { role: 'search', key: 'BRAVE_SEARCH_API_KEY', configured: !!c.braveKey, on: on.brave },
-    apollo_search: { role: 'search', key: 'APOLLO_API_KEY', configured: !!c.apolloKey, on: on.apollo_search },
-    hunter: { role: 'email lookup and verification', key: 'HUNTER_API_KEY', configured: !!c.hunterKey, on: on.hunter },
-    apollo: { role: 'email lookup', key: 'APOLLO_API_KEY', configured: !!c.apolloKey, on: on.apollo },
-    clay: { role: 'enrichment', key: 'CLAY_WEBHOOK_URL', configured: !!c.clayWebhookUrl && clayUrlOk(c.clayWebhookUrl), on: on.clay },
+    brave: { role: 'search', key: 'BRAVE_SEARCH_API_KEY', configured: !!c.braveKey, on: on.brave, optional: true, cost: 'paid (optional)' },
+    podcastindex: { role: 'search', key: 'PODCASTINDEX_API_KEY + PODCASTINDEX_API_SECRET', configured: !!c.podcastIndexKey && !!c.podcastIndexSecret,
+      on: on.podcastindex, optional: true, cost: 'free', signup: 'https://api.podcastindex.org/signup' },
+    apollo_search: { role: 'search', key: 'APOLLO_API_KEY', configured: !!c.apolloKey, on: on.apollo_search, optional: true, cost: 'plan-dependent' },
+    apollo_org: { role: 'search', key: 'APOLLO_API_KEY', configured: !!c.apolloKey, on: on.apollo_org, optional: true, cost: 'plan-dependent' },
+    hunter: { role: 'email lookup and verification', key: 'HUNTER_API_KEY', configured: !!c.hunterKey, on: on.hunter, optional: true, cost: 'free tier' },
+    apollo: { role: 'email lookup', key: 'APOLLO_API_KEY', configured: !!c.apolloKey, on: on.apollo, optional: true, cost: 'plan-dependent' },
+    clay: { role: 'enrichment', key: 'CLAY_WEBHOOK_URL', configured: !!c.clayWebhookUrl && clayUrlOk(c.clayWebhookUrl), on: on.clay, optional: true, cost: 'paid (optional)' },
+    anthropic: { role: 'reading and writing', key: 'ANTHROPIC_API_KEY', configured: !!c.anthropicKey, on: !!c.anthropicKey, optional: false, cost: 'per token' },
   };
 }
 // a role address, a provider's placeholder: never a person's address
 const NOT_A_PERSON = /^(no-?reply|do-?not-?reply|abuse|postmaster|hostmaster|webmaster|privacy|legal|dmca|security|unsubscribe|bounces?|mailer-daemon|root|admin|billing|invoices?|careers|jobs|info|hello|contact|support|team|sales|press|media)@|not_unlocked|placeholder|@example\.(com|org)$/i;
 const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
 
-export const BRAVE: Searcher = { id: 'brave', search: braveSearch };
+export const BRAVE: Searcher = { id: 'brave', provider: 'brave', search: braveSearch };
 
 // Apollo people search: no address and no credit, a person and where they
 // work. The candidate is their organization's own site (a page the engine can
 // read and quote); a profile on a big platform or a big company is left out.
+// (Phase 13) Not on Apollo's free plan: that answer is "not on the plan",
+// recorded once, never mistaken for a refused key.
 export const APOLLO_SEARCH: Searcher = {
-  id: 'apollo',
+  id: 'apollo', provider: 'apollo', endpoint: 'mixed_people/api_search',
   search: async (c, q) => {
     try {
       const r = await timed(c, 'https://api.apollo.io/api/v1/mixed_people/api_search', {
         method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json', 'x-api-key': c.apolloKey || '' },
         body: JSON.stringify({ q_keywords: q, page: 1, per_page: 25 }) }, c.timeoutMs ?? 20000);
-      if (r.status === 401 || r.status === 403) return { ok: false, results: [], why: 'Apollo refused the key' };
-      if (!r.ok) return { ok: false, results: [], why: 'Apollo answered ' + r.status };
       const b: any = await r.json().catch(() => null);
+      const v = classify('apollo', r.status, b);
+      if (v === 'unauthorized') return { ok: false, results: [], why: 'Apollo refused the key', verdict: v, status: r.status };
+      if (v === 'insufficient_plan') return { ok: false, results: [], why: 'Apollo\'s people search is not on this plan', verdict: v, status: r.status };
+      if (v !== 'ok') return { ok: false, results: [], why: 'Apollo answered ' + r.status, verdict: v, status: r.status };
       const people = Array.isArray(b?.people) ? b.people : [];
       const out: SearchHit[] = [];
       for (const p of people) {
@@ -616,24 +825,168 @@ export const APOLLO_SEARCH: Searcher = {
           snippet: ('Apollo: ' + [name, title, org].filter(Boolean).join(', ')).slice(0, 1000) });
         if (out.length >= 20) break;
       }
-      return { ok: true, results: out };
-    } catch (_) { return { ok: false, results: [], why: 'Apollo did not answer' }; }
+      return { ok: true, results: out, verdict: 'ok', status: r.status };
+    } catch (_) { return { ok: false, results: [], why: 'Apollo did not answer', verdict: 'unavailable', status: 0 }; }
   },
 };
 
+// ── Podcast Index (Phase 13): free, open, and made to be searched ───────────
+// GET /api/1.0/search/byterm with four headers: User-Agent, X-Auth-Key,
+// X-Auth-Date (unix seconds) and Authorization = sha1(key + secret + date) in
+// lowercase hex. A feed gives the show's own website (its RSS <link>), who
+// makes it, how many episodes and when the newest went out. The candidate is
+// that website; a show with no site of its own (only a hosting platform's
+// page) is left out and said so, and a dead or year-silent feed is skipped.
+const PODCAST_HOSTS = /(^|\.)(anchor\.fm|spotify\.com|apple\.com|buzzsprout\.com|libsyn\.com|podbean\.com|simplecast\.com|transistor\.fm|megaphone\.fm|redcircle\.com|spreaker\.com|captivate\.fm|soundcloud\.com|iheart\.com|iheartradio\.com|audioboom\.com|podomatic\.com|blubrry\.com|blubrry\.net|acast\.com|omny\.fm|art19\.com|castos\.com|fireside\.fm|pinecast\.com|podcasts\.google\.com|feedburner\.com|rss\.com|zencast\.fm|podbase\.com|podigee\.io|whooshkaa\.com|ausha\.co|podcastics\.com|player\.fm|podchaser\.com|stitcher\.com|tunein\.com|amazon\.com|audible\.com)$/i;
+export async function sha1Hex(s: string): Promise<string> {
+  const d = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+export async function podcastIndexHeaders(c: Cfg, now = Date.now()): Promise<Record<string, string>> {
+  const date = String(Math.floor(now / 1000));
+  return { 'user-agent': UA, 'x-auth-key': c.podcastIndexKey || '', 'x-auth-date': date,
+    authorization: await sha1Hex((c.podcastIndexKey || '') + (c.podcastIndexSecret || '') + date), accept: 'application/json' };
+}
+export function feedToHit(f: any, nowMs = Date.now()): { hit: SearchHit | null; why?: string } {
+  if (!f || typeof f !== 'object') return { hit: null, why: 'not a feed' };
+  if (Number(f.dead) === 1) return { hit: null, why: 'the feed is dead' };
+  const lang = String(f.language || '').toLowerCase();
+  if (lang && !/^en\b|^en-/.test(lang)) return { hit: null, why: 'not in English' };
+  const newest = Number(f.newestItemPubdate || f.lastUpdateTime || 0);
+  if (newest > 0 && nowMs / 1000 - newest > 365 * 86400) return { hit: null, why: 'no episode in a year' };
+  const link = String(f.link || '').trim();
+  let u: URL | null = null;
+  try { u = /^https?:\/\//i.test(link) ? new URL(link.replace(/^http:/i, 'https:')) : null; } catch (_) { u = null; }
+  if (!u) return { hit: null, why: 'no website' };
+  const host = u.hostname.toLowerCase();
+  // a hosting platform's page is not their site; a newsletter or channel
+  // profile (Substack, beehiiv, YouTube) is theirs, and research reads it
+  if (PODCAST_HOSTS.test(host) || UNFETCHABLE.test(host) || !hostAllowed(host) || (PLATFORM.test(host) && !PROFILE.test(u.toString()))) {
+    return { hit: null, why: 'no site of its own (only ' + host + ')' };
+  }
+  const title = oneLine(String(f.title || '')).slice(0, 300);
+  const who = oneLine(String(f.author || f.ownerName || '')).slice(0, 120);
+  const cats = f.categories && typeof f.categories === 'object' ? Object.values(f.categories).map((x) => String(x)).slice(0, 4).join(', ') : '';
+  const when = newest > 0 ? new Date(newest * 1000).toISOString().slice(0, 10) : '';
+  const parts = ['Podcast Index: "' + title + '"', who ? 'by ' + who : '', Number(f.episodeCount) > 0 ? f.episodeCount + ' episodes' : '',
+    when ? 'newest ' + when : '', cats].filter(Boolean);
+  const desc = oneLine(String(f.description || '')).slice(0, 300);
+  return { hit: { url: u.toString(), title: title || host, snippet: (parts.join(' · ') + (desc ? ' — ' + desc : '')).slice(0, 1000) } };
+}
+export const PODCASTINDEX: Searcher = {
+  id: 'podcastindex', provider: 'podcastindex', endpoint: 'search/byterm',
+  search: async (c, q) => {
+    try {
+      const r = await timed(c, 'https://api.podcastindex.org/api/1.0/search/byterm?max=40&q=' + encodeURIComponent(q),
+        { headers: await podcastIndexHeaders(c) }, c.timeoutMs ?? 15000);
+      const b: any = await r.json().catch(() => null);
+      const v = classify('podcastindex', r.status, b);
+      if (v !== 'ok') return { ok: false, results: [], why: v === 'unauthorized' ? 'Podcast Index refused the key' : 'Podcast Index answered ' + r.status, verdict: v, status: r.status };
+      const feeds = Array.isArray(b?.feeds) ? b.feeds : [];
+      const out: SearchHit[] = [], seen = new Set<string>();
+      let skipped = 0;
+      for (const f of feeds) {
+        const { hit } = feedToHit(f);
+        if (!hit) { skipped++; continue; }
+        if (seen.has(hit.url)) continue;
+        seen.add(hit.url);
+        out.push(hit);
+        if (out.length >= 25) break;
+      }
+      return { ok: true, results: out, verdict: 'ok', status: r.status, why: skipped ? skipped + ' show(s) without a site of their own, inactive or not in English left out' : undefined };
+    } catch (_) { return { ok: false, results: [], why: 'Podcast Index did not answer', verdict: 'unavailable', status: 0 }; }
+  },
+};
+
+// ── Apollo's organization lookup (Phase 13) ─────────────────────────────────
+// For a company domain the owner names: the organization (organizations/
+// enrich), then its top people (mixed_people/organization_top_people, the one
+// people endpoint a free Apollo key may be allowed). Neither is documented as
+// part of every plan, so each answer is classified, and "not on the plan" is
+// recorded and said, never worked around. The candidate is the organization's
+// own site; Apollo's names and titles are a note for the owner, never
+// evidence an email may cite.
+async function apolloGet(c: Cfg, path: string, params: Record<string, string>): Promise<{ status: number; body: any; v: Verdict }> {
+  try {
+    const r = await timed(c, 'https://api.apollo.io/api/v1/' + path + '?' + new URLSearchParams(params).toString(),
+      { headers: { accept: 'application/json', 'x-api-key': c.apolloKey || '', 'cache-control': 'no-cache' } }, c.timeoutMs ?? 20000);
+    const b: any = await r.json().catch(() => null);
+    return { status: r.status, body: b, v: classify('apollo', r.status, b) };
+  } catch (_) { return { status: 0, body: null, v: 'unavailable' }; }
+}
+export async function apolloOrg(x: Ctx, domain: string): Promise<{ hit: SearchHit | null; why?: string; endpoint?: string; v?: Verdict; status?: number }> {
+  const c = x.c;
+  const cached = await db(x, 'growth_outbound_cache_get', { p_provider: 'apollo_org', p_key: domain }).catch(() => null);
+  if (cached && cached.hit && cached.value && typeof cached.value === 'object') return { hit: cached.value.hit || null, why: cached.value.why };
+  if (isRefused(x, 'apollo', 'organizations/enrich')) return { hit: null, why: 'Apollo\'s organization lookup is not on this plan' };
+  const e = await apolloGet(c, 'organizations/enrich', { domain });
+  await ledger(x, [{ provider: 'apollo', operation: 'organizations/enrich', calls: 1, units: e.v === 'ok' ? 1 : 0 }]);
+  if (e.v !== 'ok') return { hit: null, why: 'Apollo ' + SAID[e.v], endpoint: 'organizations/enrich', v: e.v, status: e.status };
+  const o = e.body && e.body.organization;
+  if (!o || typeof o !== 'object') {
+    await db(x, 'growth_outbound_cache_put', { p_run: x.run, p_provider: 'apollo_org', p_key: domain, p_value: { hit: null, why: 'Apollo does not know ' + domain }, p_ttl_hours: 720 }).catch(() => null);
+    return { hit: null, why: 'Apollo does not know ' + domain };
+  }
+  const site = /^https?:\/\//i.test(String(o.website_url || '')) ? String(o.website_url).replace(/^http:/i, 'https:') : 'https://' + domain + '/';
+  let people: any[] = [];
+  let note = '';
+  if (o.id && !isRefused(x, 'apollo', 'mixed_people/organization_top_people')) {
+    const t = await apolloGet(c, 'mixed_people/organization_top_people', { organization_id: String(o.id) });
+    await ledger(x, [{ provider: 'apollo', operation: 'mixed_people/organization_top_people', calls: 1, units: 0 }]);
+    if (t.v === 'ok') {
+      people = Array.isArray(t.body?.people) ? t.body.people : Array.isArray(t.body?.contacts) ? t.body.contacts : [];
+      await health(x, 'apollo', 'connected', 'Apollo answered the top-people lookup', { endpoint: 'mixed_people/organization_top_people' });
+    } else {
+      await providerFailed(x, 'apollo', t.v, t.status, 'mixed_people/organization_top_people');
+      note = ' (top people: ' + SAID[t.v] + ')';
+    }
+  }
+  const names = people.slice(0, 5).map((p: any) => [oneLine(String(p?.name || [p?.first_name, p?.last_name].filter(Boolean).join(' '))).slice(0, 80),
+    oneLine(String(p?.title || '')).slice(0, 80)].filter(Boolean).join(' — ')).filter(Boolean);
+  const hit: SearchHit = { url: site, title: oneLine(String(o.name || domain)).slice(0, 300),
+    snippet: ('Apollo: ' + oneLine(String(o.name || domain)) + (names.length ? '; top people: ' + names.join('; ') : '') + note
+      + '. Apollo\'s names are a note for you, never something an email may say.').slice(0, 1000) };
+  await db(x, 'growth_outbound_cache_put', { p_run: x.run, p_provider: 'apollo_org', p_key: domain, p_value: { hit }, p_ttl_hours: 720 }).catch(() => null);
+  return { hit };
+}
+
 // Hunter domain search: only an address Hunter lists FOR THIS PERSON's name
 // at this domain, recorded as Hunter's find with the page Hunter saw it on.
+// (Phase 13) A domain's answer is kept 30 days, so a second person at the
+// same domain costs nothing; Hunter is asked only while its allowance lasts.
 export const HUNTER_FINDER: Finder = {
   id: 'hunter',
-  find: async (c, who) => {
+  find: async (x, who) => {
     if (!who.domain) return { found: null };
-    const h = await hunter(c, 'domain-search', { domain: who.domain, limit: '10' });
-    const list = Array.isArray(h.body?.data?.emails) ? h.body.data.emails : [];
+    let list: any[] | null = null;
+    const cached = await db(x, 'growth_outbound_cache_get', { p_provider: 'hunter_domain_search', p_key: who.domain }).catch(() => null);
+    if (cached && cached.hit && Array.isArray(cached.value?.emails)) list = cached.value.emails;
+    if (!list) {
+      if (!(await hunterReady(x, 'searches'))) return { found: null };
+      if (!(await spend(x, 'email_finder'))) return { found: null };
+      const h = await hunter(x.c, 'domain-search', { domain: who.domain, limit: '10' });
+      const v = classify('hunter', h.status, h.body);
+      if (v !== 'ok') {
+        await ledger(x, [{ provider: 'hunter', operation: 'domain-search', calls: 1, units: 0 }]);
+        if (v !== 'bad_request' && v !== 'restricted') await providerFailed(x, 'hunter', v, h.status);
+        return { found: null, note: 'Hunter answered ' + h.status };
+      }
+      const raw = Array.isArray(h.body?.data?.emails) ? h.body.data.emails : [];
+      hunterSpent(x, 'searches');
+      await ledger(x, [{ provider: 'hunter', operation: 'domain-search', calls: 1, units: raw.length ? 1 : 0 }]);
+      // keep only what a later lookup needs: the address, whose name, where Hunter saw it
+      list = raw.filter((e: any) => typeof e?.value === 'string').slice(0, 10).map((e: any) => ({
+        value: String(e.value).toLowerCase(), first_name: e.first_name || null, last_name: e.last_name || null,
+        sources: (Array.isArray(e.sources) ? e.sources : []).map((s: any) => s && s.uri).filter((u: any) => typeof u === 'string' && /^https:\/\//.test(u)).slice(0, 3) }));
+      // a domain with addresses is kept 30 days, one with none 14
+      await db(x, 'growth_outbound_cache_put', { p_run: x.run, p_provider: 'hunter_domain_search', p_key: who.domain, p_value: { emails: list },
+        p_ttl_hours: list.length ? 720 : 336 }).catch(() => null);
+    }
     const tokens = who.full.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
-    const match = list.find((e: any) => typeof e?.value === 'string' && !ROLE_SKIP.test(e.value) && e.first_name && e.last_name
+    const match = (list || []).find((e: any) => typeof e?.value === 'string' && !ROLE_SKIP.test(e.value) && e.first_name && e.last_name
       && tokens.indexOf(String(e.first_name).toLowerCase()) >= 0 && tokens.indexOf(String(e.last_name).toLowerCase()) >= 0);
-    if (!match) return { found: null, note: h.status && h.status !== 200 ? 'Hunter answered ' + h.status : undefined };
-    const src = (Array.isArray(match.sources) ? match.sources : []).map((s: any) => s && s.uri).find((u: any) => typeof u === 'string' && /^https:\/\//.test(u));
+    if (!match) return { found: null };
+    const src = (Array.isArray(match.sources) ? match.sources : []).find((u: any) => typeof u === 'string' && /^https:\/\//.test(u));
     return { found: { address: String(match.value).toLowerCase(), verified: false, sourceUrl: src || null } };
   },
 };
@@ -644,17 +997,25 @@ export const HUNTER_FINDER: Finder = {
 // or the owner), because the same company found and checked it.
 export const APOLLO_FINDER: Finder = {
   id: 'apollo',
-  find: async (c, who) => {
+  find: async (x, who) => {
+    const c = x.c;
     const body: Record<string, unknown> = { first_name: who.first, last_name: who.last, reveal_personal_emails: false, reveal_phone_number: false };
     if (who.domain) body.domain = who.domain;
     if (who.linkedin) body.linkedin_url = who.linkedin;
     if (!who.domain && !who.linkedin) return { found: null, note: 'Apollo needs their domain or LinkedIn profile' };
+    if (isRefused(x, 'apollo', 'people/match')) return { found: null };
+    if (!(await spend(x, 'email_finder'))) return { found: null };
     try {
       const r = await timed(c, 'https://api.apollo.io/api/v1/people/match', {
         method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json', 'x-api-key': c.apolloKey || '' },
         body: JSON.stringify(body) }, c.timeoutMs ?? 20000);
-      if (!r.ok) return { found: null, note: 'Apollo answered ' + r.status };
       const b: any = await r.json().catch(() => null);
+      const v = classify('apollo', r.status, b);
+      await ledger(x, [{ provider: 'apollo', operation: 'people/match', calls: 1, units: v === 'ok' ? 1 : 0 }]);
+      if (v !== 'ok') {
+        if (v !== 'bad_request') await providerFailed(x, 'apollo', v, r.status, 'people/match');
+        return { found: null, note: 'Apollo answered ' + r.status };
+      }
       const p = b?.person;
       const email = typeof p?.email === 'string' ? p.email.trim().toLowerCase() : '';
       if (!email || !EMAIL_RE.test(email) || NOT_A_PERSON.test(email)) return { found: null, note: 'Apollo has no usable address for them' };
@@ -668,13 +1029,33 @@ export const APOLLO_FINDER: Finder = {
   },
 };
 
+// Hunter's verifier. (Phase 13) Only an answer with a status is a VERDICT
+// and goes on the record (which keeps the address from being asked about
+// again for 30 days). A refused key, a used-up allowance, a rate limit, a
+// "still checking" (202) or a failed check is NOT a verdict: nothing is
+// recorded about the address, and it is asked again another day.
 export const HUNTER_VERIFIER: Verifier = {
   id: 'hunter_verifier',
   verify: async (c, email) => {
-    const v = await hunter(c, 'email-verifier', { email });
-    return v.status === 200 && typeof v.body?.data?.status === 'string' ? v.body.data.status : (v.status === 202 ? 'pending' : 'unknown');
+    const r = await hunter(c, 'email-verifier', { email });
+    const v = classify('hunter', r.status, r.body);
+    const st = r.status === 200 && typeof r.body?.data?.status === 'string' ? String(r.body.data.status).toLowerCase() : null;
+    const known = ['valid', 'invalid', 'accept_all', 'webmail', 'disposable', 'unknown'];
+    return { verdict: st && known.indexOf(st) >= 0 ? st : null, v: st ? 'ok' : (v === 'ok' ? 'bad_request' : v), status: r.status };
   },
 };
+// one address to the verifier, with the allowance, the ledger and the
+// refusal rules; the verdict, or null when there is none to record
+export async function verifyOne(x: Ctx, email: string): Promise<string | null> {
+  if (!(await hunterReady(x, 'verifications'))) return null;
+  if (!(await spend(x, 'email_verifier'))) return null;
+  const a = await HUNTER_VERIFIER.verify(x.c, email);
+  await ledger(x, [{ provider: 'hunter', operation: 'email-verifier', calls: 1, units: a.verdict ? 1 : 0 }]);
+  if (a.verdict) { hunterSpent(x, 'verifications'); return a.verdict; }
+  if (a.v === 'pending') { x.notes.push('Hunter is still checking ' + email.replace(/^(.).*@/, '$1•••@') + ': asked again another day'); return null; }
+  if (a.v !== 'bad_request' && a.v !== 'restricted') await providerFailed(x, 'hunter', a.v, a.status);
+  return null;
+}
 
 // Clay: a table's webhook takes one row per POST (its optional auth token in
 // x-clay-webhook-auth). Only a Clay address is ever posted to.
@@ -727,8 +1108,17 @@ function extractSchema(codes: string[]) {
     },
   };
 }
+// (Phase 13) what a Claude call used, for the ledger: tokens by kind and the
+// model that answered (a declined request may be answered by the fallback)
+export function usageOf(res: any, model: string): Record<string, unknown> {
+  const u = res && res.usage ? res.usage : {};
+  const n = (v: unknown) => (typeof v === 'number' && isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  return { provider: 'anthropic', operation: 'messages', calls: 1, units: 1, model: String((res && res.model) || model || '').slice(0, 60),
+    input_tokens: n(u.input_tokens), output_tokens: n(u.output_tokens), cache_read_tokens: n(u.cache_read_input_tokens),
+    cache_write_tokens: n(u.cache_creation_input_tokens) };
+}
 export async function extractWithClaude(c: Cfg, pages: { url: string; text: string }[], catalog: { code: string; label: string }[]):
-    Promise<{ ok: true; out: any } | { ok: false; why: string }> {
+    Promise<{ ok: true; out: any; usage?: Record<string, unknown> } | { ok: false; why: string; usage?: Record<string, unknown>; status?: number }> {
   const client: any = new (Anthropic as any)({ apiKey: c.anthropicKey, timeout: 90_000, maxRetries: 1 });
   const user = 'Fit catalogue (code: meaning):\n' + catalog.map((f) => f.code + ': ' + f.label).join('\n')
     + '\n\n' + pages.map((p, i) => '=== Page ' + i + ': ' + p.url + ' ===\n' + p.text.slice(0, PAGE_CHARS_FOR_LLM)).join('\n\n');
@@ -745,16 +1135,32 @@ export async function extractWithClaude(c: Cfg, pages: { url: string; text: stri
       messages: [{ role: 'user', content: user }],
     });
   } catch (e: any) {
-    return { ok: false, why: 'Claude did not answer' + (e && e.status ? ' (' + e.status + ')' : '') };
+    return { ok: false, why: 'Claude did not answer' + (e && e.status ? ' (' + e.status + ')' : ''), status: e && typeof e.status === 'number' ? e.status : 0 };
   }
-  if (res?.stop_reason === 'refusal') return { ok: false, why: 'Claude declined' };
-  if (res?.stop_reason === 'max_tokens') return { ok: false, why: 'Claude\'s answer was cut off' };
+  const usage = usageOf(res, c.model);
+  if (res?.stop_reason === 'refusal') return { ok: false, why: 'Claude declined', usage };
+  if (res?.stop_reason === 'max_tokens') return { ok: false, why: 'Claude\'s answer was cut off', usage };
   const block = Array.isArray(res?.content) ? res.content.find((b: any) => b && b.type === 'text') : null;
   try {
     const out = JSON.parse(block?.text ?? '');
-    if (!out || typeof out !== 'object' || !Array.isArray(out.facts)) return { ok: false, why: 'Claude\'s answer was not the expected shape' };
-    return { ok: true, out };
-  } catch (_) { return { ok: false, why: 'Claude\'s answer was not JSON' }; }
+    if (!out || typeof out !== 'object' || !Array.isArray(out.facts)) return { ok: false, why: 'Claude\'s answer was not the expected shape', usage };
+    return { ok: true, out, usage };
+  } catch (_) { return { ok: false, why: 'Claude\'s answer was not JSON', usage }; }
+}
+
+// ── is it worth Claude's time? (Phase 13) ───────────────────────────────────
+// A cheap, deterministic look before any paid read: EdgeDesk is NFL and
+// college football research, so a candidate whose pages never mention
+// football, or never mention numbers, models, odds or betting at all, is not
+// a fit — said with that reason, and no Claude call is spent on it. It only
+// turns away; it never makes anyone a fit.
+const FOOTBALL = /\b(nfl|ncaaf|cfb|fbs|fcs|college football|football|super bowl|quarterbacks?|gridiron|bowl games?|heisman)\b/i;
+const NUMBERS = /\b(models?|modell?ing|analytics?|analytical|data|stats?|statistics?|statistical|metrics?|projections?|ratings?|rankings?|odds|betting|bets?|wagers?|spreads?|totals?|props?|fantasy|dfs|epa|efficiency|simulations?|probabilit(y|ies)|expected value|handicapp?(ing|er)s?|markets?|clv|closing lines?|sportsbooks?|picks?|numbers|power ratings?)\b/i;
+export function worthReading(texts: string[]): { ok: boolean; why?: string } {
+  const all = texts.join('\n').slice(0, 400_000);
+  if (!FOOTBALL.test(all)) return { ok: false, why: 'nothing on the pages read is about football (NFL or college football), so it was set aside before any Claude call' };
+  if (!NUMBERS.test(all)) return { ok: false, why: 'the pages read are about football but never about numbers, models, odds or betting, so it was set aside before any Claude call' };
+  return { ok: true };
 }
 
 // ── one target, read and recorded ───────────────────────────────────────────
@@ -856,11 +1262,27 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
   const dropped: { field: string; why: string }[] = [];
   let llm: any = null, llmWhy = '';
   let negative = NEGATIVE_CODES;
-  if (x.c.anthropicKey && timeLeft(x) > 35_000 && await spend(x, 'llm')) {
+  // (Phase 13) a candidate whose pages are plainly not football analysis is
+  // set aside before anything is paid for; a prospect the owner asked about
+  // is always read
+  if (cand) {
+    const w = worthReading(pages.map((p) => p.page.visible + '\n' + p.page.title));
+    if (!w.ok) {
+      await db(x, 'growth_outbound_candidate_set', { p_id: cand.id, p_status: 'not_a_fit', p_reason: String(w.why).slice(0, 400) });
+      return { ok: true, outcome: 'not_a_fit', reason: w.why, pages: pages.length, prefiltered: true };
+    }
+  }
+  if (x.c.anthropicKey && !isRefused(x, 'anthropic') && timeLeft(x) > 35_000 && await spend(x, 'llm')) {
     const catalog = (await db(x, 'growth_outbound_fit_catalog', {})) || [];
     if (Array.isArray(catalog) && catalog.length) negative = catalog.filter((f: any) => f && f.needs_evidence === false).map((f: any) => String(f.code));
     const r = await extractWithClaude(x.c, pages.map((p) => ({ url: p.url, text: p.text })), catalog);
-    if (r.ok) llm = r.out; else llmWhy = r.why;
+    if (r.usage) await ledger(x, [r.usage]);
+    if (r.ok) llm = r.out;
+    else {
+      llmWhy = r.why;
+      const st = (r as any).status;
+      if (st) { const v = classify('anthropic', st, null); if (v !== 'bad_request') await providerFailed(x, 'anthropic', v, st); }
+    }
   } else if (!x.c.anthropicKey) llmWhy = 'ANTHROPIC_API_KEY is not set';
   if (llm && llm.relevant === false) {
     if (cand) await db(x, 'growth_outbound_candidate_set', { p_id: cand.id, p_status: 'not_a_fit', p_reason: String(llm.reason || 'not relevant').slice(0, 400) });
@@ -938,8 +1360,12 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
   if (email) payload.email = email.address;
   if (fit.length) payload.fit_factors = fit.filter((f) => f.evidence_index.length || negative.indexOf(f.code) >= 0);
   if (llm && PROSPECT_TYPES.indexOf(llm.prospect_type) >= 0 && !pros) payload.prospect_type = llm.prospect_type;
-  // a new prospect's segment (Phase 12); a known one keeps theirs (the database drops it)
-  const segment = llm && typeof llm.segment === 'string' ? SEGMENT[llm.segment] || null : null;
+  // a new prospect's segment (Phase 12); a known one keeps theirs (the database drops it).
+  // (Phase 13) the owner's word (an import or a directory said who they are)
+  // comes before Claude's reading
+  const hinted = cand && typeof cand.segment_hint === 'string' && /^(customer|partnership|media_partner|affiliate|business_partner)$/.test(cand.segment_hint)
+    ? cand.segment_hint : null;
+  const segment = hinted || (llm && typeof llm.segment === 'string' ? SEGMENT[llm.segment] || null : null);
   if (segment && !pros) payload.campaign_type = segment;
   if (llm && Array.isArray(llm.sports) && llm.sports.length) payload.sports_focus = [...new Set(llm.sports.filter((s: string) => /^[A-Z]{2,10}$/.test(s)))].slice(0, 6);
 
@@ -968,9 +1394,11 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
 
   // a business address found on the public web, for this person: each email
   // lookup that is on, in order (Hunter at their own domain, then Apollo), until
-  // one has it. Not for a partner lead: the lookup budget goes to subscribers.
+  // one has it. Not for a partner lead: the lookup budget goes to subscribers
+  // (Phase 13: unless the owner has partner outreach on).
   const on = providersOn(x.c, x.sw);
-  const partner = (segment && segment !== 'customer') || (pros && pros.campaign_type && pros.campaign_type !== 'customer');
+  const partner = !x.partnerOutreach
+    && ((segment && segment !== 'customer') || (pros && pros.campaign_type && pros.campaign_type !== 'customer'));
   const fullName = (kept.find((f) => f.field === 'full_name')?.claim || '').replace(/\s+/g, ' ').trim();
   const parts = fullName.split(' ').filter(Boolean);
   const linkedin = [...profiles].find((u) => /^https:\/\/(www\.)?linkedin\.com\/in\//i.test(u)) || null;
@@ -981,8 +1409,8 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
   for (const f of finders) {
     if (email || nameTokens.length < 2 || timeLeft(x) <= 15_000) break;
     if (f.id === 'hunter' && !ownSite) continue;
-    if (!(await spend(x, 'email_finder'))) break;
-    const r = await f.find(x.c, who);
+    // each finder counts its own call against the budget, only when it makes one
+    const r = await f.find(x, who);
     // the run's notes reach both the answer and the run's record (a per-research note was lost before)
     if (!r.found) { if (r.note) x.notes.push(r.note); continue; }
     const ev: any[] = [{ field_name: 'email', claim: r.found.address, source_url: r.found.sourceUrl || HOME[f.id], source_kind: 'provider_found' }];
@@ -995,53 +1423,223 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
       if (r2.status) out.status = r2.status;
     }
   }
-  // and a verifier's word on it (Hunter's verifier, when Hunter is on)
-  if (email && on.hunter && timeLeft(x) > 10_000 && await spend(x, 'email_verifier')) {
-    const st = await HUNTER_VERIFIER.verify(x.c, email.address);
-    const ev = st === 'valid' ? [{ field_name: 'email', claim: email.address, source_url: 'https://hunter.io', source_kind: 'provider_verified' }] : [];
-    const r3 = await db(x, 'growth_outbound_research_ingest', { p_run: x.run, p_candidate: null, p_prospect: prospectId, p_collector: 'provider:hunter_verifier',
-      p: { evidence: ev, email_verdicts: [{ email: email.address, status: st }] } });
-    out.email = { ...(out.email || {}), verdict: st };
-    if (r3 && r3.ok && r3.status) out.status = r3.status;
+  // and a verifier's word on it (Hunter's verifier, when Hunter is on). Only
+  // a real verdict is recorded (Phase 13): a refusal, a used-up allowance or
+  // "still checking" leaves the address to be asked about another day.
+  if (email && on.hunter && timeLeft(x) > 10_000) {
+    const st = await verifyOne(x, email.address);
+    if (st) {
+      const ev = st === 'valid' ? [{ field_name: 'email', claim: email.address, source_url: 'https://hunter.io', source_kind: 'provider_verified' }] : [];
+      const r3 = await db(x, 'growth_outbound_research_ingest', { p_run: x.run, p_candidate: null, p_prospect: prospectId, p_collector: 'provider:hunter_verifier',
+        p: { evidence: ev, email_verdicts: [{ email: email.address, status: st }] } });
+      if (r3 && r3.ok && r3.status) out.status = r3.status;
+    }
+    out.email = { ...(out.email || {}), verdict: st || 'not checked' };
   }
   return out;
 }
 
-// ── a search, once its run has begun (the owner's, or the morning run's) ───
-async function runDiscover(x: Ctx, queries: string[]): Promise<{ status: number; body: any }> {
-  if (!queries.length) {
-    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'no search given and none saved' });
-    return { status: 400, body: { ok: false, reason: 'no_queries', detail: 'type a search, or save some under Discovery settings' } };
+// ── directories (Phase 13) ──────────────────────────────────────────────────
+// A public page the owner chose — a list of newsletters, a network's roster —
+// is read like any page (robots.txt, the size and address checks, the fetch
+// budget) and stored, and its outbound links to independent sites, and to
+// newsletter or channel profiles, become candidates. Links back into the same
+// site, to the big publishers the database knows, to search engines, shops,
+// payment, tooling, sportsbooks or help lines are not people and are left out.
+const NOT_A_PROSPECT_SITE = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|yahoo\.com|apple\.com|amazon\.[a-z.]+|stripe\.com|paypal\.com|venmo\.com|cash\.app|mailchimp\.com|convertkit\.com|kit\.com|ghost\.org|wordpress\.org|cloudflare\.com|gravatar\.com|w3\.org|schema\.org|creativecommons\.org|gstatic\.com|googleapis\.com|bit\.ly|t\.co|wikipedia\.org|wikimedia\.org|archive\.org|1800gambler\.net|ncpgambling\.org|gamblersanonymous\.org|begambleaware\.org|draftkings\.com|fanduel\.com|betmgm\.com|caesars\.com|caesarssportsbook\.com|pointsbet\.com|bet365\.com|espnbet\.com|fanatics\.com|betrivers\.com|hardrock\.bet|prizepicks\.com|underdogfantasy\.com|sleeper\.com|eventbrite\.com|zoom\.us|calendly\.com|typeform\.com|forms\.gle|shopify\.com|squareup\.com|gumroad\.com)$/i;
+export function profileRoot(u: URL): string {
+  const host = u.hostname.toLowerCase();
+  if (/(^|\.)(substack\.com|beehiiv\.com)$/.test(host) && host.split('.').length > 2) return u.origin + '/';
+  const seg = u.pathname.split('/').filter(Boolean);
+  if (/(^|\.)youtube\.com$/.test(host)) {
+    if (seg[0] && seg[0].startsWith('@')) return u.origin + '/' + seg[0];
+    if ((seg[0] === 'c' || seg[0] === 'channel' || seg[0] === 'user') && seg[1]) return u.origin + '/' + seg[0] + '/' + seg[1];
+    return '';
   }
-  const totals: any = { queries: 0, results: 0, new: 0, seen_again: 0, duplicates: 0, suppressed: 0, invalid: 0 };
+  if (/(^|\.)(medium\.com|substack\.com|tiktok\.com)$/.test(host) && seg[0] && seg[0].startsWith('@')) return u.origin + '/' + seg[0];
+  if (/(^|\.)(twitch\.tv|patreon\.com|github\.com|linktr\.ee)$/.test(host) && seg[0]) return u.origin + '/' + seg[0];
+  return '';
+}
+export function directoryLinks(page: { links: Link[] }, pageUrl: string, shared: Set<string>): SearchHit[] {
+  let here = '', from = '';
+  try { const pu = new URL(pageUrl); here = siteKey(pu.hostname); from = pu.hostname.replace(/^www\./, ''); } catch (_) { return []; }
+  const out: SearchHit[] = [], seen = new Set<string>();
+  for (const l of page.links) {
+    if (!/^https?:/i.test(l.href)) continue;
+    let u: URL;
+    try { u = new URL(l.href.replace(/^http:/i, 'https:')); } catch (_) { continue; }
+    const host = u.hostname.toLowerCase();
+    if (!hostAllowed(host) || UNFETCHABLE.test(host) || NOT_A_PROSPECT_SITE.test(host)) continue;
+    const key = siteKey(host);
+    if (key === here || shared.has(key) || shared.has(host)) continue;
+    const text = String(l.text || '').replace(/\s+/g, ' ').trim();
+    if (text.length < 2) continue;                       // an icon, a bare image: nothing names them
+    let target = '';
+    if (PLATFORM.test(host)) { target = profileRoot(u); if (!target || !PROFILE.test(target)) continue; }
+    else target = u.origin + '/';                       // a site is read from its home page
+    if (seen.has(target)) continue;
+    seen.add(target);
+    out.push({ url: target, title: text.slice(0, 300), snippet: ('Listed on ' + from + ' as "' + text.slice(0, 200) + '"').slice(0, 1000) });
+    if (out.length >= 50) break;
+  }
+  return out;
+}
+export async function expandDirectory(x: Ctx, dir: { url: string; segment?: string | null }): Promise<{ ok: boolean; results: number; new: number; why?: string; counts?: any }> {
+  const f = await fetchPage(x, dir.url);
+  if (!f.ok) return { ok: false, results: 0, new: 0, why: f.why };
+  const page = htmlToPage(f.html, f.url, f.contentType);
+  if (!page.text.trim()) return { ok: false, results: 0, new: 0, why: 'no text' };
+  // stored as read: the database then knows this directory was read this week
+  const rec = await db(x, 'growth_outbound_page_record', { p_run: x.run, p: { url: f.url, http_status: f.status,
+    content_type: f.contentType.slice(0, 100), title: page.title, text: page.text } });
+  if (!rec || rec.ok !== true) return { ok: false, results: 0, new: 0, why: 'not stored: ' + (rec?.detail || rec?.reason || '?') };
+  const hits = directoryLinks(page, f.url, x.shared);
+  if (!hits.length) return { ok: true, results: 0, new: 0, why: 'no links to independent sites on the page' };
+  let host = f.url;
+  try { host = new URL(f.url).hostname.replace(/^www\./, ''); } catch (_) { /* keep */ }
+  const seg = dir.segment && /^(customer|partnership|media_partner|affiliate|business_partner)$/.test(dir.segment) ? dir.segment : undefined;
+  const counts = await db(x, 'growth_outbound_candidates_record', { p_run: x.run,
+    p_items: hits.map((h) => ({ ...h, query: ('directory: ' + host).slice(0, 200), provider: 'directory', ...(seg ? { segment: seg } : {}) })) });
+  return { ok: true, results: hits.length, new: counts?.new || 0, counts };
+}
+
+// ── a search, once its run has begun (the owner's, or the morning run's) ───
+// (Phase 13) every source that is on: each saved search through every search
+// provider (Brave, Podcast Index, Apollo's people search), then each directory
+// due a read. No source at all is not a failure of the morning: it is said,
+// and the run is done with nothing found.
+const NO_SOURCE = 'no discovery source is on: set PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET (free), save a directory page, or import your own list under Discover and research (Brave is optional)';
+async function runDiscover(x: Ctx, queries: string[], directories: any[] = []): Promise<{ status: number; body: any }> {
+  if (!queries.length && !directories.length) {
+    if (x.ticket) {
+      // the morning run with nothing saved: said, and done with nothing found
+      const on0 = providersOn(x.c, x.sw), none = !on0.brave && !on0.apollo_search && !on0.podcastindex;
+      const why = none ? NO_SOURCE : 'no search or directory is saved under Discovery settings: nothing to look for this morning';
+      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'done',
+        p_counts: { queries: 0, results: 0, new: 0, outcome: none ? 'no_source_configured' : 'nothing_saved' }, p_error: why });
+      return { status: 200, body: { ok: false, reason: none ? 'search_not_configured' : 'no_queries', detail: why, run_id: x.run } };
+    }
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'no search given and none saved' });
+    return { status: 400, body: { ok: false, reason: 'no_queries', detail: 'type a search, or save some (or a directory) under Discovery settings' } };
+  }
+  const totals: any = { queries: 0, results: 0, new: 0, seen_again: 0, duplicates: 0, suppressed: 0, invalid: 0, directories: 0 };
   const per: any[] = [];
-  // every search provider that is on (Phase 12): Brave, then Apollo's people search
+  // every search provider that is on (Phase 12, 13)
   const on = providersOn(x.c, x.sw);
-  const searchers: Searcher[] = [...(on.brave ? [BRAVE] : []), ...(on.apollo_search ? [APOLLO_SEARCH] : [])];
-  const refused = new Set<string>();
-  outer: for (const qq of queries) {
+  const searchers: Searcher[] = [...(on.brave ? [BRAVE] : []), ...(on.podcastindex ? [PODCASTINDEX] : []), ...(on.apollo_search ? [APOLLO_SEARCH] : [])];
+  const answered = new Set<string>();
+  if (!searchers.length && !directories.length) {
+    // nothing is on: said in words, and not counted as a failed morning step
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'done', p_counts: { ...totals, outcome: 'no_source_configured' }, p_error: NO_SOURCE });
+    return { status: x.ticket ? 200 : 503, body: { ok: false, reason: 'search_not_configured', detail: NO_SOURCE, run_id: x.run } };
+  }
+  if (!searchers.length && queries.length) x.notes.push('the saved searches were not run: no search provider is on (Podcast Index is free)');
+  outer: for (const qq of searchers.length ? queries : []) {
     for (const sr of searchers) {
-      if (refused.has(sr.id)) continue;
+      if (isRefused(x, sr.provider, sr.endpoint)) continue;
       if (timeLeft(x) < 10_000 || !(await spend(x, 'search'))) break outer;
       const s = await sr.search(x.c, qq);
       totals.queries++;
+      await ledger(x, [{ provider: sr.provider, operation: sr.endpoint || 'search', calls: 1, units: s.ok ? 1 : 0 }]);
       const tag = sr.id === 'brave' ? {} : { provider: sr.id };
       if (!s.ok) {
         per.push({ query: qq, ...tag, error: s.why });
-        if (/refused the key/.test(s.why || '')) { refused.add(sr.id); if (refused.size === searchers.length) break outer; }
+        if (s.verdict) await providerFailed(x, sr.provider, s.verdict, s.status || 0, sr.endpoint);
+        if (searchers.every((z) => isRefused(x, z.provider, z.endpoint)) && !directories.length) break outer;
         continue;
       }
-      const rec = await db(x, 'growth_outbound_candidates_record', { p_run: x.run,
-        p_items: s.results.map((r) => ({ ...r, query: qq, provider: sr.id })) });
+      if (!answered.has(sr.id)) {
+        answered.add(sr.id);
+        await health(x, sr.provider, 'connected', (sr.provider === 'podcastindex' ? 'Podcast Index' : sr.provider === 'brave' ? 'Brave' : 'Apollo') + ' answered a search',
+          sr.endpoint ? { endpoint: sr.endpoint } : undefined);
+      }
+      const rec = s.results.length ? await db(x, 'growth_outbound_candidates_record', { p_run: x.run,
+        p_items: s.results.map((r) => ({ ...r, query: qq, provider: sr.id })) }) : {};
       totals.results += s.results.length;
       for (const k of ['new', 'seen_again', 'duplicates', 'suppressed', 'invalid']) totals[k] += rec?.[k] || 0;
-      per.push({ query: qq, ...tag, results: s.results.length, new: rec?.new || 0 });
+      per.push({ query: qq, ...tag, results: s.results.length, new: rec?.new || 0, ...(s.why ? { note: s.why } : {}) });
     }
+  }
+  for (const d of directories) {
+    if (!d || typeof d.url !== 'string') continue;
+    if (timeLeft(x) < 20_000) { x.notes.push('no time left for the remaining directories: read next time'); break; }
+    const r = await expandDirectory(x, d);
+    totals.directories++;
+    totals.results += r.results;
+    if (r.counts) for (const k of ['new', 'seen_again', 'duplicates', 'suppressed', 'invalid']) totals[k] += r.counts[k] || 0;
+    per.push({ directory: d.url, results: r.results, new: r.new, ...(r.ok ? (r.why ? { note: r.why } : {}) : { error: r.why }) });
   }
   const failed = per.length > 0 && per.every((p) => p.error);
   await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done', p_counts: totals,
     p_error: failed ? per.map((p) => p.error).join('; ').slice(0, 900) : (x.notes.join('; ') || null) });
   return { status: 200, body: { ok: !failed, run_id: x.run, ...totals, per_query: per, notes: x.notes, ...(failed ? { reason: 'search_failed' } : {}) } };
+}
+
+// ── is each provider working? (Phase 13) ────────────────────────────────────
+// The owner asks; each provider whose key is set is asked the free question
+// it offers. "connected" is only ever an answer, never a key that is set.
+export async function checkHealth(x: Ctx): Promise<Record<string, { state: string; detail: string; quota?: unknown }>> {
+  const c = x.c;
+  const out: Record<string, { state: string; detail: string; quota?: unknown }> = {};
+  const calls: Record<string, unknown>[] = [];
+  // Claude: the model the engine uses, looked up (free)
+  if (!c.anthropicKey) out.anthropic = { state: 'credential_missing', detail: 'ANTHROPIC_API_KEY is not set: research reads only structured data, and every draft is the template' };
+  else {
+    try {
+      const client: any = new (Anthropic as any)({ apiKey: c.anthropicKey, timeout: 15_000, maxRetries: 0 });
+      await client.models.retrieve(c.model);
+      out.anthropic = { state: 'connected', detail: 'Claude answered; ' + c.model + ' is available to this key' };
+    } catch (e: any) {
+      const st = e && typeof e.status === 'number' ? e.status : 0;
+      const v = classify('anthropic', st, null);
+      out.anthropic = st === 404 ? { state: 'insufficient_plan', detail: c.model + ' is not available to this key (OUTBOUND_RESEARCH_MODEL)' }
+        : { state: HEALTH_OF[v] || 'unavailable', detail: 'Claude ' + SAID[v] + (st ? ' (' + st + ')' : '') };
+    }
+    calls.push({ provider: 'anthropic', operation: 'models', calls: 1, units: 0 });
+  }
+  // Hunter: the account (free): the plan, what is used, when it resets
+  if (!c.hunterKey) out.hunter = { state: 'credential_missing', detail: 'HUNTER_API_KEY is not set (optional): without it only addresses published on their own sites are used, and nothing is verified' };
+  else {
+    const a = await hunterAccount(c);
+    calls.push({ provider: 'hunter', operation: 'account', calls: 1, units: 0 });
+    if (a.verdict === 'ok' && a.quota) {
+      const s1 = remaining(a.quota.credits || a.quota.searches), v1 = remaining(a.quota.credits || a.quota.verifications);
+      out.hunter = { state: s1 === 0 && v1 === 0 ? 'quota_exhausted' : 'connected', detail: describeQuota(a.quota), quota: a.quota };
+    } else out.hunter = { state: HEALTH_OF[a.verdict] || 'unavailable', detail: 'Hunter ' + SAID[a.verdict] + (a.status ? ' (' + a.status + ')' : '') };
+  }
+  // Apollo: the key itself (free); what each endpoint allows is learned when it is used
+  if (!c.apolloKey) out.apollo = { state: 'credential_missing', detail: 'APOLLO_API_KEY is not set (optional)' };
+  else {
+    let st = 0, b: any = null;
+    try {
+      const r = await timed(c, 'https://api.apollo.io/v1/auth/health', { headers: { accept: 'application/json', 'x-api-key': c.apolloKey } }, c.timeoutMs ?? 15000);
+      st = r.status; b = await r.json().catch(() => null);
+    } catch (_) { st = 0; }
+    calls.push({ provider: 'apollo', operation: 'auth/health', calls: 1, units: 0 });
+    const v = classify('apollo', st, b);
+    out.apollo = v === 'ok' && b && b.is_logged_in !== false ? { state: 'connected', detail: 'Apollo accepted the key; each endpoint (people search, organization lookup, people match) says for itself whether the plan allows it' }
+      : { state: v === 'ok' ? 'unauthorized' : HEALTH_OF[v] || 'unavailable', detail: 'Apollo ' + (v === 'ok' ? 'did not accept the key' : SAID[v]) + (st ? ' (' + st + ')' : '') };
+  }
+  // Podcast Index: a one-result search (free)
+  if (!c.podcastIndexKey || !c.podcastIndexSecret) out.podcastindex = { state: 'credential_missing', detail: 'PODCASTINDEX_API_KEY and PODCASTINDEX_API_SECRET are not set: free at https://api.podcastindex.org/signup' };
+  else {
+    let st = 0, b: any = null;
+    try {
+      const r = await timed(c, 'https://api.podcastindex.org/api/1.0/search/byterm?max=1&q=football', { headers: await podcastIndexHeaders(c) }, c.timeoutMs ?? 15000);
+      st = r.status; b = await r.json().catch(() => null);
+    } catch (_) { st = 0; }
+    calls.push({ provider: 'podcastindex', operation: 'search/byterm', calls: 1, units: 0 });
+    const v = classify('podcastindex', st, b);
+    out.podcastindex = v === 'ok' ? { state: 'connected', detail: 'Podcast Index answered a search' } : { state: HEALTH_OF[v] || 'unavailable', detail: 'Podcast Index ' + SAID[v] + (st ? ' (' + st + ')' : '') };
+  }
+  // Brave and Clay: no free question; a key is "not checked" until it is used
+  out.brave = c.braveKey ? { state: 'not_checked', detail: 'checking Brave would spend a search; the next search says whether it works' }
+    : { state: 'credential_missing', detail: 'optional and not needed: discovery runs on your lists, directories and Podcast Index' };
+  out.clay = c.clayWebhookUrl && clayUrlOk(c.clayWebhookUrl) ? { state: 'not_checked', detail: 'a check would post a row to the table; the next handover says whether it works' }
+    : { state: 'credential_missing', detail: 'optional: CLAY_WEBHOOK_URL is not set' };
+  for (const [provider, h] of Object.entries(out)) await health(x, provider, h.state, h.detail, h.quota ? { quota: h.quota } : undefined);
+  await ledger(x, calls);
+  return out;
 }
 
 // ── one candidate or prospect read, once its run has begun ─────────────────
@@ -1074,15 +1672,25 @@ export async function runVerify(x: Ctx, n: number): Promise<{ status: number; bo
   }
   const rows = (await db(x, 'growth_outbound_verify_queue', { p_limit: Math.min(Math.max(n | 0, 1), 25) })) || [];
   const results: any[] = [];
+  let unanswered = 0;
   for (const r of Array.isArray(rows) ? rows : []) {
-    if (timeLeft(x) < 10_000 || !(await spend(x, 'email_verifier'))) break;
-    const st = await HUNTER_VERIFIER.verify(x.c, r.email);
+    if (timeLeft(x) < 10_000) break;
+    const st = await verifyOne(x, r.email);
+    // no verdict (a refused key, a spent allowance, "still checking"): nothing
+    // recorded about the address, so it stays in the queue for another day
+    if (!st) {
+      if (x.budgetOut && x.budgetOut.has('email_verifier')) break;
+      unanswered++;
+      if (isRefused(x, 'hunter') || (x.hunter && x.hunter.stopped) || (x.hunter && x.hunter.verifications === 0)) break;
+      continue;
+    }
     const ev = st === 'valid' ? [{ field_name: 'email', claim: r.email, source_url: 'https://hunter.io', source_kind: 'provider_verified' }] : [];
     const res = await db(x, 'growth_outbound_research_ingest', { p_run: x.run, p_candidate: null, p_prospect: r.prospect_id,
       p_collector: 'provider:hunter_verifier', p: { evidence: ev, email_verdicts: [{ email: r.email, status: st }] } });
     results.push({ prospect_id: r.prospect_id, verdict: st, status: res?.status || null, ok: !!(res && res.ok) });
   }
-  const counts = { asked: results.length, valid: results.filter((v) => v.verdict === 'valid').length, outcome: results.length ? 'verified' : 'queue_empty' };
+  const counts = { asked: results.length, valid: results.filter((v) => v.verdict === 'valid').length, unanswered,
+    outcome: results.length ? 'verified' : unanswered ? 'no_verdict' : 'queue_empty' };
   await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'done', p_counts: counts, p_error: x.notes.join('; ') || null });
   return { status: 200, body: { ok: true, run_id: x.run, ...counts, results, spent: x.spent, notes: x.notes } };
 }
@@ -1117,14 +1725,11 @@ async function scheduled(req: Request, c: Cfg, ticket: string): Promise<Response
   x.run = plan.run_id;
   x.shared = new Set((Array.isArray(plan.shared_sites) ? plan.shared_sites : []).map((s: string) => String(s).toLowerCase()));
   x.sw = plan.providers && typeof plan.providers === 'object' ? plan.providers : {};
+  x.partnerOutreach = plan.partner_outreach === true;
   if (plan.kind === 'discover') {
-    const on = providersOn(c, x.sw);
-    if (!on.brave && !on.apollo_search) {
-      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {},
-        p_error: !c.braveKey && !c.apolloKey ? 'search is not set up (BRAVE_SEARCH_API_KEY)' : 'every search provider is switched off' });
-      return json(req, c, { ok: false, reason: 'search_not_configured', run_id: x.run }, 503);
-    }
-    const out = await runDiscover(x, (Array.isArray(plan.queries) ? plan.queries : []).slice(0, 10));
+    // (Phase 13) every source that is on; with none, the run is done and says so
+    const out = await runDiscover(x, (Array.isArray(plan.queries) ? plan.queries : []).slice(0, 10),
+      (Array.isArray(plan.directories) ? plan.directories : []).slice(0, 10));
     return json(req, c, out.body, out.status);
   }
   if (plan.kind === 'research' && plan.input && plan.input.verify) {
@@ -1160,30 +1765,88 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
   const who = await AUTH.requireOutboundOwner(req, { url: c.url, anonKey: c.anonKey, fetch: c.fetch, timeoutMs: c.timeoutMs });
   if (!who.ok) return json(req, c, { ok: false, reason: who.reason }, who.status);
   const x: Ctx = { c, authz: who.authz, run: null, spent: {}, notes: [], started: Date.now(), robots: new Map(), shared: new Set() };
-  const providers = { search: !!(c.braveKey || c.apolloKey), email: !!(c.hunterKey || c.apolloKey), llm: !!c.anthropicKey, fetch: true, model: c.model };
+  const providers = { search: !!(c.braveKey || c.apolloKey || (c.podcastIndexKey && c.podcastIndexSecret)), email: !!(c.hunterKey || c.apolloKey),
+    llm: !!c.anthropicKey, fetch: true, model: c.model, imports: true, directories: true };
   try {
     if (action === 'status') {
       const ov = await db(x, 'growth_outbound_research_overview', {});
       const sw = ov && ov.providers && typeof ov.providers === 'object' ? ov.providers : {};
       const on = providersOn(c, sw);
-      return json(req, c, { ok: true, overview: ov, providers: { ...providers, search: on.brave || on.apollo_search, email: on.hunter || on.apollo,
-        enrichment: on.clay, detail: providerStatus(c, sw) } });
+      return json(req, c, { ok: true, overview: ov, providers: { ...providers, search: on.brave || on.apollo_search || on.podcastindex, email: on.hunter || on.apollo,
+        enrichment: on.clay, organizations: on.apollo_org, detail: providerStatus(c, sw), health: (ov && ov.health) || {} } });
+    }
+    if (action === 'health') {
+      const h = await checkHealth(x);
+      return json(req, c, { ok: true, health: h, providers: providerStatus(c, null) });
     }
     if (action === 'discover') {
       const q = typeof body.query === 'string' ? body.query.replace(/\s+/g, ' ').trim() : '';
       if (q && (q.length < 3 || q.length > 200)) return json(req, c, { ok: false, reason: 'bad_request', detail: 'a search of 3 to 200 characters' }, 400);
-      if (!providers.search) return json(req, c, { ok: false, reason: 'search_not_configured', providers }, 503);
+      // a typed search needs a search provider; the saved run also reads the directories
+      if (q && !providers.search) return json(req, c, { ok: false, reason: 'search_not_configured', detail: NO_SOURCE, providers }, 503);
       const b = await db(x, 'growth_outbound_research_begin', { p_kind: 'discover', p_input: q ? { query: q } : { saved: true } });
       if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
       x.run = b.run_id;
       x.sw = b.providers && typeof b.providers === 'object' ? b.providers : {};
+      x.partnerOutreach = b.partner_outreach === true;
+      x.shared = new Set((Array.isArray(b.shared_sites) ? b.shared_sites : []).map((s: string) => String(s).toLowerCase()));
       const on = providersOn(c, x.sw);
-      if (!on.brave && !on.apollo_search) {
+      if (q && !on.brave && !on.apollo_search && !on.podcastindex) {
         await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'every search provider is switched off' });
         return json(req, c, { ok: false, reason: 'search_not_configured', detail: 'every search provider is switched off', providers }, 503);
       }
-      const out = await runDiscover(x, q ? [q] : (Array.isArray(b.queries) ? b.queries.slice(0, 10) : []));
+      const out = await runDiscover(x, q ? [q] : (Array.isArray(b.queries) ? b.queries.slice(0, 10) : []),
+        q ? [] : (Array.isArray(b.directories) ? b.directories.slice(0, 10) : []));
       return json(req, c, out.body, out.status);
+    }
+    if (action === 'expand') {
+      // one directory page the owner chose, read now; they confirm its terms allow it
+      const url = typeof body.url === 'string' ? body.url.trim() : '';
+      let ok = false;
+      try { const u = new URL(url); ok = u.protocol === 'https:' && hostAllowed(u.hostname) && url.length <= 500; } catch (_) { ok = false; }
+      if (!ok) return json(req, c, { ok: false, reason: 'bad_request', detail: 'one https:// page address' }, 400);
+      if (body.permitted !== true) return json(req, c, { ok: false, reason: 'permission_unconfirmed', detail: 'confirm that this page\'s terms allow reusing its links' }, 400);
+      const seg = typeof body.segment === 'string' && /^(customer|partnership|media_partner|affiliate|business_partner)$/.test(body.segment) ? body.segment : null;
+      const b = await db(x, 'growth_outbound_research_begin', { p_kind: 'discover', p_input: { directory: url, permitted: true, ...(seg ? { segment: seg } : {}) } });
+      if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
+      x.run = b.run_id;
+      x.sw = b.providers && typeof b.providers === 'object' ? b.providers : {};
+      x.partnerOutreach = b.partner_outreach === true;
+      x.shared = new Set((Array.isArray(b.shared_sites) ? b.shared_sites : []).map((s: string) => String(s).toLowerCase()));
+      const out = await runDiscover(x, [], [{ url, segment: seg }]);
+      return json(req, c, out.body, out.status);
+    }
+    if (action === 'apollo_org') {
+      const raw = Array.isArray(body.domains) ? body.domains : [];
+      const domains = [...new Set(raw.map((d: unknown) => String(d || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''))
+        .filter((d: string) => /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,63}$/.test(d) && hostAllowed(d)))] as string[];
+      if (!domains.length || raw.length > 10) return json(req, c, { ok: false, reason: 'bad_request', detail: '1 to 10 company domains' }, 400);
+      const b = await db(x, 'growth_outbound_research_begin', { p_kind: 'discover', p_input: { apollo_org: domains } });
+      if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
+      x.run = b.run_id;
+      x.sw = b.providers && typeof b.providers === 'object' ? b.providers : {};
+      x.partnerOutreach = b.partner_outreach === true;
+      if (!providersOn(c, x.sw).apollo_org) {
+        const why = !c.apolloKey ? 'APOLLO_API_KEY is not set' : 'Apollo\'s organization lookup is switched off (Discover and research → Providers)';
+        await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: why });
+        return json(req, c, { ok: false, reason: 'apollo_org_not_configured', detail: why }, 503);
+      }
+      const seg = typeof body.segment === 'string' && /^(customer|partnership|media_partner|affiliate|business_partner)$/.test(body.segment) ? body.segment : null;
+      const per: any[] = [], hits: any[] = [];
+      for (const d of domains) {
+        if (timeLeft(x) < 15_000) break;
+        const r = await apolloOrg(x, d);
+        if (r.v && r.v !== 'ok' && r.v !== 'bad_request') await providerFailed(x, 'apollo', r.v, r.status || 0, r.endpoint);
+        if (r.hit) hits.push({ ...r.hit, query: ('Apollo organization: ' + d).slice(0, 200), provider: 'apollo_org', ...(seg ? { segment: seg } : {}) });
+        per.push({ domain: d, found: !!r.hit, ...(r.why ? { note: r.why } : {}) });
+        if (isRefused(x, 'apollo') || isRefused(x, 'apollo', 'organizations/enrich')) break;
+      }
+      const rec = hits.length ? await db(x, 'growth_outbound_candidates_record', { p_run: x.run, p_items: hits }) : {};
+      const failed = !hits.length && per.length > 0;
+      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done',
+        p_counts: { results: hits.length, new: rec?.new || 0, duplicates: rec?.duplicates || 0, outcome: 'apollo_org' },
+        p_error: failed ? (x.notes.join('; ') || per.map((p) => p.note).filter(Boolean).join('; ') || 'nothing found').slice(0, 900) : (x.notes.join('; ') || null) });
+      return json(req, c, { ok: !failed, run_id: x.run, per_domain: per, results: hits.length, new: rec?.new || 0, notes: x.notes, ...(failed ? { reason: 'nothing_found' } : {}) });
     }
     if (action === 'verify' || action === 'enrich') {
       const n = body.limit == null ? (action === 'verify' ? 5 : 10) : body.limit;
@@ -1197,6 +1860,7 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
       if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
       x.run = b.run_id;
       x.sw = b.providers && typeof b.providers === 'object' ? b.providers : {};
+      x.partnerOutreach = b.partner_outreach === true;
       if (action === 'verify') { const out = await runVerify(x, n); return json(req, c, out.body, out.status); }
       if (!providersOn(c, x.sw).clay) {
         await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'Clay is switched off' });
@@ -1235,10 +1899,11 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
       x.run = b.run_id;
       x.shared = new Set((Array.isArray(b.shared_sites) ? b.shared_sites : []).map((s: string) => String(s).toLowerCase()));
       x.sw = b.providers && typeof b.providers === 'object' ? b.providers : {};
+      x.partnerOutreach = b.partner_outreach === true;
       const out = await runResearch(x, target);
       return json(req, c, out.body, out.status);
     }
-    return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status, discover, research, verify or enrich' }, 400);
+    return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status, health, discover, expand, apollo_org, research, verify or enrich' }, 400);
   } catch (e: any) {
     return refusedResponse(req, c, e);
   }

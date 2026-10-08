@@ -58,7 +58,7 @@ const own = (sql) => j(db.as(OWNER, sql));
 const J = (o) => lit(JSON.stringify(o)) + '::jsonb';
 const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
 const settings = (o) => own(`select public.growth_outbound_settings_update(${J(o)});`);
-// a morning hour in New York (the default zone): 2026-10-08 07:30 EDT = 11:30 UTC
+// a morning hour in Chicago (the default zone since Phase 13): 2026-10-08 06:30 CDT = 11:30 UTC
 const MORNING = `'2026-10-08 11:30:00+00'::timestamptz`;
 const EVENING = `'2026-10-08 23:30:00+00'::timestamptz`;
 // a fixed zone where the real clock reads 12:xx, so a run started now is "this morning" there
@@ -97,11 +97,11 @@ try {
   chk('T … in the scheduler\'s record', sc.last_action === 'idle' && sc.last_reason === 'automation is off' && !!sc.last_tick_at && sc.ticks === 1, sc);
   settings({ automation_enabled: true, discovery_config: { queries: ['cfb power ratings newsletter'] } });
   r = tick(EVENING);
-  chk('T outside the morning window (7:30 pm in New York): nothing', r.action === 'idle' && /^outside the morning window \(6:00, 4 hours, America\/New_York\)$/.test(r.reason) && calls().length === 0, r);
+  chk('T outside the morning window (6:30 pm in Chicago, the owner\'s default zone): nothing', r.action === 'idle' && /^outside the morning window \(6:00, 4 hours, America\/Chicago\)$/.test(r.reason) && calls().length === 0, r);
   let p = plan(MORNING);
-  chk('T the plan, in the owner\'s time zone: 07:30 in New York is inside the window', p.in_window === true && p.local_time === '2026-10-08 07:30'
-    && p.timezone === 'America/New_York' && p.step.kind === 'discover' && p.today.searched === false, p);
-  // "today" is the owner's day: a search at 22:00 New York time the evening before (03:00 UTC, the same UTC day) was yesterday's
+  chk('T the plan, in the owner\'s time zone: 06:30 in Chicago is inside the window', p.in_window === true && p.local_time === '2026-10-08 06:30'
+    && p.timezone === 'America/Chicago' && p.step.kind === 'discover' && p.today.searched === false, p);
+  // "today" is the owner's day: a search at 21:00 Chicago time the evening before (03:00 UTC, the same UTC day) was yesterday's
   one(`insert into growth_outbound.research_runs (kind, started_by, input, ticket_sha256, ticket_expires_at, status, finished_at, started_at)
        values ('discover', 'schedule', '{}', ${lit(sha('yesterday'))}, '2020-01-15 03:10+00', 'done', '2020-01-15 03:05+00', '2020-01-15 03:00+00');`);
   p = plan(`'2020-01-15 13:30:00+00'::timestamptz`);
@@ -149,9 +149,17 @@ try {
   chk('K the ticket\'s plan: its run, its kind, its input', r.ok === true && r.run_id === R1 && r.kind === 'discover' && r.input.saved === true, r);
   for (const name of ['growth_outbound_draft_approve', 'growth_outbound_drafts_approve_batch', 'growth_outbound_send_claim', 'growth_outbound_send_result',
     'growth_outbound_draft_edit', 'growth_outbound_draft_reject', 'growth_outbound_settings_update', 'growth_outbound_suppress', 'growth_outbound_research_begin',
-    'growth_outbound_prospect_set_status', 'growth_outbound_draft_propose', 'growth_outbound_page_record', 'growth_outbound_overview', 'nonsense']) {
+    'growth_outbound_prospect_set_status', 'growth_outbound_draft_propose', 'growth_outbound_research_ingest', 'growth_outbound_candidates_import',
+    'growth_outbound_optout_check_record', 'growth_outbound_overview', 'nonsense']) {
     r = door(TK1, name, {});
     chk('K a discover ticket opens nothing else: ' + name, r.ok === false && r.reason === 'not_allowed', r);
+  }
+  // (Phase 13) a discover run may store the directory pages it reads, keep a
+  // provider's answer for a while, and record what its providers said and cost
+  for (const name of ['growth_outbound_page_record', 'growth_outbound_cache_get', 'growth_outbound_cache_put',
+    'growth_outbound_provider_health_record', 'growth_outbound_provider_record']) {
+    r = door(TK1, name, {});
+    chk('K … a discover ticket may reach ' + name + ' (and it still checks its input)', !(r && r.reason === 'not_allowed'), r);
   }
   r = door(TK1, 'growth_outbound_research_spend', { p_run: R1 + 1000, p_provider: 'search' });
   chk('K a ticket acts for its own run only', r.ok === false && r.reason === 'not_allowed' && /its own run only/.test(r.detail), r);

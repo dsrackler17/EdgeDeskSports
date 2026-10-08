@@ -156,6 +156,8 @@ try {
   settings({ digest_enabled: true });
 
   /* ══ P. THE PLAN ════════════════════════════════════════════════════════ */
+  // the times below are New York's: the owner's zone is set to it (the default is America/Chicago since Phase 13)
+  settings({ automation_timezone: 'America/New_York' });
   let p = dplan(NY_0730);
   chk('P inside the window with the morning run off, and nothing waiting for review: skip (said once)', p.action === 'skip' && p.waiting === 0
     && p.day === '2026-10-08' && p.in_window === true && /nothing waits for review/.test(p.reason), p);

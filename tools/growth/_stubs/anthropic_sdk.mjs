@@ -11,5 +11,12 @@ export default class Anthropic {
     };
     this.beta = { messages: { create } };
     this.messages = { create };
+    // (Phase 13) the free model lookup the health check uses: globalThis.__claude_models
+    // answers it (throw an error with a status to refuse); unset, the model is there
+    this.models = { retrieve: async (id) => {
+      const h = globalThis.__claude_models;
+      if (typeof h !== 'function') return { id, type: 'model' };
+      return h(id, opts);
+    } };
   }
 }

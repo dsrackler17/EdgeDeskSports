@@ -77,4 +77,20 @@ function draft(o) {
     ${evaluate(o.prospect)}`;
 }
 
-module.exports = { strong, weak, draft, evaluate, FIT_STRONG };
+/* (Phase 13) Live sending needs the opt-out endpoint CHECKED at its current
+   base and Resend's webhook PROVEN by a signed event received since the
+   secret was set. A suite that sends live emails stands both in, exactly as
+   the database would hold them after the owner's "Check the opt-out endpoint"
+   and a delivered test send. Run it after the base and the secret are set. */
+function liveReady() {
+  return `
+    update growth_outbound.settings
+       set optout_check = jsonb_build_object('base', unsubscribe_url_base, 'ok', true, 'redirect_ok', true, 'post_ok', true,
+                                             'detail', 'stood in by the test suite'),
+           optout_checked_at = now()
+     where id = 1 and unsubscribe_url_base is not null;
+    insert into growth_outbound.provider_events (event_id, event_type, outcome)
+    values ('evt_ready_' || gen_random_uuid(), 'email.delivered', 'not_outbound');`;
+}
+
+module.exports = { strong, weak, draft, evaluate, FIT_STRONG, liveReady };

@@ -89,8 +89,9 @@ const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 {
   const ENV = {
     // Phase 12: Apollo (optional) and Clay's table webhook (optional) join the research engine's providers
+    // Phase 13: Podcast Index (free; optional) joins them
     growth_outbound_research: ['ANTHROPIC_API_KEY', 'APOLLO_API_KEY', 'BRAVE_SEARCH_API_KEY', 'CLAY_WEBHOOK_TOKEN', 'CLAY_WEBHOOK_URL',
-      'HUNTER_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_RESEARCH_MODEL', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
+      'HUNTER_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_RESEARCH_MODEL', 'PODCASTINDEX_API_KEY', 'PODCASTINDEX_API_SECRET', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_draft: ['ANTHROPIC_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_DRAFT_MODEL', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_send: ['OUTBOUND_ALLOWED_ORIGINS', 'RESEND_API_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_webhook: ['SUPABASE_ANON_KEY', 'SUPABASE_URL'],

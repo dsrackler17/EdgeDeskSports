@@ -48,7 +48,7 @@ const RULES = [
   ['WEBHOOK_SIGNING_SECRET', /\bwhsec_[A-Za-z0-9+/]{24,}={0,2}/g, 0],
   ['DB_URL_WITH_PASSWORD', /\bpostgres(ql)?:\/\/[^:\s'"@/]+:([^@\s'"]{6,})@[^\s'"]+/g, 2],
   ['API_KEY_IN_URL', /[?&](api[_-]?key|apikey|access_token|token)=([A-Za-z0-9_-]{24,})/gi, 2],
-  ['ASSIGNED_SECRET', /\b(service_role_key|SUPABASE_SERVICE_ROLE_KEY|SB_SERVICE_ROLE|ODDS_API_KEY|ANTHROPIC_API_KEY|CRON_SECRET|STRIPE_SECRET_KEY|GH_TOKEN|GITHUB_TOKEN|RESEND_API_KEY|BRAVE_SEARCH_API_KEY|BRAVE_API_KEY|HUNTER_API_KEY|APOLLO_API_KEY|CLAY_WEBHOOK_TOKEN|CLAY_WEBHOOK_URL|password|passwd)\b\s*[:=]\s*['"]([^'"\s]{12,})['"]/gi, 2],
+  ['ASSIGNED_SECRET', /\b(service_role_key|SUPABASE_SERVICE_ROLE_KEY|SB_SERVICE_ROLE|ODDS_API_KEY|ANTHROPIC_API_KEY|CRON_SECRET|STRIPE_SECRET_KEY|GH_TOKEN|GITHUB_TOKEN|RESEND_API_KEY|BRAVE_SEARCH_API_KEY|BRAVE_API_KEY|HUNTER_API_KEY|APOLLO_API_KEY|CLAY_WEBHOOK_TOKEN|CLAY_WEBHOOK_URL|PODCASTINDEX_API_KEY|PODCASTINDEX_API_SECRET|password|passwd)\b\s*[:=]\s*['"]([^'"\s]{12,})['"]/gi, 2],
 ];
 const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]{10,}\b/g;
 const PLACEHOLDER = /x{4,}|X{4,}|<[^>]+>|\$\{|your[_-]?|example|placeholder|dummy|redacted|\*{4,}|\.\.\.|env(Get)?\(|process\.env|Deno\.env|secrets\./i;

@@ -121,7 +121,7 @@ const NOEMAIL = `<html><head><title>Lee Lab</title></head><body><p>Lee Live buil
 const SITES = () => ({
   'https://cfbnumbers.io/': { body: HOME }, 'https://cfbnumbers.io/about': { body: ABOUT }, 'https://cfbnumbers.io/contact': { body: '<p>Write to Pat.</p>' },
   'https://leelab.net/': { body: NOEMAIL }, 'https://leelab.net/about': { body: '<p>About Lee Live. Lee Live runs Lee Lab.</p>' },
-  'https://touts.org/': { body: '<p>GUARANTEED LOCKS! Buy our VIP picks now. 100% winners.</p>' },
+  'https://touts.org/': { body: '<p>GUARANTEED NFL LOCKS! Buy our VIP picks now. 100% winners every football Sunday.</p>' },
 });
 const CLAUDE_OK = (facts, extra) => (req) => { CLAUDE_REQS.push(req); return { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(Object.assign({
   relevant: true, reason: 'a CFB modeler', prospect_type: 'cfb_analyst', sports: ['CFB'], facts, fit_factors: [], own_profiles: [] }, extra || {})) }] }; };
@@ -276,6 +276,9 @@ const webCalls = (host) => LOG.filter((e) => e.host === host);
       { value: 'sam@leelab.net', first_name: 'Sam', last_name: 'Other', sources: [{ uri: 'https://leelab.net/team' }] },
       { value: 'lee@leelab.net', first_name: 'Lee', last_name: 'Live', confidence: 94, sources: [{ uri: 'https://leelab.net/about', extracted_on: '2026-09-01' }] }] } });
     HUNTER_V = () => jres(200, { data: { status: 'accept_all' } });
+    // (Phase 13) Hunter's first answer for leelab.net (nobody) is kept for 14
+    // days so it is not paid for twice; here that time has passed
+    one(`delete from growth_outbound.provider_cache where provider = 'hunter_domain_search';`);
     x = await run({ action: 'research', prospect_id: LEE }, cfgOf({ anthropicKey: '' }));
     const hd = webCalls('api.hunter.io').find((e) => /domain-search/.test(e.url));
     chk('R research again for a known prospect adds to them — no new prospect', x.b.ok === true && x.b.outcome === 'added' && x.b.prospect_id === LEE
@@ -425,8 +428,12 @@ const webCalls = (host) => LOG.filter((e) => e.host === host);
       && one(`select status || '|' || (counts->>'outcome') from growth_outbound.research_runs where id = ${tk.id};`) === 'done|queue_empty', x.b);
     tk = mint('discover', { saved: true });
     x = await run({ action: 'scheduled', ticket: tk.t }, cfgOf({ braveKey: '' }), { token: null });
-    chk('M no search key: the morning\'s search fails, said, and the run is marked so', x.r.status === 503 && x.b.reason === 'search_not_configured'
-      && one(`select status || '|' || error from growth_outbound.research_runs where id = ${tk.id};`) === 'failed|search is not set up (BRAVE_SEARCH_API_KEY)', x.b);
+    // (Phase 13) no paid search is required: with no source at all the run is
+    // DONE (not failed, so it never counts toward "three failed in a row") and
+    // says which free sources to set up
+    chk('M no search key and no other source: said in words, and the run is done with nothing found (not a failure)', x.r.status === 200 && x.b.reason === 'search_not_configured'
+      && /PODCASTINDEX_API_KEY/.test(x.b.detail) && /Brave is optional/.test(x.b.detail)
+      && one(`select status || '|' || (counts->>'outcome') from growth_outbound.research_runs where id = ${tk.id};`) === 'done|no_source_configured', x.b);
     tk = mint('research', { next: true });
     x = await run({ action: 'scheduled', ticket: tk.t }, undefined, { token: OWNER_T });
     chk('M a token sent along changes nothing: the ticket is the only credential, used as anon', x.b.reason === 'queue_empty'
