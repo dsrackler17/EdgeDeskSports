@@ -145,6 +145,7 @@ a{color:var(--accent)}
       <button type="button" role="tab" data-tab="gen">Article generator</button>
       <button type="button" role="tab" data-tab="review">Editorial review</button>
       <button type="button" role="tab" data-tab="pub">Publishing queue</button>
+      <button type="button" role="tab" data-tab="fp">EdgeDesk articles</button>
       <button type="button" role="tab" data-tab="perf">Performance</button>
       <button type="button" role="tab" data-tab="pubs">Publishers</button>
       <button type="button" role="tab" data-tab="set">Settings &amp; log</button>
@@ -210,6 +211,14 @@ a{color:var(--accent)}
     </section>
 
     <!-- ── PERFORMANCE ───────────────────────────────────────────────── -->
+    <section id="tab-fp" role="tabpanel" class="hide">
+      <h2>EdgeDesk’s own articles</h2>
+      <div class="banner">Monday the Weekend Model Review, Wednesday the storylines, Friday the research preview — at most three a week, on edgedesksports.com, in Central Time. In <b>dry run</b> (the default) each slot is built and checked against twelve gates and kept here, and nothing is published. In <b>auto</b>, an article that clears all twelve is published; anything less is <b>held for your review</b>. Publisher articles are unaffected: they still need your approval and your send.</div>
+      <div class="card" id="fpSettings"></div>
+      <div id="fpList"><p class="note">Loading…</p></div>
+      <div id="fpDetail"></div>
+    </section>
+
     <section id="tab-perf" role="tabpanel" class="hide">
       <h2>Business scorecard</h2>
       <div id="scOut"><p class="note">Loading…</p></div>
@@ -265,7 +274,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 </script>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/lib/content_engine.js?v=20261009a"></script>
-<script src="/admin/content/content.js?v=20261009a"></script>
+<script src="/lib/content_engine.js?v=20261009b"></script>
+<script src="/admin/content/content.js?v=20261009b"></script>
 </body>
 </html>

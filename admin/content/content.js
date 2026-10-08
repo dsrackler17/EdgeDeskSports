@@ -91,7 +91,7 @@
   $('signOut').onclick = signOutNow; $('gOut').onclick = signOutNow;
 
   /* ── tabs ──────────────────────────────────────────────────────────── */
-  var LOADERS = { opps: loadOpps, gen: fillGenerator, review: loadReview, pub: loadQueue, perf: loadPerf, pubs: loadPublishers, set: loadSettings };
+  var LOADERS = { opps: loadOpps, gen: fillGenerator, review: loadReview, pub: loadQueue, fp: loadFirstParty, perf: loadPerf, pubs: loadPublishers, set: loadSettings };
   function tab(name) {
     ST.tab = name;
     document.querySelectorAll('.tabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === name); });
@@ -846,6 +846,80 @@
       say('qMsg', 'err', (why != null ? why : 'Not sent: ' + (r && r.reason) + '. ') + (r && r.detail ? r.detail : ''));
     } catch (e) { fail('qMsg', e); }
     finally { btn.disabled = false; }
+  }
+
+  /* ======================================================================
+     EDGEDESK ARTICLES — the Monday/Wednesday/Friday features
+     (tools/editorial/features.js). The owner sets the mode, reads every
+     slot with its twelve gates, previews the article, and approves or
+     rejects what was held. The database enforces every rule; this page
+     only asks.
+     ====================================================================== */
+  var FP_STATUS = { published: 'ok', scheduled: 'ok', approved: 'ok', dry_run: '', held: 'warn', skipped: '', rejected: 'bad' };
+  var FP_LABEL = { published: 'published', scheduled: 'scheduled', approved: 'approved — publishes on the next run', dry_run: 'dry run', held: 'held for review', skipped: 'skipped', rejected: 'rejected' };
+  async function loadFirstParty() {
+    await loadOverview();
+    var st = ST.overview.settings || {};
+    var mode = st.fp_mode || 'dry_run';
+    $('fpSettings').innerHTML = '<div class="row" style="align-items:flex-end"><div class="f" style="max-width:340px"><label for="fpMode">Mode</label><select id="fpMode">'
+      + [['off', 'Off — nothing runs'], ['dry_run', 'Dry run — build and check, publish nothing'], ['auto', 'Auto — publish what clears all twelve gates']].map(function (m) { return '<option value="' + m[0] + '"' + (m[0] === mode ? ' selected' : '') + '>' + esc(m[1]) + '</option>'; }).join('') + '</select></div>'
+      + '<div class="f" style="max-width:150px"><label for="fpHour">Publish hour (CT)</label><input id="fpHour" type="number" min="5" max="20" value="' + esc(st.fp_publish_hour_ct || 7) + '"></div>'
+      + '<div class="f" style="max-width:150px"><label for="fpMax">At most a week</label><input id="fpMax" type="number" min="0" max="3" value="' + esc(st.fp_max_per_week != null ? st.fp_max_per_week : 3) + '"></div>'
+      + '<div class="f" style="flex:0 0 auto"><button id="fpSave" type="button">Save</button></div></div><div class="msg" id="fpMsg"></div>'
+      + '<p class="note">The job runs on Monday, Wednesday and Friday mornings (.github/workflows/edgedesk-features.yml) and once on other days to publish what you approved. A published article is one file the next site build renders, usually within a quarter hour.</p>';
+    $('fpSave').onclick = async function () {
+      var m = $('fpMode').value;
+      if (m === 'auto' && mode !== 'auto' && !window.confirm('Turn on automatic publishing?\n\nArticles that clear all twelve gates will be published on edgedesksports.com without asking you. Anything less is held here for your review.')) return;
+      try {
+        var r = await rpc('content_engine_fp_settings_save', { p: { fp_mode: m, fp_publish_hour_ct: +$('fpHour').value, fp_max_per_week: +$('fpMax').value } });
+        say('fpMsg', r.ok ? 'ok' : 'err', r.ok ? 'Saved: ' + r.settings.mode + ', ' + r.settings.publish_hour_ct + ':00 CT, at most ' + r.settings.max_per_week + ' a week.' : 'Not saved: ' + (r.detail || r.reason));
+        if (r.ok) await loadOverview();
+      } catch (e) { fail('fpMsg', e); }
+    };
+    var list = await rpc('content_engine_fp_list', { p_limit: 40 });
+    ST.fp = list;
+    $('fpList').innerHTML = list.length ? '<div class="card tw"><table><tr><th>Slot</th><th>Article</th><th>Status</th><th>Gates</th><th>Updated</th><th></th></tr>' + list.map(function (f) {
+      var g = f.gates || [], okN = g.filter(function (x) { return x.ok; }).length;
+      return '<tr><td>' + esc(f.slot_date) + ' · ' + esc(f.kind.replace(/_/g, ' ')) + '</td><td>' + esc(f.title || '—') + (f.url && f.status === 'published' ? ' ' + link(f.url, '↗') : '') + '</td>'
+        + '<td><span class="pill ' + (FP_STATUS[f.status] || '') + '">' + esc(FP_LABEL[f.status] || f.status) + '</span>' + (f.reason ? '<div class="sub dim">' + esc(f.reason) + '</div>' : '') + '</td>'
+        + '<td>' + (g.length ? '<span class="pill ' + (okN === 12 ? 'ok' : 'warn') + '">' + okN + ' / 12</span>' : '—') + '</td><td>' + esc(ago(f.updated_at)) + '</td>'
+        + '<td>' + (f.article ? '<button class="sm" data-fp="' + esc(f.id) + '">Open</button>' : '') + '</td></tr>';
+    }).join('') + '</table></div>' : '<p class="note">No slot has run yet. The first run is the next Monday, Wednesday or Friday morning.</p>';
+  }
+  $('fpList').onclick = function (ev) { var b = ev.target.closest('button[data-fp]'); if (b) openFirstParty(b.getAttribute('data-fp')); };
+  function openFirstParty(id) {
+    var f = (ST.fp || []).filter(function (x) { return x.id === id; })[0]; if (!f || !f.article) return;
+    var rec = f.article.record || {};
+    var gates = (f.gates || []).map(function (g) {
+      return '<li><span class="pill ' + (g.ok ? 'ok' : 'bad') + '">' + (g.ok ? 'pass' : 'fail') + '</span><div><div>' + esc(g.label) + '</div>' + (g.detail ? '<div class="d">' + esc(g.detail) + '</div>' : '') + '</div></li>';
+    }).join('');
+    var canDecide = ['held', 'dry_run', 'scheduled'].indexOf(f.status) >= 0;
+    $('fpDetail').innerHTML = '<div class="card" style="margin-top:14px"><div class="otitle">' + esc(rec.title || f.id) + '</div>'
+      + '<div class="sub">' + esc(f.slot_date) + ' · ' + esc(rec.category || f.kind) + ' · <span class="pill ' + (FP_STATUS[f.status] || '') + '">' + esc(FP_LABEL[f.status] || f.status) + '</span>'
+      + (f.owner_note ? ' · your note: ' + esc(f.owner_note) : '') + ' · <span class="mono">' + esc(rec.canonical_url || '') + '</span></div>'
+      + '<div class="grid2"><div><h3>The twelve gates</h3><ul class="checks">' + gates + '</ul>'
+      + (canDecide ? '<div class="f" style="margin-top:10px"><label for="fpNote">Note (kept with your decision)</label><input id="fpNote" maxlength="500"></div>'
+        + '<div class="row" style="margin-top:10px"><button id="fpApprove" type="button">Approve this exact text</button><button class="d" id="fpReject" type="button">Reject</button></div>' : '')
+      + (f.status === 'rejected' || f.status === 'approved' ? '<div class="row" style="margin-top:10px"><button class="g" id="fpReopen" type="button">Reopen</button></div>' : '')
+      + '<div class="msg" id="fpDMsg"></div>'
+      + '<p class="note">An approval is for this exact text. The next run publishes it if its research is still fresh and no game in it has started; otherwise it is skipped, with the reason.</p></div>'
+      + '<div><h3>The article</h3><div class="preview"><h1>' + esc(rec.title || '') + '</h1><p><em>' + esc(rec.standfirst || '') + '</em></p>'
+      + (rec.sections || []).map(function (x) { return (x.heading ? '<h2>' + esc(x.heading) + '</h2>' : '') + CE.mdToHtml(x.body); }).join('')
+      + '<p class="sub">' + esc(rec.disclaimer || '') + '</p></div></div></div></div>';
+    function decide(d) {
+      return async function () {
+        if (d === 'approve' && !window.confirm('Approve “' + (rec.title || f.id) + '” for publication on edgedesksports.com?')) return;
+        try {
+          var r = await rpc('content_engine_fp_decide', { p_id: f.id, p_decision: d, p_note: ($('fpNote') && $('fpNote').value) || null, p_content_hash: f.content_hash });
+          say('fpDMsg', r.ok ? 'ok' : 'err', r.ok ? (d === 'approve' ? 'Approved. The next run publishes it.' : d === 'reject' ? 'Rejected.' : 'Reopened.') : 'Not done: ' + (r.detail || r.reason));
+          if (r.ok) { await loadFirstParty(); openFirstParty(f.id); }
+        } catch (e) { fail('fpDMsg', e); }
+      };
+    }
+    if ($('fpApprove')) $('fpApprove').onclick = decide('approve');
+    if ($('fpReject')) $('fpReject').onclick = decide('reject');
+    if ($('fpReopen')) $('fpReopen').onclick = decide('reopen');
+    $('fpDetail').scrollIntoView({ behavior: 'smooth' });
   }
 
   /* ======================================================================

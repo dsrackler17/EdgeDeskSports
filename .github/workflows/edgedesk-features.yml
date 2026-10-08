@@ -48,6 +48,10 @@ on:
       - 'tools/editorial/features.js'
       - 'tools/editorial/features.test.js'
       - 'tools/editorial/feature_model.js'
+      - 'tools/editorial/features_funnel.test.js'
+      - 'supabase/first_party_funnel.sql'
+      - 'lib/edgedesk_public.js'
+      - 'lib/edgedesk_track.js'
       - 'tools/articles/**'
       - 'lib/content_engine.js'
       - '.github/workflows/edgedesk-features.yml'
@@ -75,6 +79,8 @@ jobs:
         run: node tools/content/content.test.js
       - name: The features — calendar, build, twelve gates, page, job, database
         run: node tools/editorial/features.test.js
+      - name: The reader funnel — engagement (consent respected) and the Growth Console report
+        run: node tools/editorial/features_funnel.test.js
       - name: The article system the features join
         run: node tools/articles/articles.test.js
 

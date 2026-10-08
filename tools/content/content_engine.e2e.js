@@ -393,6 +393,35 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       && /AI: billed amounts you entered/.test(await P.textContent('#scOut')));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
 
+    /* 7b · EdgeDesk's own articles: a held Friday preview, its twelve gates, the owner's approval */
+    {
+      const CEL = require(path.join(ROOT, 'lib', 'content_engine.js'));
+      const ARTL = require(path.join(__dirname, 'artifacts.js'));
+      const t = Date.parse('2026-10-09T13:30:00Z'), FPX = CEL.firstParty;
+      const b = FPX.build('research_preview', CEL.research.fromArtifacts(ARTL.load(), { now: t }), { now: t });
+      const slot = FPX.slot(t);
+      const g = FPX.gates(b.article, b.o, { now: t, slot, publishedThisWeek: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], teamLists: ARTL.teamLists(ARTL.load()) });
+      const rec = FPX.record(b.article, b.o, { now: t, slot });
+      db.service(`select public.content_engine_fp_record(${PG.lit(JSON.stringify({ id: slot.id, kind: 'research_preview', slot_date: slot.date, week_of: slot.week, status: 'held', mode: 'auto',
+        title: rec.title, slug: rec.slug, url: rec.canonical_url, article: { record: rec, o: { fp_kind: 'research_preview' } }, content_hash: rec.content_hash, gates: g.gates, failed: g.failed, reason: 'held: ' + g.failed.join(', ') }))}::jsonb);`);
+      await P.click('.tabs button[data-tab="fp"]');
+      await P.waitForSelector('#fpList button[data-fp]');
+      chk('7b the EdgeDesk articles tab lists the held slot with its gates, in dry-run mode by default', /held for review/.test(await P.textContent('#fpList')) && /11 \/ 12/.test(await P.textContent('#fpList'))
+        && await P.inputValue('#fpMode') === 'dry_run', await P.textContent('#fpList'));
+      await P.click('#fpList button[data-fp]');
+      await P.waitForSelector('#fpDetail #fpApprove');
+      const det = await P.textContent('#fpDetail');
+      chk('7b the article and every gate are shown, the failing one with its reason', /At most 3 a week, one per slot/.test(det) && /3 published this week/.test(det) && det.indexOf(rec.title) >= 0);
+      if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '7-edgedesk-articles.png'), fullPage: false });
+      await P.click('#fpApprove');
+      await P.waitForFunction(() => /Approved\. The next run publishes it/.test((document.getElementById('fpDMsg') || {}).textContent || ''), null, { timeout: 15000 });
+      chk('7b the owner approves this exact text', db.sql(`select status || '|' || (decided_by is not null)::text from content_engine.first_party where id = ${PG.lit(slot.id)};`) === 'approved|true');
+      await P.selectOption('#fpMode', 'auto');
+      await P.click('#fpSave');
+      await P.waitForFunction(() => /Saved: auto/.test(document.getElementById('fpMsg').textContent), null, { timeout: 15000 });
+      chk('7b turning automatic publishing on asks first, then the database holds the mode', dialogs.some((d) => /Turn on automatic publishing\?/.test(d)) && db.sql(`select fp_mode from content_engine.settings where id = 1;`) === 'auto');
+    }
+
     /* 8 · settings, phone width, errors */
     await P.click('.tabs button[data-tab="set"]');
     await P.waitForFunction(() => /AI drafting is configured/.test(document.getElementById('aiStatus').textContent), null, { timeout: 15000 });

@@ -3255,6 +3255,11 @@
   }
   var MON3 = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
   function ctDayText(t) { var p = ctParts(t); return MON3[p.m - 1] + ' ' + p.d; }
+  /* "Fri., Oct. 9, 7 a.m. CT": the publishing schedule is Central Time */
+  function ctWhen(t) {
+    var p = ctParts(t), h = p.h % 12 || 12;
+    return ['Sun.', 'Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.'][p.wd] + ', ' + MON3[p.m - 1] + ' ' + p.d + ', ' + h + (p.mi ? ':' + (p.mi < 10 ? '0' : '') + p.mi : '') + ' ' + (p.h < 12 ? 'a.m.' : 'p.m.') + ' CT';
+  }
 
   function upcomingOf(L, now, lead) { return (L && L.games || []).filter(function (p) { var k = ts(p.kickoff); return p.model.available && p.flags.indexOf('KICKED_OFF') < 0 && k != null && k > now + (lead || 0); }); }
   /* a game whose number the market disputes by more than EdgeDesk's inputs
@@ -3571,7 +3576,7 @@
     var slot = ctx.slot;
     /* 1 the slot */
     add('slot', 'Today’s Central Time slot is this article’s', slot && slot.kind === o.fp_kind && now <= ts(slot.window_end),
-      slot ? slot.label + ' · publishes ' + whenText(ts(slot.publish_at)) + ' · window closes ' + whenText(ts(slot.window_end)) : 'no slot today');
+      slot ? slot.label + ' · publishes ' + ctWhen(ts(slot.publish_at)) + ' · window closes ' + ctWhen(ts(slot.window_end)) : 'no slot today');
     /* 2 the cadence */
     var wk = (ctx.publishedThisWeek || []).filter(function (x) { return !slot || x.id !== slot.id; });
     var dupSlot = (ctx.publishedThisWeek || []).some(function (x) { return slot && x.id === slot.id; });
