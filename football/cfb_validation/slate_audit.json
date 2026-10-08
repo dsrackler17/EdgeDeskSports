@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-08T00:07:36.086Z",
- "board_generated_at": "2026-10-08T00:07:33.901Z",
+ "generated_at": "2026-10-08T01:07:35.992Z",
+ "board_generated_at": "2026-10-08T01:07:33.629Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -56,14 +56,14 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401862794",
-   "game": "South Florida @ UTSA",
-   "kickoff": "2026-10-08T23:30:00.000Z",
+   "game_id": "401869949",
+   "game": "James Madison @ Georgia Southern",
+   "kickoff": "2026-10-10T23:30:00.000Z",
    "named": false,
-   "edgedesk": "UTSA -1.7",
-   "market": "UTSA -7.0",
+   "edgedesk": "James Madison -12.2",
+   "market": "James Madison -7.5",
    "books": 1,
-   "gap": 5.32,
+   "gap": 4.67,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -76,14 +76,14 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401858256",
-   "game": "North Carolina @ Pittsburgh",
-   "kickoff": "2026-10-10T16:00:00.000Z",
+   "game_id": "401856718",
+   "game": "Ole Miss @ Vanderbilt",
+   "kickoff": "2026-10-10T19:30:00.000Z",
    "named": false,
-   "edgedesk": "Pittsburgh -12.0",
-   "market": "Pittsburgh -4.0",
+   "edgedesk": "Vanderbilt -0.4",
+   "market": "Ole Miss -9.5",
    "books": 1,
-   "gap": 8.02,
+   "gap": 9.91,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -95,12 +95,12 @@
     {
      "requirement": "correct game",
      "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T16:00:00.000Z"
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T19:30:00.000Z"
     },
     {
      "requirement": "correct home/away",
      "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Acrisure Stadium), declared by the schedule feed"
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (FirstBank Stadium), declared by the schedule feed"
     },
     {
      "requirement": "fresh multi-book consensus",
@@ -110,17 +110,17 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.4 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 0.4 rating pts"
     },
     {
      "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Pittsburgh: Mason Heintschel (previous game) · PASS: North Carolina: Billy Edwards Jr. (previous game)"
+     "result": "FAIL",
+     "detail": "FAIL: Vanderbilt: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Pittsburgh: availability sources checked, nothing filed · PASS: North Carolina: availability sources checked, nothing filed"
+     "result": "FAIL",
+     "detail": "FAIL: Vanderbilt: availability feed fetch failed — abnormal missing data · FAIL: Ole Miss: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -129,27 +129,27 @@
     },
     {
      "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.9 pts on EdgeDesk’s side"
+     "result": "FAIL",
+     "detail": "FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.2 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.5"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; resolved QB fail; no abnormal availability fail; submodel support fail."
   },
   {
-   "game_id": "401856718",
-   "game": "Ole Miss @ Vanderbilt",
-   "kickoff": "2026-10-10T19:30:00.000Z",
+   "game_id": "401858256",
+   "game": "North Carolina @ Pittsburgh",
+   "kickoff": "2026-10-10T16:00:00.000Z",
    "named": false,
-   "edgedesk": "Vanderbilt -0.4",
-   "market": "Ole Miss -9.9",
+   "edgedesk": "Pittsburgh -12.0",
+   "market": "Pittsburgh -3.9",
    "books": 0,
-   "gap": 10.29,
+   "gap": 8.15,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
