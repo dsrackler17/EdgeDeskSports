@@ -152,6 +152,8 @@
       return getJson(A.market.replace('{season}', season).replace('{ww}', (w < 10 ? '0' : '') + w));
     }));
     art.marketSnapshots = snaps.filter(Boolean);
+    var recs = await Promise.all(['cfb', 'nfl'].map(function (lg) { return getJson(A.record.replace('{league}', lg).replace('{season}', season)); }));
+    art.records = { cfb: recs[0], nfl: recs[1] };
     return art;
   }
 
@@ -901,9 +903,19 @@
       } catch (e) { fail('ccMsg', e); }
     };
   }
+  /* the weekly summary: what worked, what failed, what to change; nothing concluded from too little data */
+  async function loadWeekly() {
+    var d = await rpc('content_engine_weekly_data', { p_days: 28 });
+    var r = CE.weeklyReview(d, { now: Date.now() }), txt = CE.weeklyReviewText(r);
+    $('wkOut').innerHTML = '<div class="card"><pre class="sub" style="white-space:pre-wrap;margin:0">' + esc(txt) + '</pre>'
+      + '<div class="row" style="margin-top:10px"><button class="g sm" id="wkCopy" type="button">Copy the summary</button></div><div class="msg" id="wkMsg"></div>'
+      + '<p class="note">Counts only. A comparison needs ' + CE.SAMPLE.articles + '+ articles and ' + CE.SAMPLE.visits + '+ visits a side; below that it is listed under “Too early to say”.</p></div>';
+    $('wkCopy').onclick = function () { copy(txt, 'wkMsg'); };
+  }
   async function loadPerf() {
     if (!ST.publishers.length) await loadPublishersData();
     loadScorecard().catch(function (e) { $('scOut').innerHTML = '<p class="note">The scorecard is unavailable: ' + esc(S.message(e)) + '</p>'; });
+    loadWeekly().catch(function (e) { $('wkOut').innerHTML = '<p class="note">The weekly summary is unavailable: ' + esc(S.message(e)) + '</p>'; });
     var p = await rpc('content_engine_performance');
     var m = p.measured || {};
     var rows = p.articles || [];

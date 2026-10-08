@@ -27,6 +27,15 @@
                    14-check gate (worst finding wins; an owner review clears
                    only a gap), repair of the flagged sections only, and the
                    AI precheck, ledger key and estimate
+     T  TEMPLATES  matchup deep dive, conference race and model vs. market:
+                   their sections, honest scenarios, no standings claims, every
+                   gap explained or called unexplained; the database accepts
+                   every kind and format the library writes
+     P  POSTGAME   the recap: the last finished week from the graded record,
+                   every score and pregame margin matching it, the loser never
+                   said to have won, graded as a record and never as a bet
+     W  WEEKLY     the summary's sample-size guards: nothing is compared or
+                   judged below its minimum sample; only numbers from the data
      E  EXPORT     Markdown and HTML: disclaimer, attribution, UTM tags on
                    EdgeDesk links only, markup escaped, https links only; the
                    campaign code survives growth.sql's utm_campaign cleaning.
@@ -108,7 +117,7 @@ chk('O keys are unique', new Set(opps.map((o) => o.key)).size === opps.length);
 chk('O every source has an https URL and a time (as the database requires)', opps.every((o) => o.sources.length && o.sources.every((s) => /^https:\/\//.test(s.url) && (s.as_of || s.published_at || s.retrieved_at))));
 chk('O formats are only those the topic can fill', opps.every((o) => o.formats.every((f) => CE.FORMATS[f]) && (o.kind !== 'weekly_preview' || o.formats[0] === o.league + '_weekly_preview')));
 chk('O publisher fit: Stadium Rant prefers the broad preview to one matchup', (() => {
-  const md = opps.find((o) => o.kind === 'market_discrepancy' && o.league === 'cfb');
+  const md = opps.find((o) => (o.kind === 'market_discrepancy' || o.kind === 'matchup_preview') && o.league === 'cfb' && o.research.games.length === 1);
   return !md || cfbPrev.scores.publisher_fit.score > md.scores.publisher_fit.score;
 })());
 chk('O the CFB weekly preview leads with the week’s biggest game', /Alabama|Georgia|Texas|Oklahoma/.test(cfbPrev.summary));
@@ -322,6 +331,104 @@ const rs = CE.ai.buildRequest(cfbPrev, { publisher: SR, format: 'cfb_weekly_prev
 chk('H AI: a section rewrite asks for one section, with a smaller output cap', rs.operation === 'section' && rs.max_tokens === CE.ai.MAX_TOKENS.section && rs.max_tokens < CE.ai.MAX_TOKENS.draft && rs.output_config.format.schema === CE.ai.SECTION_SCHEMA);
 chk('H AI: a one-section reply merges into the draft, the rest untouched', (() => { const r = CE.ai.parseReply({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ key: 'limits', heading: 'Limits', body: 'New limits.' }) }] }, a0);
   return r.ok && r.section === 'limits' && r.article.sections.filter((s) => s.key !== 'limits').every((s) => s.body === a0.sections.find((x) => x.key === s.key).body); })());
+
+/* ── T templates: deep dive, conference race, model vs. market ───────── */
+section('T templates');
+const allT = CE.discover(snap, { now: NOW, publisher: SR });
+const dd = allT.find((o) => o.kind === 'matchup_preview' && o.league === 'cfb');
+const ddN = allT.find((o) => o.kind === 'matchup_preview' && o.league === 'nfl');
+const cr = allT.find((o) => o.kind === 'conference_race');
+const mvm = allT.filter((o) => o.kind === 'market_discrepancy' && o.research.games.length > 1);
+const body = (a) => a.sections.map((s) => s.body).join('\n\n');
+chk('T the week’s two headline games become deep dives, per league', allT.filter((o) => o.kind === 'matchup_preview' && o.league === 'cfb').length === 2 && allT.filter((o) => o.kind === 'matchup_preview' && o.league === 'nfl').length === 2);
+if (dd) {
+  const a = CE.draft(dd, { publisher: SR, now: NOW });
+  chk('T deep dive: the projection, how to read it, what builds it, the unit matchup, the market and the conditions', a.format === 'matchup_deep_dive'
+    && ['the_projection', 'how_to_read', 'what_drives_it', 'matchup', 'market', 'conditions', 'limits', 'conclusion'].every((k) => a.sections.some((s) => s.key === k)), a.sections.map((s) => s.key));
+  chk('T deep dive: the typical miss frames the margin', /typical miss on a game like this is about \d+ points/.test(body(a)));
+  chk('T deep dive: a settled starter is stated as a fact, never as doubt', !/not (?:been )?confirmed|unconfirmed|uncertain/.test(a.sections.find((s) => s.key === 'personnel') ? a.sections.find((s) => s.key === 'personnel').body : ''));
+  chk('T deep dive: the keyword as people type it, in the headline and the opening', a.title.length <= 70 && CE.validate(a, dd, { publisher: SR, now: NOW, teamLists: TL }).warned.indexOf('seo_keyword') < 0, a.title);
+}
+const am = allT.find((o) => o.kind === 'matchup_preview' && /Texas A&M/.test(o.title));
+if (am) chk('T a keyword keeps the team’s name: “texas a&m”, not “texas a and m”', /^texas a&m vs /.test(am.seo.primary_keyword), am.seo.primary_keyword);
+if (ddN) {
+  const a = CE.draft(ddN, { publisher: SR, now: NOW });
+  const per = (a.sections.find((s) => s.key === 'personnel') || { body: '' }).body;
+  chk('T NFL deep dive: the starter-out re-runs are the model’s scenarios, said so, never written “Team by N”', /re-run moves the projected margin to/.test(per) && /describes the model, not a report that anyone is out/.test(per)
+    && !new RegExp(ddN.research.games[0].model.favorite + ' by ').test(per), per.slice(0, 300));
+  chk('T NFL deep dive: passes every hard check and the gate', CE.validate(a, ddN, { publisher: SR, now: NOW, teamLists: TL }).ok);
+}
+if (cr) {
+  const a = CE.draft(cr, { publisher: SR, now: NOW });
+  chk('T conference race: its own format, the top three named, the race games, what they mean', a.format === 'conference_race' && cr.research.conference_top.slice(0, 3).every((t) => body(a).indexOf(t) >= 0)
+    && ['race_games', 'implications'].every((k) => a.sections.some((s) => s.key === k)));
+  chk('T conference race: says it has no standings feed and claims no standings', /doesn’t carry a conference standings feed/.test(body(a)) && !/\b(?:first|second|third) place\b|\bleads the (?:conference|standings)\b|\bclinch/i.test(body(a)));
+  const crs = allT.filter((o) => o.kind === 'conference_race').find((o) => o.research.games.length > o.research.races.length);
+  if (crs) chk('T conference race: the other contenders’ games are in the research, so their numbers are checked', CE.draft(crs, { now: NOW }).sections.some((s) => s.key === 'contenders'));
+}
+chk('T a model-vs-market report for each league with enough gaps to explain', mvm.length >= 1 && mvm.every((o) => o.formats[0] === 'model_vs_market'));
+mvm.forEach((o) => {
+  const a = CE.draft(o, { publisher: SR, now: NOW });
+  const gaps = (a.sections.find((s) => s.key === 'the_gaps') || { body: '' }).body;
+  chk('T ' + o.league + ' model vs. market: every gap of three points or more is explained from EdgeDesk’s inputs, its unexplained share stated', o.research.games.filter((p) => p.discrepancy).slice(0, 5).every((p) => gaps.indexOf(p.away + ' at ' + p.home) >= 0)
+    && o.research.games.filter((p) => p.discrepancy && p.discrepancy.unexplained_pct != null && p.discrepancy.status !== 'EXPLAINED').slice(0, 5).every(() => /not explained by anything EdgeDesk measures/.test(gaps)));
+  chk('T ' + o.league + ' model vs. market: the pattern is counted from the data, not a story', /leans toward the home team in \w+ of these \w+ gaps/.test(body(a)) && !/sharp money|public money|the books know/i.test(body(a)));
+  chk('T ' + o.league + ' model vs. market: headline under 70 characters, keyword in it', a.title.length <= 70 && /spread predictions/i.test(a.title), a.title);
+});
+const sqlText = fs.readFileSync(path.join(ROOT, 'supabase', 'content_engine.sql'), 'utf8');
+const listOf = (re) => { const m = re.exec(sqlText); return m ? m[1].split(',').map((x) => x.trim().replace(/'/g, '')).sort() : []; };
+chk('T the database accepts every format the library writes', JSON.stringify(listOf(/add constraint articles_format_check check \(format in \(([^)]*)\)\)/)) === JSON.stringify(Object.keys(CE.FORMATS).concat(CE.FORMATS.postgame_review ? [] : ['postgame_review']).sort()),
+  listOf(/add constraint articles_format_check check \(format in \(([^)]*)\)\)/));
+chk('T … and every kind', JSON.stringify(listOf(/add constraint opportunities_kind_check check \(kind in \(([^)]*)\)\)/)) === JSON.stringify(Object.keys(CE.KINDS).concat(CE.KINDS.postgame_review ? [] : ['postgame_review']).sort()));
+
+/* ── P postgame model review: graded on the record, nothing re-scored ── */
+section('P postgame review');
+const pgs = allT.filter((o) => o.kind === 'postgame_review');
+chk('P the last finished week of each league becomes a recap', pgs.map((o) => o.key).sort().join() === 'cfb:2026:w5:postgame_review,nfl:2026:w4:postgame_review', pgs.map((o) => o.key));
+const recN = JSON.parse(fs.readFileSync(path.join(ROOT, 'record', 'football', 'nfl_2026.json'), 'utf8'));
+const wk4 = (Array.isArray(recN.games) ? recN.games : Object.values(recN.games)).filter((g) => g.week === 4 && g.grade && g.grade.status === 'GRADED');
+const pgN = pgs.find((o) => o.league === 'nfl');
+if (pgN) {
+  const a = CE.draft(pgN, { publisher: SR, now: NOW });
+  const W = pgN.research.week_record;
+  chk('P the tally is the record’s own: every graded game, right winners counted from its grades', W.games === wk4.length && W.su_w === wk4.filter((g) => g.grade.su && g.grade.su.result === 'win').length, W);
+  chk('P passes every hard check and the gate', CE.validate(a, pgN, { publisher: SR, now: NOW, teamLists: TL }).ok
+    && CE.gate(Object.assign({}, a, { format: 'postgame_review' }), pgN, gctx()).verdict !== 'BLOCKED');
+  chk('P the headline comes from the record and fits a search result', a.title.length <= 75 && /^NFL Week 4 Recap: /.test(a.title) && (a.title.match(/\d+/g) || []).every((n) => [4, W.su_w, W.su_games, W.closer, W.compared, W.games].map(String).indexOf(n) >= 0 || /\d+-\d+/.test(a.title)), a.title);
+  chk('P graded as a record, never as a betting result', /not betting advice/.test(body(a)) && /not a betting record/.test(body(a)) && !/\bunits?\b|\bprofit\b|\bcashed\b/i.test(body(a)));
+  const miss = pgN.research.results.slice().sort((x, y) => y.grade.model_err - x.grade.model_err)[0];
+  const wrongScore = (a2) => { const s2 = a2.sections.find((s) => s.key === 'misses'); s2.body = s2.body.replace(miss.final.score, (miss.final.home + miss.final.away > 40 ? '31-30' : '10-9')); return a2; };
+  const vWrong = CE.validate(wrongScore(JSON.parse(JSON.stringify(a))), pgN, { publisher: SR, now: NOW, teamLists: TL });
+  chk('P a final score that is not the record’s fails', vWrong.failed.indexOf('results_reconcile') >= 0 || vWrong.failed.indexOf('numbers_in_evidence') >= 0, vWrong.failed);
+  chk('P … and the gate blocks it', CE.gate(Object.assign(wrongScore(JSON.parse(JSON.stringify(a))), { format: 'postgame_review' }), pgN, gctx()).verdict === 'BLOCKED');
+  const loserWon = JSON.parse(JSON.stringify(a)); const ms = loserWon.sections.find((s) => s.key === 'misses');
+  ms.body = ms.body.replace(miss.final.winner + ' won', miss.final.loser + ' won');
+  chk('P the loser said to have won fails', CE.validate(loserWon, pgN, { publisher: SR, now: NOW, teamLists: TL }).failed.indexOf('results_reconcile') >= 0);
+  chk('P a misquoted pregame margin fails', (() => { const b2 = JSON.parse(JSON.stringify(a)); const s2 = b2.sections.find((s) => s.key === 'closest'); const x = pgN.research.results.find((r) => s2.body.indexOf(r.away + ' at ' + r.home) >= 0 && r.pre.favorite);
+    s2.body = s2.body.replace(new RegExp('(projected|had) ' + x.pre.favorite + ' by ' + String(x.pre.margin.toFixed(1)).replace('.', '\\.')), '$1 ' + x.pre.favorite + ' by ' + (x.pre.margin + 2).toFixed(1));
+    return CE.validate(b2, pgN, { publisher: SR, now: NOW, teamLists: TL }).failed.indexOf('results_reconcile') >= 0; })());
+  chk('P the misses are the largest model errors, the closest the smallest', (() => { const errs = pgN.research.results.map((r) => r.grade.model_err).sort((x, y) => x - y);
+    return body(a).indexOf(miss.away + ' at ' + miss.home) > body(a).indexOf('biggest misses') || a.sections.find((s) => s.key === 'misses').body.indexOf(miss.away + ' at ' + miss.home) >= 0; })());
+}
+chk('P a record with no finished week in six days writes no recap', CE.discover(CE.research.fromArtifacts(art, { now: Date.parse('2026-11-30T12:00:00Z') }), { now: Date.parse('2026-11-30T12:00:00Z') }).filter((o) => o.kind === 'postgame_review').length === 0);
+
+/* ── W the weekly summary: guards before conclusions ──────────────────── */
+section('W weekly summary');
+const WK = (arts, ai) => CE.weeklyReview({ days: 28, articles: arts, ai: ai || {}, gate_failures: {} }, { now: NOW });
+const wart = (o) => Object.assign({ title: 't', format: 'cfb_weekly_preview', first_gate: 'PASS', first_gate_blocked: [], funnel: {} }, o);
+chk('W two first drafts are too few to judge the first-pass rate', (() => { const r = WK([wart({ first_gate: 'BLOCKED', first_gate_blocked: ['projections'] }), wart({})]); return !r.recommendations.some((x) => /First drafts pass/.test(x.text)) && r.too_early.some((x) => /First-pass rate/.test(x)); })());
+chk('W three or more, under 90%: a recommendation naming the most common block', (() => { const r = WK([wart({ first_gate: 'BLOCKED', first_gate_blocked: ['projections'] }), wart({ first_gate: 'BLOCKED', first_gate_blocked: ['projections'] }), wart({})]);
+  return r.recommendations.some((x) => /33%/.test(x.text) && /Projection consistency/.test(x.text)); })());
+chk('W AI acceptance needs four calls before it is judged', WK([], { calls: 3, accepted: 0, discarded: 3 }).too_early.some((x) => /AI acceptance/.test(x)) && WK([], { calls: 4, accepted: 1, discarded: 3, wasted_usd: 0.2 }).recommendations.some((x) => /Most AI rewrites were discarded/.test(x.text)));
+chk('W no traffic data: nothing is said about traffic but that', (() => { const r = WK([wart({ sent_at: '2026-10-01T00:00:00Z', published_at: '2026-10-02T00:00:00Z' })]); return r.too_early.some((x) => /no first-party visit data/.test(x)) && !r.recommendations.some((x) => /visits/.test(x.text)); })());
+chk('W formats are compared only with three articles and fifty visits a side', (() => {
+  const pub = (f, v) => wart({ format: f, sent_at: '2026-10-01T00:00:00Z', published_at: '2026-10-02T00:00:00Z', funnel: { visits: v, signups: 2 } });
+  const few = WK([pub('cfb_weekly_preview', 40), pub('nfl_weekly_preview', 10)]);
+  const many = WK([1, 2, 3].map(() => pub('cfb_weekly_preview', 40)).concat([1, 2, 3].map(() => pub('nfl_weekly_preview', 20))));
+  return few.too_early.some((x) => /Format comparison/.test(x)) && many.recommendations.some((x) => /Weekly CFB preview/.test(x.text) && /40 against 20/.test(x.text)); })());
+chk('W a sent article unpublished after two weeks is a follow-up', WK([wart({ sent_at: '2026-09-01T00:00:00Z', publisher: 'P' })]).failed.some((x) => /sent 38 days ago/.test(x.why)));
+chk('W the text carries only numbers from the data', (() => { const t = CE.weeklyReviewText(WK([wart({ sent_at: '2026-10-01T00:00:00Z', published_at: '2026-10-02T00:00:00Z', funnel: { visits: 12, signups: 1, paid: 0 } })], { calls: 2, accepted: 1, est_usd: 0.11 }));
+  return /12 visits, 1 sign-up, 0 paid/.test(t) && /\$0\.11 estimated/.test(t) && !/NaN|undefined|null/.test(t); })());
 
 /* ── E export ─────────────────────────────────────────────────────────── */
 section('E export');

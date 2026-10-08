@@ -152,7 +152,7 @@ create table if not exists content_engine.opportunities (
   league          text not null check (league in ('cfb', 'nfl')),
   season          int,
   week            int,
-  kind            text not null check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story')),
+  kind            text not null check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story', 'matchup_preview', 'postgame_review')),
   title           text not null check (length(btrim(title)) between 5 and 240),
   angle           text,
   summary         text,
@@ -180,7 +180,7 @@ create table if not exists content_engine.articles (
   id                 uuid primary key default gen_random_uuid(),
   opportunity_id     uuid not null references content_engine.opportunities(id),
   publisher_id       uuid references content_engine.publishers(id),
-  format             text not null check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'publisher_custom')),
+  format             text not null check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'matchup_deep_dive', 'conference_race', 'model_vs_market', 'postgame_review', 'publisher_custom')),
   angle              text not null default 'full_slate' check (angle ~ '^[a-z_]{3,30}$'),
   status             text not null default 'draft' check (status in ('draft', 'in_review', 'approved', 'ready_to_send', 'sent', 'published', 'archived')),
   title              text not null check (length(btrim(title)) between 10 and 200),
@@ -219,6 +219,12 @@ create unique index if not exists articles_one_live on content_engine.articles
   (opportunity_id, coalesce(publisher_id, '00000000-0000-0000-0000-000000000000'::uuid), format, angle)
   where status <> 'archived';
 create index if not exists articles_status on content_engine.articles (status, updated_at desc);
+-- the templates added since the first install (matchup deep dive, conference
+-- race, model vs. market, postgame review): the same lists, on an existing table
+alter table content_engine.opportunities drop constraint if exists opportunities_kind_check;
+alter table content_engine.opportunities add constraint opportunities_kind_check check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story', 'matchup_preview', 'postgame_review'));
+alter table content_engine.articles drop constraint if exists articles_format_check;
+alter table content_engine.articles add constraint articles_format_check check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'matchup_deep_dive', 'conference_race', 'model_vs_market', 'postgame_review', 'publisher_custom'));
 -- the editorial gate (section 6c): the last report for this article, the
 -- version it was run on, and the owner's review acknowledgements
 alter table content_engine.articles add column if not exists gate jsonb;

@@ -4,7 +4,7 @@
 
    Every file here is an artifact another EdgeDesk pipeline already builds and
    commits (football/cfb_terminal, football/rankings, football/nfl,
-   football/injuries, articles/data). Nothing is fetched and nothing is
+   football/injuries, articles/data, record/football). Nothing is fetched and nothing is
    recomputed: lib/content_engine.js normalises what these files say.
 
    The admin page reads the same files over HTTPS from the site, which is
@@ -42,7 +42,8 @@ function load() {
     nflInjuries: readJson(A.nfl_injuries),
     marketSnapshots: marketSnapshots(season),
     published: readJson(A.published),
-    forecasts: readJson(A.forecasts)
+    forecasts: readJson(A.forecasts),
+    records: { cfb: readJson(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: readJson(A.record.replace('{league}', 'nfl').replace('{season}', season)) }
   };
 }
 
