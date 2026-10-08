@@ -228,7 +228,35 @@ budget. Each is tested and in production; the phases above compose them.
 
 ---
 
-## 5. Rollout and rollback for Phases 1–2
+## 5. What Phases 1–2 shipped (this change)
+
+| Commit | What |
+|---|---|
+| `security: AI desk refuses the public anon key…` | P0 #1 above; 13 new checks in `intel:test` §32, all failing on the old gate |
+| `today: a free Today's Games page…` | `/today/`, `football/home/schedule.json` (built by `tools/home/build_home.js`), `lib/edgedesk_flags.js` |
+| `nav: one primary navigation…` | `lib/edgedesk_nav.js` + `.css`, every public header, articles rebuilt, `tools/site/nav.test.js` |
+| `access: one map of free, paid and planned…` | `lib/edgedesk_plans.js`, `tools/site/free_access.test.js` |
+| `home: free research first` | hero (free research first, a working no-vig calculator), `#free`, the Free card, FAQ; `lib/edgedesk_home_free.js` |
+| `billing: the checkout browser suite runs again` | `tools/billing/checkout_flow.e2e.js` repaired (it failed on main) |
+
+**Measurement added without new SQL:** `tool_used` with entity `todays_games`
+(paired with page `tool:todays-games` in `/admin/acquisition/`) and
+`no_vig_home` (the hero calculator); `cta_clicked` names for every new
+action (`hero_free`, `nav_*`, `free_*`, `today_*`, `pricing_free`,
+`final_free`, `strip_how`); GA `hero_free_click` and `hero_calc_used`.
+
+**Run before merging:** `npm run site:test`, `npm run funnel:test`,
+`npm run growth:engine:test`, `npm run personal:test`, `npm run billing:test`,
+`npm run articles:test`, `npm run intel:test`, the three
+`tools/presentation/landing_*.test.js`, and with Playwright
+`tools/home/landing.e2e.js`, `tools/growth/public_pages.e2e.js`,
+`tools/billing/checkout_flow.e2e.js`.
+
+**Watch:** the landing page is at 204,496 of its 204,800-character budget
+(`landing_interaction.test.js`); the next addition to it should move
+something into a library first.
+
+## 6. Rollout and rollback for Phases 1–2
 
 - Static pages only, plus one AI function fix. No SQL changes.
 - **Deploy:** merge (GitHub Pages publishes); run *Deploy intelligence* with
