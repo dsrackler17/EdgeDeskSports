@@ -58,6 +58,15 @@
    ========================================================================== */
 'use strict';
 
+/* what may be printed to a PUBLIC Actions log about a recipient */
+function maskEmail(e) {
+  const m = /^([^@]{0,2})[^@]*@(.+)$/.exec(String(e || ''));
+  return m ? m[1] + '***@' + m[2] : '***';
+}
+function redactToken(u) {
+  return String(u || '').replace(/([?&]t=)([0-9A-Za-z_-]{4})[0-9A-Za-z_-]*/g, '$1$2…(redacted)');
+}
+
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
@@ -1260,9 +1269,14 @@ async function main() {
       });
       log('  send: ' + (res.sent ? 'SENT' : 'not sent') + (res.reason ? ' — ' + res.reason : '')
         + (res.detail ? ' (' + res.detail + ')' : ''));
-      if (res.console_log) res.console_log.forEach(b => log('    would send to ' + b.emails.join(', ')));
-      (res.test_links || []).forEach(l => log('    ' + l.email + ' unsubscribe: ' + l.unsubscribe
-        + (l.live_token ? '  [live token — this link really unsubscribes]'
+      /* THE ACTIONS LOG IS PUBLIC (the repository is public), so nothing that
+         acts on a subscriber is printed in it: addresses are masked and a
+         manage token is cut to its first four characters. A live token in a
+         public log is a working unsubscribe-and-preferences link for anyone
+         who reads it. The operator clicks the real link in the test email. */
+      if (res.console_log) res.console_log.forEach(b => log('    would send to ' + b.emails.map(maskEmail).join(', ')));
+      (res.test_links || []).forEach(l => log('    ' + maskEmail(l.email) + ' unsubscribe: ' + redactToken(l.unsubscribe)
+        + (l.live_token ? '  [live token — this link really unsubscribes; use the one in the email]'
           : '  [synthetic token — this address is not a subscriber, so the link has nothing to act on]')));
       record({ sport, phase: phase === 'test' ? 'test_send' : 'send',
         edition_key: edition.edition_key, ok: !!res.sent, reason: res.reason || null,

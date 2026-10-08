@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fair Odds Calculator — Probability to American &amp; Decimal Odds | EdgeDesk</title>
+<meta name="description" content="Free fair odds calculator: turn your own win probability into fair American and decimal odds, add a push probability for spreads, and compare against a sportsbook price to see break-even and expected value.">
+<link rel="canonical" href="https://edgedesksports.com/tools/fair-odds-calculator/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/tools/fair-odds-calculator/">
+<meta property="og:title" content="Fair Odds Calculator — EdgeDesk">
+<meta property="og:description" content="Your probability in, the fair price out — and what a sportsbook's price is worth at your number.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="Fair Odds Calculator — EdgeDesk">
+<meta name="twitter:description" content="Your probability in, the fair price out — and what a sportsbook's price is worth at your number.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "EdgeDesk Fair Odds Calculator",
+  "url": "https://edgedesksports.com/tools/fair-odds-calculator/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Converts an estimated probability into fair American and decimal odds, with an optional push probability, and computes break-even and expected value against a sportsbook price.",
+  "publisher": { "@type": "Organization", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" }
+}</script>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Free tools", "item": "https://edgedesksports.com/tools/" },
+    { "@type": "ListItem", "position": 2, "name": "Fair odds calculator", "item": "https://edgedesksports.com/tools/fair-odds-calculator/" }
+  ]
+}</script>
+</head>
+<body data-ed-page="tool:fair-odds-calculator">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Site">
+    <a href="/articles/">Research</a><a href="/tools/" class="on">Free tools</a><a href="/newsletter/">Newsletter</a><a href="/methodology/">Methodology</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="tool_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/tools/">Free tools</a> › <span aria-current="page">Fair odds calculator</span></nav>
+  <span class="ey">Free tool · research, not picks</span>
+  <h1>Fair odds calculator</h1>
+  <p class="lede">Enter how likely you think an outcome is. The calculator gives the fair price for that
+  probability in American and decimal odds — and, if you add a sportsbook’s price, the break-even probability
+  and the expected value of that price <i>at your number</i>.</p>
+
+  <section class="card" aria-labelledby="calc-h">
+    <h2 id="calc-h" style="margin-top:0">Your probability</h2>
+    <div class="grid3">
+      <div><label class="fl" for="prob">Win probability (%)</label><input type="text" id="prob" inputmode="decimal" autocomplete="off" value="55"></div>
+      <div><label class="fl" for="push">Push probability (%) · optional</label><input type="text" id="push" inputmode="decimal" autocomplete="off" placeholder="0" value=""></div>
+      <div><label class="fl" for="price">Sportsbook price · optional</label><input type="text" id="price" inputmode="decimal" autocomplete="off" placeholder="-110 or 1.91" value="-110"></div>
+    </div>
+    <p class="note">A push is a refunded bet — a spread landing exactly on a whole number. Leave it blank for a moneyline or a half-point line.</p>
+    <p class="err" id="err" role="alert" hidden></p>
+    <div class="out" id="out" aria-live="polite">
+      <noscript><p class="note">The calculator needs JavaScript. By hand: fair decimal odds = 1 ÷ probability (55% → 1.818); American odds below 2.00 = −100 ÷ (decimal − 1) → −122.</p></noscript>
+    </div>
+  </section>
+
+  <section>
+    <h2>How a fair price is worked out</h2>
+    <p>A price is <b>fair</b> when, over many bets at that probability, it would neither win nor lose money. That happens
+    when the decimal odds equal one divided by the probability: 50% is 2.00 (+100), 60% is 1.667 (−150), 40% is 2.50 (+150).</p>
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th scope="col">Step</th><th scope="col">Formula</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Fair decimal</th><td class="n">1 ÷ p &nbsp;(with a push: (1 − push) ÷ p)</td></tr>
+        <tr><th scope="row">Fair American, decimal ≥ 2.00</th><td class="n">+100 × (decimal − 1)</td></tr>
+        <tr><th scope="row">Fair American, decimal &lt; 2.00</th><td class="n">−100 ÷ (decimal − 1)</td></tr>
+        <tr><th scope="row">Break-even of a price</th><td class="n">(1 − push) ÷ decimal</td></tr>
+        <tr><th scope="row">Expected value per $100</th><td class="n">p × win − (1 − p − push) × $100</td></tr>
+      </tbody>
+    </table></div>
+    <h2>Questions</h2>
+    <h3>Where does the probability come from?</h3>
+    <p>From you. This tool does arithmetic on the number you type; it does not know anything about the game. Positive
+    expected value here means only “if your probability is right, this price pays more than it should” — which is the
+    whole question.</p>
+    <h3>Why does −110 need 52.38%?</h3>
+    <p>At −110 you risk $110 to win $100 (decimal 1.909). To break even you must win 1 ÷ 1.909 = 52.38% of the time.
+    The <a href="/tools/no-vig-calculator/">no-vig calculator</a> shows how much of that is the sportsbook’s margin.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">Your number, beside EdgeDesk’s and the market’s.</h2>
+    <p>In the terminal you can enter your own fair line for any NFL or college football game and see it next to
+    EdgeDesk’s model number and the live market, with every difference explained — and keep a journal that grades
+    your numbers against the closing line.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="tool_fair_trial">Start the 7-day free trial</a>
+      <a class="btn ghost" href="/articles/" data-ed-cta="tool_fair_research">Read free research</a></div>
+    <p class="fine">7-day free trial. $49.99/month after trial. Cancel anytime.</p>
+  </aside>
+
+  <nav class="links" aria-label="More free research">
+    <a href="/tools/no-vig-calculator/">No-vig odds calculator</a>
+    <a href="/tools/model-vs-market/">Model vs. market explorer</a>
+    <a href="/articles/">Research articles</a>
+    <a href="/newsletter/?from=tool_fair_odds">Weekly research email</a>
+  </nav>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> These tools do arithmetic on numbers you enter. Nothing here is betting advice, a prediction or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/tools/">Free tools</a><a href="/articles/">Research</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_odds_tools.js?v=1"></script>
+<script>
+(function () {
+  var T = window.EDOddsTools; if (!T) return;
+  var $ = function (id) { return document.getElementById(id); };
+  var used = false;
+  function pct(x, d) { return (x * 100).toFixed(d == null ? 2 : d) + '%'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function money(x) { return (x >= 0 ? '+' : '−') + '$' + Math.abs(x).toFixed(2); }
+  function render() {
+    var res = T.fairOdds($('prob').value, { push: $('push').value, price: $('price').value });
+    var err = $('err'), out = $('out');
+    if (!res.ok) { err.hidden = false; err.textContent = res.errors.map(function (e) { return e.error; }).join(' '); out.innerHTML = ''; return; }
+    err.hidden = true;
+    var h = '<div class="grid3">'
+      + '<div class="stat"><div class="k">Fair American</div><div class="v">' + esc(res.fair_american_display) + '</div></div>'
+      + '<div class="stat"><div class="k">Fair decimal</div><div class="v">' + res.fair_decimal.toFixed(3) + '</div></div>'
+      + '<div class="stat"><div class="k">Win · push · loss</div><div class="v" style="font-size:17px">' + pct(res.probability, 1) + ' · ' + pct(res.push, 1) + ' · ' + pct(res.loss, 1) + '</div></div>'
+      + '</div>';
+    if (res.compare) {
+      var c = res.compare, good = c.ev_per_100 > 0;
+      h += '<div class="grid3" style="margin-top:12px">'
+        + '<div class="stat"><div class="k">Price ' + esc(c.american_display) + ' breaks even at</div><div class="v">' + pct(c.break_even) + '</div></div>'
+        + '<div class="stat"><div class="k">Your edge</div><div class="v" style="color:' + (good ? 'var(--pos)' : 'var(--neg)') + '">' + (c.edge_pp >= 0 ? '+' : '−') + Math.abs(c.edge_pp).toFixed(2) + ' pp</div><div class="s">your probability minus break-even</div></div>'
+        + '<div class="stat"><div class="k">EV per $100 at your number</div><div class="v" style="color:' + (good ? 'var(--pos)' : 'var(--neg)') + '">' + money(c.ev_per_100) + '</div><div class="s">arithmetic, not a forecast</div></div>'
+        + '</div>';
+    }
+    h += '<h3>The working</h3><ol class="steps">' + res.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
+    out.innerHTML = h;
+    if (used && window.EDPublic) window.EDPublic.track('tool_used', { entity: 'fair_odds', with_price: !!res.compare, with_push: res.push > 0 });
+  }
+  ['prob', 'push', 'price'].forEach(function (id) { $(id).addEventListener('input', function () { used = true; render(); }); });
+  render();
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

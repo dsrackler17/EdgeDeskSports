@@ -38,6 +38,9 @@
 //   NEWSLETTER_GH_REPO    defaults to dsrackler17/EdgeDeskSports
 //   NEWSLETTER_WORKFLOW   defaults to newsletter.yml
 //   NEWSLETTER_DEBOUNCE_S defaults to 600
+//
+// AUTHORISATION: the caller must hold the service role, or be a signed-in
+// newsletter operator (see authorized()).
 // ============================================================
 
 function config() {
@@ -132,10 +135,44 @@ export async function run(): Promise<Result> {
   return { ok: false, action: 'error', reason: `workflow_dispatch -> ${res.status}`, detail: body.slice(0, 300) };
 }
 
+// ONLY THE SCHEDULER MAY POKE. The function is deployed --no-verify-jwt, so
+// without this anybody on the internet could POST here and start the
+// newsletter workflow (the debounce limited how often, not who). pg_cron calls
+// with `Bearer <edgedesk.service_key>` (supabase/newsletter_cron.sql). The key
+// is proven by USING it: newsletter_settings has row level security on and its
+// only client policy is the operator's (newsletter_is_admin()), so a read that
+// returns its one row was made with the service role or by a signed-in
+// newsletter operator — who can already dispatch an edition from the console —
+// whatever format the project's keys are in. Anon and readers get no row. The
+// fast path is an exact match with the key this runtime was given.
+export async function authorized(req: Request, fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  const c = config();
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  if (!token || !c.url) return false;
+  if (c.serviceKey && token.length === c.serviceKey.length) {
+    let diff = 0;
+    for (let i = 0; i < token.length; i++) diff |= token.charCodeAt(i) ^ c.serviceKey.charCodeAt(i);
+    if (diff === 0) return true;
+  }
+  try {
+    const r = await fetchImpl(`${c.url}/rest/v1/newsletter_settings?select=id&limit=1`, {
+      headers: { apikey: token, authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    return Array.isArray(rows) && rows.length === 1;
+  } catch (_) { return false; }
+}
+
 // @ts-ignore Deno.serve exists in the edge runtime
 if (typeof Deno !== 'undefined' && typeof (Deno as { serve?: unknown }).serve === 'function') {
   // @ts-ignore
-  Deno.serve(async () => {
+  Deno.serve(async (req: Request) => {
+    if (!(await authorized(req))) {
+      return new Response(JSON.stringify({ ok: false, action: 'error', reason: 'not_authorised' }), {
+        status: 401, headers: { 'content-type': 'application/json' },
+      });
+    }
     const out = await run();
     return new Response(JSON.stringify(out), {
       status: out.ok ? 200 : (out.action === 'no_token' ? 503 : 502),

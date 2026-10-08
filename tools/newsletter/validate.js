@@ -254,7 +254,11 @@ function validate(edition, opts) {
       (opts.renderOpts && opts.renderOpts.mailing_address)
         || 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423',
       '21+', '1-800-GAMBLER', 'ncpgambling.org',
-    ].concat(opts.extra_supported || []));
+      /* the edition's own attribution tag on its links back to the site
+         (render.js tagLinks: utm_campaign=nl_<sport>_<edition date>) is
+         furniture like the address above, not a figure about a game */
+      RENDER.campaignOf ? RENDER.campaignOf(edition) : null,
+    ].filter(Boolean).concat(opts.extra_supported || []));
     const bad = [];
     QUALITY.numbersIn(text).forEach(tok => {
       const n = QUALITY.norm(tok);

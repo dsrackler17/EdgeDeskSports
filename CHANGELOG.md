@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-08 — Growth engine: organic discovery, free tools, attribution end to end
+
+**Visitor → research page or tool → trial → paid, measured by channel. Built on the existing articles, attribution, funnel, newsletter, outbound and partner systems; nothing touches billing.** Audit: `docs/growth-engine/AUDIT.md`; deploy order and Search Console setup: `docs/growth-engine/README.md`.
+
+**Security fixes:**
+- **`.github/workflows/newsletter.yml`:** dispatch inputs were interpolated into shell steps holding the service role and Resend keys. They now pass as environment variables, each checked against a closed list or an address pattern;
+- **test sends no longer print live unsubscribe tokens** or full addresses to the Actions log;
+- **`newsletter_cron` requires the service role** or a signed-in newsletter operator (it was callable by anyone);
+- **newsletter confirm and preferences are button presses** on static pages (`/newsletter/confirm/`, `/newsletter/manage/`), not GET side effects a link scanner can trigger; the lifecycle unsubscribe page waits for a press too;
+- **a confirmed subscriber cannot be changed from the public form** (it is mailed its own preferences link, once per cooldown); a global hourly cap, a per-address daily cap, a honeypot and a keyed client-address hash limit abuse.
+
+**Attribution:**
+- **`lib/edgedesk_public.js`** on every public page: the landing page's first-touch rule, an acquisition visit when it can matter, partner clicks, page views, CTA presses, GA4 unless Global Privacy Control or Do Not Track. Search traffic that read an article before the trial was being recorded as direct;
+- **`newsletter` and `outbound_email` are channels** (`acq_classify`, constraints widened in place); newsletter links carry `utm_campaign=nl_<sport>_<date>`;
+- four public events in `user_event_kinds`: `public_page_view`, `tool_used`, `public_cta_clicked`, `newsletter_signup`.
+
+**Free tools (`/tools/`):** no-vig calculator (four methods, the terminal's own arithmetic), fair odds calculator, and the model vs market explorer (the landing board's public subset; no EV, no props). Crawlable pages with the working shown; `robots.txt` allows exactly these under `/tools/`.
+
+**Research pages:** a trial CTA near the top and at the end with the terms as priced, "More EdgeDesk research", links to the tools/methodology/newsletter, no links to unpublished pages (14 were dead), a played-game notice, trailing-slash canonicals and sitemap entries, a real 1200×630 share image, hub breadcrumbs, hubs at about half their weight, a corrected meta description, the sitemap index dated by its children.
+
+**Newsletter:** "major findings" and "product updates" topics (product with its own consent; captured only — no sender yet).
+
+**Outbound:** each draft links to the page that fits the prospect (`growth_outbound.landing_for()`, switchable); `/partners/` for newsletter operators and creators. Approval is untouched: nothing sends without the owner.
+
+**Owner dashboards:** `/admin/acquisition/` (`supabase/growth_engine.sql`): channels, landing pages, campaigns, tools, CTAs, newsletter, trials, paid, cash by channel, measured MRR and two labelled estimates, outbound by landing page, Search Console, partner review flags (changes nothing), weekly frozen reports (`growth_engine_cron.sql`). `/admin/seo/`: `tools/seo/audit.js` checks every public page for crawlability, canonical, title, description, share image, structured data and broken links; rewritten on every article build.
+
+**Search Console:** `tools/growth/gsc_import.js` and a daily workflow, idle until `GSC_SERVICE_ACCOUNT_JSON` and `GSC_SITE` are set.
+
+**Tests:** new `growth_engine` (236), `growth_engine_sql` (53), `newsletter_growth_sql` (31), `outbound_landing_sql` (26), `public_pages.e2e` (90), `seo:audit --check`; `.github/workflows/growth-engine-tests.yml`. Existing suites updated for the intended changes and passing.
+
 ## 2026-10-08 — Growth console: providers, qualification and volume (outbound engine, phase 12)
 
 **The aim: wake up to 10–15 qualified potential subscribers with drafts, and send only the ones you approve.** Nothing added here can approve or send.

@@ -196,8 +196,8 @@ watchlist, journal, alert-settings and share-card tables, the rest only through
 `edp_track()`), `user_activation` (derived, replayed in order, internal — no
 client role can read it), `acquisition_visitors` / `user_acquisition` (first
 attributable touch write-once, last touch kept apart, classified into
-organic_x, x_dm, creator_affiliate, linkedin, search, direct, referral, other;
-it never touches the affiliate ledger) and `public_sample_games` (which games a
+organic_x, x_dm, creator_affiliate, linkedin, search, newsletter,
+outbound_email, direct, referral, other; it never touches the affiliate ledger) and `public_sample_games` (which games a
 signed-out visitor may read through `public_sample_research()`, a SUBSET of
 the shared research state). Admin reports (`growth_admin_*`) check the partner
 program's operator list. Report rows 1-9 should say `ok`. Tested by
@@ -224,7 +224,7 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **Discovery and research (Phase 7).** Search results are candidates; research stores every page it reads (append-only) and records facts only as quotes from those pages. The database checks each quote against the stored page and each claim against its quote, decides itself which pages are the prospect's own (never a publisher's), and enforces a daily budget on every provider call. Nothing here approves or sends.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-37 should say `ok`; the console's System check (Outbound tab) runs the same checks any time. Then, for the morning run (Phase 9) and hourly results matching (Phase 10), enable pg_cron and pg_net and run `growth_outbound_cron.sql` (one five-minute job, no key). Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js`, `outbound_events_sql.test.js`, `outbound_engine_sql.test.js`, `outbound_research.test.js`, `outbound_drafting_sql.test.js`, `outbound_draft.test.js`, `outbound_schedule_sql.test.js`, `outbound_analytics_sql.test.js`, the Phase 11 hardening suites (`outbound_concurrency_sql`, `outbound_fuzz_sql`, `outbound_lifecycle`, `outbound_health_sql`, `outbound_static`), and Phase 12's `outbound_qualify_sql` (the 0–100 qualification score, segments, the offer, warm-up, the sending domain, providers and Clay) and `outbound_providers`; see `docs/growth-outbound.md` (its last section, "Operating it", is the runbook).
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-37 should say `ok`; the console's System check (Outbound tab) runs the same checks any time. Then, for the morning run (Phase 9) and hourly results matching (Phase 10), enable pg_cron and pg_net and run `growth_outbound_cron.sql` (one five-minute job, no key). Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js`, `outbound_events_sql.test.js`, `outbound_engine_sql.test.js`, `outbound_research.test.js`, `outbound_drafting_sql.test.js`, `outbound_draft.test.js`, `outbound_schedule_sql.test.js`, `outbound_analytics_sql.test.js`, the Phase 11 hardening suites (`outbound_concurrency_sql`, `outbound_fuzz_sql`, `outbound_lifecycle`, `outbound_health_sql`, `outbound_static`), and Phase 12's `outbound_qualify_sql` (the 0–100 qualification score, segments, the offer, warm-up, the sending domain, providers and Clay) and `outbound_providers`; see `docs/growth-outbound.md` (its last section, "Operating it", is the runbook). `growth_outbound.landing_for()` picks each draft's landing page from the prospect's record (`landing_by_interest`, on by default; tested by `tools/growth/outbound_landing_sql.test.js`).
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,
@@ -247,7 +247,31 @@ day-1/3/7 returns are derived from terminal events. `user_preferences` gains
 onboarding steps; `funnel_admin_report(p_days)` (operators only) gives the
 funnel, the rates, retention, trial outcomes and cohorts. Report rows 1-8
 should say `ok`. Tested by `tools/funnel/funnel_sql.test.js`; see
-`docs/funnel-upgrade.md`.
+`docs/funnel-upgrade.md`. The public pages (articles, hubs, `/tools/`, the
+newsletter page) send four more client events through the same door:
+`public_page_view`, `tool_used`, `public_cta_clicked` and `newsletter_signup`
+(`lib/edgedesk_public.js`).
+
+### `growth_engine.sql` — the acquisition dashboard, MRR, Search Console, weekly reports
+Run after `growth.sql`, `funnel.sql`, `affiliates.sql` and the billing files
+(the guard says so); the newsletter and outbound figures appear once
+`newsletter.sql` and `growth_outbound.sql` are installed. `search_console_pages` / `search_console_queries` /
+`search_console_runs` (Google's daily clicks, impressions, CTR and position,
+written by `tools/growth/gsc_import.js` with the service role; no client role
+can read them) and `growth_weekly_reports` (one frozen row per week).
+`growth_mrr()` is list-price MRR from `subscriptions` (comps and test-mode rows
+excluded, an unpriced subscription counted, not guessed) plus two labelled
+`*_estimate` figures; `growth_referral_flags()` lists partner attributions worth
+a look (same browser, burst, shared customer or card, refund) and changes
+nothing. `growth_admin_acquisition(p_days)` (operators only, the partner
+program's list) is everything `/admin/acquisition/` shows;
+`growth_weekly_snapshot()` is server-side only. Nothing here touches billing.
+Report rows 1-7 should say `ok`. Tested by
+`tools/growth/growth_engine_sql.test.js`; see `docs/growth-engine/README.md`.
+
+### `growth_engine_cron.sql` — the Monday growth snapshot
+One pg_cron job, Mondays 06:17 UTC, calling `growth_weekly_snapshot()`: last
+week frozen into `growth_weekly_reports`. Nothing leaves the database.
 
 ### `home_board.sql` — the landing page's live board, for a signed-out visitor
 Run after `personal_research.sql`. `public_home_board()` (anon) is a SUBSET of
@@ -1317,9 +1341,16 @@ token, which only unsubscribes or changes a sport preference, is stored raw,
 because every sent email has to carry it and a digest would make the unsubscribe
 link unbuildable. The asymmetry is deliberate and the column comment says why.
 
+Signup is capped (an hourly cap for everybody, a daily cap per address, the
+per-source cap), and a confirmed address is never changed from the public form:
+it is mailed its own preferences link instead. Besides the CFB and NFL editions
+a subscriber may choose major model-vs-market findings and, with its own
+consent, product updates (the choice is stored; no sender exists for those yet).
+
 Tested against a real PostgreSQL by `tools/newsletter/newsletter_sql.test.js`
 (`npm run newsletter:sql`), which applies the file twice, applies it to a bare
-project, and attacks it as anon, as a signed-in reader and as the operator.
+project, and attacks it as anon, as a signed-in reader and as the operator;
+`tools/newsletter/newsletter_growth_sql.test.js` covers the topics and caps.
 
 ### `newsletter_cron.sql` — the primary newsletter scheduler
 pg_cron calling `functions/newsletter_cron` across 13:00–19:00 UTC on Monday and

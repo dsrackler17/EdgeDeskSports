@@ -395,6 +395,10 @@ on conflict on constraint activation_events_once do nothing;
 --   2  a ?ref= code that belongs to a creator (an account or a campaign) is
 --      creator_affiliate; any other ref is referral;
 --   3  a paid medium (cpc, ppc, paid, paid_social, ads, display) is other;
+--   3b EdgeDesk's own email (2026-10): utm_source=newsletter (or
+--      utm_medium=newsletter) is newsletter; utm_source=outbound — what
+--      growth_outbound.tag_links stamps on every approved outbound email — is
+--      outbound_email. Both used to fall through to other;
 --   4  utm_source x / twitter is organic_x, or x_dm with utm_medium=dm;
 --      linkedin is linkedin; a search engine (or utm_medium=organic) is
 --      search; any other utm_source is other;
@@ -410,7 +414,7 @@ declare src text := lower(btrim(coalesce(p_utm_source, ''))); med text := lower(
   ref text := upper(btrim(coalesce(p_ref, ''))); host text := lower(btrim(coalesce(p_referrer, '')));
 begin
   host := regexp_replace(host, '^(www|m|mobile|l|lm)\.', '');
-  if src in ('organic_x', 'x_dm', 'creator_affiliate', 'linkedin', 'search', 'direct', 'referral', 'other') then return src; end if;
+  if src in ('organic_x', 'x_dm', 'creator_affiliate', 'linkedin', 'search', 'direct', 'referral', 'other', 'newsletter', 'outbound_email') then return src; end if;
   if ref <> '' then
     if exists (select 1 from public.affiliate_accounts where upper(code) = ref)
        or exists (select 1 from public.affiliate_campaigns where upper(code) = ref) then
@@ -419,6 +423,8 @@ begin
     return 'referral';
   end if;
   if med in ('cpc', 'ppc', 'paid', 'paid_social', 'paidsocial', 'ads', 'display') then return 'other'; end if;
+  if src in ('newsletter', 'edgedesk_newsletter') or med = 'newsletter' then return 'newsletter'; end if;
+  if src in ('outbound', 'edgedesk_outbound') then return 'outbound_email'; end if;
   if src in ('x', 'twitter', 't.co', 'x.com', 'twitter.com') then
     return case when med in ('dm', 'dms', 'direct_message', 'message', 'messages') then 'x_dm' else 'organic_x' end;
   end if;
@@ -505,16 +511,23 @@ create table if not exists public.user_acquisition (
   claimed_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now()
 );
+-- The source list grew newsletter and outbound_email (2026-10). A constraint
+-- written by an earlier run is WIDENED (dropped and re-added with the longer
+-- list), never narrowed: every row that satisfied the old list satisfies this.
 do $c$ begin
-  if not exists (select 1 from pg_constraint where conname = 'acquisition_visitors_sources') then
+  if not exists (select 1 from pg_constraint where conname = 'acquisition_visitors_sources'
+                  and pg_get_constraintdef(oid) like '%outbound_email%') then
+    alter table public.acquisition_visitors drop constraint if exists acquisition_visitors_sources;
     alter table public.acquisition_visitors add constraint acquisition_visitors_sources check (
-          first_source in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other')
-      and last_source  in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other'));
+          first_source in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other','newsletter','outbound_email')
+      and last_source  in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other','newsletter','outbound_email'));
   end if;
-  if not exists (select 1 from pg_constraint where conname = 'user_acquisition_sources') then
+  if not exists (select 1 from pg_constraint where conname = 'user_acquisition_sources'
+                  and pg_get_constraintdef(oid) like '%outbound_email%') then
+    alter table public.user_acquisition drop constraint if exists user_acquisition_sources;
     alter table public.user_acquisition add constraint user_acquisition_sources check (
-          first_source in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other')
-      and last_source  in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other'));
+          first_source in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other','newsletter','outbound_email')
+      and last_source  in ('organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other','newsletter','outbound_email'));
   end if;
 end $c$;
 create index if not exists acquisition_visitors_first_idx on public.acquisition_visitors (first_seen_at);
@@ -784,7 +797,7 @@ begin
   if not public.growth_is_admin() then raise exception 'not an admin' using errcode = 'insufficient_privilege'; end if;
   select * into s from public.activation_settings where id = 1;
   with src(source, ord) as (
-    select * from unnest(array['organic_x','x_dm','creator_affiliate','linkedin','search','direct','referral','other','(untracked)'])
+    select * from unnest(array['search','organic_x','x_dm','creator_affiliate','linkedin','newsletter','outbound_email','direct','referral','other','(untracked)'])
       with ordinality
   ), vis as (
     select case when v_last then last_source else first_source end as source, count(*)::int as n

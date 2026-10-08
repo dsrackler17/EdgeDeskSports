@@ -462,7 +462,7 @@ var S = window.EDAdminSession.create({ url: SB_URL, key: SB_KEY, storageKey: KEY
 var KINDS = [['matchup_viewed', 'Matchup viewed'], ['repeat_visit', 'Repeat visit'], ['top5_opened', 'Top 5 Research opened'], ['watchlist_save', 'Watchlist save'],
   ['alert_configured', 'Alert configured'], ['ai_research_used', 'AI research used'], ['compare_my_number', 'Compare My Number used'],
   ['journal_entry_created', 'Journal entry created'], ['share_card_generated', 'Share card generated']];
-var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
+var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', newsletter: 'Newsletter', outbound_email: 'Outbound email', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }

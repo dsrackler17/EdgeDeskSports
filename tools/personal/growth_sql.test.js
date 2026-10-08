@@ -204,7 +204,8 @@ try {
     [[null, 'x', 'dm', null], 'x_dm'], [[null, 'twitter', 'social', null], 'organic_x'], [[null, null, null, 't.co'], 'organic_x'],
     [[null, null, null, 'www.linkedin.com'], 'linkedin'], [[null, 'linkedin', null, null], 'linkedin'],
     [[null, null, null, 'www.google.com'], 'search'], [[null, null, null, 'duckduckgo.com'], 'search'], [[null, 'google', 'organic', null], 'search'],
-    [[null, 'google', 'cpc', null], 'other'], [[null, 'newsletter', 'email', null], 'other'], [[null, null, null, 'reddit.com'], 'referral'],
+    [[null, 'google', 'cpc', null], 'other'], [[null, 'newsletter', 'email', null], 'newsletter'],
+    [[null, 'outbound', 'email', null], 'outbound_email'], [[null, 'partnerco', 'newsletter', null], 'newsletter'], [[null, 'someblog', 'email', null], 'other'], [[null, null, null, 'reddit.com'], 'referral'],
     [[null, 'x_dm', null, null], 'x_dm'], [['COACHX', 'x', 'dm', null], 'creator_affiliate']
   ];
   const wrong = CASES.filter((c) => cls(...c[0]) !== c[1]).map((c) => ({ in: c[0], want: c[1], got: cls(...c[0]) }));
@@ -262,8 +263,8 @@ try {
   chk('the funnel is admin-only', !!err && /not an admin/.test(err));
   const fu = JSON.parse(db.as(U.admin, `select public.growth_admin_funnel(90, 'first');`));
   const row = (s) => fu.rows.find((x) => x.source === s) || {};
-  chk('the funnel has a row for every source, and one for accounts with no record', fu.rows.length === 9
-    && ['organic_x', 'x_dm', 'creator_affiliate', 'linkedin', 'search', 'direct', 'referral', 'other', '(untracked)'].every((s) => fu.rows.some((x) => x.source === s)), fu.rows.map((x) => x.source));
+  chk('the funnel has a row for every source, and one for accounts with no record', fu.rows.length === 11
+    && ['organic_x', 'x_dm', 'creator_affiliate', 'linkedin', 'search', 'newsletter', 'outbound_email', 'direct', 'referral', 'other', '(untracked)'].every((s) => fu.rows.some((x) => x.source === s)), fu.rows.map((x) => x.source));
   chk('visitors are counted by their first touch', row('organic_x').visitors === 1, row('organic_x'));
   chk('accounts flow visitor → signup → trial → activated → paid by source', row('creator_affiliate').signups === 2 && row('creator_affiliate').trials === 1
     && row('creator_affiliate').activated_trials === 1 && row('creator_affiliate').paid === 1, row('creator_affiliate'));

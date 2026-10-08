@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Acquisition</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE OWNER'S ACQUISITION DASHBOARD (supabase/growth_engine.sql).
+
+     visitor → research page / tool → trial → paid → retained, by channel:
+       channels        first-touch source: visitors, signups, trials, paid,
+                       cash collected (search, newsletter and outbound email
+                       are their own channels since 2026-10)
+       landing pages   where first touches arrived, and what came of them
+       campaigns       utm_campaign: newsletter editions, outbound tags
+       public pages    the most-visited research articles, tools and pages
+       tools · CTAs    free-tool use and which calls to action are pressed
+       newsletter      signups by where they came from, confirmations, topics
+       revenue         MRR from Stripe's price on file (MEASURED), net of
+                       discounts and if-every-trial-converts (ESTIMATES)
+       search          Search Console clicks/impressions when imported
+       outbound        approved sends by landing page, and matched results
+       referrals       attributions by code and REVIEW FLAGS (nothing acts)
+       weekly          the frozen Monday reports
+
+     Every call is a security-definer function that checks the operator list
+     (public.affiliate_admins) under the operator's OWN token. No person is
+     named: every figure is a count or a sum.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.f{display:flex;flex-direction:column;gap:4px;min-width:120px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);white-space:nowrap}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+td.w{white-space:normal;word-break:break-all}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.kpi.est{border-style:dashed}
+.kpi.est i::after{content:" · estimate";color:var(--warn)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+.flag{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;font-size:12.5px;background:var(--bg);border-radius:6px}
+.badge{font-size:10px;font-weight:700;border:1px solid var(--border);border-radius:9px;padding:1px 7px;color:var(--dim)}
+.badge.m{color:var(--pos);border-color:rgba(118,189,62,.5)}
+.badge.e{color:var(--warn);border-color:rgba(217,154,43,.5)}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">acquisition</span>
+  <nav><a href="/admin/funnel/">Funnel</a><a href="/admin/growth/">Growth console</a><a href="/admin/affiliates/">Partner program</a><a href="/admin/seo/">SEO report</a></nav>
+  <span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div class="card" id="signin" style="margin-top:18px">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="row">
+      <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+      <div class="f"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+      <button type="button" id="gGo">Sign in</button>
+    </div>
+    <div class="msg" id="gMsg"></div>
+    <div class="note">Operators only (the partner program's operator list). Every figure is a count or a sum of stored rows; no person is named.</div>
+  </div>
+
+  <div id="app" class="hide">
+    <div class="row" style="margin-top:18px;align-items:center">
+      <div class="f" style="max-width:200px"><label for="win">Window</label>
+        <select id="win"><option value="7">Last 7 days</option><option value="14">Last 14 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="180">Last 180 days</option></select></div>
+      <button type="button" class="g" id="reload">Refresh</button>
+      <span class="sp"></span><span class="who" id="asOf"></span>
+    </div>
+    <div class="msg" id="aMsg"></div>
+
+    <h2>Summary <span class="badge m">measured</span> <span class="badge e">estimate</span></h2>
+    <div class="kpis" id="kpis"></div>
+
+    <h2>Visitors by acquisition channel (first touch)</h2>
+    <div class="card"><div class="tw"><table id="channels"></table></div>
+      <div class="note">A channel is the visitor's first attributable touch (supabase/growth.sql acq_classify). Cash is what Stripe collected in the window from accounts whose first touch was that channel — attribution, not causation.</div></div>
+
+    <div class="grid2">
+      <div><h2>Landing pages</h2><div class="card"><div class="tw"><table id="landing"></table></div></div></div>
+      <div><h2>Campaigns (utm_campaign)</h2><div class="card"><div class="tw"><table id="campaigns"></table></div>
+        <div class="note">nl_* are newsletter editions; ob_* are approved outbound emails.</div></div></div>
+    </div>
+
+    <div class="grid2">
+      <div><h2>Most visited public pages</h2><div class="card"><div class="tw"><table id="pages"></table></div>
+        <div class="note">One view per visitor session per page (first-party events, since 2026-10).</div></div></div>
+      <div><h2>Free tools</h2><div class="card"><div class="tw"><table id="tools"></table></div></div>
+        <h2>Calls to action</h2><div class="card"><div class="tw"><table id="ctas"></table></div></div></div>
+    </div>
+
+    <h2>Newsletter</h2>
+    <div class="card"><div class="kpis" id="nlk"></div><div class="tw" style="margin-top:12px"><table id="nl"></table></div></div>
+
+    <h2>Revenue</h2>
+    <div class="card"><div class="kpis" id="mrr"></div><div class="tw" style="margin-top:12px"><table id="rev"></table></div>
+      <div class="note" id="mrrNote"></div></div>
+
+    <h2>Search (Google Search Console)</h2>
+    <div class="card" id="search"></div>
+
+    <h2>Outbound</h2>
+    <div class="card" id="outbound"></div>
+
+    <h2>Referrals and partners</h2>
+    <div class="card" id="refs"></div>
+
+    <h2>Weekly reports (frozen every Monday)</h2>
+    <div class="card"><div class="tw"><table id="weekly"></table></div><div class="note" id="wNote"></div></div>
+
+    <h2>How to read this</h2>
+    <div class="card"><div class="note" id="notes"></div></div>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_acquisition_admin_session';
+var SESSION = null;
+var SOURCES = { search: 'Search', organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', newsletter: 'Newsletter', outbound_email: 'Outbound email', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function pct(x) { return x == null || !isFinite(x) ? '—' : (Math.round(x * 1000) / 10) + '%'; }
+function rate(a, b) { return b ? pct(a / b) : '—'; }
+function n(x) { return x == null ? '—' : Number(x).toLocaleString('en-US'); }
+function money(c) { return c == null ? '—' : '$' + (Number(c) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function kpi(label, v, sub, est) { return '<div class="kpi' + (est ? ' est' : '') + '"><i>' + esc(label) + '</i><b>' + esc(v) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
+function table(cols, rows, empty) {
+  if (!rows || !rows.length) return '<tr><td class="note">' + esc(empty || 'Nothing in this window.') + '</td></tr>';
+  return '<tr>' + cols.map(function (c) { return '<th' + (c.r ? ' class="r"' : '') + '>' + esc(c.h) + '</th>'; }).join('') + '</tr>'
+    + rows.map(function (r) { return '<tr>' + cols.map(function (c) { var v = c.f(r); return '<td class="' + (c.r ? 'r' : '') + (c.w ? ' w' : '') + '">' + v + '</td>'; }).join('') + '</tr>'; }).join('');
+}
+async function api(path, init) {
+  var t = (SESSION && SESSION.access_token) || SB_KEY;
+  var r = await fetch(SB_URL + '/rest/v1/' + path, Object.assign({}, init, { headers: { apikey: SB_KEY, authorization: 'Bearer ' + t, 'content-type': 'application/json' } }));
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function rpc(name, body) { return api('rpc/' + name, { method: 'POST', body: JSON.stringify(body || {}) }); }
+
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+
+function render(R) {
+  var F = R.funnel || {}, M = R.mrr || {}, NL = R.newsletter || {};
+  $('asOf').textContent = 'As of ' + new Date(R.as_of).toLocaleString() + ' · ' + R.window_days + ' days';
+  $('kpis').innerHTML = kpi('Visitors', n(F.visitors), 'new first touches')
+    + kpi('Public-page visitors', n(F.public_page_visitors), 'articles, tools, newsletter…')
+    + kpi('Landing visitors', n(F.landing_visitors), 'the landing page')
+    + kpi('Signups', n(F.signups), rate(F.signups, F.visitors) + ' of visitors')
+    + kpi('Trial starts', n(F.trials), rate(F.trials, F.signups) + ' of signups')
+    + kpi('Paid conversions', n(F.paid_conversions), 'first real charge')
+    + kpi('Trial → paid', rate(F.matured_trials_paid, F.matured_trials), (F.matured_trials_paid || 0) + ' of ' + (F.matured_trials || 0) + ' finished trials')
+    + kpi('Cash collected', money(F.collected_cents), 'paid invoices in the window')
+    + kpi('MRR (list)', money(M.mrr_list_cents), (M.paying_priced || 0) + ' priced paying subscriptions')
+    + kpi('Newsletter signups', n(NL.signups), (NL.confirmed_in_window || 0) + ' confirmed in the window');
+  $('channels').innerHTML = table([
+    { h: 'Channel', f: function (r) { return esc(SOURCES[r.source] || r.source); } },
+    { h: 'Visitors', r: 1, f: function (r) { return n(r.visitors); } },
+    { h: 'Signups', r: 1, f: function (r) { return n(r.signups); } },
+    { h: 'Signup %', r: 1, f: function (r) { return rate(r.signups, r.visitors); } },
+    { h: 'Trials', r: 1, f: function (r) { return n(r.trials); } },
+    { h: 'Paid', r: 1, f: function (r) { return n(r.paid); } },
+    { h: 'Cash', r: 1, f: function (r) { return money(r.collected_cents); } }
+  ], (R.channels || []).filter(function (r) { return r.visitors || r.signups || r.trials || r.paid; }), 'No visitors or accounts in this window.');
+  $('landing').innerHTML = table([
+    { h: 'Landing page', w: 1, f: function (r) { return esc(r.landing); } },
+    { h: 'Top channel', f: function (r) { return esc(SOURCES[r.top_source] || r.top_source || ''); } },
+    { h: 'Visitors', r: 1, f: function (r) { return n(r.visitors); } },
+    { h: 'Signups', r: 1, f: function (r) { return n(r.signups); } },
+    { h: 'Trials', r: 1, f: function (r) { return n(r.trials); } },
+    { h: 'Paid', r: 1, f: function (r) { return n(r.paid); } }
+  ], R.landing_pages);
+  $('campaigns').innerHTML = table([
+    { h: 'Campaign', w: 1, f: function (r) { return esc(r.campaign); } },
+    { h: 'Source', f: function (r) { return esc(r.source || ''); } },
+    { h: 'Visitors', r: 1, f: function (r) { return n(r.visitors); } },
+    { h: 'Signups', r: 1, f: function (r) { return n(r.signups); } },
+    { h: 'Trials', r: 1, f: function (r) { return n(r.trials); } },
+    { h: 'Paid', r: 1, f: function (r) { return n(r.paid); } },
+    { h: 'Cash', r: 1, f: function (r) { return money(r.collected_cents); } }
+  ], R.campaigns, 'No tagged campaign in this window.');
+  $('pages').innerHTML = table([
+    { h: 'Page', w: 1, f: function (r) { return esc(r.page); } },
+    { h: 'Views', r: 1, f: function (r) { return n(r.views); } },
+    { h: 'Visitors', r: 1, f: function (r) { return n(r.visitors); } }
+  ], R.public_pages);
+  $('tools').innerHTML = table([
+    { h: 'Tool', f: function (r) { return esc(r.tool); } },
+    { h: 'Page views', r: 1, f: function (r) { return n(r.page_views); } },
+    { h: 'Used', r: 1, f: function (r) { return n(r.uses); } },
+    { h: 'Use rate', r: 1, f: function (r) { return rate(r.uses, r.page_views); } }
+  ], R.tools);
+  $('ctas').innerHTML = table([
+    { h: 'Call to action', f: function (r) { return esc(r.cta); } },
+    { h: 'Clicks', r: 1, f: function (r) { return n(r.clicks); } }
+  ], R.ctas);
+  if (NL.installed) {
+    var tp = NL.topics_confirmed || {};
+    $('nlk').innerHTML = kpi('Signups', n(NL.signups), 'form submissions ' + n(NL.form_submissions))
+      + kpi('Confirmed (window)', n(NL.confirmed_in_window)) + kpi('Confirmed (all)', n(NL.confirmed_total))
+      + kpi('Unsubscribed (window)', n(NL.unsubscribed_in_window))
+      + kpi('Topics', 'CFB ' + n(tp.cfb) + ' · NFL ' + n(tp.nfl), 'findings ' + n(tp.findings) + ' · product updates ' + n(tp.product_updates));
+    $('nl').innerHTML = table([
+      { h: 'Signed up from', f: function (r) { return esc(r.source); } },
+      { h: 'Signups', r: 1, f: function (r) { return n(r.signups); } },
+      { h: 'Confirmed', r: 1, f: function (r) { return n(r.confirmed); } }
+    ], NL.by_source);
+  } else { $('nlk').innerHTML = '<div class="note">The newsletter is not installed in this database.</div>'; $('nl').innerHTML = ''; }
+  $('mrr').innerHTML = kpi('MRR, list price', money(M.mrr_list_cents), (M.paying_priced || 0) + ' priced of ' + (M.paying_subscriptions || 0) + ' paying')
+    + kpi('MRR, net of recurring discounts', money(M.mrr_net_cents_estimate), 'a repeating coupon ends on its own date', true)
+    + kpi('Trialing', n(M.trialing), 'subscriptions in their free days')
+    + kpi('If every trial converts', money(M.trial_mrr_list_cents_estimate), 'added MRR at list price', true)
+    + kpi('Price not on file', n(M.paying_price_not_on_file), 'paying, but no price event stored');
+  $('mrrNote').textContent = 'MRR is measured from ' + (M.basis || 'Stripe') + '. Past due counts as paying until Stripe ends it (' + n(M.past_due) + ' now). '
+    + (M.test_mode_excluded ? M.test_mode_excluded + ' test-mode subscription(s) excluded.' : '');
+  $('rev').innerHTML = table([
+    { h: 'Channel (payer\'s first touch)', f: function (r) { return esc(SOURCES[r.source] || r.source); } },
+    { h: 'Payers', r: 1, f: function (r) { return n(r.payers); } },
+    { h: 'Cash collected', r: 1, f: function (r) { return money(r.collected_cents); } }
+  ], R.revenue_by_channel, 'No payment in this window.');
+  var S = R.search || {};
+  $('search').innerHTML = S.connected
+    ? '<div class="kpis">' + kpi('Clicks', n(S.clicks)) + kpi('Impressions', n(S.impressions)) + kpi('CTR', pct(S.ctr)) + kpi('Avg position', S.avg_position == null ? '—' : S.avg_position, 'impression-weighted') + '</div>'
+      + '<div class="note">' + esc(S.first_day) + ' to ' + esc(S.last_day) + ' · last import ' + esc(S.last_import ? new Date(S.last_import).toLocaleString() : '—') + '</div>'
+      + '<div class="grid2" style="margin-top:10px"><div class="tw"><table>' + table([
+          { h: 'Page', w: 1, f: function (r) { return esc(r.page.replace('https://edgedesksports.com', '')); } },
+          { h: 'Clicks', r: 1, f: function (r) { return n(r.clicks); } }, { h: 'Impr.', r: 1, f: function (r) { return n(r.impressions); } },
+          { h: 'Pos.', r: 1, f: function (r) { return r.position == null ? '—' : r.position; } }], S.top_pages) + '</table></div>'
+      + '<div class="tw"><table>' + table([
+          { h: 'Query', w: 1, f: function (r) { return esc(r.query); } },
+          { h: 'Clicks', r: 1, f: function (r) { return n(r.clicks); } }, { h: 'Impr.', r: 1, f: function (r) { return n(r.impressions); } },
+          { h: 'Pos.', r: 1, f: function (r) { return r.position == null ? '—' : r.position; } }], S.top_queries) + '</table></div></div>'
+    : '<div class="note"><b>Not connected.</b> ' + esc(S.note || '') + (S.last_import ? ' Last successful import: ' + esc(new Date(S.last_import).toLocaleString()) + '.' : '') + '</div>';
+  var O = R.outbound || {};
+  $('outbound').innerHTML = O.installed
+    ? '<div class="kpis">' + kpi('Sent', n(O.sent), 'approved, not test') + kpi('Delivered', n(O.delivered)) + kpi('Bounced', n(O.bounced))
+      + kpi('Visited', n((O.conversions || {}).visited)) + kpi('Signed up', n((O.conversions || {}).signed_up)) + kpi('Trial', n((O.conversions || {}).trial)) + kpi('Paid', n((O.conversions || {}).paid)) + '</div>'
+      + '<div class="tw" style="margin-top:12px"><table>' + table([
+          { h: 'Landing page in the email', w: 1, f: function (r) { return esc(r.landing); } },
+          { h: 'Sent', r: 1, f: function (r) { return n(r.sent); } }, { h: 'Visited', r: 1, f: function (r) { return n(r.visited); } },
+          { h: 'Signed up', r: 1, f: function (r) { return n(r.signed_up); } }, { h: 'Trial', r: 1, f: function (r) { return n(r.trial); } },
+          { h: 'Paid', r: 1, f: function (r) { return n(r.paid); } }], O.by_landing, 'No approved outbound email was sent in this window.') + '</table></div>'
+      + '<div class="note">Results are matched by the engine (growth_outbound.sync_conversions) from the tagged link or the exact address written to. Every send was approved by hand.</div>'
+    : '<div class="note">The outbound engine is not installed in this database.</div>';
+  var RF = R.referrals || {};
+  $('refs').innerHTML = RF.installed
+    ? '<div class="kpis">' + kpi('Attributed accounts', n(RF.attributed_accounts), 'in the window') + '</div>'
+      + '<div class="tw" style="margin-top:12px"><table>' + table([
+          { h: 'Code', f: function (r) { return esc(r.code); } }, { h: 'Accounts', r: 1, f: function (r) { return n(r.accounts); } },
+          { h: 'Trials', r: 1, f: function (r) { return n(r.trials); } }, { h: 'Paid', r: 1, f: function (r) { return n(r.paid); } }], RF.by_code, 'No attribution in this window.') + '</table></div>'
+      + '<h2>Review flags</h2>' + ((RF.flags || []).length ? RF.flags.map(function (f) { return '<div class="flag"><b>' + esc(f.kind.replace(/_/g, ' ')) + '</b> · ' + esc(f.code || '') + ' — ' + esc(f.detail) + '</div>'; }).join('') : '<div class="note">Nothing to review.</div>')
+      + '<div class="note">' + esc(RF.note || '') + ' Commissions are approved and paid in <a href="/admin/affiliates/" style="color:var(--accent)">the partner program</a>, by hand.</div>'
+    : '<div class="note">The partner program is not installed in this database.</div>';
+  $('notes').innerHTML = (R.notes || []).map(function (x) { return '<p style="margin:4px 0">' + esc(x) + '</p>'; }).join('');
+}
+
+function renderWeekly(W) {
+  $('weekly').innerHTML = table([
+    { h: 'Week', f: function (r) { return esc(r.week_start) + ' → ' + esc(r.week_end); } },
+    { h: 'Visitors', r: 1, f: function (r) { return n((r.funnel || {}).visitors); } },
+    { h: 'Signups', r: 1, f: function (r) { return n((r.funnel || {}).signups); } },
+    { h: 'Trials', r: 1, f: function (r) { return n((r.funnel || {}).trials); } },
+    { h: 'Paid', r: 1, f: function (r) { return n((r.funnel || {}).paid_conversions); } },
+    { h: 'Cash', r: 1, f: function (r) { return money((r.funnel || {}).collected_cents); } },
+    { h: 'MRR (list)', r: 1, f: function (r) { return money((r.mrr || {}).mrr_list_cents); } },
+    { h: 'Newsletter', r: 1, f: function (r) { return n((r.newsletter || {}).signups); } },
+    { h: 'Search clicks', r: 1, f: function (r) { return (r.search || {}).connected ? n(r.search.clicks) : '—'; } }
+  ], W, 'No week has been frozen yet. The Monday job (supabase/growth_engine_cron.sql) writes one per week.');
+}
+
+async function load() {
+  say('aMsg', '', '');
+  try { render(await rpc('growth_admin_acquisition', { p_days: parseInt($('win').value, 10) || 30 })); }
+  catch (e) { say('aMsg', 'err', String(e.message || e)); }
+  try { renderWeekly(await rpc('growth_admin_weekly_reports', { p_limit: 12 })); }
+  catch (e) { $('wNote').textContent = 'Weekly reports: ' + String(e.message || e); }
+}
+async function boot() {
+  try {
+    var ok = await rpc('growth_is_admin', {});
+    if (ok !== true) { say('gMsg', 'err', 'This account is not on the operator list.'); return; }
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); return; }
+  $('signin').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = (SESSION && SESSION.user && SESSION.user.email) || '';
+  await load();
+}
+$('reload').onclick = load; $('win').onchange = load;
+(function () {
+  try { SESSION = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { SESSION = null; }
+  if (SESSION && SESSION.access_token && (!SESSION.expires_at || SESSION.expires_at * 1000 > Date.now() + 30000)) boot();
+  else SESSION = null;
+})();
+</script>
+</body>
+</html>

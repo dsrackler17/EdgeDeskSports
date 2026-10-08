@@ -251,8 +251,38 @@ const timeLeft = (x: Ctx) => (x.c.deadlineMs ?? 110_000) - (Date.now() - x.start
 type Fact = { evidence_id: number; field: string; claim: string; quote?: string | null; source_url?: string; source_kind?: string; confidence?: number };
 type Context = { ok: boolean; due: boolean; problem: string | null; is_test: boolean; first_name: string | null; sequence_number: number;
   facts: Fact[]; previous: { sequence_number: number; subject: string; body_text: string; sent_at: string | null }[];
-  lessons: string[]; sender: { name: string; business_name: string; cta_url: string } };
+  lessons: string[]; sender: { name: string; business_name: string; cta_url: string };
+  landing?: { url: string; key: string; reason: string } | null };
 type Draft = { subject: string; body_text: string; claims: { text: string; evidence_id: number }[] };
+
+// THE PAGE THE EMAIL LINKS TO (2026-10): the database chooses it from the
+// prospect's record (growth_outbound.landing_for) and says why. Only a page
+// on edgedesksports.com is used; anything else falls back to the owner's
+// default link. The words around the link say what the page IS — a free
+// calculator is never called "the free trial".
+const LANDING_WHAT: Record<string, string> = {
+  fair_odds_tool: 'a free fair odds calculator', no_vig_tool: 'a free no-vig calculator',
+  cfb_research: 'our public college football research', nfl_research: 'our public NFL research',
+  football_research: 'our public football research', partnership: 'how we work with newsletters and creators',
+};
+export function landingOf(ctx: Context): { url: string; key: string; reason: string } {
+  const l = ctx.landing;
+  if (l && typeof l.url === 'string' && /^https:\/\/(www\.)?edgedesksports\.com(\/[a-z0-9\/_.-]*)?$/.test(l.url) && LANDING_WHAT[l.key]) {
+    return { url: l.url, key: l.key, reason: String(l.reason || '') };
+  }
+  return { url: ctx.sender.cta_url, key: 'default', reason: 'the default call to action' };
+}
+function ctaLine(L: { url: string; key: string }, step: number): string {
+  const what = LANDING_WHAT[L.key];
+  if (!what) {
+    if (step === 2) return 'The 7-day free trial is at ' + L.url + ' if you want to look (then $49.99/month).';
+    if (step === 3) return 'the 7-day free trial is at ' + L.url + ' (then $49.99/month).';
+    return 'If it would be useful for your work, you can try it free for 7 days at ' + L.url + ' (then $49.99/month).';
+  }
+  if (step === 2) return 'If you want a look, ' + what + ' is at ' + L.url + ', and the full research has a 7-day free trial (then $49.99/month).';
+  if (step === 3) return what + ' is at ' + L.url + ', and the full research has a 7-day free trial (then $49.99/month).';
+  return 'If it would be useful, ' + what + ' is at ' + L.url + '. The full research has a 7-day free trial, then $49.99/month.';
+}
 
 // the facts the template may quote, best first: a short claim, one line, no quotation marks of its own
 export function templateFacts(ctx: Context): Fact[] {
@@ -262,7 +292,7 @@ export function templateFacts(ctx: Context): Fact[] {
 }
 export function templateDraft(ctx: Context, f: Fact | null): Draft {
   const greet = ctx.first_name ? 'Hi ' + ctx.first_name + ',' : 'Hi there,';
-  const cta = ctx.sender.cta_url, me = ctx.sender.name;
+  const L = landingOf(ctx), me = ctx.sender.name;
   const claim = f ? f.claim.replace(/\s+/g, ' ').trim() : '';
   const claims = f ? [{ text: claim, evidence_id: f.evidence_id }] : [];
   const step = ctx.sequence_number;
@@ -270,20 +300,20 @@ export function templateDraft(ctx: Context, f: Fact | null): Draft {
     return { subject: 'Following up: EdgeDesk Sports', claims, body_text: greet + '\n\n'
       + (f ? 'Following up on my note about your work ("' + claim + '").' : 'Following up on my earlier note.') + '\n\n'
       + 'EdgeDesk Sports keeps NFL and college football research, bet logging and closing-line tracking in one place, as research rather than picks. '
-      + 'The 7-day free trial is at ' + cta + ' if you want to look (then $49.99/month).\n\n'
+      + ctaLine(L, 2) + '\n\n'
       + 'If it\'s not for you, just reply "stop" and I won\'t write again.' };
   }
   if (step === 3) {
     return { subject: 'Last note: EdgeDesk Sports', claims, body_text: greet + '\n\n'
       + 'Last note from me. If EdgeDesk Sports (NFL and college football research, bet logging, closing-line tracking) would help with your work'
-      + (f ? ' ("' + claim + '")' : '') + ', the 7-day free trial is at ' + cta + ' (then $49.99/month).\n\n'
+      + (f ? ' ("' + claim + '")' : '') + ', ' + ctaLine(L, 3) + '\n\n'
       + 'Either way, thanks for reading.' };
   }
   return { subject: 'EdgeDesk Sports, for your research', claims, body_text: greet + '\n\n'
     + (f ? 'I came across your work recently, in particular this: "' + claim + '".' : 'This is a test draft, written for your own inbox.') + '\n\n'
     + 'I\'m ' + me + ', and I\'m building EdgeDesk Sports: research for NFL and college football, with bet logging and results tracked '
     + 'against the closing line. It\'s research, not picks.\n\n'
-    + 'If it would be useful for your work, you can try it free for 7 days at ' + cta + ' (then $49.99/month).\n\n'
+    + ctaLine(L, 1) + '\n\n'
     + 'Would it be worth a look?' };
 }
 
@@ -317,7 +347,12 @@ export function promptFor(ctx: Context, objections: string[] | null, previousTry
   const lines: string[] = [];
   lines.push('Write ' + STEP_NAME[ctx.sequence_number] + ' (step ' + ctx.sequence_number + ').');
   lines.push('Greeting (the first line, exactly): ' + (ctx.first_name ? 'Hi ' + ctx.first_name + ',' : 'Hi there,'));
-  lines.push('Sender: ' + ctx.sender.name + ', ' + ctx.sender.business_name + '. Link: ' + ctx.sender.cta_url);
+  const L = landingOf(ctx);
+  lines.push('Sender: ' + ctx.sender.name + ', ' + ctx.sender.business_name + '. Link: ' + L.url);
+  if (L.key !== 'default') {
+    lines.push('That link is ' + LANDING_WHAT[L.key] + ' (chosen because the prospect is ' + L.reason.replace(/:.*$/, '')
+      + '). Describe the link as exactly that, and mention that the full research has a 7-day free trial.');
+  }
   lines.push('');
   lines.push('Facts you may cite (evidence_id, what it is, the claim, the quote it comes from, where):');
   for (const f of ctx.facts) {

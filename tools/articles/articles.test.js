@@ -255,10 +255,19 @@ PUBLISHED.forEach(r => {
   const head = html.slice(0, html.indexOf('</head>'));
   chk(r.slug + ': has a unique, substantial <title>', /<title>[^<]{25,}<\/title>/.test(head));
   chk(r.slug + ': has a meta description', /name="description" content="[^"]{60,}"/.test(head));
-  has(head, '<link rel="canonical" href="' + r.canonical_url + '">', r.slug + ': canonicalises to its own clean URL');
+  /* THE URL THAT ANSWERS 200. An article is a directory with an index.html,
+     and GitHub Pages answers /articles/x with a 301 to /articles/x/, so the
+     canonical, og:url, structured URL and sitemap entry all carry the slash
+     (article_render.js slashed). The record's own canonical_url keeps its
+     historical form; the page normalises it. */
+  const canon = RENDER.slashed(r.canonical_url);
+  chk(r.slug + ': the canonical URL is the served one (trailing slash)', /\/articles\/[a-z0-9-]+\/$/.test(canon), canon);
+  has(head, '<link rel="canonical" href="' + canon + '">', r.slug + ': canonicalises to its own served URL');
   has(head, 'name="robots" content="index,follow"', r.slug + ': is crawlable');
   has(head, 'property="og:type" content="article"', r.slug + ': declares an OpenGraph article');
-  has(head, 'property="og:url" content="' + r.canonical_url + '"', r.slug + ': OpenGraph URL is the canonical one');
+  has(head, 'property="og:url" content="' + canon + '"', r.slug + ': OpenGraph URL is the canonical one');
+  chk(r.slug + ': the share image is a real https image, not a data: URI',
+    /property="og:image" content="https:\/\/[^"]+\.(png|jpe?g)"/.test(head) && !/property="og:image" content="data:/.test(head));
   has(head, 'property="og:title"', r.slug + ': has an OpenGraph title');
   has(head, 'property="og:description"', r.slug + ': has an OpenGraph description');
   has(head, 'property="og:site_name" content="EdgeDesk Sports"', r.slug + ': names the publisher in OpenGraph');
@@ -279,7 +288,7 @@ PUBLISHED.forEach(r => {
   chk(r.slug + ': datePublished is present and parseable', isFinite(Date.parse(art.datePublished)), art.datePublished);
   chk(r.slug + ': dateModified is present and parseable', isFinite(Date.parse(art.dateModified)), art.dateModified);
   chk(r.slug + ': the structured headline is within Google’s limit', art.headline.length <= 110, String(art.headline.length));
-  eq(r.slug + ': the structured URL is the canonical one', art.url, r.canonical_url);
+  eq(r.slug + ': the structured URL is the canonical one', art.url, canon);
   const ev = blocks[types.indexOf('SportsEvent')];
   chk(r.slug + ': the event names both competitors', (ev.competitor || []).length === 2);
   chk(r.slug + ': the event carries a start date', isFinite(Date.parse(ev.startDate)), ev.startDate);
@@ -327,7 +336,7 @@ chk('every file the index names exists',
   SITEMAPS.children(ROOT).every(f => fs.existsSync(path.join(ROOT, f))), SITEMAPS.children(ROOT).join(', '));
 const smUrls = SITEMAPS.urls(ROOT);
 PUBLISHED.forEach(r => {
-  chk(r.slug + ': is in the sitemap', smUrls.indexOf(r.canonical_url) >= 0);
+  chk(r.slug + ': is in the sitemap', smUrls.indexOf(RENDER.slashed(r.canonical_url)) >= 0);
   has(SM_ARTICLES, '<lastmod>', 'the article sitemap carries lastmod stamps');
   (r.aliases || []).forEach(a => {
     chk(r.slug + ': its alias /' + a + ' is NOT in the sitemap',
@@ -335,9 +344,9 @@ PUBLISHED.forEach(r => {
   });
 });
 RECORDS.filter(r => r.status !== 'published').forEach(r => {
-  chk(r.slug + ': an unpublished article is not in the sitemap', smUrls.indexOf(r.canonical_url) < 0);
+  chk(r.slug + ': an unpublished article is not in the sitemap', smUrls.indexOf(r.canonical_url) < 0 && smUrls.indexOf(RENDER.slashed(r.canonical_url)) < 0);
 });
-['/articles', '/articles/college-football', '/articles/nfl'].forEach(u => {
+['/articles/', '/articles/college-football/', '/articles/nfl/'].forEach(u => {
   chk('the hub ' + u + ' is in the sitemap', smUrls.indexOf(MODEL.SITE + u) >= 0);
 });
 chk('the standing pages survived the split into an index',
@@ -351,7 +360,7 @@ section('8. ALIASES — a second URL that says it is not the first');
   eq('the NFL article has a short alias', (r.aliases || [])[0], 'patriots-vs-seahawks-2026');
   const alias = pageOf('patriots-vs-seahawks-2026');
   chk('the alias page is built', !!alias);
-  has(alias, '<link rel="canonical" href="' + r.canonical_url + '">', 'the alias canonicalises to the article');
+  has(alias, '<link rel="canonical" href="' + RENDER.slashed(r.canonical_url) + '">', 'the alias canonicalises to the article');
   has(alias, 'name="robots" content="noindex,nofollow"', 'the alias is noindex');
   has(alias, 'http-equiv="refresh"', 'and sends a reader on to the real URL');
   /* a college programme is named for its institution, so it gets no alias */
@@ -373,7 +382,7 @@ section('9. THE HUBS — a publication front page, filterable and crawlable');
   has(hub, 'Recently published', 'and a recently-published ordering');
   ['All', 'College Football', 'NFL'].forEach(f => has(hub, '>' + f + '</a>', 'the hub filters by ' + f));
   chk('every filter is a real crawlable URL, not a script',
-    ['/articles', '/articles/college-football', '/articles/nfl'].every(u => hub.indexOf('href="' + u + '"') >= 0));
+    ['/articles/', '/articles/college-football/', '/articles/nfl/'].every(u => hub.indexOf('href="' + u + '"') >= 0));
   PUBLISHED.forEach(r => {
     has(hub, '/articles/' + r.slug, 'the hub links to ' + r.slug);
     has(hub, RENDER.esc(r.excerpt), 'and carries its summary');
@@ -384,13 +393,17 @@ section('9. THE HUBS — a publication front page, filterable and crawlable');
     (nfl.match(/data-sport="([a-z-]+)"/g) || []).every(m => m.indexOf('"nfl"') >= 0));
   has(hub, '"@type": "CollectionPage"', 'the hub carries CollectionPage structured data');
   has(hub, '"@type": "ItemList"', 'and lists its articles in it');
-  has(cfb, '<link rel="canonical" href="' + MODEL.SITE + '/articles/college-football">', 'the CFB hub canonicalises to itself');
-  has(nfl, '<link rel="canonical" href="' + MODEL.SITE + '/articles/nfl">', 'the NFL hub canonicalises to itself');
+  has(cfb, '<link rel="canonical" href="' + MODEL.SITE + '/articles/college-football/">', 'the CFB hub canonicalises to itself');
+  has(nfl, '<link rel="canonical" href="' + MODEL.SITE + '/articles/nfl/">', 'the NFL hub canonicalises to itself');
+  has(cfb, '"@type": "BreadcrumbList"', 'a sport hub carries its breadcrumb trail');
+  has(cfb, 'aria-label="Breadcrumb"', 'and shows it');
+  chk('the hub is lighter than it was: each card graphic is drawn once, not in every ordering',
+    Buffer.byteLength(hub) < 450 * 1024, Math.round(Buffer.byteLength(hub) / 1024) + ' KB');
   chk('a sport hub is written even before anything is published in it',
     fs.existsSync(path.join(ROOT, 'articles', 'nfl', 'index.html')));
   /* the sort control must not be the only way to reach an article */
   chk('every published article is in the markup, not behind a script',
-    PUBLISHED.every(r => hub.indexOf('href="/articles/' + r.slug + '"') >= 0));
+    PUBLISHED.every(r => hub.indexOf('href="/articles/' + r.slug + '/"') >= 0));
 })();
 
 /* ======================================================================== */
@@ -401,9 +414,19 @@ PUBLISHED.forEach(r => {
   has(html, 'Research the matchup. Then price it.', r.slug + ': carries the call to action');
   has(html, 'Open full EdgeDesk research', r.slug + ': carries the research-terminal button');
   has(html, 'href="' + r.terminal_url + '"', r.slug + ': the button deep-links into the terminal');
-  ['/articles/college-football', '/articles/nfl', '/articles', '/app.html#research/football'].forEach(u => {
+  ['/articles/college-football/', '/articles/nfl/', '/articles/', '/app.html#research/football', '/tools/', '/methodology/'].forEach(u => {
     has(html, 'href="' + u + '"', r.slug + ': links to ' + u);
   });
+  /* the free/paid line and the offer, worded once (lib/edgedesk_pricing.js) */
+  has(html, 'data-ed-cta="article_trial_top"', r.slug + ': carries the trial call to action near the top');
+  has(html, 'data-ed-cta="article_trial_bottom"', r.slug + ': and again at the end');
+  has(html, '7-day free trial. $49.99/month after trial. Cancel anytime.', r.slug + ': states the trial terms beside it');
+  has(html, 'id="sec-more-research"', r.slug + ': links on to more research');
+  /* every internal article link resolves to a published page */
+  const dead = (html.match(/href="(?:https:\/\/edgedesksports\.com)?\/articles\/([a-z0-9-]+)\/?"/g) || [])
+    .map(m => /\/articles\/([a-z0-9-]+)/.exec(m)[1])
+    .filter(sl => ['college-football', 'nfl', 'community', 'write'].indexOf(sl) < 0 && !PUBLISHED.some(p2 => p2.slug === sl));
+  chk(r.slug + ': every article it links to is published', dead.length === 0, dead.join(', '));
   has(html, 'Explore more college football research', r.slug + ': links out to CFB research');
   has(html, 'Explore NFL research', r.slug + ': links out to NFL research');
   has(html, 'EdgeDesk power ratings', r.slug + ': links out to the power ratings');
@@ -412,7 +435,7 @@ PUBLISHED.forEach(r => {
   has(html, 'facebook.com/sharer', r.slug + ': has a Facebook share link');
   has(html, 'id="a-copy"', r.slug + ': has a copy-link control');
   chk(r.slug + ': the share links work with JavaScript off',
-    html.indexOf('href="https://twitter.com/intent/tweet?url=' + encodeURIComponent(r.canonical_url)) >= 0);
+    html.indexOf('href="https://twitter.com/intent/tweet?url=' + encodeURIComponent(RENDER.slashed(r.canonical_url))) >= 0);
 });
 
 /* ======================================================================== */
@@ -526,7 +549,7 @@ section('13. THE BUILD REFUSES A BROKEN STORE');
   const draft = MODEL.unpublish(bySlug('missouri-vs-kansas-2026'), '2026-09-09T00:00:00Z');
   const xml = BUILD.articleSitemap([]);
   lacks(xml, draft.canonical_url, 'an empty published set produces a sitemap with no articles in it');
-  has(xml, '/articles</loc>', 'but the hubs are still listed');
+  has(xml, '/articles/</loc>', 'but the hubs are still listed (with the trailing slash GitHub Pages serves them at)');
   const idx = BUILD.sitemapIndex();
   has(idx, '<sitemapindex', 'the index writer produces an index');
   chk('the article sitemap is valid XML shape',
@@ -695,8 +718,14 @@ section('17. RESPONSIVE AND ACCESSIBLE ENOUGH TO PUBLISH');
   has(html, '<main class="a-wrap" id="main">', 'the page has a main landmark');
   has(html, 'scope="row"', 'the comparison tables carry row scopes');
   has(html, 'scope="col"', 'and column scopes');
-  chk('the only script on the page is the copy-link control',
-    (html.match(/<script(?![^>]*application\/ld\+json)/g) || []).length === 1);
+  /* one inline script (copy link) and the two first-party measurement files
+     (lib/edgedesk_track.js, lib/edgedesk_public.js), deferred, nothing else */
+  chk('the only inline script on the page is the copy-link control',
+    (html.match(/<script(?![^>]*(application\/ld\+json|src=))/g) || []).length === 1);
+  chk('and the only external scripts are EdgeDesk\'s own deferred measurement',
+    JSON.stringify((html.match(/<script[^>]*src="([^"]+)"[^>]*>/g) || []).map(t => (/src="([^"?]+)/.exec(t) || [])[1]))
+      === JSON.stringify(['/lib/edgedesk_track.js', '/lib/edgedesk_public.js'])
+      && (html.match(/<script[^>]*src=[^>]*>/g) || []).every(t => / defer/.test(t)));
   chk('and the article is complete without it',
     textOf(html.replace(/<script[\s\S]*?<\/script>/g, '')).indexOf('EdgeDesk fair spread') >= 0);
 })();

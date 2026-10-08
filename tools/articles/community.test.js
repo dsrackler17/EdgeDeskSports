@@ -283,7 +283,7 @@ has(HUB, 'Write a post', 'labelled for what it does');
 has(HUB, 'href="/articles/community"', 'and a link to read member posts');
 has(HUB, 'kept separate from EdgeDesk’s model research',
   'and says on the hub that the two are separate');
-has(HUB, '<a class="ah-tab" href="/articles/community">Members</a>', 'the section is in the site nav');
+has(HUB, '<a class="ah-tab" href="/articles/community/">Members</a>', 'the section is in the site nav');
 has(NOTFOUND, "p[1]==='community'", 'a pretty member-post URL is routed on a static host');
 has(NOTFOUND, "'/articles/community/?p='", 'to the one page that can render it');
 (function () {

@@ -39,8 +39,9 @@ a{color:var(--accent)}
 <body>
 <main class="card" aria-live="polite">
   <span class="ey">EdgeDesk · Trial emails</span>
-  <h1 id="h">Turning off trial tips…</h1>
-  <p id="m">One moment.</p>
+  <h1 id="h">Turn off trial tips?</h1>
+  <p id="m">Press the button to stop the day-1 and day-3 research emails. Opening this link changes nothing on its own.</p>
+  <button class="btn" id="stop" type="button" hidden>Turn off trial tips</button>
   <a class="btn" id="go" href="/app.html" hidden>Open the terminal</a>
   <small>Research, not picks. 21+. If you or someone you know has a gambling problem, call 1-800-GAMBLER.</small>
 </main>
@@ -48,7 +49,7 @@ a{color:var(--accent)}
 (function(){
   var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
   var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
-  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go');
+  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go'), stop=document.getElementById('stop');
   function done(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; go.hidden=false; }
   var t=''; try{ t=(new URLSearchParams(location.search).get('t')||'').toLowerCase(); }catch(_){}
   /* the token leaves the address bar before anything else happens */
@@ -57,13 +58,23 @@ a{color:var(--accent)}
     done('That link is incomplete.','Open the most recent EdgeDesk email and use its link again, or switch trial emails off in the terminal under Settings.',true);
     return;
   }
-  fetch(SB_URL+'/rest/v1/rpc/lifecycle_unsubscribe',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:t})})
-    .then(function(r){ return r.ok?r.json():null; })
-    .then(function(j){
-      if(j&&j.ok){ done('Trial tips are off.','You will not get the day-1 or day-3 research emails. If your trial is set to convert, we still send one billing notice before your card is charged — cancel in the terminal under Settings › Subscription to stop that too.'); }
-      else{ done('That link has expired or was already used.','If you are still getting emails you do not want, reply to one of them and we will take care of it.',true); }
-    })
-    .catch(function(){ done('We could not reach EdgeDesk.','Check your connection and open the link again.',true); });
+  /* A BUTTON, NOT A PAGE LOAD. This used to unsubscribe the moment the page
+     opened, so a mail scanner that follows links switched readers' tips off
+     for them. Now opening the link changes nothing; the reader presses the
+     button. Inside someone else's frame there is no button to be tricked into. */
+  var framed=false; try{ framed=window.top!==window.self; }catch(_){ framed=true; }
+  stop.hidden=framed;
+  stop.addEventListener('click', function(){
+    stop.disabled=true;
+    fetch(SB_URL+'/rest/v1/rpc/lifecycle_unsubscribe',{method:'POST',headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:JSON.stringify({p_token:t})})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(j){
+        stop.hidden=true;
+        if(j&&j.ok){ done('Trial tips are off.','You will not get the day-1 or day-3 research emails. If your trial is set to convert, we still send one billing notice before your card is charged — cancel in the terminal under Settings › Subscription to stop that too.'); }
+        else{ done('That link has expired or was already used.','If you are still getting emails you do not want, reply to one of them and we will take care of it.',true); }
+      })
+      .catch(function(){ stop.disabled=false; done('We could not reach EdgeDesk.','Check your connection and press the button again.',true); });
+  });
 })();
 </script>
 </body>

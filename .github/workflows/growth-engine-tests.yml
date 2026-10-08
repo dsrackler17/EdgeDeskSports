@@ -1,0 +1,93 @@
+# EdgeDesk — the checks that gate the growth engine: the public-page tracker,
+# the free tools' arithmetic, the public pages (tools, partners, newsletter
+# flows), robots and sitemaps, the SEO audit of every public page, the
+# acquisition report and the hardened newsletter door on a real PostgreSQL,
+# the outbound landing choice, and the tools and articles in Chromium.
+#
+# Nothing here deploys, writes or sends.
+name: Growth engine tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/index.html'
+      - 'tools/tools.css'
+      - 'tools/no-vig-calculator/**'
+      - 'tools/fair-odds-calculator/**'
+      - 'tools/model-vs-market/**'
+      - 'tools/growth/**'
+      - 'tools/seo/**'
+      - 'tools/articles/**'
+      - 'tools/newsletter/**'
+      - 'partners/**'
+      - 'newsletter/**'
+      - 'admin/acquisition/**'
+      - 'admin/seo/**'
+      - 'articles/**'
+      - 'lib/edgedesk_public.js'
+      - 'lib/edgedesk_odds_tools.js'
+      - 'lib/edgedesk_track.js'
+      - 'robots.txt'
+      - 'sitemap*.xml'
+      - 'supabase/growth_engine*.sql'
+      - 'supabase/growth.sql'
+      - 'supabase/funnel.sql'
+      - 'supabase/newsletter.sql'
+      - 'supabase/growth_outbound.sql'
+      - 'supabase/functions/newsletter/**'
+      - 'supabase/functions/newsletter_cron/**'
+      - 'supabase/functions/growth_outbound_draft/**'
+      - '.github/workflows/growth-engine-tests.yml'
+      - '.github/workflows/search-console.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: growth-engine-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Tracker, tools arithmetic, public pages, robots, sitemaps, importer, outbound landing choice
+        run: node tools/growth/growth_engine.test.js
+      - name: Every public page passes the SEO audit (titles, canonicals, links, structured data)
+        run: node tools/seo/audit.js --check
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The acquisition report on a real PostgreSQL
+        run: node tools/growth/growth_engine_sql.test.js
+      - name: The newsletter's public door, hardened
+        run: node tools/newsletter/newsletter_growth_sql.test.js
+      - name: The outbound landing-page choice in the database
+        run: node tools/growth/outbound_landing_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The tools, an article and the newsletter flows at phone and desktop widths
+        run: node tools/growth/public_pages.e2e.js

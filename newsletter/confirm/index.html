@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://iattxbkbufslbauoumga.supabase.co; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Confirm your EdgeDesk newsletter</title>
+<!-- ===========================================================================
+     CONFIRM THE RESEARCH NEWSLETTER — where the link in a confirmation email
+     lands. The token is in the #fragment, so it never reaches a server log or
+     a Referer header, and it leaves the address bar before anything else.
+
+     WHY A BUTTON. The newsletter edge function used to confirm on a plain GET,
+     so a mail scanner that prefetches links completed somebody's double
+     opt-in for them; and Supabase serves an Edge Function's HTML as plain
+     text, so the page a reader saw was raw markup. Here the reader presses
+     "Confirm", which calls public.newsletter_confirm (granted to anon, gated
+     by the 64-hex token only that mailbox received).
+     =========================================================================== -->
+<style>
+:root{--ink:#100e0a;--panel:#191510;--line:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--accent:#2fa79a;--on-accent:#042320;--neg:#e2664b}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+.ey{font:700 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:22px;line-height:1.25;letter-spacing:-.02em;margin:10px 0 10px;overflow-wrap:anywhere}
+p{color:var(--dim);font-size:14.5px;margin-top:10px}
+p.err{color:var(--neg)}
+ul{color:var(--dim);font-size:14.5px;margin:10px 0 0 18px}
+a{color:var(--accent)}
+.btn{display:inline-block;margin-top:18px;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:15px;border-radius:10px;padding:12px 18px;border:0;cursor:pointer;min-height:44px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.links{margin-top:18px;display:flex;flex-wrap:wrap;gap:14px;font-size:14px}
+small{display:block;margin-top:18px;color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+<main class="card" aria-live="polite">
+  <span class="ey">EdgeDesk · Research newsletter</span>
+  <h1 id="h">Confirm your subscription</h1>
+  <p id="m">Press the button to start receiving the EdgeDesk research email. Nothing is sent until you do.</p>
+  <ul id="topics" hidden></ul>
+  <button class="btn" id="go" type="button" hidden>Confirm my subscription</button>
+  <div class="links" id="after" hidden>
+    <a id="manage" href="/newsletter/manage/">Change what you receive</a>
+    <a href="/articles">Read this week's research</a>
+    <a href="/tools/">Free odds tools</a>
+  </div>
+  <small>EdgeDesk Sports · research, not picks. 21+ · 1-800-GAMBLER</small>
+</main>
+<script>
+(function(){
+  var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+  var h=document.getElementById('h'), m=document.getElementById('m'), go=document.getElementById('go');
+  var after=document.getElementById('after'), topics=document.getElementById('topics');
+  function say(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; }
+  var t='';
+  try{
+    var frag=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    t=(frag.get('t')||new URLSearchParams(location.search).get('t')||'').trim().toLowerCase();
+  }catch(_){}
+  try{ history.replaceState(null,'',location.pathname); }catch(_){}
+  if(!/^[0-9a-f]{64}$/.test(t)){
+    say('That link is incomplete.', 'Open the confirmation email again and use its button, or sign up again at edgedesksports.com/newsletter.', true);
+    return;
+  }
+  /* inside someone else's frame there is no button to be tricked into */
+  var framed=false; try{ framed=window.top!==window.self; }catch(_){ framed=true; }
+  go.hidden=framed;
+  function list(j){
+    var out=[];
+    if(j.wants_cfb) out.push('College Football Week Ahead — Mondays');
+    if(j.wants_nfl) out.push('NFL Week Ahead — Tuesdays');
+    if(j.wants_findings) out.push('Major model-vs-market findings — only when one clears the research bar');
+    if(j.wants_product) out.push('Occasional product updates');
+    topics.textContent='';
+    out.forEach(function(x){ var li=document.createElement('li'); li.textContent=x; topics.appendChild(li); });
+    topics.hidden=!out.length;
+  }
+  go.addEventListener('click', function(){
+    go.disabled=true;
+    fetch(SB_URL+'/rest/v1/rpc/newsletter_confirm',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},
+      body:JSON.stringify({p_token:t})})
+    .then(function(r){ if(r.status>=500) throw new Error('unavailable'); return r.ok?r.json():null; })
+    .then(function(j){
+      go.disabled=false;
+      if(!j||j.ok!==true){
+        say('That link is not valid.', j&&j.reason==='token_expired'
+          ? 'Confirmation links expire after seven days. Sign up again at edgedesksports.com/newsletter.'
+          : 'It may have been used already, or copied incompletely.', true);
+        go.hidden=true; return;
+      }
+      say('You are subscribed.', String(j.email_masked||'Your address')+' will receive:');
+      list(j); go.hidden=true; after.hidden=false;
+      if(j.manage_token&&/^[0-9a-f]{64}$/.test(j.manage_token)) document.getElementById('manage').href='/newsletter/manage/#t='+j.manage_token;
+    }, function(){ go.disabled=false; say('We could not reach EdgeDesk.', 'Check your connection and press the button again.', true); });
+  });
+})();
+</script>
+</body>
+</html>

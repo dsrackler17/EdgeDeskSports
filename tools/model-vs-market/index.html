@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Model vs. Market Explorer — EdgeDesk Fair Spreads Beside the Sportsbook Line</title>
+<meta name="description" content="Browse a free, live sample of EdgeDesk's football research: the model's fair spread beside the current sportsbook line, the gap between them, and EdgeDesk's research status for each game. Research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/tools/model-vs-market/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/tools/model-vs-market/">
+<meta property="og:title" content="Model vs. Market Explorer — EdgeDesk">
+<meta property="og:description" content="EdgeDesk's fair spread beside the live sportsbook line, the gap, and why — a free sample of the research board.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="Model vs. Market Explorer — EdgeDesk">
+<meta name="twitter:description" content="EdgeDesk's fair spread beside the live sportsbook line, the gap, and why — a free sample of the research board.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "EdgeDesk Model vs. Market Explorer",
+  "url": "https://edgedesksports.com/tools/model-vs-market/",
+  "applicationCategory": "SportsApplication",
+  "operatingSystem": "Any",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "A free, limited sample of EdgeDesk's NFL and college football research board: the model's fair spread, the current market, the gap and the research status.",
+  "publisher": { "@type": "Organization", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" }
+}</script>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Free tools", "item": "https://edgedesksports.com/tools/" },
+    { "@type": "ListItem", "position": 2, "name": "Model vs. market explorer", "item": "https://edgedesksports.com/tools/model-vs-market/" }
+  ]
+}</script>
+</head>
+<body data-ed-page="tool:model-vs-market">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Site">
+    <a href="/articles/">Research</a><a href="/tools/" class="on">Free tools</a><a href="/newsletter/">Newsletter</a><a href="/methodology/">Methodology</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="tool_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/tools/">Free tools</a> › <span aria-current="page">Model vs. market explorer</span></nav>
+  <span class="ey">Free tool · live sample · research, not picks</span>
+  <h1>Model vs. market explorer</h1>
+  <p class="lede">EdgeDesk prices every NFL and college football game from football information alone, then puts
+  its number beside the sportsbook’s. This is a free, live sample of that board: up to eight upcoming games,
+  research-grade ones first, each with EdgeDesk’s fair spread, the current market, the gap and EdgeDesk’s own
+  research status.</p>
+
+  <section class="card" aria-labelledby="board-h">
+    <h2 id="board-h" style="margin-top:0">Today’s sample</h2>
+    <div class="filters">
+      <div><label class="fl" for="fLeague">League</label>
+        <select id="fLeague"><option value="">NFL and college</option><option value="nfl">NFL</option><option value="cfb">College football</option></select></div>
+      <div><label class="fl" for="fStatus">Status</label>
+        <select id="fStatus"><option value="">Every status</option><option value="RESEARCH">Research</option><option value="WATCH">Watch</option><option value="PASS">Pass</option><option value="DATA_INCOMPLETE">Data incomplete</option></select></div>
+      <div><label class="fl" for="fSort">Order</label>
+        <select id="fSort"><option value="status">Research first</option><option value="gap">Largest gap</option><option value="kickoff">Soonest kickoff</option></select></div>
+    </div>
+    <p class="note" id="asOf">Loading the board…</p>
+    <div id="games" aria-live="polite">
+      <noscript><p class="note">The live sample needs JavaScript. EdgeDesk’s published research — the same numbers, written up per game — is at <a href="/articles/">/articles/</a>.</p></noscript>
+    </div>
+  </section>
+
+  <section>
+    <h2>How to read a row</h2>
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th scope="col">Field</th><th scope="col">What it is</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">EdgeDesk fair</th><td>The spread EdgeDesk’s model makes the game from football information alone. The market never enters it.</td></tr>
+        <tr><th scope="row">Market</th><td>A captured sportsbook line, with the book and when it was taken. A price older than its window is called stale, not current.</td></tr>
+        <tr><th scope="row">Gap</th><td>EdgeDesk’s number minus the market’s, in points, toward the team EdgeDesk likes more than the market does.</td></tr>
+        <tr><th scope="row">Reliability</th><td>How complete, fresh and consistent the inputs are (0–100). It is not a probability and not a chance of winning.</td></tr>
+      </tbody>
+    </table></div>
+    <h2>The four statuses</h2>
+    <ul class="steps">
+      <li><span class="pill research">Research</span> — clears EdgeDesk’s research gates: worth opening, not a bet.</li>
+      <li><span class="pill watch">Watch</span> — a real disagreement that has not cleared the gates yet (for example a large gap that failed an integrity check).</li>
+      <li><span class="pill pass">Pass</span> — EdgeDesk and the market agree, or the price leaves no value.</li>
+      <li><span class="pill incomplete">Data incomplete</span> — something EdgeDesk needs is missing or stale, and the row says what.</li>
+    </ul>
+    <p>A disagreement is a reason to research a game, never a recommendation to bet it. Large gaps are more often caused by
+    something the model cannot see — an injury, a quarterback change, weather — than by an edge, which is why the
+    biggest ones are held at Watch until they pass EdgeDesk’s integrity checks.</p>
+    <h2>What is in the full terminal</h2>
+    <p>This sample is deliberately limited. The terminal carries every game on the slate, prices at each sportsbook,
+    EdgeDesk EV at the exact price, the drivers behind each number, player props, line movement and your own journal.
+    How the number is built is public: <a href="/methodology/">methodology</a> and the
+    <a href="/record.html">graded public record</a>.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">Every game, every book, and why EdgeDesk disagrees.</h2>
+    <p>NFL and college football research, fair lines and win probabilities, a live market comparison, EdgeDesk EV at
+    the exact price, player props, and a bet journal with closing-line value.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="tool_explorer_trial">Start the 7-day free trial</a>
+      <a class="btn ghost" href="/newsletter/?from=tool_explorer" data-ed-cta="tool_explorer_newsletter">Get the weekly research email</a></div>
+    <p class="fine">7-day free trial. $49.99/month after trial. Cancel anytime.</p>
+  </aside>
+
+  <nav class="links" aria-label="More free research">
+    <a href="/tools/no-vig-calculator/">No-vig odds calculator</a>
+    <a href="/tools/fair-odds-calculator/">Fair odds calculator</a>
+    <a href="/articles/college-football/">College football research</a>
+    <a href="/articles/nfl/">NFL research</a>
+  </nav>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> Every number on this page is EdgeDesk’s research output or a captured market price. Nothing here is betting advice, a prediction or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/tools/">Free tools</a><a href="/articles/">Research</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_home.js?v=20260930c"></script>
+<script>
+/* THE SAME PUBLIC SUBSET THE LANDING PAGE SHOWS, through the same door and
+   the same honesty rules: public.public_home_board() (supabase/home_board.sql
+   — at most 8 games, a 60-second server cache, the four public words, no EV
+   for game lines, nothing personal) re-judged at view time by
+   lib/edgedesk_home.js (a stale market downgrades to DATA INCOMPLETE; a
+   label is never printed over numbers that are not there). Player props and
+   the terminal's drivers are not shown here. */
+(function () {
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var H = window.EDHome;
+  var $ = function (id) { return document.getElementById(id); };
+  var games = [], articles = {}, used = false;
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function timeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
+  var ORDER = { RESEARCH: 0, WATCH: 1, PASS: 2, DATA_INCOMPLETE: 3 };
+  function draw() {
+    var lg = $('fLeague').value, st = $('fStatus').value, so = $('fSort').value;
+    var list = games.filter(function (g) { return (!lg || g.league === lg) && (!st || g.status === st); });
+    list.sort(function (a, b) {
+      if (so === 'gap') return (b.gap || 0) - (a.gap || 0);
+      if (so === 'kickoff') return (Date.parse(a.kickoff_at) || 0) - (Date.parse(b.kickoff_at) || 0);
+      return (ORDER[a.status] - ORDER[b.status]) || ((b.gap || 0) - (a.gap || 0));
+    });
+    var el = $('games');
+    if (!list.length) {
+      el.innerHTML = '<p class="note">' + (games.length ? 'No game in the sample matches those filters.'
+        : 'No upcoming game is on the public board right now. EdgeDesk’s published research is at <a href="/articles/">/articles/</a>.') + '</p>';
+      return;
+    }
+    el.innerHTML = list.map(function (g) {
+      var key = String(g.game_key || '').split('|')[1] || '';
+      var art = articles[key];
+      var mk = g.market_text ? esc(g.market_text) + (g.market_book ? ' · ' + esc(g.market_book) : '') + (g.market_age_text ? ' · ' + esc(g.market_age_text) : '')
+        + (g.market_stale ? ' · <b style="color:var(--warn)">stale</b>' : '') + (g.market_note ? ' · ' + esc(g.market_note) : '') : 'No current market';
+      return '<article class="game">'
+        + '<div class="meta"><span class="pill ' + esc(g.tone) + '">' + esc(g.status_label) + '</span> &nbsp;' + esc(g.league_label)
+        + (g.kickoff_text ? ' · ' + esc(g.kickoff_text) : '') + '</div>'
+        + '<h3>' + esc(g.matchup) + '</h3>'
+        + '<div class="nums">'
+        + '<div class="stat"><div class="k">EdgeDesk fair</div><div class="v" style="font-size:18px">' + esc(g.fair_text || '—') + '</div></div>'
+        + '<div class="stat"><div class="k">Market</div><div class="v" style="font-size:18px">' + (g.market_text ? esc(g.market_text) : '—') + '</div><div class="s">' + mk + '</div></div>'
+        + '<div class="stat"><div class="k">Gap</div><div class="v" style="font-size:18px">' + esc(g.gap_text || '—') + '</div><div class="s">' + (g.toward && g.gap_text ? 'toward ' + esc(g.toward) : '') + (g.reliability != null ? (g.toward ? ' · ' : '') + 'reliability ' + g.reliability : '') + '</div></div>'
+        + '</div>'
+        + (g.status_note ? '<p class="why"><b>' + esc(g.status_label) + ':</b> ' + esc(g.status_note) + '</p>' : '')
+        + (g.key_reason && g.status !== 'DATA_INCOMPLETE' ? '<p class="why">' + esc(g.key_reason) + '</p>' : '')
+        + (g.uncertainty && g.uncertainty.length ? '<p class="why">Uncertain: ' + esc(g.uncertainty.join('; ')) + '.</p>' : '')
+        + '<div class="row">' + (art ? '<a class="btn ghost" href="' + esc(art.url) + '" data-ed-cta="explorer_article">Read the free research</a>' : '')
+        + '<a class="btn" href="/#subscribe" data-ed-cta="explorer_row_trial">Open in the terminal · 7-day free trial</a></div>'
+        + '</article>';
+    }).join('');
+  }
+  ['fLeague', 'fStatus', 'fSort'].forEach(function (id) {
+    $(id).addEventListener('change', function () {
+      draw();
+      if (!used && window.EDPublic) { used = true; window.EDPublic.track('tool_used', { entity: 'model_vs_market', filter: id }); }
+    });
+  });
+  var board = timeout(fetch(SB_URL + '/rest/v1/rpc/public_home_board', { method: 'POST',
+    headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: '{}' })
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), 8000);
+  var pub = timeout(fetch('/articles/data/published.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }), 6000)
+    .catch(function () { return null; });
+  Promise.all([board, pub]).then(function (both) {
+    var rpc = both[0], p = both[1];
+    (p && p.articles || []).forEach(function (a) { if (a.type !== 'postgame' && a.game_id) articles[a.game_id] = a; });
+    var view = H ? H.build(rpc, null, Date.now(), {}) : null;
+    games = view && view.games ? view.games : [];
+    var asOf = rpc && rpc.as_of ? new Date(rpc.as_of) : null;
+    $('asOf').textContent = games.length
+      ? games.length + ' game' + (games.length === 1 ? '' : 's') + ' in the sample' + (asOf ? ' · board as of ' + asOf.toLocaleString() : '')
+        + '. Staleness is judged now, on your clock.'
+      : 'The public board is empty right now.';
+    draw();
+  }).catch(function () {
+    $('asOf').textContent = 'The live board could not be reached just now.';
+    $('games').innerHTML = '<p class="note">Try again in a minute. EdgeDesk’s published research is always at <a href="/articles/">/articles/</a>.</p>';
+  });
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

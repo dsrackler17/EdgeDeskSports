@@ -159,8 +159,11 @@
   function seoDescriptionFor(o, p) {
     var parts = [];
     if (p && p.priced && p.fair_spread_text) {
-      parts.push('EdgeDesk prices ' + o.away + ' at ' + o.home + ' at ' + p.fair_spread_text
-        + (p.total ? ' with a ' + p.total + ' fair total' : '') + '.');
+      /* "prices Missouri at Kansas at Kansas +4.6" read as a typo in every
+         search result it appeared in; the matchup and the number are now
+         separated by a colon. */
+      parts.push('EdgeDesk fair spread for ' + o.away + ' at ' + o.home + ': ' + p.fair_spread_text
+        + (p.total ? ', fair total ' + p.total : '') + '.');
     } else {
       parts.push('EdgeDesk research on ' + o.away + ' at ' + o.home + '.');
     }

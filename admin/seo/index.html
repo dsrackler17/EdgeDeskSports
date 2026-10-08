@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — SEO report</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE INDEXING REPORT — which pages EdgeDesk offers to search engines, and
+     whether each one is served, crawlable, indexable, in the sitemap, with a
+     canonical, a title, a description, a share image and structured data,
+     and whether its internal links resolve.
+
+     It reads articles/data/seo-report.json, which tools/seo/audit.js writes
+     from the repository on every article build (the repository IS the site).
+     Every value is about public pages, so the page needs no sign-in; it is
+     noindex and disallowed in robots.txt like the rest of /admin/.
+
+     WHAT IT CANNOT SAY: whether Google has indexed a page. Only Search
+     Console knows that; its clicks and impressions appear on
+     /admin/acquisition/ once the import (tools/growth/gsc_import.js) is set up.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--accent:#2fa79a;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);vertical-align:top}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td.c{text-align:center}
+.tw{overflow-x:auto}
+.y{color:var(--pos)}.n{color:var(--neg)}.w{color:var(--warn)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+select,input{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif}
+ul.i{margin:4px 0 0 16px;padding:0}
+ul.i li{margin:2px 0}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">seo</span>
+  <nav><a href="/admin/acquisition/">Acquisition</a><a href="/admin/funnel/">Funnel</a><a href="/admin/articles/">Articles</a></nav><span class="sp"></span></div></header>
+<div class="wrap">
+  <h2>Summary</h2>
+  <div class="kpis" id="kpis"></div>
+  <div class="note" id="meta"></div>
+  <div class="row">
+    <select id="flt"><option value="all">Every page</option><option value="err">Pages with errors</option><option value="warn">Pages with warnings</option><option value="articles">Research articles</option><option value="tools">Free tools</option><option value="other">Everything else</option></select>
+    <input id="q" type="search" placeholder="Filter by path">
+  </div>
+  <div class="card"><div class="tw"><table id="t"></table></div></div>
+  <div class="card"><div class="note"><b>What this does not say:</b> whether Google has indexed a page. That is only known to Google Search Console
+    (verify the property by DNS, then set up the import described in docs/growth-engine/README.md). Clicks, impressions and positions then appear on
+    <a href="/admin/acquisition/">the acquisition dashboard</a>. A page that is served, crawlable, indexable, canonical and in the sitemap is
+    eligible to be indexed; Google decides whether it is.</div></div>
+</div>
+<script>
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function yn(b) { return b ? '<span class="y">yes</span>' : '<span class="n">no</span>'; }
+var REP = null;
+function draw() {
+  var f = $('flt').value, q = $('q').value.trim().toLowerCase();
+  var rows = (REP.pages || []).filter(function (r) {
+    if (q && r.path.toLowerCase().indexOf(q) < 0) return false;
+    if (f === 'err') return r.errors.length > 0;
+    if (f === 'warn') return r.warnings.length > 0;
+    if (f === 'articles') return /^\/articles\//.test(r.path);
+    if (f === 'tools') return /^\/tools\//.test(r.path);
+    if (f === 'other') return !/^\/(articles|tools)\//.test(r.path);
+    return true;
+  });
+  $('t').innerHTML = '<tr><th>Page</th><th>Served</th><th>Crawlable</th><th>Indexable</th><th>In sitemap</th><th>Canonical</th><th>Structured data</th><th>Title</th><th>Issues</th></tr>'
+    + rows.map(function (r) {
+      var issues = r.errors.map(function (e) { return '<li class="n">' + esc(e) + '</li>'; }).concat(r.warnings.map(function (w) { return '<li class="w">' + esc(w) + '</li>'; }));
+      return '<tr><td><a href="' + esc(r.path) + '">' + esc(r.path) + '</a></td>'
+        + '<td class="c">' + yn(r.served) + '</td><td class="c">' + yn(r.crawlable) + (r.robots_rule ? '<div class="note">' + esc(r.robots_rule) + '</div>' : '') + '</td>'
+        + '<td class="c">' + yn(r.indexable) + '</td><td class="c">' + yn(r.in_sitemap) + '</td>'
+        + '<td>' + (r.canonical ? (r.canonical === r.url ? '<span class="y">self</span>' : esc(r.canonical)) : '<span class="n">none</span>') + '</td>'
+        + '<td>' + esc((r.ld_types || []).join(', ') || '—') + '</td>'
+        + '<td>' + esc(r.title || '') + (r.title ? '<div class="note">' + r.title.length + ' chars</div>' : '') + '</td>'
+        + '<td>' + (issues.length ? '<ul class="i">' + issues.join('') + '</ul>' : '<span class="y">none</span>') + '</td></tr>';
+    }).join('');
+}
+fetch('/articles/data/seo-report.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (rep) {
+  REP = rep; var s = rep.summary || {};
+  $('kpis').innerHTML = [['Pages', s.pages], ['In the sitemap', s.in_sitemap], ['Served', s.served], ['Crawlable', s.crawlable], ['Indexable', s.indexable],
+    ['With structured data', s.with_structured_data], ['Errors', s.errors], ['Warnings', s.warnings]]
+    .map(function (k) { return '<div class="kpi"><i>' + esc(k[0]) + '</i><b>' + esc(k[1]) + '</b></div>'; }).join('');
+  $('meta').textContent = 'Read from the repository at ' + new Date(rep.generated_at).toLocaleString() + ' · ' + rep.robots_rules + ' robots.txt rules'
+    + ((s.standing_not_in_sitemap || []).length ? ' · standing pages not in the sitemap: ' + s.standing_not_in_sitemap.join(', ') : '');
+  draw();
+}).catch(function (e) { $('meta').textContent = 'The report could not be read: ' + e.message; });
+$('flt').onchange = draw; $('q').oninput = draw;
+</script>
+</body>
+</html>

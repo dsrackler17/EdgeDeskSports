@@ -439,7 +439,8 @@ try {
 
   /* ══ M. THE MORNING ═══════════════════════════════════════════════════ */
   one(`update growth_outbound.research_runs set status = 'done', finished_at = now() where status = 'running';`);
-  settings({ automation_enabled: true, automation_timezone: 'UTC', automation_start_hour: 0, automation_hours: 12,
+  // the window opens an hour before now (UTC), so these checks run inside it at any time of day
+  settings({ automation_enabled: true, automation_timezone: 'UTC', automation_start_hour: (new Date().getUTCHours() + 23) % 24, automation_hours: 12,
     discovery_config: { providers: { brave: true, hunter: true }, budget: { enrichment: 2 } } });
   // stop at the target: P1, P2, P4, P5, P8, P10 qualified today (all customers); set the target to 3
   const qToday = +one(`select count(*) from growth_outbound.prospects where not is_test and campaign_type = 'customer' and first_qualified_at >= date_trunc('day', now());`);

@@ -9,18 +9,25 @@
 // enumerate it. This function holds the service role and is the only path in.
 //
 // ROUTES  (all under /functions/v1/newsletter)
-//   POST /subscribe      { email, cfb, nfl }  -> creates a PENDING row and
-//                        emails a confirmation link. Always answers the same
-//                        way whether or not the address was already known,
-//                        because a different answer is an enumeration oracle.
-//   GET  /confirm?t=     double opt-in. Renders a page.
-//   GET  /unsubscribe?t= renders a confirmation page with a one-click button
+//   POST /subscribe      { email, cfb, nfl, findings, product, product_consent }
+//                        -> creates a PENDING row and emails a confirmation
+//                        link. Always answers the same way whether or not the
+//                        address was already known, because a different
+//                        answer is an enumeration oracle. A CONFIRMED address
+//                        is not changed from here: it is mailed its own
+//                        preferences link instead.
+//   GET  /confirm?t=     303 to the site's static confirm page (#t=...). A GET
+//                        never confirms: mail scanners prefetch links, and
+//                        Supabase serves an Edge Function's HTML as plain
+//                        text, so the page lives on the site.
+//   POST /confirm        { t } -> JSON. What the static page calls.
+//   GET  /unsubscribe?t= 303 to the site's static manage page
 //   POST /unsubscribe?t= THE RFC 8058 ENDPOINT. A mail client posts here with
 //                        `List-Unsubscribe=One-Click` in the body and expects
 //                        a 2xx. It must work with no cookie, no session and no
 //                        JavaScript, which is why it is a raw POST handler.
-//   GET  /preferences?t= the preference page
-//   POST /preferences    { t, cfb, nfl }
+//   GET  /preferences?t= 303 to the site's static manage page
+//   POST /preferences    { t, cfb, nfl, findings, product } (JSON -> JSON)
 //   POST /webhook        provider events, SIGNATURE VERIFIED, deduplicated
 //   POST /dispatch       OPERATOR ONLY. Asks GitHub to run the newsletter
 //                        workflow — a preview, a test send or a retry of the
@@ -149,8 +156,43 @@ function cors(): Record<string, string> {
 }
 
 // ------------------------------------------------------- the confirm mail --
-function confirmEmail(link: string, cfb: boolean, nfl: boolean, site: string, address: string) {
-  const which = cfb && nfl ? 'College football and NFL' : cfb ? 'College football' : 'NFL';
+function topicsLabel(cfb: boolean, nfl: boolean, findings = false, product = false): string {
+  const parts: string[] = [];
+  if (cfb) parts.push('College football');
+  if (nfl) parts.push('NFL');
+  if (findings) parts.push('major model-vs-market findings');
+  if (product) parts.push('occasional product updates');
+  return parts.length ? parts.join(', ') : 'NFL';
+}
+
+function manageEmail(link: string, address: string) {
+  const text = [
+    'EdgeDesk — your newsletter preferences',
+    '',
+    'Somebody entered this address on the EdgeDesk newsletter form. It is already subscribed,',
+    'so nothing was changed. To change what you receive, use your own preferences link:',
+    link,
+    '',
+    'If this was not you, ignore this email. Your subscription is exactly as it was.',
+    '',
+    address,
+  ].join('\n');
+  const html = `<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /></head>
+<body style="margin:0;padding:0;background-color:${T.ink};"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center">
+<table role="presentation" width="600" style="width:600px;max-width:600px;" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:28px 24px;font-family:${SANS};color:${T.text};">
+<div style="font-size:17px;font-weight:800;">EdgeDesk</div>
+<div style="font-size:22px;font-weight:800;padding-top:22px;">You are already subscribed</div>
+<div style="font-size:15px;line-height:1.6;color:${T.dim};padding-top:12px;">Somebody entered this address on the newsletter form. Nothing was changed. To change what you receive, use your own preferences link.</div>
+<div style="padding:22px 0;"><a href="${esc(link)}" style="display:inline-block;background-color:${T.obs};color:${T.onAccent};font-weight:700;font-size:15px;text-decoration:none;padding:13px 22px;border-radius:9px;">Manage my preferences</a></div>
+<div style="font-size:12.5px;line-height:1.6;color:${T.faint};">If this was not you, ignore this email.</div>
+<div style="font-size:12.5px;line-height:1.6;color:${T.faint};padding-top:16px;">${esc(address)}</div>
+</td></tr></table></td></tr></table></body></html>`;
+  return { html, text };
+}
+
+function confirmEmail(link: string, cfb: boolean, nfl: boolean, site: string, address: string,
+  findings = false, product = false) {
+  const which = topicsLabel(cfb, nfl, findings, product);
   const text = [
     'EdgeDesk — confirm your research newsletter',
     '',
@@ -273,10 +315,18 @@ async function handleSubscribe(c: Cfg, req: Request): Promise<Response> {
   let body: Record<string, unknown> = {};
   try { body = await req.json(); } catch (_) { /* fall through to the validator */ }
   const email = String(body.email ?? '').trim().toLowerCase();
-  const cfb = body.cfb === true || body.cfb === 'true';
-  const nfl = body.nfl === true || body.nfl === 'true';
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, reason: 'invalid_email' }, 400);
-  if (!cfb && !nfl) return json({ ok: false, reason: 'no_sport_selected' }, 400);
+  const yes = (v: unknown) => v === true || v === 'true';
+  const cfb = yes(body.cfb);
+  const nfl = yes(body.nfl);
+  const findings = yes(body.findings);
+  // PRODUCT UPDATES ARE A SEPARATE CONSENT: the box and its own tick, never
+  // implied by asking for research.
+  const product = yes(body.product) && yes(body.product_consent);
+  // THE HONEYPOT. A field no person can see; a form-filling bot fills it. It
+  // gets the same answer as everybody and nothing happens.
+  if (String(body.website ?? body.hp ?? '').trim() !== '') return json({ ok: true, state: 'check_your_email' });
+  if (email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, reason: 'invalid_email' }, 400);
+  if (!cfb && !nfl && !findings) return json({ ok: false, reason: 'no_sport_selected' }, 400);
   // CONSENT MUST BE EXPLICIT AND RECORDED. The page sends `consent: true` from
   // a checkbox the reader ticks; without it there is nothing to record and the
   // signup is refused rather than assumed.
@@ -287,25 +337,37 @@ async function handleSubscribe(c: Cfg, req: Request): Promise<Response> {
   try {
     out = await rpc(c, 'newsletter_signup', {
       p_email: email, p_wants_cfb: cfb, p_wants_nfl: nfl,
-      p_source: String(body.source ?? 'public_form').slice(0, 60),
+      p_wants_findings: findings, p_wants_product: product,
+      p_source: String(body.source ?? 'public_form').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 60) || 'public_form',
       p_user_agent: (req.headers.get('user-agent') ?? '').slice(0, 300),
-      // The address is hashed before it is stored: enough to see two signups
-      // came from one place, useless to anybody who steals the table.
-      p_ip_hash: await sha256Hex((req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim()),
+      p_ip_hash: await ipHash(c, req),
     });
   } catch (e) {
-    return json({ ok: false, reason: 'signup_failed', detail: String(e).slice(0, 200) }, 500);
+    // the reason is logged here, never handed to an anonymous caller
+    console.error('newsletter_signup', String(e).slice(0, 300));
+    return json({ ok: false, reason: 'signup_failed' }, 500);
   }
 
   // THE SAME ANSWER EVERY TIME. Whether the address was new, already pending
   // or already confirmed, the caller is told "check your email". A different
   // response per state would turn this endpoint into an address checker.
   if (out?.confirm_token) {
-    const link = `${c.functionBase}/confirm?t=${encodeURIComponent(String(out.confirm_token))}`;
+    // The token rides in the FRAGMENT: it never reaches a server log or a
+    // Referer header, and the page confirms only when the reader presses the
+    // button, so a scanner that prefetches the link confirms nothing.
+    const link = `${c.site}/newsletter/confirm/#t=${encodeURIComponent(String(out.confirm_token))}`;
     const mail = confirmEmail(link, cfb, nfl, c.site,
-      (s?.mailing_address as string) ?? 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423');
+      (s?.mailing_address as string) ?? 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423',
+      findings, product);
     const sent = await sendMail(c, s, email, 'Confirm your EdgeDesk research newsletter', mail);
-    if (!sent.ok) return json({ ok: false, reason: 'confirmation_email_failed', detail: sent.reason }, 502);
+    if (!sent.ok) return json({ ok: false, reason: 'confirmation_email_failed' }, 502);
+  } else if (out?.send_manage_link && out?.manage_token) {
+    // ALREADY SUBSCRIBED: the address's own preferences link, to that address
+    // only. Whoever typed it into the form learns nothing and changes nothing.
+    const link = `${c.site}/newsletter/manage/#t=${encodeURIComponent(String(out.manage_token))}`;
+    const mail = manageEmail(link,
+      (s?.mailing_address as string) ?? 'Rackler Tech Ventures LLC, 2013 89th St, Lubbock, TX 79423');
+    await sendMail(c, s, email, 'Your EdgeDesk newsletter preferences', mail);
   }
   return json({ ok: true, state: 'check_your_email' });
 }
@@ -316,59 +378,53 @@ async function sha256Hex(s: string): Promise<string | null> {
   return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function handleConfirm(c: Cfg, url: URL): Promise<Response> {
-  const t = url.searchParams.get('t') ?? '';
-  const out = await rpc(c, 'newsletter_confirm', { p_token: t });
-  if (!out?.ok) {
-    return page('Link not valid', `<h1>That link is not valid</h1>
-<p>${out?.reason === 'token_expired'
-  ? 'Confirmation links expire after seven days.'
-  : 'It may have already been used, or it may have been copied incompletely.'}</p>
-<p><a href="${esc(c.site)}/newsletter/">Sign up again</a></p>`, c.site, 400);
-  }
-  const which = out.wants_cfb && out.wants_nfl ? 'college football and the NFL'
-    : out.wants_cfb ? 'college football' : 'the NFL';
-  return page('Subscribed', `<h1>You are subscribed</h1>
-<p>${esc(String(out.email_masked ?? 'Your address'))} will get the EdgeDesk week-ahead research email for ${esc(which)}.</p>
-<p>College football arrives Monday at 10:00 AM Central. The NFL edition arrives Tuesday at 10:00 AM Central, after Monday Night Football.</p>
-<div class="card"><p style="margin:0">It is research, not picks: five to ten games worth your own time, EdgeDesk's number against the market's, what the model can see and what it cannot.</p></div>
-<p><a href="${esc(c.functionBase)}/preferences?t=${encodeURIComponent(String(out.manage_token ?? ''))}">Change your preferences</a> ·
-<a href="${esc(c.site)}/articles">Read the research</a></p>`, c.site);
+// THE CLIENT ADDRESS, KEYED. An unsalted SHA-256 of an IPv4 address is
+// reversible by enumeration; keyed with the service key it is not, and two
+// signups from one place still share a value. A request with no address at
+// all is bucketed as ONE source rather than skipping the per-source cap.
+export async function ipHash(c: { serviceKey: string }, req: Request): Promise<string | null> {
+  const h = (name: string) => (req.headers.get(name) ?? '').split(',')[0].trim();
+  const raw = h('cf-connecting-ip') || h('x-forwarded-for') || h('x-real-ip') || 'unknown';
+  return await sha256Hex('edgedesk-nl-ip:' + c.serviceKey + ':' + raw);
 }
 
-function prefsPage(c: Cfg, token: string, state: Record<string, unknown>): Response {
-  const cfb = state.wants_cfb ? ' checked' : '';
-  const nfl = state.wants_nfl ? ' checked' : '';
-  return page('Email preferences', `<h1>Email preferences</h1>
-<p>${esc(String(state.email_masked ?? ''))}</p>
-<form method="POST" action="${esc(c.functionBase)}/preferences">
-<input type="hidden" name="t" value="${esc(token)}">
-<div class="card">
-  <label><input type="checkbox" name="cfb" value="1"${cfb}><span><b>College Football Week Ahead</b><br><span style="color:${T.faint};font-size:13px">Mondays, 10:00 AM Central</span></span></label>
-  <label><input type="checkbox" name="nfl" value="1"${nfl}><span><b>NFL Week Ahead</b><br><span style="color:${T.faint};font-size:13px">Tuesdays, 10:00 AM Central, after Monday Night Football</span></span></label>
-</div>
-<button type="submit">Save preferences</button>
-</form>
-<p style="margin-top:20px"><a href="${esc(c.functionBase)}/unsubscribe?t=${encodeURIComponent(token)}">Unsubscribe from everything</a></p>`, c.site);
+function redirect(to: string): Response {
+  return new Response(null, { status: 303, headers: { location: to, 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
+}
+
+async function handleConfirm(c: Cfg, req: Request, url: URL): Promise<Response> {
+  // A GET IS A LINK BEING OPENED — possibly by a scanner. It confirms nothing:
+  // it hands the token to the site's page in the fragment, where the reader
+  // presses the button. (Confirmation emails sent before this change carry
+  // this URL; they keep working.)
+  if (req.method !== 'POST') {
+    return redirect(`${c.site}/newsletter/confirm/#t=${encodeURIComponent(url.searchParams.get('t') ?? '')}`);
+  }
+  const body = await readBody(req);
+  const out = await rpc(c, 'newsletter_confirm', { p_token: String(body.t ?? '') });
+  return json(out?.ok
+    ? { ok: true, email_masked: out.email_masked, wants_cfb: out.wants_cfb, wants_nfl: out.wants_nfl,
+        wants_findings: out.wants_findings, wants_product: out.wants_product, manage_token: out.manage_token }
+    : { ok: false, reason: out?.reason ?? 'unknown_token' }, out?.ok ? 200 : 400);
 }
 
 async function handlePreferences(c: Cfg, req: Request, url: URL): Promise<Response> {
   if (req.method === 'GET') {
-    const t = url.searchParams.get('t') ?? '';
-    const state = await rpc(c, 'newsletter_preferences_get', { p_token: t });
-    if (!state?.ok) {
-      return page('Link not valid', `<h1>That link is not valid</h1>
-<p>It may have been copied incompletely. <a href="${esc(c.site)}/newsletter/">Sign up again</a></p>`, c.site, 400);
-    }
-    return prefsPage(c, t, state);
+    return redirect(`${c.site}/newsletter/manage/#t=${encodeURIComponent(url.searchParams.get('t') ?? '')}`);
   }
+  const isJson = (req.headers.get('content-type') ?? '').toLowerCase().includes('application/json');
   const form = await readBody(req);
   const t = String(form.t ?? url.searchParams.get('t') ?? '');
+  const on = (v: unknown) => v === '1' || v === true || v === 'true';
+  const opt = (v: unknown) => (v === undefined || v === null ? null : on(v));
   const out = await rpc(c, 'newsletter_preferences_set', {
     p_token: t,
-    p_wants_cfb: form.cfb === '1' || form.cfb === true || form.cfb === 'true',
-    p_wants_nfl: form.nfl === '1' || form.nfl === true || form.nfl === 'true',
+    p_wants_cfb: on(form.cfb),
+    p_wants_nfl: on(form.nfl),
+    p_wants_findings: opt(form.findings),
+    p_wants_product: opt(form.product),
   });
+  if (isJson) return json(out?.ok ? out : { ok: false, reason: out?.reason ?? 'unknown_token' }, out?.ok ? 200 : 400);
   if (!out?.ok) return page('Link not valid', '<h1>That link is not valid</h1>', c.site, 400);
   if (out.state === 'unsubscribed') {
     return page('Unsubscribed', `<h1>Unsubscribed</h1>
@@ -401,25 +457,10 @@ async function handleUnsubscribe(c: Cfg, req: Request, url: URL): Promise<Respon
 
   // A GET is a person following the link in the footer. Unsubscribing them
   // straight from a GET would let a mail scanner that prefetches links do it
-  // for them, so this ASKS — with the sport-only option beside it.
-  const state = await rpc(c, 'newsletter_preferences_get', { p_token: t });
-  if (!state?.ok) {
-    return page('Link not valid', `<h1>That link is not valid</h1>
-<p>It may have been copied incompletely.</p>`, c.site, 400);
-  }
-  const sportLabel = sport === 'CFB' ? 'college football' : sport === 'NFL' ? 'the NFL' : null;
-  return page('Unsubscribe', `<h1>Unsubscribe</h1>
-<p>${esc(String(state.email_masked ?? ''))}</p>
-<form method="POST" action="${esc(c.functionBase)}/unsubscribe?t=${encodeURIComponent(t)}">
-<input type="hidden" name="scope" value="all">
-<div class="card"><p style="margin:0 0 12px">Stop all EdgeDesk research emails to this address.</p>
-<button type="submit">Unsubscribe from everything</button></div>
-</form>
-${sportLabel ? `<form method="POST" action="${esc(c.functionBase)}/unsubscribe?t=${encodeURIComponent(t)}">
-<input type="hidden" name="scope" value="${esc(sport)}">
-<div class="card"><p style="margin:0 0 12px">Or stop only the ${esc(sportLabel)} edition and keep the other one.</p>
-<button class="ghost" type="submit">Unsubscribe from ${esc(sportLabel)} only</button></div></form>` : ''}
-<p><a href="${esc(c.functionBase)}/preferences?t=${encodeURIComponent(t)}">Change preferences instead</a></p>`, c.site);
+  // for them, so the site's manage page ASKS — with the one-topic option
+  // beside it. (This function's own HTML is served as plain text by
+  // Supabase, which is why the page is on the site.)
+  return redirect(`${c.site}/newsletter/manage/#t=${encodeURIComponent(t)}&unsubscribe=${encodeURIComponent(sport)}`);
 }
 
 async function handleWebhook(c: Cfg, req: Request): Promise<Response> {
@@ -535,7 +576,15 @@ async function handleDispatch(c: Cfg, req: Request): Promise<Response> {
   if (sport === 'CFB' || sport === 'NFL') inputs.sport = sport;
   // A TEST SEND MAY NAME ONE ADDRESS and nothing else: it is added to the
   // stored test recipients, never substituted for the subscriber list.
-  if (phase === 'test' && body.to) inputs.to = String(body.to).slice(0, 120);
+  if (phase === 'test' && body.to) {
+    // ONE PLAIN ADDRESS, or nothing: the value becomes a workflow input that
+    // runs beside the service role and the provider key.
+    const to = String(body.to).trim();
+    if (!/^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,180}\.[A-Za-z]{2,24}$/.test(to)) {
+      return json({ ok: false, reason: 'invalid_test_address' }, 400);
+    }
+    inputs.to = to;
+  }
   if (body.force === true || body.force === 'true') inputs.force = 'true';
 
   const res = await fetch(
@@ -590,7 +639,7 @@ export async function handle(req: Request): Promise<Response> {
 
   try {
     if (route === '/subscribe' && req.method === 'POST') return await handleSubscribe(c, req);
-    if (route === '/confirm') return await handleConfirm(c, url);
+    if (route === '/confirm') return await handleConfirm(c, req, url);
     if (route === '/unsubscribe') return await handleUnsubscribe(c, req, url);
     if (route === '/preferences') return await handlePreferences(c, req, url);
     if (route === '/webhook' && req.method === 'POST') return await handleWebhook(c, req);

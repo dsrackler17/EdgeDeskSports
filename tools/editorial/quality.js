@@ -208,7 +208,12 @@
       /* the responsible-gambling helpline and the age line are fixed
          boilerplate, not figures anybody sourced */
       .replace(/1-?800-?GAMBLER/gi, ' ')
-      .replace(/\b21\+/g, ' ');
+      .replace(/\b21\+/g, ' ')
+      /* the offer is site-wide boilerplate too: the trial terms every page
+         prints, worded once in lib/edgedesk_pricing.js (article_render.js
+         TRIAL_LINE) — a price, not a statistic about the game */
+      .split(RENDER.TRIAL_LINE || '\u0000').join(' ')
+      .replace(/\bStart the 7-day free trial\b/g, ' ');
     var out = [];
     var re = /-?\d+(?:\.\d+)?/g, m;
     while ((m = re.exec(t)) !== null) out.push(m[0]);

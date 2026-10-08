@@ -326,7 +326,7 @@ begin
   perform pg_temp.chk('anon can read preferences with a token',
     has_function_privilege('anon', 'public.newsletter_preferences_get(text)', 'execute'));
   perform pg_temp.chk('anon can set preferences with a token',
-    has_function_privilege('anon', 'public.newsletter_preferences_set(text,boolean,boolean)', 'execute'));
+    has_function_privilege('anon', 'public.newsletter_preferences_set(text,boolean,boolean,boolean,boolean)', 'execute'));
   perform pg_temp.chk('anon can unsubscribe with a token',
     has_function_privilege('anon', 'public.newsletter_unsubscribe(text,text,text)', 'execute'));
 end $$;

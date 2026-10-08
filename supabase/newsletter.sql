@@ -115,6 +115,11 @@ create table if not exists public.newsletter_settings (
   -- the edge runtime, so no client and no redeploy can go around them.
   signup_cooldown_seconds integer not null default 900,
   signup_per_ip_hour integer not null default 12,
+  -- ACROSS EVERY SOURCE: rotating addresses defeats the per-source cap, so the
+  -- door also stops mailing confirmations past this many an hour in total, and
+  -- one address is sent at most confirm_max_per_day confirmations a day.
+  signup_global_hour integer not null default 300,
+  confirm_max_per_day integer not null default 5,
 
   -- where a test send goes. Never used by a scheduled edition.
   test_recipients text[] not null default '{}',
@@ -151,6 +156,8 @@ alter table public.newsletter_settings add column if not exists record_stale_hou
 alter table public.newsletter_settings add column if not exists gap_confidence_floor numeric not null default 0.55;
 alter table public.newsletter_settings add column if not exists signup_cooldown_seconds integer not null default 900;
 alter table public.newsletter_settings add column if not exists signup_per_ip_hour integer not null default 12;
+alter table public.newsletter_settings add column if not exists signup_global_hour integer not null default 300;
+alter table public.newsletter_settings add column if not exists confirm_max_per_day integer not null default 5;
 alter table public.newsletter_settings add column if not exists test_recipients text[] not null default '{}';
 alter table public.newsletter_settings add column if not exists updated_by uuid;
 
@@ -170,6 +177,8 @@ alter table public.newsletter_settings add constraint newsletter_settings_shape_
   and gap_confidence_floor between 0 and 1
   and signup_cooldown_seconds between 0 and 86400
   and signup_per_ip_hour between 1 and 1000
+  and signup_global_hour between 1 and 100000
+  and confirm_max_per_day between 1 and 50
   and position('@' in from_email) > 1
   and position('@' in reply_to_email) > 1
   and length(mailing_address) >= 10
@@ -280,6 +289,17 @@ alter table public.newsletter_subscribers add column if not exists consent_versi
 alter table public.newsletter_subscribers add column if not exists confirm_attempts integer not null default 0;
 alter table public.newsletter_subscribers add column if not exists unsubscribe_source text;
 alter table public.newsletter_subscribers add column if not exists manage_token text;
+-- TWO MORE TOPICS (2026-10, the growth engine). Major model-vs-market findings
+-- are research, sent only when one clears the research bar; product updates
+-- are NOT research and carry their own consent stamp, because "send me the
+-- college football research" is not consent to hear about features.
+alter table public.newsletter_subscribers add column if not exists wants_findings boolean not null default false;
+alter table public.newsletter_subscribers add column if not exists wants_product boolean not null default false;
+alter table public.newsletter_subscribers add column if not exists product_consent_at timestamptz;
+alter table public.newsletter_subscribers add column if not exists product_consent_source text;
+-- when a CONFIRMED address was last mailed its own preferences link because
+-- somebody submitted it on the public form (see newsletter_signup)
+alter table public.newsletter_subscribers add column if not exists manage_mail_sent_at timestamptz;
 -- A project that ran an earlier draft of this file carries the digest column;
 -- it is left in place (additive convention) and simply no longer read.
 update public.newsletter_subscribers
@@ -615,13 +635,18 @@ $$;
 -- anonymous caller a confirmation token for any address they name is a door
 -- that defeats double opt-in. The public path is the edge function, which
 -- calls this and then EMAILS the token to the address it is for.
+-- The signature grew two topics (2026-10). The old six-argument function is
+-- dropped first so a call by name resolves to exactly one function.
+drop function if exists public.newsletter_signup(text, boolean, boolean, text, text, text);
 create or replace function public.newsletter_signup(
   p_email text,
   p_wants_cfb boolean,
   p_wants_nfl boolean,
   p_source text default 'public_form',
   p_user_agent text default null,
-  p_ip_hash text default null
+  p_ip_hash text default null,
+  p_wants_findings boolean default false,
+  p_wants_product boolean default false
 ) returns jsonb
 language plpgsql
 security definer
@@ -635,12 +660,20 @@ declare
   v_suppressed public.newsletter_suppressions;
   v_cooldown integer;
   v_per_ip integer;
+  v_global integer;
+  v_max_day integer;
   v_recent integer;
+  v_attempts integer;
+  v_findings boolean := coalesce(p_wants_findings, false);
+  v_product boolean := coalesce(p_wants_product, false);
+  -- a label, never free text: it is stored on the consent record
+  v_source text := case when coalesce(p_source, '') ~ '^[a-z0-9_]{1,60}$' then p_source else 'public_form' end;
 begin
-  if v_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+  if length(v_email) > 254 or v_email !~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
     return jsonb_build_object('ok', false, 'reason', 'invalid_email');
   end if;
-  if not (coalesce(p_wants_cfb, false) or coalesce(p_wants_nfl, false)) then
+  -- at least one RESEARCH topic: product updates alone are not a newsletter
+  if not (coalesce(p_wants_cfb, false) or coalesce(p_wants_nfl, false) or v_findings) then
     return jsonb_build_object('ok', false, 'reason', 'no_sport_selected');
   end if;
 
@@ -651,8 +684,21 @@ begin
     return jsonb_build_object('ok', true, 'state', 'suppressed', 'reason', v_suppressed.reason);
   end if;
 
-  select coalesce(signup_cooldown_seconds, 900), coalesce(signup_per_ip_hour, 12)
-    into v_cooldown, v_per_ip from public.newsletter_settings where id = 1;
+  select coalesce(signup_cooldown_seconds, 900), coalesce(signup_per_ip_hour, 12),
+         coalesce(signup_global_hour, 300), coalesce(confirm_max_per_day, 5)
+    into v_cooldown, v_per_ip, v_global, v_max_day from public.newsletter_settings where id = 1;
+  v_cooldown := coalesce(v_cooldown, 900); v_per_ip := coalesce(v_per_ip, 12);
+  v_global := coalesce(v_global, 300); v_max_day := coalesce(v_max_day, 5);
+
+  -- EVERY SOURCE TOGETHER. Rotating addresses (or a missing client address,
+  -- which the edge function buckets as one source) cannot turn this door into
+  -- a mailer: past the hourly total no confirmation goes out, and the caller
+  -- gets the same answer as everybody else.
+  select count(*) into v_recent from public.newsletter_subscribers
+   where confirm_sent_at > now() - interval '1 hour' and status = 'pending';
+  if v_recent >= v_global then
+    return jsonb_build_object('ok', true, 'state', 'pending', 'throttled', 'global');
+  end if;
 
   -- PER SOURCE. Counted on the hashed address rather than the address itself,
   -- so the guard works without the table ever holding one. A caller over the
@@ -669,6 +715,8 @@ begin
   v_manage  := encode(gen_random_bytes(32), 'hex');
 
   select * into v_row from public.newsletter_subscribers where email = v_email;
+  v_attempts := case when found and v_row.confirm_sent_at > now() - interval '24 hours'
+                     then coalesce(v_row.confirm_attempts, 0) else 0 end;
 
   -- PER ADDRESS. A pending signup that was mailed a moment ago does not get a
   -- second message however many times the form is submitted; the preferences
@@ -679,35 +727,52 @@ begin
     update public.newsletter_subscribers
        set wants_cfb = coalesce(p_wants_cfb, false),
            wants_nfl = coalesce(p_wants_nfl, false),
+           wants_findings = v_findings,
+           wants_product = v_product,
+           product_consent_at = case when v_product then now() else null end,
+           product_consent_source = case when v_product then v_source else null end,
            confirm_attempts = v_row.confirm_attempts + 1
      where id = v_row.id;
     return jsonb_build_object('ok', true, 'state', 'pending', 'throttled', 'cooldown',
       'subscriber_id', v_row.id);
   end if;
+  -- ONE ADDRESS, A FEW CONFIRMATIONS A DAY, whatever the cooldown says: the
+  -- cooldown alone still let one victim be sent ~96 a day from rotating
+  -- sources.
+  if found and v_row.status = 'pending' and v_attempts >= v_max_day then
+    return jsonb_build_object('ok', true, 'state', 'pending', 'throttled', 'daily',
+      'subscriber_id', v_row.id);
+  end if;
   if not found then
     insert into public.newsletter_subscribers
-      (email, status, wants_cfb, wants_nfl, consent_source, consent_at, consent_user_agent,
-       consent_ip_hash, confirm_token_hash, confirm_sent_at, confirm_expires_at, manage_token)
+      (email, status, wants_cfb, wants_nfl, wants_findings, wants_product, product_consent_at, product_consent_source,
+       consent_source, consent_at, consent_user_agent,
+       consent_ip_hash, confirm_token_hash, confirm_sent_at, confirm_expires_at, confirm_attempts, manage_token)
     values
-      (v_email, 'pending', coalesce(p_wants_cfb, false), coalesce(p_wants_nfl, false),
-       p_source, now(), p_user_agent, p_ip_hash,
-       public.newsletter_token_hash(v_confirm), now(), now() + interval '7 days',
+      (v_email, 'pending', coalesce(p_wants_cfb, false), coalesce(p_wants_nfl, false), v_findings, v_product,
+       case when v_product then now() end, case when v_product then v_source end,
+       v_source, now(), left(p_user_agent, 300), p_ip_hash,
+       public.newsletter_token_hash(v_confirm), now(), now() + interval '7 days', 1,
        v_manage)
     returning * into v_row;
     return jsonb_build_object('ok', true, 'state', 'pending', 'confirm_token', v_confirm,
       'manage_token', v_manage, 'subscriber_id', v_row.id);
   end if;
 
-  -- ALREADY CONFIRMED: the preferences are updated and NO new confirmation is
-  -- sent, because the address is already proven. The caller is told the state
-  -- so it can send the right email; it is never told whether the address
-  -- existed before this call, because that is an enumeration oracle.
+  -- ALREADY CONFIRMED: NOTHING CHANGES FROM HERE. This door is anonymous, so
+  -- a stranger who knows an address must not be able to add topics to that
+  -- reader's inbox (it used to OR the new topics in, unannounced). Instead the
+  -- address's OWN preferences link is mailed to it, at most once per
+  -- cooldown, and the reader changes what they want there. The edge function
+  -- is told so it can send that email; the browser is told nothing different
+  -- from any other signup, because that would be an enumeration oracle.
   if v_row.status = 'confirmed' then
-    update public.newsletter_subscribers
-       set wants_cfb = wants_cfb or coalesce(p_wants_cfb, false),
-           wants_nfl = wants_nfl or coalesce(p_wants_nfl, false)
-     where id = v_row.id;
-    return jsonb_build_object('ok', true, 'state', 'already_confirmed', 'subscriber_id', v_row.id);
+    if v_row.manage_mail_sent_at is not null and v_row.manage_mail_sent_at > now() - make_interval(secs => v_cooldown) then
+      return jsonb_build_object('ok', true, 'state', 'already_confirmed', 'throttled', 'cooldown', 'subscriber_id', v_row.id);
+    end if;
+    update public.newsletter_subscribers set manage_mail_sent_at = now() where id = v_row.id;
+    return jsonb_build_object('ok', true, 'state', 'already_confirmed', 'subscriber_id', v_row.id,
+      'send_manage_link', true, 'manage_token', v_row.manage_token);
   end if;
 
   -- PENDING OR PREVIOUSLY UNSUBSCRIBED: a fresh token, a fresh consent stamp.
@@ -717,14 +782,18 @@ begin
      set status = 'pending',
          wants_cfb = coalesce(p_wants_cfb, false),
          wants_nfl = coalesce(p_wants_nfl, false),
-         consent_source = p_source,
+         wants_findings = v_findings,
+         wants_product = v_product,
+         product_consent_at = case when v_product then now() else null end,
+         product_consent_source = case when v_product then v_source else null end,
+         consent_source = v_source,
          consent_at = now(),
-         consent_user_agent = p_user_agent,
+         consent_user_agent = left(p_user_agent, 300),
          consent_ip_hash = p_ip_hash,
          confirm_token_hash = public.newsletter_token_hash(v_confirm),
          confirm_sent_at = now(),
          confirm_expires_at = now() + interval '7 days',
-         confirm_attempts = v_row.confirm_attempts + 1,
+         confirm_attempts = v_attempts + 1,
          manage_token = v_manage,
          unsubscribed_at = null,
          unsubscribe_source = null
@@ -733,7 +802,8 @@ begin
     'manage_token', v_manage, 'subscriber_id', v_row.id);
 end;
 $$;
-revoke all on function public.newsletter_signup(text, boolean, boolean, text, text, text) from public, anon, authenticated;
+revoke all on function public.newsletter_signup(text, boolean, boolean, text, text, text, boolean, boolean) from public, anon, authenticated;
+grant execute on function public.newsletter_signup(text, boolean, boolean, text, text, text, boolean, boolean) to service_role;
 
 -- -------------------------------------------------------------- confirm ----
 create or replace function public.newsletter_confirm(p_token text)
@@ -767,7 +837,8 @@ begin
   -- complaint is NOT cleared by anything a click can do
   delete from public.newsletter_suppressions where email = v.email and reason = 'unsubscribe';
   return jsonb_build_object('ok', true, 'email_masked', public.newsletter_mask_email(v.email),
-    'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl, 'manage_token', v_manage);
+    'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl,
+    'wants_findings', v.wants_findings, 'wants_product', v.wants_product, 'manage_token', v_manage);
 end;
 $$;
 -- CALLABLE BY A BROWSER ON PURPOSE. This and the three manage-by-token doors
@@ -805,14 +876,19 @@ begin
   return jsonb_build_object('ok', true, 'status', v.status,
     'email_masked', public.newsletter_mask_email(v.email),
     'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl,
+    'wants_findings', v.wants_findings, 'wants_product', v.wants_product,
     'confirmed_at', v.confirmed_at, 'consent_source', v.consent_source, 'consent_at', v.consent_at);
 end;
 $$;
 revoke all on function public.newsletter_preferences_get(text) from public;
 grant execute on function public.newsletter_preferences_get(text) to anon, authenticated;
 
+-- Two optional topics were added (2026-10): null leaves a topic as it is, so
+-- a caller that only knows the two sports changes only the two sports.
+drop function if exists public.newsletter_preferences_set(text, boolean, boolean);
 create or replace function public.newsletter_preferences_set(
-  p_token text, p_wants_cfb boolean, p_wants_nfl boolean
+  p_token text, p_wants_cfb boolean, p_wants_nfl boolean,
+  p_wants_findings boolean default null, p_wants_product boolean default null
 ) returns jsonb
 language plpgsql
 security definer
@@ -826,23 +902,44 @@ begin
   select * into v from public.newsletter_subscribers
    where manage_token = p_token;
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
-  -- TURNING BOTH OFF IS AN UNSUBSCRIBE, said in the one place that can be
-  -- sure of it, rather than leaving a confirmed row nothing will ever send to.
-  if not (coalesce(p_wants_cfb, false) or coalesce(p_wants_nfl, false)) then
+  -- TURNING EVERY RESEARCH TOPIC OFF IS AN UNSUBSCRIBE, said in the one place
+  -- that can be sure of it, rather than leaving a confirmed row nothing will
+  -- ever send to. (Product updates alone are not a reason to keep a row.)
+  if not (coalesce(p_wants_cfb, false) or coalesce(p_wants_nfl, false)
+          or coalesce(p_wants_findings, v.wants_findings, false)) then
     return public.newsletter_unsubscribe(p_token, 'all', 'preferences_page');
   end if;
   update public.newsletter_subscribers
      set wants_cfb = coalesce(p_wants_cfb, false),
          wants_nfl = coalesce(p_wants_nfl, false),
+         wants_findings = coalesce(p_wants_findings, wants_findings),
+         wants_product = coalesce(p_wants_product, wants_product),
+         product_consent_at = case
+           when p_wants_product is true and not wants_product then now()
+           when p_wants_product is false then null
+           else product_consent_at end,
+         product_consent_source = case
+           when p_wants_product is true and not wants_product then 'preferences_page'
+           when p_wants_product is false then null
+           else product_consent_source end,
+         -- A REVIVAL IS A NEW CONSENT. Re-subscribing from an old link is the
+         -- reader's own act, so it is honoured, and recorded as what it is
+         -- rather than left looking like the original signup.
+         consent_source = case when status = 'unsubscribed' then 'preferences_page' else consent_source end,
+         consent_at = case when status = 'unsubscribed' then now() else consent_at end,
+         unsubscribed_at = case when status = 'unsubscribed' then null else unsubscribed_at end,
+         unsubscribe_source = case when status = 'unsubscribed' then null else unsubscribe_source end,
          status = case when status = 'unsubscribed' then 'confirmed' else status end
-   where id = v.id;
+   where id = v.id
+  returning * into v;
   delete from public.newsletter_suppressions where email = v.email and reason = 'unsubscribe';
-  return jsonb_build_object('ok', true, 'wants_cfb', coalesce(p_wants_cfb, false),
-    'wants_nfl', coalesce(p_wants_nfl, false), 'email_masked', public.newsletter_mask_email(v.email));
+  return jsonb_build_object('ok', true, 'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl,
+    'wants_findings', v.wants_findings, 'wants_product', v.wants_product,
+    'email_masked', public.newsletter_mask_email(v.email));
 end;
 $$;
-revoke all on function public.newsletter_preferences_set(text, boolean, boolean) from public;
-grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to anon, authenticated;
+revoke all on function public.newsletter_preferences_set(text, boolean, boolean, boolean, boolean) from public;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean, boolean, boolean) to anon, authenticated;
 
 -- UNSUBSCRIBE WITHOUT A LOGIN, which is what the one-click header needs.
 -- Scope 'all' suppresses the address; a single sport turns one preference off
@@ -871,23 +968,37 @@ begin
    where manage_token = p_token;
   if not found then return jsonb_build_object('ok', false, 'reason', 'unknown_token'); end if;
 
-  if v_scope = 'CFB' or v_scope = 'NFL' then
+  -- ONE TOPIC. Product updates can always be dropped on their own; a research
+  -- topic that was the last one left becomes a full unsubscribe.
+  if v_scope = 'PRODUCT' then
     update public.newsletter_subscribers
-       set wants_cfb = case when v_scope = 'CFB' then false else wants_cfb end,
-           wants_nfl = case when v_scope = 'NFL' then false else wants_nfl end
+       set wants_product = false, product_consent_at = null, product_consent_source = null
      where id = v.id
     returning * into v;
-    if not (v.wants_cfb or v.wants_nfl) then
+    return jsonb_build_object('ok', true, 'scope', v_scope, 'state', 'partial',
+      'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl, 'wants_findings', v.wants_findings, 'wants_product', false,
+      'email_masked', public.newsletter_mask_email(v.email));
+  end if;
+  if v_scope = 'CFB' or v_scope = 'NFL' or v_scope = 'FINDINGS' then
+    update public.newsletter_subscribers
+       set wants_cfb = case when v_scope = 'CFB' then false else wants_cfb end,
+           wants_nfl = case when v_scope = 'NFL' then false else wants_nfl end,
+           wants_findings = case when v_scope = 'FINDINGS' then false else wants_findings end
+     where id = v.id
+    returning * into v;
+    if not (v.wants_cfb or v.wants_nfl or v.wants_findings) then
       v_scope := 'ALL';
     else
       return jsonb_build_object('ok', true, 'scope', v_scope, 'state', 'partial',
         'wants_cfb', v.wants_cfb, 'wants_nfl', v.wants_nfl,
+        'wants_findings', v.wants_findings, 'wants_product', v.wants_product,
         'email_masked', public.newsletter_mask_email(v.email));
     end if;
   end if;
 
   update public.newsletter_subscribers
-     set status = 'unsubscribed', unsubscribed_at = now(), unsubscribe_source = v_source
+     set status = 'unsubscribed', unsubscribed_at = now(), unsubscribe_source = v_source,
+         wants_product = false, product_consent_at = null, product_consent_source = null
    where id = v.id;
   insert into public.newsletter_suppressions (email, reason, detail)
   values (v.email, 'unsubscribe', v_source)
@@ -905,7 +1016,7 @@ grant execute on function public.newsletter_unsubscribe(text, text, text) to ano
 -- stated too rather than left to the platform's defaults.
 grant execute on function public.newsletter_confirm(text) to service_role;
 grant execute on function public.newsletter_preferences_get(text) to service_role;
-grant execute on function public.newsletter_preferences_set(text, boolean, boolean) to service_role;
+grant execute on function public.newsletter_preferences_set(text, boolean, boolean, boolean, boolean) to service_role;
 grant execute on function public.newsletter_unsubscribe(text, text, text) to service_role;
 
 -- ------------------------------------------------------ the signed-in door --
@@ -1119,14 +1230,25 @@ as $$
 $$;
 revoke all on function public.newsletter_eligible(text) from public, anon, authenticated;
 
+-- A COUNT OF THE LIST IS STILL ABOUT THE LIST: operators and the server
+-- only. It was readable by any signed-in reader. The session's role setting
+-- survives SECURITY DEFINER (only current_user is swapped), so a reader's
+-- `authenticated` session is recognised and asked for the operator allowlist;
+-- the service role and the SQL editor pass.
 create or replace function public.newsletter_eligible_count(p_sport text)
 returns integer
-language sql
+language plpgsql
 stable
 security definer
 set search_path = public, pg_temp
 as $$
-  select count(*)::integer from public.newsletter_eligible(p_sport);
+begin
+  if coalesce(nullif(current_setting('role', true), ''), 'none') in ('authenticated', 'anon')
+     and not public.newsletter_is_admin() then
+    raise exception 'newsletter_eligible_count is for operators' using errcode = '42501';
+  end if;
+  return (select count(*)::integer from public.newsletter_eligible(p_sport));
+end;
 $$;
 revoke all on function public.newsletter_eligible_count(text) from public, anon;
 grant execute on function public.newsletter_eligible_count(text) to authenticated;
@@ -1358,7 +1480,7 @@ declare
     'target_games', 'max_games', 'cfb_threshold', 'nfl_threshold',
     'cfb_expansion_threshold', 'nfl_expansion_threshold',
     'quote_stale_hours', 'record_stale_hours', 'gap_confidence_floor', 'test_recipients',
-    'signup_cooldown_seconds', 'signup_per_ip_hour'];
+    'signup_cooldown_seconds', 'signup_per_ip_hour', 'signup_global_hour', 'confirm_max_per_day'];
 begin
   if not public.newsletter_is_admin() then
     raise exception 'not authorised' using errcode = '42501';
@@ -1393,6 +1515,8 @@ begin
          gap_confidence_floor = coalesce((p_patch->>'gap_confidence_floor')::numeric, s.gap_confidence_floor),
          signup_cooldown_seconds = coalesce((p_patch->>'signup_cooldown_seconds')::integer, s.signup_cooldown_seconds),
          signup_per_ip_hour = coalesce((p_patch->>'signup_per_ip_hour')::integer, s.signup_per_ip_hour),
+         signup_global_hour = coalesce((p_patch->>'signup_global_hour')::integer, s.signup_global_hour),
+         confirm_max_per_day = coalesce((p_patch->>'confirm_max_per_day')::integer, s.confirm_max_per_day),
          test_recipients = coalesce(
            (select array_agg(value::text) from jsonb_array_elements_text(p_patch->'test_recipients')),
            s.test_recipients),
