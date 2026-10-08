@@ -53,13 +53,13 @@
    "week": 5
   },
   {
-   "ats_at_close": 0.0,
-   "ats_at_freeze_line": 0.0,
-   "bias": -11.663,
-   "brier": 0.0758,
-   "clv_mean": 0.0,
+   "ats_at_close": 0.333,
+   "ats_at_freeze_line": 0.333,
+   "bias": -8.262,
+   "brier": 0.0932,
+   "clv_mean": 1.083,
    "disagreement_c_d_mean": 1.482,
-   "final": 1,
+   "final": 3,
    "frozen_games": 58,
    "largest_misses": [
     {
@@ -67,18 +67,30 @@
      "final": 21.0,
      "game": "Southern Miss @ Troy",
      "v2": 9.3
+    },
+    {
+     "abs_error": 8.9,
+     "final": 19.0,
+     "game": "New Mexico State @ Florida International",
+     "v2": 10.1
+    },
+    {
+     "abs_error": 4.2,
+     "final": -1.0,
+     "game": "Jacksonville State @ Kennesaw State",
+     "v2": -5.2
     }
    ],
-   "mae": 11.663,
-   "mae_candidate_001_same_games": 11.676,
-   "mae_close": 11.5,
-   "mae_line_at_freeze": 11.5,
-   "mae_v1_same_games": 11.28,
-   "mae_v2_same_close_games": 11.663,
-   "mae_v2_same_line_at_freeze_games": 11.663,
-   "mae_v2_vs_candidate_001_games": 11.663,
-   "mae_v2_vs_v1_games": 11.663,
-   "rmse": 11.663,
+   "mae": 8.262,
+   "mae_candidate_001_same_games": 8.414,
+   "mae_close": 8.583,
+   "mae_line_at_freeze": 9.5,
+   "mae_v1_same_games": 8.467,
+   "mae_v2_same_close_games": 8.262,
+   "mae_v2_same_line_at_freeze_games": 8.262,
+   "mae_v2_vs_candidate_001_games": 8.262,
+   "mae_v2_vs_v1_games": 8.262,
+   "rmse": 8.817,
    "week": 6
   }
  ],
@@ -86,17 +98,17 @@
  "feature_drift_psi": {
   "ens_pred": 0.097,
   "ens_pred_noise_q99": 0.184,
-  "ens_sd": 0.144,
+  "ens_sd": 0.138,
   "ens_sd_noise_q99": 0.184,
-  "pred_total": 0.114,
+  "pred_total": 0.121,
   "pred_total_noise_q99": 0.184,
   "reference_weeks": "week6",
-  "sigma": 0.234,
+  "sigma": 0.23,
   "sigma_noise_q99": 0.184
  },
- "generated_at": "2026-10-08T10:50:18Z",
+ "generated_at": "2026-10-08T17:39:05Z",
  "learning": {
-  "bias": -1.4175263157894737,
+  "bias": -1.5919152542372879,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -109,20 +121,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.4175263157894737,
+    "bias": -1.5919152542372879,
     "fcs_not_priced_games": 3,
-    "games_scored": 57,
-    "mae": 13.555105263157897,
-    "major_miss_share": 0.19298245614035087,
+    "games_scored": 59,
+    "mae": 13.318050847457629,
+    "major_miss_share": 0.1864406779661017,
     "sources": {
-     "FROZEN": 57
+     "FROZEN": 59
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 57,
-  "mae": 13.555105263157897,
-  "major_miss_share": 0.19298245614035087,
+  "games_scored": 59,
+  "mae": 13.318050847457629,
+  "major_miss_share": 0.1864406779661017,
   "miss_classes": {
    "explosive_variance": 2,
    "garbage_time": 2,
@@ -133,7 +145,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 57
+   "FROZEN": 59
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1815,8 +1827,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 57,
+  "final": 59,
   "frozen_games": 114,
-  "mae": 13.555
+  "mae": 13.318
  }
 }

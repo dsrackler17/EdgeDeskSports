@@ -85,6 +85,7 @@ try {
   settings({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701', test_inbox: 'owner-test@edgedesk.test',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
   chk('A configured: nothing needs attention', JSON.stringify(codes()) === '[]', codes());
   // dozens of live emails in one day: the warm-up (Phase 12, its own suite) is off here
   settings({ test_mode: false, confirm_live: true, warmup_enabled: false, confirm_cap_increase: true });

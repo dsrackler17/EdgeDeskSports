@@ -96,6 +96,10 @@ globalThis.fetch = async (input, init) => {
     MAIL.push({ key: h['idempotency-key'], authz: h.authorization, msg: m });
     return jres(200, { id: 're_lc_' + String(MAIL.length).padStart(4, '0') });
   }
+  // (Phase 13) the configured opt-out endpoint IS the deployed opt-out function
+  if (u.host === 'iattxbkbufslbauoumga.supabase.co' && u.pathname === '/functions/v1/growth_outbound_optout') {
+    return M.optout.handle(new Request(url, { method: (init && init.method) || 'GET', headers: h, body: init && init.body }), cfg.optout);
+  }
   if (u.pathname === '/robots.txt') return new Response('User-agent: *\nAllow: /', { status: 200, headers: { 'content-type': 'text/plain' } });
   if (WEB[u.origin + u.pathname]) return new Response(WEB[u.origin + u.pathname], { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
   return new Response('not found', { status: 404, headers: { 'content-type': 'text/html' } });
@@ -221,6 +225,16 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
     x = await hook('email.delivered', 're_lc_0001');
     chk('3 Resend\'s signed webhook says delivered: recorded', x.status === 200 && one(`select delivery_status from growth_outbound.sends where resend_message_id = 're_lc_0001';`) === 'delivered', x.b);
     chk('3 a test send does not make them contacted', pstatus(PAT) !== 'contacted');
+    // (Phase 13) going live needs the webhook PROVEN (the delivered event above
+    // did it) and the opt-out endpoint CHECKED at its base, end to end
+    let st = own(`select public.growth_outbound_settings();`);
+    chk('3 the signed event proved the webhook; the opt-out endpoint is still unchecked, so live sending is blocked', st.webhook.proven === true
+      && JSON.stringify(st.live_send_blockers) === JSON.stringify(['unsubscribe_endpoint_unverified']), st.live_send_blockers);
+    x = await call('send', post('send', { action: 'optout_check' }, OWNER_T));
+    st = own(`select public.growth_outbound_settings();`);
+    chk('3 the owner checks the opt-out endpoint: a GET redirects to the stop page, a one-click POST reaches the database; recorded, nothing blocks',
+      x.status === 200 && x.b.ok === true && x.b.check.ok === true && x.b.check.redirect_ok === true && x.b.check.post_ok === true
+      && st.live_send_blockers.length === 0 && one(`select count(*) from growth_outbound.suppressions;`) === '0', [x.b, st.live_send_blockers]);
 
     /* ══ 4. LIVE ══════════════════════════════════════════════════════════ */
     r = own(`select public.growth_outbound_settings_update('{"test_mode": false, "confirm_live": true}'::jsonb);`);

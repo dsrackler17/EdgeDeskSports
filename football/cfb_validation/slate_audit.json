@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-08T17:07:41.266Z",
- "board_generated_at": "2026-10-08T17:07:39.356Z",
+ "generated_at": "2026-10-08T18:07:46.008Z",
+ "board_generated_at": "2026-10-08T18:07:44.398Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,6 +15,46 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
+  {
+   "game_id": "401862795",
+   "game": "Tulane @ Army",
+   "kickoff": "2026-10-10T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Army -8.6",
+   "market": "Army -3.0",
+   "books": 1,
+   "gap": 5.58,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856724",
+   "game": "Florida @ Texas",
+   "kickoff": "2026-10-17T04:00:00.000Z",
+   "named": false,
+   "edgedesk": "Texas -14.7",
+   "market": "Texas -9.5",
+   "books": 1,
+   "gap": 5.2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
   {
    "game_id": "401862794",
    "game": "South Florida @ UTSA",
@@ -36,70 +76,130 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
+   "game_id": "401856826",
+   "game": "Iowa State @ BYU",
+   "kickoff": "2026-10-10T02:15:00.000Z",
+   "named": false,
+   "edgedesk": "BYU -13.8",
+   "market": "BYU -10.5",
+   "books": 1,
+   "gap": 3.35,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401871052",
+   "game": "Missouri State @ Western Kentucky",
+   "kickoff": "2026-10-08T23:00:00.000Z",
+   "named": false,
+   "edgedesk": "Western Kentucky -1.6",
+   "market": "Missouri State -1.5",
+   "books": 1,
+   "gap": 3.15,
+   "gap_class": "MODERATE",
+   "favorite_flip": true,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401858494",
+   "game": "Wisconsin @ UCLA",
+   "kickoff": "2026-10-17T04:00:00.000Z",
+   "named": false,
+   "edgedesk": "UCLA -5.7",
+   "market": "UCLA -3.5",
+   "books": 1,
+   "gap": 2.2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401858256",
    "game": "North Carolina @ Pittsburgh",
    "kickoff": "2026-10-10T16:00:00.000Z",
    "named": false,
    "edgedesk": "Pittsburgh -12.0",
-   "market": "Pittsburgh -3.5",
-   "books": 1,
-   "gap": 8.52,
+   "market": "Pittsburgh -3.6",
+   "books": 0,
+   "gap": 8.4,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
    "requirements": [
     {
      "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-10T16:00:00.000Z"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Acrisure Stadium), declared by the schedule feed"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.4 rating pts"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Pittsburgh: Mason Heintschel (previous game) · PASS: North Carolina: Billy Edwards Jr. (previous game)"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "no abnormal availability",
-     "result": "FAIL",
-     "detail": "FAIL: Pittsburgh: availability feed fetch failed — abnormal missing data · FAIL: North Carolina: availability feed fetch failed — abnormal missing data"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 4.4 pts on EdgeDesk’s side"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.7 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; football-only calibration preserves the major gap fail."
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
    "game_id": "401856718",

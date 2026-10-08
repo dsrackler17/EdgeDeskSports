@@ -93,6 +93,8 @@ try {
   // Tess: a TEST send (to the owner's test inbox); everyone else: a live one
   let c = claim(did(1));
   result(c.send_id, 're_test_1');
+  // (Phase 13) live sending needs the opt-out endpoint checked and the webhook proven: the suite stands both in
+  one(SEED.liveReady());
   settings({ test_mode: false, confirm_live: true });
   for (const [n] of PEOPLE.slice(1)) { c = claim(did(n)); result(c.send_id, 're_live_' + n); }
   chk('(seed) one test send and six live ones, all sent', count('sends', 'sent_at is not null and is_test') === 1 && count('sends', 'sent_at is not null and not is_test') === 6
@@ -248,8 +250,8 @@ try {
   const checks = j(one(`select jsonb_agg(to_jsonb(c) order by c.step) from growth_outbound.self_check() c;`));
   const row39 = checks.find((x) => x.step === 39) || {};
   chk('V the System check proves the rules and says what came in', row39.outcome === 'ok' && /detection on; \d+ replied, 1 automatic, 3 asked to stop, 4 from nobody we wrote to \(30 days\); last /.test(row39.item), row39);
-  chk('V every System check row is ok; twenty-one tables, every one denied to clients', checks.every((x) => /^ok/.test(x.outcome))
-    && one(`select count(*) from pg_tables where schemaname = 'growth_outbound';`) === '21'
+  chk('V every System check row is ok; twenty-five tables (Phase 13 added four), every one denied to clients', checks.every((x) => /^ok/.test(x.outcome))
+    && one(`select count(*) from pg_tables where schemaname = 'growth_outbound';`) === '25'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and tablename = 'replies' and policyname = 'deny_clients' and permissive = 'RESTRICTIVE';`) === '1',
     checks.filter((x) => !/^ok/.test(x.outcome)));
 } catch (e) {

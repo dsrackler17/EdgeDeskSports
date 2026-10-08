@@ -162,6 +162,7 @@ try {
   chk('(setup) a TEST send to the owner\'s inbox', r.ok === true && r.test === true, r);
   const S7 = r.send_id;
   result(S7, 'msg_test_007');
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
   settings({ test_mode: false, confirm_live: true });
   const S = {};
   for (const n of [1, 2, 3, 4, 5, 6, 8]) {

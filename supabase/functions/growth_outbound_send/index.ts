@@ -33,6 +33,20 @@
 //      (and Resend's own status for it, when the key may read it) and
 //      records the result (growth_outbound_domain_auth_record, as the
 //      caller). A record found missing blocks live sending until fixed.
+//      (Phase 13) Resend's own status counts too: a domain Resend has not
+//      verified fails the check.
+//
+//   POST { action: 'optout_check' }   (Phase 13; sends nothing, changes nothing)
+//      asks the opt-out endpoint itself, at the configured base (or this
+//      project's own functions address when none is set yet): a GET with a
+//      token no send carries must 303 to the stop page with the token in the
+//      fragment; a one-click POST with it must answer "not valid", which
+//      proves the endpoint reaches the database. The result is recorded
+//      (growth_outbound_optout_check_record, as the caller); live sending
+//      needs it to pass at the current base.
+//   POST { action: 'health' }   (Phase 13; sends nothing)
+//      whether Resend accepts the key (a sending-only key is said to be one)
+//      and is recorded as the provider's state.
 //
 // WHAT IT HOLDS. The project URL, the PUBLIC anon key (to reach the API as
 // the caller) and RESEND_API_KEY. NO service-role key: every database call
@@ -354,8 +368,67 @@ export async function domainCheck(c: Cfg, domain: string): Promise<any> {
         out.provider = d ? { ok: d.status === 'verified', detail: 'Resend: ' + String(d.status || 'unknown').slice(0, 40) } : { ok: false, detail: 'Resend has no domain ' + domain };
       } else out.provider = { ok: null, detail: 'Resend answered ' + r.status };
     } catch (_) { out.provider = { ok: null, detail: 'Resend did not answer' }; } finally { clearTimeout(t); }
+    // (Phase 13) Resend saying the domain is not verified fails the check:
+    // Resend would refuse to send from it whatever DNS says
+    if (out.provider && out.provider.ok === false) out.ok = false;
   }
   return out;
+}
+
+// ── the opt-out endpoint, checked (Phase 13) ────────────────────────────────
+// Nothing about any real send is touched: the token is 64 zeros, which no
+// send carries, so the endpoint's only possible answers are the redirect (a
+// GET changes nothing) and "not valid" (a POST that reached the database).
+const NO_SEND_TOKEN = '0'.repeat(64);
+export async function optoutCheck(c: Cfg, base: string): Promise<Record<string, unknown>> {
+  const b = base.endsWith('/') ? base : base + '/';
+  const fn = b + 'growth_outbound_optout?t=' + NO_SEND_TOKEN;
+  const out: Record<string, unknown> = { base: b };
+  const timed = async (init: RequestInit) => {
+    const ctl = new AbortController();
+    const t = setTimeout(() => { try { ctl.abort(); } catch (_) { /* gone */ } }, c.timeoutMs ?? 10000);
+    try { return await c.fetch(fn, { ...init, signal: ctl.signal }); } finally { clearTimeout(t); }
+  };
+  try {
+    const r = await timed({ method: 'GET', redirect: 'manual' });
+    const loc = r.headers.get('location') || '';
+    out.get_status = r.status;
+    out.redirect_ok = r.status === 303 && /^https:\/\/(www\.)?edgedesksports\.com\/[^#\s]*#t=0{64}$/.test(loc);
+  } catch (_) { out.get_status = 0; out.redirect_ok = false; }
+  try {
+    const r = await timed({ method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'List-Unsubscribe=One-Click' });
+    const t = (await r.text().catch(() => '')).slice(0, 300);
+    out.post_status = r.status;
+    out.post_ok = r.status === 400 && /not valid/i.test(t);
+  } catch (_) { out.post_status = 0; out.post_ok = false; }
+  out.ok = out.redirect_ok === true && out.post_ok === true;
+  out.detail = out.ok ? 'the link redirects to the stop page, and the one-click POST reaches the database'
+    : !out.get_status ? 'the opt-out endpoint did not answer: deploy growth_outbound_optout (--no-verify-jwt)'
+    : out.get_status === 404 ? 'growth_outbound_optout is not deployed at this address'
+    : out.get_status === 401 ? 'the endpoint asks for a token: deploy it with --no-verify-jwt'
+    : !out.redirect_ok ? 'a GET did not redirect to the stop page (' + out.get_status + ')'
+    : 'the one-click POST answered ' + out.post_status + ' instead of "not valid": is supabase/growth_outbound.sql applied?';
+  return out;
+}
+
+// ── Resend's key (Phase 13) ─────────────────────────────────────────────────
+// GET /domains sends nothing. A full-access key reads them; a sending-only
+// key is refused with "restricted_api_key", which still proves the key is a
+// real Resend key; any other refusal means the key is wrong.
+export async function resendHealth(c: Cfg): Promise<{ state: string; detail: string }> {
+  if (!c.resendKey) return { state: 'credential_missing', detail: 'RESEND_API_KEY is not set: nothing can be sent' };
+  const ctl = new AbortController();
+  const t = setTimeout(() => { try { ctl.abort(); } catch (_) { /* gone */ } }, 8000);
+  try {
+    const r = await c.fetch('https://api.resend.com/domains', { headers: { authorization: 'Bearer ' + c.resendKey }, signal: ctl.signal });
+    const b: any = await r.json().catch(() => null);
+    if (r.ok) return { state: 'connected', detail: 'Resend accepted the key (it may read domains)' };
+    if ((r.status === 401 || r.status === 403) && b && /restricted/.test(String(b.name || b.message || '')))
+      return { state: 'connected', detail: 'Resend accepted the key: a sending-only key (the domain\'s status cannot be read with it)' };
+    if (r.status === 401 || r.status === 403) return { state: 'unauthorized', detail: 'Resend refused the key (' + r.status + ')' };
+    if (r.status === 429) return { state: 'unavailable', detail: 'Resend is rate-limiting (429): try again in a minute' };
+    return { state: 'unavailable', detail: 'Resend answered ' + r.status };
+  } catch (_) { return { state: 'unavailable', detail: 'Resend did not answer' }; } finally { clearTimeout(t); }
 }
 
 export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
@@ -369,6 +442,27 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
 
   let body: any = null;
   try { body = await req.json(); } catch (_) { body = null; }
+  if (body && body.action === 'optout_check') {
+    // the configured base, or this project's own functions address when none is set yet
+    let st;
+    try { st = await AUTH.rpcAsCaller(c, who.authz, 'growth_outbound_settings', {}); }
+    catch (_) { return json(req, c, { ok: false, reason: 'database_unreachable' }, 503); }
+    const configured = st && st.ok && st.body && typeof st.body.unsubscribe_url_base === 'string' ? st.body.unsubscribe_url_base : '';
+    const base = configured || (c.url.replace(/\/+$/, '') + '/functions/v1/');
+    const check = await optoutCheck(c, base);
+    let rec;
+    try { rec = await AUTH.rpcAsCaller(c, who.authz, 'growth_outbound_optout_check_record', { p: check }); }
+    catch (_) { return json(req, c, { ok: false, reason: 'database_unreachable', check }, 503); }
+    if (rec.status === 404) return json(req, c, { ok: false, reason: 'not_installed', check }, 503);
+    if (!rec.ok || !rec.body || rec.body.ok !== true) return json(req, c, { ok: false, reason: (rec.body && rec.body.reason) || 'not_recorded', detail: rec.body && rec.body.detail, check }, 409);
+    return json(req, c, { ok: true, check, unsubscribe_url_base: rec.body.unsubscribe_url_base, live_send_blockers: rec.body.live_send_blockers });
+  }
+  if (body && body.action === 'health') {
+    const h = await resendHealth(c);
+    try { await AUTH.rpcAsCaller(c, who.authz, 'growth_outbound_provider_health_record', { p_run: null, p: { provider: 'resend', state: h.state, detail: h.detail } }); }
+    catch (_) { /* the answer still stands */ }
+    return json(req, c, { ok: true, health: { resend: h } });
+  }
   if (body && body.action === 'domain_check') {
     // the sending domain is the database's (the sender in the settings), never the request's
     let st;
