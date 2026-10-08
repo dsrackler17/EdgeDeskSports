@@ -244,6 +244,12 @@ jobs:
       # engine's doors for its run, never approve, edit, send or settings.
       - name: The morning run finds, researches and drafts on single-use tickets, and can never approve or send
         run: node tools/growth/outbound_schedule_sql.test.js
+      # Results: a live email's EdgeDesk links carry its campaign code; a
+      # visit or an account counts only by that code or the address written
+      # to, after the first email; an account ends the sequence; a customer
+      # is never cold-emailed; the owner's results leak no account.
+      - name: Results are matched by link or address only, end the sequence, and leak no account
+        run: node tools/growth/outbound_analytics_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

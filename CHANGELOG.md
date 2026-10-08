@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-08 — Growth console: results and attribution (outbound engine, phase 10)
+
+**A result is matched, never guessed.**
+
+**`supabase/growth_outbound.sql`** adds:
+- **tagged links:** a live email's links to edgedesksports.com carry `utm_campaign=ob_<the prospect's random token>`. A test send's links carry `ob_test`. Punctuation, fragments, existing utm tags, subdomains and look-alike domains are left alone. The review preview is the message as sent, and each send records whether its links were tagged. A setting turns tagging off;
+- **the matcher, `sync_conversions()`:** a visit, an account, a trial or a payment counts for a prospect only by their email's campaign code or the address written to. It must also come after the first email, and that email must have reached them. Never an owner's, a test's or an earlier account's. Trials and payments come from Stripe's own record;
+- **the record:** `growth_outbound.conversions`, append-only, written by the matcher only, storing a one-way key instead of the account (19 tables);
+- **the end of a sequence:** an account makes a contacted prospect converted, cancels their unsent follow-ups, and the send door checks again before any follow-up;
+- **customers are never cold-emailed:** an address with an EdgeDesk account is left out of drafting, refused at approval and refused by the send trigger;
+- **when it matches:** hourly from the scheduler's tick (whether or not the morning run is on), whenever Results is opened, and for one prospect before each follow-up. A failure is recorded and never stops the tick;
+- **the results door, `growth_outbound_analytics(days)`:** owner only:
+  - the pipeline, what Resend reported, and what the people written to did, as rates;
+  - by step, writer, prospect type, search and fit, with 95% (Wilson) ranges;
+  - what stands out: only groups of 10 or more whose whole range is clear of the average;
+  - by day, in the owner's zone; provider calls; the latest results;
+  - no account, address or key ever leaves;
+- report rows 34–35. The drafting stats count replies, not signups.
+
+**`/admin/growth/` → Outbound:**
+- the **Results** panel;
+- review cards show the tagged links, and block an address that already has an account;
+- each prospect lists its results;
+- a **Results** settings group (link tagging).
+
+**Tests:**
+- `outbound_analytics_sql.test.js`: 100 checks; 69 mutations, 66 caught and 3 equivalent;
+- console e2e: 236; security suite: 422;
+- earlier suites: all passing.
+
 ## 2026-10-08 — Growth console: the morning run (outbound engine, phase 9)
 
 **Software may find, research, score, verify, draft and queue on a schedule. It may not approve or send.**

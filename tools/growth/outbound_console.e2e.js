@@ -99,6 +99,19 @@
     50  the window and the zone are settings like any other
     51  the clock not running, or pg_net missing: said, with what to run
     52  before the Phase 9 SQL: said
+    53  RESULTS (Phase 10): whether links are tagged, when results were last
+        matched, provider calls; the people written to and what they did,
+        with rates; the emails; what stands out (only past the minimum
+        sample); by step; by group with each rate's 95% range ("few" below
+        the sample); the latest results, opening the prospect; the days
+        that had activity. Opening the page reads the last 90 days
+    54  the window and the grouping: a new window is read again; a new
+        grouping is only redrawn
+    55  each card shows the words as sent (tagged links) and says what the
+        tag is; an address that already has an account blocks the card
+    56  a prospect lists its results; link tagging is a setting (turning it
+        off is saved and said); a matching failure is said; before the
+        Phase 10 SQL, said
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -142,7 +155,7 @@ function freshSettings() {
   return { automation_enabled: false, test_mode: true, test_inbox: 'owner-test@edgedesk.test', daily_prospect_target: 15, max_sends_per_day: 20, max_test_sends_per_day: 25,
     min_fit_score: 80, min_identity_confidence: 0.9, min_role_confidence: 0.85, min_research_confidence: 0.85, min_email_confidence: 0.9,
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
-    automation_timezone: 'America/New_York', automation_start_hour: 6, automation_hours: 4,
+    automation_timezone: 'America/New_York', automation_start_hour: 6, automation_hours: 4, attribution_links: true,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
     send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing'],
@@ -199,12 +212,34 @@ const DETAIL = { ok: true,
 const CATALOG = [{ code: 'quant_analysis', label: 'publishes quantitative sports analysis', points: 18, needs_evidence: true },
                  { code: 'touting', label: 'sells picks or promises winnings', points: -40, needs_evidence: false }];
 const MAILFOOT = '--\nDavis, EdgeDesk Sports\n[no postal address is set: sending is blocked until there is one]\nNot for you? Reply "stop", or opt out in one click: [your personal opt-out link is added when this is sent]';
+const RESULTS = (o) => Object.assign({ ok: true, days: 90, since: '2026-07-10T00:00:00Z', min_sample: 10, attribution_links: true,
+  synced: { new: {}, converted: 0, drafts_cancelled: 0 }, sync_error: null, synced_at: '2026-10-08T01:00:00Z',
+  pipeline: { found: 40, prospects: 31, drafted: 30, approved: 26, rejected: 3 },
+  sends: { sent: 34, delivered: 32, bounced: 1, complained: 0, opened: 12, clicked: 6, links_tagged: 34, delivery_rate: 0.9412, bounce_rate: 0.0294, complaint_rate: 0 },
+  people: { contacted: 24, replied: 13, opted_out: 1, bounced: 1, complained: 0, visited: 5, signed_up: 4, trial: 2, paid: 1,
+    reply_rate: 0.5417, opt_out_rate: 0.0417, visit_rate: 0.2083, signup_rate: 0.1667, trial_rate: 0.0833, paid_rate: 0.0417 },
+  by_step: [{ step: 1, sent: 24, delivered: 23, bounced: 1, opened: 10, clicked: 5, replies_after: 12, signups_after: 3 },
+            { step: 2, sent: 10, delivered: 9, bounced: 0, opened: 2, clicked: 1, replies_after: 1, signups_after: 1 }],
+  groups: {
+    prospect_type: [{ group: 'podcast', contacted: 12, replied: 12, opted_out: 0, visited: 1, signed_up: 1, trial: 0, paid: 0, reply_rate: 1, reply_interval: [0.757, 1], signup_rate: 0.0833, signup_interval: [0.015, 0.354], enough: true },
+                    { group: 'cfb_analyst', contacted: 12, replied: 1, opted_out: 1, visited: 4, signed_up: 3, trial: 2, paid: 1, reply_rate: 0.0833, reply_interval: [0.015, 0.354], signup_rate: 0.25, signup_interval: [0.089, 0.532], enough: true }],
+    query: [{ group: 'added by hand', contacted: 20, replied: 11, opted_out: 1, visited: 4, signed_up: 3, trial: 2, paid: 1, reply_rate: 0.55, reply_interval: [0.342, 0.742], signup_rate: 0.15, signup_interval: [0.052, 0.36], enough: true },
+            { group: XSS, contacted: 4, replied: 2, opted_out: 0, visited: 1, signed_up: 1, trial: 0, paid: 0, reply_rate: 0.5, reply_interval: [0.15, 0.85], signup_rate: 0.25, signup_interval: [0.046, 0.699], enough: false }],
+    writer: [{ group: 'owner', contacted: 24, replied: 13, opted_out: 1, visited: 5, signed_up: 4, trial: 2, paid: 1, reply_rate: 0.5417, reply_interval: [0.351, 0.721], signup_rate: 0.1667, signup_interval: [0.067, 0.359], enough: true }],
+    fit_band: [] },
+  signals: [{ dimension: 'prospect_type', group: 'podcast', metric: 'reply', direction: 'higher', k: 12, n: 12, rate: 1, overall: 0.5417 }],
+  daily: [{ day: '2026-10-06', sent: 0, replied: 0, visited: 0, signed_up: 0 }, { day: '2026-10-07', sent: 20, replied: 3, visited: 2, signed_up: 1 },
+          { day: '2026-10-08', sent: 14, replied: 1, visited: 0, signed_up: 0 }],
+  providers: { search: 3, llm: 5 },
+  latest: [{ prospect_id: 'p1', full_name: 'Pat Analyst', organization: 'CFB Numbers', stage: 'paid', matched_by: 'link', occurred_at: '2026-10-07T12:00:00Z' },
+           { prospect_id: 'pc', full_name: XSS, organization: null, stage: 'signed_up', matched_by: 'address', occurred_at: '2026-10-07T11:00:00Z' }] }, o || {});
 const card = (o) => ({
   draft: { id: o.id, prospect_id: o.pid, sequence_number: o.seq || 1, status: o.status || 'pending_review', subject: o.subject, body_text: o.body, content_hash: 'h-' + o.id,
     approved_at: o.status === 'approved' ? '2026-10-07T10:00:00Z' : null, generator_version: o.gen || 'owner', edited_by_owner: o.edited == null ? !o.gen : !!o.edited },
   prospect: { id: o.pid, full_name: o.name, organization: o.org || null, fit_score: o.fit == null ? null : o.fit, status: o.pstatus || 'ready_for_review', is_test: !!o.test, gates: o.gates || [], email: o.email },
-  lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [], greeting_problem: o.greeting || null,
-  preview: { test: true, from: 'Davis <davis@edgedesksports.com>', to: 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject, body: o.body, footer: MAILFOOT } });
+  lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [], greeting_problem: o.greeting || null, existing_account: !!o.customer,
+  preview: { test: o.live ? false : true, from: 'Davis <davis@edgedesksports.com>', to: o.live ? o.email : 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject,
+    body: o.pbody || o.body, links_tagged: o.tagged == null ? !!o.pbody : o.tagged, footer: MAILFOOT } });
 const SENDS = [
   { id: 's1', draft_id: 'd7', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'pat@cfbnumbers.test',
     subject: 'Your CFB ratings', delivery_status: 'delivered', claimed_at: '2026-10-07T10:00:00Z', sent_at: '2026-10-07T10:00:02Z', attempts: 1,
@@ -232,6 +267,14 @@ const Q8 = { ok: true, status: 'pending_review', total: 3, rows: [
     greeting: 'the greeting names "Pat", but their established first name is "Patricia"' }),
   card({ id: 'd83', pid: 'pc', name: 'Cam Contacted', fit: 88, seq: 2, pstatus: 'contacted', email: 'cam@contacted.test', subject: 'Following up',
     body: 'Hi Cam,\n\nFollowing up on my note about your CFB power ratings against the market.', claims: PAT_CLAIM })] };
+const LINKED = 'Hi Pat,\n\nTry it free for 7 days at https://edgedesksports.com/ (then $49.99/month).';
+const Q10 = { ok: true, status: 'pending_review', total: 2, rows: [
+  card({ id: 'd101', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Your CFB ratings', live: true, claims: PAT_CLAIM_10(),
+    body: LINKED, pbody: LINKED.replace('https://edgedesksports.com/', 'https://edgedesksports.com/?utm_source=outbound&utm_medium=email&utm_campaign=ob_0123456789abcdef0123456789abcdef') }),
+  card({ id: 'd102', pid: 'p2', name: 'Kai Customer', org: 'Moss Models', fit: 90, email: 'kai@mossmodels.test', subject: 'Your models', live: true, customer: true, claims: PAT_CLAIM_10(),
+    body: 'Hi Kai,\n\nI read your CFB power ratings against the market.' })] };
+function PAT_CLAIM_10() { return [{ text: 'CFB power ratings against the market', evidence_id: 9, confidence: 0.91,
+  evidence: { id: 9, field_name: 'project', claim: 'CFB power ratings against the market', source_url: 'https://cfbnumbers.test/ratings', source_kind: 'own_site', source_excerpt: 'Week 5', current: true, own: true } }]; }
 const QAPPROVED = { ok: true, status: 'approved', total: 1, rows: [
   card({ id: 'd9', pid: 'p1', name: 'Pat Analyst', status: 'approved', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Approved one', body: 'Hi Pat.' })] };
 const PROSPECTS = { total: 2, rows: [
@@ -331,7 +374,7 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
         if (name === 'growth_outbound_review_queue') {
           if (o.noQueue) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
-          return reply(200, body.p_status === 'approved' ? QAPPROVED : state.queue8 ? Q8 : QPENDING);
+          return reply(200, body.p_status === 'approved' ? QAPPROVED : state.queue10 ? Q10 : state.queue8 ? Q8 : QPENDING);
         }
         if (name === 'growth_outbound_sends') return reply(200, SENDS);
         if (name === 'growth_outbound_research_overview') return reply(200, RESEARCH_OV);
@@ -339,6 +382,10 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_automation_overview') {
           if (state.am === 'missing') return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
           return reply(200, Object.assign(AM_OV(), typeof state.am === 'object' ? state.am : {}));
+        }
+        if (name === 'growth_outbound_analytics') {
+          if (state.results === 'missing') return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, RESULTS(Object.assign({ days: body.p_days || 90, attribution_links: st.attribution_links !== false }, typeof state.results === 'object' ? state.results : {})));
         }
         if (name === 'growth_outbound_candidates') return reply(200, body.p_status === 'new' ? CANDS : []);
         if (name === 'growth_outbound_candidate_set') return reply(200, { ok: true, status: body.p_status });
@@ -361,7 +408,10 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, { ok: true, status: 'replied', drafts_cancelled: 1, suppressed: !!body.p_stop });
         }
         if (name === 'growth_outbound_prospect') {
-          if (body.p_id === 'p1') return reply(200, DETAIL);
+          if (body.p_id === 'p1') return reply(200, Object.assign({}, DETAIL, o.results10 ? { conversions: [
+            { stage: 'visited', matched_by: 'link', occurred_at: '2026-10-07T10:00:00Z', recorded_at: '2026-10-07T11:00:00Z' },
+            { stage: 'signed_up', matched_by: 'link', occurred_at: '2026-10-07T10:05:00Z', recorded_at: '2026-10-07T11:00:00Z' },
+            { stage: 'paid', matched_by: 'link', occurred_at: '2026-10-07T12:00:00Z', recorded_at: '2026-10-07T13:00:00Z' }] } : {}));
           if (body.p_id === 'pc') {
             return reply(200, Object.assign({}, DETAIL, { prospect: Object.assign({}, DETAIL.prospect, { id: 'pc', full_name: 'Cam Contacted', status: o.pcStatus || 'contacted',
               email: 'cam@contacted.test', suppressed: !!o.pcSuppressed }) }));
@@ -1009,6 +1059,99 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
     chk('52 before the Phase 9 SQL: said, and nothing else fails', /arrives with the Phase 9 SQL/.test(await text(t.page, '#amChips')) && !(await visible(t.page, '#obMsg')));
     chk('52 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 53–56. results (Phase 10) ─────────────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    const a = t.calls.filter((c) => c[0] === 'growth_outbound_analytics');
+    chk('53 opening the page reads the last 90 days of results', a.length === 1 && JSON.stringify(a[0][1]) === JSON.stringify({ p_days: 90 }), a);
+    const chips = await text(t.page, '#rsChips');
+    chk('53 whether links are tagged, when results were matched, and the provider calls', /Links tagged/.test(chips) && /Matched 2026-10-08 01:00Z/.test(chips)
+      && /Provider calls: llm 5 · search 3/.test(chips), chips);
+    const people = await text(t.page, '#rsPeople');
+    chk('53 the people written to, and what they did, as rates of them', /Written to24first email in the last 90 days/.test(people) && /Replied1354\.2% of 24 written to/.test(people)
+      && /Made an account416\.7% of 24 written to/.test(people) && /Paid14\.2% of 24 written to/.test(people) && /Opted out1/.test(people) && /Visited5/.test(people), people);
+    const mails = await text(t.page, '#rsSends');
+    chk('53 the emails: sent, delivered, bounced, complaints; opens only a hint', /Emails sent3426 approved · 30 drafted · 31 new prospects/.test(mails) && /Delivered3294\.1%/.test(mails)
+      && /Bounced12\.9%/.test(mails) && /Opened12a hint only/.test(mails), mails);
+    const sig = await text(t.page, '#rsSignals');
+    chk('53 what stands out, with the numbers behind it', /Prospect type: podcast replies more often than everyone: 12 of 12 \(100%\) against 54\.2% overall\./.test(sig), sig);
+    const steps = await t.page.$$eval('#rsSteps tr', (trs) => trs.slice(1).map((tr) => Array.from(tr.cells).map((c) => c.textContent)));
+    chk('53 by step: sent, delivered, bounced, opened, clicked, and the replies and signups that followed each', JSON.stringify(steps)
+      === JSON.stringify([['First email', '24', '23', '1', '10', '5', '12', '3'], ['Follow-up', '10', '9', '0', '2', '1', '1', '1']]), steps);
+    const groups = await text(t.page, '#rsGroups');
+    chk('53 by group (prospect type first), each rate with its 95% range', /Prospect type/.test(groups) && /podcast/.test(groups) && /100% 75\.7%–100%/.test(groups)
+      && /cfb analyst/.test(groups) && /25% 8\.9%–53\.2%/.test(groups), groups);
+    const latest = await text(t.page, '#rsLatest');
+    chk('53 the latest results: who, what, matched how — text from anywhere stays text', /Pat Analyst/.test(latest) && /Paid/.test(latest) && /the email's link/.test(latest)
+      && /the address we wrote to/.test(latest) && /<img/.test(latest), latest);
+    const daily = await text(t.page, '#rsDaily');
+    chk('53 by day: only days with activity, newest first', /2026-10-08.*2026-10-07/.test(daily.replace(/\n/g, ' ')) && !/2026-10-06/.test(daily), daily);
+    chk('53 nothing from the web runs as code', !(await t.page.evaluate(() => window.__pwned)));
+    await t.page.click('#rsLatest [data-open="p1"]'); await settle(t.page, 700);
+    chk('53 a result opens its prospect', /Pat Analyst/.test(await text(t.page, '#obDetail')));
+    const n0 = t.calls.filter((c) => c[0] === 'growth_outbound_analytics').length;
+    await t.page.click('#rsDim [data-rdim="query"]'); await settle(t.page, 300);
+    const g2 = await text(t.page, '#rsGroups');
+    chk('54 another grouping is only redrawn (no new read)', /Search that found them/.test(g2) && /added by hand/.test(g2) && /few/.test(g2)
+      && t.calls.filter((c) => c[0] === 'growth_outbound_analytics').length === n0, g2);
+    chk('54 … a group below the sample is marked "few", and web text stays text', (await t.page.$$('#rsGroups .pill')).length === 1 && /<img/.test(g2) && !(await t.page.evaluate(() => window.__pwned)));
+    await t.page.click('#rsDays [data-rdays="30"]'); await settle(t.page, 500);
+    const a2 = t.calls.filter((c) => c[0] === 'growth_outbound_analytics').slice(-1)[0];
+    chk('54 another window is read again, for exactly that many days', !!a2 && JSON.stringify(a2[1]) === JSON.stringify({ p_days: 30 })
+      && /first email in the last 30 days/.test(await text(t.page, '#rsPeople'))
+      && await t.page.evaluate(() => document.querySelector('#rsDays [data-rdays="30"]').classList.contains('on')), a2);
+    chk('53-54 no page errors', t.errors.length === 0, t.errors);
+    if (SHOTS) await t.page.locator('.card:has(#rsDays)').screenshot({ path: path.join(SHOTS, 'outbound-results.png') });
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.queue10 = true;
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    const c1 = await text(t.page, '[data-draft="d101"]');
+    chk('55 a card shows the words exactly as sent: its link carries the prospect\'s code', /edgedesksports\.com\/\?utm_source=outbound&utm_medium=email&utm_campaign=ob_0123456789abcdef0123456789abcdef/.test(c1)
+      && /carry this prospect's campaign code/.test(c1), c1);
+    const c2 = await text(t.page, '[data-draft="d102"]');
+    chk('55 an address that already has an EdgeDesk account: said, and the card cannot be selected or approved', /already has an EdgeDesk account/.test(c2) && /never cold-emailed/.test(c2)
+      && await t.page.isDisabled('[data-approve="d102"]') && await t.page.isDisabled('[data-pick="d102"]') && !(await t.page.isDisabled('[data-approve="d101"]')), c2);
+    chk('55 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner', results10: true });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    await t.page.evaluate(() => window.EDOutbound.open('p1')); await settle(t.page, 700);
+    const r = await text(t.page, '#pdResults');
+    chk('56 a prospect lists its results, and how each was matched', /Visited EdgeDesk from the email/.test(r) && /Made an account/.test(r) && /Paid/.test(r) && /the email's link/.test(r), r);
+    chk('56 link tagging is a setting, on by default', await t.page.isChecked('#obf_attribution_links'));
+    await t.page.uncheck('#obf_attribution_links');
+    await t.page.click('#obSave'); await settle(t.page, 700);
+    const up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('56 … turning it off saves exactly that', !!up && JSON.stringify(up[1].p) === JSON.stringify({ attribution_links: false }), up && up[1]);
+    chk('56 … and the results say so', /Link tagging is off/.test(await text(t.page, '#rsChips')), await text(t.page, '#rsChips'));
+    chk('56 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.results = { sync_error: 'the Stripe ledger is unreachable', signals: [], latest: [] };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    const chips = await text(t.page, '#rsChips');
+    chk('56 a matching failure is said, and the rest still shows', /Matching failed: the Stripe ledger is unreachable/.test(chips) && /Written to24/.test(await text(t.page, '#rsPeople')), chips);
+    chk('56 with nothing standing out, it says why (the minimum sample, the 95% range)', /Nothing stands out yet\. A group is compared only once it has 10 people/.test(await text(t.page, '#rsSignals')));
+    chk('56 no result yet: said', /No result yet/.test(await text(t.page, '#rsLatest')));
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.results = 'missing';
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    chk('56 before the Phase 10 SQL: said, and nothing else fails', /arrive with the Phase 10 SQL/.test(await text(t.page, '#rsChips')) && !(await visible(t.page, '#obMsg')));
+    chk('56 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

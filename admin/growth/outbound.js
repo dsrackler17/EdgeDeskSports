@@ -91,7 +91,8 @@
     ['Sender and compliance', [['sender_name', 'text', 'Sender name'], ['sender_email', 'email', 'Sender email (@edgedesksports.com)'],
                                ['reply_to_email', 'email', 'Reply-to (@edgedesksports.com, optional)'], ['cta_url', 'text', 'Call-to-action URL (edgedesksports.com)'],
                                ['business_name', 'text', 'Business name in the footer'], ['postal_address', 'text', 'Postal address in the footer (required to send)'],
-                               ['unsubscribe_url_base', 'text', 'Opt-out endpoint base URL']]]
+                               ['unsubscribe_url_base', 'text', 'Opt-out endpoint base URL']]],
+    ['Results', [['attribution_links', 'bool', 'Tag EdgeDesk links in live emails with the prospect\'s campaign code (utm_campaign=ob_…), so a visit or signup can be matched']]]
   ];
 
   function $(id) { return document.getElementById(id); }
@@ -133,8 +134,9 @@
     if ($('tabs')) $('tabs').classList.add('hide');
     if ($('obModeTag')) $('obModeTag').classList.add('hide');
     show('growth');
-    DETAIL = null; CATALOG = null; QROWS = []; PICKED = {};
-    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
+    DETAIL = null; CATALOG = null; QROWS = []; PICKED = {}; RES = null;
+    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns',
+     'rsChips', 'rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
   function show(which) {
@@ -192,7 +194,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -301,7 +303,7 @@
       var changed = Object.keys(r.changed || {});
       say('obSetMsg', 'ok', changed.length ? 'Saved: ' + changed.join(', ') + '.' : 'Saved (no change).');
       paintMode(r.settings); paintSettings(r.settings);
-      return Promise.all([loadActivity(), loadAutomation()]);
+      return Promise.all([loadActivity(), loadAutomation(), loadResults(), loadQueue()]);
     }, function (e) { fail('obSetMsg', e); }).then(function () { $('obSave').disabled = false; });
   }
 
@@ -407,6 +409,10 @@
       }).join('') : '<tr><td colspan="6" class="dim">No identifiers.</td></tr>') + '</table></div>'
       + '<div class="note">An email address or a profile names one prospect. "Not theirs" releases it from this person (kept on the record) so it can belong to someone else.</div>';
 
+    h += '<h3>Results</h3><div class="tw"><table id="pdResults"><tr><th>When</th><th>What</th><th>Matched by</th></tr>'
+      + ((d.conversions || []).length ? d.conversions.map(function (x) {
+        return '<tr><td>' + when(x.occurred_at) + '</td><td>' + esc(STAGE[x.stage] || x.stage) + '</td><td>' + esc(MATCHED[x.matched_by] || x.matched_by) + '</td></tr>';
+      }).join('') : '<tr><td colspan="3" class="dim">Nothing yet: no visit or account has been matched to an email to them.</td></tr>') + '</table></div>';
     h += '<h3>Drafts</h3><div class="tw"><table><tr><th>Step</th><th>Subject</th><th>By</th><th>Status</th><th class="r">Claims cited</th></tr>'
       + ((d.drafts || []).length ? d.drafts.map(function (x) {
         return '<tr><td>' + esc(x.sequence_number) + '</td><td class="wrap">' + esc(clip(x.subject, 150)) + '</td><td>' + esc(writer(x)) + '</td><td>' + esc(x.status) + '</td><td class="r">' + esc((x.claims || []).length) + '</td></tr>';
@@ -697,6 +703,85 @@
     }, function (e) { fail('dvMsg', e); });
   }
 
+  /* ── results (Phase 10) ─────────────────────────────────────────────── */
+  var STAGE = { visited: 'Visited EdgeDesk from the email', signed_up: 'Made an account', trial: 'Started the free trial', paid: 'Paid' };
+  var MATCHED = { link: 'the email\'s link (its campaign code)', address: 'the address we wrote to' };
+  var DIMS = [['prospect_type', 'Prospect type'], ['query', 'Search that found them'], ['writer', 'Who wrote the first email'], ['fit_band', 'Fit score']];
+  var RDAYS = 90, RDIM = 'prospect_type', RES = null;
+  function pct(x) { return x == null ? '—' : (Math.round(Number(x) * 1000) / 10) + '%'; }
+  function range(iv) { return iv ? pct(iv[0]) + '–' + pct(iv[1]) : '—'; }
+  function ofWritten(n, p, rate) { return n == null ? '' : pct(rate) + ' of ' + p.contacted + ' written to'; }
+  function groupName(dim, g) { return dim === 'prospect_type' ? String(g).replace(/_/g, ' ') : g; }
+  function paintResults(r) {
+    RES = r;
+    var p = r.people || {}, x = r.sends || {}, pl = r.pipeline || {};
+    Array.prototype.forEach.call($('rsDays').querySelectorAll('button'), function (b) { b.classList.toggle('on', Number(b.getAttribute('data-rdays')) === r.days); });
+    Array.prototype.forEach.call($('rsDim').querySelectorAll('button'), function (b) { b.classList.toggle('on', b.getAttribute('data-rdim') === RDIM); });
+    var h = r.attribution_links ? '<span class="chip ok" data-rs="tagged">Links tagged: a visit or signup from an email is matched by its link</span>'
+      : '<span class="chip warn" data-rs="untagged">Link tagging is off (Outbound settings → Results): only the address written to can be matched</span>';
+    h += r.sync_error ? '<span class="chip warn" data-rs="error">Matching failed: ' + esc(clip(r.sync_error, 160)) + '</span>'
+      : '<span class="chip" data-rs="synced">Matched ' + esc(when(r.synced_at)) + '</span>';
+    var pv = r.providers || {};
+    h += '<span class="chip off" data-rs="providers">Provider calls: ' + (Object.keys(pv).length ? Object.keys(pv).sort().map(function (k) { return esc(k) + ' ' + esc(pv[k]); }).join(' · ') : 'none') + '</span>';
+    $('rsChips').innerHTML = h;
+    $('rsPeople').innerHTML = kpi('Written to', p.contacted || 0, 'first email in the last ' + r.days + ' days')
+      + kpi('Replied', p.replied || 0, ofWritten(p.replied, p, p.reply_rate)) + kpi('Opted out', p.opted_out || 0, ofWritten(p.opted_out, p, p.opt_out_rate))
+      + kpi('Visited', p.visited || 0, ofWritten(p.visited, p, p.visit_rate)) + kpi('Made an account', p.signed_up || 0, ofWritten(p.signed_up, p, p.signup_rate))
+      + kpi('Started a trial', p.trial || 0, ofWritten(p.trial, p, p.trial_rate)) + kpi('Paid', p.paid || 0, ofWritten(p.paid, p, p.paid_rate));
+    $('rsSends').innerHTML = kpi('Emails sent', x.sent || 0, (pl.approved || 0) + ' approved · ' + (pl.drafted || 0) + ' drafted · ' + (pl.prospects || 0) + ' new prospects')
+      + kpi('Delivered', x.delivered || 0, pct(x.delivery_rate)) + kpi('Bounced', x.bounced || 0, pct(x.bounce_rate))
+      + kpi('Spam complaints', x.complained || 0, pct(x.complaint_rate)) + kpi('Opened', x.opened || 0, 'a hint only: many clients hide opens')
+      + kpi('Clicked', x.clicked || 0, 'as Resend saw it');
+    var sig = r.signals || [];
+    $('rsSignals').innerHTML = sig.length ? '<ul class="claims">' + sig.map(function (g) {
+      return '<li data-signal="' + esc(g.dimension + ':' + g.group + ':' + g.metric) + '"><b>' + esc(label(DIMS, g.dimension)) + ': ' + esc(groupName(g.dimension, g.group)) + '</b> '
+        + (g.metric === 'reply' ? 'replies' : 'signs up') + ' ' + (g.direction === 'higher' ? 'more' : 'less') + ' often than everyone: '
+        + esc(g.k) + ' of ' + esc(g.n) + ' (' + pct(g.rate) + ') against ' + pct(g.overall) + ' overall.</li>';
+    }).join('') + '</ul>'
+      : '<div class="note" data-signal="none">Nothing stands out yet. A group is compared only once it has ' + esc(r.min_sample) + ' people, and called out only when the whole of its 95% range is above or below everyone\'s rate — so a lucky few never look like a pattern.</div>';
+    var steps = r.by_step || [];
+    $('rsSteps').innerHTML = '<tr><th>Step</th><th class="r">Sent</th><th class="r">Delivered</th><th class="r">Bounced</th><th class="r">Opened</th><th class="r">Clicked</th><th class="r">Replies after it</th><th class="r">Signups after it</th></tr>'
+      + (steps.length ? steps.map(function (s) {
+        return '<tr><td>' + esc(s.step === 1 ? 'First email' : s.step === 2 ? 'Follow-up' : 'Final follow-up') + '</td><td class="r">' + esc(s.sent) + '</td><td class="r">' + esc(s.delivered)
+          + '</td><td class="r">' + esc(s.bounced) + '</td><td class="r">' + esc(s.opened) + '</td><td class="r">' + esc(s.clicked) + '</td><td class="r">' + esc(s.replies_after)
+          + '</td><td class="r">' + esc(s.signups_after) + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" class="dim">No live email in this window.</td></tr>');
+    paintGroups();
+    var days = (r.daily || []).filter(function (d) { return d.sent || d.replied || d.visited || d.signed_up; }).reverse();
+    $('rsDaily').innerHTML = '<tr><th>Day</th><th class="r">Sent</th><th class="r">Replies</th><th class="r">Visits</th><th class="r">Accounts</th></tr>'
+      + (days.length ? days.map(function (d) {
+        return '<tr><td>' + esc(d.day) + '</td><td class="r">' + esc(d.sent) + '</td><td class="r">' + esc(d.replied) + '</td><td class="r">' + esc(d.visited) + '</td><td class="r">' + esc(d.signed_up) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="dim">Nothing happened in this window.</td></tr>');
+    var latest = r.latest || [];
+    $('rsLatest').innerHTML = '<tr><th>When</th><th>Prospect</th><th>What</th><th>Matched by</th></tr>'
+      + (latest.length ? latest.map(function (c) {
+        return '<tr><td>' + when(c.occurred_at) + '</td><td><button type="button" class="lnk" data-open="' + esc(c.prospect_id) + '">' + esc(c.full_name || '(name not established)') + '</button>'
+          + (c.organization ? '<div class="sub">' + esc(c.organization) + '</div>' : '') + '</td><td>' + esc(STAGE[c.stage] || c.stage) + '</td><td>' + esc(MATCHED[c.matched_by] || c.matched_by) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="dim">No result yet.</td></tr>');
+  }
+  function paintGroups() {
+    var rows = ((RES && RES.groups) || {})[RDIM] || [];
+    $('rsGroups').innerHTML = '<tr><th>' + esc(label(DIMS, RDIM)) + '</th><th class="r">Written to</th><th class="r">Replied</th><th>Reply rate (95% range)</th>'
+      + '<th class="r">Accounts</th><th>Signup rate (95% range)</th><th class="r">Paid</th><th class="r">Opted out</th></tr>'
+      + (rows.length ? rows.map(function (g) {
+        return '<tr data-group="' + esc(g.group) + '"><td class="wrap">' + esc(groupName(RDIM, g.group)) + (g.enough ? '' : ' <span class="pill" title="Fewer than ' + esc(RES.min_sample) + ' people: too few to compare">few</span>')
+          + '</td><td class="r">' + esc(g.contacted) + '</td><td class="r">' + esc(g.replied) + '</td><td class="conf"><b>' + pct(g.reply_rate) + '</b> ' + range(g.reply_interval)
+          + '</td><td class="r">' + esc(g.signed_up) + '</td><td class="conf"><b>' + pct(g.signup_rate) + '</b> ' + range(g.signup_interval)
+          + '</td><td class="r">' + esc(g.paid) + '</td><td class="r">' + esc(g.opted_out) + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" class="dim">No one written to in this window.</td></tr>');
+  }
+  function loadResults() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_analytics', { p_days: RDAYS }).then(paintResults, function (e) {
+      if (e && e.kind === 'not_installed') {
+        $('rsChips').innerHTML = '<span class="chip off">Results arrive with the Phase 10 SQL: run supabase/growth_outbound.sql again.</span>';
+        ['rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest'].forEach(function (id) { $(id).innerHTML = ''; });
+        return;
+      }
+      throw e;
+    });
+  }
+
   /* ── the morning run (Phase 9) ───────────────────────────────────────── */
   var STEP = { discover: 'search the saved searches', research: 'research the next new candidate', draft: 'write drafts for whoever is due' };
   function hh(n) { return (n < 10 ? '0' : '') + n + ':00'; }
@@ -835,7 +920,7 @@
     var p = c.prospect || {};
     if (c.draft.status !== 'pending_review' || (c.lint || []).length) return false;
     if (p.is_test) return true;
-    if (c.greeting_problem) return false;
+    if (c.greeting_problem || c.existing_account) return false;
     return !(p.gates || []).length && !(c.claims_missing || []).length && (c.draft.sequence_number > 1 ? p.status === 'contacted' : p.status === 'ready_for_review');
   }
   function paintQueue(r) {
@@ -855,13 +940,15 @@
       + '<span class="sub">' + esc([p.organization, 'step ' + d.sequence_number, p.fit_score == null ? 'fit —' : 'fit ' + p.fit_score].filter(Boolean).join(' · ')) + '</span>'
       + '<span class="sp"></span><span class="pill by" data-by="' + esc(writerKey(d)) + '">' + esc(writer(d)) + '</span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
     if (c.greeting_problem) h += '<div class="block"><b>The greeting:</b> ' + esc(c.greeting_problem) + '. Edit it (your words are yours) or reject it.</div>';
+    if (c.existing_account) h += '<div class="block" data-customer="1"><b>This address already has an EdgeDesk account.</b> A customer is never cold-emailed: it cannot be approved or sent. Reject it.</div>';
     if (gates.length || miss.length) h += '<div class="block"><b>Not approvable yet.</b> ' + gates.concat(miss.map(function (m) { return 'the email no longer says "' + m + '"'; })).map(esc).join(' · ') + '</div>';
     if (lint.length) h += '<div class="block"><b>Breaks the content rules:</b> ' + lint.map(esc).join(' · ') + '</div>';
     h += '<div class="mail"><div class="mh"><i>From</i>' + esc(pv.from || '') + '</div>'
       + '<div class="mh"><i>To</i>' + (pv.to ? '<span class="mono">' + esc(pv.to) + '</span>' : '<span class="dim">no test inbox set</span>')
       + (pv.test && pv.intended_recipient && pv.intended_recipient !== pv.to ? ' <span class="dim">(test: not ' + esc(pv.intended_recipient) + ')</span>' : '') + '</div>'
       + '<div class="mh"><i>Subject</i><b>' + esc(d.subject) + '</b></div>'
-      + '<div class="mb">' + esc(d.body_text) + '</div><div class="mf">' + esc(pv.footer || '') + '</div></div>';
+      + '<div class="mb">' + esc(pv.body != null ? pv.body : d.body_text) + '</div><div class="mf">' + esc(pv.footer || '') + '</div></div>'
+      + (pv.links_tagged && pv.body !== d.body_text ? '<div class="sub" data-tagged="1">Its EdgeDesk links carry ' + (pv.test ? 'the test code (ob_test), so your own clicks count for nobody' : 'this prospect\'s campaign code, so a visit or signup from it can be matched') + '.</div>' : '');
     h += '<h3>What it says about them, and why we believe it</h3>' + ((c.claims || []).length ? '<ul class="claims">' + c.claims.map(function (k) {
       var e = k.evidence || null, bad = !e || !e.current || !e.own || Number(k.confidence) === 0;
       return '<li class="' + (bad ? 'badc' : '') + '"><b>“' + esc(k.text) + '”</b> '
@@ -962,7 +1049,7 @@
   /* ── sending ─────────────────────────────────────────────────────────── */
   function nameOf(draftId) { var c = byId(draftId); return (c && c.prospect && c.prospect.full_name) || 'a draft'; }
   function sendWhy(x) {
-    if (x.reason === 'refused' || x.reason === 'stale_claim' || x.reason === 'approval_withdrawn') return x.detail || x.reason;
+    if (x.reason === 'refused' || x.reason === 'stale_claim' || x.reason === 'approval_withdrawn' || x.reason === 'prospect_converted') return x.detail || x.reason;
     if (x.reason === 'content') return 'breaks the content rules: ' + (x.problems || []).join('; ');
     if (/^resend_\d+$/.test(x.reason || '')) return 'Resend answered ' + x.reason.slice(7) + '; press Send again (the same draft can never be sent twice)';
     return (SEND_WHY[x.reason] || x.reason || 'not sent') + (x.reason === 'resend_rejected' && x.detail ? ': ' + x.detail : '');
@@ -1152,6 +1239,8 @@
         if (root.confirm('Try this send again? It reuses the same key, so it can never go out twice.')) sendDrafts([b.getAttribute('data-resend')]);
       }
       else if (b.id === 'rqFixture') fixture();
+      else if (b.getAttribute('data-rdays')) { RDAYS = Number(b.getAttribute('data-rdays')); loadResults().catch(function (er) { fail('rsMsg', er); }); }
+      else if (b.getAttribute('data-rdim')) { RDIM = b.getAttribute('data-rdim'); if (RES) paintResults(RES); }
     });
     $('tabOutbound').addEventListener('change', function (e) {
       var t = e.target;
