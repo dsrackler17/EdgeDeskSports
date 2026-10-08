@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-08T06:11:29.416Z",
+  "generated_at": "2026-10-08T10:10:29.955Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -244,6 +244,46 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:market:market_gap price",
+      "sport": "CFB",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-27T03:30:36.660Z",
+      "updated_at": "2026-10-08T07:15:12.051Z",
+      "evidence": [
+        {
+          "lesson_id": "401858469:contradicted:market",
+          "game_id": "401858469",
+          "season": 2026,
+          "week": 4,
+          "team": "USC",
+          "expectation": "2 published claims said the same thing: EdgeDesk makes it USC -2.4 where the market has USC +3.0 at captured (stale 103h) · BetOnline.ag — a 5.4 points disagreement. EdgeDesk prices this game at USC -2.4 with a fair total of 61.3, which makes USC the better team here by that margin on this field.",
+          "result": "USC Trojans lost by 14. USC Trojans lost by 14 where EdgeDesk projected a 2.4-point edge.",
+          "severity": "high",
+          "at": "2026-09-27T03:30:36.660Z"
+        },
+        {
+          "lesson_id": "401866429:contradicted:market",
+          "game_id": "401866429",
+          "season": 2026,
+          "week": 4,
+          "team": "Sacramento State",
+          "expectation": "2 published claims said the same thing: EdgeDesk makes it Sacramento State -3.8 where the market has Sacramento State +4.5 at captured (stale 104h) · FanDuel — a 8.3 points disagreement. EdgeDesk prices this game at Sacramento State -3.8 with a fair total of 51.6, which makes Sacramento State the better team here by that margin on this field.",
+          "result": "Sacramento State Hornets lost by 29. Sacramento State Hornets lost by 29 where EdgeDesk projected a 3.8-point edge.",
+          "severity": "high",
+          "at": "2026-10-08T07:15:12.051Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:market:market_gap price",
       "sport": "NFL",
       "category": "market",
@@ -262,35 +302,6 @@
           "result": "Houston Texans lost by 5. Houston Texans lost by 5 where EdgeDesk projected a 0.5-point edge.",
           "severity": "high",
           "at": "2026-09-13T20:41:25.405Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:market:market_gap price",
-      "sport": "CFB",
-      "category": "market",
-      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-27T03:30:36.660Z",
-      "updated_at": "2026-09-27T03:30:36.660Z",
-      "evidence": [
-        {
-          "lesson_id": "401858469:contradicted:market",
-          "game_id": "401858469",
-          "season": 2026,
-          "week": 4,
-          "team": "USC",
-          "expectation": "2 published claims said the same thing: EdgeDesk makes it USC -2.4 where the market has USC +3.0 at captured (stale 103h) · BetOnline.ag — a 5.4 points disagreement. EdgeDesk prices this game at USC -2.4 with a fair total of 61.3, which makes USC the better team here by that margin on this field.",
-          "result": "USC Trojans lost by 14. USC Trojans lost by 14 where EdgeDesk projected a 2.4-point edge.",
-          "severity": "high",
-          "at": "2026-09-27T03:30:36.660Z"
         }
       ],
       "occurrences": 1,

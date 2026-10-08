@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-08T04:03:44.151Z",
+ "generated_at": "2026-10-08T06:24:49.738Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-08T04:03:44.151Z",
-  "reliability_generated_at": "2026-10-08T04:03:44.151Z",
-  "enrichment_generated_at": "2026-10-08T04:03:35.519Z",
+  "at": "2026-10-08T06:24:49.738Z",
+  "reliability_generated_at": "2026-10-08T06:24:49.738Z",
+  "enrichment_generated_at": "2026-10-08T06:24:38.816Z",
   "counts": {
-   "games": 119,
+   "games": 117,
    "mean": 85.9,
    "median": 88,
    "by_band": {
     "VERY_STRONG": 13,
     "ADEQUATE": 18,
-    "STRONG": 83,
+    "STRONG": 81,
     "LOW": 3,
     "CAUTION": 2
    },
-   "missing_qb_status": 206,
+   "missing_qb_status": 202,
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 29,
+   "games_lacking_injury_information": 27,
    "unrated_meaningful_absences": 223,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 119,
+   "games_under_two_market_sources": 117,
    "stale_evidence_records": 6,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
@@ -2515,28 +2515,6 @@
      "away": "PROVIDER_FAILED"
     }
    },
-   "401871051": {
-    "game": "Jacksonville State @ Kennesaw State",
-    "score": 86,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 6,
-     "qb_status": 4,
-     "starters": 1.6,
-     "rating_sample": 1,
-     "stability": 0.6,
-     "qb_identity": 0.8,
-     "transfer_turnover": 0.3
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
-    }
-   },
    "401871052": {
     "game": "Missouri State @ Western Kentucky",
     "score": 80,
@@ -2594,29 +2572,6 @@
      "venue": 1.4,
      "starters": 1.6,
      "rating_sample": 1.4,
-     "transfer_turnover": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
-    }
-   },
-   "401871066": {
-    "game": "New Mexico State @ Florida International",
-    "score": 83,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 6,
-     "qb_identity": 3.4,
-     "qb_status": 4,
-     "venue": 1.4,
-     "starters": 0.8,
-     "rating_sample": 1,
-     "stability": 0.4,
      "transfer_turnover": 0.6
     },
     "qb": {
@@ -2697,7 +2652,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-08T03:12:35.606Z",
+  "at": "2026-10-08T04:03:44.151Z",
   "counts": {
    "games": 119,
    "mean": 85.9,
@@ -2722,34 +2677,16 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
+ "what_improved": [
+  "-4 QB statuses missing (206 → 202)",
+  "-2 games lacking injury information (29 → 27)",
+  "-2 games under two market sources (119 → 117)"
+ ],
  "what_degraded": [],
- "why": [],
+ "why": [
+  "the slate itself changed: 0 games entered the window, 2 left it (kicked off or rolled out)"
+ ],
  "history": [
-  {
-   "at": "2026-09-30T16:06:55.486Z",
-   "counts": {
-    "games": 109,
-    "mean": 84.4,
-    "median": 87,
-    "by_band": {
-     "STRONG": 86,
-     "LOW": 3,
-     "ADEQUATE": 17,
-     "CAUTION": 3
-    },
-    "missing_qb_status": 215,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 24,
-    "unrated_meaningful_absences": 30,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 109,
-    "stale_evidence_records": 52,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-30T16:47:13.371Z",
    "counts": {
@@ -4178,6 +4115,31 @@
     "unrated_meaningful_absences": 223,
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 119,
+    "stale_evidence_records": 6,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-08T06:24:49.738Z",
+   "counts": {
+    "games": 117,
+    "mean": 85.9,
+    "median": 88,
+    "by_band": {
+     "VERY_STRONG": 13,
+     "ADEQUATE": 18,
+     "STRONG": 81,
+     "LOW": 3,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 202,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 27,
+    "unrated_meaningful_absences": 223,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
     "stale_evidence_records": 6,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
