@@ -69,7 +69,13 @@
 --          here (never rewritten), the quote is on that page and the claim is
 --          in the quote; whether a page is the prospect's own site or profile
 --          is decided here, never by the engine; every provider call is
---          counted against a daily budget before it is made.
+--          counted against a daily budget before it is made;
+--        a draft from the drafting engine enters the queue only through its
+--          door: each claim is this person's current, confident evidence in
+--          its own words; no name, figure or sentence about them comes from
+--          nowhere; the greeting uses an established first name or none; the
+--          step is due; and a follow-up is SENT only on the configured
+--          cadence, after the step before it went out.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -1407,7 +1413,7 @@ create table if not exists growth_outbound.research_runs (
 do $c$ begin
   alter table growth_outbound.research_runs drop constraint if exists research_runs_shape_ck;
   alter table growth_outbound.research_runs add constraint research_runs_shape_ck check (
-        kind in ('discover', 'research') and started_by in ('owner', 'schedule')
+        kind in ('discover', 'research', 'draft') and started_by in ('owner', 'schedule')
     and status in ('running', 'done', 'failed')
     and jsonb_typeof(input) = 'object' and jsonb_typeof(counts) = 'object'
     and (error is null or length(error) <= 1000)
@@ -1484,6 +1490,8 @@ end $c$;
 
 -- an engine fact cites the stored page it was read from
 alter table growth_outbound.evidence add column if not exists page_id bigint references growth_outbound.pages (id) on delete restrict;
+-- an engine draft names the run that wrote it
+alter table growth_outbound.drafts add column if not exists run_id bigint references growth_outbound.research_runs (id) on delete restrict;
 
 -- THE BUDGET. The owner sets each daily figure (discovery_config.budget) up to
 -- the ceiling written here; past the ceiling takes a change to this file.
@@ -2045,6 +2053,8 @@ declare
   s growth_outbound.settings;
   v_blockers text[];
   v_n int;
+  v_prev timestamptz;
+  v_days int;
 begin
   if tg_op = 'UPDATE' then
     if (new.prospect_id, new.draft_id, new.sequence_number, new.is_test, new.idempotency_key, new.sender,
@@ -2131,6 +2141,27 @@ begin
     -- and the prospect still qualifies, as of its latest evaluation
     if (new.sequence_number = 1 and p.status <> 'ready_for_review') or (new.sequence_number > 1 and p.status <> 'contacted') then
       raise exception 'this prospect is %, not ready for step %', p.status, new.sequence_number using errcode = 'insufficient_privilege';
+    end if;
+    -- a follow-up only on the cadence in the settings: while it is turned on,
+    -- after the step before it went out (and did not bounce), and once its
+    -- delay has passed
+    if new.sequence_number > 1 then
+      if (new.sequence_number = 2 and not s.followup_enabled) or (new.sequence_number = 3 and not s.final_followup_enabled) then
+        raise exception '%', case when new.sequence_number = 2 then 'follow-ups are turned off in the settings'
+                                  else 'the final follow-up is turned off in the settings' end
+          using errcode = 'insufficient_privilege';
+      end if;
+      v_prev := growth_outbound.step_sent_at(new.prospect_id, new.sequence_number - 1);
+      if v_prev is null then
+        raise exception 'step % goes out only after step % did', new.sequence_number, new.sequence_number - 1
+          using errcode = 'insufficient_privilege';
+      end if;
+      v_days := case when new.sequence_number = 2 then s.followup_delay_days else s.final_followup_delay_days end;
+      if v_prev > now() - make_interval(days => v_days) then
+        raise exception 'step % is not due until % UTC', new.sequence_number,
+          to_char((v_prev + make_interval(days => v_days)) at time zone 'utc', 'YYYY-MM-DD HH24:MI')
+          using errcode = 'insufficient_privilege';
+      end if;
     end if;
     select count(*) into v_n from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now());
     if v_n >= s.max_sends_per_day then
@@ -3021,6 +3052,131 @@ set search_path = pg_catalog, pg_temp as $$
                   coalesce(growth_outbound.norm_text(coalesce(d.subject, '') || ' ' || coalesce(d.body_text, '')), '')) = 0;
 $$;
 
+-- ── what an ENGINE-written email must get right (Phase 8) ───────────────────
+-- The drafting engine proposes; growth_outbound_draft_propose decides, with
+-- these. An owner writing or editing a draft is not held to them: those are
+-- the owner's own words.
+
+-- What an email may cite about a person: what they make, write, run or do.
+-- Never their address, never a name (the greeting's business), never an
+-- audience figure, never a fit signal (the research engine's own reading).
+create or replace function growth_outbound.engine_citeable(p_field text)
+returns boolean language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(p_field in ('organization', 'job_title', 'project', 'article', 'podcast', 'newsletter', 'model', 'topic',
+                              'sports_focus'), false);
+$$;
+
+-- The name an email's greeting uses: 'there', the name, or NULL when the
+-- first line is not "Hi …," (or "Hello …,", "Hey …,") on a line of its own.
+create or replace function growth_outbound.greeting_of(p_body text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when x.m is null then null when lower(x.m[2]) = 'there' then 'there' else x.m[2] end
+    from (select regexp_match(coalesce(p_body, ''), '^(Hi|Hello|Hey) ([^,\n]{1,60}),[ \t]*\n') as m) x;
+$$;
+
+-- NEVER A GUESSED NAME. "Hi there," always passes; "Hi <name>," only when
+-- the name IS the first name the evidence establishes (identity at the gate
+-- and a plain first-and-last name), letter for letter. NULL: nothing wrong.
+create or replace function growth_outbound.greeting_problem(p_body text, p_first text)
+returns text language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare g text := growth_outbound.greeting_of(p_body);
+begin
+  if g is null then return 'the email opens with "Hi there," or "Hi <their first name>," on a line of its own'; end if;
+  if g = 'there' then return null; end if;
+  if p_first is null then
+    return format('the greeting names "%s", but no first name is established for this person: it is "Hi there,"', left(g, 60));
+  end if;
+  if g is distinct from p_first then
+    return format('the greeting names "%s", but their established first name is "%s"', left(g, 60), p_first);
+  end if;
+  return null;
+end $$;
+
+-- The words of a text as the detail check reads them: split at spaces,
+-- slashes and dashes; outer punctuation and a possessive 's dropped;
+-- lower-cased. ("EdgeDesk's $49.99/month" is edgedesk, 49.99, month.)
+create or replace function growth_outbound.detail_words(p text)
+returns text[] language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(array_agg(distinct x.w), '{}') from (
+    select lower(regexp_replace(regexp_replace(t, '^[^[:alnum:]]+|[^[:alnum:]]+$', '', 'g'), '''s$', '')) as w
+      from regexp_split_to_table(replace(coalesce(p, ''), '’', ''''), '[[:space:]/–—-]+') t) x
+   where x.w <> '';
+$$;
+
+-- NOTHING SPECIFIC FROM NOWHERE. In an engine email a figure, a word in
+-- capitals, or a capitalised word inside a sentence (a name, a title, a
+-- brand, a place) must come from a cited claim, the first name, or
+-- EdgeDesk's own words (p_allowed and the short list here). Returns the
+-- words that came from nowhere: what a model made up looks exactly like this.
+create or replace function growth_outbound.uncited_details(p_text text, p_allowed text)
+returns text[] language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  v_ok text[] := growth_outbound.detail_words(p_allowed)
+    || array['i', 'i''m', 'i''ve', 'i''d', 'i''ll', 'hi', 'hello', 'hey', 'ok', 'edgedesk', 'edgedesksports.com',
+             'www.edgedesksports.com', 'nfl', 'cfb', '7', '49.99'];
+  v_bad text[] := '{}';
+  v_line text;
+  t text;
+  w text;
+  v_start boolean;
+begin
+  for v_line in select x from regexp_split_to_table(replace(coalesce(p_text, ''), '’', ''''), '\n') x loop
+    v_start := true;
+    for t in select x from regexp_split_to_table(v_line, '[[:space:]/–—-]+') x loop
+      continue when t = '';
+      w := regexp_replace(regexp_replace(t, '^[^[:alnum:]]+|[^[:alnum:]]+$', '', 'g'), '''s$', '');
+      if w <> '' and (w ~ '[0-9]' or w ~ '^[[:upper:]]{2}' or w ~ '[[:lower:]][[:upper:]]' or (not v_start and w ~ '^[[:upper:]]'))
+         and not (lower(w) = any (v_ok)) then
+        v_bad := array_append(v_bad, left(w, 60));
+      end if;
+      -- the next word starts a sentence after . ! ? or :
+      v_start := t ~ '[.!?:][]"'')]*$';
+    end loop;
+  end loop;
+  return array(select distinct x from unnest(v_bad) x order by 1);
+end $$;
+
+-- A SENTENCE ABOUT THEM CARRIES A CLAIM. "your <something>" says something
+-- about the person, and the only things an engine email may say about them
+-- are cited. Generic possessives ("your work", "your research", "your
+-- bets" …) need no citation. Returns the sentences that cite nothing.
+-- (A heuristic, and the owner reads every draft: it stops the common ways a
+-- model invents a personal detail, not every way.)
+create or replace function growth_outbound.uncited_sentences(p_text text, p_claims text[])
+returns text[] language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  v_s text;
+  v_bad text[] := '{}';
+begin
+  for v_s in select btrim(x) from regexp_split_to_table(
+               regexp_replace(replace(coalesce(p_text, ''), '’', ''''), '([.!?])[[:space:]]+', E'\\1\n', 'g'), '\n') x loop
+    continue when v_s = '';
+    if exists (select 1 from regexp_matches(lower(v_s), '\myours?\M([[:space:]]+own\M)?[[:space:]]*([[:alpha:]]*)', 'g') m
+                where m[2] not in ('work', 'research', 'process', 'bets', 'betting', 'results', 'analysis', 'time', 'inbox',
+                                   'notes', 'readers', 'audience', 'subscribers'))
+       and not exists (select 1 from unnest(coalesce(p_claims, '{}')) c where growth_outbound.quote_in(c, v_s)) then
+      v_bad := array_append(v_bad, left(v_s, 160));
+    end if;
+  end loop;
+  return v_bad;
+end $$;
+
+-- When a real step went out to a prospect and stayed out: NULL if it never
+-- did, or it bounced, drew a complaint or failed.
+create or replace function growth_outbound.step_sent_at(p_prospect uuid, p_seq int)
+returns timestamptz language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select max(x.sent_at) from growth_outbound.sends x
+   where x.prospect_id = p_prospect and x.sequence_number = p_seq and not x.is_test
+     and x.sent_at is not null and x.delivery_status not in ('bounced', 'complained', 'failed');
+$$;
+
 -- The footer every message carries: who sent it, the postal address, and how
 -- to stop. The personal opt-out link is made at send time (Phase 5/6).
 create or replace function growth_outbound.footer_text(p_link text)
@@ -3066,6 +3222,8 @@ set search_path = pg_catalog, public, pg_temp as $$
                 || jsonb_build_object('thresholds', p.assessment->'thresholds', 'fields', p.assessment->'fields'),
     'lint', to_jsonb(growth_outbound.draft_lint(d.subject, d.body_text)),
     'claims_missing', to_jsonb(growth_outbound.claims_missing(d)),
+    'greeting_problem', case when d.generator_version like 'engine:%' and not d.edited_by_owner and not d.is_test
+                             then growth_outbound.greeting_problem(d.body_text, p.first_name) end,
     'claims', coalesce((
       select jsonb_agg(jsonb_build_object(
                'text', x.c->>'text',
@@ -3128,6 +3286,12 @@ begin
     foreach x in array growth_outbound.claims_missing(d) loop
       v_gates := array_append(v_gates, ('a cited claim is not in the email: "' || left(coalesce(x, ''), 80) || '"')::text);
     end loop;
+    -- the engine greets by a first name only while it is established; your
+    -- own words (an edit) are yours
+    if d.generator_version like 'engine:%' and not d.edited_by_owner then
+      x := growth_outbound.greeting_problem(d.body_text, p.first_name);
+      if x is not null then v_gates := array_append(v_gates, ('greeting: ' || x)::text); end if;
+    end if;
   end if;
   -- the content rules hold for every draft, test or not
   foreach x in array growth_outbound.draft_lint(d.subject, d.body_text) loop
@@ -3956,7 +4120,7 @@ declare
   v_id bigint;
 begin
   v_owner := growth_outbound.require_owner();
-  if coalesce(p_kind, '') not in ('discover', 'research') then
+  if coalesce(p_kind, '') not in ('discover', 'research', 'draft') then
     return jsonb_build_object('ok', false, 'reason', 'invalid_kind');
   end if;
   if p_input is not null and (jsonb_typeof(p_input) <> 'object' or length(p_input::text) > 4000) then
@@ -3995,6 +4159,8 @@ begin
   if coalesce(p_provider, '') not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier') then
     return jsonb_build_object('ok', false, 'reason', 'invalid_provider');
   end if;
+  -- a drafting run writes; it does not search, read pages or look up addresses
+  if r.kind = 'draft' and p_provider <> 'llm' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
   if coalesce(p_n, 0) not between 1 and 50 then return jsonb_build_object('ok', false, 'reason', 'invalid_count'); end if;
   v_cap := coalesce((select (s.discovery_config->'budget'->>p_provider)::int from growth_outbound.settings s where s.id = 1),
                     growth_outbound.budget_default(p_provider));
@@ -4024,6 +4190,7 @@ begin
   perform growth_outbound.require_owner();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
   if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'not_an_object'); end if;
   select string_agg(x, ', ') into v_bad from jsonb_object_keys(p) x
    where x not in ('url', 'http_status', 'content_type', 'title', 'text');
@@ -4067,6 +4234,7 @@ begin
   perform growth_outbound.require_owner();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) > 50 then
     return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'a list of at most 50 results');
   end if;
@@ -4186,6 +4354,7 @@ begin
   perform growth_outbound.require_owner();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
   if coalesce(p_collector, '') !~ '^(research_engine|provider:[a-z0-9_-]{1,40})$' then
     return jsonb_build_object('ok', false, 'reason', 'invalid_collector');
   end if;
@@ -4303,6 +4472,369 @@ begin
   perform growth_outbound.log('research_' || r.kind || '_' || p_status, null, 'research_run', p_run::text,
     r.counts || jsonb_build_object('error', r.error));
   return jsonb_build_object('ok', true, 'run', to_jsonb(r) - 'requested_by');
+end $$;
+
+-- ── the drafting engine (Phase 8): software may DRAFT, never approve or send ─
+--
+--   The engine (supabase/functions/growth_outbound_draft) writes a first
+--   email or a follow-up for a prospect who is due one and PROPOSES it here.
+--   It enters the review queue only if, checked here:
+--     * every claim it makes about the person cites current evidence about
+--       them that an email may cite, sure enough BY ITSELF to clear the
+--       research gate, and the claim's words are that evidence's own words
+--       (its claim or its quote) — the email says each claim in those words;
+--     * it names nothing and gives no figure it cannot cite, and every
+--       sentence about them ("your …") carries a claim;
+--     * the greeting is "Hi <first name>," only for an established first
+--       name, "Hi there," otherwise — never a guess;
+--     * the step is due (step_due_problem), and the content rules hold.
+--   It goes in pending review, unedited, marked as the engine's. Approving
+--   and sending stay the owner's; the send trigger checks the follow-up
+--   cadence again.
+
+-- Is a step due for a prospect now? NULL: yes. Otherwise why not, in words.
+--   step 1  a first email: the prospect is qualified (every gate clear, no
+--           draft waiting) and was never sent step 1;
+--   step 2  follow-up 1: contacted and not answered, opted out or bounced;
+--           step 1 went out followup_delay_days ago; follow-ups are on;
+--   step 3  the final follow-up: the same, final_followup_delay_days after
+--           follow-up 1, while the final follow-up is on.
+create or replace function growth_outbound.step_due_problem(p_prospect uuid, p_seq int)
+returns text language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  p growth_outbound.prospects;
+  s growth_outbound.settings;
+  v_prev timestamptz;
+  v_days int;
+begin
+  select * into p from growth_outbound.prospects where id = p_prospect;
+  if not found then return 'no such prospect'; end if;
+  select * into s from growth_outbound.settings where id = 1;
+  if p_seq is null or p_seq not between 1 and 3 then return 'the steps are 1, 2 and 3'; end if;
+  if p.status = 'suppressed' or growth_outbound.is_suppressed(p.email) then return 'this address is suppressed'; end if;
+  if p.status in ('rejected', 'replied', 'converted') then return 'this prospect is ' || p.status; end if;
+  if p.duplicate_of is not null then return 'this prospect duplicates another'; end if;
+  if exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = p_seq
+               and d.status in ('pending_review', 'approved')) then
+    return 'a draft for this step is already waiting';
+  end if;
+  if exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = p_seq and d.status = 'sent')
+     or exists (select 1 from growth_outbound.sends x where x.prospect_id = p.id and x.sequence_number = p_seq and not x.is_test) then
+    return 'this step has already been sent';
+  end if;
+  if p_seq = 1 then
+    if p.status <> 'qualified' then
+      return left('not qualified (' || p.status || coalesce(': ' || p.status_reason, '') || ')', 300);
+    end if;
+    return null;
+  end if;
+  if p.is_test then return 'a test prospect gets a first email only'; end if;
+  if p.status <> 'contacted' then
+    return 'a follow-up goes only to a prospect who was contacted and has not answered (this one is ' || p.status || ')';
+  end if;
+  if (p_seq = 2 and not s.followup_enabled) or (p_seq = 3 and not s.final_followup_enabled) then
+    return case when p_seq = 2 then 'follow-ups are turned off in the settings' else 'the final follow-up is turned off in the settings' end;
+  end if;
+  v_prev := growth_outbound.step_sent_at(p.id, p_seq - 1);
+  if v_prev is null then return 'step ' || (p_seq - 1) || ' has not gone out (or it bounced)'; end if;
+  v_days := case when p_seq = 2 then s.followup_delay_days else s.final_followup_delay_days end;
+  if v_prev > now() - make_interval(days => v_days) then
+    return 'not due until ' || to_char((v_prev + make_interval(days => v_days)) at time zone 'utc', 'YYYY-MM-DD HH24:MI') || ' UTC';
+  end if;
+  return null;
+end $$;
+
+-- WHO IS DUE A DRAFT NOW: real prospects only; follow-ups first (they are
+-- the ones with a date), then the best fit. Not a step whose draft the owner
+-- rejected in the last 14 days: the engine does not argue (the owner can
+-- still ask for one by hand). Not a step the engine gave up on in the last 7
+-- days, unless new evidence has arrived since (so one prospect nothing can be
+-- written for does not take the first place, and the budget, every time).
+create or replace function growth_outbound.drafting_due()
+returns table (prospect_id uuid, sequence_number int)
+language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select p.id, k.seq
+    from growth_outbound.prospects p
+   cross join lateral (select 1 as seq where p.status = 'qualified'
+                       union all select 2 where p.status = 'contacted'
+                       union all select 3 where p.status = 'contacted') k
+   where not p.is_test
+     and growth_outbound.step_due_problem(p.id, k.seq) is null
+     and not exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = k.seq
+                       and d.status = 'rejected' and d.rejected_at > now() - interval '14 days')
+     and not exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'draft_gave_up'
+                       and a.detail->>'sequence' = k.seq::text and a.at > now() - interval '7 days'
+                       and not exists (select 1 from growth_outbound.evidence e where e.prospect_id = p.id and e.observed_at > a.at))
+   order by k.seq desc, p.fit_score desc nulls last, p.created_at, p.id;
+$$;
+
+-- The facts an email to this prospect may cite, best first: current,
+-- citeable, and each sure enough by itself to clear the research gate. One
+-- line per claim (its first source), however many sources say it.
+create or replace function growth_outbound.citeable_facts(p_prospect uuid)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_agg(jsonb_build_object('evidence_id', y.id, 'field', y.field_name, 'claim', y.claim,
+           'quote', y.source_excerpt, 'source_url', y.source_url, 'source_kind', y.source_kind, 'source_title', y.source_title,
+           'published_at', y.source_published_at, 'confidence', y.c) order by y.c desc, y.id), '[]'::jsonb)
+    from (select x.* from (
+            select distinct on (e.field_name, e.claim_norm) e.*, growth_outbound.evidence_confidence(e.id, p_prospect) as c
+              from growth_outbound.evidence e
+             where e.prospect_id = p_prospect and e.superseded_at is null and e.claim_norm is not null
+               and growth_outbound.engine_citeable(e.field_name)
+             order by e.field_name, e.claim_norm, e.id) x
+           where x.c >= (select s.min_research_confidence from growth_outbound.settings s where s.id = 1)
+           order by x.c desc, x.id limit 12) y;
+$$;
+
+-- What the owner said when rejecting the engine's recent drafts: the engine
+-- reads it before writing the next one.
+create or replace function growth_outbound.engine_lessons()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_agg(x.r order by x.at desc), '[]'::jsonb) from (
+    select d.rejection_reason as r, d.rejected_at as at from growth_outbound.drafts d
+     where d.generator_version like 'engine:%' and d.status = 'rejected' and d.rejection_reason is not null
+       and d.rejected_at > now() - interval '60 days'
+     order by d.rejected_at desc limit 5) x;
+$$;
+
+-- How each writer's drafts fare (90 days, real prospects): the engine's,
+-- its template's, the owner's. Approved as written vs after an edit vs
+-- rejected is what the engine is judged on.
+create or replace function growth_outbound.drafting_stats()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_object_agg(x.k, x.v), '{}'::jsonb) from (
+    select case when d.generator_version like 'engine:template:%' then 'template'
+                when d.generator_version like 'engine:%' then 'engine' else 'owner' end as k,
+           jsonb_build_object(
+             'drafts', count(*),
+             'waiting', count(*) filter (where d.status = 'pending_review'),
+             'approved_as_written', count(*) filter (where d.status in ('approved', 'sent') and not d.edited_by_owner),
+             'approved_after_edit', count(*) filter (where d.status in ('approved', 'sent') and d.edited_by_owner),
+             'rejected', count(*) filter (where d.status = 'rejected'),
+             'sent', count(*) filter (where d.status = 'sent'),
+             'replied', count(distinct d.prospect_id) filter (where d.status = 'sent' and p.status in ('replied', 'converted'))) as v
+      from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
+     where not d.is_test and d.generated_at > now() - interval '90 days'
+     group by 1) x;
+$$;
+
+-- WHAT THE ENGINE MAY WRITE FROM, for one prospect and one step: whether it
+-- is due; their first name (only if established); the facts it may cite;
+-- what was already sent to them; the owner's recent reasons for rejecting
+-- engine drafts; who signs. Nothing else about the person.
+create or replace function public.growth_outbound_draft_context(p_prospect uuid, p_sequence int default 1)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  p growth_outbound.prospects;
+  s growth_outbound.settings;
+  v_problem text;
+begin
+  perform growth_outbound.require_owner();
+  if not exists (select 1 from growth_outbound.prospects where id = p_prospect) then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+  perform growth_outbound.evaluate(p_prospect);
+  select * into p from growth_outbound.prospects where id = p_prospect;
+  select * into s from growth_outbound.settings where id = 1;
+  v_problem := growth_outbound.step_due_problem(p.id, p_sequence);
+  return jsonb_build_object('ok', true, 'prospect_id', p.id, 'sequence_number', p_sequence,
+    'due', v_problem is null, 'problem', v_problem, 'is_test', p.is_test,
+    'first_name', p.first_name, 'prospect_type', p.prospect_type, 'campaign_type', p.campaign_type,
+    'facts', growth_outbound.citeable_facts(p.id),
+    'previous', coalesce((
+      select jsonb_agg(jsonb_build_object('sequence_number', d.sequence_number, 'subject', d.subject, 'body_text', d.body_text,
+               'sent_at', (select x.sent_at from growth_outbound.sends x where x.draft_id = d.id)) order by d.sequence_number)
+        from growth_outbound.drafts d
+       where d.prospect_id = p.id and d.status = 'sent' and d.sequence_number < coalesce(p_sequence, 1)), '[]'::jsonb),
+    'lessons', growth_outbound.engine_lessons(),
+    'sender', jsonb_build_object('name', s.sender_name, 'business_name', s.business_name, 'cta_url', s.cta_url),
+    'min_research_confidence', s.min_research_confidence);
+end $$;
+
+-- PROPOSE A DRAFT — the engine's only way into the review queue.
+--   { sequence_number, subject, body_text, claims: [{text, evidence_id}],
+--     generator: 'engine:<writer>:<version>' }
+-- A refusal lists every problem found, in words, so the engine can try once
+-- more or fall back to its template. Nothing is written unless all is well.
+create or replace function public.growth_outbound_draft_propose(p_run bigint, p_prospect uuid, p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r growth_outbound.research_runs;
+  v_p growth_outbound.prospects;
+  s growth_outbound.settings;
+  e growth_outbound.evidence;
+  d growth_outbound.drafts;
+  v_gen text;
+  v_seq int;
+  v_subject text;
+  v_body text;
+  v_due text;
+  v_problems text[] := '{}';
+  v_claims jsonb := '[]'::jsonb;
+  v_texts text[] := '{}';
+  v_text text;
+  v_conf numeric;
+  c jsonb;
+  x text;
+begin
+  perform growth_outbound.require_owner();
+  select * into r from growth_outbound.research_runs where id = p_run for update;
+  if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind <> 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'not_an_object'); end if;
+  select string_agg(k, ', ') into x from jsonb_object_keys(p) k
+   where k not in ('sequence_number', 'subject', 'body_text', 'claims', 'generator');
+  if x is not null then return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', x); end if;
+  v_gen := case when jsonb_typeof(p->'generator') = 'string' then p->>'generator' end;
+  if coalesce(v_gen, '') !~ '^engine:[a-z0-9._-]{1,40}:[a-z0-9._-]{1,20}$' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_generator', 'detail', 'engine:<writer>:<version>');
+  end if;
+  v_seq := case when jsonb_typeof(p->'sequence_number') = 'number' and (p->>'sequence_number') ~ '^[1-3]$'
+                then (p->>'sequence_number')::int end;
+  if v_seq is null then return jsonb_build_object('ok', false, 'reason', 'invalid_sequence'); end if;
+  if jsonb_typeof(p->'subject') is distinct from 'string' or jsonb_typeof(p->'body_text') is distinct from 'string' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_content', 'detail', 'a subject and a body, as text');
+  end if;
+  if jsonb_typeof(p->'claims') is distinct from 'array' or jsonb_array_length(p->'claims') > 5 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'claims: a list of at most 5');
+  end if;
+  if not exists (select 1 from growth_outbound.prospects where id = p_prospect) then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+
+  -- the prospect as the evidence stands NOW, and the step due NOW
+  perform growth_outbound.evaluate(p_prospect);
+  select * into v_p from growth_outbound.prospects where id = p_prospect for update;
+  select * into s from growth_outbound.settings where id = 1;
+  v_due := growth_outbound.step_due_problem(v_p.id, v_seq);
+  if v_due is not null then return jsonb_build_object('ok', false, 'reason', 'not_due', 'detail', v_due); end if;
+
+  v_subject := btrim(regexp_replace(p->>'subject', '\s+', ' ', 'g'));
+  v_body := btrim(regexp_replace(replace(p->>'body_text', E'\r\n', E'\n'), '[ \t]+\n', E'\n', 'g'));
+  if length(v_subject) not between 3 and 80 then v_problems := array_append(v_problems, 'the subject is 3 to 80 characters'::text); end if;
+  if length(v_body) not between 40 and 1500 then v_problems := array_append(v_problems, 'the body is 40 to 1,500 characters'::text); end if;
+
+  -- every claim: this person's current, citeable, confident evidence, in its
+  -- own words, and said in the email
+  for c in select y from jsonb_array_elements(p->'claims') y loop
+    v_text := case when jsonb_typeof(c) = 'object' and jsonb_typeof(c->'text') = 'string'
+                   then btrim(regexp_replace(c->>'text', '\s+', ' ', 'g')) end;
+    if v_text is null or length(v_text) not between 3 and 200 or jsonb_typeof(c->'evidence_id') is distinct from 'number'
+       or (c->>'evidence_id') !~ '^[0-9]{1,18}$' then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'each claim is {text: 3 to 200 characters, evidence_id}');
+    end if;
+    select * into e from growth_outbound.evidence where id = (c->>'evidence_id')::bigint;
+    if not found or e.prospect_id <> v_p.id or e.superseded_at is not null or e.claim_norm is null then
+      v_problems := array_append(v_problems, format('"%s" cites evidence %s, which is not current evidence about this person',
+                                                    left(v_text, 80), c->>'evidence_id'));
+      continue;
+    end if;
+    if not growth_outbound.engine_citeable(e.field_name) then
+      v_problems := array_append(v_problems, format('"%s" cites their %s, which an email does not cite', left(v_text, 80),
+                                                    replace(e.field_name, '_', ' ')));
+      continue;
+    end if;
+    v_conf := growth_outbound.evidence_confidence(e.id, v_p.id);
+    if v_conf < s.min_research_confidence then
+      v_problems := array_append(v_problems, format('"%s" rests on evidence only %s sure (the research gate is %s)',
+                                                    left(v_text, 80), round(v_conf, 2), s.min_research_confidence));
+    end if;
+    if not (growth_outbound.quote_in(v_text, e.claim) or growth_outbound.quote_in(v_text, e.source_excerpt)) then
+      v_problems := array_append(v_problems, format('"%s" is not in the words of evidence %s', left(v_text, 80), e.id));
+    end if;
+    if not growth_outbound.quote_in(v_text, v_subject || E'\n' || v_body) then
+      v_problems := array_append(v_problems, format('"%s" is cited, but the email does not say it in those words', left(v_text, 80)));
+    end if;
+    v_texts := array_append(v_texts, v_text);
+    v_claims := v_claims || jsonb_build_array(jsonb_build_object('text', v_text, 'evidence_id', e.id));
+  end loop;
+  if jsonb_array_length(p->'claims') = 0 and not v_p.is_test then
+    v_problems := array_append(v_problems, 'an individual email says at least one thing about them, cited'::text);
+  end if;
+
+  -- the greeting, nothing specific from nowhere, no uncited sentence about them
+  x := growth_outbound.greeting_problem(v_body, v_p.first_name);
+  if x is not null then v_problems := array_append(v_problems, x); end if;
+  foreach x in array growth_outbound.uncited_details(v_subject || E'\n' || v_body,
+      array_to_string(v_texts, ' ') || ' ' || coalesce(v_p.first_name, '') || ' ' || s.sender_name || ' ' || s.business_name) loop
+    v_problems := array_append(v_problems, format('"%s" comes from no cited claim', x));
+  end loop;
+  foreach x in array growth_outbound.uncited_sentences(v_subject || E'\n' || v_body, v_texts) loop
+    v_problems := array_append(v_problems, format('this says something about them without a cited claim: "%s"', x));
+  end loop;
+  foreach x in array growth_outbound.draft_lint(v_subject, v_body) loop
+    v_problems := array_append(v_problems, ('content: ' || x)::text);
+  end loop;
+  if cardinality(v_problems) > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'refused', 'problems', to_jsonb(v_problems[1:20]));
+  end if;
+
+  insert into growth_outbound.drafts (prospect_id, sequence_number, campaign_type, is_test, subject, body_text, greeting_name,
+                                      claims, generator_version, edited_by_owner, run_id)
+  values (v_p.id, v_seq, v_p.campaign_type, v_p.is_test, v_subject, v_body, nullif(growth_outbound.greeting_of(v_body), 'there'),
+          v_claims, v_gen, false, p_run)
+  returning * into d;
+  perform growth_outbound.evaluate(v_p.id);
+  perform growth_outbound.log('draft_proposed', v_p.id, 'draft', d.id::text,
+    jsonb_build_object('sequence', v_seq, 'claims', jsonb_array_length(v_claims), 'generator', v_gen, 'run', p_run));
+  return jsonb_build_object('ok', true, 'draft_id', d.id, 'content_hash', d.content_hash,
+    'status', (select status from growth_outbound.prospects where id = v_p.id));
+end $$;
+
+-- GAVE UP: for this step the engine wrote nothing the database accepts (both
+-- of Claude's tries and the template were refused). On the record, with the
+-- reasons, so the owner sees it and the due list leaves the step alone for a
+-- week (new evidence, or the owner asking, brings it back).
+create or replace function public.growth_outbound_draft_gave_up(p_run bigint, p_prospect uuid, p_sequence int, p_reasons jsonb default '[]'::jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare r growth_outbound.research_runs;
+begin
+  perform growth_outbound.require_owner();
+  select * into r from growth_outbound.research_runs where id = p_run;
+  if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind <> 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
+  if not exists (select 1 from growth_outbound.prospects where id = p_prospect) then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if p_sequence is null or p_sequence not between 1 and 3 then return jsonb_build_object('ok', false, 'reason', 'invalid_sequence'); end if;
+  perform growth_outbound.log('draft_gave_up', p_prospect, 'prospect', p_prospect::text,
+    jsonb_build_object('sequence', p_sequence, 'run', p_run, 'reasons', coalesce((
+      select jsonb_agg(left(y.x, 300)) from (
+        select x from jsonb_array_elements_text(case when jsonb_typeof(p_reasons) = 'array' then p_reasons else '[]'::jsonb end) x limit 10) y),
+      '[]'::jsonb)));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- THE DRAFTING DESK: who is due a draft, today's writing budget, how each
+-- writer's drafts fare, the recent drafting runs and the cadence.
+create or replace function public.growth_outbound_drafting_overview()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return (
+    with due as (select x.prospect_id, x.sequence_number, x.n from growth_outbound.drafting_due() with ordinality x(prospect_id, sequence_number, n))
+    select jsonb_build_object(
+      'llm_budget', growth_outbound.research_budget()->'llm',
+      'due_counts', jsonb_build_object('first', (select count(*) from due where sequence_number = 1),
+                                       'followup', (select count(*) from due where sequence_number = 2),
+                                       'final', (select count(*) from due where sequence_number = 3)),
+      'due', coalesce((select jsonb_agg(jsonb_build_object('prospect_id', d.prospect_id, 'sequence_number', d.sequence_number,
+                         'full_name', p.full_name, 'organization', p.organization, 'fit_score', p.fit_score) order by d.n)
+                         from (select * from due order by n limit 50) d join growth_outbound.prospects p on p.id = d.prospect_id), '[]'::jsonb),
+      'stats', growth_outbound.drafting_stats(),
+      'lessons', growth_outbound.engine_lessons(),
+      'cadence', (select jsonb_build_object('followup_enabled', s.followup_enabled, 'followup_delay_days', s.followup_delay_days,
+                    'final_followup_enabled', s.final_followup_enabled, 'final_followup_delay_days', s.final_followup_delay_days)
+                    from growth_outbound.settings s where s.id = 1),
+      'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' order by r.started_at desc) from (
+          select * from growth_outbound.research_runs where kind = 'draft' order by started_at desc limit 10) r), '[]'::jsonb)));
 end $$;
 
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
@@ -4503,6 +5035,26 @@ union all
 select 29, 'candidates: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                        from (select status, count(*) n from growth_outbound.candidates group by status) x), 'none yet')
   || '; last research run ' || coalesce((select to_char(max(started_at), 'YYYY-MM-DD HH24:MI') || ' UTC' from growth_outbound.research_runs), 'never'),
+  'ok'
+union all
+select 30, 'drafting engine: an engine draft cites only current, confident evidence in its own words, invents no name or figure, and greets only by an established first name',
+  case when growth_outbound.greeting_problem(E'Hi Pat,\nThanks.', 'Pat') is null
+        and growth_outbound.greeting_problem(E'Hi there,\nThanks.', null) is null
+        and growth_outbound.greeting_problem(E'Hi Patrick,\nThanks.', 'Pat') is not null
+        and growth_outbound.greeting_problem(E'Hi Pat,\nThanks.', null) is not null
+        and growth_outbound.uncited_details('I loved your 2024 Heisman model', 'model') = array['2024', 'Heisman']
+        and cardinality(growth_outbound.uncited_sentences('I loved your model.', '{}')) = 1
+        and cardinality(growth_outbound.uncited_sentences('I loved your CFB model.', array['CFB model'])) = 0
+        and not growth_outbound.engine_citeable('email') and not growth_outbound.engine_citeable('fit_signal')
+        and to_regprocedure('public.growth_outbound_draft_propose(bigint, uuid, jsonb)') is not null
+        and pg_get_constraintdef((select oid from pg_constraint where conname = 'research_runs_shape_ck')) like '%draft%'
+       then 'ok' else 'CHECK THIS' end
+union all
+select 31, 'drafting: ' || (select count(*) from growth_outbound.drafting_due() x where x.sequence_number = 1)::text || ' first emails and '
+  || (select count(*) from growth_outbound.drafting_due() x where x.sequence_number > 1)::text || ' follow-ups due; engine drafts in 90 days: '
+  || coalesce((select (v->>'drafts') || ' written, ' || (v->>'approved_as_written') || ' approved as written, '
+                      || (v->>'approved_after_edit') || ' after an edit, ' || (v->>'rejected') || ' rejected'
+                 from jsonb_each(growth_outbound.drafting_stats()) x(k, v) where k = 'engine'), 'none'),
   'ok'
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)

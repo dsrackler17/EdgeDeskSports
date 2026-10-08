@@ -172,7 +172,15 @@ try {
   r = approve(F6);
   chk('G (setup) a follow-up draft for the contacted prospect is approved', r.ok === true, r);
   r = claim(F6);
-  chk('G … and sent as step 2, with its own key', r.ok === true && r.idempotency_key === 'edgedesk-outbound-' + F6, r);
+  chk('G a follow-up is not sent before its delay has passed (the cadence is the send trigger\'s, not a page\'s)', r.ok === false
+    && /step 2 is not due until \d{4}-\d\d-\d\d \d\d:\d\d UTC/.test(r.detail) && nsends(`draft_id = '${F6}'`) === 0 && dstatus(F6) === 'approved', r);
+  one(`update growth_outbound.sends set sent_at = now() - interval '5 days 1 minute' where id = '${S6}';`);
+  settings({ followup_enabled: false });
+  r = claim(F6);
+  chk('G … nor while follow-ups are turned off', r.ok === false && /follow-ups are turned off/.test(r.detail) && nsends(`draft_id = '${F6}'`) === 0, r);
+  settings({ followup_enabled: true });
+  r = claim(F6);
+  chk('G … and once due, it is sent as step 2, with its own key', r.ok === true && r.idempotency_key === 'edgedesk-outbound-' + F6, r);
 
   /* the cap */
   settings({ max_sends_per_day: 2 });

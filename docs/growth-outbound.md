@@ -799,8 +799,116 @@ A prospect also has **Research again**. If the function is not deployed, the pag
 - **Write emails.** Drafting from verified evidence is Phase 8.
 - **Read X, LinkedIn or Instagram.** They refuse robots; a profile link still identifies someone, and the owner can add evidence by hand.
 
+## Phase 8: personalization (the drafting engine)
+
+**The engine may draft. It may not approve or send, and it may not say anything about a person that the database cannot cite.** It runs only when the owner presses a button (the scheduled morning run is Phase 9). Every draft waits in the review queue for you.
+
+### How a draft is written
+
+1. **Who is due** (`growth_outbound.step_due_problem`, the same rule everywhere):
+   - **first email:** the prospect is *qualified* (every gate clear, no draft waiting) and was never sent step 1;
+   - **follow-up 1:** contacted, has not replied, opted out or bounced; step 1 went out `followup_delay_days` ago; follow-ups are on;
+   - **final follow-up:** the same, `final_followup_delay_days` after follow-up 1, while the final follow-up is on;
+   - **a test prospect:** a first email only.
+
+   The **Write drafts** list puts follow-ups first, then the best fit. It leaves out a step whose draft you rejected in the last 14 days, and a step the engine gave up on in the last 7 days unless new evidence has arrived since. You can still ask for either by hand.
+2. **What it may write from** (`growth_outbound_draft_context`):
+   - the first name, **only if the evidence establishes it** (identity at the gate and a plain first-and-last name);
+   - the facts it may cite: what they make, write, run or do (project, newsletter, podcast, model, article, topic, sports focus, organization, title). Each fact must be current and **sure enough by itself** to clear the research gate. Never their address, their name, an audience figure or a fit signal;
+   - for a follow-up, what was already sent to them;
+   - your reasons for rejecting the engine's recent drafts.
+
+   Nothing else about the person is given to Claude.
+3. **Claude writes** (official SDK, `claude-opus-5-5`, low effort, structured output, server-side refusal fallback). For each thing it says about them, it copies a phrase from that fact's own words and cites the fact's id.
+4. **The database decides** (`growth_outbound_draft_propose`). An engine draft goes into the queue only if:
+   - **every claim** cites current evidence about *this* person that may be cited, sure enough by itself (at the research gate), in that evidence's own words (its claim or its quote), and the email says it in those words. There is at least one;
+   - **nothing specific comes from nowhere** (`uncited_details`): a figure, an all-capitals word, or a capitalised word inside a sentence (a name, a title, a brand, a place) must come from a cited claim, the first name, or EdgeDesk's own words. "Your 2024 Heisman model" is refused for "2024" and for "Heisman";
+   - **a sentence about them carries a claim** (`uncited_sentences`): "your newsletter", uncited, is refused. Generic phrases such as "your work", "your research" and "your bets" are fine;
+   - **the greeting** (`greeting_problem`) is "Hi <first name>," only for the established first name, letter for letter, and otherwise "Hi there,", alone on the first line. A name the evidence does not establish is a guess, and is refused;
+   - **the content rules** hold (no promised winnings or locks, $49.99/month, a 7-day free trial, EdgeDesk links only);
+   - **the step is due** now.
+
+   A refusal lists every problem in words.
+5. **One more try, then the template.** Claude gets the database's objections and one more try. If that is refused too, or Claude declines, fails, is not configured, or today's writing budget is spent, a plain **template** is used. It quotes the best fact in its own words, greets by first name or "Hi there,", and is checked by the same door.
+6. **If nothing passes,** nothing is drafted. The reasons are returned and recorded (`draft_gave_up`, in Activity).
+
+**What the checks do not prove.** They stop the common ways a model invents a personal detail: a name, a number, a brand, or a sentence about them that cites nothing. They cannot catch every lowercase claim. That is why every draft says **who wrote it**, and why nothing is sent until you approve it and press Send.
+
+### At approval and at sending
+
+- **An engine draft you have not edited** is approved only while its greeting still matches the first name as the evidence stands *now*. If research later shows "Hi Pat," should be "Hi Patricia,", it cannot be approved until you edit it. **Your own edits are your words** and are not held to this.
+- **Follow-ups are sent only on the cadence**, whoever wrote them. The send trigger refuses a live follow-up:
+  - while that follow-up is turned off;
+  - before the step before it went out (and did not bounce, draw a complaint or fail);
+  - before its delay has passed.
+
+  The final follow-up's delay counts from follow-up 1.
+
+### The console
+
+**Review queue:**
+- whether Claude writes, and today's use of the writing budget;
+- who is due (first emails, follow-ups);
+- how the engine's drafts fare over 90 days: written, approved as written, approved after your edit, rejected;
+- **Write the next N drafts.**
+
+**Each card** says who wrote it: the engine, its template, or you, and "edited by you". A greeting the evidence no longer supports is said, and that card cannot be approved. Rejecting an engine draft tells you the engine reads your reason.
+
+**A prospect** has **Let the engine write it**, for the step you choose. A step that is not due is said in the database's words.
+
+**Fixed along the way:** a follow-up for a contacted prospect could not be selected or approved on the page. The database always allowed it; the page now does too.
+
+### New in the database
+
+- `research_runs.kind` gains `draft`. A drafting run spends only on Claude, and the research doors refuse it.
+- `drafts.run_id`: the run that wrote an engine draft.
+- **The checks:** `engine_citeable`, `greeting_of`, `greeting_problem`, `detail_words`, `uncited_details`, `uncited_sentences`, `step_sent_at`, `step_due_problem`, `drafting_due`, `citeable_facts`, `engine_lessons`, `drafting_stats`.
+- **Doors** (owner only):
+  - `draft_context`, `draft_propose`, `draft_gave_up` (called by the function as the owner);
+  - `drafting_overview`.
+- **Changed:**
+  - `approve_one`: the greeting gate for unedited engine drafts;
+  - the send trigger: the follow-up cadence;
+  - the review card: `greeting_problem`.
+- **Report rows 30–31:** the checks themselves, and what is due and how the engine's drafts fare.
+
+### Deploy (in order)
+
+1. Merge the Phase 8 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql` again. Report rows 1–31 should say `ok`.
+3. `ANTHROPIC_API_KEY` is already set if research uses Claude (secrets are shared by every function). Without it, every draft is the template. Optional: `OUTBOUND_DRAFT_MODEL`.
+4. **Deploy the function:** Actions → **Deploy outbound Edge Functions**, or `supabase functions deploy growth_outbound_draft --no-verify-jwt`.
+5. In the console: **Review queue → Write the next drafts**, or open a qualified prospect → **Let the engine write it**. Then review.
+
+**Cost:** at most two short Claude calls per draft (a few thousand tokens each). They count against the same daily Claude figure as research ("Claude calls / day" under Discover and research), so that figure caps both.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_drafting_sql.test.js` | 139 | runs (a drafting run writes only, and research doors refuse it); **due** (first email, follow-up delay, turned off, after a reply, a first email that failed, a test prospect, the order, rejected and given-up steps leaving the list, new evidence bringing one back); the context (established first name or none; facts sure enough by themselves, one line per claim, never an address, name, fit signal or a single publication's fact); **claims** (someone else's evidence, an address, a fit signal, a name, below the gate, other words than the evidence's, not said in the email, superseded, none); **names** (a different name, wrong case, no greeting line, no established first name); **specifics** (a figure, a brand, a name, all-capitals, mid-sentence or not, the subject too, "your newsletter" uncited); the content rules; the insert (pending review, unedited, the engine's, its run, line endings); the **greeting gate at approval** and an owner's edit; the **follow-up cadence at sending**; the overview, lessons and statistics; owner only, anon nothing. **Mutation-checked:** 72 deliberate breaks; every one caught except the two that cannot change behaviour (below). |
+| `tools/growth/outbound_draft.test.js` | 66 | the **deployed** function against the **real SQL** (`tools/growth/_rpc_shim.js`, now shared with the research test). Claude is the SDK, stubbed. It covers: owner only; status without the key; the prompt (only citeable facts and the established first name, the rules, pages as data); the SDK call (model, structured output, low effort, the fallback); a made-up detail refused and fixed on the second try with the database's objections; the template after two refusals, a decline, a failure, a malformed answer, no key, no budget, no time; the template for all three steps accepted by the database; nothing drafted when nothing passes (recorded, and the run marked failed); not due; a follow-up with nothing left to cite; next N as time allows; previous emails and lessons in a follow-up's prompt; the key only to the SDK; **the doors it calls: none that approves, edits or sends**. **Mutation-checked:** 30 deliberate breaks, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 191 | adds sections 42–47: the drafting status, Write the next drafts, who wrote each card, the greeting block, a follow-up approvable, the reject hint, Let the engine write it, the function not deployed |
+| `tools/growth/outbound_send_sql.test.js` | 49 | adds: a follow-up is not sent before its delay, nor while follow-ups are off |
+| earlier suites | all passing | |
+
+**Mutations that cannot be caught, and why.**
+- **Superseded facts in the context** (`citeable_facts` without its `superseded_at` filter): the filter is redundant, because superseded evidence has confidence 0 and so never clears the gate.
+- **A send with no `sent_at` counted as sent** (`step_sent_at`): unreachable, because a prospect becomes *contacted* only when its step-1 send records a message id and `sent_at` together.
+
+### Rollback
+
+- **Stop drafting at once:** set "Claude calls / day" to 0. The engine then writes only the template. Or delete the function: `supabase functions delete growth_outbound_draft`. The console says it is not deployed and still shows who is due.
+- **A bad engine draft:** reject it, with a reason (the engine reads it). Nothing an engine writes is ever sent without your approval and your Send.
+- **The database:** additive. The cadence check at sending can be relaxed only by editing the file. That is deliberate.
+
+### What Phase 8 does not do
+
+- **Run by itself:** the morning run is Phase 9.
+- **Send anything:** drafts wait for you.
+- **Learn beyond your words:** it reads your reasons for rejecting its drafts. Measuring which drafts get replies (attribution) is Phase 10.
+
 ## Next
 
-- **Phase 8:** personalization: drafts written only from stored, quoted evidence, each claim cited.
 - **Phase 9:** the scheduled morning run (find, research, score, draft, queue; never approve or send).
 - **Phase 10:** analytics and attribution.

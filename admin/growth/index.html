@@ -113,6 +113,8 @@ textarea{background:var(--bg);color:var(--text);border:1px solid var(--border);b
 .chip.warn{color:var(--warn);border-color:rgba(217,154,43,.5)}
 .pname{font-size:17px;font-weight:700;overflow-wrap:anywhere}
 .pill.st{font-size:11px;color:var(--text)}
+.pill.by{font-size:11px;color:var(--dim)}
+#rqDrafting{margin-top:0}
 h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:18px 0 6px;font-weight:700}
 tr.old td{color:var(--faint)}
 td.quote{font-style:italic;color:var(--dim)}
@@ -227,6 +229,10 @@ ul.claims li.badc b{color:var(--neg)}
       <h2>Review queue</h2>
       <div class="card">
         <div class="row" style="align-items:center">
+          <div class="chips" id="rqDrafting"></div><span class="sp"></span>
+          <button type="button" class="g sm" id="rqWrite" disabled title="The drafting engine writes for the prospects due a first email or a follow-up; every draft waits here for you">Write drafts</button>
+        </div>
+        <div class="row" style="align-items:center">
           <div class="seg" id="rqSeg"><button type="button" data-q="pending_review" class="on">Waiting for review</button><button type="button" data-q="approved">Approved, not sent</button></div>
           <span class="sub" id="rqTotal"></span><span class="sp"></span>
           <button type="button" class="g sm" id="rqFixture" title="A test prospect at your own test inbox, with a draft to review">Test draft for my inbox</button>
@@ -235,7 +241,7 @@ ul.claims li.badc b{color:var(--neg)}
         </div>
         <div class="msg" id="rqMsg" role="status" aria-live="polite"></div>
         <div id="rqCards"></div>
-        <div class="note">Approving sends nothing. Each card is the message exactly as it would go out, and what it says about the person with the evidence behind it. Approving several asks you to type how many, and the database approves exactly that many or none. An approved draft goes out only when you press Send — in test mode, only to your test inbox.</div>
+        <div class="note">The drafting engine writes only from facts the database holds about that person, each sure enough on its own, in the source's own words; the database checks every draft before it appears here, and greets by first name only when the evidence establishes it. Approving sends nothing. Each card is the message exactly as it would go out, and what it says about the person with the evidence behind it. Approving several asks you to type how many, and the database approves exactly that many or none. An approved draft goes out only when you press Send — in test mode, only to your test inbox.</div>
       </div>
 
       <h2>Sends</h2>
@@ -265,7 +271,7 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="row" style="margin-top:8px">
           <div class="f" style="max-width:120px"><label for="dvB_search">Searches / day</label><input id="dvB_search" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:120px"><label for="dvB_fetch">Pages / day</label><input id="dvB_fetch" inputmode="numeric" maxlength="5"></div>
-          <div class="f" style="max-width:120px"><label for="dvB_llm">Claude reads / day</label><input id="dvB_llm" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:120px"><label for="dvB_llm" title="Research and drafting share this figure">Claude calls / day</label><input id="dvB_llm" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:140px"><label for="dvB_email_finder">Email lookups / day</label><input id="dvB_email_finder" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:150px"><label for="dvB_email_verifier">Verifications / day</label><input id="dvB_email_verifier" inputmode="numeric" maxlength="5"></div>
           <span class="sp"></span><button type="button" class="g" id="dvSave">Save</button>
@@ -365,7 +371,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261007f"></script>
+<script src="/admin/growth/outbound.js?v=20261007g"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
