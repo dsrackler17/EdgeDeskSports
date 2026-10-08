@@ -117,6 +117,21 @@
         and in the panel (text from anywhere stays text); every check listed;
         "run the check again" asks the database again; before the Phase 11
         SQL, said
+    58  THIS MORNING (Phase 12): qualified today against the target, review,
+        today's (warm-up) cap, the sending domain, partner leads kept apart
+        (web text stays text, a lead opens); before the Phase 12 SQL, said
+    59  each card: the 0–100 score in its five parts, why they fit, the
+        address and whether anyone verified it, where to read up (https
+        only), what the email should still say, the segment
+    60  a prospect: the score and its parts; who they are to EdgeDesk changes
+        only when asked, with a reason; the prospects table shows the score
+    61  providers: each switch, Apollo and Clay off until switched on; saving
+        sends the switches and the enrichment budget; "Verify waiting
+        addresses"; "Send to Clay" asks first; the CSV export downloads and
+        is marked; the CSV import maps Clay's columns and says what came back
+    62  the sending domain checked from the System check (sends nothing),
+        each record said; loosening the warm-up asks, and the database is
+        told it was confirmed; the qualification bar is a setting
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -285,6 +300,22 @@ function PAT_CLAIM_10() { return [{ text: 'CFB power ratings against the market'
   evidence: { id: 9, field_name: 'project', claim: 'CFB power ratings against the market', source_url: 'https://cfbnumbers.test/ratings', source_kind: 'own_site', source_excerpt: 'Week 5', current: true, own: true } }]; }
 const QAPPROVED = { ok: true, status: 'approved', total: 1, rows: [
   card({ id: 'd9', pid: 'p1', name: 'Pat Analyst', status: 'approved', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Approved one', body: 'Hi Pat.' })] };
+const QUAL = (o) => Object.assign({ score: 82, segment: 'customer', why: 'publishes quantitative sports analysis; tracks closing-line value',
+  against: null, parts: { relevance: { points: 30, max: 35, reasons: [] }, analytics: { points: 25, max: 25, reasons: [] }, purchase: { points: 12, max: 15, reasons: [] },
+    contact: { points: 9, max: 15, email: 5, email_status: 'unverified', identity: 2, own_site_or_profile: 2 }, personalization: { points: 5, max: 10, citeable_facts: 1 },
+    penalties: { points: -0, reasons: [] } } }, o || {});
+const MORNING = { day: '2026-10-08', timezone: 'America/New_York', test_mode: true, automation: true, qualified_today: 3, qualified_target: 12, min_qualification_score: 75,
+  researched_today: 9, review: 4, approved_unsent: 1, sent_today: 2, live_cap: { cap: 10, max: 20, warmup: true, week: 0, warming: true, start: 10, step: 5 },
+  partner_leads_7d: 2, verification_waiting: 3, enrichment_waiting: 5, domain_auth: { domain: 'edgedesksports.com', ok: true, spf: { ok: true }, dkim: { ok: true }, dmarc: { ok: true, policy: 'none' } },
+  domain_auth_checked_at: '2026-10-07T20:00:00Z', providers: { apollo: true, clay: false } };
+const PARTNERS = [{ id: 'pm', full_name: 'Max Media ' + XSS, organization: 'Big Sports Pod', campaign_type: 'media_partner', qualification_score: 61, email: 'max@bigpod.test',
+  email_status: 'verified', status: 'qualified' }];
+const Q12 = { ok: true, status: 'pending_review', total: 1, rows: [Object.assign(card({ id: 'd121', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89,
+  email: 'pat@cfbnumbers.test', subject: 'Your CFB ratings', body: 'Hi Pat,\n\nI read your CFB power ratings against the market.', claims: PAT_CLAIM_10() }), {
+  advice: ['offer: say the price, $49.99/month', 'offer: say the 7-day free trial'], words: 12,
+  links: ['https://cfbnumbers.test', 'javascript:alert(1)', 'https://x.com/patanalyst'] })] };
+Q12.rows[0].prospect = Object.assign(Q12.rows[0].prospect, { qualification_score: 82, qualification: QUAL(), email_status: 'unverified', email_source_kind: 'own_site',
+  campaign_type: 'customer', thresholds: { qualification: 75 } });
 const PROSPECTS = { total: 2, rows: [
   { id: 'p1', full_name: 'Pat Analyst', organization: 'CFB Numbers', prospect_type: 'cfb_analyst', sports_focus: ['CFB'], fit_score: 88, identity_confidence: 0.95, role_confidence: 0.9,
     email_confidence: 0.95, research_confidence: 0.9, email: 'pat@cfbnumbers.test', email_status: 'verified', status: 'ready_for_review', updated_at: '2026-10-05T12:00:00Z', is_test: false, suppressed: false },
@@ -323,7 +354,15 @@ const PROSPECTS = { total: 2, rows: [
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_research', body]);
         if (state.research === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
+        if (body.action === 'status' && o.p12) return reply(200, { ok: true, providers: { search: true, email: true, llm: true, fetch: true, model: 'claude-opus-5-5', enrichment: false,
+          detail: { brave: { role: 'search', key: 'BRAVE_SEARCH_API_KEY', configured: true, on: true }, apollo_search: { role: 'search', key: 'APOLLO_API_KEY', configured: false, on: false },
+            hunter: { role: 'email lookup and verification', key: 'HUNTER_API_KEY', configured: true, on: true }, apollo: { role: 'email lookup', key: 'APOLLO_API_KEY', configured: true, on: true },
+            clay: { role: 'enrichment', key: 'CLAY_WEBHOOK_URL', configured: true, on: false } } },
+          overview: Object.assign({}, RESEARCH_OV, { providers: { apollo: true }, verification_waiting: 3, enrichment_waiting: 5, daily_qualified_target: 12,
+            budget: Object.assign({}, RESEARCH_OV.budget, { enrichment: { cap: 15, used: 0, left: 15 } }) }) });
         if (body.action === 'status') return reply(200, { ok: true, providers: { search: true, email: false, llm: true, fetch: true, model: 'claude-opus-5-5' }, overview: RESEARCH_OV });
+        if (body.action === 'verify') return reply(200, { ok: true, run_id: 40, asked: 3, valid: 2, outcome: 'verified', results: [], notes: [] });
+        if (body.action === 'enrich') return reply(200, { ok: true, run_id: 41, pushed: 5, failed: [], notes: [] });
         if (body.action === 'discover') {
           if (state.research === 'nobrave') return reply(503, { ok: false, reason: 'search_not_configured', code: 'search_not_configured' });
           return reply(200, { ok: true, run_id: 9, queries: body.query ? 1 : 2, results: 18, new: 5, seen_again: 3, duplicates: 1, suppressed: 0, invalid: 0, per_query: [], notes: [] });
@@ -357,6 +396,11 @@ const PROSPECTS = { total: 2, rows: [
       if (/functions\/v1\/growth_outbound_send/.test(url)) {
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_send', body, req.headers().authorization]);
+        if (body.action === 'domain_check') {
+          return reply(200, { ok: true, live_send_blockers: state.domainFail ? ['domain_auth_failed'] : [], check: { domain: 'edgedesksports.com', ok: state.domainFail ? false : true, via: 'dns-over-https',
+            spf: { ok: true, detail: 'send.edgedesksports.com: v=spf1 include:amazonses.com ~all' }, dkim: { ok: !state.domainFail, detail: state.domainFail ? 'no DKIM key at resend._domainkey.edgedesksports.com' : 'key ' + XSS },
+            dmarc: { ok: true, policy: 'none', detail: 'v=DMARC1; p=none' }, provider: { ok: null, detail: 'the Resend key can send but not read domains' } } });
+        }
         if (state.fn === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
         if (state.fn === 'nokey') return reply(503, { ok: false, reason: 'resend_not_configured', code: 'resend_not_configured' });
         if (state.fn === 'refused') return reply(200, { ok: true, sent: 0, results: body.draft_ids.map((d) => ({ draft_id: d, ok: false, reason: 'refused', detail: 'the daily send cap (20) is reached' })) });
@@ -376,10 +420,16 @@ const PROSPECTS = { total: 2, rows: [
         if (o.role !== 'owner' || (o.demoteAfter != null && outboundData > o.demoteAfter)) return reply(403, { code: '42501', message: 'outbound owner only' });
         if (name === 'growth_outbound_settings') return reply(200, st);
         if (name === 'growth_outbound_overview') return reply(200, { settings: st, prospects_by_status: { ready_for_review: 2, needs_research: 3 }, drafts_pending_review: 2, drafts_approved_unsent: 0, sends_7d_by_status: {}, suppressions: 1, discovered_today: 4 });
-        if (name === 'growth_outbound_prospects') return reply(200, PROSPECTS);
+        if (name === 'growth_outbound_prospects') return reply(200, o.p12 ? { total: 1, rows: [Object.assign({}, PROSPECTS.rows[0], { qualification_score: 82, campaign_type: 'media_partner' })] } : PROSPECTS);
         if (name === 'growth_outbound_suppressions') return reply(200, [{ created_at: '2026-10-05T11:00:00Z', scope: 'address', target: 'no@thanks.test', kind: 'unsubscribe', source: 'owner', reason: 'asked' }]);
         if (name === 'growth_outbound_activity') return reply(200, [{ at: '2026-10-05T11:00:00Z', actor_kind: 'owner', action: 'settings_changed', entity: 'settings', entity_id: '1', detail: { x: 1 } }]);
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
+        if (o.p12 && name === 'growth_outbound_morning') return reply(200, MORNING);
+        if (o.p12 && name === 'growth_outbound_partner_leads') return reply(200, PARTNERS);
+        if (o.p12 && name === 'growth_outbound_prospect_set_segment') return reply(200, { ok: true, segment: body.p_segment, drafts_cancelled: 1 });
+        if (o.p12 && name === 'growth_outbound_enrichment_export') return reply(200, { ok: true, run_id: 42, rows: [{ edgedesk_ref: 'p1', full_name: 'Pat "The Model" Analyst', organization: 'CFB, Numbers', domain: 'cfbnumbers.test' }] });
+        if (o.p12 && name === 'growth_outbound_provider_import') return reply(200, { ok: true, run_id: 43, imported: 1, unmatched: 1, refused: 0, rows: [] });
+        if (o.p12 && name === 'growth_outbound_review_queue' && body.p_status !== 'approved') return reply(200, Q12);
         if (name === 'growth_outbound_review_queue') {
           if (o.noQueue) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
           return reply(200, body.p_status === 'approved' ? QAPPROVED : state.queue10 ? Q10 : state.queue8 ? Q8 : QPENDING);
@@ -420,6 +470,8 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, { ok: true, status: 'replied', drafts_cancelled: 1, suppressed: !!body.p_stop });
         }
         if (name === 'growth_outbound_prospect') {
+          if (body.p_id === 'p1' && o.p12) return reply(200, Object.assign({}, DETAIL, { prospect: Object.assign({}, DETAIL.prospect, { qualification_score: 82, qualification: QUAL(),
+            campaign_type: 'customer', assessment: Object.assign({}, DETAIL.prospect.assessment, { thresholds: Object.assign({}, DETAIL.prospect.assessment.thresholds, { qualification: 75 }) }) }) }));
           if (body.p_id === 'p1') return reply(200, Object.assign({}, DETAIL, o.results10 ? { conversions: [
             { stage: 'visited', matched_by: 'link', occurred_at: '2026-10-07T10:00:00Z', recorded_at: '2026-10-07T11:00:00Z' },
             { stage: 'signed_up', matched_by: 'link', occurred_at: '2026-10-07T10:05:00Z', recorded_at: '2026-10-07T11:00:00Z' },
@@ -453,6 +505,7 @@ const PROSPECTS = { total: 2, rows: [
           const p = body.p || {};
           if (p.max_sends_per_day > st.max_sends_per_day && !p.confirm_cap_increase) return reply(200, { ok: false, reason: 'cap_increase_needs_confirmation' });
           if (p.test_mode === false && st.test_mode && !p.confirm_live) return reply(200, { ok: false, reason: 'going_live_needs_confirmation' });
+          if (p.warmup_enabled === false && st.warmup_enabled && !p.confirm_cap_increase) return reply(200, { ok: false, reason: 'cap_increase_needs_confirmation' });
           const changed = {};
           if (p.discovery_config && p.discovery_config.budget && typeof p.discovery_config.budget.llm !== 'number' && p.discovery_config.budget.llm != null) {
             return reply(200, { ok: false, reason: 'invalid_value', detail: 'budget: llm must be a whole number' });
@@ -1197,6 +1250,128 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
     chk('57 before the Phase 11 SQL: said, and nothing else fails', /arrives with the Phase 11 SQL/.test(await text(t.page, '#hcSummary')) && !(await visible(t.page, '#obMsg')));
     chk('57 no page errors (before the SQL)', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 58–62. PHASE 12: the morning, the score, providers, the domain ──── */
+  {
+    const t = await open({ role: 'owner', p12: true, settings: { min_qualification_score: 75, daily_qualified_target: 12, warmup_enabled: true, warmup_start_per_day: 10,
+      warmup_step_per_week: 5, today: { live_sends: 2, test_sends: 0, cap: 20, test_cap: 25, live_cap: { cap: 10, max: 20, warming: true, week: 0 } } } });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    const mk = await text(t.page, '#mnKpis'), mc = await text(t.page, '#mnChips');
+    chk('58 this morning: qualified today against the target, at the bar', /Qualified today3 of 12new potential subscribers at 75\+/.test(mk), mk);
+    chk('58 … what waits for review, what may go out today, what waits for a verifier or enrichment', /Waiting for review4/.test(mk) && /Sent today2 \/ 10/.test(mk)
+      && /Addresses to verify3/.test(mk) && /Waiting for enrichment5/.test(mk), mk);
+    chk('58 … the sending domain and the warm-up', /edgedesksports\.com: SPF, DKIM and DMARC in place \(DMARC p=none\)/.test(mc) && /Today's live cap 10 \(warming up, week 0 of the ramp to 20\)/.test(mc)
+      && /Paid providers on: Apollo email match/.test(mc), mc);
+    chk('58 the header chip says today\'s warm-up cap', /live sends today 2 \/ 10 \(warming up, week 0\)/.test(await text(t.page, '#obChips')), await text(t.page, '#obChips'));
+    const pl = await text(t.page, '#mnPartners');
+    chk('58 partner leads, apart, with web text as text', /Partner leads \(1\)/.test(await text(t.page, '#mnPartnersSum')) && /Media partner/.test(pl) && /Big Sports Pod/.test(pl)
+      && /<img src=x/.test(pl) && !(await t.page.evaluate(() => window.__pwned)), pl);
+    await t.page.click('#mnPartnersSum'); await t.page.click('#mnPartners [data-open="pm"]'); await settle(t.page, 500);
+    chk('58 … a lead opens', t.calls.some((c) => c[0] === 'growth_outbound_prospect' && c[1].p_id === 'pm'));
+
+    /* 59. the card */
+    const cd = await text(t.page, '[data-draft="d121"]');
+    chk('59 the card: the score in its five parts', /30 \/ 35Product relevance/.test(cd) && /25 \/ 25Analytics interest/.test(cd) && /12 \/ 15Purchase signals/.test(cd)
+      && /9 \/ 15Contact quality/.test(cd) && /5 \/ 10Personalization/.test(cd) && /score 82/.test(cd), cd);
+    chk('59 … why they fit, in words', /Why they fit: publishes quantitative sports analysis; tracks closing-line value\./.test(cd));
+    chk('59 … the address and whether anyone verified it (not yet: published on their own site)', /Address: pat@cfbnumbers\.test\s*unverified/.test(cd) && /Their own site/.test(cd), cd);
+    const rl = await t.page.$$eval('[data-draft="d121"] [data-contact] a', (as) => as.map((a) => a.getAttribute('href')));
+    chk('59 … where to read up: https links only, opened safely', rl.length === 2 && rl.every((h) => /^https:/.test(h)) && /javascript:alert/.test(cd)
+      && (await t.page.$$eval('[data-draft="d121"] [data-contact] a', (as) => as.every((a) => a.rel === 'noopener noreferrer nofollow'))), rl);
+    chk('59 … what the email should still say, as advice (the owner\'s words are not blocked)', /Worth fixing before you approve: offer: say the price, \$49\.99\/month · offer: say the 7-day free trial/.test(cd)
+      && /12 words/.test(cd), cd);
+
+    /* 60. the prospect */
+    const pr = await text(t.page, '#obProspects');
+    chk('60 the prospects table shows the score and a partner\'s segment', /Score/.test(pr) && /82/.test(pr) && /Media partner/.test(pr), pr);
+    await t.page.click('#rqCards [data-open="p1"]'); await settle(t.page, 600);
+    const pd = await text(t.page, '#obDetail');
+    chk('60 a prospect: the score beside its bar and in its parts', /Qualification82needs 75/.test(pd) && /30 \/ 35Product relevance/.test(pd) && /Potential subscriber/.test(pd), pd.slice(0, 600));
+    await t.page.selectOption('#pdSeg', 'media_partner');
+    t.setAnswers([false]);
+    await t.page.click('#pdSegSave'); await settle(t.page);
+    chk('60 changing the segment asks first (saying a waiting email is cancelled); declining changes nothing', /cancelled/.test(t.dialogs[t.dialogs.length - 1].msg)
+      && !t.calls.some((c) => c[0] === 'growth_outbound_prospect_set_segment'));
+    t.setAnswers(['they run a podcast network']);
+    await t.page.click('#pdSegSave'); await settle(t.page);
+    const sg = t.calls.filter((c) => c[0] === 'growth_outbound_prospect_set_segment');
+    chk('60 … accepting sends the segment and the reason', sg.length === 1 && sg[0][1].p_segment === 'media_partner' && sg[0][1].p_reason === 'they run a podcast network', sg);
+
+    /* 61. providers */
+    const sw = await t.page.$$eval('[data-sw]', (els) => els.map((e) => e.getAttribute('data-sw') + ':' + e.checked));
+    chk('61 each provider has a switch: Brave and Hunter on, Apollo as saved, Clay off until switched on', JSON.stringify(sw) === JSON.stringify(['brave:true', 'apollo_search:false', 'hunter:true', 'apollo:true', 'clay:false']), sw);
+    chk('61 … with whether its key is set', /not set up: APOLLO_API_KEY/.test(await text(t.page, '#dvSwitches')) && /key set, switched off/.test(await text(t.page, '#dvSwitches')), await text(t.page, '#dvSwitches'));
+    chk('61 … and the email chip names who looks addresses up', /Email: Hunter \+ Apollo email match/.test(await text(t.page, '#dvProviders')), await text(t.page, '#dvProviders'));
+    await t.page.check('[data-sw="clay"]'); await t.page.fill('#dvB_enrichment', '5');
+    await t.page.click('#dvSave'); await settle(t.page);
+    const sv = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop();
+    chk('61 saving sends the switches and the enrichment budget', !!sv && sv[1].p.discovery_config.providers.clay === true && sv[1].p.discovery_config.providers.brave === true
+      && sv[1].p.discovery_config.budget.enrichment === 5, sv && sv[1]);
+    await t.page.click('#dvVerify'); await settle(t.page);
+    chk('61 "Verify waiting addresses" asks the research function to verify, and says what came of it', t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'verify')
+      && /Asked about 3 addresses: 2 verified\./.test(await text(t.page, '#dvEnrichMsg')));
+    t.setAnswers([false]);
+    await t.page.click('#dvClayPush'); await settle(t.page);
+    chk('61 "Send to Clay" asks first, saying what Clay is told; declining sends nothing', /who they are and where they are/.test(t.dialogs[t.dialogs.length - 1].msg)
+      && !t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'enrich'));
+    t.setAnswers([true]);
+    await t.page.click('#dvClayPush'); await settle(t.page);
+    chk('61 … accepting sends them, and says how the results come back', t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'enrich')
+      && /Sent 5 to Clay\. When Clay has enriched them, export the table as CSV and import it here\./.test(await text(t.page, '#dvEnrichMsg')));
+    const [dl] = await Promise.all([t.page.waitForEvent('download', { timeout: 4000 }).catch(() => null), t.page.click('#dvClayExport')]);
+    let csv = '';
+    if (dl) { const fp = await dl.path(); csv = fs.readFileSync(fp, 'utf8'); }
+    chk('61 the CSV export downloads, quoted properly, with our reference column', !!dl && /^edgedesk_ref,full_name,first_name,last_name,organization/.test(csv)
+      && /p1,"Pat ""The Model"" Analyst",,,"CFB, Numbers"/.test(csv), csv.slice(0, 300));
+    chk('61 … and says it was marked', /Exported 1 prospect for Clay \(marked as sent: not again for 14 days\)/.test(await text(t.page, '#dvEnrichMsg')));
+    const tmp = path.join(require('os').tmpdir(), 'clay-' + process.pid + '.csv');
+    fs.writeFileSync(tmp, '\uFEFFedgedesk_ref,Full Name,Work Email,Company Name,LinkedIn Profile,Phone\r\np1,Pat Analyst,pat@cfbnumbers.test,"CFB, Numbers",https://www.linkedin.com/in/pat,555\r\n,Stranger,s@x.test,,,\r\n');
+    await t.page.setInputFiles('#dvClayFile', tmp); await settle(t.page, 600);
+    const im = t.calls.filter((c) => c[0] === 'growth_outbound_provider_import').pop();
+    chk('61 the CSV import maps Clay\'s columns (and leaves out the ones we do not keep)', !!im && im[1].p_provider === 'clay' && JSON.stringify(im[1].p_rows[0])
+      === JSON.stringify({ ref: 'p1', full_name: 'Pat Analyst', email: 'pat@cfbnumbers.test', organization: 'CFB, Numbers', linkedin_url: 'https://www.linkedin.com/in/pat' })
+      && im[1].p_rows.length === 2, im && im[1]);
+    chk('61 … and says what came back, and that Clay\'s addresses stay unverified', /Imported 1 of 2 rows as Clay's word; 1 named nobody we know/.test(await text(t.page, '#dvEnrichMsg'))
+      && /stay unverified until the verifier or you confirm them/.test(await text(t.page, '#dvEnrichMsg')), await text(t.page, '#dvEnrichMsg'));
+
+    /* 62. the domain, the warm-up, the bar */
+    await t.page.click('#hcDomain'); await settle(t.page);
+    chk('62 the domain check asks the send function — and sends nothing', t.calls.some((c) => c[0] === 'fn:growth_outbound_send' && c[1].action === 'domain_check' && !c[1].draft_ids)
+      && /edgedesksports\.com: SPF, DKIM and DMARC are in place\./.test(await text(t.page, '#hcMsg')));
+    const dt = await text(t.page, '#hcDomainOut');
+    chk('62 … each record said, web text as text', /SPF\s*ok/.test(dt) && /DKIM\s*ok/.test(dt) && /DMARC\s*ok/.test(dt) && /Resend\s*unknown/.test(dt) && /<img src=x/.test(dt), dt);
+    t.state.domainFail = true;
+    await t.page.click('#hcDomain'); await settle(t.page);
+    chk('62 a missing record: said, live sending blocked', /a record is missing — live sending is blocked/.test(await text(t.page, '#hcMsg')) && /DKIM\s*missing/.test(await text(t.page, '#hcDomainOut')));
+    chk('62 the qualification bar and the daily target are settings', (await t.page.inputValue('#obf_min_qualification_score')) === '75' && (await t.page.inputValue('#obf_daily_qualified_target')) === '12');
+    await t.page.uncheck('#obf_warmup_enabled');
+    t.setAnswers([false]);
+    const nup = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').length;
+    await t.page.click('#obSave'); await settle(t.page);
+    chk('62 turning the warm-up off asks (a new domain that sends too much lands in spam); declining saves nothing', /lands in spam/.test(t.dialogs[t.dialogs.length - 1].msg)
+      && t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').length === nup && /warm-up change was not confirmed/.test(await text(t.page, '#obSetMsg')));
+    t.setAnswers([true]);
+    await t.page.click('#obSave'); await settle(t.page);
+    const wu = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop();
+    chk('62 … accepting tells the database it was confirmed', wu[1].p.warmup_enabled === false && wu[1].p.confirm_cap_increase === true, wu[1]);
+    chk('58–62 no page errors', t.errors.length === 0, t.errors);
+    if (SHOTS) await t.page.screenshot({ path: path.join(SHOTS, 'outbound-morning.png'), fullPage: true });
+    try { fs.unlinkSync(tmp); } catch (_) { /* gone */ }
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 600);
+    chk('58 before the Phase 12 SQL: the morning panel says what to run, and nothing else fails', /arrives with the Phase 12 SQL/.test(await text(t.page, '#mnChips')) && !(await visible(t.page, '#obMsg')));
+    chk('58 … and no Phase 12 setting is sent with a save', await (async () => { await t.page.fill('#obf_max_sends_per_day', '12'); await t.page.click('#obSave'); await settle(t.page);
+      const u = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop(); return !!u && Object.keys(u[1].p).join(',') === 'max_sends_per_day'; })());
+    await t.page.click('#dvSave'); await settle(t.page);
+    const dv = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop();
+    chk('58 … nor the provider switches or the enrichment budget with the saved searches (the older database would refuse them)', !!dv && dv[1].p.discovery_config
+      && !('providers' in dv[1].p.discovery_config) && !('enrichment' in (dv[1].p.discovery_config.budget || {})), dv && dv[1]);
+    chk('58 … and a card shows no score or word count it does not have', !/words/.test(await text(t.page, '#rqCards')) && !/Product relevance/.test(await text(t.page, '#rqCards')));
     await t.ctx.close();
   }
 

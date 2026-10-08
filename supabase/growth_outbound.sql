@@ -455,6 +455,33 @@ do $c$ begin
         automation_start_hour between 0 and 23 and automation_hours between 1 and 12
     and growth_outbound.valid_timezone(automation_timezone));
 end $c$;
+-- QUALIFICATION AND VOLUME (Phase 12):
+--   min_qualification_score  the 0–100 qualification score a prospect needs
+--                            (see compute(): relevance 35, analytics 25,
+--                            purchase signals 15, contact 15, personalization 10);
+--   daily_qualified_target   the morning run researches until this many new
+--                            subscriber prospects qualified today (or a budget,
+--                            or daily_prospect_target reads, runs out);
+--   warmup_*                 the live daily cap grows from warmup_start_per_day
+--                            by warmup_step_per_week each week after the first
+--                            live email, never past max_sends_per_day;
+--   domain_auth              the last SPF/DKIM/DMARC check of the sending domain
+--                            (written by the send function's domain check).
+alter table growth_outbound.settings add column if not exists min_qualification_score int not null default 75;
+alter table growth_outbound.settings add column if not exists daily_qualified_target int not null default 12;
+alter table growth_outbound.settings add column if not exists warmup_enabled boolean not null default true;
+alter table growth_outbound.settings add column if not exists warmup_start_per_day int not null default 10;
+alter table growth_outbound.settings add column if not exists warmup_step_per_week int not null default 5;
+alter table growth_outbound.settings add column if not exists domain_auth jsonb;
+alter table growth_outbound.settings add column if not exists domain_auth_checked_at timestamptz;
+do $c$ begin
+  alter table growth_outbound.settings drop constraint if exists outbound_settings_qualification;
+  alter table growth_outbound.settings add constraint outbound_settings_qualification check (
+        min_qualification_score between 0 and 100 and daily_qualified_target between 1 and 50
+    and warmup_start_per_day between 1 and 200 and warmup_step_per_week between 0 and 100
+    and (domain_auth is null or jsonb_typeof(domain_auth) = 'object')
+    and (domain_auth is null) = (domain_auth_checked_at is null));
+end $c$;
 
 -- What stops a real send right now, in words. Empty means nothing does.
 -- What stops a send, in words. Empty means nothing does. A TEST send (only
@@ -474,7 +501,10 @@ begin
     case when not coalesce(p_test, false) and not exists (select 1 from growth_outbound.secrets where name = 'resend_webhook')
          then 'webhook_secret_missing' end,
     case when coalesce(p_test, true) and s.test_inbox is null then 'test_inbox_missing' end,
-    case when not exists (select 1 from growth_outbound.owners) then 'no_outbound_owner' end
+    case when not exists (select 1 from growth_outbound.owners) then 'no_outbound_owner' end,
+    -- a sending domain CHECKED and found missing SPF, DKIM or DMARC (Phase 12);
+    -- a domain never checked is a System check item, not a blocker
+    case when not coalesce(p_test, false) and s.domain_auth->>'ok' = 'false' then 'domain_auth_failed' end
   ], null)
   from growth_outbound.settings s where s.id = 1);
 end $$;
@@ -536,7 +566,9 @@ do $c$ begin
   alter table growth_outbound.prospects drop constraint if exists prospects_shape_ck;
   alter table growth_outbound.prospects add constraint prospects_shape_ck check (
         email_status in ('none', 'unverified', 'verified', 'risky', 'invalid')
-    and campaign_type in ('customer', 'partnership')
+    -- who they are to EdgeDesk (Phase 12): a potential subscriber ('customer'),
+    -- or a partner lead the engine never pitches a subscription to
+    and campaign_type in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner')
     and status in ('discovered', 'needs_research', 'qualified', 'ready_for_review', 'contacted',
                    'replied', 'converted', 'rejected', 'suppressed')
     and prospect_type in ('analytics_creator', 'football_analyst', 'cfb_analyst', 'nfl_analyst', 'quant_researcher',
@@ -608,7 +640,9 @@ do $c$ begin
   alter table growth_outbound.drafts drop constraint if exists drafts_shape_ck;
   alter table growth_outbound.drafts add constraint drafts_shape_ck check (
         sequence_number between 1 and 3
-    and campaign_type in ('customer', 'partnership')
+    -- who they are to EdgeDesk (Phase 12): a potential subscriber ('customer'),
+    -- or a partner lead the engine never pitches a subscription to
+    and campaign_type in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner')
     and status in ('pending_review', 'approved', 'rejected', 'superseded', 'cancelled', 'sent')
     and length(btrim(subject)) between 1 and 150
     and length(btrim(body_text)) between 1 and 5000
@@ -948,6 +982,17 @@ alter table growth_outbound.prospects add column if not exists research_requeste
 alter table growth_outbound.prospects add column if not exists email_invalid_at timestamptz;
 alter table growth_outbound.prospects add column if not exists assessment jsonb not null default '{}'::jsonb;
 alter table growth_outbound.prospects add column if not exists duplicate_of uuid references growth_outbound.prospects (id) on delete restrict;
+-- THE QUALIFICATION SCORE (Phase 12), computed by compute() like every other
+-- number here: 0–100 with its parts and what each rests on, and when the
+-- prospect first cleared every gate (the morning run's daily target counts it)
+alter table growth_outbound.prospects add column if not exists qualification_score int;
+alter table growth_outbound.prospects add column if not exists qualification jsonb not null default '{}'::jsonb;
+alter table growth_outbound.prospects add column if not exists first_qualified_at timestamptz;
+do $c$ begin
+  alter table growth_outbound.prospects drop constraint if exists prospects_qualification_ck;
+  alter table growth_outbound.prospects add constraint prospects_qualification_ck check (
+    (qualification_score is null or qualification_score between 0 and 100) and jsonb_typeof(qualification) = 'object');
+end $c$;
 do $c$ begin
   alter table growth_outbound.prospects drop constraint if exists prospects_assessment_ck;
   alter table growth_outbound.prospects add constraint prospects_assessment_ck check (
@@ -1118,29 +1163,57 @@ do $c$ begin
   alter table growth_outbound.fit_factor_catalog add constraint fit_factor_catalog_ck check (
     code ~ '^[a-z_]{2,40}$' and points between -100 and 50 and points <> 0 and needs_evidence = (points > 0));
 end $c$;
-insert into growth_outbound.fit_factor_catalog (code, label, points, needs_evidence) values
-  ('quant_analysis',             'publishes quantitative sports analysis',          18, true),
-  ('publishes_models',           'builds or publishes predictive models',           15, true),
-  ('odds_markets_probability',   'writes about odds, markets or probability',       14, true),
-  ('ev_fair_pricing',            'discusses expected value or fair pricing',        14, true),
-  ('discusses_clv',              'tracks closing-line value',                       12, true),
-  ('clear_workflow_fit',         'a research workflow EdgeDesk clearly serves',     12, true),
-  ('covers_cfb',                 'covers college football',                          8, true),
-  ('covers_nfl',                 'covers the NFL',                                   8, true),
-  ('runs_newsletter_or_channel', 'runs a newsletter, podcast or channel',            8, true),
-  ('props_research',             'researches player props',                          6, true),
-  ('uses_analytics_tools',       'uses analytics tools or data',                     6, true),
-  ('engaged_audience',           'has an engaged audience',                          6, true),
-  ('consistent_publishing',      'publishes consistently',                           5, true),
-  ('generic_content',            'generic content',                                -15, false),
-  ('entertainment_only',         'entertainment only',                             -20, false),
-  ('inactive',                   'inactive',                                       -25, false),
-  ('no_analytics_interest',      'no interest in analytics',                       -30, false),
-  ('poor_fit',                   'poor fit',                                       -30, false),
-  ('anonymous_no_contact',       'anonymous, no public business contact',         -40, false),
-  ('touting',                    'sells picks or promises winnings',               -40, false),
-  ('spam',                       'spam',                                          -100, false)
-on conflict (code) do update set label = excluded.label, points = excluded.points, needs_evidence = excluded.needs_evidence;
+-- Each reason belongs to one part of the QUALIFICATION SCORE (Phase 12):
+--   relevance  what they do is what EdgeDesk does (NFL/CFB, markets, pricing)   ≤ 35
+--   analytics  they demonstrably do analytics (models, numbers, data, charts)   ≤ 25
+--   purchase   evidence they would pay for research (they bet, track, buy tools) ≤ 15
+--   penalty    a reason against (subtracted, unproven)
+alter table growth_outbound.fit_factor_catalog add column if not exists category text;
+insert into growth_outbound.fit_factor_catalog (code, label, points, needs_evidence, category) values
+  ('quant_analysis',             'publishes quantitative sports analysis',          18, true, 'analytics'),
+  ('publishes_models',           'builds or publishes predictive models',           15, true, 'analytics'),
+  ('odds_markets_probability',   'writes about odds, markets or probability',       14, true, 'relevance'),
+  ('ev_fair_pricing',            'discusses expected value or fair pricing',        14, true, 'relevance'),
+  ('discusses_clv',              'tracks closing-line value',                       12, true, 'purchase'),
+  ('clear_workflow_fit',         'a research workflow EdgeDesk clearly serves',     12, true, 'relevance'),
+  ('covers_cfb',                 'covers college football',                          8, true, 'relevance'),
+  ('covers_nfl',                 'covers the NFL',                                   8, true, 'relevance'),
+  ('runs_newsletter_or_channel', 'runs a newsletter, podcast or channel',            8, true, 'analytics'),
+  ('props_research',             'researches player props',                          6, true, 'relevance'),
+  ('uses_analytics_tools',       'uses analytics tools or data',                     6, true, 'analytics'),
+  ('engaged_audience',           'has an engaged audience',                          6, true, 'analytics'),
+  ('consistent_publishing',      'publishes consistently',                           5, true, 'analytics'),
+  ('data_visualization',         'makes sports data visualizations',                 8, true, 'analytics'),
+  ('tracks_own_bets',            'tracks their own bets or results',                10, true, 'purchase'),
+  ('pays_for_tools',             'pays for data, tools or research subscriptions',  10, true, 'purchase'),
+  ('sells_paid_research',        'runs a paid newsletter or subscription',           6, true, 'purchase'),
+  ('independent_researcher',     'independent researcher, not a media company',      6, true, 'purchase'),
+  ('generic_content',            'generic content',                                -15, false, 'penalty'),
+  ('entertainment_only',         'entertainment only',                             -20, false, 'penalty'),
+  ('inactive',                   'inactive',                                       -25, false, 'penalty'),
+  ('large_media_outlet',         'a large media outlet, not a person or small team', -25, false, 'penalty'),
+  ('no_analytics_interest',      'no interest in analytics',                       -30, false, 'penalty'),
+  ('poor_fit',                   'poor fit',                                       -30, false, 'penalty'),
+  ('industry_role_no_analytics', 'a sports-industry job without analytics work',   -30, false, 'penalty'),
+  ('anonymous_no_contact',       'anonymous, no public business contact',         -40, false, 'penalty'),
+  ('touting',                    'sells picks or promises winnings',               -40, false, 'penalty'),
+  ('sportsbook_or_operator',     'works for a sportsbook, odds provider or operator', -50, false, 'penalty'),
+  ('spam',                       'spam',                                          -100, false, 'penalty')
+on conflict (code) do update set label = excluded.label, points = excluded.points, needs_evidence = excluded.needs_evidence,
+                                 category = excluded.category;
+do $c$ begin
+  alter table growth_outbound.fit_factor_catalog drop constraint if exists fit_factor_catalog_category_ck;
+  alter table growth_outbound.fit_factor_catalog add constraint fit_factor_catalog_category_ck check (
+    category in ('relevance', 'analytics', 'purchase', 'penalty') and (category = 'penalty') = (points < 0));
+end $c$;
+
+-- The qualification rubric: each part's ceiling. Edited here, not by a page.
+create or replace function growth_outbound.qualification_max(p_part text)
+returns int language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case p_part when 'relevance' then 35 when 'analytics' then 25 when 'purchase' then 15
+                     when 'contact' then 15 when 'personalization' then 10 else 0 end;
+$$;
 
 -- The keys a prospect row claims, from its own columns: its email, its profile
 -- URLs, and (weak) its computed name with its organization.
@@ -1197,6 +1270,19 @@ declare
   v_dup uuid;
   v_maybe jsonb;
   v_email_a jsonb;
+  -- the qualification score's parts (Phase 12)
+  v_part jsonb := '{}'::jsonb;
+  v_q_rel int;
+  v_q_ana int;
+  v_q_pur int;
+  v_q_pen int;
+  v_q_email int;
+  v_q_ident int;
+  v_q_own int;
+  v_q_facts int;
+  v_q_pers int;
+  v_q_total int;
+  v_email_found boolean := false;
 begin
   select * into s from growth_outbound.settings where id = 1;
   select exists (select 1 from growth_outbound.evidence e where e.prospect_id = r.id and e.superseded_at is null and e.claim_norm is not null)
@@ -1263,6 +1349,7 @@ begin
         when e_email.kinds && array['owner_verified', 'provider_verified'] then 'verified'
         when e_email.kinds && array['own_site', 'own_profile', 'publication', 'interview', 'directory'] then 'unverified'
         else 'risky' end;
+      v_email_found := e_email.kinds && array['provider_found'];
     end if;
     if r.email_invalid_at is not null then
       r.email_status := 'invalid';
@@ -1300,6 +1387,10 @@ begin
     end if;
     v_any_factor := true;
     v_score := v_score + c.points;
+    v_part := jsonb_set(v_part, array[coalesce(c.category, 'penalty')],
+      coalesce(v_part->coalesce(c.category, 'penalty'), '[]'::jsonb)
+      || jsonb_build_array(jsonb_build_object('code', c.code, 'label', c.label, 'points', c.points,
+                                              'evidence', coalesce(to_jsonb(v_valid), '[]'::jsonb))));
     v_factors := v_factors || jsonb_build_array(jsonb_build_object('code', c.code, 'label', c.label, 'points', c.points,
       'evidence', coalesce(to_jsonb(v_valid), '[]'::jsonb), 'confidence', v_fc));
     v_reason := array_append(v_reason, (c.label || ' (' || case when c.points > 0 then '+' else '' end || c.points || ')')::text);
@@ -1333,6 +1424,57 @@ begin
        and growth_outbound.evidence_field_class(e.field_name) = 'content';
   end if;
   r.research_confidence := v_research;
+
+  -- THE QUALIFICATION SCORE (Phase 12), 0–100, every part from evidence:
+  --   relevance 35, analytics 25, purchase signals 15: the evidenced catalogue
+  --     reasons of that part, summed and capped at the part's ceiling;
+  --   contact quality 15: the address (verified 9; published on their own
+  --     site or profile 5; published elsewhere, or a provider's unverified
+  --     find, 3; none, guessed or bounced 0), the
+  --     identity (at its gate 4, at 0.70 2) and a site or profile of their own (2);
+  --   personalization 10: facts an email may cite, each sure enough by itself
+  --     (one 5, two 8, three or more 10);
+  --   penalties: every reason against, subtracted.
+  -- A prospect with no evidence has no score.
+  select coalesce(sum((x->>'points')::int), 0) into v_q_rel from jsonb_array_elements(coalesce(v_part->'relevance', '[]'::jsonb)) x;
+  select coalesce(sum((x->>'points')::int), 0) into v_q_ana from jsonb_array_elements(coalesce(v_part->'analytics', '[]'::jsonb)) x;
+  select coalesce(sum((x->>'points')::int), 0) into v_q_pur from jsonb_array_elements(coalesce(v_part->'purchase', '[]'::jsonb)) x;
+  select coalesce(sum((x->>'points')::int), 0) into v_q_pen from jsonb_array_elements(coalesce(v_part->'penalty', '[]'::jsonb)) x;
+  v_q_rel := least(v_q_rel, growth_outbound.qualification_max('relevance'));
+  v_q_ana := least(v_q_ana, growth_outbound.qualification_max('analytics'));
+  v_q_pur := least(v_q_pur, growth_outbound.qualification_max('purchase'));
+  v_q_email := case when v_email is null or r.email_status in ('none', 'invalid') then 0
+                    when r.email_status = 'verified' then 9
+                    when r.email_status = 'unverified' and r.email_source_kind in ('own_site', 'own_profile') then 5
+                    when r.email_status = 'unverified' or v_email_found then 3
+                    else 0 end;   -- a guessed address is worth nothing
+  v_q_ident := case when coalesce(r.identity_confidence, 0) >= s.min_identity_confidence then 4
+                    when coalesce(r.identity_confidence, 0) >= 0.70 then 2 else 0 end;
+  v_q_own := case when exists (select 1 from growth_outbound.evidence e where e.prospect_id = r.id and e.superseded_at is null
+                                  and e.claim_norm is not null and e.source_kind in ('own_site', 'own_profile')) then 2 else 0 end;
+  v_q_facts := jsonb_array_length(growth_outbound.citeable_facts(r.id));
+  v_q_pers := case when v_q_facts >= 3 then 10 when v_q_facts = 2 then 8 when v_q_facts = 1 then 5 else 0 end;
+  v_q_total := greatest(0, least(100, v_q_rel + v_q_ana + v_q_pur + v_q_email + v_q_ident + v_q_own + v_q_pers + v_q_pen));
+  r.qualification_score := case when v_has_evidence then v_q_total end;
+  r.qualification := case when not v_has_evidence then '{}'::jsonb else jsonb_build_object(
+    'score', v_q_total, 'segment', r.campaign_type,
+    'parts', jsonb_build_object(
+      'relevance', jsonb_build_object('points', v_q_rel, 'max', growth_outbound.qualification_max('relevance'),
+                                      'reasons', coalesce(v_part->'relevance', '[]'::jsonb)),
+      'analytics', jsonb_build_object('points', v_q_ana, 'max', growth_outbound.qualification_max('analytics'),
+                                      'reasons', coalesce(v_part->'analytics', '[]'::jsonb)),
+      'purchase', jsonb_build_object('points', v_q_pur, 'max', growth_outbound.qualification_max('purchase'),
+                                     'reasons', coalesce(v_part->'purchase', '[]'::jsonb)),
+      'contact', jsonb_build_object('points', v_q_email + v_q_ident + v_q_own, 'max', growth_outbound.qualification_max('contact'),
+                                    'email', v_q_email, 'email_status', r.email_status, 'identity', v_q_ident, 'own_site_or_profile', v_q_own),
+      'personalization', jsonb_build_object('points', v_q_pers, 'max', growth_outbound.qualification_max('personalization'),
+                                            'citeable_facts', v_q_facts),
+      'penalties', jsonb_build_object('points', v_q_pen, 'reasons', coalesce(v_part->'penalty', '[]'::jsonb))),
+    'why', (select string_agg(x->>'label', '; ' order by (x->>'points')::int desc)
+              from jsonb_array_elements(coalesce(v_part->'relevance', '[]'::jsonb) || coalesce(v_part->'analytics', '[]'::jsonb)
+                                        || coalesce(v_part->'purchase', '[]'::jsonb)) x),
+    'against', (select string_agg(x->>'label', '; ' order by (x->>'points')::int)
+                  from jsonb_array_elements(coalesce(v_part->'penalty', '[]'::jsonb)) x)) end;
 
   -- ONE PERSON, ONE ROW: a strong key another row already holds makes this a
   -- duplicate (which blocks it); shared weak keys are flagged for the owner
@@ -1371,6 +1513,10 @@ begin
       if coalesce(r.fit_score, -1) < s.min_fit_score then
         v_gates := array_append(v_gates, ('fit ' || coalesce(r.fit_score::text, 'unscored') || ' < ' || s.min_fit_score)::text);
       end if;
+      if coalesce(r.qualification_score, -1) < s.min_qualification_score then
+        v_gates := array_append(v_gates, ('qualification ' || coalesce(r.qualification_score::text, 'unscored') || ' < '
+                                          || s.min_qualification_score)::text);
+      end if;
       if coalesce(r.identity_confidence, 0) < s.min_identity_confidence then
         v_gates := array_append(v_gates, ('identity ' || coalesce(r.identity_confidence, 0) || ' < ' || s.min_identity_confidence)::text);
       end if;
@@ -1397,6 +1543,11 @@ begin
     end if;
   end if;
 
+  -- the first time every gate cleared (kept from then on): what the morning
+  -- run's daily target counts
+  if r.status in ('qualified', 'ready_for_review') and r.first_qualified_at is null then
+    r.first_qualified_at := now();
+  end if;
   r.warnings := coalesce((select jsonb_agg(distinct x) from unnest(v_warn) x), '[]'::jsonb);
   r.last_researched_at := (select max(e.observed_at) from growth_outbound.evidence e where e.prospect_id = r.id);
   r.assessment := jsonb_build_object(
@@ -1408,8 +1559,10 @@ begin
     'gates', to_jsonb(v_gates),
     'duplicate_of', v_dup,
     'possible_duplicates', v_maybe,
+    'qualification', r.qualification,
     'thresholds', jsonb_build_object('fit', s.min_fit_score, 'identity', s.min_identity_confidence,
-                                     'role', s.min_role_confidence, 'email', s.min_email_confidence, 'research', s.min_research_confidence));
+                                     'role', s.min_role_confidence, 'email', s.min_email_confidence, 'research', s.min_research_confidence,
+                                     'qualification', s.min_qualification_score));
   return r;
 end $$;
 
@@ -1495,7 +1648,7 @@ create table if not exists growth_outbound.research_runs (
 do $c$ begin
   alter table growth_outbound.research_runs drop constraint if exists research_runs_shape_ck;
   alter table growth_outbound.research_runs add constraint research_runs_shape_ck check (
-        kind in ('discover', 'research', 'draft') and started_by in ('owner', 'schedule')
+        kind in ('discover', 'research', 'draft', 'enrich') and started_by in ('owner', 'schedule')
     and status in ('running', 'done', 'failed')
     and jsonb_typeof(input) = 'object' and jsonb_typeof(counts) = 'object'
     and (error is null or length(error) <= 1000)
@@ -1643,7 +1796,7 @@ create table if not exists growth_outbound.provider_usage (
 do $c$ begin
   alter table growth_outbound.provider_usage drop constraint if exists provider_usage_shape_ck;
   alter table growth_outbound.provider_usage add constraint provider_usage_shape_ck check (
-    provider in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier') and calls >= 0);
+    provider in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier', 'enrichment') and calls >= 0);
 end $c$;
 
 -- an engine fact cites the stored page it was read from
@@ -1657,13 +1810,13 @@ create or replace function growth_outbound.budget_ceiling(p_provider text)
 returns int language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select case p_provider when 'search' then 200 when 'fetch' then 2000 when 'llm' then 400
-                         when 'email_finder' then 200 when 'email_verifier' then 400 else 0 end;
+                         when 'email_finder' then 200 when 'email_verifier' then 400 when 'enrichment' then 200 else 0 end;
 $$;
 create or replace function growth_outbound.budget_default(p_provider text)
 returns int language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select case p_provider when 'search' then 20 when 'fetch' then 150 when 'llm' then 30
-                         when 'email_finder' then 15 when 'email_verifier' then 30 else 0 end;
+                         when 'email_finder' then 15 when 'email_verifier' then 30 when 'enrichment' then 15 else 0 end;
 $$;
 
 -- Sites many people write for: a page there is a publication, never anyone's
@@ -1691,7 +1844,10 @@ set search_path = pg_catalog, public, pg_temp as $$
 $$;
 
 -- What is wrong with a discovery configuration, in words (NULL: nothing).
---   { queries: [text], budget: {provider: int}, shared_sites: [domain] }
+--   { queries: [text], budget: {provider: int}, shared_sites: [domain],
+--     providers: {brave|apollo_search|hunter|apollo|clay: boolean} }   (Phase 12)
+-- A provider is used when its key is set AND it is not switched off here;
+-- Apollo and Clay cost money per call, so they are used only when switched on.
 create or replace function growth_outbound.discovery_config_problems(p jsonb)
 returns text language plpgsql immutable
 set search_path = pg_catalog, pg_temp as $$
@@ -1701,7 +1857,7 @@ declare
 begin
   if p is null or jsonb_typeof(p) <> 'object' then return 'discovery_config must be an object'; end if;
   for k in select jsonb_object_keys(p) loop
-    if k not in ('queries', 'budget', 'shared_sites') then return 'unknown discovery setting "' || left(k, 40) || '"'; end if;
+    if k not in ('queries', 'budget', 'shared_sites', 'providers') then return 'unknown discovery setting "' || left(k, 40) || '"'; end if;
   end loop;
   if p ? 'queries' then
     if jsonb_typeof(p->'queries') <> 'array' or jsonb_array_length(p->'queries') > 25 then
@@ -1716,13 +1872,22 @@ begin
   if p ? 'budget' then
     if jsonb_typeof(p->'budget') <> 'object' then return 'budget: an object of daily call counts'; end if;
     for k, v in select * from jsonb_each(p->'budget') loop
-      if k not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier') then
+      if k not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier', 'enrichment') then
         return 'budget: unknown provider "' || left(k, 40) || '"';
       end if;
       if jsonb_typeof(v) <> 'number' or (v #>> '{}') !~ '^[0-9]{1,5}$' then return 'budget: ' || k || ' must be a whole number'; end if;
       if (v #>> '{}')::int > growth_outbound.budget_ceiling(k) then
         return 'budget: ' || k || ' may be at most ' || growth_outbound.budget_ceiling(k) || ' a day';
       end if;
+    end loop;
+  end if;
+  if p ? 'providers' then
+    if jsonb_typeof(p->'providers') <> 'object' then return 'providers: an object of on/off switches'; end if;
+    for k, v in select * from jsonb_each(p->'providers') loop
+      if k not in ('brave', 'apollo_search', 'hunter', 'apollo', 'clay') then
+        return 'providers: unknown provider "' || left(k, 40) || '"';
+      end if;
+      if jsonb_typeof(v) <> 'boolean' then return 'providers: ' || k || ' is true or false'; end if;
     end loop;
   end if;
   if p ? 'shared_sites' then
@@ -1749,7 +1914,7 @@ returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
   select jsonb_object_agg(p.provider, jsonb_build_object('cap', p.cap, 'used', coalesce(u.calls, 0), 'left', greatest(p.cap - coalesce(u.calls, 0), 0)))
     from (select x.provider, coalesce((s.discovery_config->'budget'->>x.provider)::int, growth_outbound.budget_default(x.provider)) cap
-            from unnest(array['search', 'fetch', 'llm', 'email_finder', 'email_verifier']) x(provider), growth_outbound.settings s
+            from unnest(array['search', 'fetch', 'llm', 'email_finder', 'email_verifier', 'enrichment']) x(provider), growth_outbound.settings s
            where s.id = 1) p
     left join growth_outbound.provider_usage u on u.provider = p.provider and u.day = (now() at time zone 'utc')::date;
 $$;
@@ -2103,11 +2268,12 @@ begin
     if (new.full_name, new.first_name, new.last_name, new.organization, new.job_title, new.email_source_url,
         new.email_source_kind, new.audience_size_estimate, new.audience_source_url, new.fit_score, new.fit_reason,
         new.identity_confidence, new.role_confidence, new.email_confidence, new.research_confidence, new.fit_confidence,
-        new.last_researched_at, new.duplicate_of) is distinct from
+        new.last_researched_at, new.duplicate_of, new.qualification_score, new.first_qualified_at) is distinct from
        (null::text, null::text, null::text, null::text, null::text, null::text, null::text, null::int, null::text,
         null::int, null::text, null::numeric, null::numeric, null::numeric, null::numeric, null::numeric,
-        null::timestamptz, null::uuid)
+        null::timestamptz, null::uuid, null::int, null::timestamptz)
        or new.email_status <> 'none' or new.warnings <> '[]'::jsonb or new.assessment <> '{}'::jsonb
+       or new.qualification <> '{}'::jsonb
        or new.status <> 'discovered' then
       raise exception 'a prospect starts as discovered with nothing computed: names, confidences, scores and status come from evidence, through evaluate()'
         using errcode = 'insufficient_privilege';
@@ -2128,12 +2294,14 @@ begin
   if (new.full_name, new.first_name, new.last_name, new.organization, new.job_title, new.email_status, new.email_source_url,
       new.email_source_kind, new.audience_size_estimate, new.audience_source_url, new.fit_score, new.fit_reason,
       new.identity_confidence, new.role_confidence, new.email_confidence, new.research_confidence, new.fit_confidence,
-      new.warnings, new.assessment, new.last_researched_at, new.duplicate_of)
+      new.warnings, new.assessment, new.last_researched_at, new.duplicate_of,
+      new.qualification_score, new.qualification, new.first_qualified_at)
      is distinct from
      (old.full_name, old.first_name, old.last_name, old.organization, old.job_title, old.email_status, old.email_source_url,
       old.email_source_kind, old.audience_size_estimate, old.audience_source_url, old.fit_score, old.fit_reason,
       old.identity_confidence, old.role_confidence, old.email_confidence, old.research_confidence, old.fit_confidence,
-      old.warnings, old.assessment, old.last_researched_at, old.duplicate_of) then
+      old.warnings, old.assessment, old.last_researched_at, old.duplicate_of,
+      old.qualification_score, old.qualification, old.first_qualified_at) then
     raise exception 'names, confidences, scores and email status are computed from evidence by evaluate() only'
       using errcode = 'insufficient_privilege';
   end if;
@@ -2233,6 +2401,7 @@ declare
   v_n int;
   v_prev timestamptz;
   v_days int;
+  v_cap int;
 begin
   if tg_op = 'UPDATE' then
     if (new.prospect_id, new.draft_id, new.sequence_number, new.is_test, new.idempotency_key, new.sender,
@@ -2352,6 +2521,12 @@ begin
     if v_n >= s.max_sends_per_day then
       raise exception 'the daily send cap (%) is reached', s.max_sends_per_day using errcode = 'insufficient_privilege';
     end if;
+    -- a new sending domain warms up (Phase 12): today's cap grows week by week
+    v_cap := (growth_outbound.live_send_cap()->>'cap')::int;
+    if v_n >= v_cap then
+      raise exception 'today''s warm-up cap (%) is reached; it grows by % a week up to the daily cap of %',
+        v_cap, s.warmup_step_per_week, s.max_sends_per_day using errcode = 'insufficient_privilege';
+    end if;
   end if;
   new.claimed_at := now();
   new.delivery_status := 'claimed';
@@ -2406,6 +2581,25 @@ set search_path = pg_catalog, public, pg_temp as $$
           p_action, p_prospect, p_entity, p_entity_id, coalesce(p_detail, '{}'::jsonb));
 $$;
 
+-- TODAY'S LIVE CAP (Phase 12): the daily cap, or less while the domain warms
+-- up. Week 0 starts the day of the first live email that went out; each week
+-- after adds warmup_step_per_week, never past max_sends_per_day.
+create or replace function growth_outbound.live_send_cap()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_build_object('cap', case when s.warmup_enabled
+                                       then least(s.max_sends_per_day, s.warmup_start_per_day + s.warmup_step_per_week * w.week)
+                                       else s.max_sends_per_day end,
+                            'max', s.max_sends_per_day, 'warmup', s.warmup_enabled, 'week', w.week, 'first_live_at', w.first_at,
+                            'start', s.warmup_start_per_day, 'step', s.warmup_step_per_week,
+                            'warming', s.warmup_enabled and s.warmup_start_per_day + s.warmup_step_per_week * w.week < s.max_sends_per_day)
+    from growth_outbound.settings s
+   cross join lateral (select min(x.sent_at) as first_at,
+                              coalesce(floor(extract(epoch from now() - min(x.sent_at)) / 604800)::int, 0) as week
+                         from growth_outbound.sends x where not x.is_test and x.sent_at is not null) w
+   where s.id = 1;
+$$;
+
 create or replace function growth_outbound.settings_json()
 returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
@@ -2420,7 +2614,10 @@ set search_path = pg_catalog, public, pg_temp as $$
     'today', jsonb_build_object(
       'live_sends', (select count(*) from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now())),
       'test_sends', (select count(*) from growth_outbound.sends where is_test and claimed_at >= date_trunc('day', now())),
-      'cap', s.max_sends_per_day, 'test_cap', s.max_test_sends_per_day))
+      'cap', s.max_sends_per_day, 'test_cap', s.max_test_sends_per_day,
+      'live_cap', growth_outbound.live_send_cap(),
+      'qualified', (select count(*) from growth_outbound.prospects p where not p.is_test and p.campaign_type = 'customer'
+                     and p.first_qualified_at >= date_trunc('day', now()))))
   from growth_outbound.settings s where s.id = 1;
 $$;
 
@@ -2464,7 +2661,8 @@ declare
     'max_test_sends_per_day', 'min_fit_score', 'min_identity_confidence', 'min_role_confidence', 'min_research_confidence',
     'min_email_confidence', 'followup_enabled', 'followup_delay_days', 'final_followup_enabled', 'final_followup_delay_days',
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
-    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links'];
+    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links',
+    'min_qualification_score', 'daily_qualified_target', 'warmup_enabled', 'warmup_start_per_day', 'warmup_step_per_week'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2488,6 +2686,14 @@ begin
        and coalesce((p->>'confirm_cap_increase')::boolean, false) is not true then
       return jsonb_build_object('ok', false, 'reason', 'cap_increase_needs_confirmation',
         'detail', format('raising the daily cap from %s to %s needs confirm_cap_increase', v_old.max_sends_per_day, p->>'max_sends_per_day'));
+    end if;
+    -- loosening the warm-up raises what can go out today, like raising the cap
+    if ((p ? 'warmup_enabled' and (p->>'warmup_enabled')::boolean is false and v_old.warmup_enabled)
+        or (p ? 'warmup_start_per_day' and (p->>'warmup_start_per_day')::int > v_old.warmup_start_per_day)
+        or (p ? 'warmup_step_per_week' and (p->>'warmup_step_per_week')::int > v_old.warmup_step_per_week))
+       and coalesce((p->>'confirm_cap_increase')::boolean, false) is not true then
+      return jsonb_build_object('ok', false, 'reason', 'cap_increase_needs_confirmation',
+        'detail', 'turning the warm-up off or speeding it up raises today''s cap; it needs confirm_cap_increase');
     end if;
     if p ? 'test_mode' and (p->>'test_mode')::boolean is false and v_old.test_mode
        and coalesce((p->>'confirm_live')::boolean, false) is not true then
@@ -2522,6 +2728,11 @@ begin
       automation_start_hour     = coalesce((p->>'automation_start_hour')::int, automation_start_hour),
       automation_hours          = coalesce((p->>'automation_hours')::int, automation_hours),
       attribution_links         = coalesce((p->>'attribution_links')::boolean, attribution_links),
+      min_qualification_score   = coalesce((p->>'min_qualification_score')::int, min_qualification_score),
+      daily_qualified_target    = coalesce((p->>'daily_qualified_target')::int, daily_qualified_target),
+      warmup_enabled            = coalesce((p->>'warmup_enabled')::boolean, warmup_enabled),
+      warmup_start_per_day      = coalesce((p->>'warmup_start_per_day')::int, warmup_start_per_day),
+      warmup_step_per_week      = coalesce((p->>'warmup_step_per_week')::int, warmup_step_per_week),
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
@@ -3232,7 +3443,45 @@ begin
   if coalesce(p_subject, '') ~* '^\s*(re|fw|fwd)\s*:' then
     v := array_append(v, 'the subject pretends to be a reply or a forward'::text);
   end if;
+  -- (Phase 12) the offer is the 7-day free trial, then $49.99/month: nothing
+  -- free beyond it, no discount, no special access
+  if t ~ ('\m(complimentary|comped|on the house|gratis|coupons?|(discount|promo|promotional|referral) codes?|comp (you|them|your))\M'
+          || '|\mfree (subscriptions?|accounts?|access|memberships?|months?|years?|seats?|licen[cs]es?|upgrades?)\M'
+          || '|\mdiscounted (price|rate|subscriptions?|access|plan)\M|\m[0-9]{1,3} ?% (off|discount)'
+          || '|\m(special|exclusive|early|vip|lifetime|priority|insider|founding[- ]member) access\M') then
+    v := array_append(v, 'offers something beyond the 7-day free trial (free or discounted access, special access)'::text);
+  end if;
+  -- research, not picks: nothing that reads like a picks or tips service
+  if t ~ ('\m(best bets?|(bets?|picks?|plays?|locks?) of the (day|week)|(our|my|today''?s|weekly|daily|winning|premium|expert|free|vip|top|hot) picks'
+          || '|betting tips|tipsters?|touts?|touting|sure bets?)\M') then
+    v := array_append(v, 'reads like a picks service (EdgeDesk is research, not picks)'::text);
+  end if;
   return array(select distinct x from unnest(v) x order by 1);
+end $$;
+
+-- WHAT EVERY ENGINE EMAIL SAYS (Phase 12): the 7-day free trial, $49.99/month,
+-- the link to EdgeDesk, and under 150 words. The engine is refused without
+-- them; an email the owner wrote or edited is shown what it lacks, as advice.
+create or replace function growth_outbound.offer_problems(p_body text, p_cta text)
+returns text[] language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  v text[] := '{}';
+  v_words int := coalesce(array_length(regexp_split_to_array(nullif(btrim(coalesce(p_body, '')), ''), '\s+'), 1), 0);
+begin
+  if coalesce(p_body, '') !~* '\$49\.99 ?(/ ?|per |a )(month|mo)\M' then
+    v := array_append(v, 'offer: say the price, $49.99/month'::text);
+  end if;
+  if coalesce(p_body, '') !~* '\m(7|seven)[- ]day free trial\M|\mfree for (7|seven) days\M|\mfree (7|seven)[- ]day trial\M' then
+    v := array_append(v, 'offer: say the 7-day free trial'::text);
+  end if;
+  if coalesce(p_body, '') !~* 'https://(www\.)?edgedesksports\.com(/|\M)' then
+    v := array_append(v, ('offer: include the link to EdgeDesk (' || coalesce(p_cta, 'https://edgedesksports.com/') || ')')::text);
+  end if;
+  if v_words > 150 then
+    v := array_append(v, ('length: ' || v_words || ' words; keep it under 150')::text);
+  end if;
+  return v;
 end $$;
 
 -- A cited claim must be IN the email, in its words: the claims list is what
@@ -3476,6 +3725,14 @@ set search_path = pg_catalog, public, pg_temp as $$
     'greeting_problem', case when d.generator_version like 'engine:%' and not d.edited_by_owner and not d.is_test
                              then growth_outbound.greeting_problem(d.body_text, p.first_name) end,
     'existing_account', not d.is_test and growth_outbound.has_account(p.email),
+    -- (Phase 12) what an email should say that this one does not (blocking for
+    -- the engine; advice for the owner's own words), its length, and where the
+    -- owner can read up on the person
+    'advice', to_jsonb(growth_outbound.offer_problems(d.body_text, (select x.cta_url from growth_outbound.settings x where x.id = 1))),
+    'words', coalesce(array_length(regexp_split_to_array(nullif(btrim(d.body_text), ''), '\s+'), 1), 0),
+    'links', (select coalesce(jsonb_agg(u order by n), '[]'::jsonb) from unnest(array[p.website_url, p.newsletter_url, p.x_url, p.youtube_url,
+                                                                                    p.other_profile_url, p.email_source_url]) with ordinality t(u, n)
+               where u is not null),
     'claims', coalesce((
       select jsonb_agg(jsonb_build_object(
                'text', x.c->>'text',
@@ -3531,6 +3788,10 @@ begin
     if d.sequence_number = 1 and p.status <> 'ready_for_review' then v_gates := array_append(v_gates, ('status is ' || p.status)::text); end if;
     if p.duplicate_of is not null then v_gates := array_append(v_gates, 'duplicate of another prospect'::text); end if;
     if coalesce(p.fit_score, -1) < s.min_fit_score then v_gates := array_append(v_gates, 'fit score below minimum'::text); end if;
+    if coalesce(p.qualification_score, -1) < s.min_qualification_score then
+      v_gates := array_append(v_gates, ('qualification score ' || coalesce(p.qualification_score::text, 'unscored') || ' below '
+                                        || s.min_qualification_score)::text);
+    end if;
     if coalesce(p.identity_confidence, 0) < s.min_identity_confidence then v_gates := array_append(v_gates, 'identity confidence below minimum'::text); end if;
     if coalesce(p.research_confidence, 0) < s.min_research_confidence then v_gates := array_append(v_gates, 'research confidence below minimum'::text); end if;
     if coalesce(p.email_confidence, 0) < s.min_email_confidence then v_gates := array_append(v_gates, 'email confidence below minimum'::text); end if;
@@ -3732,7 +3993,8 @@ begin
   for v_pid in
     select distinct x.prospect_id from (
       select d.prospect_id from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
-       where d.status = v_status order by p.is_test desc, p.fit_score desc nulls last, d.generated_at limit v_limit) x
+       where d.status = v_status
+       order by p.is_test desc, p.qualification_score desc nulls last, p.fit_score desc nulls last, d.generated_at limit v_limit) x
   loop
     perform growth_outbound.evaluate(v_pid);
   end loop;
@@ -3740,7 +4002,8 @@ begin
     'total', (select count(*) from growth_outbound.drafts where status = v_status),
     'rows', coalesce((
       select jsonb_agg(growth_outbound.review_card(x.d) order by x.ord)
-        from (select d, row_number() over (order by p.is_test desc, p.fit_score desc nulls last, d.generated_at) as ord
+        from (select d, row_number() over (order by p.is_test desc, p.qualification_score desc nulls last, p.fit_score desc nulls last,
+                                                    d.generated_at) as ord
                 from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
                where d.status = v_status
                order by 2 limit v_limit) x), '[]'::jsonb));
@@ -4376,7 +4639,11 @@ begin
     'budget', growth_outbound.research_budget(),
     'queries', coalesce((select s.discovery_config->'queries' from growth_outbound.settings s where s.id = 1), '[]'::jsonb),
     'shared_sites', coalesce((select s.discovery_config->'shared_sites' from growth_outbound.settings s where s.id = 1), '[]'::jsonb),
+    'providers', coalesce((select s.discovery_config->'providers' from growth_outbound.settings s where s.id = 1), '{}'::jsonb),
     'daily_prospect_target', (select s.daily_prospect_target from growth_outbound.settings s where s.id = 1),
+    'daily_qualified_target', (select s.daily_qualified_target from growth_outbound.settings s where s.id = 1),
+    'enrichment_waiting', (select count(*) from growth_outbound.enrichment_queue(200)),
+    'verification_waiting', (select count(*) from growth_outbound.verify_queue(200)),
     'candidates', coalesce((select jsonb_object_agg(status, n) from (
         select status, count(*) n from growth_outbound.candidates group by status) x), '{}'::jsonb),
     'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' order by r.started_at desc) from (
@@ -4394,7 +4661,7 @@ declare
   v_id bigint;
 begin
   v_owner := growth_outbound.require_owner();
-  if coalesce(p_kind, '') not in ('discover', 'research', 'draft') then
+  if coalesce(p_kind, '') not in ('discover', 'research', 'draft', 'enrich') then
     return jsonb_build_object('ok', false, 'reason', 'invalid_kind');
   end if;
   if p_input is not null and (jsonb_typeof(p_input) <> 'object' or length(p_input::text) > 4000) then
@@ -4411,6 +4678,7 @@ begin
   return jsonb_build_object('ok', true, 'run_id', v_id, 'budget', growth_outbound.research_budget(),
     'queries', coalesce((select s.discovery_config->'queries' from growth_outbound.settings s where s.id = 1), '[]'::jsonb),
     'daily_prospect_target', (select s.daily_prospect_target from growth_outbound.settings s where s.id = 1),
+    'providers', coalesce((select s.discovery_config->'providers' from growth_outbound.settings s where s.id = 1), '{}'::jsonb),
     'shared_sites', to_jsonb(growth_outbound.builtin_shared_sites())
                     || coalesce((select s.discovery_config->'shared_sites' from growth_outbound.settings s where s.id = 1), '[]'::jsonb));
 end $$;
@@ -4430,11 +4698,13 @@ begin
   perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run for update;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
-  if coalesce(p_provider, '') not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier') then
+  if coalesce(p_provider, '') not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier', 'enrichment') then
     return jsonb_build_object('ok', false, 'reason', 'invalid_provider');
   end if;
   -- a drafting run writes; it does not search, read pages or look up addresses
   if r.kind = 'draft' and p_provider <> 'llm' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
+  -- an enrichment run (Phase 12) hands prospects to an enrichment provider, and nothing else
+  if r.kind = 'enrich' and p_provider <> 'enrichment' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
   if coalesce(p_n, 0) not between 1 and 50 then return jsonb_build_object('ok', false, 'reason', 'invalid_count'); end if;
   v_cap := coalesce((select (s.discovery_config->'budget'->>p_provider)::int from growth_outbound.settings s where s.id = 1),
                     growth_outbound.budget_default(p_provider));
@@ -4693,12 +4963,25 @@ begin
   end if;
 
   v_verdicts := p->'email_verdicts';
+  -- who a known prospect is to EdgeDesk (subscriber or partner) is not the
+  -- engine's to change once set: the owner may have decided it (Phase 12)
+  if v_target is not null then p := p - 'campaign_type'; end if;
   p := (p - 'email_verdicts' - 'urls') || jsonb_build_object('collected_by', p_collector)
        || case when p ? 'urls' then jsonb_build_object('urls', v_urls) else '{}'::jsonb end;
   v_res := growth_outbound.ingest(v_target, p);
   v_ok := coalesce((v_res->>'ok')::boolean, false);
   v_pid := coalesce((v_res->>'prospect_id')::uuid, v_target);
 
+  -- every verifier's word is on the record (Phase 12), so an address is not
+  -- asked about again every morning
+  if v_ok and v_verdicts is not null then
+    for v in select x from jsonb_array_elements(v_verdicts) x loop
+      continue when jsonb_typeof(v) <> 'object' or growth_outbound.norm_email(v->>'email') is null;
+      perform growth_outbound.log('email_verdict', v_pid, 'prospect', v_pid::text,
+        jsonb_build_object('email', growth_outbound.norm_email(v->>'email'), 'status', left(coalesce(v->>'status', 'unknown'), 40),
+                           'by', p_collector));
+    end loop;
+  end if;
   -- an address a verifier calls invalid or disposable is not used
   if v_ok and v_verdicts is not null then
     for v in select x from jsonb_array_elements(v_verdicts) x loop
@@ -4839,6 +5122,9 @@ set search_path = pg_catalog, public, pg_temp as $$
                        union all select 2 where p.status = 'contacted'
                        union all select 3 where p.status = 'contacted') k
    where not p.is_test
+     -- the engine pitches a subscription to potential subscribers only; a
+     -- partner lead is the owner's to write to (Phase 12)
+     and p.campaign_type = 'customer'
      and growth_outbound.step_due_problem(p.id, k.seq) is null
      and not growth_outbound.has_account(p.email)
      and not exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = k.seq
@@ -4846,7 +5132,7 @@ set search_path = pg_catalog, public, pg_temp as $$
      and not exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'draft_gave_up'
                        and a.detail->>'sequence' = k.seq::text and a.at > now() - interval '7 days'
                        and not exists (select 1 from growth_outbound.evidence e where e.prospect_id = p.id and e.observed_at > a.at))
-   order by k.seq desc, p.fit_score desc nulls last, p.created_at, p.id;
+   order by k.seq desc, p.qualification_score desc nulls last, p.fit_score desc nulls last, p.created_at, p.id;
 $$;
 
 -- The facts an email to this prospect may cite, best first: current,
@@ -4939,6 +5225,104 @@ begin
     'min_research_confidence', s.min_research_confidence);
 end $$;
 
+-- THE ENGINE'S RULES FOR AN EMAIL, in one place: what draft_propose refuses
+-- and what the owner's draft check reports. Reads only; writes nothing.
+--   { reason, detail }            the proposal is malformed (no problems list)
+--   { problems[], claims[], subject, body, words }   otherwise; no problems
+--                                  means the engine may queue it
+-- Every claim: this person's current, citeable, confident evidence, in its own
+-- words, said in the email. The greeting, nothing specific from nowhere, no
+-- uncited sentence about them, and the content rules. And (Phase 12) what
+-- every engine email must say: the 7-day free trial and $49.99/month, the
+-- link to EdgeDesk, under 150 words, and only to a potential subscriber.
+create or replace function growth_outbound.engine_draft_problems(p_prospect uuid, p_seq int, p_subject text, p_body text,
+                                                                 p_claims jsonb)
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_p growth_outbound.prospects;
+  s growth_outbound.settings;
+  e growth_outbound.evidence;
+  v_subject text;
+  v_body text;
+  v_problems text[] := '{}';
+  v_claims jsonb := '[]'::jsonb;
+  v_texts text[] := '{}';
+  v_text text;
+  v_conf numeric;
+  v_words int;
+  c jsonb;
+  x text;
+begin
+  select * into v_p from growth_outbound.prospects where id = p_prospect;
+  if not found then return jsonb_build_object('reason', 'not_found'); end if;
+  select * into s from growth_outbound.settings where id = 1;
+  v_subject := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_body := btrim(regexp_replace(replace(coalesce(p_body, ''), E'\r\n', E'\n'), '[ \t]+\n', E'\n', 'g'));
+  if length(v_subject) not between 3 and 80 then v_problems := array_append(v_problems, 'the subject is 3 to 80 characters'::text); end if;
+  if length(v_body) not between 40 and 1500 then v_problems := array_append(v_problems, 'the body is 40 to 1,500 characters'::text); end if;
+
+  for c in select y from jsonb_array_elements(case when jsonb_typeof(p_claims) = 'array' then p_claims else '[]'::jsonb end) y loop
+    v_text := case when jsonb_typeof(c) = 'object' and jsonb_typeof(c->'text') = 'string'
+                   then btrim(regexp_replace(c->>'text', '\s+', ' ', 'g')) end;
+    if v_text is null or length(v_text) not between 3 and 200 or jsonb_typeof(c->'evidence_id') is distinct from 'number'
+       or (c->>'evidence_id') !~ '^[0-9]{1,18}$' then
+      return jsonb_build_object('reason', 'invalid_claims', 'detail', 'each claim is {text: 3 to 200 characters, evidence_id}');
+    end if;
+    select * into e from growth_outbound.evidence where id = (c->>'evidence_id')::bigint;
+    if not found or e.prospect_id <> v_p.id or e.superseded_at is not null or e.claim_norm is null then
+      v_problems := array_append(v_problems, format('"%s" cites evidence %s, which is not current evidence about this person',
+                                                    left(v_text, 80), c->>'evidence_id'));
+      continue;
+    end if;
+    if not growth_outbound.engine_citeable(e.field_name) then
+      v_problems := array_append(v_problems, format('"%s" cites their %s, which an email does not cite', left(v_text, 80),
+                                                    replace(e.field_name, '_', ' ')));
+      continue;
+    end if;
+    v_conf := growth_outbound.evidence_confidence(e.id, v_p.id);
+    if v_conf < s.min_research_confidence then
+      v_problems := array_append(v_problems, format('"%s" rests on evidence only %s sure (the research gate is %s)',
+                                                    left(v_text, 80), round(v_conf, 2), s.min_research_confidence));
+    end if;
+    if not (growth_outbound.quote_in(v_text, e.claim) or growth_outbound.quote_in(v_text, e.source_excerpt)) then
+      v_problems := array_append(v_problems, format('"%s" is not in the words of evidence %s', left(v_text, 80), e.id));
+    end if;
+    if not growth_outbound.quote_in(v_text, v_subject || E'\n' || v_body) then
+      v_problems := array_append(v_problems, format('"%s" is cited, but the email does not say it in those words', left(v_text, 80)));
+    end if;
+    v_texts := array_append(v_texts, v_text);
+    v_claims := v_claims || jsonb_build_array(jsonb_build_object('text', v_text, 'evidence_id', e.id));
+  end loop;
+  if jsonb_array_length(v_claims) = 0 and coalesce(jsonb_array_length(case when jsonb_typeof(p_claims) = 'array' then p_claims end), 0) = 0
+     and not v_p.is_test then
+    v_problems := array_append(v_problems, 'an individual email says at least one thing about them, cited'::text);
+  end if;
+
+  x := growth_outbound.greeting_problem(v_body, v_p.first_name);
+  if x is not null then v_problems := array_append(v_problems, x); end if;
+  foreach x in array growth_outbound.uncited_details(v_subject || E'\n' || v_body,
+      array_to_string(v_texts, ' ') || ' ' || coalesce(v_p.first_name, '') || ' ' || s.sender_name || ' ' || s.business_name) loop
+    v_problems := array_append(v_problems, format('"%s" comes from no cited claim', x));
+  end loop;
+  foreach x in array growth_outbound.uncited_sentences(v_subject || E'\n' || v_body, v_texts) loop
+    v_problems := array_append(v_problems, format('this says something about them without a cited claim: "%s"', x));
+  end loop;
+  foreach x in array growth_outbound.draft_lint(v_subject, v_body) loop
+    v_problems := array_append(v_problems, ('content: ' || x)::text);
+  end loop;
+
+  -- (Phase 12) what every engine email says, and to whom
+  if v_p.campaign_type <> 'customer' and not v_p.is_test then
+    v_problems := array_append(v_problems, ('this is a ' || replace(v_p.campaign_type, '_', ' ')
+      || ' lead: the engine writes to potential subscribers only (write a partnership note yourself)')::text);
+  end if;
+  v_problems := v_problems || growth_outbound.offer_problems(v_body, s.cta_url);
+  v_words := coalesce(array_length(regexp_split_to_array(nullif(v_body, ''), '\s+'), 1), 0);
+  return jsonb_build_object('problems', to_jsonb(v_problems), 'claims', v_claims, 'subject', v_subject, 'body', v_body,
+                            'words', v_words);
+end $$;
+
 -- PROPOSE A DRAFT — the engine's only way into the review queue.
 --   { sequence_number, subject, body_text, claims: [{text, evidence_id}],
 --     generator: 'engine:<writer>:<version>' }
@@ -4950,20 +5334,14 @@ set search_path = pg_catalog, public, pg_temp as $$
 declare
   r growth_outbound.research_runs;
   v_p growth_outbound.prospects;
-  s growth_outbound.settings;
-  e growth_outbound.evidence;
   d growth_outbound.drafts;
   v_gen text;
   v_seq int;
   v_subject text;
   v_body text;
   v_due text;
-  v_problems text[] := '{}';
-  v_claims jsonb := '[]'::jsonb;
-  v_texts text[] := '{}';
-  v_text text;
-  v_conf numeric;
-  c jsonb;
+  v_chk jsonb;
+  v_claims jsonb;
   x text;
 begin
   perform growth_outbound.require_engine();
@@ -4994,69 +5372,20 @@ begin
   -- the prospect as the evidence stands NOW, and the step due NOW
   perform growth_outbound.evaluate(p_prospect);
   select * into v_p from growth_outbound.prospects where id = p_prospect for update;
-  select * into s from growth_outbound.settings where id = 1;
   v_due := growth_outbound.step_due_problem(v_p.id, v_seq);
   if v_due is not null then return jsonb_build_object('ok', false, 'reason', 'not_due', 'detail', v_due); end if;
 
-  v_subject := btrim(regexp_replace(p->>'subject', '\s+', ' ', 'g'));
-  v_body := btrim(regexp_replace(replace(p->>'body_text', E'\r\n', E'\n'), '[ \t]+\n', E'\n', 'g'));
-  if length(v_subject) not between 3 and 80 then v_problems := array_append(v_problems, 'the subject is 3 to 80 characters'::text); end if;
-  if length(v_body) not between 40 and 1500 then v_problems := array_append(v_problems, 'the body is 40 to 1,500 characters'::text); end if;
-
-  -- every claim: this person's current, citeable, confident evidence, in its
-  -- own words, and said in the email
-  for c in select y from jsonb_array_elements(p->'claims') y loop
-    v_text := case when jsonb_typeof(c) = 'object' and jsonb_typeof(c->'text') = 'string'
-                   then btrim(regexp_replace(c->>'text', '\s+', ' ', 'g')) end;
-    if v_text is null or length(v_text) not between 3 and 200 or jsonb_typeof(c->'evidence_id') is distinct from 'number'
-       or (c->>'evidence_id') !~ '^[0-9]{1,18}$' then
-      return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'each claim is {text: 3 to 200 characters, evidence_id}');
-    end if;
-    select * into e from growth_outbound.evidence where id = (c->>'evidence_id')::bigint;
-    if not found or e.prospect_id <> v_p.id or e.superseded_at is not null or e.claim_norm is null then
-      v_problems := array_append(v_problems, format('"%s" cites evidence %s, which is not current evidence about this person',
-                                                    left(v_text, 80), c->>'evidence_id'));
-      continue;
-    end if;
-    if not growth_outbound.engine_citeable(e.field_name) then
-      v_problems := array_append(v_problems, format('"%s" cites their %s, which an email does not cite', left(v_text, 80),
-                                                    replace(e.field_name, '_', ' ')));
-      continue;
-    end if;
-    v_conf := growth_outbound.evidence_confidence(e.id, v_p.id);
-    if v_conf < s.min_research_confidence then
-      v_problems := array_append(v_problems, format('"%s" rests on evidence only %s sure (the research gate is %s)',
-                                                    left(v_text, 80), round(v_conf, 2), s.min_research_confidence));
-    end if;
-    if not (growth_outbound.quote_in(v_text, e.claim) or growth_outbound.quote_in(v_text, e.source_excerpt)) then
-      v_problems := array_append(v_problems, format('"%s" is not in the words of evidence %s', left(v_text, 80), e.id));
-    end if;
-    if not growth_outbound.quote_in(v_text, v_subject || E'\n' || v_body) then
-      v_problems := array_append(v_problems, format('"%s" is cited, but the email does not say it in those words', left(v_text, 80)));
-    end if;
-    v_texts := array_append(v_texts, v_text);
-    v_claims := v_claims || jsonb_build_array(jsonb_build_object('text', v_text, 'evidence_id', e.id));
-  end loop;
-  if jsonb_array_length(p->'claims') = 0 and not v_p.is_test then
-    v_problems := array_append(v_problems, 'an individual email says at least one thing about them, cited'::text);
+  v_chk := growth_outbound.engine_draft_problems(v_p.id, v_seq, p->>'subject', p->>'body_text', p->'claims');
+  if v_chk ? 'reason' then
+    return jsonb_build_object('ok', false, 'reason', v_chk->>'reason', 'detail', v_chk->>'detail');
   end if;
-
-  -- the greeting, nothing specific from nowhere, no uncited sentence about them
-  x := growth_outbound.greeting_problem(v_body, v_p.first_name);
-  if x is not null then v_problems := array_append(v_problems, x); end if;
-  foreach x in array growth_outbound.uncited_details(v_subject || E'\n' || v_body,
-      array_to_string(v_texts, ' ') || ' ' || coalesce(v_p.first_name, '') || ' ' || s.sender_name || ' ' || s.business_name) loop
-    v_problems := array_append(v_problems, format('"%s" comes from no cited claim', x));
-  end loop;
-  foreach x in array growth_outbound.uncited_sentences(v_subject || E'\n' || v_body, v_texts) loop
-    v_problems := array_append(v_problems, format('this says something about them without a cited claim: "%s"', x));
-  end loop;
-  foreach x in array growth_outbound.draft_lint(v_subject, v_body) loop
-    v_problems := array_append(v_problems, ('content: ' || x)::text);
-  end loop;
-  if cardinality(v_problems) > 0 then
-    return jsonb_build_object('ok', false, 'reason', 'refused', 'problems', to_jsonb(v_problems[1:20]));
+  if jsonb_array_length(v_chk->'problems') > 0 then
+    return jsonb_build_object('ok', false, 'reason', 'refused',
+      'problems', (select jsonb_agg(x.v order by x.n) from jsonb_array_elements(v_chk->'problems') with ordinality x(v, n) where x.n <= 20));
   end if;
+  v_subject := v_chk->>'subject';
+  v_body := v_chk->>'body';
+  v_claims := v_chk->'claims';
 
   insert into growth_outbound.drafts (prospect_id, sequence_number, campaign_type, is_test, subject, body_text, greeting_name,
                                       claims, generator_version, edited_by_owner, run_id)
@@ -5068,6 +5397,44 @@ begin
     jsonb_build_object('sequence', v_seq, 'claims', jsonb_array_length(v_claims), 'generator', v_gen, 'run', p_run));
   return jsonb_build_object('ok', true, 'draft_id', d.id, 'content_hash', d.content_hash,
     'status', (select status from growth_outbound.prospects where id = v_p.id));
+end $$;
+
+-- CHECK A DRAFT WITHOUT QUEUEING IT (Phase 12): the owner's dry run. The
+-- same rules draft_propose applies, the step's due-ness reported rather than
+-- required, and nothing written: no draft, no log, no evaluation.
+--   p: { sequence_number, subject, body_text, claims: [{text, evidence_id}] }
+create or replace function public.growth_outbound_draft_check(p_prospect uuid, p jsonb)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_seq int;
+  v_chk jsonb;
+  v_due text;
+begin
+  perform growth_outbound.require_owner();
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'not_an_object'); end if;
+  if exists (select 1 from jsonb_object_keys(p) k where k not in ('sequence_number', 'subject', 'body_text', 'claims')) then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_field');
+  end if;
+  v_seq := case when coalesce(p->>'sequence_number', '1') ~ '^[1-3]$' then coalesce(p->>'sequence_number', '1')::int end;
+  if v_seq is null then return jsonb_build_object('ok', false, 'reason', 'invalid_sequence'); end if;
+  if jsonb_typeof(p->'subject') is distinct from 'string' or jsonb_typeof(p->'body_text') is distinct from 'string' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_content', 'detail', 'a subject and a body, as text');
+  end if;
+  if p ? 'claims' and (jsonb_typeof(p->'claims') <> 'array' or jsonb_array_length(p->'claims') > 5) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_claims', 'detail', 'claims: a list of at most 5');
+  end if;
+  if not exists (select 1 from growth_outbound.prospects where id = p_prospect) then
+    return jsonb_build_object('ok', false, 'reason', 'not_found');
+  end if;
+  v_chk := growth_outbound.engine_draft_problems(p_prospect, v_seq, p->>'subject', p->>'body_text', coalesce(p->'claims', '[]'::jsonb));
+  if v_chk ? 'reason' then
+    return jsonb_build_object('ok', false, 'reason', v_chk->>'reason', 'detail', v_chk->>'detail');
+  end if;
+  v_due := growth_outbound.step_due_problem(p_prospect, v_seq);
+  return jsonb_build_object('ok', true, 'passes', jsonb_array_length(v_chk->'problems') = 0,
+    'problems', v_chk->'problems', 'words', v_chk->'words', 'due', v_due is null, 'due_problem', v_due,
+    'lint', to_jsonb(growth_outbound.draft_lint(v_chk->>'subject', v_chk->>'body')));
 end $$;
 
 -- GAVE UP: for this step the engine wrote nothing the database accepts (both
@@ -5135,8 +5502,12 @@ end $$;
 
 -- WHAT THE MORNING RUN DOES NEXT, in the owner's time zone (one step a tick):
 --   1  search the saved searches, once a day;
---   2  research the next new candidate, up to daily_prospect_target a day;
---   3  draft for whoever is due, a few at a time, up to the daily send cap a
+--   2  ask the verifier about addresses found but not yet verified (Phase 12:
+--      from Clay, Apollo, or a day the verifier budget ran out), five a step;
+--   3  research the next new candidate, until daily_qualified_target new
+--      subscriber prospects qualified today (Phase 12), at most
+--      daily_prospect_target reads a day;
+--   4  draft for whoever is due, a few at a time, up to today's live cap a
 --      day (more drafts than can be sent would only wait).
 -- It stops for the day after three scheduled runs in a row fail, or after 60
 -- runs, and never starts while a scheduled run is still going.
@@ -5158,21 +5529,31 @@ declare
   v_step jsonb;
   v_reason text;
   v_today jsonb;
+  v_qualified int;
+  v_verify int;
+  v_cap int;
 begin
   select * into s from growth_outbound.settings where id = 1;
   v_local := p_now at time zone s.automation_timezone;
   v_hour := extract(hour from v_local)::int;
   v_in := ((v_hour - s.automation_start_hour + 24) % 24) < s.automation_hours;
   v_day_start := date_trunc('day', v_local) at time zone s.automation_timezone;
-  select count(*), count(*) filter (where kind = 'discover'), count(*) filter (where kind = 'research')
+  select count(*), count(*) filter (where kind = 'discover'), count(*) filter (where kind = 'research' and not (input ? 'verify'))
     into v_runs, v_disc, v_res
     from growth_outbound.research_runs where started_by = 'schedule' and started_at >= v_day_start;
+  -- new potential subscribers who cleared every gate today (Phase 12)
+  select count(*) into v_qualified from growth_outbound.prospects p
+   where not p.is_test and p.campaign_type = 'customer' and p.first_qualified_at >= v_day_start;
+  select count(*) into v_verify from growth_outbound.verify_queue(50);
+  if coalesce((growth_outbound.research_budget()->'email_verifier'->>'left')::int, 0) = 0 then v_verify := 0; end if;
+  v_cap := (growth_outbound.live_send_cap()->>'cap')::int;
   select count(*) into v_drafted from growth_outbound.drafts d join growth_outbound.research_runs r on r.id = d.run_id
    where r.started_by = 'schedule' and r.started_at >= v_day_start;
   select count(*) into v_new from growth_outbound.candidates where status = 'new';
   select count(*) into v_due from growth_outbound.drafting_due();
   v_today := jsonb_build_object('day', v_local::date, 'runs', v_runs, 'searched', v_disc > 0, 'researched', v_res,
-    'research_target', s.daily_prospect_target, 'drafted', v_drafted, 'draft_cap', s.max_sends_per_day,
+    'research_target', s.daily_prospect_target, 'drafted', v_drafted, 'draft_cap', v_cap,
+    'qualified', v_qualified, 'qualified_target', s.daily_qualified_target, 'verify_waiting', v_verify,
     'new_candidates', v_new, 'due', v_due);
 
   if not s.automation_enabled then
@@ -5192,14 +5573,19 @@ begin
     v_reason := 'the last three scheduled runs failed, so nothing more today (see Activity)';
   elsif jsonb_typeof(s.discovery_config->'queries') = 'array' and jsonb_array_length(s.discovery_config->'queries') > 0 and v_disc = 0 then
     v_step := jsonb_build_object('kind', 'discover', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('saved', true));
-  elsif v_res < s.daily_prospect_target and v_new > 0 then
+  elsif v_verify > 0
+        and not exists (select 1 from growth_outbound.research_runs r
+                         where r.started_by = 'schedule' and r.kind = 'research' and r.input ? 'verify'
+                           and r.started_at > p_now - interval '20 minutes') then
+    v_step := jsonb_build_object('kind', 'research', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('verify', 5));
+  elsif v_res < s.daily_prospect_target and v_new > 0 and v_qualified < s.daily_qualified_target then
     v_step := jsonb_build_object('kind', 'research', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('next', true));
-  elsif v_drafted < s.max_sends_per_day and v_due > 0
+  elsif v_drafted < v_cap and v_due > 0
         and not exists (select 1 from growth_outbound.research_runs r
                          where r.started_by = 'schedule' and r.kind = 'draft' and r.started_at > p_now - interval '30 minutes'
                            and coalesce((r.counts->>'drafted')::int, 0) = 0) then
     v_step := jsonb_build_object('kind', 'draft', 'fn', 'growth_outbound_draft',
-      'input', jsonb_build_object('next', least(3, s.max_sends_per_day - v_drafted)));
+      'input', jsonb_build_object('next', least(3, v_cap - v_drafted)));
   else
     v_reason := 'nothing left to do this morning';
   end if;
@@ -5309,7 +5695,8 @@ begin
     || case r.kind
          when 'discover' then array['growth_outbound_candidates_record']
          when 'research' then array['growth_outbound_candidates', 'growth_outbound_candidate', 'growth_outbound_candidate_set',
-                                    'growth_outbound_page_record', 'growth_outbound_research_ingest', 'growth_outbound_fit_catalog']
+                                    'growth_outbound_page_record', 'growth_outbound_research_ingest', 'growth_outbound_fit_catalog',
+                                    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark']
          when 'draft' then array['growth_outbound_drafting_overview', 'growth_outbound_draft_context',
                                  'growth_outbound_draft_propose', 'growth_outbound_draft_gave_up']
          else '{}'::text[] end;
@@ -5322,6 +5709,7 @@ begin
   if p_door = 'plan' then
     return jsonb_build_object('ok', true, 'run_id', r.id, 'kind', r.kind, 'input', r.input, 'budget', growth_outbound.research_budget(),
       'queries', coalesce((select x.discovery_config->'queries' from growth_outbound.settings x where x.id = 1), '[]'::jsonb),
+      'providers', coalesce((select x.discovery_config->'providers' from growth_outbound.settings x where x.id = 1), '{}'::jsonb),
       'shared_sites', to_jsonb(growth_outbound.builtin_shared_sites())
                       || coalesce((select x.discovery_config->'shared_sites' from growth_outbound.settings x where x.id = 1), '[]'::jsonb));
   end if;
@@ -5345,6 +5733,12 @@ begin
       public.growth_outbound_research_ingest(v_run, (a->>'p_candidate')::bigint, (a->>'p_prospect')::uuid, a->>'p_collector', a->'p')
     when 'growth_outbound_fit_catalog' then
       public.growth_outbound_fit_catalog()
+    when 'growth_outbound_verify_queue' then
+      public.growth_outbound_verify_queue(coalesce((a->>'p_limit')::int, 5))
+    when 'growth_outbound_enrichment_queue' then
+      public.growth_outbound_enrichment_queue(coalesce((a->>'p_limit')::int, 25))
+    when 'growth_outbound_enrichment_mark' then
+      public.growth_outbound_enrichment_mark(v_run, a->>'p_provider', a->'p_prospects')
     when 'growth_outbound_drafting_overview' then
       public.growth_outbound_drafting_overview()
     when 'growth_outbound_draft_context' then
@@ -5756,6 +6150,441 @@ end
 $reevaluate$;
 
 -- =============================================================================
+-- 12. PROVIDERS, QUALIFICATION AND VOLUME (Phase 12)
+--
+--   Discovery and enrichment providers plug in behind the research engine
+--   (Brave and Apollo search; Hunter and Apollo email lookup; Hunter
+--   verification; Clay enrichment), each switched on or off in
+--   discovery_config.providers. Whatever a provider says arrives as evidence
+--   like any other, weighed the same way: an address a provider found is
+--   'unverified' until a verifier or the owner confirms it; a title or an
+--   employer a provider reports is a directory's word (the lowest weight),
+--   never something an email may cite. Clay is enrichment only: it adds to a
+--   prospect the engine already found, never creates one.
+--
+--   (Placed before the System check, which checks it.)
+-- =============================================================================
+
+-- WHO IS WAITING FOR A VERIFIER: an address on record that nobody has
+-- confirmed — published on a page, or a provider's find ('risky' until
+-- checked), never a guessed one — and no verifier has answered about in 30 days.
+create or replace function growth_outbound.verify_queue(p_limit int)
+returns table (prospect_id uuid, email text) language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select p.id, growth_outbound.norm_email(p.email)
+    from growth_outbound.prospects p
+   where not p.is_test and p.status = 'needs_research' and p.duplicate_of is null
+     and p.email is not null and p.email_status in ('unverified', 'risky') and p.email_invalid_at is null
+     and exists (select 1 from growth_outbound.evidence e where e.prospect_id = p.id and e.field_name = 'email' and e.superseded_at is null
+                   and e.claim_norm = growth_outbound.norm_email(p.email) and e.source_kind <> 'pattern_guess')
+     and not growth_outbound.is_suppressed(p.email)
+     and not exists (select 1 from growth_outbound.activity a
+                      where a.prospect_id = p.id and a.action = 'email_verdict'
+                        and a.detail->>'email' = growth_outbound.norm_email(p.email) and a.at > now() - interval '30 days')
+   order by p.qualification_score desc nulls last, p.updated_at desc, p.id
+   limit least(greatest(coalesce(p_limit, 5), 1), 200);
+$$;
+
+-- WHO IS WORTH ENRICHING: a potential subscriber whose only missing piece is
+-- a usable address (with a verified one, worth 9 points, they would clear the
+-- qualification bar), not handed to an enrichment provider in 14 days.
+create or replace function growth_outbound.enrichment_queue(p_limit int)
+returns table (prospect_id uuid) language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select p.id
+    from growth_outbound.prospects p
+    cross join growth_outbound.settings s
+   where s.id = 1 and not p.is_test and p.campaign_type = 'customer' and p.status = 'needs_research'
+     and p.duplicate_of is null and p.full_name is not null
+     and not growth_outbound.is_suppressed(p.email)
+     and (p.email is null or p.email_status = 'none'
+          -- a guessed address: something better is wanted
+          or (p.email_status = 'risky'
+              and not exists (select 1 from growth_outbound.evidence e where e.prospect_id = p.id and e.field_name = 'email' and e.superseded_at is null
+                                and e.claim_norm = growth_outbound.norm_email(p.email) and e.source_kind <> 'pattern_guess'))
+          -- one a verifier answered about and could not confirm
+          or (p.email_status in ('unverified', 'risky')
+              and exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'email_verdict'
+                            and a.detail->>'email' = growth_outbound.norm_email(p.email))))
+     and coalesce(p.qualification_score, 0) + 9 - coalesce((p.qualification->'parts'->'contact'->>'email')::int, 0)
+         >= s.min_qualification_score
+     and not exists (select 1 from jsonb_array_elements_text(coalesce(p.assessment->'gates', '[]'::jsonb)) g(x)
+                      where g.x !~ '^(no email address|email |qualification )')
+     and not exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'enrichment_pushed'
+                       and a.at > now() - interval '14 days')
+   order by p.qualification_score desc nulls last, p.updated_at desc, p.id
+   limit least(greatest(coalesce(p_limit, 25), 1), 200);
+$$;
+
+-- What an enrichment provider is given about a prospect: who they are and
+-- where they are, nothing else (no score, no evidence, no address of ours).
+create or replace function growth_outbound.enrichment_row(p growth_outbound.prospects)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_strip_nulls(jsonb_build_object(
+    'edgedesk_ref', p.id, 'full_name', p.full_name, 'first_name', p.first_name, 'last_name', p.last_name,
+    'organization', p.organization, 'job_title', p.job_title, 'website_url', p.website_url,
+    'domain', case when p.website_url is not null then growth_outbound.site_key(growth_outbound.url_host(p.website_url)) end,
+    'x_url', p.x_url, 'newsletter_url', p.newsletter_url,
+    'linkedin_url', (select 'https://www.linkedin.com/in/' || substr(i.value, 13) from growth_outbound.identifiers i
+                      where i.prospect_id = p.id and i.released_at is null and i.kind = 'handle' and i.value like 'linkedin:in:%'
+                      order by i.id limit 1)));
+$$;
+
+create or replace function public.growth_outbound_verify_queue(p_limit int default 5)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_engine();
+  return coalesce((select jsonb_agg(jsonb_build_object('prospect_id', q.prospect_id, 'email', q.email))
+                     from growth_outbound.verify_queue(least(greatest(coalesce(p_limit, 5), 1), 25)) q), '[]'::jsonb);
+end $$;
+
+create or replace function public.growth_outbound_enrichment_queue(p_limit int default 25)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_engine();
+  return coalesce((select jsonb_agg(growth_outbound.enrichment_row(p))
+                     from growth_outbound.enrichment_queue(least(greatest(coalesce(p_limit, 25), 1), 100)) q
+                     join growth_outbound.prospects p on p.id = q.prospect_id), '[]'::jsonb);
+end $$;
+
+-- HANDED TO A PROVIDER: on the record, so nobody is pushed twice in 14 days.
+create or replace function public.growth_outbound_enrichment_mark(p_run bigint, p_provider text, p_prospects jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r growth_outbound.research_runs;
+  v_id uuid;
+  n int := 0;
+begin
+  perform growth_outbound.require_engine();
+  select * into r from growth_outbound.research_runs where id = p_run;
+  if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind not in ('research', 'enrich') then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
+  if coalesce(p_provider, '') not in ('clay') then return jsonb_build_object('ok', false, 'reason', 'invalid_provider'); end if;
+  if p_prospects is null or jsonb_typeof(p_prospects) <> 'array' or jsonb_array_length(p_prospects) > 100 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_prospects');
+  end if;
+  for v_id in select distinct (x #>> '{}')::uuid from jsonb_array_elements(p_prospects) x
+               where jsonb_typeof(x) = 'string' and (x #>> '{}') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' loop
+    continue when not exists (select 1 from growth_outbound.prospects where id = v_id);
+    perform growth_outbound.log('enrichment_pushed', v_id, 'prospect', v_id::text, jsonb_build_object('provider', p_provider, 'run', p_run));
+    n := n + 1;
+  end loop;
+  return jsonb_build_object('ok', true, 'marked', n);
+end $$;
+
+-- FOR CLAY BY HAND: the enrichment queue as rows for a CSV the owner uploads
+-- to a Clay table, marked as handed over. Clay's results come back through
+-- growth_outbound_provider_import.
+create or replace function public.growth_outbound_enrichment_export(p_limit int default 25)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  v_run bigint;
+  v_rows jsonb;
+begin
+  v_owner := growth_outbound.require_owner();
+  select coalesce(jsonb_agg(growth_outbound.enrichment_row(p)), '[]'::jsonb) into v_rows
+    from growth_outbound.enrichment_queue(least(greatest(coalesce(p_limit, 25), 1), 200)) q
+    join growth_outbound.prospects p on p.id = q.prospect_id;
+  if jsonb_array_length(v_rows) = 0 then return jsonb_build_object('ok', true, 'rows', v_rows); end if;
+  insert into growth_outbound.research_runs (kind, started_by, requested_by, input)
+  values ('enrich', 'owner', v_owner, jsonb_build_object('provider', 'clay', 'export', jsonb_array_length(v_rows)))
+  returning id into v_run;
+  perform public.growth_outbound_enrichment_mark(v_run, 'clay',
+    (select jsonb_agg(x->'edgedesk_ref') from jsonb_array_elements(v_rows) x));
+  update growth_outbound.research_runs set status = 'done', finished_at = now(),
+         counts = jsonb_build_object('exported', jsonb_array_length(v_rows))
+   where id = v_run;
+  return jsonb_build_object('ok', true, 'run_id', v_run, 'rows', v_rows);
+end $$;
+
+-- WHAT CLAY FOUND, BROUGHT BACK (a CSV exported from the Clay table). Each
+-- row names a prospect we sent (edgedesk_ref) or one its address or profile
+-- already identifies; a row that names nobody we know is left out, never made
+-- into a prospect. What it adds, as Clay's word:
+--   an email address: found by Clay, 'unverified' until a verifier (the
+--     morning run asks) or the owner confirms it; never a role address;
+--   their profile and site addresses: who they are (never someone else's);
+--   a title and an employer: a directory's word, from the profile page Clay
+--     read (the lowest weight; an email never cites it).
+--   p_rows: [{ ref, full_name, job_title, organization, email, linkedin_url,
+--              x_url, website_url, newsletter_url, source_url }]  (1 to 200)
+create or replace function public.growth_outbound_provider_import(p_provider text, p_rows jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  v_run bigint;
+  v jsonb;
+  i bigint;
+  v_keys text[] := array['ref', 'full_name', 'job_title', 'organization', 'email', 'linkedin_url', 'x_url', 'website_url',
+                         'newsletter_url', 'source_url'];
+  v_bad text;
+  v_target uuid;
+  v_matches uuid[];
+  v_email text;
+  v_urls jsonb;
+  v_page text;
+  v_ev jsonb;
+  v_res jsonb;
+  v_out jsonb := '[]'::jsonb;
+  n_ok int := 0;
+  n_unmatched int := 0;
+  n_refused int := 0;
+  k text;
+begin
+  v_owner := growth_outbound.require_owner();
+  if coalesce(p_provider, '') not in ('clay') then return jsonb_build_object('ok', false, 'reason', 'invalid_provider'); end if;
+  if p_rows is null or jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) not between 1 and 200 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_rows', 'detail', '1 to 200 rows');
+  end if;
+  for v, i in select x, n from jsonb_array_elements(p_rows) with ordinality t(x, n) loop
+    if jsonb_typeof(v) <> 'object' then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_rows', 'detail', 'row ' || i || ' is not an object');
+    end if;
+    select string_agg(x, ', ') into v_bad from jsonb_object_keys(v) x where x <> all (v_keys);
+    if v_bad is not null then
+      return jsonb_build_object('ok', false, 'reason', 'unknown_column', 'detail', 'row ' || i || ': ' || left(v_bad, 120));
+    end if;
+    select string_agg(k2, ', ') into v_bad from jsonb_each(v) e(k2, x) where jsonb_typeof(x) not in ('string', 'null')
+       or length(x #>> '{}') > 500;
+    if v_bad is not null then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'row ' || i || ': ' || left(v_bad, 120));
+    end if;
+  end loop;
+
+  insert into growth_outbound.research_runs (kind, started_by, requested_by, input)
+  values ('enrich', 'owner', v_owner, jsonb_build_object('provider', p_provider, 'import', jsonb_array_length(p_rows)))
+  returning id into v_run;
+
+  for v, i in select x, n from jsonb_array_elements(p_rows) with ordinality t(x, n) loop
+    -- the address, unless it is a role address, a provider's placeholder, or not one
+    v_email := growth_outbound.norm_email(nullif(btrim(coalesce(v->>'email', '')), ''));
+    if v_email is not null and (not growth_outbound.valid_email(v_email)
+        or v_email ~ '^(no-?reply|do-?not-?reply|abuse|postmaster|hostmaster|webmaster|privacy|legal|dmca|security|unsubscribe|bounces?|mailer-daemon|root|admin|billing|invoices?|careers|jobs|info|hello|contact|support|team|sales|press|media)@'
+        or v_email ~ '(not_unlocked|unavailable|placeholder|example\.(com|org)$)') then
+      v_email := null;
+    end if;
+    select coalesce(jsonb_agg(u), '[]'::jsonb) into v_urls
+      from (select growth_outbound.canonical_url(v->>c) u from unnest(array['linkedin_url', 'x_url', 'website_url', 'newsletter_url']) c) z
+     where u is not null;
+
+    -- who is this? the prospect we sent, or the one their address or profile names
+    v_target := null;
+    if coalesce(v->>'ref', '') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+       and exists (select 1 from growth_outbound.prospects where id = (v->>'ref')::uuid) then
+      v_target := (v->>'ref')::uuid;
+    else
+      select coalesce(array_agg(distinct i2.prospect_id), '{}'::uuid[]) into v_matches
+        from growth_outbound.identifiers i2
+       where i2.strength = 'strong' and i2.released_at is null
+         and ((i2.kind = 'email' and i2.value = v_email)
+           or (i2.kind, i2.value) in (select kk.kind, kk.value from jsonb_array_elements_text(v_urls) u(url),
+                                        lateral growth_outbound.url_identity(u.url) kk where kk.strength = 'strong'));
+      if cardinality(v_matches) = 1 then v_target := v_matches[1]; end if;
+      if cardinality(v_matches) <> 1 then
+        n_unmatched := n_unmatched + 1;
+        v_out := v_out || jsonb_build_array(jsonb_build_object('row', i, 'ok', false,
+          'reason', case when cardinality(v_matches) = 0 then 'unmatched' else 'ambiguous' end,
+          'detail', case when cardinality(v_matches) = 0 then 'names no prospect we know (Clay adds to prospects; it does not create them)'
+                         else 'its address and profiles name different prospects' end));
+        continue;
+      end if;
+    end if;
+
+    -- what it says, as Clay's word
+    v_page := coalesce(growth_outbound.canonical_url(v->>'linkedin_url'), growth_outbound.canonical_url(v->>'source_url'));
+    v_ev := '[]'::jsonb;
+    if v_email is not null then
+      v_ev := v_ev || jsonb_build_array(jsonb_build_object('field_name', 'email', 'claim', v_email, 'source_kind', 'provider_found',
+        'source_url', coalesce(growth_outbound.canonical_url(v->>'source_url'), v_page, 'https://www.clay.com/'), 'source_title', 'Clay enrichment'));
+    end if;
+    if v_page is not null then
+      foreach k in array array['full_name', 'job_title', 'organization'] loop
+        continue when nullif(btrim(coalesce(v->>k, '')), '') is null;
+        continue when k = 'organization' and lower(btrim(v->>k)) ~ '^@?[a-z0-9-]+(\.[a-z0-9-]+)+$';
+        v_ev := v_ev || jsonb_build_array(jsonb_build_object('field_name', k, 'claim', btrim(v->>k), 'source_kind', 'directory',
+          'source_url', v_page, 'source_title', 'Clay enrichment',
+          'source_excerpt', case k when 'full_name' then 'Name' when 'job_title' then 'Title' else 'Company' end || ': ' || btrim(v->>k)));
+      end loop;
+    end if;
+    if jsonb_array_length(v_ev) = 0 and jsonb_array_length(v_urls) = 0 then
+      n_refused := n_refused + 1;
+      v_out := v_out || jsonb_build_array(jsonb_build_object('row', i, 'ok', false, 'reason', 'nothing_usable', 'prospect_id', v_target,
+        'detail', 'no usable address, profile or fact'));
+      continue;
+    end if;
+    begin
+      v_res := public.growth_outbound_research_ingest(v_run, null, v_target, 'provider:' || p_provider,
+        jsonb_strip_nulls(jsonb_build_object('email', v_email, 'urls', v_urls, 'evidence', v_ev)));
+    exception when others then
+      v_res := jsonb_build_object('ok', false, 'reason', 'refused', 'detail', left(sqlerrm, 200));
+    end;
+    if coalesce((v_res->>'ok')::boolean, false) then
+      n_ok := n_ok + 1;
+      v_out := v_out || jsonb_build_array(jsonb_build_object('row', i, 'ok', true, 'prospect_id', v_target,
+        'status', v_res->>'status', 'evidence', coalesce(jsonb_array_length(v_res->'evidence_ids'), 0), 'left_out', v_res->'dropped'));
+    else
+      n_refused := n_refused + 1;
+      v_out := v_out || jsonb_build_array(jsonb_build_object('row', i, 'ok', false, 'prospect_id', v_target,
+        'reason', v_res->>'reason', 'detail', left(coalesce(v_res->>'detail', ''), 200)));
+    end if;
+  end loop;
+  update growth_outbound.research_runs set status = 'done', finished_at = now(),
+         counts = counts || jsonb_build_object('imported', n_ok, 'unmatched', n_unmatched, 'refused', n_refused)
+   where id = v_run;
+  perform growth_outbound.log('enrichment_imported', null, 'research_run', v_run::text,
+    jsonb_build_object('provider', p_provider, 'imported', n_ok, 'unmatched', n_unmatched, 'refused', n_refused));
+  return jsonb_build_object('ok', true, 'run_id', v_run, 'imported', n_ok, 'unmatched', n_unmatched, 'refused', n_refused, 'rows', v_out);
+end $$;
+
+-- THE SENDING DOMAIN'S CHECK (SPF, DKIM, DMARC), as the send function found
+-- it in DNS. ok: true (all in place), false (one is missing: live sending is
+-- blocked until it is fixed and checked again), null (could not tell).
+--   p: { domain, ok, spf: {ok, detail}, dkim: {ok, detail}, dmarc: {ok, policy, detail},
+--        provider: {ok, detail}, via }
+create or replace function public.growth_outbound_domain_auth_record(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  k text;
+begin
+  perform growth_outbound.require_owner();
+  select * into s from growth_outbound.settings where id = 1 for update;
+  if p is null or jsonb_typeof(p) <> 'object' or length(p::text) > 4000 then
+    return jsonb_build_object('ok', false, 'reason', 'not_an_object');
+  end if;
+  for k in select jsonb_object_keys(p) loop
+    if k not in ('domain', 'ok', 'spf', 'dkim', 'dmarc', 'provider', 'via') then
+      return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', left(k, 40));
+    end if;
+  end loop;
+  if lower(coalesce(p->>'domain', '')) <> split_part(s.sender_email, '@', 2) then
+    return jsonb_build_object('ok', false, 'reason', 'wrong_domain', 'detail', 'the check is of the sending domain, ' || split_part(s.sender_email, '@', 2));
+  end if;
+  if jsonb_typeof(p->'ok') not in ('boolean', 'null') then return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'ok'); end if;
+  foreach k in array array['spf', 'dkim', 'dmarc'] loop
+    if jsonb_typeof(p->k) is distinct from 'object' or jsonb_typeof(p->k->'ok') not in ('boolean', 'null') then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', k);
+    end if;
+  end loop;
+  -- the verdict cannot claim more than its parts: ok only when all three are
+  if (p->>'ok')::boolean is true and not ((p->'spf'->>'ok')::boolean and (p->'dkim'->>'ok')::boolean and (p->'dmarc'->>'ok')::boolean) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'ok while a record is missing');
+  end if;
+  update growth_outbound.settings set domain_auth = p, domain_auth_checked_at = now() where id = 1;
+  perform growth_outbound.log('domain_auth_checked', null, 'settings', '1',
+    jsonb_build_object('domain', p->>'domain', 'ok', p->'ok', 'spf', p->'spf'->'ok', 'dkim', p->'dkim'->'ok', 'dmarc', p->'dmarc'->'ok'));
+  return jsonb_build_object('ok', true, 'domain_auth', p, 'live_send_blockers', to_jsonb(growth_outbound.send_blockers_for(false)));
+end $$;
+
+-- WHO SOMEONE IS TO EDGEDESK, by the owner: a potential subscriber, or a
+-- partner lead (media, affiliate, business). Moving someone away from
+-- 'customer' cancels any subscriber email waiting for them.
+create or replace function public.growth_outbound_prospect_set_segment(p_id uuid, p_segment text, p_reason text default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  p growth_outbound.prospects;
+  n int := 0;
+begin
+  perform growth_outbound.require_owner();
+  select * into p from growth_outbound.prospects where id = p_id for update;
+  if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if coalesce(p_segment, '') not in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner') then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_segment');
+  end if;
+  if p.campaign_type = p_segment then return jsonb_build_object('ok', true, 'segment', p_segment, 'unchanged', true); end if;
+  update growth_outbound.prospects set campaign_type = p_segment where id = p_id;
+  if p_segment <> 'customer' then
+    update growth_outbound.drafts set status = 'cancelled'
+     where prospect_id = p_id and status in ('pending_review', 'approved') and campaign_type = 'customer';
+    get diagnostics n = row_count;
+  end if;
+  perform growth_outbound.evaluate(p_id);
+  perform growth_outbound.log('segment_changed', p_id, 'prospect', p_id::text,
+    jsonb_build_object('from', p.campaign_type, 'to', p_segment, 'reason', left(p_reason, 200), 'drafts_cancelled', n));
+  return jsonb_build_object('ok', true, 'segment', p_segment, 'drafts_cancelled', n);
+end $$;
+
+-- THE QUALIFICATION RULES, as the console shows them.
+create or replace function public.growth_outbound_qualification_rules()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return jsonb_build_object(
+    'threshold', (select min_qualification_score from growth_outbound.settings where id = 1),
+    'parts', jsonb_build_array(
+      jsonb_build_object('part', 'relevance', 'max', growth_outbound.qualification_max('relevance'),
+        'rule', 'Evidenced reasons that what they do is what EdgeDesk does: NFL or college football, odds and markets, fair pricing, props.'),
+      jsonb_build_object('part', 'analytics', 'max', growth_outbound.qualification_max('analytics'),
+        'rule', 'Evidenced reasons they do analytics: quantitative work, models, data tools, visualizations, an analytical newsletter.'),
+      jsonb_build_object('part', 'purchase', 'max', growth_outbound.qualification_max('purchase'),
+        'rule', 'Evidence they would pay for research: they track CLV or their own bets, pay for tools, sell paid research, work independently.'),
+      jsonb_build_object('part', 'contact', 'max', growth_outbound.qualification_max('contact'),
+        'rule', 'A verified address 9 (published on their own site 5, elsewhere 3); identity at its gate 4 (at 0.70, 2); a site or profile of their own 2.'),
+      jsonb_build_object('part', 'personalization', 'max', growth_outbound.qualification_max('personalization'),
+        'rule', 'Facts an email may cite, each sure enough by itself: one 5, two 8, three or more 10.'),
+      jsonb_build_object('part', 'penalties', 'max', 0,
+        'rule', 'Every reason against is subtracted: touting, sportsbook staff, a big media outlet, a sports-industry job without analytics work, inactive, generic.')),
+    'catalogue', coalesce((select jsonb_agg(jsonb_build_object('code', c.code, 'label', c.label, 'points', c.points, 'category', c.category)
+                                            order by c.category, c.points desc, c.code)
+                             from growth_outbound.fit_factor_catalog c), '[]'::jsonb));
+end $$;
+
+-- PARTNER LEADS: media, affiliate and business prospects, kept apart from the
+-- subscriber queue (the engine never pitches them a subscription).
+create or replace function public.growth_outbound_partner_leads(p_limit int default 50)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return coalesce((select jsonb_agg(growth_outbound.prospect_card(x) order by x.updated_at desc)
+    from (select * from growth_outbound.prospects p
+           where not p.is_test and p.campaign_type <> 'customer' and p.status not in ('rejected', 'suppressed')
+           order by p.updated_at desc limit least(greatest(coalesce(p_limit, 50), 1), 200)) x), '[]'::jsonb);
+end $$;
+
+-- THE MORNING, at a glance: what was found and qualified since the day began
+-- (in the owner's time zone), what waits for review, what may go out today.
+create or replace function public.growth_outbound_morning()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  v_day_start timestamptz;
+begin
+  perform growth_outbound.require_owner();
+  select * into s from growth_outbound.settings where id = 1;
+  v_day_start := date_trunc('day', now() at time zone s.automation_timezone) at time zone s.automation_timezone;
+  return jsonb_build_object(
+    'day', (now() at time zone s.automation_timezone)::date, 'timezone', s.automation_timezone,
+    'test_mode', s.test_mode, 'automation', s.automation_enabled,
+    'qualified_today', (select count(*) from growth_outbound.prospects p where not p.is_test and p.campaign_type = 'customer'
+                          and p.first_qualified_at >= v_day_start),
+    'qualified_target', s.daily_qualified_target, 'min_qualification_score', s.min_qualification_score,
+    'researched_today', (select count(*) from growth_outbound.research_runs r where r.kind = 'research' and not (r.input ? 'verify')
+                           and r.started_at >= v_day_start),
+    'review', (select count(*) from growth_outbound.drafts d where d.status = 'pending_review' and not d.is_test),
+    'approved_unsent', (select count(*) from growth_outbound.drafts d where d.status = 'approved' and not d.is_test),
+    'sent_today', (select count(*) from growth_outbound.sends x where not x.is_test and x.claimed_at >= date_trunc('day', now())),
+    'live_cap', growth_outbound.live_send_cap(),
+    'partner_leads_7d', (select count(*) from growth_outbound.prospects p where not p.is_test and p.campaign_type <> 'customer'
+                           and p.status not in ('rejected', 'suppressed') and p.discovered_at >= now() - interval '7 days'),
+    'verification_waiting', (select count(*) from growth_outbound.verify_queue(200)),
+    'enrichment_waiting', (select count(*) from growth_outbound.enrichment_queue(200)),
+    'domain_auth', s.domain_auth, 'domain_auth_checked_at', s.domain_auth_checked_at,
+    'providers', coalesce(s.discovery_config->'providers', '{}'::jsonb));
+end $$;
+
+-- =============================================================================
 -- 11. THE SYSTEM CHECK (Phase 11): the report below, as a function, so the
 --     owner's console runs the very same checks the SQL editor shows — any
 --     time, not only when this file is run — plus what needs attention now.
@@ -5990,6 +6819,24 @@ select 36, 'hardening: two batches, two ticks and two discovery runs queue inste
         and to_regprocedure('public.growth_outbound_health()') is not null
        then 'ok' else 'CHECK THIS' end
 union all
+select 37, 'qualification and providers (Phase 12): every fit reason belongs to a part of the 0–100 score (35/25/15, contact 15, personalization 10); the content rules refuse free or special access and picks talk; engine emails carry the offer; the live cap warms up',
+  case when not exists (select 1 from growth_outbound.fit_factor_catalog where category is null)
+        and growth_outbound.qualification_max('relevance') + growth_outbound.qualification_max('analytics')
+            + growth_outbound.qualification_max('purchase') + growth_outbound.qualification_max('contact')
+            + growth_outbound.qualification_max('personalization') = 100
+        and cardinality(growth_outbound.draft_lint('Hello', 'You get complimentary access to our premium picks.')) = 2
+        and cardinality(growth_outbound.draft_lint('Hello', 'Research, not picks: try it free for 7 days, then $49.99/month.')) = 0
+        and to_regprocedure('growth_outbound.engine_draft_problems(uuid,integer,text,text,jsonb)') is not null
+        and pg_get_functiondef('growth_outbound.sends_guard()'::regprocedure) like '%live_send_cap()%'
+        and (select growth_outbound.discovery_config_problems(discovery_config) is null from growth_outbound.settings where id = 1)
+       then 'ok — threshold ' || (select min_qualification_score from growth_outbound.settings where id = 1)
+            || ', today''s live cap ' || (growth_outbound.live_send_cap()->>'cap')
+            || ', sending domain ' || coalesce((select case when domain_auth->>'ok' = 'true' then 'checked: SPF, DKIM and DMARC in place'
+                                                            when domain_auth->>'ok' = 'false' then 'CHECKED AND FAILING'
+                                                            else 'checked: could not tell' end
+                                                  from growth_outbound.settings where id = 1 and domain_auth is not null), 'not checked yet')
+       else 'CHECK THIS' end
+union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),
   'ok'
@@ -6039,7 +6886,20 @@ set search_path = pg_catalog, public, pg_temp as $$
     select 3, 'blocked', 'Sending is blocked: ' || array_to_string(growth_outbound.send_blockers(), ', ') || '.'
       where cardinality(growth_outbound.send_blockers()) > 0
     union all
+    select 1, 'domain_auth_failed', 'The sending domain check found ' || coalesce((select string_agg(upper(k), ', ' order by k) from jsonb_each(s.domain_auth) x(k, v)
+             where k in ('spf', 'dkim', 'dmarc') and v->>'ok' = 'false'), 'a record') || ' missing on ' || coalesce(s.domain_auth->>'domain', 'the domain')
+             || '. Live sending is blocked until it is fixed in DNS and checked again (System check → Check the sending domain).'
+      from s where s.domain_auth->>'ok' = 'false'
+    union all
+    select 3, 'domain_auth_unchecked', 'The sending domain''s SPF, DKIM and DMARC have not been checked '
+             || case when s.domain_auth_checked_at is null then 'yet' else 'in 30 days' end || '. Run the check (System check → Check the sending domain).'
+      from s where not s.test_mode and (s.domain_auth_checked_at is null or s.domain_auth_checked_at < now() - interval '30 days')
+    union all
     select 4, 'cap_raised', 'The daily send cap is ' || s.max_sends_per_day || ' (the default is 20).' from s where s.max_sends_per_day > 20
+    union all
+    select 4, 'warming_up', 'The sending domain is warming up: today''s live cap is ' || (growth_outbound.live_send_cap()->>'cap')
+             || ' of ' || s.max_sends_per_day || ', rising by ' || s.warmup_step_per_week || ' a week.'
+      from s where not s.test_mode and (growth_outbound.live_send_cap()->>'warming')::boolean
   )
   select coalesce(jsonb_agg(jsonb_build_object('severity', sev, 'code', code, 'text', text) order by sev, code), '[]'::jsonb) from items;
 $$;

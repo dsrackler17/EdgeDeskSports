@@ -180,7 +180,8 @@ try {
   result(S1, 'msg_test_send_01');
 
   // live
-  r = settings({ test_mode: false, confirm_live: true, max_sends_per_day: 80, confirm_cap_increase: true });
+  // dozens of live emails in one day: the warm-up (Phase 12, its own suite) is off here
+  r = settings({ test_mode: false, confirm_live: true, max_sends_per_day: 80, warmup_enabled: false, confirm_cap_increase: true });
   chk('(setup) live, with room for this suite\'s sends', r.ok === true, r);
   prospect(2, 'Kim Ratings');
   c = card(did(2));

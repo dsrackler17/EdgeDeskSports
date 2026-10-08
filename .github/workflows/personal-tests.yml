@@ -264,6 +264,13 @@ jobs:
         run: node tools/growth/outbound_health_sql.test.js
       - name: No key, secret or service-role reference in the files; functions read only their settings and log no token
         run: node tools/growth/outbound_static.test.js
+      # Phase 12: the 0–100 qualification score, segments, the offer and
+      # content rules, warm-up, the sending domain, providers and Clay/Apollo,
+      # and the providers through the deployed functions.
+      - name: Prospects are scored 0–100 from evidence, partners are kept apart, and every engine email carries the offer
+        run: node tools/growth/outbound_qualify_sql.test.js
+      - name: Search, email lookup, verification and enrichment providers are switched on deliberately and weighed as their word
+        run: node tools/growth/outbound_providers.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

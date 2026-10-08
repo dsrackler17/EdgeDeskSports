@@ -37,6 +37,17 @@
    claims the send in the database, hands Resend exactly what the database
    composed with one key per draft (a retry can never send twice), and
    records the answer. The Sends table shows every one, and how it went.
+
+   THE MORNING (Phase 12). "This morning" says what the overnight run found
+   and qualified against the daily target, what waits for review, what may go
+   out today (the warm-up cap), the sending domain's SPF/DKIM/DMARC check and
+   the partner leads kept apart from the subscriber queue. Each card and each
+   prospect shows the 0–100 qualification score in its five parts, why they
+   fit, their address and whether anyone verified it, and where to read up on
+   them. Providers (Brave, Apollo, Hunter, Clay) are switched on and off here;
+   Clay's enrichment goes out by its table's webhook or a CSV, and comes back
+   as a CSV the database weighs as Clay's word. The page still computes
+   nothing: every number comes from the database.
    =========================================================================== */
 (function (root) {
   'use strict';
@@ -49,8 +60,15 @@
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
     test_inbox_missing: 'test mode is on but no test inbox is set',
     no_outbound_owner: 'no outbound owner is configured',
-    webhook_secret_missing: 'Resend\'s webhook signing secret is not set, so bounces and spam complaints could not reach EdgeDesk (in the Supabase SQL editor: select growth_outbound.set_webhook_secret(\'whsec_…\'))'
+    webhook_secret_missing: 'Resend\'s webhook signing secret is not set, so bounces and spam complaints could not reach EdgeDesk (in the Supabase SQL editor: select growth_outbound.set_webhook_secret(\'whsec_…\'))',
+    domain_auth_failed: 'the sending domain is missing SPF, DKIM or DMARC (System check → Check the sending domain)'
   };
+  var SEGMENTS = [['customer', 'Potential subscriber'], ['media_partner', 'Media partner'], ['affiliate', 'Affiliate'],
+    ['business_partner', 'Business partner'], ['partnership', 'Partnership (other)']];
+  var PARTS = [['relevance', 'Product relevance'], ['analytics', 'Analytics interest'], ['purchase', 'Purchase signals'],
+    ['contact', 'Contact quality'], ['personalization', 'Personalization']];
+  var PROVIDERS = [['brave', 'Brave', 'search'], ['apollo_search', 'Apollo people search', 'search'], ['hunter', 'Hunter', 'email lookup and verification'],
+    ['apollo', 'Apollo email match', 'email lookup'], ['clay', 'Clay', 'enrichment']];
   var SEND_WHY = {
     resend_unreachable: 'Resend did not answer; press Send again (the same draft can never be sent twice)',
     resend_key_refused: 'Resend refused the API key: check RESEND_API_KEY in the Edge Function secrets',
@@ -82,8 +100,12 @@
     ['Morning run', [['automation_timezone', 'text', 'Your time zone (e.g. America/New_York)'], ['automation_start_hour', 'int', 'Starts at (hour, 0–23)', 0, 23],
                      ['automation_hours', 'int', 'For how many hours', 1, 12]]],
     ['Limits', [['max_sends_per_day', 'int', 'Daily send cap (live)', 1, 200], ['max_test_sends_per_day', 'int', 'Daily test-send cap', 1, 100],
-                ['daily_prospect_target', 'int', 'Prospects to prepare per day', 1, 100]]],
-    ['Gates', [['min_fit_score', 'int', 'Minimum fit score', 0, 100], ['min_identity_confidence', 'num', 'Minimum identity confidence'],
+                ['daily_prospect_target', 'int', 'Candidates to read per day (at most)', 1, 100],
+                ['daily_qualified_target', 'int', 'New qualified subscribers to aim for per day', 1, 50]]],
+    ['Warm-up', [['warmup_enabled', 'bool', 'Warm up the sending domain: the live cap grows week by week up to the daily cap'],
+                 ['warmup_start_per_day', 'int', 'Live emails a day in the first week', 1, 200], ['warmup_step_per_week', 'int', 'Added each week', 0, 100]]],
+    ['Gates', [['min_qualification_score', 'int', 'Minimum qualification score (0–100)', 0, 100],
+               ['min_fit_score', 'int', 'Minimum fit score', 0, 100], ['min_identity_confidence', 'num', 'Minimum identity confidence'],
                ['min_role_confidence', 'num', 'Minimum role confidence'], ['min_research_confidence', 'num', 'Minimum research confidence'],
                ['min_email_confidence', 'num', 'Minimum email confidence']]],
     ['Follow-ups', [['followup_enabled', 'bool', 'Follow-up 1 (still needs your approval)'], ['followup_delay_days', 'int', 'Days before follow-up 1', 2, 30],
@@ -136,6 +158,7 @@
     show('growth');
     DETAIL = null; CATALOG = null; QROWS = []; PICKED = {}; RES = null;
     ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns',
+     'mnChips', 'mnKpis', 'mnPartners', 'dvSwitches', 'dvWaiting', 'hcDomainOut',
      'rsChips', 'rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest', 'hcTop', 'hcSummary', 'hcAttention', 'hcChecks'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
@@ -170,7 +193,8 @@
       (s.test_mode ? '<span class="chip test" data-mode="test">TEST MODE — sends go only to ' + esc(s.test_inbox || '(no test inbox set)') + '</span>'
                    : '<span class="chip live" data-mode="live">LIVE — approved drafts reach real prospects</span>')
       + '<span class="chip ' + (s.automation_enabled ? 'ok' : 'off') + '">automation ' + (s.automation_enabled ? 'on' : 'off') + ' · never approves or sends</span>'
-      + '<span class="chip">live sends today ' + esc(t.live_sends || 0) + ' / ' + esc(s.max_sends_per_day) + '</span>'
+      + '<span class="chip">live sends today ' + esc(t.live_sends || 0) + ' / ' + esc(t.live_cap && t.live_cap.cap != null ? t.live_cap.cap : s.max_sends_per_day)
+      + (t.live_cap && t.live_cap.warming ? ' (warming up, week ' + esc(t.live_cap.week) + ')' : '') + '</span>'
       + '<span class="chip">test sends today ' + esc(t.test_sends || 0) + ' / ' + esc(s.max_test_sends_per_day) + '</span>'
       + webhookChip(s.webhook);
     var b = s.send_blockers || [];
@@ -194,8 +218,72 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadHealth(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadMorning(), loadOverview(), loadHealth(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
+  /* ── the 0–100 qualification score, in its parts (Phase 12) ─────────── */
+  // the Phase 12 SQL is installed: the database reports its settings (and only then are they shown or sent)
+  function p12() { return !!SETTINGS && 'min_qualification_score' in SETTINGS; }
+  function qualBlock(q, min) {
+    if (q === undefined) return '';   /* the SQL is older than the score */
+    if (!q || q.score == null) return '<div class="note" data-qual="none">No qualification score yet: nothing is known about them.</div>';
+    var parts = q.parts || {};
+    var h = '<div class="qual" data-qual="' + esc(q.score) + '">' + PARTS.map(function (x) {
+      var pt = parts[x[0]] || {}, mx = pt.max || 0, v = pt.points || 0;
+      return '<div data-part="' + esc(x[0]) + '"><b>' + esc(v) + ' / ' + esc(mx) + '</b>' + esc(x[1])
+        + '<div class="meter"><span style="width:' + (mx ? Math.max(0, Math.min(100, Math.round(100 * v / mx))) : 0) + '%"></span></div></div>';
+    }).join('') + (parts.penalties && parts.penalties.points ? '<div data-part="penalties"><b>' + esc(parts.penalties.points) + '</b>Penalties</div>' : '') + '</div>';
+    if (q.why) h += '<div class="sub" data-why="1">Why they fit: ' + esc(q.why) + '.</div>';
+    if (q.against) h += '<div class="sub" data-against="1">Against: ' + esc(q.against) + '.</div>';
+    var c = parts.contact || {};
+    if (c.email_status) h += '<div class="sub">Contact: address ' + esc(c.email_status) + ' (' + esc(c.email || 0) + '), identity ' + esc(c.identity || 0) + ', own site or profile ' + esc(c.own_site_or_profile || 0) + '; '
+      + esc((parts.personalization || {}).citeable_facts || 0) + ' fact(s) an email may cite.' + (min != null ? ' The bar is ' + esc(min) + '.' : '') + '</div>';
+    return h;
+  }
+  function segName(k) { return label(SEGMENTS, k || 'customer'); }
+
+  /* ── this morning (Phase 12) ──────────────────────────────────────────── */
+  function loadMorning() {
+    if (!OWNER) return Promise.resolve();
+    return Promise.all([S.rpc('growth_outbound_morning', {}), S.rpc('growth_outbound_partner_leads', { p_limit: 50 })]).then(function (r) {
+      paintMorning(r[0] || {}, r[1] || []);
+    }, function (e) {
+      if (e && e.kind === 'not_installed') {
+        $('mnChips').innerHTML = '<span class="chip off">The morning summary arrives with the Phase 12 SQL: run supabase/growth_outbound.sql again.</span>';
+        $('mnKpis').innerHTML = ''; $('mnPartners').innerHTML = '';
+        return;
+      }
+      throw e;
+    });
+  }
+  function domainChip(da, at) {
+    if (!da) return '<span class="chip off" data-domain="unchecked">Sending domain: not checked yet (System check → Check the sending domain)</span>';
+    var bad = ['spf', 'dkim', 'dmarc'].filter(function (k) { return da[k] && da[k].ok === false; }).map(function (k) { return k.toUpperCase(); });
+    if (da.ok === true) return '<span class="chip ok" data-domain="ok">' + esc(da.domain) + ': SPF, DKIM and DMARC in place' + (da.dmarc && da.dmarc.policy ? ' (DMARC p=' + esc(da.dmarc.policy) + ')' : '') + ' · ' + esc(when(at)) + '</span>';
+    if (da.ok === false) return '<span class="chip warn" data-domain="failed">' + esc(da.domain) + ': ' + esc(bad.join(', ') || 'a record') + ' missing — live sending blocked</span>';
+    return '<span class="chip off" data-domain="unknown">' + esc(da.domain) + ': DNS could not be read · ' + esc(when(at)) + '</span>';
+  }
+  function paintMorning(m, partners) {
+    var cap = m.live_cap || {};
+    var on = PROVIDERS.filter(function (x) { return (m.providers || {})[x[0]] === true; }).map(function (x) { return x[1]; });
+    $('mnChips').innerHTML = '<span class="chip" data-mn="day">' + esc(m.day) + ' · ' + esc(m.timezone) + '</span>'
+      + domainChip(m.domain_auth, m.domain_auth_checked_at)
+      + '<span class="chip ' + (cap.warming ? 'warn' : '') + '" data-mn="cap">Today\'s live cap ' + esc(cap.cap) + (cap.warming ? ' (warming up, week ' + esc(cap.week) + ' of the ramp to ' + esc(cap.max) + ')' : '') + '</span>'
+      + (on.length ? '<span class="chip ok" data-mn="paid">Paid providers on: ' + esc(on.join(', ')) + '</span>' : '');
+    $('mnKpis').innerHTML = kpi('Qualified today', (m.qualified_today || 0) + ' of ' + (m.qualified_target || 0), 'new potential subscribers at ' + (m.min_qualification_score != null ? m.min_qualification_score + '+' : 'the bar'))
+      + kpi('Waiting for review', m.review || 0, 'drafts for you') + kpi('Approved, not sent', m.approved_unsent || 0)
+      + kpi('Sent today', (m.sent_today || 0) + ' / ' + (cap.cap != null ? cap.cap : '—'), m.test_mode ? 'test mode: only to your inbox' : 'live')
+      + kpi('Researched today', m.researched_today || 0) + kpi('Addresses to verify', m.verification_waiting || 0)
+      + kpi('Waiting for enrichment', m.enrichment_waiting || 0, 'only an address is missing') + kpi('Partner leads, 7 days', m.partner_leads_7d || 0);
+    $('mnPartnersSum').textContent = 'Partner leads (' + partners.length + ')';
+    $('mnPartners').innerHTML = '<tr><th>Lead</th><th>Kind</th><th>Organization</th><th class="r">Score</th><th>Address</th><th>Status</th></tr>'
+      + (partners.length ? partners.map(function (x) {
+        return '<tr><td><button type="button" class="lnk" data-open="' + esc(x.id) + '">' + esc(x.full_name || '(name not established)') + '</button></td>'
+          + '<td><span class="pill seg">' + esc(segName(x.campaign_type)) + '</span></td><td>' + esc(x.organization || '—') + '</td>'
+          + '<td class="r">' + (x.qualification_score == null ? '—' : esc(x.qualification_score)) + '</td>'
+          + '<td class="mono">' + esc(x.email || '—') + (x.email ? ' <span class="pill">' + esc(x.email_status) + '</span>' : '') + '</td><td>' + esc(STATUS[x.status] || x.status) + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" class="dim">No partner leads.</td></tr>');
+  }
+
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
       paintMode(o.settings); paintSettings(o.settings);
@@ -211,17 +299,19 @@
     var st = $('obStatus').value || null, q = $('obSearch').value.trim() || null;
     return S.rpc('growth_outbound_prospects', { p_status: st, p_search: q, p_limit: 100, p_offset: 0 }).then(function (r) {
       var rows = (r && r.rows) || [];
-      $('obProspects').innerHTML = '<tr><th>Prospect</th><th>Organization</th><th>Type · focus</th><th class="r">Fit</th><th>Confidence (id · role · email · research)</th><th>Email</th><th>Status</th><th>Updated</th></tr>'
+      $('obProspects').innerHTML = '<tr><th>Prospect</th><th>Organization</th><th>Type · focus</th><th class="r">Score</th><th class="r">Fit</th><th>Confidence (id · role · email · research)</th><th>Email</th><th>Status</th><th>Updated</th></tr>'
         + (rows.length ? rows.map(function (x) {
           return '<tr><td><button type="button" class="lnk" data-open="' + esc(x.id) + '">' + esc(x.full_name || '(name not established)') + '</button>'
             + (x.is_test ? ' <span class="pill test">TEST</span>' : '') + (x.suppressed ? ' <span class="pill bad">suppressed</span>' : '')
-            + (x.duplicate_of ? ' <span class="pill bad">duplicate</span>' : '') + '</td>'
+            + (x.duplicate_of ? ' <span class="pill bad">duplicate</span>' : '')
+            + (x.campaign_type && x.campaign_type !== 'customer' ? ' <span class="pill seg">' + esc(segName(x.campaign_type)) + '</span>' : '') + '</td>'
             + '<td>' + esc(x.organization || '—') + '</td><td>' + esc(x.prospect_type) + (x.sports_focus && x.sports_focus.length ? ' · ' + esc(x.sports_focus.join(', ')) : '') + '</td>'
+            + '<td class="r"><b>' + (x.qualification_score == null ? '—' : esc(x.qualification_score)) + '</b></td>'
             + '<td class="r">' + (x.fit_score == null ? '—' : esc(x.fit_score)) + '</td>'
             + '<td class="conf"><b>' + num(x.identity_confidence) + '</b> · ' + num(x.role_confidence) + ' · <b>' + num(x.email_confidence) + '</b> · ' + num(x.research_confidence) + '</td>'
             + '<td class="mono">' + esc(x.email || '—') + ' <span class="pill">' + esc(x.email_status) + '</span></td>'
             + '<td>' + esc(STATUS[x.status] || x.status) + (x.gates && x.gates.length ? '<div class="sub">' + esc(clip(x.gates.join('; '), 120)) + '</div>' : '') + '</td><td>' + when(x.updated_at) + '</td></tr>';
-        }).join('') : '<tr><td colspan="8">No prospects ' + (st ? 'in "' + esc(STATUS[st] || st) + '"' : 'yet') + '. Add one below; automatic discovery arrives in a later phase, and nothing is invented to fill this table.</td></tr>');
+        }).join('') : '<tr><td colspan="9">No prospects ' + (st ? 'in "' + esc(STATUS[st] || st) + '"' : 'yet') + '. Search under Discover and research, or add one below; nothing is invented to fill this table.</td></tr>');
     });
   }
   function loadSupp() {
@@ -262,6 +352,8 @@
     FIELDS.forEach(function (g) {
       g[1].forEach(function (f) {
         var el = $('obf_' + f[0]); if (!el) return;
+        // a setting the database did not report is one its SQL does not have yet: never sent
+        if (SETTINGS && !(f[0] in SETTINGS)) return;
         var cur = SETTINGS ? SETTINGS[f[0]] : undefined, v;
         if (f[1] === 'bool') v = el.checked;
         else if (f[1] === 'int') v = el.value === '' ? null : parseInt(el.value, 10);
@@ -282,6 +374,14 @@
     if (p.max_sends_per_day != null && p.max_sends_per_day > s.max_sends_per_day) {
       if (!root.confirm('You are about to RAISE the daily live send cap from ' + s.max_sends_per_day + ' to ' + p.max_sends_per_day + '.\n\nScaling should be deliberate. Continue?')) {
         say('obSetMsg', '', 'Not saved: the cap increase was not confirmed.'); return Promise.resolve();
+      }
+      p.confirm_cap_increase = true;
+    }
+    /* LOOSENING THE WARM-UP raises today's cap too: said, confirmed, flagged. */
+    if ((p.warmup_enabled === false && s.warmup_enabled) || (p.warmup_start_per_day != null && p.warmup_start_per_day > s.warmup_start_per_day)
+        || (p.warmup_step_per_week != null && p.warmup_step_per_week > s.warmup_step_per_week)) {
+      if (!root.confirm('This raises how many live emails may go out a day while the sending domain warms up.\n\nA new domain that sends too much too soon lands in spam. Continue?')) {
+        say('obSetMsg', '', 'Not saved: the warm-up change was not confirmed.'); return Promise.resolve();
       }
       p.confirm_cap_increase = true;
     }
@@ -337,7 +437,8 @@
     var h = '<div class="row" style="align-items:center"><div><div class="pname">' + esc(p.full_name || '(name not established)')
       + (p.is_test ? ' <span class="pill test">TEST</span>' : '') + (p.suppressed ? ' <span class="pill bad">suppressed</span>' : '') + '</div>'
       + '<div class="sub">' + esc([p.job_title, p.organization].filter(Boolean).join(' · ') || 'role not established') + ' · ' + esc(p.prospect_type) + '</div></div>'
-      + '<span class="sp"></span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
+      + '<span class="sp"></span><span class="pill ' + (p.campaign_type && p.campaign_type !== 'customer' ? 'seg' : '') + '" data-seg="' + esc(p.campaign_type || 'customer') + '">' + esc(segName(p.campaign_type)) + '</span>'
+      + '<span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
     if (!a.evaluated_at) h += '<div class="block">Not assessed yet: run supabase/growth_outbound.sql again so the database can evaluate this prospect. Nothing here counts as ready until it has.</div>';
     else if (p.status === 'suppressed' || p.status === 'rejected') h += '<div class="block">' + esc(STATUS[p.status]) + (p.status_reason ? ': ' + esc(p.status_reason) : '') + '</div>';
     else if (gates.length) h += '<div class="block"><b>Not ready to contact.</b> ' + gates.map(esc).join(' · ') + '</div>';
@@ -348,7 +449,11 @@
       + bar('Identity', p.identity_confidence, th.identity) + bar('Role', p.role_confidence, th.role, 'a gate only when a draft cites it', true)
       + bar('Email', p.email_confidence, th.email, p.email ? p.email_status : 'no address')
       + bar('Research', p.research_confidence, th.research, a.research && a.research.from === 'draft_claims' ? 'weakest claim a draft cites' : 'best fact found')
-      + bar('Fit', p.fit_score, th.fit) + '</div>';
+      + bar('Fit', p.fit_score, th.fit) + bar('Qualification', p.qualification_score, th.qualification) + '</div>';
+    if (p.qualification !== undefined) h += '<h3>Qualification</h3>' + qualBlock(p.qualification, th.qualification)
+      + '<div class="row" style="margin-top:8px"><div class="f" style="max-width:240px"><label for="pdSeg">Who they are to EdgeDesk</label><select id="pdSeg">' + options(SEGMENTS, p.campaign_type || 'customer') + '</select></div>'
+      + '<button type="button" class="g" id="pdSegSave">Change</button></div><div class="msg" id="pdSegMsg"></div>'
+      + '<div class="note">Only potential subscribers are drafted by the engine. A partner lead is kept apart; moving someone away from "Potential subscriber" cancels a subscriber email waiting for them.</div>';
     if ((p.warnings || []).length) h += '<div class="chips">' + p.warnings.map(function (w) { return '<span class="chip warn">' + esc(warnText(w)) + '</span>'; }).join('') + '</div>';
     if ((d.related || []).length) h += '<div class="note">' + d.related.map(function (r) {
       return (r.relation === 'duplicate_of' ? 'Duplicate of ' : 'Possibly the same person as ') + '<button type="button" class="lnk" data-open="' + esc(r.id) + '">'
@@ -558,7 +663,7 @@
     not_found: 'it is no longer there'
   };
   function researchWhy(r) { return RESEARCH_WHY[r && (r.reason || r.code)] || (r && (r.detail || r.reason)) || 'it could not be done'; }
-  var BUDGET_KEYS = ['search', 'fetch', 'llm', 'email_finder', 'email_verifier'];
+  var BUDGET_KEYS = ['search', 'fetch', 'llm', 'email_finder', 'email_verifier', 'enrichment'];
   function used(b) { return b ? esc(b.used) + ' / ' + esc(b.cap) : '—'; }
   function provChip(on, what, name, env, b, b2) {
     return on ? '<span class="chip ok" data-prov="' + esc(what) + '">' + esc(what) + ': ' + esc(name) + ' · ' + used(b) + (b2 ? ' · checks ' + used(b2) : '') + ' today</span>'
@@ -567,11 +672,28 @@
   function paintResearch(prov, ov) {
     ov = ov || {};
     var b = ov.budget || {};
+    var det = prov && prov.detail ? prov.detail : null;
+    var named = function (role) {
+      var on = det ? PROVIDERS.filter(function (x) { return x[2].indexOf(role) >= 0 && det[x[0]] && det[x[0]].on; }).map(function (x) { return x[1]; }) : [];
+      return on.length ? on.join(' + ') : null;
+    };
     $('dvProviders').innerHTML = prov
-      ? provChip(prov.search, 'Search', 'Brave', 'BRAVE_SEARCH_API_KEY', b.search) + provChip(prov.llm, 'Reading', 'Claude', 'ANTHROPIC_API_KEY', b.llm)
-        + provChip(prov.email, 'Email', 'Hunter', 'HUNTER_API_KEY', b.email_finder, b.email_verifier)
+      ? provChip(prov.search, 'Search', named('search') || 'Brave', 'BRAVE_SEARCH_API_KEY', b.search) + provChip(prov.llm, 'Reading', 'Claude', 'ANTHROPIC_API_KEY', b.llm)
+        + provChip(prov.email, 'Email', named('email') || 'Hunter', 'HUNTER_API_KEY', b.email_finder, b.email_verifier)
+        + (det && det.clay && det.clay.on ? '<span class="chip ok" data-prov="Enrichment">Enrichment: Clay · ' + used(b.enrichment) + ' today</span>' : '')
         + '<span class="chip">pages read today ' + used(b.fetch) + '</span>'
       : '';
+    /* each provider: its key set or not, and the owner's switch */
+    var sw = ov.providers || {};
+    $('dvSwitches').innerHTML = PROVIDERS.map(function (x) {
+      var d = det ? det[x[0]] : null, paid = x[0] === 'apollo' || x[0] === 'apollo_search' || x[0] === 'clay';
+      var checked = paid ? sw[x[0]] === true : sw[x[0]] !== false;
+      return '<div class="f" style="min-width:230px"><label class="chk"><input type="checkbox" data-sw="' + esc(x[0]) + '"' + (checked ? ' checked' : '') + '> ' + esc(x[1])
+        + ' <span class="sub">(' + esc(x[2]) + ')</span></label><div class="sub" data-swkey="' + esc(x[0]) + '">'
+        + (d ? (d.configured ? (d.on ? 'on' : 'key set, switched off') : 'not set up: ' + esc(d.key)) : (paid ? 'off until switched on' : '')) + '</div></div>';
+    }).join('');
+    $('dvWaiting').textContent = (ov.verification_waiting || 0) + ' address(es) waiting for a verifier · ' + (ov.enrichment_waiting || 0) + ' prospect(s) waiting for enrichment (only an address is missing)'
+      + (ov.daily_qualified_target ? ' · daily target: ' + ov.daily_qualified_target + ' qualified' : '');
     if (document.activeElement !== $('dvQueries')) $('dvQueries').value = (ov.queries || []).join('\n');
     BUDGET_KEYS.forEach(function (k) { var el = $('dvB_' + k); if (el && document.activeElement !== el) el.value = b[k] ? b[k].cap : ''; });
     var counts = ov.candidates || {};
@@ -631,7 +753,7 @@
   }
   function setBusy(on) {
     BUSY = !!on;
-    ['dvSearch', 'dvSaved', 'dvNext'].forEach(function (id) { if ($(id)) $(id).disabled = BUSY; });
+    ['dvSearch', 'dvSaved', 'dvNext', 'dvVerify', 'dvClayPush'].forEach(function (id) { if ($(id)) $(id).disabled = BUSY; });
     Array.prototype.forEach.call(document.querySelectorAll('[data-research],#pdResearchAgain'), function (x) { x.disabled = BUSY; });
   }
   function researchFail(id, e) {
@@ -694,13 +816,121 @@
     var qs = $('dvQueries').value.split('\n').map(function (x) { return x.replace(/\s+/g, ' ').trim(); }).filter(Boolean);
     var budget = {};
     BUDGET_KEYS.forEach(function (k) { var v = String($('dvB_' + k).value || '').trim(); if (v !== '') budget[k] = /^\d+$/.test(v) ? Number(v) : v; });
+    var switches = {};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-sw]'), function (el) { switches[el.getAttribute('data-sw')] = !!el.checked; });
     var cfg = Object.assign({}, (SETTINGS && SETTINGS.discovery_config) || {}, { queries: qs, budget: budget });
+    // the switches (and the enrichment budget) only to a database that has them
+    if (Object.keys(switches).length && p12()) cfg.providers = switches;
+    if (!p12()) delete budget.enrichment;
     return S.rpc('growth_outbound_settings_update', { p: { discovery_config: cfg } }).then(function (r) {
       if (!r || r.ok === false) { say('dvMsg', 'err', 'Not saved: ' + ((r && (r.detail || r.reason)) || 'refused') + '.'); return; }
       SETTINGS = r.settings || SETTINGS;
-      say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ' and the daily budget.');
+      say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ', the daily budget and the providers.');
       return loadResearch();
     }, function (e) { fail('dvMsg', e); });
+  }
+
+  /* ── addresses and enrichment (Phase 12) ─────────────────────────────── */
+  var ENRICH_WHY = {
+    verifier_not_configured: 'No verifier is set up: HUNTER_API_KEY in Supabase → Edge Functions → Secrets, with Hunter switched on.',
+    enrichment_not_configured: 'Clay is not set up: CLAY_WEBHOOK_URL (your Clay table\'s webhook) in the Edge Function secrets, and Clay switched on above.',
+    too_many_running: 'Three research runs are already going; wait for one to finish.'
+  };
+  function enrichWhy(r) { return ENRICH_WHY[r && (r.reason || r.code)] || (r && (r.detail || r.reason)) || 'it could not be done'; }
+  function enrichFail(e) {
+    if (e && e.kind === 'not_installed') { say('dvEnrichMsg', 'err', 'The research function is not deployed yet: deploy supabase/functions/growth_outbound_research.'); return; }
+    if (e && e.code && ENRICH_WHY[e.code]) { say('dvEnrichMsg', 'err', ENRICH_WHY[e.code]); return; }
+    fail('dvEnrichMsg', e);
+  }
+  function verifyWaiting() {
+    if (BUSY) return Promise.resolve();
+    setBusy(true); say('dvEnrichMsg', '', 'Asking the verifier…');
+    return S.invoke('growth_outbound_research', { action: 'verify', limit: 10 }, { timeoutMs: 120000 }).then(function (r) {
+      if (!r || r.ok === false) { say('dvEnrichMsg', 'err', 'Nothing verified: ' + enrichWhy(r) + '.'); return; }
+      say('dvEnrichMsg', 'ok', r.asked ? 'Asked about ' + r.asked + ' address' + (r.asked === 1 ? '' : 'es') + ': ' + r.valid + ' verified.' : 'No address is waiting for a verifier.');
+    }, enrichFail).then(function () { setBusy(false); return Promise.all([loadResearch(), loadMorning(), loadProspects()]); });
+  }
+  function clayPush() {
+    if (BUSY) return Promise.resolve();
+    if (!root.confirm('Send the prospects waiting for enrichment to your Clay table?\n\nClay is told who they are and where they are (name, organization, site, profiles) and nothing else. Each costs Clay credits; each prospect is sent at most once in 14 days.')) return Promise.resolve();
+    setBusy(true); say('dvEnrichMsg', '', 'Sending to Clay…');
+    return S.invoke('growth_outbound_research', { action: 'enrich', limit: 10 }, { timeoutMs: 120000 }).then(function (r) {
+      if (!r || r.ok === false) { say('dvEnrichMsg', 'err', 'Not sent to Clay: ' + enrichWhy(r) + (r && r.failed && r.failed.length ? ' (' + r.failed[0].why + ')' : '') + '.'); return; }
+      say('dvEnrichMsg', 'ok', r.pushed ? 'Sent ' + r.pushed + ' to Clay. When Clay has enriched them, export the table as CSV and import it here.' : 'Nobody is waiting for enrichment.');
+    }, enrichFail).then(function () { setBusy(false); return loadResearch(); });
+  }
+  function csvCell(v) { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  var EXPORT_COLS = ['edgedesk_ref', 'full_name', 'first_name', 'last_name', 'organization', 'job_title', 'domain', 'website_url', 'linkedin_url', 'x_url', 'newsletter_url'];
+  function clayExport() {
+    return S.rpc('growth_outbound_enrichment_export', { p_limit: 100 }).then(function (r) {
+      var rows = (r && r.rows) || [];
+      if (!rows.length) { say('dvEnrichMsg', '', 'Nobody is waiting for enrichment.'); return; }
+      var csv = EXPORT_COLS.join(',') + '\n' + rows.map(function (x) { return EXPORT_COLS.map(function (k) { return csvCell(x[k]); }).join(','); }).join('\n') + '\n';
+      if (typeof Blob === 'function' && root.URL && root.URL.createObjectURL) {
+        var a = document.createElement('a');
+        a.href = root.URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        a.download = 'edgedesk-for-clay-' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+      }
+      say('dvEnrichMsg', 'ok', 'Exported ' + rows.length + ' prospect' + (rows.length === 1 ? '' : 's') + ' for Clay (marked as sent: not again for 14 days). Keep the edgedesk_ref column in Clay so the results come back to the right person.');
+      return loadResearch();
+    }, function (e) { fail('dvEnrichMsg', e); });
+  }
+  /* a CSV, quotes and all; the database decides what any of it is worth */
+  function parseCsv(text) {
+    var rows = [], row = [], cell = '', q = false, i, ch;
+    text = String(text || '').replace(/^\uFEFF/, '');
+    for (i = 0; i < text.length; i++) {
+      ch = text[i];
+      if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+      else if (ch === '"') q = true;
+      else if (ch === ',') { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (c) { return String(c).trim() !== ''; }); });
+  }
+  var CLAY_COLS = { edgedesk_ref: 'ref', ref: 'ref', prospect_id: 'ref', full_name: 'full_name', name: 'full_name', 'full name': 'full_name',
+    job_title: 'job_title', title: 'job_title', 'job title': 'job_title', organization: 'organization', company: 'organization', 'company name': 'organization',
+    company_name: 'organization', email: 'email', 'work email': 'email', work_email: 'email', 'email address': 'email', linkedin_url: 'linkedin_url',
+    linkedin: 'linkedin_url', 'linkedin profile': 'linkedin_url', 'linkedin url': 'linkedin_url', x_url: 'x_url', twitter: 'x_url', twitter_url: 'x_url',
+    website_url: 'website_url', website: 'website_url', newsletter_url: 'newsletter_url', newsletter: 'newsletter_url', source_url: 'source_url', source: 'source_url' };
+  function clayRows(text) {
+    var t = parseCsv(text);
+    if (t.length < 2) return [];
+    var head = t[0].map(function (h) { return CLAY_COLS[String(h).trim().toLowerCase()] || null; });
+    return t.slice(1).map(function (r) {
+      var o = {};
+      head.forEach(function (k, i) { var v = String(r[i] == null ? '' : r[i]).trim(); if (k && v && !o[k]) o[k] = v.slice(0, 500); });
+      return o;
+    }).filter(function (o) { return Object.keys(o).length; });
+  }
+  function clayImport(file) {
+    if (!file) return Promise.resolve();
+    return new Promise(function (ok, no) { var fr = new FileReader(); fr.onload = function () { ok(fr.result); }; fr.onerror = no; fr.readAsText(file); }).then(function (text) {
+      var rows = clayRows(text);
+      if (!rows.length) { say('dvEnrichMsg', 'err', 'Nothing to import: the CSV needs a header row with columns such as edgedesk_ref, full_name, email, linkedin_url.'); return; }
+      if (rows.length > 200) { say('dvEnrichMsg', 'err', 'At most 200 rows at a time; this file has ' + rows.length + '.'); return; }
+      return S.rpc('growth_outbound_provider_import', { p_provider: 'clay', p_rows: rows }).then(function (r) {
+        if (!r || r.ok === false) { say('dvEnrichMsg', 'err', 'Not imported: ' + why(r) + '.'); return; }
+        say('dvEnrichMsg', r.imported ? 'ok' : 'err', 'Imported ' + r.imported + ' of ' + rows.length + ' row' + (rows.length === 1 ? '' : 's') + ' as Clay\'s word'
+          + (r.unmatched ? '; ' + r.unmatched + ' named nobody we know (Clay adds to prospects; it never creates them)' : '')
+          + (r.refused ? '; ' + r.refused + ' refused' : '') + '. Addresses from Clay stay unverified until the verifier or you confirm them.');
+        return Promise.all([loadResearch(), loadMorning(), loadProspects(), loadActivity()]);
+      });
+    }, function (e) { fail('dvEnrichMsg', e); }).then(function () { if ($('dvClayFile')) $('dvClayFile').value = ''; });
+  }
+  function setSegment() {
+    if (!DETAIL) return Promise.resolve();
+    var id = DETAIL.prospect.id, seg = $('pdSeg').value;
+    if (seg === (DETAIL.prospect.campaign_type || 'customer')) { say('pdSegMsg', '', 'No change.'); return Promise.resolve(); }
+    var reason = root.prompt('Mark them as "' + segName(seg) + '"?' + (seg !== 'customer' ? ' A subscriber email waiting for them is cancelled.' : '') + ' Why (optional)?');
+    if (reason == null) return Promise.resolve();
+    return S.rpc('growth_outbound_prospect_set_segment', { p_id: id, p_segment: seg, p_reason: String(reason).trim() || null }).then(function (r) {
+      if (!r || r.ok === false) { say('pdSegMsg', 'err', 'Not changed: ' + why(r)); return; }
+      return Promise.all([refreshAfter(id), loadMorning()]);
+    }, function (e) { fail('pdSegMsg', e); });
   }
 
   /* ── the system check (Phase 11) ─────────────────────────────────────── */
@@ -721,6 +951,23 @@
       return '<tr' + (c.ok ? '' : ' data-failing="1"') + '><td>' + esc(c.step) + '</td><td class="wrap">' + esc(c.item) + '</td><td class="wrap">'
         + '<span class="pill ' + (c.ok ? 'on' : 'bad') + '">' + (c.ok ? 'ok' : 'CHECK') + '</span> ' + (c.ok && c.outcome === 'ok' ? '' : esc(c.outcome)) + '</td></tr>';
     }).join('');
+  }
+  function checkDomain() {
+    say('hcMsg', '', 'Reading SPF, DKIM and DMARC for the sending domain…');
+    $('hcDomain').disabled = true;
+    return S.invoke('growth_outbound_send', { action: 'domain_check' }, { timeoutMs: 60000 }).then(function (r) {
+      var c = (r && r.check) || null;
+      if (!r || r.ok === false || !c) { say('hcMsg', 'err', 'Not checked: ' + why(r) + '.'); return; }
+      say('hcMsg', c.ok === true ? 'ok' : 'err', c.ok === true ? c.domain + ': SPF, DKIM and DMARC are in place.' : c.ok === false ? c.domain + ': a record is missing — live sending is blocked until it is fixed and checked again.' : c.domain + ': DNS could not be read; nothing was decided.');
+      $('hcDomainOut').innerHTML = '<div class="tw"><table data-domaincheck="1"><tr><th>Record</th><th>Result</th><th>Detail</th></tr>' + ['spf', 'dkim', 'dmarc', 'provider'].filter(function (k) { return c[k]; }).map(function (k) {
+        var x = c[k];
+        return '<tr><td>' + esc(k === 'provider' ? 'Resend' : k.toUpperCase()) + '</td><td><span class="pill ' + (x.ok === true ? 'on' : x.ok === false ? 'bad' : '') + '">' + (x.ok === true ? 'ok' : x.ok === false ? 'missing' : 'unknown') + '</span></td><td class="wrap mono">' + esc(clip(x.detail || '', 240)) + '</td></tr>';
+      }).join('') + '</table></div>';
+      return Promise.all([loadHealth(), loadMorning(), loadOverview()]);
+    }, function (e) {
+      if (e && e.kind === 'not_installed') { say('hcMsg', 'err', 'The send function is not deployed yet: deploy supabase/functions/growth_outbound_send.'); return; }
+      fail('hcMsg', e);
+    }).then(function () { $('hcDomain').disabled = false; });
   }
   function loadHealth() {
     if (!OWNER) return Promise.resolve();
@@ -814,7 +1061,9 @@
   }
 
   /* ── the morning run (Phase 9) ───────────────────────────────────────── */
-  var STEP = { discover: 'search the saved searches', research: 'research the next new candidate', draft: 'write drafts for whoever is due' };
+  var STEP = { discover: 'search the saved searches', research: 'research the next new candidate', draft: 'write drafts for whoever is due',
+    verify: 'ask the verifier about waiting addresses' };
+  function stepName(st) { return st && st.kind === 'research' && st.input && st.input.verify ? STEP.verify : STEP[st && st.kind] || (st && st.kind); }
   function hh(n) { return (n < 10 ? '0' : '') + n + ':00'; }
   function paintAutomation(a) {
     var p = a.plan || {}, t = p.today || {}, sc = a.scheduler || {};
@@ -826,17 +1075,19 @@
     if (sc.ticking) h += '<span class="chip ok" data-am="ticking">Clock: last tick ' + esc(when(sc.last_tick_at)) + '</span>';
     else h += '<span class="chip off" data-am="noclock">The clock is not running' + (sc.last_tick_at ? ' (last tick ' + esc(when(sc.last_tick_at)) + ')' : '')
       + ': run supabase/growth_outbound_cron.sql in the SQL editor</span>';
-    h += '<span class="chip" data-am="next">' + (p.step ? 'Next: ' + esc(STEP[p.step.kind] || p.step.kind) : 'Now: ' + esc(p.reason || 'nothing to do')) + '</span>';
+    h += '<span class="chip" data-am="next">' + (p.step ? 'Next: ' + esc(stepName(p.step)) : 'Now: ' + esc(p.reason || 'nothing to do')) + '</span>';
     $('amChips').innerHTML = h;
-    $('amToday').innerHTML = kpi('Searched today', t.searched ? 'yes' : 'not yet') + kpi('Researched today', (t.researched || 0) + ' of ' + (t.research_target || 0))
-      + kpi('Drafted today', (t.drafted || 0) + ' of ' + (t.draft_cap || 0), 'the daily send cap') + kpi('New candidates', t.new_candidates || 0) + kpi('Due a draft', t.due || 0);
+    $('amToday').innerHTML = kpi('Searched today', t.searched ? 'yes' : 'not yet')
+      + (t.qualified_target != null ? kpi('Qualified today', (t.qualified || 0) + ' of ' + t.qualified_target, 'new potential subscribers') : '')
+      + kpi('Researched today', (t.researched || 0) + ' of ' + (t.research_target || 0), t.qualified_target != null ? 'at most' : '')
+      + kpi('Drafted today', (t.drafted || 0) + ' of ' + (t.draft_cap || 0), 'today\'s send cap') + kpi('New candidates', t.new_candidates || 0) + kpi('Due a draft', t.due || 0);
     var runs = a.runs || [];
     $('amRuns').innerHTML = '<tr><th>When</th><th>Step</th><th>Status</th><th>Result</th><th>Note</th></tr>'
       + (runs.length ? runs.map(function (r) {
         var c = r.counts || {};
         var res = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '') : r.kind === 'draft' ? (c.drafted != null ? c.drafted + ' drafted' : '')
           : (c.outcome ? String(c.outcome).replace(/_/g, ' ') + (c.evidence ? ', ' + c.evidence + ' fact(s)' : '') : '');
-        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(STEP[r.kind] || r.kind) + '</td>'
+        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(stepName(r)) + '</td>'
           + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td>'
           + '<td>' + esc(res) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
       }).join('') : '<tr><td colspan="5">The morning run has not run yet.</td></tr>');
@@ -968,12 +1219,21 @@
       + (d.status === 'pending_review' ? '<label class="chk" title="' + (ok ? 'Select for a batch' : 'Not approvable yet') + '"><input type="checkbox" data-pick="' + id + '"' + (ok ? '' : ' disabled') + '></label>' : '')
       + '<span class="pill ' + (pv.test ? 'test' : 'bad') + '">' + (pv.test ? 'TEST' : 'LIVE') + '</span>'
       + '<button type="button" class="lnk" data-open="' + esc(p.id) + '">' + esc(p.full_name || '(name not established)') + '</button>'
-      + '<span class="sub">' + esc([p.organization, 'step ' + d.sequence_number, p.fit_score == null ? 'fit —' : 'fit ' + p.fit_score].filter(Boolean).join(' · ')) + '</span>'
+      + '<span class="sub">' + esc([p.organization, 'step ' + d.sequence_number, p.qualification_score == null ? 'score —' : 'score ' + p.qualification_score,
+        p.fit_score == null ? 'fit —' : 'fit ' + p.fit_score].filter(Boolean).join(' · ')) + '</span>'
+      + (p.campaign_type && p.campaign_type !== 'customer' ? '<span class="pill seg">' + esc(segName(p.campaign_type)) + '</span>' : '')
       + '<span class="sp"></span><span class="pill by" data-by="' + esc(writerKey(d)) + '">' + esc(writer(d)) + '</span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
     if (c.greeting_problem) h += '<div class="block"><b>The greeting:</b> ' + esc(c.greeting_problem) + '. Edit it (your words are yours) or reject it.</div>';
     if (c.existing_account) h += '<div class="block" data-customer="1"><b>This address already has an EdgeDesk account.</b> A customer is never cold-emailed: it cannot be approved or sent. Reject it.</div>';
     if (gates.length || miss.length) h += '<div class="block"><b>Not approvable yet.</b> ' + gates.concat(miss.map(function (m) { return 'the email no longer says "' + m + '"'; })).map(esc).join(' · ') + '</div>';
     if (lint.length) h += '<div class="block"><b>Breaks the content rules:</b> ' + lint.map(esc).join(' · ') + '</div>';
+    if ((c.advice || []).length) h += '<div class="note" data-advice="1"><b>Worth fixing before you approve:</b> ' + c.advice.map(esc).join(' · ') + '</div>';
+    /* who they are, why they fit, how to reach them, where to read up */
+    h += '<div class="row" style="align-items:flex-start;margin-top:8px"><div style="flex:1;min-width:240px">' + qualBlock(p.qualification, (p.thresholds || {}).qualification) + '</div>'
+      + '<div style="flex:1;min-width:220px" class="sub" data-contact="1">Address: <span class="mono">' + esc(p.email || '—') + '</span> <span class="pill ' + (p.email_status === 'verified' ? 'on' : 'test') + '">' + esc(p.email_status || 'none') + '</span>'
+      + (p.email_source_kind ? ' <span class="sub">(' + esc(label(EV_KINDS, p.email_source_kind)) + ')</span>' : '')
+      + ((c.links || []).length ? '<div>Read up: ' + c.links.map(function (u) { return link(u, hostOf(u)); }).join(' · ') + '</div>' : '')
+      + (c.words != null ? '<div>' + esc(c.words) + ' words</div>' : '') + '</div></div>';
     h += '<div class="mail"><div class="mh"><i>From</i>' + esc(pv.from || '') + '</div>'
       + '<div class="mh"><i>To</i>' + (pv.to ? '<span class="mono">' + esc(pv.to) + '</span>' : '<span class="dim">no test inbox set</span>')
       + (pv.test && pv.intended_recipient && pv.intended_recipient !== pv.to ? ' <span class="dim">(test: not ' + esc(pv.intended_recipient) + ')</span>' : '') + '</div>'
@@ -1271,9 +1531,15 @@
       }
       else if (b.id === 'rqFixture') fixture();
       else if (b.id === 'hcRun') { b.disabled = true; loadHealth().catch(function (er) { fail('obMsg', er); }).then(function () { b.disabled = false; }); }
+      else if (b.id === 'hcDomain') checkDomain();
+      else if (b.id === 'dvVerify') verifyWaiting();
+      else if (b.id === 'dvClayPush') clayPush();
+      else if (b.id === 'dvClayExport') clayExport();
+      else if (b.id === 'pdSegSave') setSegment();
       else if (b.getAttribute('data-rdays')) { RDAYS = Number(b.getAttribute('data-rdays')); loadResults().catch(function (er) { fail('rsMsg', er); }); }
       else if (b.getAttribute('data-rdim')) { RDIM = b.getAttribute('data-rdim'); if (RES) paintResults(RES); }
     });
+    $('dvClayFile').addEventListener('change', function () { if (OWNER && this.files && this.files[0]) clayImport(this.files[0]); });
     $('tabOutbound').addEventListener('change', function (e) {
       var t = e.target;
       if (!t || !t.getAttribute || !t.getAttribute('data-pick') || !OWNER) return;
@@ -1283,7 +1549,7 @@
     });
   }
 
-  var API = { start: start, reset: reset, show: show, open: openProspect, _readSettings: readSettings };
+  var API = { start: start, reset: reset, show: show, open: openProspect, _readSettings: readSettings, _clayRows: clayRows };
   root.EDOutbound = API;
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
