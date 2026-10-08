@@ -59,6 +59,25 @@ claim opens a review candidate, and only a person closes one.
 
 See [`tools/editorial/README.md`](tools/editorial/README.md).
 
+## The Sports Media Content Engine — research-driven articles for publishers
+
+`/admin/content/` (outbound owners only) turns EdgeDesk's committed research
+into broad, searchable sports journalism. It finds and scores the week's topics:
+CFB and NFL previews, upset watch, conference races, model-versus-line
+disagreements, injury implications, and attributed trending headlines. It then:
+
+- writes an SEO brief and a draft from EdgeDesk's own numbers;
+- checks every number, team, price label and phrase against the research;
+- takes the draft through an owner-only review to a publisher-ready Markdown
+  or HTML export, with UTM-tagged links.
+
+Claude can rewrite a draft, but its version is kept only if it passes the same
+checks. A weekly job (`.github/workflows/content-engine.yml`) drafts at most a
+couple of the best topics into the owner's review queue. Nothing is approved,
+sent or published except by the owner, and the database enforces it
+(`supabase/content_engine.sql`). See
+[`docs/content-engine/README.md`](docs/content-engine/README.md).
+
 ## EdgeDesk Intelligence — the research desk
 
 The chat panel in `app.html` is served by `supabase/functions/edgedesk_ai`.

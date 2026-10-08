@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-08 — Content Engine: research-driven sports articles for publishers
+
+**A new owner-only page, `/admin/content/`, turns EdgeDesk's committed research into broad, searchable sports articles, from discovery to a publisher-ready export. Research, not picks: nothing is invented, nothing is a pick, and nothing is sent or published except by the owner.** Docs: `docs/content-engine/README.md`.
+
+- **Core** (`lib/content_engine.js`, no dependencies; the page, the weekly job and the Edge Function run the same code). It covers:
+  - research packets read from the CFB terminal, the rankings, the NFL slate, the injury report and the captured quotes. Old prices are labelled stale with their capture time, and reference lines are labelled as references;
+  - six kinds of opportunity, each scored on seven parts with its basis. Search demand is an **estimate** unless EdgeDesk's own Search Console shows impressions;
+  - SEO briefs; five formats; the deterministic writer; Markdown and HTML export with UTM tags;
+  - the validator, which fails invented numbers or teams, pick or guarantee language, projections presented as bets, stale prices called current, unattributed reporting and near-duplicates.
+- **Database** (`supabase/content_engine.sql`, a private schema with owner doors on the outbound owner list):
+  - **Approval** is bound to the exact content hash and the five-point review; an edit after approval returns the article to review.
+  - **Sending**: `sent` needs a delivery record, and sent content is frozen.
+  - **Budgets**: AI calls and feed fetches count against a daily budget before they are made.
+  - **Measurement**: first-party conversion counts by campaign code; owners are excluded and no identity is returned.
+  - **Seed**: Stadium Rant, editorial preferences only. Contacts and benchmarks are entered in the page, never in this public repository.
+- **Edge Function** `content_engine` (Claude rewrites checked before they are saved, and the trending RSS fetch). Needs the **Deploy content engine function** workflow; `ANTHROPIC_API_KEY` is optional.
+- **Weekly job** `.github/workflows/content-engine.yml` (Tue/Wed): discovers topics, then drafts at most `drafts_per_run` (default 2) into the review queue. One run per week; the owner's switch turns it off. Existing secrets only.
+- **Links** to the new page from the growth, acquisition and SEO consoles.
+
+**Tests:** `content:test` (177), `content:sql` (98), `content:fn` (40), `content:job:test` (23), `content:e2e` (30: discover → outline → draft → AI rewrite → review → approve → export → record send → publish, in Chromium against a real PostgreSQL).
+
 ## 2026-10-08 — Product-led growth, phases 1–2: free research first
 
 **Free research is the front door; Full Access ($49.99/month, 7-day free trial) is one step behind it. Nothing in billing changes.** Audit and the five-phase plan: `docs/product-led-growth/PLAN.md`.
