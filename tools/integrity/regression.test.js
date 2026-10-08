@@ -217,10 +217,15 @@ section('5  no future-week game leaks into current-week research');
   const leaked = [];
   opps.forEach((o) => ((o.research && o.research.games) || []).forEach((p) => { if (p.week_scope === 'FUTURE_WEEK' || (o.week != null && p.week != null && p.week !== o.week)) leaked.push(o.key + ': ' + p.away + ' at ' + p.home + ' (week ' + p.week + ')'); }));
   chk('no article opportunity built from the committed research carries a game from another week', opps.length > 0 && !leaked.length, leaked.slice(0, 4));
-  /* the committed terminal research is the October 8 board itself: 117 games, of which 62 are week 7 look-ahead */
-  const all = Object.values(art.cfbGames.games), wk7 = all.filter((g) => g.week === 7).length;
-  chk('the committed research mixes weeks (as the October 8 board did): ' + all.length + ' games, ' + wk7 + ' of them week 7', all.length === 117 && wk7 === 62, { all: all.length, wk7 });
-  chk('… and the content research keeps only the current week: 55 week-6 games, no week-7 game', snap.cfb.week === 6 && snap.cfb.games.length === 55 && snap.cfb.games.every((p) => p.week === 6), { week: snap.cfb.week, n: snap.cfb.games.length });
+  /* the committed terminal research mixes weeks, as the October 8 board did
+     (117 games then, 62 of them week 7 look-ahead). It is rebuilt hourly, so
+     the test holds the SHAPE, never the day's counts: more than one week in
+     the file, and the content research keeps exactly the chosen week's games */
+  const all = Object.values(art.cfbGames.games);
+  const weeks = all.map((g) => g.week).filter((w, i, a) => a.indexOf(w) === i);
+  const chosen = all.filter((g) => g.week === snap.cfb.week).length, other = all.length - chosen;
+  chk('the committed research mixes weeks (as the October 8 board did): ' + all.length + ' games across weeks ' + weeks.sort().join(', '), weeks.length >= 2 && other > 0, { all: all.length, weeks });
+  chk('… and the content research keeps only the current week: every one of its ' + chosen + ' games, no game from another week', snap.cfb.games.length === chosen && chosen > 0 && snap.cfb.games.every((p) => p.week === snap.cfb.week), { week: snap.cfb.week, n: snap.cfb.games.length, chosen });
 }
 
 /* ===================================================================== 6 */
