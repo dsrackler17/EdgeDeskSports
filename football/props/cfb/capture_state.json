@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "38 prop prices from 2 books across 1 of 1 events queried.",
+ "why": "1104 prop prices from 6 books across 1 of 1 events queried.",
  "error_message": null,
- "started_at": "2026-10-08T10:40:39.501Z",
- "completed_at": "2026-10-08T10:40:40.007Z",
- "updated_at": "2026-10-08T10:40:40.007Z",
- "last_attempt": "2026-10-08T10:40:39.501Z",
- "duration_ms": 506,
+ "started_at": "2026-10-08T10:45:49.389Z",
+ "completed_at": "2026-10-08T10:45:50.019Z",
+ "updated_at": "2026-10-08T10:45:50.019Z",
+ "last_attempt": "2026-10-08T10:45:49.389Z",
+ "duration_ms": 630,
  "run": {
-  "id": "37764970329.1",
+  "id": "37765523796.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,9 +81,9 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-10-08T10:40:39.501Z",
- "last_success_at": "2026-10-08T10:40:39.501Z",
- "last_full_success_at": "2026-10-08T10:40:39.501Z",
+ "last_run": "2026-10-08T10:45:49.389Z",
+ "last_success_at": "2026-10-08T10:45:49.389Z",
+ "last_full_success_at": "2026-10-08T10:45:49.389Z",
  "polled_at": {
   "b274da111dc9826f36e5fa238998dd69": "2026-10-08T10:00:56.023Z",
   "561884d0d63e91b022e96bc6c415accd": "2026-10-08T10:00:56.023Z",
@@ -103,7 +103,7 @@
   "b067027cbaeaf86e6c9bb26becb97c94": "2026-10-08T10:00:56.023Z",
   "690e2edaba34c383d2ebfa8f8394f973": "2026-10-08T10:00:56.023Z",
   "71ed0e11bb0f2e5149ac4821fcde4599": "2026-10-08T10:40:39.501Z",
-  "9383cbbbb905d9ee50a3341f6945eae7": "2026-10-08T04:45:59.489Z",
+  "9383cbbbb905d9ee50a3341f6945eae7": "2026-10-08T10:45:49.389Z",
   "310dd8851a99203930a45881b0156d36": "2026-10-08T05:10:44.614Z",
   "43dda5e509a9619bee41f752a2c25fa7": "2026-10-08T06:00:50.020Z",
   "d5c5d566d388f445ead9c2dc63caaed1": "2026-10-08T07:30:52.084Z",
@@ -511,8 +511,8 @@
    "next_due_at": "2026-10-08T16:40:39.501Z"
   },
   "9383cbbbb905d9ee50a3341f6945eae7": {
-   "polled_ok_at": "2026-10-08T04:45:59.489Z",
-   "attempted_at": "2026-10-08T04:45:59.489Z",
+   "polled_ok_at": "2026-10-08T10:45:49.389Z",
+   "attempted_at": "2026-10-08T10:45:49.389Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -524,8 +524,8 @@
    "away_team": "South Carolina Gamecocks",
    "books": 6,
    "markets": 14,
-   "quotes": 1105,
-   "next_due_at": "2026-10-08T10:45:59.489Z"
+   "quotes": 1104,
+   "next_due_at": "2026-10-08T16:45:49.389Z"
   },
   "310dd8851a99203930a45881b0156d36": {
    "polled_ok_at": "2026-10-08T05:10:44.614Z",
@@ -1517,8 +1517,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 23332,
-  "requests_used": 76668
+  "requests_remaining": 23316,
+  "requests_used": 76684
  },
  "pacing": {
   "factor": 1,
@@ -1535,58 +1535,76 @@
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "71ed0e11bb0f2e5149ac4821fcde4599"
+  "9383cbbbb905d9ee50a3341f6945eae7"
  ],
  "books_returned": [
+  "betmgm",
   "betonlineag",
-  "draftkings"
+  "draftkings",
+  "espnbet",
+  "fanduel",
+  "hardrockbet"
  ],
  "markets_returned": {
-  "player_anytime_td": 2
+  "player_anytime_td": 5,
+  "player_pass_tds_alternate": 5,
+  "player_pass_yds_alternate": 6,
+  "player_reception_yds_alternate": 6,
+  "player_receptions_alternate": 3,
+  "player_rush_yds_alternate": 6,
+  "player_pass_tds": 2,
+  "player_pass_yds": 3,
+  "player_reception_yds": 3,
+  "player_receptions": 2,
+  "player_rush_yds": 3,
+  "player_pass_attempts": 1,
+  "player_pass_completions": 1,
+  "player_rush_reception_yds": 1
  },
- "outcomes_returned": 40,
- "quotes": 38,
- "quotes_normalized": 38,
- "quotes_written": 38,
+ "outcomes_returned": 1138,
+ "quotes": 1104,
+ "quotes_normalized": 1104,
+ "quotes_written": 1104,
  "refused": {
-  "team or defense entity, not a player": 2
+  "team or defense entity, not a player": 4,
+  "duplicate outcome": 30
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 1,
- "requests_remaining": 23332,
- "requests_used": 76668,
+ "credits_spent": 14,
+ "requests_remaining": 23316,
+ "requests_used": 76684,
  "requests": [
   {
-   "event_id": "71ed0e11bb0f2e5149ac4821fcde4599",
-   "matchup": "Ball State Cardinals @ Northwestern Wildcats",
-   "kickoff": "2026-10-10T16:30:00Z",
+   "event_id": "9383cbbbb905d9ee50a3341f6945eae7",
+   "matchup": "South Carolina Gamecocks @ Florida Gators",
+   "kickoff": "2026-10-10T16:45:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 107,
-   "books": 2,
-   "markets": 1,
-   "outcomes": 40,
-   "quotes": 38,
-   "cost": 1,
-   "remaining": 23332
+   "ms": 217,
+   "books": 6,
+   "markets": 14,
+   "outcomes": 1138,
+   "quotes": 1104,
+   "cost": 14,
+   "remaining": 23316
   }
  ],
- "feed_quotes": 19988,
+ "feed_quotes": 19987,
  "feed_events": 55,
  "markets_closed": 5,
  "quotes_carried": 0,
  "closed_events": 0,
- "next_due_at": "2026-10-08T10:45:59.489Z",
+ "next_due_at": "2026-10-08T11:00:56.023Z",
  "health": {
-  "now": "2026-10-08T10:40:39.501Z",
+  "now": "2026-10-08T10:45:49.389Z",
   "active_events": 55,
   "on_target": 55,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-10-08T10:40:39.501Z",
-  "last_attempt_at": "2026-10-08T10:40:39.501Z",
+  "last_success_at": "2026-10-08T10:45:49.389Z",
+  "last_attempt_at": "2026-10-08T10:45:49.389Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
