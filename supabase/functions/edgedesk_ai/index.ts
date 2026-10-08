@@ -36325,7 +36325,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-09-27-r20-support-boundary";
+export const BUILD = "edgedesk_ai-2026-10-08-r21-anon-gate";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -36423,7 +36423,11 @@ const REQUIRE_SUBSCRIPTION = !/^(0|false|off|no)$/i.test(
 const RATE_PER_MIN = Math.max(1, parseInt(Deno.env.get("EDGEDESK_AI_RATE_PER_MIN") ?? "30", 10) || 30);
 const RATE_PER_HOUR = Math.max(1, parseInt(Deno.env.get("EDGEDESK_AI_RATE_PER_HOUR") ?? "300", 10) || 300);
 const RATE_BOOK = new Map<string, number[]>();
-const PG_GRACE_DAYS = 3;
+/* The database's own rule (supabase/billing_hardening.sql
+   billing_row_grants_access, lib/edgedesk_access.js PAST_DUE_GRACE_DAYS): a
+   past_due row keeps access for 21 days. This copy said 3, so a reader the
+   terminal let in was refused here. */
+const PG_GRACE_DAYS = 21;
 
 /* The rate bucket is keyed with the Dal's OWN callerKey — an FNV-1a tag over
    the Authorization header. Deliberately not the decoded `sub` claim: a
@@ -36481,10 +36485,35 @@ export function rateVerdict(key: string, now = Date.now()): { status: number; bo
  * conflating them either locks out every paying reader when a table is
  * unreachable or lets everybody in when it is.
  */
+/* The `role` claim of a bearer token, read WITHOUT verifying it — so it is
+   used only to REFUSE, never to admit. PostgREST verifies every token this
+   function forwards; this only stops a token that names itself `anon` (the
+   public key every page ships) before it costs a read. null when the token is
+   not a JWT at all. */
+export function bearerRole(auth: string): string | null {
+  const t = String(auth || "").replace(/^bearer\s+/i, "").trim();
+  const part = t.split(".")[1];
+  if (!part) return null;
+  try {
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const claims = JSON.parse(atob(b64 + "===".slice((b64.length + 3) % 4)));
+    return typeof claims?.role === "string" ? claims.role : null;
+  } catch { return null; }
+}
+
+const SIGN_IN_BODY = { error: "sign in required",
+  note: "EdgeDesk Intelligence is part of the subscription and needs a signed-in account. "
+    + "The free research on edgedesksports.com does not." };
+
 export async function subscriptionGate(
   auth: string, url: string, apikey: string, now = Date.now(),
 ): Promise<{ ok: boolean; status: number; body?: any; why: string }> {
   if (!REQUIRE_SUBSCRIPTION) return { ok: true, status: 200, why: "subscription checking is switched off" };
+  /* THE PUBLIC KEY IS NOT AN ACCOUNT. It is in every page's source, and
+     before this check it reached the subscription read below, which anon may
+     not run (billing.sql revokes it) — so it answered 401, and a 401 was let
+     through as "could not be checked". Anyone could spend the model. */
+  if (bearerRole(auth) === "anon") return { ok: false, status: 401, body: SIGN_IN_BODY, why: "the public anon key is not an account" };
   if (!url || !apikey) return { ok: true, status: 200, why: "no database configured to check against" };
   let rows: any = null;
   try {
@@ -36492,9 +36521,16 @@ export async function subscriptionGate(
       `${url}/rest/v1/subscriptions?select=status,price_id,current_period_end&limit=1`,
       { headers: { apikey, authorization: auth } },
     );
+    /* 401/403 = PostgREST refused THIS TOKEN (expired, invalid, or a role
+       with no read on the table). That is a caller who is not signed in, and
+       it is refused — the app refreshes its session and asks again. */
+    if (r.status === 401 || r.status === 403) {
+      return { ok: false, status: 401, body: SIGN_IN_BODY, why: `the subscription read refused this token (${r.status})` };
+    }
     if (!r.ok) {
-      /* 404 = the table is not deployed. 401/403 = refused. Neither says the
-         reader has not paid, so neither locks them out. */
+      /* 404 = the table is not deployed; 5xx = the database is in trouble.
+         Neither says the reader has not paid, so neither locks out every
+         paying reader. The rate limit above still holds. */
       return { ok: true, status: 200, why: `the subscription table answered ${r.status}, so entitlement could not be checked` };
     }
     rows = await r.json();

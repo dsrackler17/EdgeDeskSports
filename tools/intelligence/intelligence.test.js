@@ -2024,8 +2024,19 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
       m.entitled({ status: 'active', current_period_end: new Date(NOW - day).toISOString() }, NOW), false);
     eq('past_due inside the grace window still works',
       m.entitled({ status: 'past_due', current_period_end: new Date(NOW - day).toISOString() }, NOW), true);
+    /* the database's grace (billing_row_grants_access: 21 days), not a
+       shorter private one — a reader the terminal admits is admitted here */
+    eq('past_due 20 days in is still inside the database\'s 21-day grace',
+      m.entitled({ status: 'past_due', current_period_end: new Date(NOW - 20 * day).toISOString() }, NOW), true);
     eq('past_due long past the grace window does not',
-      m.entitled({ status: 'past_due', current_period_end: new Date(NOW - 9 * day).toISOString() }, NOW), false);
+      m.entitled({ status: 'past_due', current_period_end: new Date(NOW - 22 * day).toISOString() }, NOW), false);
+    {
+      const ACCESS = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_access.js'));
+      [1, 3, 9, 20, 21, 22, 40].forEach((d) => {
+        const row = { status: 'past_due', price_id: 'price_test', current_period_end: new Date(NOW - d * day).toISOString() };
+        eq('past_due ' + d + 'd: the desk and lib/edgedesk_access.js agree', m.entitled(row, NOW), ACCESS.grants(row, NOW));
+      });
+    }
     eq('canceled is not entitled', m.entitled({ status: 'canceled' }, NOW), false);
 
     /* ---- and the endpoint actually refuses ------------------------------ */
@@ -2053,6 +2064,49 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
     const open = await m.handle(req({ mode: 'chat', question: 'How does Texas State look this week?',
       history: [] }, '?dry=1'));
     eq('a subscription table that cannot be read does NOT lock out a reader', open.status, 200);
+
+    /* BUT A REFUSED TOKEN IS NOT AN OUTAGE. The anon key ships in every
+       page; anon may not read subscriptions, so PostgREST answers 401 — and
+       that 401 used to be let through as "could not be checked", which put
+       the model one curl away from anyone. */
+    {
+      const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+      const jwt = (claims) => b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64(claims) + '.sig';
+      const ANON = jwt({ iss: 'supabase', role: 'anon' });
+      const role = typeof m.bearerRole === 'function' ? m.bearerRole : () => undefined;
+      eq('the anon key\'s role is read', role('Bearer ' + ANON), 'anon');
+      eq('a signed-in token\'s role is read', role('Bearer ' + jwt({ role: 'authenticated', sub: 'u1' })), 'authenticated');
+      eq('a token that is not a JWT has no role (and is not refused for it)', role('Bearer user-jwt'), null);
+      eq('a malformed payload has no role', role('Bearer a.!!!.c'), null);
+
+      let subReads = 0;
+      const realFetch = globalThis.fetch;
+      const withSubStatus = (status) => async function (url, init) {
+        if (String(url).indexOf('/subscriptions') >= 0) { subReads++; return { ok: false, status, text: async () => 'denied', json: async () => null }; }
+        return realFetch(url, init);
+      };
+      const ask = (auth) => m.handle(new Request('https://fn.test/edgedesk_ai?dry=1', {
+        method: 'POST', headers: { authorization: auth, 'content-type': 'application/json' },
+        body: JSON.stringify({ mode: 'chat', question: 'How does Texas State look this week?', history: [] }) }));
+      try {
+        clearCache(); route = FX.router(fx);
+        globalThis.fetch = withSubStatus(401);
+        const anon = await ask('Bearer ' + ANON);
+        eq('the public anon key is refused', anon.status, 401);
+        eq('before the subscription read is spent on it', subReads, 0);
+        const ab = await anon.json();
+        chk('and is told to sign in, pointing at the free research', /sign in/i.test(ab.error || '') && /free research/i.test(ab.note || ''), ab);
+
+        clearCache(); subReads = 0;
+        eq('a token PostgREST refuses (401) is refused, not let through',
+          (await ask('Bearer ' + jwt({ role: 'authenticated', sub: 'expired' }))).status, 401);
+        eq('and the table was asked', subReads, 1);
+        clearCache(); globalThis.fetch = withSubStatus(403);
+        eq('a 403 from the subscription read is refused too', (await ask('Bearer user-jwt')).status, 401);
+        clearCache(); globalThis.fetch = withSubStatus(503);
+        eq('a 503 is still an outage, not a lockout of paying readers', (await ask('Bearer user-jwt')).status, 200);
+      } finally { globalThis.fetch = realFetch; }
+    }
 
     /* ---- rate, which is what actually burns a budget -------------------- */
     resetRate();
