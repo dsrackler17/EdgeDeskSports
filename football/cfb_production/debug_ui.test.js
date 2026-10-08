@@ -91,9 +91,24 @@ const view = E.render(Pj, T, pred.game_id);
 chk('game view: every stage has its card, in order', TR.STAGES.every((k, i, arr) => view.indexOf('id="st-' + k + '"') > 0 && (i === 0 || view.indexOf('id="st-' + arr[i - 1] + '"') < view.indexOf('id="st-' + k + '"'))));
 chk('game view: the numbers shown are the stored ones', view.includes(String(pred.canonical.projection.fair_spread_display).replace(/&/g, '&amp;')) && view.includes(pred.canonical.snapshot_id) && clean(view));
 chk('game view: "Official decision (governed policy)" and "Research only (stage-8 class, not a decision)" are separate', /Official decision \(governed policy\)/.test(view) && /Research only \(stage-8 class, not a decision\)/.test(view));
+/* The official column draws the governed decision's own status, whatever this
+   week's files make it (NO_DECISION, PASS, RESEARCH …), and never the stage-8
+   research status. The first check reads the real game; the second pins the
+   case that matters on a copy (research LEAN, policy NO_DECISION), so it does
+   not depend on which statuses the committed data happens to hold. */
+const officialChips = (v) => (v.slice(v.indexOf('Official decision (governed policy)'), v.indexOf('Research only (stage-8'))
+  .match(/<span class="chip[^"]*">[^<]*<\/span>/g) || []).map((c) => c.replace(/<[^>]+>/g, ''));
+chk('game view: the official chip is the governed decision\'s own status', (() => {
+  const o = st(pred, 'decision').official;
+  return JSON.stringify(officialChips(view)) === JSON.stringify([String(o && o.status != null ? o.status : 'UNKNOWN')]);
+})(), officialChips(view));
 chk('game view: the stage-8 research status is never drawn as the official chip', (() => {
-  const off = view.slice(view.indexOf('Official decision (governed policy)'), view.indexOf('Research only (stage-8'));
-  return /<span class="chip[^"]*">NO_DECISION<\/span>|<span class="chip[^"]*">UNAVAILABLE<\/span>/.test(off) && !(pred.research && pred.research.status === 'LEAN' && /<span class="chip[^"]*">LEAN<\/span>/.test(off));
+  const t2 = JSON.parse(JSON.stringify(T));
+  const d = t2.games[pred.game_id].find((s) => s.stage === 'decision');
+  d.official = { status: 'NO_DECISION', basis: 'cfb_decision_policy_v1' };
+  d.research = Object.assign({}, d.research, { status: 'LEAN' });
+  const chips = officialChips(E.render(Pj, t2, pred.game_id));
+  return JSON.stringify(chips) === '["NO_DECISION"]' && !chips.includes('LEAN');
 })());
 chk('game view: an unknown game says so and links back', /is not in projections\.json/.test(E.render(Pj, T, '999999999')) && /href="\?"/.test(E.render(Pj, T, '999999999')));
 chk('game view: without traces.json the game still renders and says the trace is missing', /No prediction trace/.test(E.render(Pj, null, pred.game_id)) && /traces\.json not loaded/.test(E.render(Pj, null, pred.game_id)));
