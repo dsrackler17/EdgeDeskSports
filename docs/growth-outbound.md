@@ -1399,6 +1399,194 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
 - **A failed domain check blocking live sends:** fix DNS and check again, or `update growth_outbound.settings set domain_auth = null, domain_auth_checked_at = null;` in the SQL editor.
 - **The database:** additive. To return to Phase 11, re-run the Phase 11 file (`git show 4f99b38:supabase/growth_outbound.sql`). Its functions replace these, and the new columns are harmless.
 
+## The daily email (2026-10): "N drafts are waiting for your review"
+
+**A short note to you, once a morning, when the morning run leaves drafts for you to review.** It is a notice to the owner, not outreach: it never goes to a prospect, never sends a draft, and never counts against the daily cap. It is off until you turn it on.
+
+### What it says
+
+Counts, and nothing else:
+
+- how many drafts wait for review (first emails and follow-ups), and how many the morning run wrote;
+- approved drafts not yet sent;
+- in test mode, that approved emails go only to your test inbox; live, how many emails you may still send today (under the warm-up cap);
+- what the System check says needs attention, in fixed words;
+- the link to `/admin/growth/`.
+
+No name, address, organization, site or draft text appears in it. If your inbox is ever read by someone else, it tells them nothing about anyone.
+
+For example:
+
+> **Subject:** 3 outbound drafts are ready for your review
+>
+> 3 drafts are waiting for your review: 2 first emails, 1 follow-up.
+> The morning run wrote 3 of them on Thursday, October 8.
+>
+> Test mode is on: an approved email goes only to your test inbox.
+>
+> Review them: https://edgedesksports.com/admin/growth/
+>
+> Nothing goes to a prospect until you approve it and press Send.
+> This note goes only to you. Turn it off in Outbound settings, under Morning run.
+
+### Whom it goes to
+
+- **Your account's own confirmed address.** You turn it on under **Outbound settings → Morning run**. It goes to the account that turned it on, and the settings show which address that is. There is no address field: nothing typed in, nothing a hijacked session could point elsewhere.
+- **It is looked up every time**, so a changed address follows you.
+  - An owner who is removed stops receiving it at once.
+  - An unconfirmed address receives nothing.
+  - If the owner's address is also a prospect's, it is refused rather than guessed about.
+- **From:** `EdgeDesk outbound <davis@edgedesksports.com>` (your sender address). It is tagged `edgedesk=outbound`, so the newsletter's webhook leaves its events alone.
+
+### When it goes
+
+- **Once a morning, at most.** It goes as soon as the morning run has nothing left to do: not while a step is running, and not while the run only pauses before trying a step again. If the run never finishes, it goes when your window closes.
+- **Up to 12 hours after the window.** Turned on in the afternoon, you get today's note within five minutes.
+- **Nothing to review that morning:** no email. The morning is recorded as skipped, and a draft that arrives later that day does not bring one.
+- **Automation off:** it still goes, at your window's time, if drafts wait (for example, ones you wrote yourself).
+
+### How it is sent, and why it cannot do more
+
+The tick decides; it never sends anything itself.
+
+1. When the morning run is idle, the tick mints a **single-use ticket** (only its sha256 is kept) and posts it through pg_net to a new Edge Function, **`growth_outbound_digest`**.
+2. The function presents the ticket to the ticket door (`growth_outbound_scheduled`). A daily-email ticket opens **two doors and no others**:
+   - write the note (once per ticket);
+   - say what became of it (Resend's id, or why not).
+
+   It cannot reach a run door, a draft, a prospect, a send, an approval or a setting. A morning-run ticket cannot reach these two either.
+3. The function checks the note is still exactly one plain EdgeDesk email to one address (no extra recipients, headers or fields), then sends it through Resend with one idempotency key per try.
+4. It holds the project URL, the public anon key and `RESEND_API_KEY` (already set). It holds no service-role key, and it refuses any request from a browser.
+
+### When it fails
+
+- **It surely did not go** (Resend down or rate-limiting, the key refused, the key not set, or the function never ran): tried again 20 minutes later, at most three tries.
+- **It may have gone** (no answer from Resend, or the function stopped after writing it): never tried again. A missed note is better than a duplicate.
+- **Resend refused the message:** not tried again.
+- **The System check** says when this morning's email could not be sent, or when it has nobody to go to. The morning-run panel shows each try.
+
+### New in the database
+
+- **Settings:** `digest_enabled`; `digest_owner` (who turned it on: a reference to the owners list, cleared when they lose outbound). The settings show the address it resolves to, not the id; the id appears only in the settings change log.
+- **Table:** `digests`, the twentieth. It holds one row per morning: what was decided, how many waited, the tries, Resend's id, and the ticket's hash only. It holds no address. Deny-all to every client role, and never deleted.
+- **Functions:**
+  - the plan and the tick's part: `digest_recipient`, `digest_plan`, `digest_tick`, `digest_sweep`, `post_blocker`;
+  - the ticket and its doors: `digest_for_ticket`, `digest_door`, `digest_compose`, `digest_result`, `digest_end`.
+
+  None is callable by a client role. The ticket door hands a ticket that is not a run's to `digest_door`, which checks it first.
+- **The morning-run panel** (`growth_outbound_automation_overview`) adds `digest`: on or off, to whom, what next, and the last seven mornings. It never shows a ticket hash or an account id.
+- **System check:** row 38 (the rules above, and where it goes); rows 1 and 12 count the new table and its never-delete trigger. Attention items `digest_failed` and `digest_no_recipient`.
+- **Still three public doors.**
+
+### Deploy (in order)
+
+1. Merge the PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–38 should say `ok`.
+3. Deploy the functions: Actions → **Deploy outbound Edge Functions**. It now deploys `growth_outbound_digest` too, `--no-verify-jwt` like the research and drafting functions (pg_cron sends no JWT; the database checks the ticket). No new secret: it uses `RESEND_API_KEY`.
+4. The clock (`supabase/growth_outbound_cron.sql`) is unchanged. If it already runs, nothing to do.
+5. Outbound settings → Morning run → tick **Email me once the morning run is done…** and Save. It shows the address it will use.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_digest_sql.test.js` (new) | 102 | Settings, the plan (window, zone, midnight, grace, busy, pausing, off), the tick, the ticket (two doors only; a run's ticket cannot reach them; dead once answered or expired), the content (counts only; nothing about anyone), retries and the sweep, never a send, draft or prospect, the overview and System check |
+| `tools/growth/outbound_digest.test.js` (new) | 45 | The deployed function against the real SQL and a Resend stand-in: only a POST, never a browser, a well-formed ticket; exactly the note the database wrote, to one address, tagged, keyed per try; every Resend failure recorded with the right retry; a tampered note never sent; no key, ticket or address in any answer or log |
+| `tools/growth/outbound_lifecycle.test.js` | 48 | Adds step 9: the morning run drafts, the tick hands the daily email a ticket, the real function sends one note to the owner; nothing else moves |
+| `tools/growth/outbound_static.test.js` | 40 | Every outbound function is checked (a new one must be added); the digest function reads only its three settings and logs nothing secret |
+| `tools/growth/outbound_console.e2e.js` | 295 | Adds sections 58–60: the setting, where it goes, no address field, the panel's chip (sent, failed with its reason, nobody to go to, off), text never markup |
+| `tools/growth/outbound_sql.test.js` | 494 | Twenty tables, every one denied to clients |
+
+**Mutation-checked:** 66 deliberate breaks (52 of the SQL, 14 of the function). 63 were caught. Two of those were first missed, which led to two more checks: the plan's own words after a failure that may have sent, and the ticket check itself after an answer.
+
+The other three remove one of two independent safeguards whose other one holds in every state the database allows:
+- the owner check inside `digest_recipient` (the foreign keys already clear a removed owner);
+- the two guards on the tick's upsert (the plan never asks for a send or a skip they would refuse).
+
+### Rollback
+
+- **Stop it:** untick it in the settings. A ticket already out dies with it, and nothing more is written or sent.
+- **The database:** additive. Re-running an earlier file leaves the new table and columns unused.
+
+## Replies (2026-10): read from Resend
+
+**A reply ends that person's sequence by itself, the way "They replied" does.** Until now a reply counted only when you marked it. Now the database reads Resend's signed `email.received` event for every email Resend receives for you.
+
+- **A reply** from an address a live email went to, after it went (up to 180 days): the prospect becomes "replied", their unsent follow-ups are cancelled, and the results count it like a marked reply.
+- **An automatic answer** (out of office, "Automatic reply", "OOO", on vacation, and the common German, French and Spanish forms): noted; nothing changes, and the follow-up stays due.
+- **A request to stop** ("unsubscribe", "remove me", "opt out", "stop emailing", "do not contact" in the subject): the address is suppressed, always, even with detection off. They asked.
+- **An answer to a test email** (from your test inbox): noted as a test, nothing changes. This is how you prove the setup works.
+- **From nobody we wrote to:** kept with the sender masked (`s•••@example.com`) and no subject; nothing changes.
+
+### What it can and cannot see
+
+- **Matched by the sender's address alone,** whole and in any case. Never by a name, a domain or a guess: a colleague writing from the same company is nobody we wrote to.
+- **Only what the event carries:** who sent it, to which address, and the subject. **Never the body.** You read the reply itself in your mailbox, as now. The kind (reply, automatic, stop) is read from the subject.
+- **Signed, or nothing.** The event arrives through the existing `growth_outbound_webhook`, and the database checks Resend's signature first. A forged "reply" is refused before anything is read. The same email delivered twice counts once.
+- **Safe direction only.** Whatever it gets wrong, the worst it can do is stop emailing someone: end a sequence, or suppress an address. It never approves, drafts or sends.
+
+### Setting it up (you choose; nothing is sent until you do)
+
+Resend has to receive a copy of the replies. The simplest way leaves your inbox exactly as it is:
+
+1. **In Resend → Receiving,** note the receiving address Resend gives you (on its own `resend.app` domain; no DNS change). You can instead receive on a domain of yours with the MX record Resend shows, but a domain's MX record is where its mail lives, so never point `edgedesksports.com` itself there while `davis@` is hosted elsewhere.
+2. **In the mailbox that receives `davis@edgedesksports.com`,** add a rule that forwards a copy of incoming mail to that address, keeping the original sender. Gmail's forwarding keeps it. In Outlook, use "redirect", not "forward". Gmail first sends a confirmation code to the new address: open it in Resend's Receiving list.
+3. **In Resend → Webhooks,** add the `email.received` event to the endpoint that already points at `growth_outbound_webhook`. **Do not add it to the newsletter's endpoint.** The newsletter ignores received mail anyway, but a reply's sender and subject have no business there.
+4. **Prove it:**
+   1. in test mode, send yourself the test email;
+   2. reply to it from your test inbox;
+   3. Outbound → **Replies** shows "answer to a test email" within a minute.
+
+**Turning it off:** Outbound settings → Follow-ups → untick "Detect replies from Resend". Replies are still listed, and a request to stop is still honoured. To stop the events entirely, remove `email.received` from the webhook in Resend.
+
+### In the console and the daily email
+
+- **Outbound → Replies:** each email received, newest first. It shows who it was from (the prospect, or a masked stranger), which email it answered, what it was taken to be, and what it changed. Counts for 30 days. Whether detection is on.
+- **A prospect's page** lists their replies.
+- **The daily email** adds "N people replied in the last day": a count, never who.
+
+### New in the database
+
+- **Setting:** `reply_detection` (on by default).
+- **Table:** `replies`, the twenty-first. Append-only, deny-all to every client role. It holds the kind, the prospect and send it matched, the masked sender, and the subject only when it matched someone.
+- **Functions:**
+  - `classify_reply(subject)`;
+  - `reply_received(event, data)`, called by the webhook door for `email.received` after the signature check;
+  - owner door `growth_outbound_replies`;
+  - the prospect door's `replies`.
+- **The webhook door** routes `email.received` there. Every other event is handled as before.
+- **The newsletter's webhook** (`supabase/functions/newsletter`) acknowledges a received email and keeps nothing about it.
+- **System check:** row 39 (the classifier's cases, the webhook's routing, the append-only record, and what came in over 30 days). Rows 1 and 12 count the new table and trigger.
+
+### Deploy (in order)
+
+1. Merge the PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–39 should say `ok`.
+3. Deploy the newsletter function as you usually do. Its only change is that it ignores received mail.
+
+   The outbound functions are unchanged by this: the webhook function already relays every event untouched.
+4. Set up receiving (above), and prove it with a test reply.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_replies_sql.test.js` (new) | 43 | Real sends, real signatures. 24 subjects classified. A reply ends the sequence once (status, follow-up cancelled, counted). An automatic answer changes nothing. A request to stop suppresses, even with detection off. A test reply is noted. A stranger, a colleague at the same domain, a too-old email and a near-miss address are not matched. Detection off records only. Forged, unreadable and repeated events. The Replies list, the prospect's page, the results, the webhook's health, the daily email's line, the System check. The record is append-only and unreadable to clients |
+| `tools/growth/outbound_lifecycle.test.js` | 53 | Adds step 10: the owner sends Kai's draft; Kai replies; Resend's signed event passes through the real webhook function; the sequence ends |
+| `tools/growth/outbound_events.test.js` | 66 | The newsletter's webhook keeps nothing about a received email |
+| `tools/growth/outbound_concurrency_sql.test.js` | 24 | Adds race Y: one reply delivered under five event ids, plus three more replies from the same person, all at the same instant. Every delivery is answered, the email is recorded once, and "replied" is logged once. Without the per-email lock it adds, this race failed with duplicate-key errors |
+| `tools/growth/outbound_console.e2e.js` | 305 | Adds sections 61–62: the Replies list, the prospect's replies, the setting, text never markup, before the SQL, nothing received yet |
+| `tools/growth/outbound_sql.test.js` | 500 | Twenty-one tables; the new door opens with the owner check |
+
+**Mutation-checked:** 29 deliberate breaks. 28 were caught: the routing, the classifier's three rules and its word boundaries, matching by domain, by case, with the display name, or past 180 days, test sends treated as live, every effect (suppression, status, follow-ups, the results record, the detection switch), the masking, the deduplication, the record's shape, the door's owner check, row-level security, the append-only trigger, the prospect page, the daily email's line, and the newsletter's guard.
+
+One was first missed and led to a sharper check: a subject's control characters past the 200-character cut. The remaining survivor adds the matched prospect's own address to the Replies list. That is something you already see on their page, and it is never a stranger's.
+
+### Rollback
+
+- **Stop it:** untick reply detection, or remove `email.received` from the webhook in Resend.
+- **The database:** additive. A reply already applied stays applied, as a marked one would.
+
 ## Phase 13: free-first discovery and operational readiness
 
 **The aim: the pipeline runs with Brave, Apollo and Clay all off, every provider state on the console is what the provider actually said, and nothing can go live until the opt-out link and the webhook are proven.** Nothing in this phase approves or sends.
@@ -1492,19 +1680,19 @@ Two new blockers for **live** sends (test sends are unaffected):
   - `provider_ledger`: calls, units, tokens and cost by day;
   - `revenue`.
 
-  All four are deny-all to clients, like every other table. Report row 1 now counts 23 tables.
+  All four are deny-all to clients, like every other table. Report row 1 now counts 25 tables.
 - **Settings:** `optout_check`, `optout_checked_at`, `partner_outreach_enabled`; `discovery_config.directories`.
 - **Owner doors:** `growth_outbound_candidates_import`.
 - **Engine doors** (owner, or a ticket on its own run): `provider_health_record`, `provider_record`, `cache_get`, `cache_put`.
 - **Send-function door:** `growth_outbound_optout_check_record`. Owner-initiated, it writes only the check's result.
-- **Report row 38.**
+- **Report row 40.**
 
 ### Deploy (in order) — for you to run when you have reviewed it
 
 Nothing in this phase has been deployed or applied to production.
 
-1. Merge the Phase 13 PR. The console works against the Phase 12 SQL until step 2. Each Phase 13 panel says "run supabase/growth_outbound.sql again" until then.
-2. In the SQL editor, run `supabase/growth_outbound.sql`. It is additive and idempotent. Report rows 1–38 should say `ok`.
+1. Merge the Phase 13 PR. The console works against the earlier SQL until step 2. Each Phase 13 panel says "run supabase/growth_outbound.sql again" until then.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. It is additive and idempotent. Report rows 1–40 should say `ok`.
    - **Live sending becomes blocked** until steps 5 and 6. That is intended: test sends are not affected.
    - Partner leads are re-scored on the partner basis; some may now qualify.
 3. **Deploy the functions** (research, send and draft changed): Actions → **Deploy outbound Edge Functions**, or from a terminal `supabase functions deploy growth_outbound_research --no-verify-jwt` (and `growth_outbound_send`, `growth_outbound_draft`).
@@ -1521,16 +1709,16 @@ Nothing in this phase has been deployed or applied to production.
 
 | Suite | Checks | What it proves |
 |---|---|---|
-| `tools/growth/outbound_freefirst_sql.test.js` (new) | 120 | **Upgrade** from the Phase 12 file in place. **Import:** sources, canonical and counted once, duplicates, suppressed domains, refused platforms and search pages, segments, owner only. **Directories** due weekly, permitted only. **Health:** states, endpoints, quota, the ticket's own run only. **Cache, ledger and prices.** **Blockers:** the opt-out base checked here, the webhook proven since the current secret. **Test inbox** never a prospect's or a suppressed address. **Partners:** scoring basis, letters, no money. **Tone and footer.** **Revenue** gross from Stripe's record. **Attention.** **Overview** and row 38 |
+| `tools/growth/outbound_freefirst_sql.test.js` (new) | 120 | **Upgrade** in place from the file as it was before Phase 13. **Import:** sources, canonical and counted once, duplicates, suppressed domains, refused platforms and search pages, segments, owner only. **Directories** due weekly, permitted only. **Health:** states, endpoints, quota, the ticket's own run only. **Cache, ledger and prices.** **Blockers:** the opt-out base checked here, the webhook proven since the current secret. **Test inbox** never a prospect's or a suppressed address. **Partners:** scoring basis, letters, no money. **Tone and footer.** **Revenue** gross from Stripe's record. **Attention.** **Overview** and row 40 |
 | `tools/growth/outbound_freefirst.test.js` (new) | 75 | The deployed functions against the real SQL, with Brave never called. **Health:** every provider's free question and signed headers; refusals said for what they are. **Discovery** with no Brave key (Podcast Index) and no key at all (directories, imports). **Apollo** off the free plan. **Prefilter** (no Claude call for an obvious non-fit). **Partners** drafted with the partnership rules. **Hunter:** the allowance first, the domain remembered, a used-up allowance and a refused key. **Opt-out check** (deployed, missing, JWT on). **Resend** sending-only key. **End to end:** your own list → research → qualification → Hunter verification → Claude draft → your approval → a test send to the test inbox only (footer, postal address, one-click opt-out) → a signed delivered event → the webhook proven |
-| Earlier suites | All passing | Updated for the new blockers (a fixture proves the endpoint and the webhook), the Chicago time zone, the engine-door allowlist and the 23 tables |
+| Earlier suites | All passing | Updated for the new blockers (a fixture proves the endpoint and the webhook; the replies suite too), the Chicago time zone (the daily email suite sets New York, whose times it uses), the engine-door allowlist and the 25 tables |
 
 ### Rollback
 
 - **Stop a provider:** delete its secret, or switch it off under Providers.
 - **Partner outreach:** switch it off (Outbound settings → Campaigns).
 - **The live-sending proofs:** do not remove them. Fix the endpoint or the webhook and check again.
-- **The database:** additive. To return to Phase 12, re-run the Phase 12 file. Its functions replace these, and the new tables and columns are harmless.
+- **The database:** additive. To go back, re-run the file as it was before Phase 13. Its functions replace these, and the new tables and columns are harmless.
 
 ## Operating it
 
@@ -1543,14 +1731,16 @@ Nothing in this phase has been deployed or applied to production.
 5. **System check:** all checks pass, and nothing under "Now" or "Soon".
 6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first; the warm-up starts at 10 a day and adds 5 a week up to it.
 7. **The morning run (optional):** run `supabase/growth_outbound_cron.sql`, set your window, and turn Automation on. It never approves or sends.
+8. **The daily email (optional):** tick "Email me once the morning run is done…" in the same group. It tells you when drafts wait, and only you.
+9. **Replies (optional):** have Resend receive a copy of your replies and send `email.received` to the outbound webhook ("Replies", above). Prove it with a reply to your test email.
 
 ### Every morning
 
-1. Open `/admin/growth/` → Outbound.
+1. Open `/admin/growth/` → Outbound. With the daily email on, its link brings you there once drafts are waiting.
 2. Read the System check line and **This morning**: qualified today, what waits for review, today's cap, the domain.
 3. **Review queue:** approve or reject each draft.
 4. **Approved, not sent:** press Send.
-5. In **Sends**, check delivery. Mark replies on the prospect ("They replied", or "…stop emailing them").
+5. In **Sends**, check delivery. **Replies** shows what Resend received. A reply that only you saw (by phone, say), mark on the prospect ("They replied", or "…stop emailing them").
 
 ### When something goes wrong
 
@@ -1566,8 +1756,9 @@ Nothing in this phase has been deployed or applied to production.
   3. tighten the email-confidence gate in settings.
 - **A key may have leaked:** rotate it at the provider, then in Supabase → Edge Functions → Secrets: `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `PODCASTINDEX_API_KEY`/`PODCASTINDEX_API_SECRET`, `HUNTER_API_KEY`, `APOLLO_API_KEY` or `BRAVE_SEARCH_API_KEY`. Functions read keys on every request, so nothing is redeployed. For the webhook secret, roll it in Resend, then run `select growth_outbound.set_webhook_secret('whsec_…');` (Svix sends both signatures while it rolls).
 - **Remove an owner:** in the SQL editor, run `delete from growth_outbound.owners where user_id = (select id from auth.users where lower(email) = lower('them@…'));`. Removing them from the affiliate admins does the same. Every grant and revoke is audited.
+- **The daily email did not come:** the morning-run panel says why ("Daily email: …"). Usually nothing waited for review, or the morning run is still working. If it says it could not be sent, the System check says what Resend answered. Check that `growth_outbound_digest` is deployed and `RESEND_API_KEY` is set. It tries again by itself only when it surely did not go.
 - **"Sends were never confirmed" (System check, "Soon"):** press "Try again" in Sends. It reuses the same key, so Resend sends at most once. After 23 hours the tick marks such a send failed.
 
 ## Next
 
-All thirteen phases are built. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).
+All thirteen phases are built, with the owner's daily email and replies read from Resend. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).

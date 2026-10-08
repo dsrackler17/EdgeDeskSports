@@ -1,5 +1,52 @@
 # Changelog
 
+## 2026-10-08 — Product-led growth, phases 1–2: free research first
+
+**Free research is the front door; Full Access ($49.99/month, 7-day free trial) is one step behind it. Nothing in billing changes.** Audit and the five-phase plan: `docs/product-led-growth/PLAN.md`.
+
+**Security fix:**
+- **the AI desk let the public anon key through.** `edgedesk_ai` treated a 401 from the subscriptions read as "could not be checked"; anon cannot read that table, so the key in every page's source got paid inference. It now refuses an `anon` token and any 401/403 (404/5xx stay fail-open for paying readers) and uses the database's 21-day past-due grace instead of 3. Needs the Deploy intelligence workflow (build `edgedesk_ai-2026-10-08-r21-anon-gate`).
+
+**Found and not fixed here (PLAN.md §2):** premium research is committed as public static JSON in a public repository (`football/cfb_terminal/`, `football/props/`, the slates) and `/research/cfb/` renders the CFB board with no sign-in — Phase 2b; `collective_public` uses a looser entitlement copy; `paywall.sql` is not in the repo.
+
+**Navigation:** one primary nav on every public page — Free Research, Today's Games, Tools, Research Terminal, Pricing (`lib/edgedesk_nav.js`; `tools/site/nav.test.js` fails on drift). Articles rebuilt (header and footer only).
+
+**Today's Games (`/today/`):** the week's NFL and FBS slate in the reader's time zone, each game with its free research and EdgeDesk's public read where the free board has one; `football/home/schedule.json` (no model numbers) built beside the home board.
+
+**Landing page:** free research first — the first action, a working no-vig calculator in the hero instead of a sample of an unbuilt feature, a `#free` section before any pitch, a Free card beside Full Access, nothing in development on either price card.
+
+**Freemium access map:** `lib/edgedesk_plans.js` (free / Full Access / planned, with the door or gate for each) and `lib/edgedesk_flags.js` (UI-only flags; never read by access code). `tools/site/free_access.test.js` (122): free pages use anonymous doors only, anon grants match the SQL, no premium artifact is fetched by a free page, no secret in a served file, the desk's gate is pinned.
+
+**Tests:** new `site:test` (nav 493, free access 122); landing positioning 466, interaction 203, landing e2e 249, public pages e2e 130, home 142, intelligence §32 +13; `checkout_flow.e2e.js` repaired (failed on main) — 40.
+
+## 2026-10-08 — Outbound: replies read from Resend
+
+**A reply ends that person's sequence by itself, the way "They replied" does.** Resend's signed `email.received` event arrives through the existing outbound webhook. The database checks the signature, then matches the sender's address, whole and alone, to the last live email that went there in 180 days. Details and setup: `docs/growth-outbound.md`, "Replies".
+
+- **A reply:** the prospect becomes replied, unsent follow-ups are cancelled, and the results count it.
+- **An out-of-office or automatic answer:** noted; nothing changes.
+- **"Unsubscribe", "remove me", "stop emailing" in the subject:** the address is suppressed, always, even with detection off.
+- **A reply to a test email:** noted as a test (how the setup is proved).
+- **From nobody we wrote to** (or a colleague at the same domain): kept masked, without a subject.
+- **Only the event's metadata** (sender, subject), never the body. Forged events are refused, and repeats count once. It can only ever stop emailing someone, never send.
+- **Setting** `reply_detection` (on). **Table** `replies` (the twenty-first, append-only, deny-all). **Owner door** `growth_outbound_replies`; the prospect page lists replies; the daily email counts them; report row 39.
+- **Console:** Outbound → Replies; the setting under Follow-ups.
+- **The newsletter's webhook** now ignores received mail, keeping a reply's sender and subject out of its tables.
+- **Setup** needs no DNS: a mailbox rule forwards copies to Resend's receiving address, and `email.received` is added to the outbound webhook in Resend.
+- **Tests:** `outbound_replies_sql` (43), lifecycle step 10 (53), events (66), concurrency race Y (24), console e2e sections 61–62 (305). Mutation-checked: 28 of 29 breaks caught; the survivor is benign.
+
+## 2026-10-08 — Outbound: the owner's daily email ("N drafts are waiting for your review")
+
+**One short note a morning, to the owner only, when the morning run leaves drafts for review.** Off until turned on (Outbound settings → Morning run). It never goes to a prospect, never sends a draft and never counts against the daily cap. Details, deploy order and rollback: `docs/growth-outbound.md`, "The daily email".
+
+- **Whom:** the confirmed address of the outbound owner who turned it on, looked up every time it is written. There is no address field. A removed owner, an unconfirmed address, or an address that is also a prospect's: nothing is sent.
+- **What:** counts only: drafts waiting (first emails and follow-ups), how many the morning run wrote, approved and unsent, what may still go out today, System-check items in fixed words, and the console link. No name, address, organization or draft.
+- **When:** once the morning run has nothing left to do, or its window closes (up to 12 hours after). Once a morning at most. A morning with nothing to review is recorded as skipped, with no email.
+- **How:** the tick mints a single-use ticket (its hash kept) for a new Edge Function, `growth_outbound_digest` (project URL, anon key, `RESEND_API_KEY`; no service-role key; refuses browsers). The ticket opens two doors (write it; record what became of it) and nothing else. Tried again only when it surely did not go, at most three times.
+- **Database:** `digests` (the twentieth table, deny-all, never deleted), `digest_enabled` / `digest_owner` settings, the morning-run panel's `digest`, report row 38, attention items `digest_failed` and `digest_no_recipient`. Still three public doors.
+- **Console:** the setting shows the address it goes to; the morning-run panel shows today's email (sent, skipped, on its way, or why not).
+- **Tests:** `outbound_digest_sql` (102), `outbound_digest` (45), lifecycle step 9 (48), static (40), console e2e sections 58–60 (295). 63 of 66 deliberate breaks were caught; the other 3 are layered safeguards.
+
 ## 2026-10-08 — Growth engine: organic discovery, free tools, attribution end to end
 
 **Visitor → research page or tool → trial → paid, measured by channel. Built on the existing articles, attribution, funnel, newsletter, outbound and partner systems; nothing touches billing.** Audit: `docs/growth-engine/AUDIT.md`; deploy order and Search Console setup: `docs/growth-engine/README.md`.

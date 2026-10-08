@@ -19,21 +19,25 @@
    LIVE    at 320 · 375 · 390 · 430 · 768 · 1280:
              nothing wider than the screen (every element's box is measured,
              since the page clips overflow-x); the hero says "Research, not
-             picks" and "Bet with a process. Know what's working."; both hero
+             picks" and "Research the game before you bet it."; both hero
              actions above the fold, at least 44 px tall, the first one the
-             trial and the second "See how it works" to #how; the sample week
-             beside it labelled In development and Sample data; the research
+             free research (#free) and the second the trial; beside them a
+             free no-vig calculator that works (and says so); the research
              preview (two RESEARCH/WATCH game markets and one player prop — on
              a phone the prop second) and its stats filled from the data; no
              tout words; the price and trial from lib/edgedesk_pricing.js
    FIRST SCREEN  375×548, a first visit inside an in-app browser: the
            eyebrow, the headline, the sentence, both actions, the price and
-           the top of the product preview — with its In development label —
-           before any scroll
+           the top of the free calculator — labelled Free — before any scroll
+   CALC    the hero calculator recomputes on input with the odds library's
+           numbers, names a bad price, and records one tool_used
+   FREE    #free fills its games from the board and its research from the
+           published articles; the free research is reached from the hero
    FUNNEL  landing_view on load; cta_clicked for each hero action, once;
            the live research preview and pricing seen when scrolled to —
            each once; the GA names the reports read (hero_cta_click with its
-           legacy hero_trial_click, how_it_works_click, process_coach_view,
+           legacy hero_trial_click, hero_free_click, how_it_works_click from
+           the strip, process_coach_view,
            pricing_view, signup_started) with the hero variant on each
    STICKY  on a phone the sticky call to action appears once the hero's
            buttons scroll away, steps aside at pricing and under an open
@@ -201,7 +205,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     try { S = await open(vp, 'live'); } catch (e) { chk(w + ': the landing page renders its live research preview', false, String(e.message).slice(0, 300)); continue; }
     const { page } = S;
     const r = await page.evaluate(() => {
-      const box = (id) => { const el = document.getElementById(id); if (!el) return null; const b = el.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, h: b.height, w: b.width }; };
+      const box = (id) => { const el = document.getElementById(id); if (!el) return null; const b = el.getBoundingClientRect(); return { top: b.top, bottom: b.bottom, h: b.height, w: b.width, x: b.left, y: b.top }; };
       const stats = [...document.querySelectorAll('#lpStats li[data-k]')].filter((li) => !li.hidden).map((li) => li.querySelector('b').textContent.trim());
       const card = (el) => ({ chip: (el.querySelector('.st') || {}).textContent || '', head: (el.querySelector('.opp-hd b') || {}).textContent || '',
         kicker: (el.querySelector('.opp-k') || {}).textContent || '', cells: [...el.querySelectorAll('.cells .v')].map((v) => v.textContent.trim()),
@@ -228,11 +232,12 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       };
     });
     chk(w + ': the eyebrow is "Research, not picks."', /Research, not picks\./i.test(r.eyebrow), r.eyebrow);
-    chk(w + ': the headline', r.h1 === 'Bet with a process. Know what’s working.', r.h1);
+    chk(w + ': the headline', r.h1 === 'Research the game before you bet it.', r.h1);
     chk(w + ': both hero calls to action above the fold', r.cta && r.start && r.cta.bottom <= r.vh && r.start.bottom <= r.vh, [r.cta, r.start, r.vh]);
     chk(w + ': and at least 44 px tall', r.cta.h >= 44 && r.start.h >= 44, [r.cta.h, r.start.h]);
-    chk(w + ': the first is the free trial, the second "See how it works" to #how', /^Start free trial/.test(r.primary) && r.second.text === 'See how it works' && r.second.href === '#how', [r.primary, r.second]);
-    chk(w + ': the sample week says it is in development and sample data, in its own chrome', /In development/i.test(r.dashBar) && /Sample data/i.test(r.dashBar) && /not a real account/.test(r.dashFoot), [r.dashBar, r.dashFoot]);
+    chk(w + ': the first is the free research (#free), the second the free trial', /^Explore free research/.test(r.second.text) && r.second.href === '#free' && /^Start free trial/.test(r.primary), [r.second, r.primary]);
+    chk(w + ': the free research leads, left of or above the trial', r.start.x < r.cta.x || r.start.y < r.cta.y, [r.start, r.cta]);
+    chk(w + ': beside them, a free calculator that says so, and no sample of a feature in development', /Free/i.test(r.dashBar) && !/In development|Sample data/i.test(r.dashBar + r.dashFoot) && /Not a prediction/.test(r.dashFoot), [r.dashBar, r.dashFoot]);
     chk(w + ': live stats shown, none of them a zero', r.stats.length >= 2 && r.stats.every((s) => s && s !== '0'), r.stats);
     /* a phone shows one of each pillar first; wider screens keep the column's order */
     const order = w <= 560 ? 'game,prop,game' : 'game,game,prop';
@@ -287,6 +292,8 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       await page.click('#heroStart');
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+      await page.click('.strip-how');
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
       await page.click('#heroCta');
       await page.waitForSelector('#authModal.on', { timeout: 5000 });
       await page.waitForTimeout(1800);
@@ -296,13 +303,14 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
       chk('funnel: landing_view once', count('landing_view') === 1, names);
       chk('funnel: the live research preview seen once', count('landing_live_board_view') === 1, names);
       chk('funnel: pricing seen once', count('pricing_view') === 1, names);
-      chk('funnel: "See how it works" once, however often it is pressed', ctas('hero_how') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: "Explore free research" once, however often it is pressed', ctas('hero_free') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
+      chk('funnel: "How Full Access works" from the strip', ctas('strip_how') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
       chk('funnel: the hero trial click, naming its CTA', ctas('hero_trial') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
       chk('funnel: the sticky trial click, naming its CTA', ctas('sticky_trial') === 1, S.events.filter((e) => e.event === 'cta_clicked'));
       chk('funnel: the sign-up form opening is signup_started', count('signup_started') >= 1, names);
       chk('funnel: every event carries the path, never a query string or an address', S.events.every((e) => e.page_path === '/' && !/[?@]/.test(JSON.stringify(e))), S.events[0]);
       const ga = await gaEvents(page), gn = ga.map((x) => x.name);
-      ['landing_page_view', 'hero_cta_click', 'hero_trial_click', 'how_it_works_click', 'hero_how_click', 'process_coach_view', 'pricing_view', 'signup_started', 'sticky_cta_click']
+      ['landing_page_view', 'hero_cta_click', 'hero_trial_click', 'hero_free_click', 'how_it_works_click', 'hero_how_click', 'process_coach_view', 'pricing_view', 'signup_started', 'sticky_cta_click']
         .forEach((n) => chk('GA: ' + n + ' is sent', gn.indexOf(n) >= 0, gn));
       chk('GA: the page\'s own events carry the hero variant', ga.filter((x) => /_click$|_view$/.test(x.name)).every((x) => x.params.hero_variant === 'a'), ga.slice(0, 4));
       chk('GA: nothing personal is sent', !/@|password|access_token/.test(JSON.stringify(ga)), ga);
@@ -331,7 +339,7 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     chk('first visit: what it does, above the fold', above(r.does), r);
     chk('first visit: the price and trial above the fold', above(r.cost) && /\$49\.99/.test(r.price) && /7 days free/.test(r.price), r);
     chk('first visit: both calls to action above the fold', above(r.tap) && above(r.next), r);
-    chk('first visit: the top of the product preview shows, with its In development label', r.dashTop !== null && r.dashTop < r.H && above(r.dashBar) && /In development/i.test(r.label), r);
+    chk('first visit: the top of the free calculator shows, labelled Free', r.dashTop !== null && r.dashTop < r.H && above(r.dashBar) && /Free/i.test(r.label), r);
     chk('first visit: no script errors', S.errors.length === 0, S.errors);
     await S.ctx.close();
   }
@@ -358,10 +366,57 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     const h1 = await S.page.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim());
     const ga = await gaEvents(S.page);
     chk('variant c: its headline is shown', h1 === 'Research the bet. Track the result. Improve the process.', h1);
-    chk('variant c: the GA events carry it', ga.filter((x) => x.name === 'how_it_works_click').every((x) => x.params.hero_variant === 'c') && ga.some((x) => x.name === 'how_it_works_click'), ga);
+    chk('variant c: the GA events carry it', ga.filter((x) => x.name === 'hero_free_click').every((x) => x.params.hero_variant === 'c') && ga.some((x) => x.name === 'hero_free_click'), ga);
+    await S.ctx.close();
+    const P = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=p' });
+    chk('variant p: the process headline that led before free research is kept', (await P.page.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim())) === 'Bet with a process. Know what’s working.');
+    await P.ctx.close();
+    {
+      /* THE HERO CALCULATOR AND #free, at a phone and a desktop */
+      const OT = require(path.join(ROOT, 'lib', 'edgedesk_odds_tools.js'));
+      const PUB = JSON.parse(fs.readFileSync(path.join(ROOT, 'articles', 'data', 'published.json'), 'utf8'));
+      for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+        const C = await open(vp, 'live');
+        const tag = vp.width + ' calc';
+        const read = () => C.page.evaluate(() => ({ pa: $t('hcPa'), pb: $t('hcPb'), oa: $t('hcOa'), vig: $t('hcVig'),
+          err: document.getElementById('hcErr').hidden ? null : $t('hcErr'), badB: document.getElementById('hcB').getAttribute('aria-invalid') }));
+        await C.page.evaluate(() => { window.$t = (id) => document.getElementById(id).textContent.trim(); });
+        await C.page.fill('#hcA', '-110'); await C.page.fill('#hcB', '-110');
+        let v = await read();
+        const want = OT.noVig(['-110', '-110'], { method: 'proportional' });
+        chk(tag + ': recomputes with the odds library: -110/-110 is 50/50 with the margin out',
+          v.pa === (want.outcomes[0].fair * 100).toFixed(2) + '%' && v.pb === '50.00%' && v.vig === (want.overround * 100).toFixed(2) + '%' && /\+100|−100/.test(v.oa), v);
+        await C.page.fill('#hcB', 'abc');
+        v = await read();
+        chk(tag + ': names a bad price, on the field that has it', !!v.err && /not a price/.test(v.err) && v.badB === 'true', v);
+        await C.page.fill('#hcB', '+250');
+        v = await read();
+        chk(tag + ': prices that cannot be one market are named, and no single field is blamed', !!v.err && /implied probability/.test(v.err) && v.badB === null, v);
+        await C.page.fill('#hcB', '-105');
+        v = await read();
+        chk(tag + ': and it recovers when they are fixed', v.err === null && v.badB === null && /%$/.test(v.pa) && v.pa !== '50.00%', v);
+        await C.page.evaluate(() => window.EDTrack && window.EDTrack.flush(false));
+        await C.page.waitForTimeout(300);
+        const used = C.events.filter((e) => e.event === 'tool_used');
+        chk(tag + ': one tool_used for the calculator, however many prices are typed', used.length === 1 && used[0].props && used[0].props.entity === 'no_vig_home', used);
+        /* #free: the board's games, the published research, and a way in from the hero */
+        await C.page.evaluate(() => document.getElementById('free').scrollIntoView({ block: 'start', behavior: 'instant' }));
+        await C.page.waitForTimeout(500);
+        const f = await C.page.evaluate(() => ({ games: [...document.querySelectorAll('#freeGames li')].map((li) => li.innerText),
+          chips: document.querySelectorAll('#freeGames .st').length, arts: [...document.querySelectorAll('#freeArts a')].map((a) => a.getAttribute('href')),
+          links: [...document.querySelectorAll('#free a')].map((a) => a.getAttribute('href')) }));
+        chk(vp.width + ' free: the week\'s games from the board, each with EdgeDesk\'s public read', f.games.length >= 1 && f.games.length <= 4 && f.chips === f.games.length, f);
+        const pubUrls = PUB.articles.map((a) => a.url.replace('https://edgedesksports.com', ''));
+        chk(vp.width + ' free: the latest research, linked to published articles only', f.arts.length >= 1 && f.arts.every((h) => pubUrls.indexOf(h) >= 0), f.arts);
+        ['/today/', '/articles/', '/tools/no-vig-calculator/', '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/research/sample/', '/newsletter/?from=home_free']
+          .forEach((h) => chk(vp.width + ' free: links ' + h, f.links.indexOf(h) >= 0, f.links));
+        chk(vp.width + ' free: nothing wider than the screen, no script error', (await overflowing(C.page)).length === 0 && C.errors.length === 0, C.errors);
+        await C.ctx.close();
+      }
+    }
     await S.ctx.close();
     const U = await open({ width: 1280, height: 900 }, 'live', { search: '?hero=<b>x</b>' });
-    chk('an unknown variant leaves the page as it ships', (await U.page.evaluate(() => document.querySelector('h1').textContent)) === 'Bet with a process. Know what’s working.');
+    chk('an unknown variant leaves the page as it ships', (await U.page.evaluate(() => document.querySelector('h1').textContent)) === 'Research the game before you bet it.');
     await U.ctx.close();
   }
 

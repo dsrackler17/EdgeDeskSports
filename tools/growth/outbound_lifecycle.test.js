@@ -2,11 +2,11 @@
 /* ===========================================================================
    PHASE 11 — ONE PROSPECT'S WHOLE LIFE, through every part at once.
 
-   All five outbound Edge Functions as deployed (research, draft, send,
-   webhook, opt-out), the pg_cron tick, and the site's own acquisition doors
-   (supabase/growth.sql), against ONE real database. Only the outside world
-   is stood in for: Brave, the web, Hunter, Claude (the SDK), Resend, Stripe's
-   ledger rows. Each phase was tested alone; this proves they compose.
+   All six outbound Edge Functions as deployed (research, draft, send,
+   webhook, opt-out, the owner's daily email), the pg_cron tick, and the
+   site's own acquisition doors (supabase/growth.sql), against ONE real
+   database. Only the outside world is stood in for: Brave, the web,
+   Hunter, Claude (the SDK), Resend, Stripe's ledger rows. Each phase was tested alone; this proves they compose.
 
      1  the morning run finds a candidate and researches it into a prospect,
         on single-use tickets, with no owner signed in
@@ -25,6 +25,13 @@
      8  across all of it: Resend called once per approved message, never for
         a suppressed address, each with its own key; no key or token in any
         answer; approve and send happened only by the owner's hand
+     9  the owner's daily email (2026-10): the morning run drafts for a newly
+        qualified prospect; when it has nothing left to do, the tick hands a
+        ticket to the digest function, and Resend gets one note — to the
+        owner alone, counts only; no send, no prospect touched
+    10  a reply, read from Resend (2026-10): the owner sends that draft; the
+        person answers; Resend's signed email.received reaches the webhook
+        function, and the database ends their sequence — as "They replied"
 
    Run: node tools/growth/outbound_lifecycle.test.js
    =========================================================================== */
@@ -130,6 +137,7 @@ const cfg = {
   send: { url: URL_, anonKey: ANON, resendKey: KEYS.resend, origins: ['https://edgedesksports.com'], fetch: (u, i) => globalThis.fetch(u, i), timeoutMs: 3000 },
   webhook: { url: URL_, anonKey: ANON, fetch: (u, i) => globalThis.fetch(u, i), log: () => {} },
   optout: { url: URL_, anonKey: ANON, page: 'https://edgedesksports.com/email/stop/', fetch: (u, i) => globalThis.fetch(u, i), log: () => {} },
+  digest: { url: URL_, anonKey: ANON, resendKey: KEYS.resend, fetch: (u, i) => globalThis.fetch(u, i), timeoutMs: 3000, log: () => {} },
 };
 const M = {};
 async function call(name, req) {
@@ -175,7 +183,7 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
       unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/', daily_prospect_target: 2,
       discovery_config: { queries: ['cfb power ratings newsletter'] } })});`);
     MORNING.install(db);
-    for (const k of ['research', 'draft', 'send', 'webhook', 'optout']) M[k] = await import(fn('growth_outbound_' + k));
+    for (const k of ['research', 'draft', 'send', 'webhook', 'optout', 'digest']) M[k] = await import(fn('growth_outbound_' + k));
 
     /* ══ 1. FOUND AND RESEARCHED, WITH NOBODY SIGNED IN ══════════════════ */
     let s = await morning('discover');
@@ -324,6 +332,47 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
     const sched = JSON.parse(one(`select coalesce(jsonb_agg(distinct action), '[]') from growth_outbound.activity where actor_kind = 'system';`));
     chk('8 what the system did on its own: found, researched, drafted, matched — never approved or sent',
       !sched.some((a) => /approv|send_claimed|^sent$/.test(a)) && sched.includes('prospect_converted'), sched);
+    /* ══ 9. THE OWNER'S DAILY EMAIL ══════════════════════════════════════ */
+    r = own(`select public.growth_outbound_settings_update('{"digest_enabled": true}'::jsonb);`);
+    chk('9 the owner turns the daily email on: it goes to their own address', r.ok === true && r.settings.digest_to === 'owner@edgedesk.test', r.settings && r.settings.digest_to);
+    const KAI = '00000000-0000-0000-0000-00000000c0a1';
+    one(SEED.strong({ id: KAI, name: 'Kai Lines', email: 'kai@linelab.test', domain: 'linelab.test', handle: 'KaiLines', org: 'Line Lab' }));
+    resetRuns();
+    const sendsBefore = one(`select count(*) from growth_outbound.sends;`), mailBefore = MAIL.length;
+    s = await morning('draft');
+    chk('9 the morning run drafts for a newly qualified prospect', s.x && s.x.b.ok === true && s.x.b.drafted >= 1 && !!pendingDraft(KAI), s.x && s.x.b);
+    chk('9 … and no email goes anywhere while it works', MAIL.length === mailBefore);
+    const t9 = JSON.parse(one(`select growth_outbound.schedule_tick(${lit(MORNING.BASE)}, now());`));
+    const c9 = JSON.parse(one(`select to_jsonb(c) from net.calls c order by id desc limit 1;`));
+    chk('9 with nothing left to do, the tick hands the daily email a ticket', t9.action === 'idle' && t9.digest && t9.digest.action === 'started'
+      && c9.url === MORNING.BASE.replace(/\/$/, '') + '/growth_outbound_digest', { t9, url: c9.url });
+    x = await call('digest', new Request(c9.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(c9.body) }));
+    const waiting = +one(`select count(*) from growth_outbound.drafts where status = 'pending_review' and not is_test;`);
+    const note = (MAIL[mailBefore] || {}).msg || {};
+    chk('9 the digest function sends one note, recorded as sent', x.status === 200 && x.b.sent === true && MAIL.length === mailBefore + 1
+      && one(`select status from growth_outbound.digests order by id desc limit 1;`) === 'sent', x.b);
+    chk('9 … to the owner alone, from EdgeDesk, saying how many wait', JSON.stringify(note.to) === '["owner@edgedesk.test"]'
+      && note.from === 'EdgeDesk outbound <davis@edgedesksports.com>' && waiting >= 1
+      && note.subject === waiting + (waiting === 1 ? ' outbound draft is' : ' outbound drafts are') + ' ready for your review', note);
+    chk('9 … counts only: nobody\'s name, address or words', !/Kai|Pat|Lee|linelab|cfbnumbers|A research tool for your work/.test(note.subject + note.text), note.text);
+    chk('9 … and nothing else moved: no send, the draft still waits for the owner', one(`select count(*) from growth_outbound.sends;`) === sendsBefore
+      && one(`select status from growth_outbound.drafts where id = ${lit(pendingDraft(KAI))};`) === 'pending_review');
+    const leaked9 = ANSWERS.filter((a) => Object.values(KEYS).some((k) => a.includes(k)) || a.includes(c9.body.ticket) || a.includes('owner@edgedesk.test'));
+    chk('9 no answer carried a key, the ticket or the owner\'s address', leaked9.length === 0, leaked9.slice(0, 2));
+    /* ══ 10. A REPLY, READ FROM RESEND ══════════════════════════════════ */
+    const DKAI = pendingDraft(KAI);
+    chk('10 the owner approves Kai\'s draft', approve(DKAI).ok === true);
+    x = await call('send', post('send', { draft_ids: [DKAI] }, OWNER_T));
+    chk('10 … and sends it: to Kai', x.status === 200 && x.b.sent === 1 && pstatus(KAI) === 'contacted' && JSON.stringify(MAIL[MAIL.length - 1].msg.to) === '["kai@linelab.test"]', x.b);
+    x = await hook('email.received', 'rcv_lc_kai', { from: 'Kai Lines <Kai@LineLab.test>', to: ['replies@edgedesksports.com'], cc: [], bcc: [],
+      received_for: ['replies@edgedesksports.com'], message_id: '<r1@linelab.test>', subject: 'Re: A research tool for your work', attachments: [] });
+    chk('10 Kai answers; Resend\'s signed event reaches the webhook function, which relays it untouched', x.status === 200);
+    chk('10 … and the database ends Kai\'s sequence, as "They replied" does', pstatus(KAI) === 'replied'
+      && one(`select kind || '|' || applied from growth_outbound.replies where prospect_id = ${lit(KAI)};`) === 'reply|true'
+      && one(`select actor_kind from growth_outbound.activity where action = 'prospect_replied' and prospect_id = ${lit(KAI)};`) === 'webhook'
+      && +one(`select count(*) from growth_outbound.drafting_due() x where x.prospect_id = ${lit(KAI)};`) === 0);
+    const rl = own(`select public.growth_outbound_replies(10);`);
+    chk('10 the owner sees it in Replies: who, which email, what it was', rl.rows[0].full_name === 'Kai Lines' && rl.rows[0].kind === 'reply' && rl.rows[0].sequence_number === 1, rl.rows[0]);
     const out = db.applyFileAtomic(path.join(PG.ROOT, 'supabase', 'growth_outbound.sql'));
     chk('8 the file runs again over all of this, every report row ok', !/CHECK THIS/.test(out), out.split('\n').filter((l) => /CHECK THIS/.test(l)));
   } catch (e) {
@@ -332,6 +381,6 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
     db.stop();
   }
   failures.forEach((f) => console.log('FAIL | ' + f));
-  console.log((fail === 0 && failures.length === 0 ? 'PASS' : 'FAIL') + ' — outbound lifecycle (five functions, one database): ' + pass + '/' + (pass + fail) + ' checks');
+  console.log((fail === 0 && failures.length === 0 ? 'PASS' : 'FAIL') + ' — outbound lifecycle (six functions, one database): ' + pass + '/' + (pass + fail) + ' checks');
   process.exit(fail === 0 && failures.length === 0 ? 0 : 1);
 })();

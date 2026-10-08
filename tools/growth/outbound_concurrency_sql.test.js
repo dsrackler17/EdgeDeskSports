@@ -208,6 +208,27 @@ try {
   chk('X a send claimed while its approval is withdrawn: sent, or withdrawn — never both', allOk(rs)
     && ((sent === 1 && st === 'sent') || (sent === 0 && st === 'pending_review')), [sent, st, errs(rs), rs.map((r) => r.answer)]);
 
+  /* ══ Y. ONE REPLY, MANY EVENTS (2026-10) ═══════════════════════════════ */
+  const qEmail = ready(17, 'Quin Rowe');
+  approve(did(17));
+  const c17 = own(`select public.growth_outbound_send_claim(${lit(did(17))});`);
+  own(`select public.growth_outbound_send_result(${lit(c17.send_id)}, 're_conc_live_17', null, false);`);
+  const rts = String(Math.floor(Date.now() / 1000));
+  const rcvd = (eid) => JSON.stringify({ type: 'email.received', created_at: new Date().toISOString(),
+    data: { email_id: eid, from: 'Quin Rowe <' + qEmail + '>', to: ['replies@edgedesksports.com'], subject: 'Re: Your work, Quin' } });
+  const delivery = (evid, b) => ({ as: 'anon', sql: `select public.growth_outbound_webhook(${lit(evid)}, ${lit(rts)}, ${lit('v1,' + crypto.createHmac('sha256',
+    Buffer.from(SECRET.slice(6), 'base64')).update(evid + '.' + rts + '.' + b, 'utf8').digest('base64'))}, ${lit(b)});` });
+  rs = race([1, 2, 3, 4, 5].map((n) => delivery('msg_conc_rcv_a' + n, rcvd('rcv_conc_1')))
+    .concat([2, 3, 4].map((n) => delivery('msg_conc_rcv_b' + n, rcvd('rcv_conc_' + n)))));
+  chk('Y one reply under five event ids, and three more replies from the same person, all at once: every delivery answered, no error',
+    allOk(rs) && rs.every((r) => r.answer && r.answer.ok === true), errs(rs));
+  chk('Y … that email recorded once, four replies in all, "replied" logged once, the sequence ended once',
+    count('replies', `resend_email_id = 'rcv_conc_1'`) === 1 && count('replies', `prospect_id = ${lit(pid(17))}`) === 4
+    && count('activity', `action = 'prospect_replied' and prospect_id = ${lit(pid(17))}`) === 1
+    && one(`select status from growth_outbound.prospects where id = ${lit(pid(17))};`) === 'replied'
+    && rs.filter((r) => r.answer.outcome === 'reply_duplicate').length === 4,
+    [count('replies', `prospect_id = ${lit(pid(17))}`), rs.map((r) => r.answer)]);
+
   const out = db.applyFileAtomic(path.join(PG.ROOT, 'supabase', 'growth_outbound.sql'));
   chk('the file runs again over all of this, every report row ok', !/CHECK THIS/.test(out), out.split('\n').filter((l) => /CHECK THIS/.test(l)));
 } catch (err) {

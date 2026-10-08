@@ -277,6 +277,13 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="note">Every email handed to Resend, newest first. A send is written down before Resend is called, with one key per draft, so "Try again" can never send it twice; an answer still missing after 23 hours is marked failed rather than retried. Delivery, bounces and spam complaints arrive from Resend's signed webhook.</div>
       </div>
 
+      <h2>Replies</h2>
+      <div class="card">
+        <div class="chips" id="obReplyChips"></div>
+        <div class="tw"><table id="obReplies"></table></div>
+        <div class="note">Read from Resend's signed webhook, once Resend receives your replies (setup: docs/growth-outbound.md, "Replies"). A reply from someone you wrote to ends their sequence, as "They replied" does; an automatic answer changes nothing; "unsubscribe" in a reply stops all email to them. Only the subject is known here: read the reply itself in your mailbox.</div>
+      </div>
+
       <h2>Results</h2>
       <div class="card">
         <div class="row" style="align-items:center">

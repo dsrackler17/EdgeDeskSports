@@ -9,10 +9,15 @@
 #   growth_outbound_draft    the drafting engine: writes drafts the database
 #                            accepts into the review queue (never approves or
 #                            sends); the owner presses it
-#   (research and draft also take the MORNING RUN's steps: pg_cron, through
-#    pg_net, posts a single-use ticket the database minted; no JWT, which is
-#    why both stay deployed --no-verify-jwt. The clock itself is
-#    supabase/growth_outbound_cron.sql, applied by hand.)
+#   growth_outbound_digest   the OWNER's daily email ("N drafts are waiting
+#                            for your review"): once a morning, to the owner's
+#                            own confirmed address only, counts only; it
+#                            cannot reach a draft, a prospect or a send
+#   (research and draft also take the MORNING RUN's steps, and the digest
+#    function the daily email: pg_cron, through pg_net, posts a single-use
+#    ticket the database minted; no JWT, which is why all three stay deployed
+#    --no-verify-jwt. The clock itself is supabase/growth_outbound_cron.sql,
+#    applied by hand.)
 #
 # MANUAL ON PURPOSE (workflow_dispatch). Shipping the code that can send email
 # to real people is a decision a person makes. This workflow never touches the
@@ -25,7 +30,7 @@
 #      — and the owner check the send function carries
 #      (tools/growth/outbound_auth.test.js), which must be a verbatim copy of
 #      tools/growth/outbound_auth.js (tools/growth/inline_outbound_auth.js --check);
-#   2. deploys all three with --no-verify-jwt: the send function verifies the
+#   2. deploys all six with --no-verify-jwt: the send function verifies the
 #      owner itself (GoTrue, then growth_outbound_is_owner() asked as the
 #      caller) and the browser's CORS preflight carries no token; Resend and a
 #      person opting out have no Supabase token at all — their proofs are
@@ -35,13 +40,13 @@
 #   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF
 # And on the Supabase side, usually already set for the newsletter (Supabase
 # secrets are shared by every function in the project):
-#   RESEND_API_KEY   (the send function only)
+#   RESEND_API_KEY   (the send function, and the daily email's)
 #   BRAVE_SEARCH_API_KEY, HUNTER_API_KEY, ANTHROPIC_API_KEY   (the research
 #                    function; each optional: without one, that provider is
 #                    said to be not set up and nothing is faked)
 #   ANTHROPIC_API_KEY (the drafting function too; without it, every draft is
 #                    the template)
-# None of the three holds a service-role key, and none needs one. The webhook
+# None of the six holds a service-role key, and none needs one. The webhook
 # signing secret is NOT a function secret: it lives in the database
 # (select growth_outbound.set_webhook_secret('whsec_...'), in the SQL editor).
 name: Deploy outbound Edge Functions
@@ -77,6 +82,7 @@ jobs:
           OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_research.test.js
           OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_draft.test.js
           OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_providers.test.js
+          OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_digest.test.js
           OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_freefirst.test.js
 
       - name: Check the credentials exist before claiming anything
@@ -89,7 +95,7 @@ jobs:
           echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
           echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
           if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
-            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the outbound functions cannot be deployed from CI. Deploy them from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt (and growth_outbound_webhook, growth_outbound_optout, growth_outbound_research, growth_outbound_draft)"
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the outbound functions cannot be deployed from CI. Deploy them from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt (and growth_outbound_webhook, growth_outbound_optout, growth_outbound_research, growth_outbound_draft, growth_outbound_digest)"
             exit 1
           fi
 
@@ -98,12 +104,12 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy the outbound functions (send, webhook, opt-out, research, draft)
+      - name: Deploy the outbound functions (send, webhook, opt-out, research, draft, daily email)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          for fn in growth_outbound_send growth_outbound_webhook growth_outbound_optout growth_outbound_research growth_outbound_draft; do
+          for fn in growth_outbound_send growth_outbound_webhook growth_outbound_optout growth_outbound_research growth_outbound_draft growth_outbound_digest; do
             supabase functions deploy "$fn" \
               --project-ref "$PROJECT_REF" \
               --no-verify-jwt

@@ -77,11 +77,19 @@ function supabase(state) {
     const json = (status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
     if (u.pathname === '/auth/v1/signup' || u.pathname === '/auth/v1/token') return json(200, SESSION);
+    /* create_checkout_session (billing_hardening) is not deployed here: a 404
+       is the deploy-window answer, after which the page uses the Payment Link
+       this suite drives. Answering 200 with no url (the catch-all below) is a
+       refusal, and the page rightly stops with "nothing has been charged". */
+    if (u.pathname.indexOf('/functions/v1/') === 0) return json(404, { error: 'not deployed here' });
     if (u.pathname === '/rest/v1/billing_consents' && req.method() === 'POST') { state.consents.push(JSON.parse(req.postData() || '[]')[0]); return json(201, null); }
     if (u.pathname === '/rest/v1/subscriptions') {
       return json(200, state.paid ? [{ status: 'trialing', price_id: null, cancel_at_period_end: false, stripe_customer_id: 'cus_e2e',
         current_period_end: state.trialEnd }] : []);
     }
+    /* my_billing_access (billing_hardening) is not installed here either: the
+       access client reads the subscription row, as in the deploy window */
+    if (u.pathname === '/rest/v1/rpc/my_billing_access') return json(404, { message: 'not installed here' });
     if (u.pathname.indexOf('/rest/v1/rpc/') === 0) return json(200, u.pathname.endsWith('my_subscription_price')
       ? [{ unit_amount: X.PRICE_CENTS, currency: 'usd', billing_interval: 'month', interval_count: 1 }] : null);
     return json(200, []);
@@ -160,7 +168,8 @@ async function startTrial(page) {
       const { ctx, page, state, errors } = await run(browser, base, { link: LINK, width });
       const heroText = await page.textContent('#top .microcta');
       chk('1 the signed-out landing page says Then $49.99/month under the hero button', /Then \$49\.99\/month/.test(heroText), heroText);
-      chk('  and the plan card says $49.99 / month, 7 days free', (await page.textContent('.pamt')) === '$49.99' && /7 days free/.test(await page.textContent('.pcard')));
+      /* the paid plan's card (the Free card beside it says $0) */
+      chk('  and the plan card says $49.99 / month, 7 days free', (await page.textContent('.pcard:not(.freecard) .pamt')) === '$49.99' && /7 days free/.test(await page.textContent('.pcard:not(.freecard)')));
       chk('  and nothing on the page says $79.99', !/79\.99/.test(await page.evaluate(() => document.body.innerText)));
 
       await startTrial(page);

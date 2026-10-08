@@ -41,6 +41,16 @@
    Run by .github/workflows/player-props.yml on every run (after the boards),
    committed with them.
 
+   ALSO football/home/schedule.json — THE WEEK'S SLATE, FOR /today/. Every
+   NFL and FBS game from a few hours ago to eight days out: the teams, the
+   kickoff, the week, the venue (NFL) or conferences (college). NO MODEL
+   NUMBER: no fair line, no probability, no market, no EV. It is the free
+   Today's Games page's list of games; EdgeDesk's public status for the games
+   that have one comes from public_home_board() at view time, as on the
+   landing page. Copied from football/nfl/slate.json and
+   football/cfb_terminal/board.json — 1 MB and 0.85 MB a phone should never
+   download to print a schedule.
+
      node tools/home/build_home.js [--write] [--out <file>] [--now <iso>]
    ========================================================================== */
 'use strict';
@@ -49,7 +59,11 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
 const OUT = path.join(ROOT, 'football', 'home', 'board.json');
+const SCHEDULE_OUT = path.join(ROOT, 'football', 'home', 'schedule.json');
 const LIMITS = { top: 12, per_game: 3, why: 2, concerns: 2, horizon_days: 8 };
+/* the schedule's window: a game that kicked off in the last few hours is
+   still today's game; the horizon is the board's own */
+const SCHEDULE = { past_hours: 6, horizon_days: LIMITS.horizon_days, max_games: 240 };
 /* THE FILE'S SIZE IS A PROPERTY OF THE BUILD, not of how many games have
    props that hour: the page's file must stay under 64 KB
    (tools/home/home.test.js, tools/presentation/landing_interaction.test.js).
@@ -261,6 +275,61 @@ function build(opts) {
   }, kick, opts.budget);
 }
 
+/* ---------------------------------------------------- the week's slate */
+/* Only what a schedule prints. Every field is copied; a game whose kickoff or
+   teams cannot be read is left out rather than guessed. */
+function scheduleGames(nfl, cfb, now) {
+  const from = now - SCHEDULE.past_hours * 36e5, to = now + SCHEDULE.horizon_days * 864e5;
+  const inWindow = (iso) => { const t = Date.parse(iso); return isFinite(t) && t >= from && t <= to; };
+  const out = [];
+  ((nfl && nfl.games) || []).forEach((g) => {
+    if (!g || !g.game_id || !g.home_team || !g.away_team || !inWindow(g.kickoff)) return;
+    out.push(strip({
+      key: 'nfl|' + str(g.game_id, 40), league: 'nfl', week: num(g.week), kickoff: str(g.kickoff, 40),
+      away: str(g.away_team, 60), home: str(g.home_team, 60), away_code: str(g.away_code, 6), home_code: str(g.home_code, 6),
+      venue: str(g.venue, 80)
+    }));
+  });
+  ((cfb && cfb.rows) || []).forEach((r) => {
+    if (!r || !r.game_id || !r.home || !r.away || !inWindow(r.kickoff)) return;
+    const conf = Array.isArray(r.conf) ? r.conf : [];
+    out.push(strip({
+      key: 'cfb|' + str(r.game_id, 40), league: 'cfb', week: num(r.week), kickoff: str(r.kickoff, 40),
+      away: str(r.away, 60), home: str(r.home, 60), away_conf: str(conf[0], 40), home_conf: str(conf[1], 40),
+      fcs: r.fcs === true ? true : null
+    }));
+  });
+  out.sort((a, b) => (Date.parse(a.kickoff) - Date.parse(b.kickoff)) || (a.key < b.key ? -1 : 1));
+  return out.slice(0, SCHEDULE.max_games);
+}
+
+function buildSchedule(opts) {
+  opts = opts || {};
+  const now = opts.now ? Date.parse(opts.now) : Date.now();
+  const read = opts.read || ((rel) => readJson(path.join(ROOT, rel)));
+  const nfl = read('football/nfl/slate.json'), cfb = read('football/cfb_terminal/board.json');
+  const games = scheduleGames(nfl, cfb, now);
+  return {
+    schema: 'edgedesk_home_schedule/1',
+    generated_at: new Date(now).toISOString(),
+    note: 'The week\'s NFL and FBS games for /today/: teams, kickoff, week, venue or conferences. Copied from football/nfl/slate.json and football/cfb_terminal/board.json. No model number, market or EV is in this file.',
+    window: { from: new Date(now - SCHEDULE.past_hours * 36e5).toISOString(), to: new Date(now + SCHEDULE.horizon_days * 864e5).toISOString() },
+    sources: strip({ nfl: nfl ? str(nfl.generated_at, 40) : null, cfb: cfb ? str(cfb.generated_at, 40) : null }),
+    counts: { nfl: games.filter((g) => g.league === 'nfl').length, cfb: games.filter((g) => g.league === 'cfb').length },
+    games
+  };
+}
+
+/* generated_at alone changing is not news: keep the file (and the commit) quiet */
+function writeQuiet(file, body) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  let prev = null; try { prev = fs.readFileSync(file, 'utf8'); } catch (e) { prev = null; }
+  let same = false;
+  try { same = !!prev && JSON.stringify(Object.assign(JSON.parse(prev), { generated_at: null })) === JSON.stringify(Object.assign(JSON.parse(body), { generated_at: null })); } catch (e) { same = false; }
+  if (!same) fs.writeFileSync(file, body);
+  return same;
+}
+
 function main() {
   const a = process.argv.slice(2);
   const arg = (k) => { const i = a.indexOf('--' + k); return i >= 0 ? a[i + 1] : null; };
@@ -268,19 +337,23 @@ function main() {
   const body = JSON.stringify(out) + '\n';
   if (a.indexOf('--write') >= 0) {
     const file = arg('out') || OUT;
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    let prev = null; try { prev = fs.readFileSync(file, 'utf8'); } catch (e) { prev = null; }
-    /* generated_at alone changing is not news: keep the file (and the commit) quiet */
-    const same = prev && JSON.stringify(Object.assign(JSON.parse(prev), { generated_at: null })) === JSON.stringify(Object.assign(JSON.parse(body), { generated_at: null }));
-    if (!same) fs.writeFileSync(file, body);
+    const same = writeQuiet(file, body);
     console.log('home board: ' + (same ? 'unchanged' : 'written') + ' · ' + Buffer.byteLength(body) + ' bytes · '
       + out.props.top.length + ' research-grade props (' + Object.keys(out.props.items).length + ' printed) · ' + Object.keys(out.props.by_game).length + ' games with props · '
       + Object.keys(out.game_ev).length + ' college game EV quotes'
       + (out.props.counts.trimmed ? ' · held under ' + out.props.counts.trimmed.budget_bytes + ' bytes: cards taken off the ' + out.props.counts.trimmed.games + ' latest games' : ''));
+    /* the week's slate, beside it (not when --out names a one-off file) */
+    if (!arg('out')) {
+      const sch = buildSchedule({ now: arg('now') || undefined });
+      const sbody = JSON.stringify(sch) + '\n';
+      const ssame = writeQuiet(SCHEDULE_OUT, sbody);
+      console.log('home schedule: ' + (ssame ? 'unchanged' : 'written') + ' · ' + Buffer.byteLength(sbody) + ' bytes · '
+        + sch.counts.nfl + ' NFL and ' + sch.counts.cfb + ' college games');
+    }
   } else {
     process.stdout.write(JSON.stringify(out, null, 1) + '\n');
   }
 }
 
 if (require.main === module) main();
-module.exports = { build, slimProp, propsPart, gameEvPart, ratingsPart, fit, LIMITS, BUDGET_BYTES };
+module.exports = { build, buildSchedule, scheduleGames, slimProp, propsPart, gameEvPart, ratingsPart, fit, LIMITS, BUDGET_BYTES, SCHEDULE };

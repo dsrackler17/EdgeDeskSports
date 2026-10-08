@@ -19,6 +19,12 @@
 -- research or drafting Edge Function. The ticket opens only the engine's own
 -- doors, for that run, for 15 minutes; the database keeps only its hash.
 --
+-- THE DAILY EMAIL (2026-10, if the owner turns it on): once the morning run
+-- has nothing left to do (or its window has closed), one short note to the
+-- OWNER — "N drafts are waiting for your review" — through the
+-- growth_outbound_digest function, on a ticket of its own that opens only
+-- its own two doors. Counts only; never to a prospect; never a send.
+--
 -- WHAT IT NEVER DOES: approve or send. Every draft waits for the owner in
 -- the review queue; approving and sending are the owner's, checked by the
 -- database, and no ticket reaches those doors.
@@ -29,10 +35,10 @@
 --   1  Run supabase/growth_outbound.sql first (Phase 9 or later).
 --   2  Enable pg_cron and pg_net (Database → Extensions). Already on if any
 --      other *_cron.sql in this folder has been run.
---   3  Deploy growth_outbound_research and growth_outbound_draft (Actions →
---      Deploy outbound Edge Functions). Both are deployed with JWT
---      verification OFF: pg_cron sends no JWT, and the ticket is checked by
---      the database.
+--   3  Deploy growth_outbound_research, growth_outbound_draft and
+--      growth_outbound_digest (Actions → Deploy outbound Edge Functions).
+--      They are deployed with JWT verification OFF: pg_cron sends no JWT,
+--      and the ticket is checked by the database.
 --   4  Run this file. It needs no key and no database setting.
 --   5  In the console, turn automation on and set the window.
 --
