@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-08 — Content Engine: Save as PDF, and the page always loads its latest code
+
+- **Save as PDF** in the publishing queue (the export row and the *Send it yourself* card). It opens the article's clean, script-free print view, with the tagged EdgeDesk link and the disclaimer, and the browser's print dialog, where *Save as PDF* is the destination. Word stays the format to send for editing.
+- **Cache.** `admin/content/` loads `content_engine.js` and `content.js` with a new version tag (`?v=20261008b`). The Word update kept the old tag, so a browser that had the earlier page could keep running its cached code without the Word button.
+
+**Tests:** `content:e2e` (54: Save as PDF opens the print view of the right article, script-free, with the tagged link, and calls print).
+
 ## 2026-10-08 — Content Engine: a Word file the editor can touch up, and "Mark as sent"
 
 **An approved article now downloads as a Word (.docx) file that the publisher's editor can edit in Word or Google Docs. The quickest way to send it is now to email it yourself and press Mark as sent.** Nothing is ever sent on its own. Docs: `docs/content-engine/README.md` (*Using it*, step 6).

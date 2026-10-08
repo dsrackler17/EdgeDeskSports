@@ -24,8 +24,9 @@
         address and asks first, emails the approved article with its files,
         and records it as sent; mark published (URL asked)
      6b Send it yourself: a second article, approved, downloaded as a Word
-        file (opened and checked), then "Mark as sent" with one confirmation;
-        nothing is emailed
+        file (opened and checked), saved as a PDF (the print view: the clean
+        article, the print dialog), then "Mark as sent" with one
+        confirmation; nothing is emailed
      7  Performance lists the article with its campaign code; nothing claims a
         measurement it does not have
      8  at 390 px nothing overflows; no page errors anywhere
@@ -338,6 +339,15 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       && wparas.some((x) => x.style === 'Heading2') && wparas.some((x) => /21\+\. Gamble responsibly — 1-800-GAMBLER/.test(x.text)) && wparas.some((x) => x.text === 'For the editor (not for publication)'));
     chk('6b … with the tagged EdgeDesk link live', /Target="https:\/\/edgedesksports\.com\/[^"]*utm_source=stadiumrant&amp;utm_medium=publisher&amp;utm_campaign=ce_stadiumrant_[0-9a-f]{12}/.test(wfiles['word/_rels/document.xml.rels'] ? wfiles['word/_rels/document.xml.rels'].toString('utf8') : ''));
     chk('6b … and the download is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art3.id}' and detail ->> 'as' = 'docx';`) === 1);
+    /* Save as PDF: the print view in its own window (print() counted, not run) */
+    await P.evaluate(() => { const o = window.open; window.open = function () { const w = o.apply(window, arguments); if (w) w.print = function () { window.__printed = (window.__printed || 0) + 1; }; return w; }; });
+    const [pop] = await Promise.all([P.waitForEvent('popup'), P.locator('#pDetail button[data-q="pdf"]').last().click()]);
+    await P.waitForFunction(() => window.__printed === 1, null, { timeout: 10000 });
+    const printed = await pop.content();
+    chk('6b Save as PDF opens the clean article and the print dialog (Save as PDF)', /<h1>NFL Week 5 Predictions/.test(printed) && /1-800-GAMBLER/.test(printed) && !/<script/i.test(printed)
+      && /utm_campaign=ce_stadiumrant_[0-9a-f]{12}/.test(printed) && /Save as PDF/.test(await P.textContent('#qMsg')));
+    chk('6b … and is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art3.id}' and detail ->> 'as' = 'pdf';`) === 1);
+    await pop.close();
     const before = RESEND.length;
     await P.click('#pDetail button[data-q="sent"]');
     await P.waitForFunction(() => /Done/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 15000 });

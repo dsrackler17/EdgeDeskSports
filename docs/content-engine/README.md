@@ -117,7 +117,7 @@ Search Console (existing import) ───────────────�
    - the export preview.
 
    Confirm the five points (source verification, data freshness, model accuracy, SEO, compliance), then **Approve this exact version**. The approval is bound to the content hash on screen.
-6. **Publishing queue.** Open the approved article. The exports are **Word (.docx)**, Markdown (with front matter), HTML and the SEO sheet. Then send it in one of two ways.
+6. **Publishing queue.** Open the approved article. The exports are **Word (.docx)**, **Save as PDF** (the article's clean print view; choose *Save as PDF* in the print dialog), Markdown (with front matter), HTML and the SEO sheet. Then send it in one of two ways.
 
    **Send it yourself (the editor touches it up):**
    1. Press **Download Word file**. It opens in Word or Google Docs, ready to edit:
@@ -294,7 +294,7 @@ npm run content:test      # the core against the committed research + static gua
 npm run content:sql       # the database on a real PostgreSQL (125)
 npm run content:fn        # the Edge Function as deployed, against that database (61)
 npm run content:job:test  # the weekly job as the service role (23)
-npm run content:e2e       # the owner's whole flow in Chromium, both ways of sending included (52)
+npm run content:e2e       # the owner's whole flow in Chromium, both ways of sending included (54)
 npm run content:example   # write an example article (Word, Markdown, HTML, SEO sheet) from the current research to content-example/
 ```
 
