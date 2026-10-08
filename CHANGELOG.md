@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-08 — Content Engine: Send to publisher
+
+**An approved article can now be emailed to the publisher's editor from the publishing queue, only when the owner presses Send and confirms the address.** Nothing is ever sent on its own. Docs: `docs/content-engine/README.md` (*Using it*, step 6).
+
+- **Page.** The publishing queue gains a Send panel: To (the publisher's contacts), subject, a note above the article, **Send a test to me** and **Send to …**.
+  - The real send unlocks only once the article is marked ready.
+  - The page names the address and asks first.
+  - The old manual path stays as **Record a send made elsewhere…**.
+- **Database** (`supabase/content_engine.sql`, re-paste; idempotent). `content_engine_send_claim` is owner only; the service role and the weekly job cannot call it. It checks:
+  - the approved hash on screen, and `ready_to_send` for a real send;
+  - a recipient who is a contact on that publisher's profile, or, for a test, the owner's own address;
+  - an active publisher.
+
+  It writes the send **before** anything goes out, with one idempotency key. `content_engine_send_result` then records a delivery (method `email`) and `sent`.
+  - An unanswered send is retried with the same key and the same message, so it cannot arrive twice.
+  - An address that already has the article never gets it again.
+  - Sends cannot be edited or deleted.
+  - The sender defaults to the outbound engine's `edgedesksports.com` sender; Settings can change it (only `@edgedesksports.com`).
+- **Edge Function** `content_engine` gains `{action:'send'}`: Resend with the database's idempotency key, the article as HTML and text, the Markdown, HTML and SEO sheet attached, tagged `edgedesk=content`. It reuses `RESEND_API_KEY`; redeploy it.
+- **Newsletter webhook** acknowledges and ignores `edgedesk=content` events, as it does outbound ones; redeploy `newsletter`.
+
+**Tests:** `content:test` (179), `content:sql` (125), `content:fn` (60), `content:job:test` (23), `content:e2e` (44: add a contact → test send → mark ready → Send → recorded as sent, in Chromium).
+
 ## 2026-10-08 — Content Engine: research-driven sports articles for publishers
 
 **A new owner-only page, `/admin/content/`, turns EdgeDesk's committed research into broad, searchable sports articles, from discovery to a publisher-ready export. Research, not picks: nothing is invented, nothing is a pick, and nothing is sent or published except by the owner.** Docs: `docs/content-engine/README.md`.

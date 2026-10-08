@@ -7,7 +7,7 @@
    Supabase is not mocked away: every /rest/v1/rpc call runs in a throwaway
    PostgreSQL with supabase/content_engine.sql applied (tools/growth/_rpc_shim.js),
    and /functions/v1/content_engine runs the DEPLOYED Edge Function file in
-   Node. Only Claude and the RSS feeds are stubbed. The page's clock is fixed
+   Node. Only Claude, Resend and the RSS feeds are stubbed. The page's clock is fixed
    at Thursday of CFB Week 6 so the committed slate is in the future.
 
      1  an owner signs in; a non-owner affiliate admin is turned away
@@ -18,8 +18,11 @@
      4  Rewrite with AI: the function's version is checked and saved
      5  Submit for review → the five-point review → approve this exact version
      6  Publishing queue: export is locked before approval; after it the
-        Markdown carries the UTM-tagged link and the disclaimer; record the
-        send (method asked); mark published (URL asked)
+        Markdown carries the UTM-tagged link and the disclaimer. Send: the
+        publisher's contact is added under Publishers; a test goes to the
+        owner and changes nothing; the real send waits for "ready", names the
+        address and asks first, emails the approved article with its files,
+        and records it as sent; mark published (URL asked)
      7  Performance lists the article with its campaign code; nothing claims a
         measurement it does not have
      8  at 390 px nothing overflows; no page errors anywhere
@@ -90,9 +93,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     register(pathToFileURL(path.join(__dirname, '..', 'growth', '_stubs', 'hooks.mjs')));
     chk('the function carries the core verbatim', !INLINE.drifted());
     const SHIM = rpcShim(db, { url: SB, users: { [T_OWNER]: { id: OWNER, email: 'owner@edgedesk.test' }, [T_ADMIN]: { id: ADMIN, email: 'admin@edgedesk.test' } } });
+    const RESEND = [];
     const nodeFetch = async (input, init) => {
       const url = String(input);
       const viaDb = await SHIM(url, init); if (viaDb) return viaDb;
+      if (url === 'https://api.resend.com/emails') {
+        RESEND.push({ headers: Object.assign({}, init.headers), body: JSON.parse(init.body) });
+        return new Response(JSON.stringify({ id: 're_e2e_' + RESEND.length }), { status: 200 });
+      }
       if (url === 'https://www.espn.com/espn/rss/ncf/news') return new Response(RSS, { status: 200 });
       return new Response('unavailable', { status: 503 });
     };
@@ -102,7 +110,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       return { stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(Object.assign({}, cur, { standfirst: cur.standfirst + ' Here is what the numbers say.' })) }] };
     };
     const FNM = await import(pathToFileURL(INLINE.TARGET).href);
-    const fnCfg = { url: SB, anonKey: ANON, anthropicKey: 'sk-ant-e2e-stub-key-0000', model: 'claude-opus-5-5', origins: ['http://127.0.0.1:' + site.port], fetch: nodeFetch, timeoutMs: 5000 };
+    const fnCfg = { url: SB, anonKey: ANON, anthropicKey: 'sk-ant-e2e-stub-key-0000', resendKey: 're_e2e_stub_key_0000', model: 'claude-opus-5-5', origins: ['http://127.0.0.1:' + site.port], fetch: nodeFetch, timeoutMs: 5000 };
 
     try { browser = await pw.chromium.launch({ headless: true }); }
     catch (e) {
@@ -218,14 +226,45 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('5 approved, by the owner, for the version on screen', db.sql(`select status || '|' || approved_by::text || '|' || (approved_hash = content_hash)::text from content_engine.articles where id = '${art.id}';`) === 'approved|' + OWNER + '|true');
     if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '3-review.png'), fullPage: false });
 
-    /* 6 · publishing queue */
+    /* 6 · the publisher's contact, then the publishing queue */
+    await P.click('.tabs button[data-tab="pubs"]');
+    await P.waitForSelector('#pbList button[data-edit]');
+    await P.click('#pbList button[data-edit]');
+    await P.waitForSelector('#pbAddC');
+    await P.click('#pbAddC');
+    const crow = P.locator('#pbContacts .crow').last();
+    await crow.locator('[data-c=name]').fill('Jordan Editor');
+    await crow.locator('[data-c=role]').fill('editor');
+    await crow.locator('[data-c=email]').fill('jordan@publisher.example');
+    await P.click('#pbAddC');
+    const crow2 = P.locator('#pbContacts .crow').last();
+    await crow2.locator('[data-c=name]').fill('Pat Writer');
+    await crow2.locator('[data-c=email]').fill('Pat@Publisher.example');
+    await P.click('#pbSave');
+    await P.waitForFunction(() => /Saved/.test(document.getElementById('pbMsg').textContent), null, { timeout: 15000 });
+    chk('6 the contact is saved on the publisher (owner-only)', /jordan@publisher\.example/.test(db.sql(`select contacts::text from content_engine.publishers where slug = 'stadium-rant';`)));
+
     await P.click('.tabs button[data-tab="pub"]');
     await P.waitForSelector('#pCols button[data-open="' + art.id + '"]');
     await P.click('#pCols button[data-open="' + art.id + '"]');
     await P.waitForSelector('#pDetail button[data-q="ready"]');
     chk('6 approved: export unlocked', !(await P.isDisabled('#pDetail button[data-q="md"]')));
+    const panel = await P.textContent('#pDetail');
+    chk('6 the send panel: To the contact, from the edgedesksports.com sender', /Send to Stadium Rant/.test(panel) && /Jordan Editor — jordan@publisher\.example/.test(panel) && /From Davis <davis@edgedesksports\.com>/.test(panel), panel.slice(0, 600));
+    chk('6 … the real send is locked until it is marked ready', await P.isDisabled('#pDetail button[data-q="email"]'));
+    chk('6 … the note greets the contact by first name', /^Hi Jordan,/.test(await P.inputValue('#sNote')));
+    await P.selectOption('#sTo', 'pat@publisher.example');
+    chk('6 … choosing another contact changes the button and the greeting', /^Send to Pat$/.test(await P.textContent('#pDetail button[data-q="email"]')) && /^Hi Pat,/.test(await P.inputValue('#sNote')));
+    await P.selectOption('#sTo', 'jordan@publisher.example');
+
+    await P.click('#pDetail button[data-q="emailtest"]');
+    await P.waitForFunction(() => /Test sent to/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 30000 });
+    chk('6 a test goes to the owner only, after asking', RESEND.length === 1 && RESEND[0].body.to[0] === 'owner@edgedesk.test' && dialogs.some((d) => /Send a TEST of/.test(d) && /owner@edgedesk\.test/.test(d)), RESEND.map((e) => e.body.to));
+    chk('6 … and changes nothing about the article', db.sql(`select status from content_engine.articles where id = '${art.id}';`) === 'approved' && +db.sql(`select count(*) from content_engine.deliveries where article_id = '${art.id}';`) === 0);
+
     await P.click('#pDetail button[data-q="ready"]');
-    await P.waitForSelector('#pDetail button[data-q="sent"]');
+    await P.waitForSelector('#pDetail button[data-q="email"]:not([disabled])');
+    chk('6 ready to send: the real send unlocks; recording a send made elsewhere stays available', await P.isVisible('#pDetail button[data-q="sent"]'));
     const [dl] = await Promise.all([P.waitForEvent('download'), P.click('#pDetail button[data-q="md"]')]);
     const md = fs.readFileSync(await dl.path(), 'utf8');
     chk('6 the Markdown export: front matter, headline, sections', /^---\ntitle: "College Football Week 6 Predictions/.test(md) && /## How to read these numbers/.test(md) && /### No\. 6 Georgia at No\. 11 Alabama/.test(md), md.slice(0, 300));
@@ -236,9 +275,21 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     const html = fs.readFileSync(await dl2.path(), 'utf8');
     chk('6 the HTML export is a clean, standalone document with no script', /^<!doctype html>/.test(html) && !/<script/i.test(html) && /<h2>How to read these numbers<\/h2>/.test(html));
     chk('6 each export is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art.id}';`) === 2);
-    await P.click('#pDetail button[data-q="sent"]');
-    await P.waitForFunction(() => /Done/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 15000 });
-    chk('6 record as sent asks how, and records it', dialogs.some((d) => /How did you send it/.test(d)) && db.sql(`select method || '|' || note from content_engine.deliveries where article_id = '${art.id}';`) === 'manual_email|sent by the owner, e2e');
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '4-send.png'), fullPage: false });
+
+    await P.fill('#sSubj', 'College Football Week 6 Predictions — for Stadium Rant');
+    await P.click('#pDetail button[data-q="email"]');
+    await P.waitForFunction(() => /Recorded as sent/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 30000 });
+    const em = RESEND[1] || { headers: {}, body: {} };
+    chk('6 Send asks first, naming the address', dialogs.some((d) => /^Email “College Football Week 6 Predictions/.test(d) && /Jordan Editor <jordan@publisher\.example>/.test(d)));
+    chk('6 … one email to the contact, with the subject as typed, from the sender', RESEND.length === 2 && em.body.to.length === 1 && em.body.to[0] === 'jordan@publisher.example'
+      && em.body.subject === 'College Football Week 6 Predictions — for Stadium Rant' && em.body.from === 'Davis <davis@edgedesksports.com>', em.body.to);
+    const files = (em.body.attachments || []).map((x) => x.filename);
+    chk('6 … the note, the approved article with its tagged link and disclaimer, and three files', /<p>Hi Jordan,<\/p>/.test(em.body.html || '') && /utm_campaign=ce_stadiumrant_/.test(em.body.html) && /1-800-GAMBLER/.test(em.body.html)
+      && files.length === 3 && files.every((f) => f.indexOf(art.slug) === 0), files);
+    chk('6 … with the database’s idempotency key, and no key anywhere on the page', /^edgedesk-content-[0-9a-f]{32}$/.test(em.headers['idempotency-key']) && !/re_e2e_stub_key/.test(await P.content()));
+    chk('6 recorded: sent, an email delivery, the send on record', db.sql(`select a.status || '|' || d.method || '|' || s.status from content_engine.articles a join content_engine.deliveries d on d.article_id = a.id join content_engine.sends s on s.article_id = a.id and not s.is_test where a.id = '${art.id}';`) === 'sent|email|sent');
+    chk('6 the page shows it sent, with the email in its history', /Sent/.test(await P.textContent('#pDetail')) && /To Jordan Editor <jordan@publisher\.example> · sent/.test(await P.textContent('#pDetail')));
     await P.click('#pDetail button[data-q="published"]');
     await P.waitForFunction(() => /Done/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 15000 });
     chk('6 published, with its URL', db.sql(`select status || '|' || published_url from content_engine.articles where id = '${art.id}';`) === 'published|https://www.stadiumrant.com/college-football-week-6-predictions');
@@ -254,12 +305,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('.tabs button[data-tab="set"]');
     await P.waitForFunction(() => /AI drafting is configured/.test(document.getElementById('aiStatus').textContent), null, { timeout: 15000 });
     chk('8 settings say whether AI is configured (never the key)', !/sk-ant/.test(await P.textContent('#tab-set')));
+    chk('8 … and whether sending is, with the sender (never the key)', /Send to publisher is configured/.test(await P.textContent('#aiStatus')) && !/re_e2e/.test(await P.textContent('#tab-set'))
+      && await P.getAttribute('#sSEmail', 'placeholder') === 'davis@edgedesksports.com', await P.textContent('#aiStatus'));
     await P.setViewportSize({ width: 390, height: 844 });
     await P.click('.tabs button[data-tab="opps"]');
     await P.waitForSelector('#oList .opp');
     const over = await P.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     chk('8 at 390 px nothing overflows horizontally', over <= 1, over);
-    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '4-phone.png'), fullPage: false });
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '5-phone.png'), fullPage: false });
     chk('8 no page errors', o.errors.length === 0, o.errors);
     await o.ctx.close();
   } catch (e) {

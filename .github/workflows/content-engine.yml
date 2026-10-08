@@ -83,7 +83,7 @@ jobs:
         run: |
           npm install --no-save playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: The owner's whole flow in a browser — discover, write, review, approve, export
+      - name: The owner's whole flow in a browser — discover, write, review, approve, export, send
         run: node tools/content/content_engine.e2e.js
 
   weekly:

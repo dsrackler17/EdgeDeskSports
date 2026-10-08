@@ -217,6 +217,8 @@ const TOK = 'ab'.repeat(32);
   chk('N the tag test: only edgedesk=outbound counts', N.isOutboundEvent({ tags: { edgedesk: 'outbound' } }) && N.isOutboundEvent({ tags: [{ name: 'edgedesk', value: 'outbound' }] })
     && !N.isOutboundEvent({ tags: { edgedesk: 'newsletter' } }) && !N.isOutboundEvent({ tags: [{ name: 'category', value: 'outbound' }] }) && !N.isOutboundEvent({})
     && !N.isOutboundEvent(null) && !N.isOutboundEvent({ tags: 'edgedesk=outbound' }) && !N.isOutboundEvent({ tags: [null] }));
+  chk('N a Content Engine email (edgedesk=content) is not the newsletter’s either', N.isContentEvent({ tags: { edgedesk: 'content' } }) && N.isContentEvent({ tags: [{ name: 'edgedesk', value: 'content' }] })
+    && !N.isContentEvent({ tags: { edgedesk: 'outbound' } }) && !N.isContentEvent({}) && !N.isContentEvent(null) && !N.isOutboundEvent({ tags: { edgedesk: 'content' } }));
   const unsigned = nl(Object.assign({}, bounce, { tags: { edgedesk: 'outbound' } }), 'evt_x');
   const forged = new Request(unsigned.url, { method: 'POST', headers: { 'svix-id': 'evt_x', 'svix-timestamp': unsigned.headers.get('svix-timestamp'), 'svix-signature': 'v1,forged' }, body: await unsigned.text() });
   x = await run(N, {}, forged, null);

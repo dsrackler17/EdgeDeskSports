@@ -1,8 +1,9 @@
 // ============================================================
 //  FILE:    supabase/functions/content_engine/index.ts
 //  TYPE:    Edge Function (deployed) — the Content Engine's server half:
-//           the AI editorial pass and the trending-news fetch. It never
-//           approves, sends or publishes anything.
+//           the AI editorial pass, the trending-news fetch, and the email the
+//           OWNER sends to a publisher by pressing Send. It never approves or
+//           publishes anything, and never sends on its own.
 //  DEPLOY:  supabase functions deploy content_engine --no-verify-jwt
 //           (the owner's token is verified inside, by requireOutboundOwner)
 // ============================================================
@@ -28,6 +29,20 @@
 //        5  accepted → saved as a new revision (content_engine_article_save,
 //           which puts an approved article back into review).
 //        With `section`, only that section is rewritten.
+//   POST { action: 'send', article_id, recipient, subject?, note?, test? }
+//        THE OWNER'S SEND. Only when the owner presses Send in the publishing
+//        queue (the page confirms the address first):
+//        1  content_engine_send_claim, as the owner: the article is approved
+//           and ready to send, the content is the approved hash on screen, and
+//           the recipient is a contact on that publisher's profile — or, with
+//           test, the owner's own sign-in address. The send is WRITTEN before
+//           anything goes out, with one idempotency key;
+//        2  Resend, with that Idempotency-Key: the owner's note, the article
+//           as HTML (and as text), and the Markdown, HTML and SEO sheet as
+//           attachments, from the engine's edgedesksports.com sender;
+//        3  content_engine_send_result: a delivery row and `sent`, or the
+//           failure. An unanswered send is retried with the same key and
+//           the message as first claimed, so it can never arrive twice.
 //   POST { action: 'trending', leagues?: ['cfb','nfl'] }
 //        the public RSS feeds in lib/content_engine.js FEEDS (headline, link,
 //        time and the feed's own description — never an article body), each
@@ -43,6 +58,8 @@
 //   SUPABASE_URL, SUPABASE_ANON_KEY   provided by the platform
 //   ANTHROPIC_API_KEY        optional: without it the deterministic draft is
 //                            the draft (the page says so)
+//   RESEND_API_KEY           Send to publisher (already set for the newsletter
+//                            and outbound; Supabase secrets are shared)
 //   CONTENT_ENGINE_MODEL     optional; defaults to claude-opus-5-5
 //   CONTENT_ENGINE_ALLOWED_ORIGINS  optional; defaults to edgedesksports.com
 // ============================================================
@@ -2303,7 +2320,7 @@ const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
 const USER_AGENT = 'EdgeDeskContentEngine/1.0 (+https://edgedesksports.com)';
 
 type Cfg = {
-  url: string; anonKey: string; anthropicKey: string; model: string; origins: string[];
+  url: string; anonKey: string; anthropicKey: string; resendKey: string; model: string; origins: string[];
   fetch: typeof fetch; timeoutMs?: number;
 };
 
@@ -2314,7 +2331,7 @@ function config(): Cfg {
   const origins = (env('CONTENT_ENGINE_ALLOWED_ORIGINS') || 'https://edgedesksports.com,https://www.edgedesksports.com')
     .split(',').map((s) => s.trim()).filter(Boolean);
   return {
-    url: env('SUPABASE_URL'), anonKey: env('SUPABASE_ANON_KEY'), anthropicKey: env('ANTHROPIC_API_KEY'),
+    url: env('SUPABASE_URL'), anonKey: env('SUPABASE_ANON_KEY'), anthropicKey: env('ANTHROPIC_API_KEY'), resendKey: env('RESEND_API_KEY'),
     model: env('CONTENT_ENGINE_MODEL') || 'claude-opus-5-5', origins, fetch: globalThis.fetch.bind(globalThis),
   };
 }
@@ -2429,6 +2446,90 @@ async function draft(x: Ctx, articleId: string, section: string | null): Promise
   return { ok: false, reason: lastReason || 'validation_failed', objections, detail: 'the AI draft did not pass the checks; nothing was saved and the existing draft stands', llm_calls: x.llmCalls };
 }
 
+// ── Send to publisher: the owner's own send ─────────────────────────────────
+const RESEND_URL = 'https://api.resend.com/emails';
+const EMAIL = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+
+function b64(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
+  return btoa(bin);
+}
+
+// The database composed the envelope; it goes out only if it still looks like
+// exactly one EdgeDesk email to exactly one person.
+export function checkEnvelope(m: any): string | null {
+  if (!m || typeof m !== 'object') return 'no message';
+  const one = (v: unknown) => typeof v === 'string' && !/[\r\n]/.test(v);
+  if (!one(m.from) || !/^[^<>@]{1,60} <[a-z0-9._%+-]+@edgedesksports\.com>$/.test(m.from)) return 'the sender is not an edgedesksports.com address';
+  if (!one(m.to) || !EMAIL.test(m.to) || m.to.length > 254) return 'the recipient is not one email address';
+  if (!one(m.reply_to) || !EMAIL.test(m.reply_to)) return 'the reply-to is not one email address';
+  if (!one(m.subject) || !m.subject.trim() || m.subject.length > 150) return 'the subject is missing, too long or spans lines';
+  return null;
+}
+
+// The email: the owner's note, then the article exactly as the export renders
+// it (disclaimer and tagged EdgeDesk link included), and the three files.
+export function composeEmail(row: any, note: string) {
+  const a = asArticle(row);
+  const ctx = { publisher: row.publisher_profile, campaign: row.campaign_code, opportunity: row.opportunity, landing: row.landing_url };
+  const noteText = String(note || '').trim();
+  const noteHtml = noteText ? noteText.split(/\n{2,}/).map((p) => '<p>' + CE.util.esc(p).replace(/\n/g, '<br>') + '</p>').join('') : '';
+  const html = '<div style="font:15px/1.55 -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;color:#1d1d1f;max-width:720px">'
+    + noteHtml + (noteHtml ? '<hr style="border:0;border-top:1px solid #ddd;margin:22px 0">' : '') + CE.toHtml(a, ctx) + '</div>';
+  const text = (noteText ? noteText + '\n\n---\n\n' : '') + CE.toMarkdown(a, ctx);
+  const attachments = [
+    { filename: a.slug + '.md', content: b64(CE.toMarkdown(a, Object.assign({ frontMatter: true }, ctx))) },
+    { filename: a.slug + '.html', content: b64(CE.toHtml(a, Object.assign({ standalone: true }, ctx))) },
+    { filename: a.slug + '-seo.txt', content: b64(CE.seoSheet(a, row.opportunity) + '\n') },
+  ];
+  return { html, text, attachments };
+}
+
+async function send(x: Ctx, articleId: string, recipient: string, subject: string | null, note: string, test: boolean): Promise<any> {
+  if (!x.c.resendKey) return { ok: false, reason: 'email_not_configured', detail: 'RESEND_API_KEY is not set on this project: nothing can be sent' };
+  const row = await db(x, 'content_engine_article', { p_id: articleId });
+  if (!row) throw new Refused('not_found', 'no such article', 404);
+  const claim = await db(x, 'content_engine_send_claim', { p_id: articleId, p_recipient: recipient, p_subject: subject, p_content_hash: row.content_hash, p_test: test, p_note: note });
+  if (!claim || claim.ok !== true) return { ok: false, reason: claim?.reason || 'refused', detail: claim?.detail };
+  if (claim.already) return { ok: true, already: true, state: 'sent', detail: 'this article was already emailed to that address' };
+  const m = claim.message;
+  const record = async (id: string | null, error: string | null) => {
+    try { const r = await db(x, 'content_engine_send_result', { p_send_id: claim.send_id, p_provider_id: id, p_error: error }); return r; } catch (_) { return null; }
+  };
+  const bad = checkEnvelope(m);
+  if (bad) { await record(null, 'not sent: ' + bad); return { ok: false, reason: 'message_check_failed', detail: bad }; }
+  // a retry sends the message first claimed, byte for byte: Resend refuses a key reused with a different body
+  const body = composeEmail(row, claim.retry ? String(m.note || '') : note);
+  const ctl = new AbortController();
+  const t = setTimeout(() => { try { ctl.abort(); } catch (_) { /* gone */ } }, 20000);
+  let status = 0, providerId: string | undefined, message: string | undefined;
+  try {
+    const r = await x.c.fetch(RESEND_URL, {
+      method: 'POST', signal: ctl.signal,
+      headers: { authorization: 'Bearer ' + x.c.resendKey, 'content-type': 'application/json', 'idempotency-key': String(claim.idempotency_key) },
+      body: JSON.stringify({ from: m.from, to: [m.to], reply_to: m.reply_to, subject: m.subject, html: body.html, text: body.text,
+        attachments: body.attachments, tags: [{ name: 'edgedesk', value: 'content' }, { name: 'send', value: String(claim.send_id) }] }),
+    });
+    status = r.status;
+    let b: any = null; try { b = await r.json(); } catch (_) { b = null; }
+    providerId = b && typeof b.id === 'string' ? b.id : undefined;
+    message = b && (b.message || b.name) ? String(b.message || b.name).slice(0, 300) : undefined;
+  } catch (_) { status = 0; } finally { clearTimeout(t); }
+  if (status >= 200 && status < 300 && providerId) {
+    const res = await record(providerId, null);
+    return { ok: true, state: 'sent', test: !!claim.test, to: m.to, recipient_name: claim.recipient_name, status: res && res.status,
+      recorded: !!(res && res.ok), retried: !!claim.retry, ...(res && res.ok ? {} : { warning: 'sent, but not yet recorded: press Send again to record it (the same key cannot send twice)' }) };
+  }
+  if (status === 400 || status === 403 || status === 422) {
+    await record(null, 'refused by Resend (' + status + '): ' + (message || 'invalid'));
+    return { ok: false, reason: 'provider_rejected', detail: message || ('Resend answered ' + status) };
+  }
+  // unknown outcome: the claim stays open, and a retry reuses the same key
+  return { ok: false, reason: 'outcome_unknown', detail: 'Resend did not answer clearly (' + (status || 'no response') + '). Press Send again: the same key cannot send twice.' };
+}
+
 async function trending(x: Ctx, leagues: string[]): Promise<any> {
   const feeds = CE.FEEDS.filter((f: any) => leagues.indexOf(f.league) >= 0);
   const items: any[] = [];
@@ -2462,7 +2563,8 @@ export async function handle(req: Request, cfgOverride?: Partial<Cfg>): Promise<
   try {
     if (body.action === 'status') {
       const ov = await db(x, 'content_engine_overview', {});
-      return json(req, c, { ok: true, ai_configured: !!c.anthropicKey, model: c.model, budget: ov && ov.budget, feeds: CE.FEEDS.length, version: CE.VERSION });
+      return json(req, c, { ok: true, ai_configured: !!c.anthropicKey, email_configured: !!c.resendKey, sender: ov && ov.sender ? ov.sender.from : null,
+        model: c.model, budget: ov && ov.budget, feeds: CE.FEEDS.length, version: CE.VERSION });
     }
     if (body.action === 'draft') {
       const id = String(body.article_id || '');
@@ -2471,11 +2573,19 @@ export async function handle(req: Request, cfgOverride?: Partial<Cfg>): Promise<
       if (section && !/^[a-z_]{3,30}$/.test(section)) return json(req, c, { ok: false, reason: 'bad_request', detail: 'bad section key' }, 400);
       return json(req, c, await draft(x, id, section));
     }
+    if (body.action === 'send') {
+      const id = String(body.article_id || '');
+      const to = String(body.recipient || '').trim().toLowerCase();
+      if (!UUID.test(id) || !EMAIL.test(to)) return json(req, c, { ok: false, reason: 'bad_request', detail: 'article_id and one recipient address required' }, 400);
+      const subject = body.subject == null ? null : String(body.subject).slice(0, 200);
+      const note = String(body.note == null ? '' : body.note).slice(0, 4000);
+      return json(req, c, await send(x, id, to, subject, note, body.test === true));
+    }
     if (body.action === 'trending') {
       const leagues = (Array.isArray(body.leagues) ? body.leagues : ['cfb', 'nfl']).filter((l: string) => l === 'cfb' || l === 'nfl');
       return json(req, c, await trending(x, leagues.length ? leagues : ['cfb', 'nfl']));
     }
-    return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status, draft or trending' }, 400);
+    return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status, draft, send or trending' }, 400);
   } catch (e: any) {
     if (e instanceof Refused) return json(req, c, { ok: false, reason: e.reason, detail: e.detail }, e.status);
     return json(req, c, { ok: false, reason: 'unhandled', detail: 'the content engine stopped unexpectedly' }, 500);

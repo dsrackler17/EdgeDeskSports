@@ -298,6 +298,19 @@ export function isOutboundEvent(data: Record<string, unknown> | null | undefined
   return !!tags && typeof tags === 'object' && (tags as Record<string, unknown>).edgedesk === 'outbound';
 }
 
+// The Content Engine tags the email the owner sends a publisher
+// edgedesk=content (supabase/functions/content_engine). It is not the
+// newsletter's either: a publisher contact's address, events and bounces stay
+// out of the newsletter's tables.
+export function isContentEvent(data: Record<string, unknown> | null | undefined): boolean {
+  const tags = data ? (data as Record<string, unknown>).tags : null;
+  if (Array.isArray(tags)) {
+    return tags.some((t) => !!t && typeof t === 'object'
+      && (t as Record<string, unknown>).name === 'edgedesk' && (t as Record<string, unknown>).value === 'content');
+  }
+  return !!tags && typeof tags === 'object' && (tags as Record<string, unknown>).edgedesk === 'content';
+}
+
 // The provider's vocabulary mapped onto the five states this system tracks.
 // An unknown type is STORED and not acted on.
 const EVENTS: Record<string, { status: string | null; suppress: string | null }> = {
@@ -480,7 +493,7 @@ async function handleWebhook(c: Cfg, req: Request): Promise<Response> {
   // (growth_outbound_webhook) handles those. Nothing about them is kept here,
   // and nothing is suppressed from here: the address, the event, the bounce
   // all stay out of the newsletter's tables.
-  if (isOutboundEvent(data)) return json({ ok: true, state: 'not_newsletter' });
+  if (isOutboundEvent(data) || isContentEvent(data)) return json({ ok: true, state: 'not_newsletter' });
   // NOR IS AN EMAIL RECEIVED (2026-10). The newsletter receives nothing; a
   // received email is a reply to the outbound engine (its own webhook reads
   // it). Its sender and subject are kept out of the newsletter's tables.

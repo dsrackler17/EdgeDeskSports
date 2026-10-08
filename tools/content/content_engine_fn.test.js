@@ -20,6 +20,13 @@
      X  SECTION    a section rewrite changes that section only
      T  TRENDING   only the allowlisted feeds, each fetch counted; a dead feed
                    is reported, not fatal
+     M  SEND       the owner's send: no key, no call; a test only to the
+                   owner; a real send only to a contact, only once ready; the
+                   database claims it first and Resend gets that idempotency
+                   key, the edgedesksports.com sender, the edgedesk=content
+                   tag, the note, the article and its three files; an
+                   unanswered send retried with the SAME key; delivered →
+                   `sent` with its delivery row; never a second send
      K  KEYS       no key or token in any answer; no service-role key; the
                    function names no door that approves, sends or publishes;
                    the copies of the owner check and the core are verbatim
@@ -46,7 +53,8 @@ const SRC = fs.readFileSync(FN, 'utf8');
 chk('K the function carries the owner check and the core byte for byte', !INLINE.drifted());
 chk('K no service-role key in its source', !/SERVICE_ROLE|service_role/.test(SRC.replace(/\/\/ ── BEGIN CONTENT ENGINE CORE[\s\S]*?END CONTENT ENGINE CORE/, '')));
 chk('K Claude through the official SDK, never a raw host', /^import Anthropic from 'npm:@anthropic-ai\/sdk';$/m.test(SRC) && !/api\.anthropic\.com/.test(SRC));
-chk('K the function names no door that approves, sends or publishes', !/content_engine_article_(approve|transition|review)/.test(SRC));
+chk('K the function names no door that approves, reviews or publishes', !/content_engine_article_(approve|transition|review)/.test(SRC));
+chk('K the function claims a send in the database before it calls Resend', SRC.indexOf("db(x, 'content_engine_send_claim'") > 0 && SRC.indexOf("db(x, 'content_engine_send_claim'") < SRC.indexOf('x.c.fetch(RESEND_URL'));
 
 const db = PG.start('contentfn');
 if (db.skip) { console.log((process.env.CONTENT_PG_REQUIRED ? 'FAIL | ' : 'NOTE | ') + db.skip + ' — skipped'); if (process.env.CONTENT_PG_REQUIRED) process.exit(1); process.exit(0); }
@@ -71,8 +79,18 @@ const RSS = `<?xml version="1.0"?><rss><channel><title>NFL</title>
     <pubDate>Thu, 08 Oct 2026 15:00:00 GMT</pubDate><description>Prescott was limited Thursday.</description></item>
   <item><title>Not a link</title><link>javascript:alert(1)</link></item>
 </channel></rss>`;
+let RESEND = [], resendMode = 'ok';
+const RESEND_IDS = new Map(); /* like Resend: one id per idempotency key */
 globalThis.fetch = async (input, init) => {
   const url = String(input), u = new URL(url), h = Object.assign({}, (init && init.headers) || {});
+  if (url === 'https://api.resend.com/emails') {
+    RESEND.push({ headers: h, body: JSON.parse(init.body) });
+    if (resendMode === 'down') throw new TypeError('network down');
+    if (resendMode === 'reject') return new Response(JSON.stringify({ name: 'validation_error', message: 'bad' }), { status: 422 });
+    const key = h['idempotency-key'];
+    if (!RESEND_IDS.has(key)) RESEND_IDS.set(key, 're_' + (RESEND_IDS.size + 1));
+    return new Response(JSON.stringify({ id: RESEND_IDS.get(key) }), { status: 200 });
+  }
   LOG.push({ url, host: u.host, headers: h, body: init && init.body });
   if (/\/rest\/v1\/rpc\//.test(url)) DOORS.add(url.split('/rpc/')[1]);
   const viaDb = await SHIM(url, init);
@@ -195,6 +213,55 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     const locked = await run({ action: 'draft', article_id: AID });
     chk('D an approved article is not rewritten by the engine', ap.ok && locked.b.reason === 'not_editable' && CLAUDE_REQS.length === 0, ap);
 
+    /* ── M the owner's send ─────────────────────────────────────────── */
+    const RKEY = 're_live_secret_key_0001';
+    const cfgM = (o) => cfgOf(Object.assign({ resendKey: RKEY }, o || {}));
+    const pubId = own('select public.content_engine_publishers();').find((p) => p.slug === 'stadium-rant').id;
+    own(`select public.content_engine_publisher_save(${lit(JSON.stringify({ id: pubId, contacts: [{ name: 'Sam Editor', role: 'editor', email: 'sam@publisher.example' }] }))}::jsonb);`);
+    RESEND = [];
+    const nk = await run({ action: 'send', article_id: AID, recipient: 'owner@edgedesk.test', test: true }, cfgM({ resendKey: '' }));
+    chk('M no Resend key: no call, a plain answer', nk.b.reason === 'email_not_configured' && RESEND.length === 0);
+    const tn = await run({ action: 'send', article_id: AID, recipient: 'sam@publisher.example', test: true }, cfgM());
+    chk('M a test goes only to the owner’s own address', tn.b.reason === 'test_goes_to_you' && RESEND.length === 0);
+    const t1 = await run({ action: 'send', article_id: AID, recipient: 'owner@edgedesk.test', subject: 'TEST: Week 6', note: 'Hi Sam,\n\nHere it is.', test: true }, cfgM());
+    const e1 = RESEND[0] || { headers: {}, body: {} };
+    chk('M a test to the owner is sent', t1.b.ok && t1.b.test === true && RESEND.length === 1 && e1.body.to[0] === 'owner@edgedesk.test', t1.b);
+    chk('M … with the database’s key, the edgedesksports.com sender and the content tag', /^edgedesk-content-[0-9a-f]{32}$/.test(e1.headers['idempotency-key'])
+      && e1.body.from === 'Davis <davis@edgedesksports.com>' && e1.body.tags.some((t) => t.name === 'edgedesk' && t.value === 'content'));
+    const att = (e1.body.attachments || []).map((a) => ({ n: a.filename, t: Buffer.from(a.content, 'base64').toString('utf8') }));
+    chk('M … the note, the article (HTML and text) and three files', /Here it is\./.test(e1.body.html) && /<h2>How to read these numbers<\/h2>/.test(e1.body.html) && /How to read these numbers/.test(e1.body.text)
+      && att.length === 3 && /\.md$/.test(att[0].n) && /^---\ntitle:/.test(att[0].t) && /1-800-GAMBLER/.test(att[0].t) && /<!doctype html>/.test(att[1].t) && /Primary keyword:/.test(att[2].t));
+    chk('M … the tagged EdgeDesk link travels in the email', /utm_campaign=ce_stadiumrant_/.test(e1.body.html));
+    chk('M … a markup note stays text', (await (async () => { RESEND = []; await run({ action: 'send', article_id: AID, recipient: 'owner@edgedesk.test', note: '<script>x</script>', test: true }, cfgM()); return !/<script>/.test(RESEND[0].body.html); })()));
+    chk('M … each test is on record as sent', one(`select count(*) from content_engine.sends where is_test and status = 'sent' and provider_id is not null;`) === '2');
+    resendMode = 'reject'; RESEND = [];
+    const rj = await run({ action: 'send', article_id: AID, recipient: 'owner@edgedesk.test', test: true }, cfgM());
+    chk('M refused by Resend: said plainly, recorded as failed', rj.b.reason === 'provider_rejected' && RESEND.length === 1
+      && one(`select count(*) from content_engine.sends where status = 'failed' and error like 'refused by Resend (422)%';`) === '1', rj.b);
+    resendMode = 'ok';
+    chk('M a test changes nothing about the article', one(`select status from content_engine.articles where id = ${lit(AID)};`) === 'approved');
+    RESEND = [];
+    const nr = await run({ action: 'send', article_id: AID, recipient: 'sam@publisher.example' }, cfgM());
+    chk('M a real send waits until it is marked ready', nr.b.reason === 'not_ready' && RESEND.length === 0);
+    own(`select public.content_engine_article_transition(${lit(AID)}, 'ready_to_send', '{}'::jsonb);`);
+    const nc = await run({ action: 'send', article_id: AID, recipient: 'stranger@else.example' }, cfgM());
+    chk('M only to a contact on the publisher’s profile', nc.b.reason === 'not_a_contact' && RESEND.length === 0);
+    chk('M one address, well formed', (await run({ action: 'send', article_id: AID, recipient: 'a@b.example, c@d.example' }, cfgM())).r.status === 400);
+    resendMode = 'down';
+    const s1 = await run({ action: 'send', article_id: AID, recipient: 'sam@publisher.example', note: 'Hi Sam' }, cfgM());
+    const k1 = RESEND[0] && RESEND[0].headers['idempotency-key'];
+    chk('M no answer from Resend: said plainly, the claim kept', s1.b.reason === 'outcome_unknown' && one(`select status from content_engine.sends where recipient = 'sam@publisher.example';`) === 'claimed');
+    resendMode = 'ok'; RESEND = [];
+    const s2 = await run({ action: 'send', article_id: AID, recipient: 'sam@publisher.example', note: 'Edited since' }, cfgM());
+    chk('M pressed again: the SAME key, so it cannot arrive twice', s2.b.ok && RESEND.length === 1 && RESEND[0].headers['idempotency-key'] === k1, s2.b);
+    chk('M … and the same message as first claimed, not the edited note (and it says so)', /Hi Sam/.test(RESEND[0].body.html) && !/Edited since/.test(RESEND[0].body.html) && s2.b.retried === true);
+    chk('M delivered: `sent`, with an email delivery row', s2.b.status === 'sent' && one(`select status from content_engine.articles where id = ${lit(AID)};`) === 'sent'
+      && one(`select method from content_engine.deliveries where article_id = ${lit(AID)};`) === 'email', { b: s2.b, a: one(`select status from content_engine.articles where id = ${lit(AID)};`), d: one(`select string_agg(method, ',') from content_engine.deliveries where article_id = ${lit(AID)};`) });
+    RESEND = [];
+    const s3 = await run({ action: 'send', article_id: AID, recipient: 'sam@publisher.example' }, cfgM());
+    chk('M never a second send', s3.b.ok === false && RESEND.length === 0, { b: s3.b, n: RESEND.length });
+    chk('K the Resend key goes in its Authorization header only', [e1].every((e) => e.headers.authorization === 'Bearer ' + RKEY) && JSON.stringify([t1.b, s1.b, s2.b, s3.b]).indexOf(RKEY) < 0);
+
     /* ── T trending ─────────────────────────────────────────────────── */
     const tr = await run({ action: 'trending', leagues: ['nfl'] });
     chk('T the allowlisted NFL feeds, parsed: headline, https link, time, source', tr.b.ok && tr.b.items.length === 1
@@ -206,7 +273,7 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     const matched = CE.news.match(tr.b.items, snap);
     chk('T the page can match the headline to this week’s slate', matched.length === 1 && matched[0].teams.indexOf('Dallas Cowboys') >= 0 && matched[0].kind === 'injury');
 
-    chk('K across the suite the function called only these doors', [...DOORS].every((d) => /^content_engine_(article|article_save|spend|log|overview|is_owner)$/.test(d) || d === 'growth_outbound_is_owner'), [...DOORS]);
+    chk('K across the suite the function called only these doors', [...DOORS].every((d) => /^content_engine_(article|article_save|send_claim|send_result|spend|log|overview|is_owner)$/.test(d) || d === 'growth_outbound_is_owner'), [...DOORS]);
   } catch (e) {
     chk('the suite reached its end — ' + String(e && e.stack || e).slice(0, 600), false);
   } finally {
