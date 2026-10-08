@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-08T16:07:44.377Z",
- "board_generated_at": "2026-10-08T16:07:41.479Z",
+ "generated_at": "2026-10-08T16:55:15.227Z",
+ "board_generated_at": "2026-10-08T16:55:11.892Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -99,8 +99,8 @@
     },
     {
      "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Pittsburgh: availability sources checked, nothing filed · PASS: North Carolina: availability sources checked, nothing filed"
+     "result": "FAIL",
+     "detail": "FAIL: Pittsburgh: availability feed fetch failed — abnormal missing data · FAIL: North Carolina: availability feed fetch failed — abnormal missing data"
     },
     {
      "requirement": "component adjustments within historical bounds",
@@ -119,7 +119,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401856718",
