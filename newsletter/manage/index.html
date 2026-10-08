@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://iattxbkbufslbauoumga.supabase.co; img-src 'none'; base-uri 'none'; form-action 'none'">
+<title>EdgeDesk newsletter preferences</title>
+<!-- ===========================================================================
+     NEWSLETTER PREFERENCES AND UNSUBSCRIBE — where the footer links in every
+     research email land (the newsletter edge function redirects its GET
+     routes here, the manage token in the #fragment).
+
+     The token is the subscriber's own 64-hex secret. It confers exactly two
+     powers — change topics, stop email — and this page shows only a MASKED
+     address. Every change is a button press: opening the link changes
+     nothing, so a mail scanner that prefetches it unsubscribes nobody. The
+     mail client's own one-click unsubscribe (RFC 8058) still POSTs to the
+     edge function directly and needs no page.
+
+     Calls: newsletter_preferences_get / _set and newsletter_unsubscribe, each
+     granted to anon and gated by the token (supabase/newsletter.sql).
+     =========================================================================== -->
+<style>
+:root{--ink:#100e0a;--panel:#191510;--line:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;--accent:#2fa79a;--on-accent:#042320;--neg:#e2664b}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+body{background:var(--ink);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;color-scheme:dark;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{width:100%;max-width:560px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:26px 22px}
+.ey{font:700 11px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:22px;line-height:1.25;letter-spacing:-.02em;margin:10px 0 6px;overflow-wrap:anywhere}
+p{color:var(--dim);font-size:14.5px;margin-top:10px}
+p.err{color:var(--neg)}
+a{color:var(--accent)}
+label{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:15px}
+label:last-of-type{border-bottom:0}
+input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+.sub{display:block;color:var(--faint);font-size:12.5px;margin-top:2px}
+.box{border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-top:16px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.btn{background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:15px;border-radius:10px;padding:12px 18px;border:0;cursor:pointer;min-height:44px}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:3px}
+.focus{border-color:var(--accent)}
+small{display:block;margin-top:18px;color:var(--faint);font-size:12px}
+</style>
+</head>
+<body>
+<main class="card" aria-live="polite">
+  <span class="ey">EdgeDesk · Email preferences</span>
+  <h1 id="h">Checking your link…</h1>
+  <p id="m">One moment.</p>
+  <div id="form" hidden>
+    <div class="box">
+      <label><input type="checkbox" id="cfb"><span><b>College Football Week Ahead</b><span class="sub">Mondays, 10:00 AM Central</span></span></label>
+      <label><input type="checkbox" id="nfl"><span><b>NFL Week Ahead</b><span class="sub">Tuesdays, 10:00 AM Central, after Monday Night Football</span></span></label>
+      <label><input type="checkbox" id="findings"><span><b>Major model-vs-market findings</b><span class="sub">Only when a finding clears EdgeDesk's research bar. Research, not picks.</span></span></label>
+      <label><input type="checkbox" id="product"><span><b>Occasional product updates</b><span class="sub">New EdgeDesk features. Separate from the research; tick only if you want them.</span></span></label>
+    </div>
+    <div class="row">
+      <button class="btn" id="save" type="button">Save preferences</button>
+      <button class="btn ghost" id="one" type="button" hidden></button>
+      <button class="btn ghost" id="all" type="button">Unsubscribe from everything</button>
+    </div>
+  </div>
+  <small>EdgeDesk Sports · research, not picks. <a href="/newsletter/">Newsletter</a> · <a href="/privacy.html">Privacy</a></small>
+</main>
+<script>
+(function(){
+  var SB_URL="https://iattxbkbufslbauoumga.supabase.co";
+  var SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+  function $(id){ return document.getElementById(id); }
+  var h=$('h'), m=$('m'), form=$('form');
+  function say(title, msg, bad){ h.textContent=title; m.textContent=msg; m.className=bad?'err':''; }
+  var t='', focus='';
+  try{
+    var frag=new URLSearchParams((location.hash||'').replace(/^#/,''));
+    t=(frag.get('t')||new URLSearchParams(location.search).get('t')||'').trim().toLowerCase();
+    focus=String(frag.get('unsubscribe')||'').toUpperCase();
+  }catch(_){}
+  try{ history.replaceState(null,'',location.pathname); }catch(_){}
+  if(!/^[0-9a-f]{64}$/.test(t)){ say('That link is incomplete.', 'Open the link in your EdgeDesk email again, or reply to that email and we will change it by hand.', true); return; }
+  var framed=false; try{ framed=window.top!==window.self; }catch(_){ framed=true; }
+
+  function rpc(name, body){
+    return fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},
+      body:JSON.stringify(body)})
+      .then(function(r){ if(r.status>=500||r.status===404) throw new Error('unavailable'); return r.ok?r.json():null; });
+  }
+  var LABEL={CFB:'college football',NFL:'the NFL',FINDINGS:'major findings',PRODUCT:'product updates'};
+  function fill(j){
+    ['cfb','nfl','findings','product'].forEach(function(k){ $(k).checked=!!j['wants_'+k]; });
+    var st=j.status||'confirmed';
+    say(st==='unsubscribed'?'You are unsubscribed.':'What EdgeDesk sends you',
+      String(j.email_masked||'')+(st==='unsubscribed'?' receives nothing from EdgeDesk. Tick a topic and save to subscribe again.':''));
+    form.hidden=false;
+    var one=$('one');
+    if(LABEL[focus] && st!=='unsubscribed'){ one.textContent='Stop '+LABEL[focus]+' only'; one.hidden=framed; }
+    if(framed){ $('save').hidden=true; $('all').hidden=true; }
+  }
+  function failed(){ say('We could not reach EdgeDesk.', 'Check your connection and try again, or reply to any EdgeDesk email.', true); }
+  function busy(on){ ['save','one','all'].forEach(function(k){ $(k).disabled=on; }); }
+  function bad(){ say('That link is not valid.', 'It may have been copied incompletely.', true); form.hidden=true; }
+
+  $('save').addEventListener('click', function(){
+    busy(true);
+    rpc('newsletter_preferences_set',{p_token:t,p_wants_cfb:$('cfb').checked,p_wants_nfl:$('nfl').checked,
+      p_wants_findings:$('findings').checked,p_wants_product:$('product').checked})
+    .then(function(j){ busy(false); if(!j||j.ok!==true) return bad();
+      if(j.state==='unsubscribed'){ say('Unsubscribed.', String(j.email_masked||'This address')+' will receive no further EdgeDesk email.'); ['cfb','nfl','findings','product'].forEach(function(k){ $(k).checked=false; }); $('one').hidden=true; return; }
+      fill(Object.assign({status:'confirmed'}, j)); m.textContent=String(j.email_masked||'')+' — saved.';
+    }, function(){ busy(false); failed(); });
+  });
+  function unsub(scope){
+    busy(true);
+    rpc('newsletter_unsubscribe',{p_token:t,p_scope:scope,p_source:'manage_page'})
+    .then(function(j){ busy(false); if(!j||j.ok!==true) return bad();
+      if(j.state==='unsubscribed'){ say('Unsubscribed.', String(j.email_masked||'This address')+' will receive no further EdgeDesk email.'); ['cfb','nfl','findings','product'].forEach(function(k){ $(k).checked=false; }); $('one').hidden=true; return; }
+      fill(Object.assign({status:'confirmed'}, j)); $('one').hidden=true; m.textContent=String(j.email_masked||'')+' — '+(LABEL[scope]||'that topic')+' stopped.';
+    }, function(){ busy(false); failed(); });
+  }
+  $('all').addEventListener('click', function(){ unsub('all'); });
+  $('one').addEventListener('click', function(){ unsub(focus); });
+  rpc('newsletter_preferences_get',{p_token:t}).then(function(j){ if(!j||j.ok!==true) return bad(); fill(j); }, failed);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>No-Vig Odds Calculator — Remove the Vig, See Fair Probabilities | EdgeDesk</title>
+<meta name="description" content="Free no-vig calculator: enter sportsbook odds for every side of a market and get the implied probabilities, the book's margin, and the fair no-vig odds by four methods, with the working shown.">
+<link rel="canonical" href="https://edgedesksports.com/tools/no-vig-calculator/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/tools/no-vig-calculator/">
+<meta property="og:title" content="No-Vig Odds Calculator — EdgeDesk">
+<meta property="og:description" content="Remove the sportsbook's margin from any market and see the fair probability of each side, with the arithmetic printed.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="No-Vig Odds Calculator — EdgeDesk">
+<meta name="twitter:description" content="Remove the sportsbook's margin from any market and see the fair probability of each side, with the arithmetic printed.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "EdgeDesk No-Vig Odds Calculator",
+  "url": "https://edgedesksports.com/tools/no-vig-calculator/",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "description": "Converts sportsbook odds to implied probabilities, measures the margin, and removes it by the multiplicative, additive, power and Shin methods.",
+  "publisher": { "@type": "Organization", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" }
+}</script>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Free tools", "item": "https://edgedesksports.com/tools/" },
+    { "@type": "ListItem", "position": 2, "name": "No-vig odds calculator", "item": "https://edgedesksports.com/tools/no-vig-calculator/" }
+  ]
+}</script>
+</head>
+<body data-ed-page="tool:no-vig-calculator">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Site">
+    <a href="/articles/">Research</a><a href="/tools/" class="on">Free tools</a><a href="/newsletter/">Newsletter</a><a href="/methodology/">Methodology</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="tool_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/tools/">Free tools</a> › <span aria-current="page">No-vig odds calculator</span></nav>
+  <span class="ey">Free tool · research, not picks</span>
+  <h1>No-vig odds calculator</h1>
+  <p class="lede">Enter the price on every side of one market. The calculator shows what each price implies,
+  how much of it is the sportsbook’s margin, and the fair probability and fair odds once that margin is removed —
+  with the arithmetic printed underneath.</p>
+
+  <section class="card" aria-labelledby="calc-h">
+    <h2 id="calc-h" style="margin-top:0">Your market</h2>
+    <div class="seg" role="group" aria-label="Odds format">
+      <button type="button" id="fmtAm" class="on" aria-pressed="true">American</button>
+      <button type="button" id="fmtDec" aria-pressed="false">Decimal</button>
+    </div>
+    <div id="rows" class="grid2">
+      <div><label class="fl" for="o0">Side 1 price</label><input type="text" id="o0" inputmode="decimal" autocomplete="off" value="-110"></div>
+      <div><label class="fl" for="o1">Side 2 price</label><input type="text" id="o1" inputmode="decimal" autocomplete="off" value="-110"></div>
+      <div id="o2wrap" hidden><label class="fl" for="o2">Side 3 price (three-way markets)</label><input type="text" id="o2" inputmode="decimal" autocomplete="off" value=""></div>
+    </div>
+    <div class="row">
+      <div style="flex:1;min-width:200px">
+        <label class="fl" for="method">De-vig method</label>
+        <select id="method">
+          <option value="proportional">Multiplicative (proportional)</option>
+          <option value="power">Power</option>
+          <option value="shin">Shin</option>
+          <option value="additive">Additive</option>
+        </select>
+      </div>
+      <button type="button" class="btn ghost" id="three">Add a third outcome</button>
+    </div>
+    <p class="err" id="err" role="alert" hidden></p>
+    <div class="out" id="out" aria-live="polite">
+      <noscript><p class="note">The calculator needs JavaScript. The method is written out below, so you can do it by hand: at −110 / −110 each side implies 52.38%, the two add to 104.76%, and dividing each by 104.76% gives a fair 50% / 50% (+100 / +100).</p></noscript>
+    </div>
+  </section>
+
+  <section>
+    <h2>What “no-vig” means</h2>
+    <p>A sportsbook’s prices on both sides of a market add up to more than 100% implied probability. At −110 on each
+    side, each price implies 52.38%; together 104.76%. The extra 4.76% is the <b>overround</b> — the book’s margin, often
+    called the vig or juice. Removing it gives a <b>no-vig</b> (fair) probability for each side: the market’s own
+    estimate with the margin taken out.</p>
+    <p>A no-vig price is a benchmark, not a prediction. It tells you what the market implies; it does not tell you who will
+    win, and it is only as good as the market you entered.</p>
+
+    <h2>The four methods</h2>
+    <p>Every method agrees on the total margin. They differ on <i>how it is split</i> between the favourite and the underdog,
+    which matters most on lopsided markets.</p>
+    <div class="tblwrap"><table class="tbl">
+      <thead><tr><th scope="col">Method</th><th scope="col">Formula</th><th scope="col">When it differs</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Multiplicative</th><td class="n">pᵢ = qᵢ ÷ Σq</td><td>The common default. Removes margin in proportion to each price.</td></tr>
+        <tr><th scope="row">Power</th><td class="n">pᵢ = qᵢᵏ, Σ qᵢᵏ = 1</td><td>Takes more margin from the longshot (favourite–longshot bias).</td></tr>
+        <tr><th scope="row">Shin</th><td class="n">insider share z solved so Σp = 1</td><td>Also leans on the longshot; on a two-way market it equals the additive method.</td></tr>
+        <tr><th scope="row">Additive</th><td class="n">pᵢ = qᵢ − (Σq − 1) ÷ n</td><td>Equal margin per side; can fail on a heavy longshot (the tool says so).</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">q is a price’s implied probability (1 ÷ decimal odds). EdgeDesk’s terminal uses the same four
+    methods, from the same arithmetic, as its market benchmark — never as EdgeDesk’s own probability.</p>
+
+    <h2>Questions</h2>
+    <h3>Should I enter both sides of the same market?</h3>
+    <p>Yes — every outcome of <i>one</i> market at <i>one</i> book (a spread’s two sides at the same number, a moneyline’s
+    two sides, or a three-way market’s three outcomes). Mixing books or numbers makes the “margin” meaningless; the
+    tool refuses totals under 98% or over 150%.</p>
+    <h3>Is the fair price a good bet?</h3>
+    <p>Not by itself. A fair price is the market’s own number with the margin removed. Whether a bet has value depends on
+    your probability against the price you can actually get — the <a href="/tools/fair-odds-calculator/">fair odds
+    calculator</a> does that arithmetic for a probability you supply.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">This is the market’s number. EdgeDesk prices the game first.</h2>
+    <p>The terminal builds its own fair line for every NFL and college football game before it looks at a sportsbook,
+    then compares it with live prices at each book and shows EdgeDesk EV at the exact price — with what the model
+    could not measure printed beside it.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="tool_novig_trial">Start the 7-day free trial</a>
+      <a class="btn ghost" href="/tools/model-vs-market/" data-ed-cta="tool_novig_explorer">See model vs. market, free</a></div>
+    <p class="fine">7-day free trial. $49.99/month after trial. Cancel anytime.</p>
+  </aside>
+
+  <nav class="links" aria-label="More free research">
+    <a href="/tools/fair-odds-calculator/">Fair odds calculator</a>
+    <a href="/tools/model-vs-market/">Model vs. market explorer</a>
+    <a href="/articles/">Research articles</a>
+    <a href="/newsletter/?from=tool_no_vig">Weekly research email</a>
+  </nav>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> These tools do arithmetic on numbers you enter. Nothing here is betting advice, a prediction or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/tools/">Free tools</a><a href="/articles/">Research</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_odds_tools.js?v=1"></script>
+<script>
+(function () {
+  var T = window.EDOddsTools; if (!T) return;
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = 'american', three = false, used = false;
+  function pct(x, d) { return (x * 100).toFixed(d == null ? 2 : d) + '%'; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function inputs() { var a = [$('o0').value, $('o1').value]; if (three) a.push($('o2').value); return a; }
+  function render() {
+    var res = T.noVig(inputs(), { method: $('method').value, format: fmt });
+    var err = $('err'), out = $('out');
+    if (!res.ok) {
+      err.hidden = false;
+      err.textContent = res.errors.map(function (e) { return (e.index != null ? 'Side ' + (e.index + 1) + ': ' : '') + e.error; }).join(' ');
+      out.innerHTML = ''; return;
+    }
+    err.hidden = true;
+    var h = '<div class="grid3">'
+      + '<div class="stat"><div class="k">Total implied</div><div class="v">' + pct(res.total_implied) + '</div><div class="s">Above 100% is margin</div></div>'
+      + '<div class="stat"><div class="k">Overround (vig)</div><div class="v">' + pct(res.overround) + '</div><div class="s">Hold ' + pct(res.hold) + '</div></div>'
+      + '<div class="stat"><div class="k">Method</div><div class="v" style="font-size:16px">' + esc(res.method_label) + '</div></div>'
+      + '</div>';
+    h += '<div class="tblwrap" style="margin-top:12px"><table class="tbl"><thead><tr><th scope="col">Side</th><th scope="col">Price</th><th scope="col">Implied</th><th scope="col">Fair (no-vig)</th><th scope="col">Fair American</th><th scope="col">Fair decimal</th></tr></thead><tbody>';
+    res.outcomes.forEach(function (o, i) {
+      h += '<tr><th scope="row">Side ' + (i + 1) + '</th><td class="n">' + esc(fmt === 'american' ? T.americanDisplay(o.input_american) : o.input_decimal.toFixed(3)) + '</td>'
+        + '<td class="n">' + pct(o.implied) + '</td><td class="n"><b>' + pct(o.fair) + '</b></td><td class="n">' + esc(o.fair_american_display) + '</td><td class="n">' + o.fair_decimal.toFixed(3) + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<h3>Every method, side by side</h3><div class="tblwrap"><table class="tbl"><thead><tr><th scope="col">Method</th>'
+      + res.outcomes.map(function (o, i) { return '<th scope="col">Side ' + (i + 1) + '</th>'; }).join('') + '</tr></thead><tbody>';
+    res.compare.forEach(function (c) {
+      h += '<tr><th scope="row">' + esc(c.label) + '</th>' + (c.ok ? c.fair.map(function (f) { return '<td class="n">' + pct(f) + '</td>'; }).join('')
+        : '<td colspan="' + res.outcomes.length + '">' + esc(c.problem) + '</td>') + '</tr>';
+    });
+    h += '</tbody></table></div>';
+    h += '<h3>The working</h3><ol class="steps">' + res.steps.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ol>';
+    out.innerHTML = h;
+    if (used && window.EDPublic) window.EDPublic.track('tool_used', { entity: 'no_vig', method: res.method, outcomes: res.outcomes.length });
+  }
+  function setFmt(f) {
+    if (f === fmt) return;
+    var conv = inputs().map(function (v) { var p = T.parsePrice(v, fmt); return p.ok ? (f === 'decimal' ? p.decimal.toFixed(3) : T.americanDisplay(p.american)) : v; });
+    fmt = f;
+    $('fmtAm').classList.toggle('on', f === 'american'); $('fmtAm').setAttribute('aria-pressed', f === 'american');
+    $('fmtDec').classList.toggle('on', f === 'decimal'); $('fmtDec').setAttribute('aria-pressed', f === 'decimal');
+    $('o0').value = conv[0]; $('o1').value = conv[1]; if (three) $('o2').value = conv[2];
+    render();
+  }
+  $('fmtAm').addEventListener('click', function () { setFmt('american'); });
+  $('fmtDec').addEventListener('click', function () { setFmt('decimal'); });
+  $('three').addEventListener('click', function () {
+    three = !three; $('o2wrap').hidden = !three;
+    $('three').textContent = three ? 'Back to two outcomes' : 'Add a third outcome';
+    if (three && !$('o2').value) $('o2').value = fmt === 'american' ? '+250' : '3.50';
+    used = true; render();
+  });
+  ['o0', 'o1', 'o2', 'method'].forEach(function (id) {
+    $(id).addEventListener('input', function () { used = true; render(); });
+    $(id).addEventListener('change', function () { used = true; render(); });
+  });
+  render();
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

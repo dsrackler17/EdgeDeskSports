@@ -468,8 +468,47 @@ function personalise(body, urls) {
   return out;
 }
 
-function render(edition, opts) {
-  return { html: renderHtml(edition, opts), text: renderText(edition, opts) };
+/* ------------------------------------------------------- attribution */
+/* EVERY LINK BACK TO THE SITE SAYS IT CAME FROM THE NEWSLETTER (2026-10).
+   Without it a reader who clicked through arrived as "direct" (or as their
+   webmail's host, "referral"), and supabase/growth.sql could not credit the
+   newsletter with a single visit, signup or trial. utm_source=newsletter is
+   what acq_classify reads as the newsletter channel; the campaign names the
+   edition. Legal pages are left alone, and the unsubscribe and preferences
+   links point at the newsletter function, not the site, so they are never
+   touched. The query goes before any #fragment (app.html routes on it). */
+function campaignOf(edition) {
+  const sport = String(edition && edition.sport || 'nl').toLowerCase().replace(/[^a-z]/g, '') || 'nl';
+  const when = String(edition && (edition.edition_date || ('w' + edition.week)) || '').replace(/[^0-9a-z]/gi, '').toLowerCase();
+  return ('nl_' + sport + (when ? '_' + when : '')).slice(0, 64);
+}
+function tagUrl(url, edition, content) {
+  const m = /^([^#]*?)(\?[^#]*)?(#.*)?$/.exec(String(url));
+  if (!m) return url;
+  const path = m[1], query = m[2] || '', hash = m[3] || '';
+  if (/[?&]utm_source=/.test(query)) return url;
+  if (/\/(privacy|terms|disclaimer)\.html$/.test(path)) return url;
+  const add = 'utm_source=newsletter&utm_medium=email&utm_campaign=' + campaignOf(edition)
+    + (content ? '&utm_content=' + content : '');
+  return path + (query ? query + '&' : '?') + add + hash;
+}
+function tagLinks(str, edition, site, html) {
+  const host = String(site || 'https://edgedesksports.com').replace(/\/+$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp(host + '(?:/[^\\s"\'<>]*)?', 'g');
+  return String(str).replace(re, (u) => {
+    /* in HTML the ampersand is written as an entity inside an attribute */
+    const t = tagUrl(html ? u.replace(/&amp;/g, '&') : u, edition);
+    return html ? t.replace(/&/g, '&amp;') : t;
+  });
 }
 
-module.exports = { T, SANS, MONO, WIDTH, PLACEHOLDER, esc, wrap, render, renderHtml, renderText, personalise };
+function render(edition, opts) {
+  opts = opts || {};
+  const site = opts.site || 'https://edgedesksports.com';
+  return {
+    html: tagLinks(renderHtml(edition, opts), edition, site, true),
+    text: tagLinks(renderText(edition, opts), edition, site, false)
+  };
+}
+
+module.exports = { T, SANS, MONO, WIDTH, PLACEHOLDER, esc, wrap, render, renderHtml, renderText, personalise, tagUrl, tagLinks, campaignOf };

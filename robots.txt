@@ -25,9 +25,26 @@ Allow: /articles/
 # search while the research articles are put in it.
 Allow: /games
 Allow: /games/
+
+# THE FREE TOOLS live under /tools/, which is ALSO where the repository keeps
+# its build and test scripts. Only the tool pages and their stylesheet are
+# offered; everything else under /tools/ stays out. Google and Bing apply the
+# longest matching rule, so each Allow below wins over the Disallow for its
+# own path and nothing else. ($ = this exact URL.)
+Allow: /tools/$
+Allow: /tools/tools.css
+Allow: /tools/no-vig-calculator/
+Allow: /tools/fair-odds-calculator/
+Allow: /tools/model-vs-market/
+Disallow: /tools/
+
+# The article store: every record, published or not, as JSON. Drafts are not
+# for search; the published index the explorer reads is.
+Allow: /articles/data/published.json
+Disallow: /articles/data/
+Disallow: /supabase/
 Disallow: /articles/_preview/
 Disallow: /admin/
-Disallow: /tools/
 Disallow: /admin.html
 Disallow: /collective/admin.html
 Disallow: /reset.html

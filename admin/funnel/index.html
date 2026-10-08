@@ -153,7 +153,7 @@ var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
 var KEY = 'edgedesk_funnel_admin_session';
 var SESSION = null, REP = null, LC = null, DIM = 'signup_week';
-var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
+var SOURCES = { organic_x: 'Organic X', x_dm: 'X DM', creator_affiliate: 'Creator / affiliate', linkedin: 'LinkedIn', search: 'Search', newsletter: 'Newsletter', outbound_email: 'Outbound email', direct: 'Direct', referral: 'Referral', other: 'Other', '(untracked)': 'No record' };
 var KINDS = { trial_welcome: 'Welcome (terminal is live)', trial_day1: 'Day 1 research', trial_day3: 'Day 3: new since last visit', renewal_reminder: 'Renewal reminder' };
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }

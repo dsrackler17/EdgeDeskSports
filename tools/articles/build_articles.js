@@ -96,11 +96,20 @@ function lastmod(rec) {
 /* PUBLISHED ONLY. A draft in a sitemap is an invitation to index a draft, and
    an alias is never listed: it is a second URL for one document and the
    sitemap's job is to name the canonical one. */
-function articleSitemap(recs) {
+/* a pregame article whose kickoff has passed will not change again, whether
+   or not the refresh that marks it frozen ever ran (a game that left the
+   board before it did kept saying "hourly" forever) */
+function settled(r, nowIso) {
+  if (r.frozen || r.article_type === 'postgame') return true;
+  const k = Date.parse(r.game_time), n = Date.parse(nowIso || NOW);
+  return isFinite(k) && isFinite(n) && k <= n;
+}
+function articleSitemap(recs, nowIso) {
+  const newest = (sport) => recs.filter(r => !sport || r.sport === sport).map(lastmod).filter(Boolean).sort().pop() || null;
   const hubs = [
-    { loc: SITE + '/articles', freq: 'daily', pri: '0.9' },
-    { loc: SITE + '/articles/college-football', freq: 'daily', pri: '0.8' },
-    { loc: SITE + '/articles/nfl', freq: 'daily', pri: '0.8' }
+    { loc: SITE + '/articles/', freq: 'daily', pri: '0.9', lm: newest(null) },
+    { loc: SITE + '/articles/college-football/', freq: 'daily', pri: '0.8', lm: newest('CFB') },
+    { loc: SITE + '/articles/nfl/', freq: 'daily', pri: '0.8', lm: newest('NFL') }
   ];
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n';
   x += '<!-- EdgeDesk research articles. PUBLISHED ONLY: a draft, a preview and a\n';
@@ -108,13 +117,14 @@ function articleSitemap(recs) {
   x += '     tools/articles/build_articles.js; do not edit by hand. -->\n';
   x += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
   hubs.forEach(h => {
-    x += '  <url><loc>' + xmlEsc(h.loc) + '</loc><changefreq>' + h.freq + '</changefreq><priority>' + h.pri + '</priority></url>\n';
+    x += '  <url><loc>' + xmlEsc(h.loc) + '</loc>' + (h.lm ? '<lastmod>' + h.lm + '</lastmod>' : '')
+      + '<changefreq>' + h.freq + '</changefreq><priority>' + h.pri + '</priority></url>\n';
   });
   recs.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).forEach(r => {
     const lm = lastmod(r);
-    /* a frozen article is history and will not change again */
-    const freq = r.frozen ? 'yearly' : 'hourly';
-    x += '  <url><loc>' + xmlEsc(r.canonical_url) + '</loc>'
+    /* a frozen or played article is history and will not change again */
+    const freq = settled(r, nowIso) ? 'yearly' : 'hourly';
+    x += '  <url><loc>' + xmlEsc(R.slashed(r.canonical_url)) + '</loc>'
       + (lm ? '<lastmod>' + lm + '</lastmod>' : '')
       + '<changefreq>' + freq + '</changefreq><priority>0.7</priority></url>\n';
   });
@@ -123,16 +133,28 @@ function articleSitemap(recs) {
 }
 /* The primary sitemap becomes an INDEX pointing at the two real ones, so
    adding a sport or a section later never touches the site-wide list again. */
-function sitemapIndex() {
+/* THE LASTMOD OF EACH CHILD IS WHEN ITS CONTENT CHANGED — the newest
+   <lastmod> inside it — not when this build ran. Stamping the build time on
+   every run told crawlers both files changed every ten minutes, which made
+   the date worthless. */
+function newestLastmod(xml) {
+  return (String(xml || '').match(/<lastmod>([^<]+)<\/lastmod>/g) || [])
+    .map(m => m.replace(/<\/?lastmod>/g, '')).filter(t => isFinite(Date.parse(t))).sort().pop() || null;
+}
+function sitemapIndex(articlesXml) {
   const now = new Date(NOW).toISOString();
+  let pagesXml = '';
+  try { pagesXml = fs.readFileSync(path.join(ROOT, 'sitemap-pages.xml'), 'utf8'); } catch (_) { pagesXml = ''; }
+  const lmPages = newestLastmod(pagesXml);
+  const lmArticles = newestLastmod(articlesXml) || now;
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n';
   x += '<!-- EdgeDesk. The primary sitemap is an INDEX: the pages that rarely\n';
   x += '     change live in sitemap-pages.xml, and the research articles, which\n';
   x += '     are added and refreshed continuously, live in their own file that a\n';
   x += '     build rewrites. Written by tools/articles/build_articles.js. -->\n';
   x += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-  x += '  <sitemap><loc>' + SITE + '/sitemap-pages.xml</loc><lastmod>' + now + '</lastmod></sitemap>\n';
-  x += '  <sitemap><loc>' + SITE + '/sitemap-articles.xml</loc><lastmod>' + now + '</lastmod></sitemap>\n';
+  x += '  <sitemap><loc>' + SITE + '/sitemap-pages.xml</loc>' + (lmPages ? '<lastmod>' + lmPages + '</lastmod>' : '') + '</sitemap>\n';
+  x += '  <sitemap><loc>' + SITE + '/sitemap-articles.xml</loc><lastmod>' + lmArticles + '</lastmod></sitemap>\n';
   x += '</sitemapindex>\n';
   return x;
 }
@@ -171,8 +193,21 @@ function build() {
   ownedDirs().forEach(d => fs.rmSync(d, { recursive: true, force: true }));
   const written = [];
 
+  /* the published set, for links that must resolve, and each article's
+     neighbours: other published games, the same sport first, nearest
+     kickoff first — never its own pregame/postgame twin, which the page
+     links on its own */
+  const published = new Set(pub.map(r => r.slug));
+  const kick = (r) => { const t = Date.parse(r.game_time); return isFinite(t) ? t : 0; };
+  const moreFor = (r) => pub
+    .filter(o => o.id !== r.id && String(o.game_id) !== String(r.game_id))
+    .sort((a, b) => ((a.sport === r.sport ? 0 : 1) - (b.sport === r.sport ? 0 : 1))
+      || ((a.article_type === r.article_type ? 0 : 1) - (b.article_type === r.article_type ? 0 : 1))
+      || (Math.abs(kick(a) - kick(r)) - Math.abs(kick(b) - kick(r)))
+      || String(a.slug).localeCompare(String(b.slug)))
+    .slice(0, 6);
   pub.forEach(r => {
-    written.push(page(r.slug, R.articlePage(r)));
+    written.push(page(r.slug, R.articlePage(r, { published: published, more: moreFor(r), now: NOW })));
     (r.aliases || []).forEach(a => { written.push(page(a, R.aliasPage(r, a))); });
   });
 
@@ -180,7 +215,7 @@ function build() {
      with nothing published in it yet: an empty section that says so is a
      better answer to a crawler and a reader than a 404. */
   written.push(page('', R.hubPage({
-    records: pub, canonical: SITE + '/articles', active: '/articles', now: NOW,
+    records: pub, canonical: SITE + '/articles/', active: '/articles/', now: NOW,
     title: 'EdgeDesk Research Articles — Model Projections, Fair Spreads and Matchup Analysis',
     og_title: 'EdgeDesk research — every game, priced and explained',
     description: 'EdgeDesk publishes a research article for every game it prices: the fair spread, the projected score, what moved the number, where each team has an edge, and what the model could not measure. Research, not picks.',
@@ -192,7 +227,7 @@ function build() {
     const S = MODEL.SPORTS[code];
     const recs = pub.filter(r => r.sport === code);
     written.push(page(S.slug, R.hubPage({
-      records: recs, canonical: SITE + '/articles/' + S.slug, active: '/articles/' + S.slug, now: NOW,
+      records: recs, canonical: SITE + '/articles/' + S.slug + '/', active: '/articles/' + S.slug + '/', now: NOW, crumb: S.label,
       title: 'EdgeDesk ' + S.label + ' Research — Fair Spreads, Model Projections and Matchup Analysis',
       og_title: 'EdgeDesk ' + S.label + ' research',
       description: 'EdgeDesk ' + S.label + ' research: the model’s fair spread and projected score for every game it prices, the drivers behind the number, the matchups that decide it, and the data it is missing. Research, not picks.',
@@ -214,9 +249,32 @@ function build() {
     log('  ' + drafts.length + ' draft preview(s) under /articles/_preview/');
   }
 
-  write(path.join(ROOT, 'sitemap-articles.xml'), articleSitemap(pub));
-  write(path.join(ROOT, 'sitemap.xml'), sitemapIndex());
+  /* THE PUBLISHED INDEX, small enough for a page to fetch: which games have
+     a public research page, at what URL. The model-vs-market explorer
+     (/tools/model-vs-market/) links a board row to its article with it, and
+     the outbound engine's landing-page choice reads the same list. Published
+     records only; nothing a draft holds. */
+  write(path.join(OUT, 'data', 'published.json'), JSON.stringify({
+    schema: 'edgedesk_published_articles/1',
+    note: 'Published research articles only. Written by tools/articles/build_articles.js.',
+    articles: pub.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).map(r => ({
+      game_id: r.game_id != null ? String(r.game_id) : null, sport: r.sport, sport_slug: r.sport_slug,
+      type: r.article_type || 'pregame', slug: r.slug, url: R.slashed(r.canonical_url),
+      title: r.away_team + ' vs. ' + r.home_team, game_time: r.game_time || null,
+      updated_at: lastmod(r)
+    }))
+  }, null, 1) + '\n');
+  const articlesXml = articleSitemap(pub, NOW);
+  write(path.join(ROOT, 'sitemap-articles.xml'), articlesXml);
+  write(path.join(ROOT, 'sitemap.xml'), sitemapIndex(articlesXml));
 
+  /* THE SEO REPORT (/admin/seo/) is re-read from the pages just written, so
+     it is never older than the site. A failure here never fails the build:
+     the pages are the product, the report is about them. */
+  try {
+    const rep = require('../seo/audit.js').write(ROOT);
+    log('  seo report: ' + rep.summary.pages + ' pages, ' + rep.summary.errors + ' error(s), ' + rep.summary.warnings + ' warning(s)');
+  } catch (e) { log('  seo report not written: ' + (e && e.message || e)); }
   log(written.length + ' file(s) written · ' + pub.length + ' published article(s)');
   return { written: written, problems: [], published: pub.length };
 }

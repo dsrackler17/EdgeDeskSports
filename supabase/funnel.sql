@@ -151,6 +151,14 @@ create table if not exists public.user_event_kinds (
   description  text not null
 );
 insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_in, description) values
+  -- THE PUBLIC SITE BEFORE THE LANDING PAGE (2026-10, the growth engine):
+  -- research articles, the free tools, the newsletter page. A Google visitor
+  -- usually meets EdgeDesk on one of these, not on the landing page.
+  -- props.entity names the page (kind:slug) or the tool or the CTA.
+  ('public_page_view',        'client', 'session_entity',  5, false, 'A public page outside the landing page was opened (props.entity = kind:slug).'),
+  ('tool_used',               'client', 'session_entity',  6, false, 'A free tool produced a result (props.entity = tool key).'),
+  ('public_cta_clicked',      'client', 'session_entity',  7, false, 'A call to action on a public page was pressed (props.cta names which).'),
+  ('newsletter_signup',       'client', 'session',         8, false, 'The public newsletter form was accepted (a confirmation email was requested).'),
   ('landing_view',            'client', 'session',        10, false, 'The landing page was opened.'),
   ('landing_live_board_view', 'client', 'session',        11, false, 'The live board on the landing page scrolled into view with live data.'),
   ('pricing_view',            'client', 'session',        12, false, 'The pricing section scrolled into view.'),

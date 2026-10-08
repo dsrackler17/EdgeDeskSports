@@ -10,6 +10,11 @@
 <meta property="og:description" content="College football Monday, NFL Tuesday. Five to ten games worth researching, with EdgeDesk's number beside the market's and the limits printed next to both.">
 <meta property="og:url" content="https://edgedesksports.com/newsletter/">
 <meta property="og:type" content="website">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The EdgeDesk research newsletter">
+<meta name="twitter:description" content="College football Monday, NFL Tuesday. Five to ten games worth researching, with EdgeDesk's number beside the market's.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <!-- ===========================================================================
      THE PUBLIC SIGNUP AND PREFERENCE PAGE.
@@ -71,6 +76,8 @@ input[type=email]:focus{outline:2px solid var(--obs);outline-offset:-1px}
 .opt small{color:var(--faint);font-size:12.5px;font-family:'JetBrains Mono',monospace}
 .consent{display:flex;gap:11px;align-items:flex-start;margin:14px 0 4px;font-size:12.5px;color:var(--dim);line-height:1.5;cursor:pointer}
 .consent input{width:17px;height:17px;margin-top:2px;flex:none}
+/* the honeypot: off-screen, not display:none (some bots skip hidden fields) */
+.hpf{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .btn{font-family:'Inter',sans-serif;font-weight:700;font-size:15px;border-radius:10px;padding:13px 22px;cursor:pointer;border:1px solid var(--obs);background:var(--obs);color:var(--on-accent);width:100%}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.ghost{background:transparent;color:var(--text);border-color:var(--line2)}
@@ -120,12 +127,18 @@ footer a{color:var(--faint)}
           <span><b>College Football Week Ahead</b><small>Mondays · 10:00 AM America/Chicago · all of FBS, not just the Power Four</small></span></label>
         <label class="opt" id="optNfl"><input type="checkbox" id="nlNfl">
           <span><b>NFL Week Ahead</b><small>Tuesdays · 10:00 AM America/Chicago · after Monday Night Football</small></span></label>
+        <label class="opt" id="optFindings"><input type="checkbox" id="nlFindings">
+          <span><b>Major model-vs-market findings</b><small>Only when a finding clears EdgeDesk’s research bar · research, not picks</small></span></label>
       </div>
+      <div class="hpf" aria-hidden="true"><label for="nlWebsite">Website</label><input id="nlWebsite" type="text" tabindex="-1" autocomplete="off"></div>
       <label class="consent"><input type="checkbox" id="nlConsent">
         <span>I’m asking EdgeDesk to email me the research editions I ticked above. I understand this is
         <b style="color:var(--text)">research and information only</b> — not betting advice, not a prediction,
         and never a guarantee of any outcome — and that I can unsubscribe from any email in one click.
         I’m 21+ and I’ve read the <a href="/privacy.html">Privacy Policy</a> and <a href="/terms.html">Terms</a>.</span></label>
+      <label class="consent"><input type="checkbox" id="nlProduct">
+        <span><b style="color:var(--text)">Optional:</b> also send me occasional EdgeDesk product updates (new features).
+        This is separate from the research emails above, and you can stop it on its own at any time.</span></label>
       <button class="btn" id="nlSubmit" type="submit" disabled>Send me the confirmation link</button>
       <div class="msg" id="nlMsg" role="status" aria-live="polite"></div>
       <p style="color:var(--faint);font-size:12px;margin-top:12px;line-height:1.5">
@@ -190,25 +203,38 @@ footer a{color:var(--faint)}
 </div></footer>
 
 <script>
-/* The newsletter edge function. It is the ONLY endpoint this page talks to,
-   and it holds the service role; nothing here carries a privileged key. */
+/* The newsletter edge function. It is the ONLY endpoint this page sends an
+   address to, and it holds the service role; nothing here carries a
+   privileged key. (lib/edgedesk_public.js, loaded below, records the visit
+   and an anonymous "signed up" count — never the address.) */
 var NL_ENDPOINT = "https://iattxbkbufslbauoumga.supabase.co/functions/v1/newsletter";
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 var $ = function (id) { return document.getElementById(id); };
-var form = $('nlForm'), email = $('nlEmail'), cfb = $('nlCfb'), nfl = $('nlNfl'),
-    consent = $('nlConsent'), submit = $('nlSubmit'), msg = $('nlMsg');
+var form = $('nlForm'), email = $('nlEmail'), cfb = $('nlCfb'), nfl = $('nlNfl'), findings = $('nlFindings'),
+    product = $('nlProduct'), consent = $('nlConsent'), submit = $('nlSubmit'), msg = $('nlMsg');
+
+/* WHERE THE SIGNUP CAME FROM, as a label the server keeps on the consent
+   record: ?from=tool_no_vig (a tool page), research_hub, … — letters, digits
+   and underscores only, prefixed so it can never pose as another source. */
+var SOURCE = (function () {
+  try {
+    var f = (new URLSearchParams(location.search).get('from') || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 40);
+    return f ? 'nl_' + f : 'newsletter_page';
+  } catch (e) { return 'newsletter_page'; }
+})();
 
 function valid() {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.value.trim())
-    && (cfb.checked || nfl.checked) && consent.checked;
+    && (cfb.checked || nfl.checked || findings.checked) && consent.checked;
 }
 function sync() {
   submit.disabled = !valid();
   $('optCfb').classList.toggle('on', cfb.checked);
   $('optNfl').classList.toggle('on', nfl.checked);
+  $('optFindings').classList.toggle('on', findings.checked);
 }
-[email, cfb, nfl, consent].forEach(function (el) {
+[email, cfb, nfl, findings, consent].forEach(function (el) {
   el.addEventListener('input', sync); el.addEventListener('change', sync);
 });
 sync();
@@ -220,6 +246,7 @@ sync();
   q = q.toLowerCase();
   if (q === 'cfb' || q === 'both') cfb.checked = true;
   if (q === 'nfl' || q === 'both') nfl.checked = true;
+  if (q === 'findings') findings.checked = true;
   sync();
 })();
 
@@ -235,8 +262,11 @@ form.addEventListener('submit', function (e) {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       email: email.value.trim().toLowerCase(),
-      cfb: cfb.checked, nfl: nfl.checked, consent: true,
-      source: 'newsletter_page'
+      cfb: cfb.checked, nfl: nfl.checked, findings: findings.checked,
+      /* product updates carry their own tick and their own consent flag */
+      product: product.checked, product_consent: product.checked,
+      consent: true, source: SOURCE,
+      website: $('nlWebsite').value
     })
   }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
     .then(function (out) {
@@ -244,12 +274,14 @@ form.addEventListener('submit', function (e) {
          page whether the address was already known, and neither does this. */
       if (out.j && out.j.ok) {
         say('ok', 'Check your inbox. The confirmation link expires in seven days, and nothing is sent until you open it.');
+        /* counted once per session; the address is never sent anywhere but the newsletter function */
+        if (window.EDPublic) window.EDPublic.track('newsletter_signup', { cfb: cfb.checked, nfl: nfl.checked, findings: findings.checked, product: product.checked, source: SOURCE }, { now: true });
         form.reset(); sync();
         return;
       }
       var why = (out.j && out.j.reason) || 'unknown';
       say('err', why === 'invalid_email' ? 'That does not look like an email address.'
-        : why === 'no_sport_selected' ? 'Pick at least one edition.'
+        : why === 'no_sport_selected' ? 'Pick at least one edition or the findings email.'
         : why === 'consent_required' ? 'Tick the consent box so we have a record of it.'
         : why === 'confirmation_email_failed' ? 'We could not send the confirmation email just now. Try again in a minute.'
         : 'Something went wrong (' + why + '). Try again, or email support@edgedesksports.com.');
@@ -261,5 +293,7 @@ form.addEventListener('submit', function (e) {
     });
 });
 </script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
 </body>
 </html>

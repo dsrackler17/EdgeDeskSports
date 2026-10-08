@@ -286,7 +286,12 @@ if (good.json) {
        key for PRESENCE first, and an empty key prints a ::warning:: and a run
        summary line naming what was not captured. Never a silent no-op, never
        an invented price. */
-    'ODDS_API_KEY'];
+    'ODDS_API_KEY',
+    /* The Search Console import (search-console.yml, for /admin/acquisition/).
+       Same rule: the step checks every key for PRESENCE first, and an empty
+       one prints a ::warning:: and a run-summary line naming what was not
+       imported. Read-only on Google's side; the log prints counts only. */
+    'GSC_SERVICE_ACCOUNT_JSON', 'GSC_SITE'];
   let files = [];
   try { files = fs.readdirSync(WF).filter(f => /\.ya?ml$/.test(f)); } catch (_) {}
   chk('the workflow directory could be read', files.length > 0, String(files.length));

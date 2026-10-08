@@ -137,9 +137,19 @@ jobs:
         env:
           SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
           SB_URL: ${{ secrets.SB_URL }}
+          # FREE TEXT NEVER REACHES THE SHELL AS SCRIPT. A dispatch input is
+          # interpolated by Actions BEFORE bash parses the line, so
+          # `${{ github.event.inputs.x }}` inside `run:` is code, not data. It
+          # travels as an environment variable and is checked against a closed
+          # list before it is used.
+          IN_SPORT: ${{ github.event.inputs.sport }}
         run: |
           ARGS=""
-          if [ -n "${{ github.event.inputs.sport }}" ]; then ARGS="--sport ${{ github.event.inputs.sport }}"; fi
+          case "$IN_SPORT" in
+            '') ;;
+            CFB|NFL|cfb|nfl) ARGS="--sport $IN_SPORT" ;;
+            *) echo "::error::sport must be CFB or NFL"; exit 1 ;;
+          esac
           node tools/newsletter/run.js market $ARGS
 
       # The newsletter quotes what the research terminal says, so the records
@@ -172,12 +182,33 @@ jobs:
           # is the only correct source for them. It prints the records and
           # never the key.
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Every dispatch input arrives as DATA (see the market step above):
+          # `to` can be set from the operator console through the newsletter
+          # edge function, and this step holds the service role and the
+          # provider key, so an address that is not an address stops the run.
+          IN_PHASE: ${{ github.event.inputs.phase }}
+          IN_SPORT: ${{ github.event.inputs.sport }}
+          IN_TO: ${{ github.event.inputs.to }}
+          IN_FORCE: ${{ github.event.inputs.force }}
         run: |
-          PHASE="${{ github.event.inputs.phase }}"
+          PHASE="$IN_PHASE"
+          case "$PHASE" in
+            ''|all|build|send|preview|test|rank|due|doctor|gate-on|gate-off|retry) ;;
+            *) echo "::error::unknown phase"; exit 1 ;;
+          esac
           ARGS=""
-          if [ -n "${{ github.event.inputs.sport }}" ]; then ARGS="$ARGS --sport ${{ github.event.inputs.sport }}"; fi
-          if [ -n "${{ github.event.inputs.to }}" ]; then ARGS="$ARGS --to ${{ github.event.inputs.to }}"; fi
-          if [ "${{ github.event.inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          case "$IN_SPORT" in
+            '') ;;
+            CFB|NFL|cfb|nfl) ARGS="$ARGS --sport $IN_SPORT" ;;
+            *) echo "::error::sport must be CFB or NFL"; exit 1 ;;
+          esac
+          if [ -n "$IN_TO" ]; then
+            if ! printf '%s' "$IN_TO" | grep -Eq '^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,180}\.[A-Za-z]{2,24}$'; then
+              echo "::error::to must be one plain email address"; exit 1
+            fi
+            ARGS="$ARGS --to $IN_TO"
+          fi
+          if [ "$IN_FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
           # THE LAUNCH GATE IS TWO CHOICES, NOT A PHASE PLUS A FLAG. A dropdown
           # where picking the wrong adjacent item opens production sending is a
           # dropdown that will eventually be mis-picked, so the direction is

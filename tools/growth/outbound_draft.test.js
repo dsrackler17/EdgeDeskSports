@@ -231,7 +231,11 @@ const fnCalls = (re) => LOG.filter((e) => e.host === 'proj.supabase.test' && re.
     chk('T … the template: "Hi there,", the best fact quoted in its own words and cited, marked as the template\'s', d.generator_version === 'engine:template:p1'
       && d.body_text.startsWith('Hi there,\n\nI came across your work recently, in particular this: "CFB power ratings against the market".')
       && JSON.stringify(d.claims) === JSON.stringify([{ text: 'CFB power ratings against the market', evidence_id: PROJK }]) && d.greeting_name === null
-      && d.subject === 'EdgeDesk Sports, for your research' && /\$49\.99\/month/.test(d.body_text) && /free for 7 days at https:\/\/edgedesksports\.com\//.test(d.body_text), d);
+      && d.subject === 'EdgeDesk Sports, for your research' && /\$49\.99\/month/.test(d.body_text)
+      /* a college football analyst is sent to the public CFB research, not the
+         home page (growth_outbound.landing_for), and the words say what it is */
+      && /our public college football research is at https:\/\/edgedesksports\.com\/articles\/college-football\/\./.test(d.body_text)
+      && /7-day free trial/.test(d.body_text), d);
     claude(() => ({ stop_reason: 'refusal', content: [] }));
     x = await run({ action: 'draft', prospect_id: P.uma });
     chk('T Claude declining: the template, after one call', x.b.ok === true && x.b.writer === 'template' && CLAUDE_REQS.length === 1

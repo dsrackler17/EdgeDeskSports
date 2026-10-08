@@ -1,0 +1,71 @@
+# EdgeDesk — import Google Search Console data for the owner's acquisition
+# dashboard (supabase/growth_engine.sql, /admin/acquisition/).
+#
+# Daily: clicks, impressions, CTR and position by page and by query over a
+# rolling ten-day window ending three days ago (Search Console finalises late),
+# upserted by day, so a re-run writes the same rows. The log prints row counts
+# only — this repository's Actions logs are public.
+#
+# SECRETS (new; until they exist the job prints a ::warning:: and a run-summary
+# line naming what is missing, and exits green)
+#   GSC_SERVICE_ACCOUNT_JSON  a Google Cloud service account key (JSON) whose
+#                             client_email is a user on the Search Console
+#                             property
+#   GSC_SITE                  sc-domain:edgedesksports.com (domain property) or
+#                             https://edgedesksports.com/ (URL-prefix property)
+#   SB_SERVICE_ROLE, SB_URL   the existing Supabase service role
+name: Search Console import
+
+on:
+  schedule:
+    - cron: '41 9 * * *'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days to (re)import, ending three days ago'
+        type: string
+        default: '10'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: search-console
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The importer's own checks
+        run: node tools/growth/growth_engine.test.js
+      - name: Import
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GSC_SITE: ${{ secrets.GSC_SITE }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+          SB_URL: ${{ secrets.SB_URL }}
+          IN_DAYS: ${{ github.event.inputs.days }}
+        run: |
+          # An empty secret is a loud, named state, never a silent green run.
+          missing=""
+          [ -n "$GSC_SERVICE_ACCOUNT_JSON" ] || missing="$missing GSC_SERVICE_ACCOUNT_JSON"
+          [ -n "$GSC_SITE" ] || missing="$missing GSC_SITE"
+          [ -n "$SB_SERVICE_ROLE" ] || missing="$missing SB_SERVICE_ROLE"
+          [ -n "$SB_URL" ] || missing="$missing SB_URL"
+          if [ -n "$missing" ]; then
+            echo "::warning::Search Console import not configured, nothing imported. Missing secret(s):$missing (docs/growth-engine/README.md, Deploying step 4)."
+            echo "**Search Console import:** not configured, nothing imported. Missing secret(s):$missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          DAYS="${IN_DAYS:-10}"
+          case "$DAYS" in ''|*[!0-9]*) DAYS=10 ;; esac
+          node tools/growth/gsc_import.js --days "$DAYS"
+          echo "**Search Console import:** done (${DAYS} days)." >> "$GITHUB_STEP_SUMMARY"

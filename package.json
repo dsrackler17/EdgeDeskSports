@@ -14,7 +14,7 @@
     "cfb:terminal:check": "node football/cfb_terminal/build.js --check",
     "cfb:terminal:test": "node football/cfb_terminal/tests.js && node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js && node tools/bettor/consistency.test.js && node football/cfb_terminal/read.test.js && node football/cfb_ev/ev.test.js && node tools/football/quote_ev.test.js && node football/cfb_terminal/alternates.test.js && node football/cfb_terminal/user_test.js && node football/cfb_terminal/analytics_sql.test.js",
     "bettor:consistency:test": "node tools/bettor/consistency.test.js",
- "cfb:terminal:usertest": "node football/cfb_terminal/user_test.js --md",
+    "cfb:terminal:usertest": "node football/cfb_terminal/user_test.js --md",
     "cfb:board:audit": "node tools/football/cfb_board_audit.js",
     "cfb:board:audit:sql": "node tools/football/cfb_board_audit_sql.js --write",
     "cfb:board:audit:repro": "node tools/football/cfb_board_repro_app.js",
@@ -161,7 +161,7 @@
     "newsletter:rank": "node tools/newsletter/run.js rank",
     "newsletter:report": "node tools/newsletter/run.js report",
     "newsletter:test": "node tools/newsletter/newsletter.test.js",
-    "newsletter:sql": "node tools/newsletter/newsletter_sql.test.js && node tools/newsletter/newsletter_suppress_sql.test.js",
+    "newsletter:sql": "node tools/newsletter/newsletter_sql.test.js && node tools/newsletter/newsletter_suppress_sql.test.js && node tools/newsletter/newsletter_growth_sql.test.js",
     "editorial:sql": "node tools/editorial/editorial_sql.test.js && node tools/editorial/runtime_sql.test.js",
     "games:build": "node games/build_challenges.js",
     "games:test": "node tools/games/games.test.js && node tools/games/dynasty.test.js && node tools/games/drill.test.js && node tools/games/feel.test.js && node tools/games/state_parity.test.js && node tools/games/attribution_parity.test.js && node tools/games/builder.test.js && node tools/games/social.test.js && node tools/games/franchise.test.js && node tools/games/sql_security.test.js && node tools/games/franchise_sql.test.js && node tools/games/gridiron.test.js && node tools/games/live.test.js && node tools/games/rushing.test.js && node tools/games/flow.test.js && node tools/games/profile.test.js && node tools/games/vault.test.js && node tools/games/pack_odds.test.js && node tools/games/cards_sql.test.js && node tools/games/season_sql.test.js && node tools/games/offline.test.js && node tools/games/exchange_concurrency.test.js && node tools/games/loop.test.js",
@@ -372,6 +372,11 @@
     "validation:health": "node tools/validation/model_health.js",
     "validation:health:write": "node tools/validation/model_health.js --write",
     "validation:health:check": "node tools/validation/model_health.js --check",
-    "validation:keys": "node tools/validation/build_key_numbers.js --write"
+    "validation:keys": "node tools/validation/build_key_numbers.js --write",
+    "growth:engine:test": "node tools/growth/growth_engine.test.js && node tools/seo/audit.js --check",
+    "growth:engine:sql": "node tools/growth/growth_engine_sql.test.js && node tools/newsletter/newsletter_growth_sql.test.js && node tools/growth/outbound_landing_sql.test.js",
+    "growth:engine:e2e": "node tools/growth/public_pages.e2e.js",
+    "seo:audit": "node tools/seo/audit.js",
+    "growth:gsc": "node tools/growth/gsc_import.js"
   }
 }

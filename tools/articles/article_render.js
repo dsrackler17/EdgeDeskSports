@@ -28,7 +28,46 @@
 
   var SITE = 'https://edgedesksports.com';
   var ORG = 'EdgeDesk Sports';
-  var CSS_HREF = '/articles/articles.css?v=2';
+  var CSS_HREF = '/articles/articles.css?v=3';
+  /* THE SHARE IMAGE. Every article's hero graphic is an inline SVG data URI,
+     which X, Facebook, LinkedIn and Slack all refuse as an og:image: a card
+     with no picture. A real 1200x630 PNG on the site is used instead wherever
+     the record has no raster image of its own. */
+  var OG_DEFAULT = SITE + '/assets/og/edgedesk-research.png';
+  /* THE OFFER, worded by lib/edgedesk_pricing.js (CTA_LINE). This file loads
+     in a browser without that module, so the line is copied here and
+     tools/growth/public_pages.test.js holds the two equal. */
+  var TRIAL_LINE = '7-day free trial. $49.99/month after trial. Cancel anytime.';
+  var TRIAL_HREF = '/#subscribe';
+  /* first-party measurement (lib/edgedesk_public.js): published pages only —
+     a draft preview or an alias stub records nothing */
+  var TRACK_JS = '<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>'
+    + '<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>';
+
+  /* ONE URL PER PAGE. Every article is a directory with an index.html, and
+     GitHub Pages answers /articles/x with a 301 to /articles/x/. A canonical,
+     a sitemap entry or an internal link without the slash therefore pointed
+     at a redirect. Every /articles URL this file writes goes through here. */
+  function slashed(u) {
+    if (typeof u !== 'string') return u;
+    var m = /^((?:https:\/\/edgedesksports\.com)?\/articles(?:\/[a-z0-9-]+)*)(\/?)([?#].*)?$/.exec(u);
+    if (!m) return u;
+    return m[1] + '/' + (m[3] || '');
+  }
+  function normRec(rec) {
+    if (!rec || rec.__norm) return rec;
+    var o = Object.assign({}, rec, { __norm: true, canonical_url: slashed(rec.canonical_url) });
+    if (rec.related) {
+      o.related = Object.assign({}, rec.related);
+      if (o.related.pregame_url) o.related.pregame_url = slashed(o.related.pregame_url);
+      if (o.related.postgame_url) o.related.postgame_url = slashed(o.related.postgame_url);
+    }
+    return o;
+  }
+  function ogImage(rec) {
+    var im = rec && rec.hero_image;
+    return (typeof im === 'string' && /^https:\/\//.test(im)) ? im : OG_DEFAULT;
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -76,13 +115,14 @@
     h += '<meta property="og:title" content="' + esc(o.og_title || o.title) + '">\n';
     h += '<meta property="og:description" content="' + esc(o.description) + '">\n';
     h += '<meta property="og:locale" content="en_US">\n';
-    if (o.image) {
-      h += '<meta property="og:image" content="' + esc(o.image) + '">\n';
-      h += '<meta name="twitter:card" content="summary_large_image">\n';
-      h += '<meta name="twitter:image" content="' + esc(o.image) + '">\n';
-    } else {
-      h += '<meta name="twitter:card" content="summary">\n';
-    }
+    /* a data: URI is not an image a social card can fetch (see OG_DEFAULT) */
+    var img = (typeof o.image === 'string' && /^https:\/\//.test(o.image)) ? o.image : OG_DEFAULT;
+    h += '<meta property="og:image" content="' + esc(img) + '">\n';
+    h += '<meta property="og:image:width" content="1200">\n';
+    h += '<meta property="og:image:height" content="630">\n';
+    h += '<meta property="og:image:alt" content="EdgeDesk research — where the model and the market disagree">\n';
+    h += '<meta name="twitter:card" content="summary_large_image">\n';
+    h += '<meta name="twitter:image" content="' + esc(img) + '">\n';
     h += '<meta name="twitter:site" content="@edgedesksports">\n';
     h += '<meta name="twitter:title" content="' + esc(o.og_title || o.title) + '">\n';
     h += '<meta name="twitter:description" content="' + esc(o.description) + '">\n';
@@ -107,20 +147,23 @@
     return '<header class="ah">'
       + '<a class="ah-brand" href="/"><span class="ah-mark" aria-hidden="true"></span>EdgeDesk</a>'
       + '<nav class="ah-nav" aria-label="Research sections">'
-      + tab('/articles', 'All research')
-      + tab('/articles/college-football', 'College football')
-      + tab('/articles/nfl', 'NFL')
-      + tab('/articles/community', 'Members')
+      + tab('/articles/', 'All research')
+      + tab('/articles/college-football/', 'College football')
+      + tab('/articles/nfl/', 'NFL')
+      + tab('/tools/', 'Free tools')
+      + tab('/articles/community/', 'Members')
       + '</nav>'
-      + '<a class="ah-cta" href="/app.html#research/football">Research terminal</a>'
+      + '<a class="ah-cta" href="' + TRIAL_HREF + '" data-ed-cta="header_trial">Start free trial</a>'
       + '</header>';
   }
   function siteFooter() {
     return '<footer class="af">'
       + '<p class="af-line"><b>Research, not picks.</b> EdgeDesk publishes what its model sees, how confident it is, and what it could not measure. Nothing on this site is betting advice, a wager or a recommendation.</p>'
       + '<nav class="af-nav" aria-label="Site">'
-      + '<a href="/articles">Research articles</a><a href="/articles/college-football">College football</a>'
-      + '<a href="/articles/nfl">NFL</a><a href="/articles/community">Member posts</a>'
+      + '<a href="/articles/">Research articles</a><a href="/articles/college-football/">College football</a>'
+      + '<a href="/articles/nfl/">NFL</a><a href="/articles/community/">Member posts</a>'
+      + '<a href="/tools/">Free odds tools</a><a href="/methodology/">Methodology</a>'
+      + '<a href="/record.html">Public record</a>'
       + '<a href="/app.html#research/football">Research terminal</a>'
       + '<a href="/newsletter/">Weekly research email</a>'
       + '<a href="/games">EdgeDesk Games</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
@@ -556,15 +599,25 @@
      analysis says so at the top; a postgame page always points back. It is a
      plain anchor with real text, so it works for a crawler and with scripts
      off, and it is the single most useful internal link either page has. */
-  function relatedHTML(rec) {
+  function slugOfUrl(u) {
+    var m = /\/articles\/([a-z0-9-]+)\/?(?:[?#].*)?$/.exec(String(u || ''));
+    return m ? m[1] : null;
+  }
+  /* A LINK TO A PAGE THAT DOES NOT EXIST IS A 404 GOOGLE FOLLOWS. A postgame
+     analysis whose pregame was never published (ready_too_late, held) used
+     to link to it anyway. With the build's list of published slugs the link
+     is drawn only when its target is a page; a preview with no list keeps
+     the old behaviour. */
+  function relatedHTML(rec, published) {
     var r = rec.related;
     if (!r) return '';
-    if (rec.article_type === 'postgame' && r.pregame_url) {
+    var live = function (u) { return !published || published.has(slugOfUrl(u)); };
+    if (rec.article_type === 'postgame' && r.pregame_url && live(r.pregame_url)) {
       return '<nav class="a-related a-related-back" aria-label="The original research">'
         + '<a href="' + esc(r.pregame_url) + '"><span class="a-relk">Before the game</span>'
         + '<span class="a-relv">Read our original pregame research →</span></a></nav>';
     }
-    if (rec.article_type !== 'postgame' && r.postgame_url) {
+    if (rec.article_type !== 'postgame' && r.postgame_url && live(r.postgame_url)) {
       return '<nav class="a-related a-related-fwd" aria-label="The postgame analysis">'
         + '<a href="' + esc(r.postgame_url) + '"><span class="a-relk">After the game</span>'
         + '<span class="a-relv">See what actually happened →</span></a></nav>';
@@ -587,7 +640,7 @@
     var bits = [a.venue, rec.neutral_site ? 'neutral site' : null, a.conference_line,
       a.week ? 'Week ' + a.week : null, a.season ? String(a.season) : null].filter(has);
     var h = '<header class="a-hero">';
-    h += '<div class="a-eyebrow"><a href="' + esc('/articles/' + rec.sport_slug) + '">' + esc(a.eyebrow) + '</a>'
+    h += '<div class="a-eyebrow"><a href="' + esc('/articles/' + rec.sport_slug + '/') + '">' + esc(a.eyebrow) + '</a>'
       + (a.status ? '<span class="a-status">' + esc(a.status) + '</span>' : '')
       + (a.bet ? '<span class="a-betres">' + esc(a.bet) + '</span>' : '')
       + (a.confidence != null ? '<span class="a-conf">' + esc(a.confidence) + '% data confidence</span>' : '') + '</div>';
@@ -629,18 +682,73 @@
       + b.paragraphs.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('')
       + '</section>';
   }
-  function ctaHTML(rec) {
+  function ctaHTML(rec, published) {
     var c = rec.article.cta;
+    /* a link to an article that is not published is a 404; the build's list
+       of published slugs decides (a preview with no list keeps every link) */
+    var links = (c.links || []).filter(function (l) {
+      var sl = slugOfUrl(l.href);
+      return !published || !sl || ['college-football', 'nfl', 'community', 'write'].indexOf(sl) >= 0 || published.has(sl);
+    });
     /* `prompt` is the standing positioning line, on every article whatever
        its type. A postgame page's own CTA line is about the two halves, so
        it carries the prompt as a second line rather than losing it. */
     return '<section class="a-cta">'
       + '<p class="a-ctaline">' + esc(c.line) + '</p>'
       + (c.prompt ? '<p class="a-ctaprompt">' + esc(c.prompt) + '</p>' : '')
-      + '<a class="a-ctabtn" href="' + esc(c.href) + '">' + esc(c.button) + '</a>'
+      + '<a class="a-ctabtn" href="' + esc(TRIAL_HREF) + '" data-ed-cta="article_trial_bottom">Start the 7-day free trial</a> '
+      + '<a class="a-sharebtn" href="' + esc(c.href) + '" data-ed-cta="article_terminal">' + esc(c.button) + '</a>'
+      + '<p class="a-trialfine">' + esc(TRIAL_LINE) + '</p>'
       + '<nav class="a-ctalinks" aria-label="More EdgeDesk research">'
-      + c.links.map(function (l) { return '<a href="' + esc(l.href) + '">' + esc(l.label) + '</a>'; }).join('')
+      + links.map(function (l) { return '<a href="' + esc(slashed(l.href)) + '">' + esc(l.label) + '</a>'; }).join('')
       + '</nav></section>';
+  }
+  /* WHAT IS FREE AND WHAT IS NOT, said once near the top. This page is the
+     public half; the terminal is the paid half, and the list below is only
+     what a subscriber can open today (lib/edgedesk_pricing.js FEATURES). */
+  function trialStripHTML() {
+    return '<aside class="a-trial" aria-label="EdgeDesk Full Access">'
+      + '<p class="a-trialk">Free research · the full terminal is EdgeDesk Full Access</p>'
+      + '<p class="a-trialv">Every NFL and college football game priced like this one, a live market comparison, '
+      + 'EdgeDesk EV at the exact price, player props, and your own bet journal with closing-line value.</p>'
+      + '<a class="a-ctabtn" href="' + esc(TRIAL_HREF) + '" data-ed-cta="article_trial_top">Start the 7-day free trial</a>'
+      + '<p class="a-trialfine">' + esc(TRIAL_LINE) + '</p></aside>';
+  }
+  /* AFTER KICKOFF, A PREGAME PAGE SAYS SO. It is kept exactly as published
+     (an article is never rewritten to look right after the fact) and points
+     at the postgame analysis when there is one. */
+  function playedHTML(rec, published) {
+    var r = rec.related || {};
+    var post = r.postgame_url && (!published || published.has(slugOfUrl(r.postgame_url)));
+    return '<aside class="a-played" role="note"><b>This game has been played.</b> '
+      + 'This is EdgeDesk’s research as it stood before kickoff, kept as published and no longer updated.'
+      + (post ? ' <a href="' + esc(r.postgame_url) + '">Read the postgame analysis →</a>' : '')
+      + '</aside>';
+  }
+  /* MORE RESEARCH: other published games, nearest kickoff first, the tools
+     and the method. No figure from another game is printed here: every
+     number on a page traces to that page's own record (the editorial
+     integrity gate). Real anchors, so the article is a node in the site rather
+     than a dead end. */
+  function moreHTML(rec, more) {
+    var list = (more || []).slice(0, 6);
+    var h = '<section class="a-more"><h2 class="a-h2" id="sec-more-research">More EdgeDesk research</h2>';
+    if (list.length) {
+      h += '<ul class="a-morelist">' + list.map(function (m) {
+        var isPost = m.article_type === 'postgame';
+        return '<li><a href="' + esc(slashed(m.canonical_url)) + '">' + esc(m.away_team + ' vs. ' + m.home_team)
+          + '</a><span class="a-morek">' + esc((isPost ? 'Postgame analysis · ' : 'Pregame research · ') + m.sport_label)
+          + '</span></li>';
+      }).join('') + '</ul>';
+    }
+    h += '<nav class="a-ctalinks" aria-label="Free tools and method">'
+      + '<a href="/tools/model-vs-market/">Model vs. market explorer</a>'
+      + '<a href="/tools/no-vig-calculator/">No-vig odds calculator</a>'
+      + '<a href="/tools/fair-odds-calculator/">Fair odds calculator</a>'
+      + '<a href="/methodology/">How EdgeDesk builds a number</a>'
+      + '<a href="/newsletter/">The weekly research email</a>'
+      + '</nav></section>';
+    return h;
   }
   /* Share links are plain anchors with the URL already in them, so they work
      with JavaScript off. Copy Link is the one control that needs a script and
@@ -673,13 +781,14 @@
       inLanguage: 'en-US',
       isAccessibleForFree: true,
       author: { '@type': 'Organization', name: rec.author, url: SITE },
-      publisher: { '@type': 'Organization', name: ORG, url: SITE },
+      publisher: { '@type': 'Organization', name: ORG, url: SITE,
+        logo: { '@type': 'ImageObject', url: OG_DEFAULT, width: 1200, height: 630 } },
       url: rec.canonical_url,
       keywords: [rec.away_team, rec.home_team, rec.sport_label, 'EdgeDesk', 'fair spread', 'model projection'].join(', ')
     };
     if (rec.published_at) art.datePublished = iso(rec.published_at);
     art.dateModified = iso(rec.updated_at) || iso(rec.published_at) || iso(rec.generated_at);
-    if (rec.hero_image) art.image = [rec.hero_image];
+    art.image = [ogImage(rec)];
     out.push(art);
 
     var ev = {
@@ -718,8 +827,8 @@
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Research', item: SITE + '/articles' },
-        { '@type': 'ListItem', position: 2, name: rec.sport_label, item: SITE + '/articles/' + rec.sport_slug },
+        { '@type': 'ListItem', position: 1, name: 'Research', item: SITE + '/articles/' },
+        { '@type': 'ListItem', position: 2, name: rec.sport_label, item: SITE + '/articles/' + rec.sport_slug + '/' },
         { '@type': 'ListItem', position: 3, name: rec.away_team + ' at ' + rec.home_team, item: rec.canonical_url }
       ]
     });
@@ -727,22 +836,31 @@
   }
 
   /* ------------------------------------------------------------- the page */
-  function articleBody(rec) {
+  function articleBody(rec, opts) {
+    opts = opts || {};
+    rec = normRec(rec);
+    var published = opts.published || null;
+    var nowMs = opts.now ? Date.parse(opts.now) : null;
+    var played = rec.article_type !== 'postgame' && nowMs != null && isFinite(Date.parse(rec.game_time))
+      && Date.parse(rec.game_time) <= nowMs;
     var h = '';
-    h += '<nav class="a-crumbs" aria-label="Breadcrumb"><a href="/articles">Research</a> <span>›</span> '
-      + '<a href="/articles/' + esc(rec.sport_slug) + '">' + esc(rec.sport_label) + '</a> <span>›</span> '
+    h += '<nav class="a-crumbs" aria-label="Breadcrumb"><a href="/articles/">Research</a> <span>›</span> '
+      + '<a href="/articles/' + esc(rec.sport_slug) + '/">' + esc(rec.sport_label) + '</a> <span>›</span> '
       + '<span aria-current="page">' + esc(rec.away_team + ' at ' + rec.home_team) + '</span></nav>';
+    if (played) h += playedHTML(rec, published);
     h += heroHTML(rec);
-    h += relatedHTML(rec);
+    h += relatedHTML(rec, published);
     h += shareHTML(rec);
     h += tocHTML(rec);
+    if (!opts.noTrial) h += trialStripHTML();
     (rec.article.sections || []).forEach(function (s) {
       var fn = SECTION_HTML[s.kind];
       if (fn) h += fn(s);
     });
     h += bottomHTML(rec.article.bottom_line);
-    h += relatedHTML(rec);
-    h += ctaHTML(rec);
+    h += relatedHTML(rec, published);
+    h += ctaHTML(rec, published);
+    h += moreHTML(rec, opts.more);
     /* PART 15 — the methodology notice. Rendered from the record so it says
        what is true of THIS page: which snapshot it read, which providers the
        statistics came from, and when. */
@@ -761,6 +879,7 @@
 
   function articlePage(rec, opts) {
     opts = opts || {};
+    rec = normRec(rec);
     var noindex = !!opts.noindex || rec.status !== 'published';
     var h = '<!doctype html>\n<html lang="en">\n<head>\n';
     h += head({
@@ -771,12 +890,13 @@
     });
     h += '</head>\n<body class="a-body">\n';
     if (noindex) h += '<div class="a-draftbar">Draft preview — this article is <b>' + esc(rec.status) + '</b> and is marked noindex. It is not in the sitemap.</div>';
-    h += siteHeader('/articles/' + rec.sport_slug);
+    h += siteHeader('/articles/' + rec.sport_slug + '/');
     h += '<main class="a-wrap" id="main"><article class="a-article">';
-    h += articleBody(rec);
+    h += articleBody(rec, opts);
     h += '</article></main>';
     h += siteFooter();
     h += SHARE_JS;
+    if (!noindex) h += TRACK_JS;
     h += '\n</body>\n</html>\n';
     return h;
   }
@@ -786,12 +906,13 @@
      link a human can click. No meta refresh: a redirect a crawler cannot
      follow is worse than a page that explains itself. */
   function aliasPage(rec, alias) {
-    var url = SITE + '/articles/' + alias;
+    rec = normRec(rec);
+    var url = SITE + '/articles/' + alias + '/';
     var h = '<!doctype html>\n<html lang="en">\n<head>\n';
     h += head({ title: rec.seo_title, description: rec.seo_description, canonical: rec.canonical_url,
       og_title: rec.title, noindex: true, ld: [] });
     h += '<meta http-equiv="refresh" content="0; url=' + esc(rec.canonical_url) + '">\n';
-    h += '</head>\n<body class="a-body">\n' + siteHeader('/articles/' + rec.sport_slug);
+    h += '</head>\n<body class="a-body">\n' + siteHeader('/articles/' + rec.sport_slug + '/');
     h += '<main class="a-wrap"><article class="a-article"><p class="a-lede">This article lives at '
       + '<a href="' + esc(rec.canonical_url) + '">' + esc(rec.canonical_url) + '</a>.</p></article></main>';
     h += siteFooter() + '\n</body>\n</html>\n';
@@ -800,19 +921,23 @@
   }
 
   /* -------------------------------------------------------------- the hub */
-  function cardHTML(rec) {
+  function cardHTML(rec, withImage) {
+    rec = normRec(rec);
     var when = rec.game_time ? dateLabel(rec.game_time, { timeZoneName: undefined }) : null;
     var h = '<article class="a-cardart" data-sport="' + esc(rec.sport_slug) + '"'
       + ' data-type="' + esc(rec.article_type || 'pregame') + '"'
       + ' data-kick="' + esc(iso(rec.game_time) || '') + '">';
-    h += '<a class="a-cardlink" href="/articles/' + esc(rec.slug) + '">';
+    h += '<a class="a-cardlink" href="/articles/' + esc(rec.slug) + '/">';
     var isPost = rec.article_type === 'postgame';
     h += '<div class="a-cardtop"><span class="a-cardsport">' + esc(rec.sport_label) + '</span>'
       + '<span class="a-cardtype' + (isPost ? ' post' : '') + '">' + (isPost ? 'Postgame' : 'Pregame') + '</span>'
       + (rec.model_status ? '<span class="a-status">' + esc(rec.model_status) + '</span>' : '')
       + (isPost && rec.grading && rec.grading.bet_headline ? '<span class="a-betres">' + esc(rec.grading.bet_headline) + '</span>' : '')
       + (rec.confidence != null ? '<span class="a-conf">' + esc(rec.confidence) + '%</span>' : '') + '</div>';
-    if (rec.hero_image) h += '<img class="a-cardimg" src="' + esc(rec.hero_image) + '" alt="" loading="lazy" width="640" height="360">';
+    /* the inline SVG graphic is drawn on the first (visible) list only: the
+       same card in the four alternate orderings used to carry it four times,
+       which is most of why the hub weighed 730 KB */
+    if (rec.hero_image && withImage !== false) h += '<img class="a-cardimg" src="' + esc(rec.hero_image) + '" alt="" loading="lazy" width="640" height="360">';
     h += '<h3 class="a-cardh">' + esc(rec.away_team + ' vs. ' + rec.home_team) + '</h3>';
     h += '<p class="a-cardsum">' + esc(rec.excerpt) + '</p>';
     h += '<div class="a-cardmeta">';
@@ -834,7 +959,8 @@
     var recs = o.records || [];
     var scope = o.scope || null;              /* null = all sports */
     var now = o.now ? new Date(o.now).getTime() : Date.now();
-    var title = o.title, desc = o.description, canonical = o.canonical;
+    var title = o.title, desc = o.description, canonical = slashed(o.canonical);
+    recs = recs.map(normRec);
 
     var byPublished = recs.slice().sort(function (a, b) {
       return (Date.parse(b.published_at || b.updated_at || 0) || 0) - (Date.parse(a.published_at || a.updated_at || 0) || 0);
@@ -847,6 +973,8 @@
       return isFinite(t) && t >= now;
     }).sort(function (a, b) { return Date.parse(a.game_time) - Date.parse(b.game_time); });
 
+    var crumbs = [{ '@type': 'ListItem', position: 1, name: 'Research', item: SITE + '/articles/' }];
+    if (o.crumb) crumbs.push({ '@type': 'ListItem', position: 2, name: o.crumb, item: canonical });
     var ld = [{
       '@context': 'https://schema.org', '@type': 'CollectionPage',
       name: title, description: desc, url: canonical, inLanguage: 'en-US',
@@ -858,14 +986,17 @@
           return { '@type': 'ListItem', position: i + 1, url: r.canonical_url, name: r.title };
         })
       }
-    }];
+    }, { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs }];
 
     var h = '<!doctype html>\n<html lang="en">\n<head>\n';
     h += head({ title: title, description: desc, canonical: canonical, og_type: 'website',
       og_title: o.og_title || title, noindex: !!o.noindex, ld: o.noindex ? [] : ld });
     h += '</head>\n<body class="a-body">\n';
-    h += siteHeader(o.active || '/articles');
+    h += siteHeader(slashed(o.active || '/articles'));
     h += '<main class="a-wrap hub" id="main">';
+    h += '<nav class="a-crumbs" aria-label="Breadcrumb">' + (o.crumb
+      ? '<a href="/articles/">Research</a> <span>›</span> <span aria-current="page">' + esc(o.crumb) + '</span>'
+      : '<span aria-current="page">Research</span>') + '</nav>';
     h += '<header class="a-hubhead"><h1 class="a-h1">' + esc(o.h1) + '</h1>'
       + '<p class="a-standfirst">' + esc(o.standfirst) + '</p>'
       + '<p class="a-hubcount">' + recs.length + ' published ' + (recs.length === 1 ? 'article' : 'articles') + '</p></header>';
@@ -884,7 +1015,7 @@
 
     /* the sport filter — three real links, so each is a crawlable URL */
     h += '<nav class="a-filters" aria-label="Filter by sport">';
-    [['All', '/articles'], ['College Football', '/articles/college-football'], ['NFL', '/articles/nfl']].forEach(function (f) {
+    [['All', '/articles/'], ['College Football', '/articles/college-football/'], ['NFL', '/articles/nfl/']].forEach(function (f) {
       h += '<a class="a-filter' + (canonical === SITE + f[1] ? ' on' : '') + '" href="' + f[1] + '">' + esc(f[0]) + '</a>';
     });
     h += '</nav>';
@@ -896,6 +1027,7 @@
          either half. Each list is rendered server-side into its own div and a
          radio input swaps which one is visible — no JavaScript, no layout
          shift, and a crawler sees every card in the markup. */
+      var noImg = function (r) { return cardHTML(r, false); };
       var pre = byPublished.filter(function (r) { return r.article_type !== 'postgame'; });
       var post = byPublished.filter(function (r) { return r.article_type === 'postgame'; });
       h += '<div class="a-sortpanel">';
@@ -906,24 +1038,29 @@
         + (post.length ? '<input type="radio" name="a-sort" id="sort-pregame"><label for="sort-pregame">Pregame research</label>'
           + '<input type="radio" name="a-sort" id="sort-postgame"><label for="sort-postgame">Postgame analysis</label>' : '')
         + '<input type="radio" name="a-sort" id="sort-updated"><label for="sort-updated">Recently published</label>'
-        + '<div class="a-list a-list-latest">' + byPublished.map(cardHTML).join('') + '</div>'
+        + '<div class="a-list a-list-latest">' + byPublished.map(function (r) { return cardHTML(r, true); }).join('') + '</div>'
         + '<div class="a-list a-list-upcoming">'
-        + (upcoming.length ? upcoming.map(cardHTML).join('')
+        + (upcoming.length ? upcoming.map(noImg).join('')
           : '<p class="a-nodata">Every published article in this section is for a game that has already kicked off.</p>')
         + '</div>'
         + (post.length
-          ? '<div class="a-list a-list-pregame">' + (pre.length ? pre.map(cardHTML).join('')
+          ? '<div class="a-list a-list-pregame">' + (pre.length ? pre.map(noImg).join('')
               : '<p class="a-nodata">No pregame research is published in this section yet.</p>') + '</div>'
-            + '<div class="a-list a-list-postgame">' + post.map(cardHTML).join('') + '</div>'
+            + '<div class="a-list a-list-postgame">' + post.map(noImg).join('') + '</div>'
           : '')
-        + '<div class="a-list a-list-updated">' + byUpdated.map(cardHTML).join('') + '</div>'
+        + '<div class="a-list a-list-updated">' + byUpdated.map(noImg).join('') + '</div>'
         + '</div></div>';
     }
     h += '<section class="a-about"><h2 class="a-h2">How to read an EdgeDesk article</h2>'
       + '<p>Every article on this page is built from the same research the EdgeDesk terminal runs: one model, one set of numbers, published with its own confidence and its own gaps. EdgeDesk prices a game before it looks at a sportsbook, says which inputs moved the number and which did not, and names what it could not measure.</p>'
       + '<p><b>Research, not picks.</b> Nothing here is a wager, a recommendation or advice. A model status of <code>THIN DATA</code>, <code>INVESTIGATE</code> or <code>UNPROVEN</code> means exactly what it says, and EdgeDesk leaves it on the page rather than dressing it up.</p>'
       + '<p><b>Featured games get both halves.</b> Before the game, what EdgeDesk thought and why. After it, what actually happened — with every pregame claim graded against the box score, and the bet result reported separately from whether the reasoning held up. A number that landed on a broken thesis is published as exactly that.</p>'
-      + '<p><a class="a-ctabtn" href="/app.html#research/football">Open the EdgeDesk research terminal</a></p></section>';
+      + '<p><a class="a-ctabtn" href="' + TRIAL_HREF + '" data-ed-cta="hub_trial">Start the 7-day free trial</a> '
+      + '<a class="a-sharebtn" href="/app.html#research/football">Open the research terminal</a></p>'
+      + '<p class="a-trialfine">' + esc(TRIAL_LINE) + '</p>'
+      + '<p>Free tools: <a href="/tools/no-vig-calculator/">no-vig odds calculator</a> · '
+      + '<a href="/tools/fair-odds-calculator/">fair odds calculator</a> · '
+      + '<a href="/tools/model-vs-market/">model vs. market explorer</a>.</p></section>';
     /* THE WEEKLY EMAIL, on the hub rather than on every article page. A
        research reader who reached the hub is the one person for whom a
        shortlist of next week's games is actually useful; a subscription
@@ -935,8 +1072,8 @@
       + 'EdgeDesk’s fair spread beside the market’s number, the evidence behind the gap, and the '
       + 'thing the model could not see printed next to both.</p>'
       + '<p><b>Research, not picks.</b> No locks, no guaranteed outcomes, and one-click unsubscribe in every email.</p>'
-      + '<p><a class="a-ctabtn" href="/newsletter/">See what is in it</a></p></section>';
-    h += '</main>' + siteFooter() + '\n</body>\n</html>\n';
+      + '<p><a class="a-ctabtn" href="/newsletter/?from=research_hub" data-ed-cta="hub_newsletter">See what is in it</a></p></section>';
+    h += '</main>' + siteFooter() + (o.noindex ? '' : TRACK_JS) + '\n</body>\n</html>\n';
     return h;
   }
 
@@ -946,7 +1083,8 @@
     relatedHTML: relatedHTML, thesisAuditHTML: thesisAuditHTML, processHTML: processHTML,
     narrativeHTML: narrativeHTML,
     scorecardHTML: scorecardHTML, lessonsHTML: lessonsHTML, watchedHTML: watchedHTML,
-    hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel
+    hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel,
+    slashed: slashed, OG_DEFAULT: OG_DEFAULT, TRIAL_LINE: TRIAL_LINE, TRIAL_HREF: TRIAL_HREF
   };
 });
 /*__EDART_RENDER_END__*/

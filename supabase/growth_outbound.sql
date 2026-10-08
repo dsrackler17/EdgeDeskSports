@@ -449,6 +449,11 @@ alter table growth_outbound.settings add column if not exists automation_hours i
 -- RESULTS (Phase 10): EdgeDesk links in a live email carry this prospect's
 -- campaign code, so a visit or a signup that came from it can be matched back.
 alter table growth_outbound.settings add column if not exists attribution_links boolean not null default true;
+-- LANDING BY INTEREST (2026-10, the growth engine): the link in a drafted
+-- email points at the page most relevant to what the prospect's verified
+-- record says they do (growth_outbound.landing_for), instead of everyone at
+-- cta_url. Off means every draft uses cta_url, as before.
+alter table growth_outbound.settings add column if not exists landing_by_interest boolean not null default true;
 do $c$ begin
   alter table growth_outbound.settings drop constraint if exists outbound_settings_automation;
   alter table growth_outbound.settings add constraint outbound_settings_automation check (
@@ -2464,7 +2469,8 @@ declare
     'max_test_sends_per_day', 'min_fit_score', 'min_identity_confidence', 'min_role_confidence', 'min_research_confidence',
     'min_email_confidence', 'followup_enabled', 'followup_delay_days', 'final_followup_enabled', 'final_followup_delay_days',
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
-    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links'];
+    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links',
+    'landing_by_interest'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2522,6 +2528,7 @@ begin
       automation_start_hour     = coalesce((p->>'automation_start_hour')::int, automation_start_hour),
       automation_hours          = coalesce((p->>'automation_hours')::int, automation_hours),
       attribution_links         = coalesce((p->>'attribution_links')::boolean, attribution_links),
+      landing_by_interest       = coalesce((p->>'landing_by_interest')::boolean, landing_by_interest),
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
@@ -4903,6 +4910,58 @@ set search_path = pg_catalog, public, pg_temp as $$
      group by 1) x;
 $$;
 
+-- THE PAGE A DRAFT LINKS TO (2026-10). Chosen from what the prospect's
+-- record already says — their type, the campaign, their sports — never from
+-- anything new, and stated with its reason so the owner sees why in review.
+-- The URL is written into the draft's words, so it is part of the content
+-- hash the owner approves: nothing here can change an approved email.
+--   partnership campaign, or a newsletter / media / podcast / community /
+--     video operator                          → /partners/
+--   a modeller, quant, analytics creator, educator or handicapper-modeller
+--                                             → /tools/fair-odds-calculator/
+--   a player-props analyst                    → /tools/no-vig-calculator/
+--   college football (type, or sports focus)  → /articles/college-football/
+--   the NFL or fantasy (type, or sports focus) → /articles/nfl/
+--   a football analyst covering both          → /articles/
+--   anything else, or landing_by_interest off → cta_url (the owner's default)
+-- tag_links() adds the campaign code to whichever page it is, at send time.
+create or replace function growth_outbound.landing_for(p_prospect uuid)
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  p growth_outbound.prospects; s growth_outbound.settings;
+  v_focus text; v_cfb boolean; v_nfl boolean;
+  site constant text := 'https://edgedesksports.com';
+  pick text; why text; k text;
+begin
+  select * into s from growth_outbound.settings where id = 1;
+  select * into p from growth_outbound.prospects where id = p_prospect;
+  if not found or not coalesce(s.landing_by_interest, true) then
+    return jsonb_build_object('url', s.cta_url, 'key', 'default', 'reason', 'the default call to action (landing by interest is off)');
+  end if;
+  v_focus := upper(coalesce(array_to_string(p.sports_focus, ' '), ''));
+  v_cfb := p.prospect_type = 'cfb_analyst' or v_focus ~ '(CFB|NCAAF|COLLEGE)';
+  v_nfl := p.prospect_type in ('nfl_analyst', 'fantasy_analyst') or v_focus ~ '(NFL|FANTASY)';
+  if p.campaign_type = 'partnership'
+     or p.prospect_type in ('newsletter_writer', 'analytics_newsletter', 'media_founder', 'podcast', 'community_operator', 'youtube_creator') then
+    pick := '/partners/'; k := 'partnership'; why := 'a ' || replace(p.prospect_type, '_', ' ') || ' (' || p.campaign_type || ' campaign): the research partnership page';
+  elsif p.prospect_type in ('quant_researcher', 'modeling_creator', 'analytics_creator', 'handicapper_modeler', 'betting_educator') then
+    pick := '/tools/fair-odds-calculator/'; k := 'fair_odds_tool'; why := 'a ' || replace(p.prospect_type, '_', ' ') || ': the free fair odds calculator';
+  elsif p.prospect_type = 'props_analyst' then
+    pick := '/tools/no-vig-calculator/'; k := 'no_vig_tool'; why := 'a player-props analyst: the free no-vig calculator';
+  elsif v_cfb and not v_nfl then
+    pick := '/articles/college-football/'; k := 'cfb_research'; why := 'covers college football: the public CFB research';
+  elsif v_nfl and not v_cfb then
+    pick := '/articles/nfl/'; k := 'nfl_research'; why := 'covers the NFL: the public NFL research';
+  elsif (v_cfb and v_nfl) or p.prospect_type = 'football_analyst' then
+    pick := '/articles/'; k := 'football_research'; why := 'covers football: the public research hub';
+  else
+    return jsonb_build_object('url', s.cta_url, 'key', 'default', 'reason', 'no specific interest on the record: the default call to action');
+  end if;
+  return jsonb_build_object('url', site || pick, 'key', k, 'reason', why);
+end $$;
+revoke all on function growth_outbound.landing_for(uuid) from public;
+
 -- WHAT THE ENGINE MAY WRITE FROM, for one prospect and one step: whether it
 -- is due; their first name (only if established); the facts it may cite;
 -- what was already sent to them; the owner's recent reasons for rejecting
@@ -4936,6 +4995,8 @@ begin
          and exists (select 1 from growth_outbound.sends x where x.draft_id = d.id and not x.is_test)), '[]'::jsonb),
     'lessons', growth_outbound.engine_lessons(),
     'sender', jsonb_build_object('name', s.sender_name, 'business_name', s.business_name, 'cta_url', s.cta_url),
+    -- the page this prospect's email should link to, and why (landing_for)
+    'landing', growth_outbound.landing_for(p.id),
     'min_research_confidence', s.min_research_confidence);
 end $$;
 
