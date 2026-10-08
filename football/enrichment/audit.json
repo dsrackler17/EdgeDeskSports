@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-08T13:56:16.844Z",
+ "generated_at": "2026-10-08T14:11:33.389Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-08T13:56:16.844Z",
-  "reliability_generated_at": "2026-10-08T13:56:16.844Z",
-  "enrichment_generated_at": "2026-10-08T13:56:08.308Z",
+  "at": "2026-10-08T14:11:33.389Z",
+  "reliability_generated_at": "2026-10-08T14:11:33.389Z",
+  "enrichment_generated_at": "2026-10-08T14:11:24.089Z",
   "counts": {
    "games": 117,
    "mean": 86.2,
@@ -24,7 +24,7 @@
    "unrated_meaningful_absences": 314,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 117,
-   "stale_evidence_records": 32,
+   "stale_evidence_records": 48,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -2654,7 +2654,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-08T13:54:43.314Z",
+  "at": "2026-10-08T13:56:16.844Z",
   "counts": {
    "games": 117,
    "mean": 86.2,
@@ -2680,33 +2680,11 @@
   "baseline_of": null
  },
  "what_improved": [],
- "what_degraded": [],
+ "what_degraded": [
+  "+16 stale evidence records (32 → 48)"
+ ],
  "why": [],
  "history": [
-  {
-   "at": "2026-09-30T18:52:41.173Z",
-   "counts": {
-    "games": 109,
-    "mean": 84.5,
-    "median": 86,
-    "by_band": {
-     "STRONG": 88,
-     "LOW": 3,
-     "ADEQUATE": 15,
-     "CAUTION": 3
-    },
-    "missing_qb_status": 215,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 26,
-    "unrated_meaningful_absences": 30,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 109,
-    "stale_evidence_records": 36,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-09-30T20:37:43.779Z",
    "counts": {
@@ -4139,6 +4117,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 117,
     "stale_evidence_records": 32,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-08T14:11:33.389Z",
+   "counts": {
+    "games": 117,
+    "mean": 86.2,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 17,
+     "ADEQUATE": 18,
+     "STRONG": 77,
+     "LOW": 3,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 193,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 21,
+    "unrated_meaningful_absences": 314,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 117,
+    "stale_evidence_records": 48,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
