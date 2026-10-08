@@ -65,6 +65,7 @@ on:
       - 'lib/edgedesk_admin_session.js'
       - 'lib/edgedesk_auth.js'
       - 'tools/growth/**'
+      - 'tools/cfb/secret_audit.js'
       - 'supabase/growth_outbound.sql'
       - 'supabase/growth_outbound_cron.sql'
       - 'supabase/functions/growth_outbound_send/**'
@@ -250,6 +251,19 @@ jobs:
       # is never cold-emailed; the owner's results leak no account.
       - name: Results are matched by link or address only, end the sequence, and leak no account
         run: node tools/growth/outbound_analytics_sql.test.js
+      # Phase 11, hardening: the races (real sessions released together), the
+      # junk (seeded, replayable), the whole life of a prospect through all
+      # five functions, the System check, and what the files must never say.
+      - name: At the same instant, every race resolves to one send, one step, one candidate, one suppression — no deadlock
+        run: node tools/growth/outbound_concurrency_sql.test.js
+      - name: Junk at every door is refused in words, never an error, and the public doors write nothing without their proof
+        run: node tools/growth/outbound_fuzz_sql.test.js
+      - name: One prospect's whole life through all five Edge Functions and one database, approved and sent only by the owner
+        run: node tools/growth/outbound_lifecycle.test.js
+      - name: The System check is the file's own report, owner only; what needs attention appears exactly when true
+        run: node tools/growth/outbound_health_sql.test.js
+      - name: No key, secret or service-role reference in the files; functions read only their settings and log no token
+        run: node tools/growth/outbound_static.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

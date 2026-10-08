@@ -1,5 +1,40 @@
 # Changelog
 
+## 2026-10-08 — Growth console: testing and hardening (outbound engine, phase 11)
+
+**Each phase was tested on its own. Phase 11 tests them together, at the same instant, and against junk, then fixes what that found.**
+
+**Found and fixed in `supabase/growth_outbound.sql`:**
+- **two overlapping batch approvals deadlocked:** a batch now locks its drafts up front, in one order;
+- **two ticks at once could each start a morning-run step:** the tick now takes a lock;
+- **two discovery runs finding the same new address deadlocked:** recording candidates now takes a lock;
+- **a test send used up the real prospect:** their first email counted as sent, so after going live it was never drafted, and their status stuck at "ready for review". A test send is now a dry run, the status refreshes when a send is claimed, and a follow-up's context lists only what reached them;
+- **a trial in the same second as the email could go uncounted:** Stripe stamps whole seconds. A trial or payment now counts for any account made after the email, never dated before the account;
+- **a numeric date in evidence raised a raw database error:** every malformed-data error (SQLSTATE 22) is now refused in words.
+
+**Added:**
+- **`self_check()`:** the file's report as a function, so the console runs the same checks;
+- **`growth_outbound_health()`:** owner only, changes nothing. It returns those checks plus what needs attention, most serious first, each with what to do: complaints, bounces, a silent webhook, unconfirmed sends, a stopped clock, failing runs, matching errors, unsent approvals, blockers and a raised cap;
+- **the sweep:** the tick marks a send unconfirmed for 23 hours as failed;
+- report row 36.
+
+**`/admin/growth/` → Outbound:** a System check line at the top and a System check panel.
+
+**`tools/cfb/secret_audit.js`** (every PR) also finds Resend API keys, webhook signing secrets and the outbound providers' keys assigned in code. Svix's published example is a fixture only inside tests.
+
+**Tests:**
+- new suites:
+  - `outbound_lifecycle` (39): five functions and one database, the whole life of three prospects;
+  - `outbound_concurrency_sql` (22): nine real races;
+  - `outbound_fuzz_sql` (17, seeded): helpers and public, owner and engine doors;
+  - `outbound_health_sql` (31);
+  - `outbound_static` (36);
+- console e2e: 246; send SQL: 50;
+- 28 deliberate breaks, all caught;
+- every earlier suite passing.
+
+**Docs:** `docs/growth-outbound.md` gains a pre-launch checklist, the morning routine and what to do when something goes wrong ("Operating it").
+
 ## 2026-10-08 — Growth console: results and attribution (outbound engine, phase 10)
 
 **A result is matched, never guessed.**

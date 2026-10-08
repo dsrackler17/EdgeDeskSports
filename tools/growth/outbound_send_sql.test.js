@@ -106,7 +106,9 @@ try {
   r = result(S1, 'msg_abc123', null, false);
   chk('S a message id makes it sent', r.ok && r.state === 'sent' && one(`select delivery_status || '|' || (sent_at is not null) || '|' || resend_message_id || '|' || coalesce(last_error, '-')
       from growth_outbound.sends where id = '${S1}';`) === 'sent|true|msg_abc123|-');
-  chk('S a TEST send does not mark the real prospect contacted', pstatus(pid(1)) === 'ready_for_review');
+  chk('S a TEST send does not mark the real prospect contacted: a dry run, they are qualified again for their real first email (Phase 11)', pstatus(pid(1)) === 'qualified');
+  chk('S … and their first email is still due: the engine will write it again once you are live', one(`select coalesce(growth_outbound.step_due_problem('${pid(1)}', 1), 'due');`) === 'due'
+    && one(`select count(*) from growth_outbound.drafting_due() where prospect_id = '${pid(1)}' and sequence_number = 1;`) === '1');
   r = claim(did(1));
   chk('S claiming a sent draft again never sends it again', r.ok === true && r.already === true && r.state === 'sent' && !r.message && !r.idempotency_key, r);
   chk('S the same id again is harmless', result(S1, 'msg_abc123', null, false).already === true);

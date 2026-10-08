@@ -1106,6 +1106,127 @@ A failure (say, the Stripe record unreachable) is recorded and shown, and never 
 - **Read your inbox.** A reply counts when you mark it ("They replied").
 - **Guess.** A signup it cannot trace to an email by link or address is not counted as one.
 
+## Phase 11: testing and hardening
+
+**Each phase was tested on its own. Phase 11 tests them together, at the same instant, and against junk, then fixes what that found.** It adds no new way to send anything.
+
+### What the new suites prove
+
+- **The whole life of a prospect** (`outbound_lifecycle.test.js`) runs through all five Edge Functions as deployed (research, draft, send, webhook, opt-out), the pg_cron tick and the site's own acquisition doors, against one real database. Only the outside world is stood in for.
+  - The morning run finds a candidate and researches it, with nobody signed in.
+  - The engine drafts.
+  - The owner reviews the message exactly as it will go, and approves it.
+  - A test send reaches only the owner's inbox.
+  - Live, the email reaches the prospect, with their campaign code, opt-out link and one-click headers.
+  - Resend's signed events record delivery, opens and clicks.
+  - The prospect visits, makes an account and starts a trial; the results show it and they are converted.
+  - A second prospect bounces and a third opts out with one click; no follow-up is written for any of them.
+  - Across all of it: Resend is called once per approved message; no key, secret or token appears in any answer; every approval and send is the owner's.
+- **The same instant** (`outbound_concurrency_sql.test.js`): real separate database sessions, released together:
+  - eight claims of one draft give one send;
+  - ten claims against a cap with room for five give five;
+  - two batches over the same drafts in opposite orders;
+  - four ticks at once;
+  - two discovery runs finding the same new address;
+  - one Resend event delivered five times;
+  - one opt-out link pressed five times;
+  - four matchers at once;
+  - a claim racing a withdrawn approval.
+- **Junk** (`outbound_fuzz_sql.test.js`, seeded and replayable with `FUZZ_SEED`):
+  - **the text helpers:** thousands of random and hostile texts — quotes, dollar quotes, backslashes, comment markers, unicode, half-links. None fails. Link tagging is idempotent and leaves link-free text untouched.
+  - **the three public doors:** every junk request is answered and nothing is written. A forged webhook in Resend's exact format is refused.
+  - **the owner's and the engine's doors:** random input and near-valid input (the right shape with one part wrong) is refused in words, never with an error. Nothing junk approves or sends, and every table survives.
+- **The files themselves** (`outbound_static.test.js`):
+  - the repository's secret audit (`tools/cfb/secret_audit.js`, on every PR) now also finds a Resend API key, a webhook signing secret and the outbound providers' keys assigned in code;
+  - the console's files hold no key and never call a provider directly;
+  - each Edge Function reads exactly its own settings, never a service-role key, and logs no token, key, ticket, header or body.
+
+### What it found, and what changed
+
+| Found | Fixed |
+|---|---|
+| Two overlapping batch approvals in opposite orders **deadlocked**: Postgres aborted one, and the owner saw an error. | A batch locks all its drafts up front, in one order. The second batch waits, then is refused cleanly ("nothing was approved"). |
+| Two ticks at the same moment would **both start a morning-run step**. This was only avoided by accident, while results matching happened to serialize them. | The tick takes a lock: one at a time. |
+| Two discovery runs finding the same new address **deadlocked**. | Recording candidates takes a lock: one candidate, seen twice. |
+| **A test send used up the real prospect.** In test mode, sending a real prospect's draft to your own inbox (what test mode is for) marked their first email "already sent". After going live, the engine never drafted their real first email, and their status stayed "ready for review" with nothing waiting. | A test send is a dry run: the step is still due. The prospect's status is refreshed when a send is claimed. A follow-up's context lists only what reached the prospect. |
+| **A trial could go uncounted.** Stripe stamps whole seconds, so a trial in the same second as the email compared as "before" it. | A trial or payment counts for any account made after the email, and is never dated before the account. |
+| Evidence with a numeric date (a time-zone displacement out of range) raised a **raw database error** instead of a refusal. | Every malformed-data error class (SQLSTATE 22) is refused in words: in evidence, settings and pages. |
+
+### The System check
+
+- **`growth_outbound.self_check()`** is the report at the end of the SQL file, now as a function. The file's report and the console run the very same checks.
+- **`growth_outbound_health()`** (owner only; it changes nothing) returns those checks plus what needs attention now, most serious first, each with what to do:
+  1. **Now:** a failing check; spam complaints above 1 in 1,000; bounces above 4% (over at least 20 emails in 30 days); live emails out for over a day with no event from Resend.
+  2. **Soon:** sends never confirmed after an hour; automation on but the clock not ticking; three failed morning steps in a row; a results-matching error.
+  3. **When you can:** approvals unsent for over three days; sending blocked.
+  4. **Note:** a raised daily cap.
+- **The console** shows "System check: all 36 pass" (or what needs attention) at the top of the Outbound tab. A **System check** panel lists every check and every item, with "Run the check again".
+- **The sweep:** the tick marks a send never confirmed for 23 hours as failed, as the send door would on a retry. It is never retried, so never sent twice, and it is recorded as the system's.
+- **Report row 36:** the three locks are in place and the System check exists.
+
+### Deploy (in order)
+
+1. Merge the Phase 11 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–36 should say `ok`.
+3. No Edge Function changed.
+4. Open the Outbound tab: the top should say "System check: all 36 pass" once sending is configured. Until then, the panel says what is blocking it.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_lifecycle.test.js` (new) | 39 | the whole life of three prospects through all five functions and one database (above) |
+| `tools/growth/outbound_concurrency_sql.test.js` (new) | 22 | nine races, each with real sessions released together; stable over repeated runs |
+| `tools/growth/outbound_fuzz_sql.test.js` (new) | 17 | helpers, public doors, owner and engine doors against seeded junk. In CI: seed 20261008, 300 cases per family. Five more seeds at 600 also pass. |
+| `tools/growth/outbound_health_sql.test.js` (new) | 31 | the System check is the file's report; owner only; changes nothing; a broken invariant surfaces first; every attention item appears exactly when true, in order; the sweep |
+| `tools/growth/outbound_static.test.js` (new) | 36 | the secret audit's new rules; the real tree clean; the browser's files; each function's settings and logging; the deploy workflow |
+| `tools/growth/outbound_console.e2e.js` | 246 | adds section 57, the System check |
+| `tools/growth/outbound_send_sql.test.js` | 50 | a test send leaves the prospect qualified, with their first email still due |
+| earlier suites | all passing | |
+
+**Mutation-checked:** 22 deliberate breaks of the Phase 11 SQL (the three locks, the dry-run rule, the status refresh, the trial rule, the error classes, the sweep, the health door and every attention rule) and 6 of the files (a function logging a token, reading the service-role key; the console calling Resend, another door or the webhook; a key committed). Every one was caught.
+
+### Rollback
+
+- **The database:** additive. The three locks, the dry-run rule and the trial rule are what was meant all along.
+- **The console:** the System check panel only reads.
+
+## Operating it
+
+### Before you go live (a checklist)
+
+1. **Owner:** `select growth_outbound.grant_owner('you@…');` once, in the SQL editor. Only owners see the Outbound tab.
+2. **Compliance:** a postal address in Outbound settings; the opt-out endpoint (`growth_outbound_optout`) deployed and its base URL set; Resend's webhook pointed at `growth_outbound_webhook`, with its signing secret set (`select growth_outbound.set_webhook_secret('whsec_…');`). The red banner lists whatever is missing.
+3. **Domain:** send from `davis@edgedesksports.com` on a domain verified in Resend (SPF, DKIM, and DMARC at least `p=none`).
+4. **A dry run in test mode:** use "Test draft for my inbox", approve it and send it. Check that the email arrives with the footer, the opt-out link and the `ob_test` link; that Sends says delivered; and that the opt-out link's page asks before it changes anything.
+5. **System check:** all checks pass, and nothing under "Now" or "Soon".
+6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first.
+7. **The morning run (optional):** run `supabase/growth_outbound_cron.sql`, set your window, and turn Automation on. It never approves or sends.
+
+### Every morning
+
+1. Open `/admin/growth/` → Outbound.
+2. Read the System check line at the top.
+3. **Review queue:** approve or reject each draft.
+4. **Approved, not sent:** press Send.
+5. In **Sends**, check delivery. Mark replies on the prospect ("They replied", or "…stop emailing them").
+
+### When something goes wrong
+
+- **Stop everything now:**
+  - turn Automation off (the morning run stops, and every live ticket dies at once);
+  - turn test mode on (no email can reach a real person);
+  - if you want the clock gone too, run `select cron.unschedule('growth_outbound_tick');`.
+- **A draft you approved should not go:** use "Withdraw approval" (Review queue → Approved, not sent). Once sent, an email cannot be recalled.
+- **Someone asks not to be contacted:** Suppressions → add the address (or the domain). This is permanent and cancels everything unsent for them.
+- **Bounces or spam complaints climb (System check, "Now"):**
+  1. stop sending (test mode on);
+  2. look at how those addresses were found (Discover and research);
+  3. tighten the email-confidence gate in settings.
+- **A key may have leaked:** rotate it at the provider, then in Supabase → Edge Functions → Secrets: `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `BRAVE_SEARCH_API_KEY` or `HUNTER_API_KEY`. Functions read keys on every request, so nothing is redeployed. For the webhook secret, roll it in Resend, then run `select growth_outbound.set_webhook_secret('whsec_…');` (Svix sends both signatures while it rolls).
+- **Remove an owner:** in the SQL editor, run `delete from growth_outbound.owners where user_id = (select id from auth.users where lower(email) = lower('them@…'));`. Removing them from the affiliate admins does the same. Every grant and revoke is audited.
+- **"Sends were never confirmed" (System check, "Soon"):** press "Try again" in Sends. It reuses the same key, so Resend sends at most once. After 23 hours the tick marks such a send failed.
+
 ## Next
 
-- **Phase 11:** testing and hardening.
+All eleven phases are built. What remains is operating it: the checklist and the morning above.

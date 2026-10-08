@@ -2525,7 +2525,7 @@ begin
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
-  exception when check_violation or invalid_text_representation or numeric_value_out_of_range then
+  exception when check_violation or data_exception then
     return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', sqlerrm);
   end;
   foreach k in array v_keys loop
@@ -3040,9 +3040,9 @@ begin
       update growth_outbound.prospects set fit_factors = v_ff where id = v_id;
     end if;
   exception
-    when check_violation or not_null_violation or invalid_text_representation or invalid_datetime_format
-         or datetime_field_overflow or numeric_value_out_of_range or foreign_key_violation
-         or string_data_right_truncation or invalid_parameter_value or array_subscript_error then
+    -- data_exception is every SQLSTATE 22xxx (a bad date, number, time zone,
+    -- text …): a malformed field is refused in words, whatever form it takes
+    when check_violation or not_null_violation or foreign_key_violation or data_exception then
       return jsonb_build_object('ok', false, 'reason', 'invalid', 'at', v_where, 'detail', sqlerrm);
     when unique_violation then
       return jsonb_build_object('ok', false, 'reason', 'identity_conflict', 'at', v_where, 'detail', sqlerrm);
@@ -3593,6 +3593,12 @@ begin
      or (select count(distinct lower(x->>'draft_id')) from jsonb_array_elements(p_items) x) <> v_n then
     return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'each item is {draft_id, content_hash}, each draft once');
   end if;
+  -- every draft of the batch locked up front, in one order (Phase 11): two
+  -- batches over the same drafts queue behind each other instead of each
+  -- holding one draft and waiting for the other's
+  perform 1 from growth_outbound.drafts d
+   where d.id in (select (x->>'draft_id')::uuid from jsonb_array_elements(p_items) x)
+   order by d.id for update;
   begin
     for it in select x from jsonb_array_elements(p_items) x loop
       r := growth_outbound.approve_one(v_owner, (it->>'draft_id')::uuid, it->>'content_hash');
@@ -3925,6 +3931,9 @@ begin
     -- the send trigger said no: the cap, a suppression, the configuration…
     return jsonb_build_object('ok', false, 'reason', 'refused', 'detail', sqlerrm);
   end;
+  -- their status follows: no draft is waiting any more (after a test send
+  -- that means qualified again, ready for their real first email — Phase 11)
+  perform growth_outbound.evaluate(d.prospect_id);
   perform growth_outbound.log('send_claimed', d.prospect_id, 'send', x.id::text,
     jsonb_build_object('draft', d.id, 'test', x.is_test, 'to', x.recipient, 'sequence', x.sequence_number));
   return jsonb_build_object('ok', true, 'send_id', x.id, 'idempotency_key', x.idempotency_key, 'test', x.is_test,
@@ -4467,7 +4476,7 @@ begin
     insert into growth_outbound.pages (run_id, url, site_key, http_status, content_type, title, text, text_sha256)
     values (p_run, p->>'url', '', (p->>'http_status')::int, p->>'content_type', p->>'title', p->>'text', '')
     returning * into pg;
-  exception when check_violation or not_null_violation or invalid_text_representation or numeric_value_out_of_range then
+  exception when check_violation or not_null_violation or data_exception then
     return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
   end;
   return jsonb_build_object('ok', true, 'page_id', pg.id, 'url', pg.url, 'site_key', pg.site_key,
@@ -4503,6 +4512,9 @@ begin
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) > 50 then
     return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'a list of at most 50 results');
   end if;
+  -- one recording at a time (Phase 11): two runs that find the same new
+  -- address make one candidate, seen twice, instead of a deadlock
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.candidates'));
   for v in select x from jsonb_array_elements(p_items) x loop
     v_url := case when jsonb_typeof(v) = 'object' then growth_outbound.canonical_url(v->>'url') end;
     if v_url is null or coalesce(v->>'provider', '') !~ '^[a-z0-9_-]{1,40}$' then n_bad := n_bad + 1; continue; end if;
@@ -4784,8 +4796,9 @@ begin
                and d.status in ('pending_review', 'approved')) then
     return 'a draft for this step is already waiting';
   end if;
-  if exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = p_seq and d.status = 'sent')
-     or exists (select 1 from growth_outbound.sends x where x.prospect_id = p.id and x.sequence_number = p_seq and not x.is_test) then
+  -- sent means sent to THEM: a test send (to the owner's own inbox, in test
+  -- mode) is a dry run, and the real first email is still to come (Phase 11)
+  if exists (select 1 from growth_outbound.sends x where x.prospect_id = p.id and x.sequence_number = p_seq and not x.is_test) then
     return 'this step has already been sent';
   end if;
   if p_seq = 1 then
@@ -4918,7 +4931,9 @@ begin
       select jsonb_agg(jsonb_build_object('sequence_number', d.sequence_number, 'subject', d.subject, 'body_text', d.body_text,
                'sent_at', (select x.sent_at from growth_outbound.sends x where x.draft_id = d.id)) order by d.sequence_number)
         from growth_outbound.drafts d
-       where d.prospect_id = p.id and d.status = 'sent' and d.sequence_number < coalesce(p_sequence, 1)), '[]'::jsonb),
+       where d.prospect_id = p.id and d.status = 'sent' and d.sequence_number < coalesce(p_sequence, 1)
+         -- what reached THEM, not a dry run to the owner's inbox
+         and exists (select 1 from growth_outbound.sends x where x.draft_id = d.id and not x.is_test)), '[]'::jsonb),
     'lessons', growth_outbound.engine_lessons(),
     'sender', jsonb_build_object('name', s.sender_name, 'business_name', s.business_name, 'cta_url', s.cta_url),
     'min_research_confidence', s.min_research_confidence);
@@ -5207,12 +5222,28 @@ declare
   v_run bigint;
   v_base text := rtrim(btrim(coalesce(p_functions_base, '')), '/');
   v_why text;
+  v_gone record;
 begin
   if growth_outbound.api_origin() then
     raise exception 'the scheduler runs inside the database (pg_cron) only' using errcode = 'insufficient_privilege';
   end if;
+  -- one tick at a time (Phase 11): two ticks that overlap must not both see
+  -- "nothing running" and start a step each
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.tick'));
   update growth_outbound.research_runs set status = 'failed', finished_at = now(), error = 'never finished (the function stopped)'
    where status = 'running' and started_at < now() - interval '30 minutes';
+  -- a send handed over and never confirmed for 23 hours is marked failed, as
+  -- the send door would on a retry: never sent twice to find out (Phase 11)
+  for v_gone in
+    update growth_outbound.sends
+       set delivery_status = 'failed', failed_at = now(),
+           failure_reason = 'the first attempt''s outcome is unknown and too old to retry safely: never sent twice'
+     where delivery_status = 'claimed' and resend_message_id is null and claimed_at < now() - interval '23 hours'
+    returning id, prospect_id, claimed_at
+  loop
+    perform growth_outbound.log_as('system', 'send_abandoned', v_gone.prospect_id, 'send', v_gone.id::text,
+      jsonb_build_object('claimed_at', v_gone.claimed_at, 'by', 'the scheduler'));
+  end loop;
   -- RESULTS (Phase 10), hourly, whether or not the morning run is on: who
   -- visited, signed up, started a trial or paid; a signup ends its sequence.
   -- A failure here is recorded and never stops the tick.
@@ -5475,11 +5506,14 @@ begin
        order by x.prospect_id, x.user_id, x.pref
     ), ins as (
       insert into growth_outbound.conversions (prospect_id, stage, matched_by, account_key, occurred_at)
-      select m.prospect_id, st.stage, m.matched_by, growth_outbound.account_key('account', m.user_id::text), st.at
+      -- the account was made after the email (m), so its trial and its payment
+      -- are the email's results too; never dated before the account itself
+      -- (Stripe keeps whole seconds; the account and the email do not)
+      select m.prospect_id, st.stage, m.matched_by, growth_outbound.account_key('account', m.user_id::text), greatest(st.at, m.created_at)
         from m
         left join growth_outbound.account_stages(v_users) f on f.user_id = m.user_id
         cross join lateral (values ('signed_up', m.created_at), ('trial', f.trial_started_at), ('paid', f.paid_at)) st(stage, at)
-       where st.at is not null and st.at >= m.first_sent_at
+       where st.at is not null
       on conflict (prospect_id, stage, account_key) do nothing
       returning stage)
     select coalesce(jsonb_object_agg(stage, k), '{}'::jsonb) into v_add from (select stage, count(*) k from ins group by stage) z;
@@ -5721,34 +5755,15 @@ begin
 end
 $reevaluate$;
 
--- ── who may call the doors ───────────────────────────────────────────────────
--- Supabase grants EXECUTE on every new public function to anon, authenticated
--- and service_role; revoking from PUBLIC alone would leave those in place.
-do $grants$
-declare f regprocedure;
-begin
-  for f in select p.oid::regprocedure from pg_proc p
-            where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%' loop
-    execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
-    -- THREE PUBLIC DOORS, each refusing anything without its own proof (Resend's
-    -- signature; a send's opt-out token; a scheduled run's ticket). Every other
-    -- door: signed-in callers, and then only an owner gets past its first
-    -- statement.
-    if f::text like 'growth_outbound_webhook(%' or f::text like 'growth_outbound_optout(%' or f::text like 'growth_outbound_scheduled(%' then
-      execute format('grant execute on function %s to anon', f);
-    else
-      execute format('grant execute on function %s to authenticated', f);
-    end if;
-  end loop;
-end
-$grants$;
-revoke all on all functions in schema growth_outbound from public, anon, authenticated, service_role;
-
-notify pgrst, 'reload schema';
-
 -- =============================================================================
--- REPORT: every row should say ok.
+-- 11. THE SYSTEM CHECK (Phase 11): the report below, as a function, so the
+--     owner's console runs the very same checks the SQL editor shows — any
+--     time, not only when this file is run — plus what needs attention now.
 -- =============================================================================
+create or replace function growth_outbound.self_check()
+returns table (step int, item text, outcome text)
+language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
 select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
@@ -5968,7 +5983,108 @@ select 35, 'results: ' || (select count(distinct prospect_id) from growth_outbou
                                      from growth_outbound.scheduler where id = 1 and conversions_synced_at is not null), 'never (the tick does it hourly)'),
   case when (select conversions_error from growth_outbound.scheduler where id = 1) is null then 'ok' else 'CHECK THIS' end
 union all
+select 36, 'hardening: two batches, two ticks and two discovery runs queue instead of deadlocking; a test send is a dry run; the console runs these same checks (System check)',
+  case when pg_get_functiondef('public.growth_outbound_drafts_approve_batch(jsonb,integer)'::regprocedure) like '%order by d.id for update%'
+        and pg_get_functiondef('growth_outbound.schedule_tick(text,timestamp with time zone)'::regprocedure) like '%growth_outbound.tick%'
+        and pg_get_functiondef('public.growth_outbound_candidates_record(bigint,jsonb)'::regprocedure) like '%growth_outbound.candidates%'
+        and to_regprocedure('public.growth_outbound_health()') is not null
+       then 'ok' else 'CHECK THIS' end
+union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),
   'ok'
-order by 1;
+$$;
+
+-- What needs the owner's attention now, in words, most serious first. None
+-- of it changes anything; each says what to do.
+create or replace function growth_outbound.attention()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  with s as (select * from growth_outbound.settings where id = 1),
+  sc as (select * from growth_outbound.scheduler where id = 1),
+  live30 as (select count(*) filter (where sent_at is not null) as sent, count(*) filter (where bounced_at is not null) as bounced,
+                    count(*) filter (where complained_at is not null) as complained
+               from growth_outbound.sends where not is_test and claimed_at >= now() - interval '30 days'),
+  items(sev, code, text) as (
+    select 1, 'check_failed', 'A system check fails: ' || string_agg(c.item, '; ') || '. Run supabase/growth_outbound.sql again and read its report.'
+      from growth_outbound.self_check() c where c.outcome not like 'ok%' having count(*) > 0
+    union all
+    select 1, 'complaints', 'Spam complaints: ' || l.complained || ' of the last ' || l.sent || ' live emails (30 days). Above 1 in 1,000 mailbox providers start filtering; slow down and review who is being written to.'
+      from live30 l where l.complained > 0 and l.sent > 0 and l.complained::numeric / l.sent > 0.001
+    union all
+    select 1, 'bounces', 'Bounces: ' || l.bounced || ' of the last ' || l.sent || ' live emails (30 days, ' || round(100.0 * l.bounced / l.sent, 1) || '%). Above 4% hurts delivery for every email from the domain; check how addresses are being found and verified.'
+      from live30 l where l.sent >= 20 and l.bounced::numeric / l.sent > 0.04
+    union all
+    select 1, 'webhook_silent', 'Live emails went out in the last two days but no event from Resend arrived: bounces and complaints are not being recorded. Check the webhook in Resend (its address and signing secret).'
+      where exists (select 1 from growth_outbound.sends where not is_test and sent_at >= now() - interval '48 hours' and sent_at < now() - interval '1 hour')
+        and not exists (select 1 from growth_outbound.provider_events where outcome <> 'not_outbound' and received_at >= now() - interval '48 hours')
+    union all
+    select 2, 'stale_claims', count(*) || ' send(s) were handed over over an hour ago and never confirmed. Press Try again on them in Sends (it can never send twice); after 23 hours they are marked failed.'
+      from growth_outbound.sends where delivery_status = 'claimed' and resend_message_id is null and claimed_at < now() - interval '1 hour' having count(*) > 0
+    union all
+    select 2, 'clock_stopped', 'The morning run is on but the clock has not ticked for ' || coalesce(to_char(now() - sc.last_tick_at, 'HH24" h "MI" min"'), 'ever') || '. Run supabase/growth_outbound_cron.sql in the SQL editor (pg_cron and pg_net on).'
+      from s, sc where s.automation_enabled and (sc.last_tick_at is null or sc.last_tick_at < now() - interval '15 minutes')
+    union all
+    select 2, 'runs_failing', 'The last three morning-run steps failed (' || (select string_agg(left(coalesce(r.error, r.status), 80), '; ') from (
+             select error, status from growth_outbound.research_runs where started_by = 'schedule' order by id desc limit 3) r) || '). See Discover and research.'
+      where (select count(*) = 3 and bool_and(status = 'failed') from (
+               select status from growth_outbound.research_runs where started_by = 'schedule' order by id desc limit 3) x)
+    union all
+    select 2, 'results_error', 'Matching results failed: ' || sc.conversions_error || '. It is tried again every hour.'
+      from sc where sc.conversions_error is not null
+    union all
+    select 3, 'approved_waiting', count(*) || ' approved draft(s) have waited over three days without being sent. Send them or withdraw the approval (the facts behind them age).'
+      from growth_outbound.drafts where status = 'approved' and approved_at < now() - interval '3 days' having count(*) > 0
+    union all
+    select 3, 'blocked', 'Sending is blocked: ' || array_to_string(growth_outbound.send_blockers(), ', ') || '.'
+      where cardinality(growth_outbound.send_blockers()) > 0
+    union all
+    select 4, 'cap_raised', 'The daily send cap is ' || s.max_sends_per_day || ' (the default is 20).' from s where s.max_sends_per_day > 20
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('severity', sev, 'code', code, 'text', text) order by sev, code), '[]'::jsonb) from items;
+$$;
+
+-- THE SYSTEM CHECK DOOR. Owner only. Reads; changes nothing.
+create or replace function public.growth_outbound_health()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v_checks jsonb;
+begin
+  perform growth_outbound.require_owner();
+  select coalesce(jsonb_agg(jsonb_build_object('step', c.step, 'item', c.item, 'ok', c.outcome like 'ok%', 'outcome', c.outcome) order by c.step), '[]'::jsonb)
+    into v_checks from growth_outbound.self_check() c;
+  return jsonb_build_object('ok', true, 'checked_at', now(), 'checks', v_checks,
+    'passing', (select count(*) from jsonb_array_elements(v_checks) x where (x->>'ok')::boolean),
+    'total', jsonb_array_length(v_checks),
+    'attention', growth_outbound.attention());
+end $$;
+
+-- ── who may call the doors ───────────────────────────────────────────────────
+-- Supabase grants EXECUTE on every new public function to anon, authenticated
+-- and service_role; revoking from PUBLIC alone would leave those in place.
+do $grants$
+declare f regprocedure;
+begin
+  for f in select p.oid::regprocedure from pg_proc p
+            where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%' loop
+    execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
+    -- THREE PUBLIC DOORS, each refusing anything without its own proof (Resend's
+    -- signature; a send's opt-out token; a scheduled run's ticket). Every other
+    -- door: signed-in callers, and then only an owner gets past its first
+    -- statement.
+    if f::text like 'growth_outbound_webhook(%' or f::text like 'growth_outbound_optout(%' or f::text like 'growth_outbound_scheduled(%' then
+      execute format('grant execute on function %s to anon', f);
+    else
+      execute format('grant execute on function %s to authenticated', f);
+    end if;
+  end loop;
+end
+$grants$;
+revoke all on all functions in schema growth_outbound from public, anon, authenticated, service_role;
+
+notify pgrst, 'reload schema';
+
+-- =============================================================================
+-- REPORT: every row should say ok.
+-- =============================================================================
+select * from growth_outbound.self_check() order by 1;
