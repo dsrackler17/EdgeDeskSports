@@ -523,7 +523,7 @@
     $('pDetail').innerHTML = '<div class="card" style="margin-top:14px"><div class="otitle">' + esc(row.title) + '</div><div class="sub">' + pill(st) + ' · ' + esc(pubName(row.publisher_id)) + ' · revision ' + esc(row.revision)
       + (row.approved_at ? ' · approved ' + when(row.approved_at) : '') + (row.sent_at ? ' · sent ' + when(row.sent_at) : '') + (row.published_url ? ' · ' + link(row.published_url, 'published copy') : '') + '</div>'
       + '<div class="row" style="margin-top:10px">' + acts + '</div>'
-      + '<h3>Export</h3><div class="row"><button class="g" data-q="docx"' + (exportable ? '' : ' disabled') + '>Download Word (.docx)</button><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
+      + '<h3>Export</h3><div class="row"><button class="g" data-q="docx"' + (exportable ? '' : ' disabled') + '>Download Word (.docx)</button><button class="g" data-q="pdf"' + (exportable ? '' : ' disabled') + '>Save as PDF</button><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
       + '<button class="g" data-q="copyhtml"' + (exportable ? '' : ' disabled') + '>Copy HTML</button><button class="g" data-q="seo"' + (exportable ? '' : ' disabled') + '>Download SEO sheet</button></div>'
       + (exportable ? '' : '<p class="note">Export unlocks once the owner approves this exact version. Use the editor’s preview until then.</p>')
       + '<h3>Tagged referral link</h3><div class="sub mono" style="overflow-wrap:anywhere">' + esc(utm) + '</div><p class="note">Every EdgeDesk link in the export carries utm_source=' + esc(row.publisher_profile ? row.publisher_profile.utm_source : 'direct') + ', utm_medium=publisher and utm_campaign=' + esc(row.campaign_code) + ': visits, sign-ups, trials and paid conversions through it appear under Performance (counts only).</p>'
@@ -565,15 +565,24 @@
           var url = window.prompt('The published article’s URL (https://…)', ''); if (url === null) return;
           r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'published', p: { url: url.trim() } });
         }
-        if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo' || q === 'docx') {
+        if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo' || q === 'docx' || q === 'pdf') {
           var ctx = exportCtx(row);
           if (q === 'docx') download(row.slug + '.docx', CE.toDocx(a, ctx), CE.DOCX_TYPE);
+          if (q === 'pdf') {
+            /* the clean standalone article in its own window, then the browser's print dialog,
+               where "Save as PDF" is the destination; opened before any await so no pop-up blocker objects */
+            var w = window.open('', '_blank');
+            if (!w) { say('qMsg', 'err', 'The browser blocked the PDF window: allow pop-ups for this page, then press Save as PDF again.'); return; }
+            w.document.open(); w.document.write(CE.toHtml(a, Object.assign({ standalone: true }, ctx))); w.document.close();
+            w.focus(); setTimeout(function () { try { w.print(); } catch (_) { /* the reader can still print from the window */ } }, 400);
+          }
           if (q === 'md') download(row.slug + '.md', CE.toMarkdown(a, Object.assign({ frontMatter: true }, ctx)), 'text/markdown');
           if (q === 'html') download(row.slug + '.html', CE.toHtml(a, Object.assign({ standalone: true }, ctx)), 'text/html');
           if (q === 'copyhtml') copy(CE.toHtml(a, ctx), 'qMsg');
           if (q === 'seo') download(row.slug + '-seo.txt', CE.seoSheet(a, row.opportunity), 'text/plain');
           await rpc('content_engine_log', { p_kind: 'exported', p_detail: { as: q, revision: row.revision, content_hash: row.content_hash }, p_article: id });
-          if (q !== 'copyhtml') say('qMsg', 'ok', 'Exported revision ' + row.revision + '.');
+          if (q === 'pdf') say('qMsg', 'ok', 'Opened revision ' + row.revision + ' to print: choose “Save as PDF” as the destination.');
+          else if (q !== 'copyhtml') say('qMsg', 'ok', 'Exported revision ' + row.revision + '.');
           return;
         }
         if (r && r.ok === false) { say('qMsg', 'err', 'Not done: ' + (r.detail || r.reason)); return; }
@@ -607,7 +616,7 @@
     /* 1 — send it yourself: the editable Word file, then one click to record it */
     var self = '<div class="card" style="background:var(--bg)"><div class="otitle" style="font-size:14px">Send it yourself</div>'
       + '<p class="note" style="margin:6px 0 10px">Download the Word file and email it to ' + esc(who) + ' from your own inbox; they can touch it up in Word or Google Docs. It keeps the tagged EdgeDesk link and the disclaimer, and its last page (for the editor, not for publication) has the SEO details. Then mark it sent here.</p>'
-      + '<div class="row"><button data-q="docx" type="button">Download Word file</button>'
+      + '<div class="row"><button data-q="docx" type="button">Download Word file</button><button class="g" data-q="pdf" type="button" title="opens the article’s print view: choose Save as PDF">Save as PDF</button>'
       + '<div class="f" style="max-width:240px;flex:0 1 240px"><label for="qMethod">How you sent it</label><select id="qMethod">'
       + [['manual_email', 'I emailed it myself'], ['shared_document', 'I shared a document'], ['cms_upload', 'I uploaded it to their CMS'], ['other', 'Some other way']].map(function (m) { return '<option value="' + m[0] + '">' + esc(m[1]) + '</option>'; }).join('')
       + '</select></div><button class="g" data-q="sent" type="button">Mark as sent</button></div></div>';
