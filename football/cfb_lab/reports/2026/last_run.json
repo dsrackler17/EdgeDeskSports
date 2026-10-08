@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-08T03:07:25.000Z",
+ "started_at": "2026-10-08T04:07:26.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,12 +7,12 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 0
+   "ms": 1
   },
   "supabase_pull": {
    "ok": true,
    "quotes": 0,
-   "ms": 791
+   "ms": 894
   },
   "market": {
    "ok": true,
@@ -20,7 +20,7 @@
     "espn": {
      "days": 12,
      "errors": [],
-     "candidates": 272,
+     "candidates": 347,
      "schema": {
       "rejected_payloads": 0,
       "rejected_events": 0,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-08T03:07:25.000Z",
+      "last_success_at": "2026-10-08T04:07:26.000Z",
       "last_failure_at": null,
-      "calls": 6383,
+      "calls": 6406,
       "failures": 0
      }
     },
@@ -59,8 +59,8 @@
       "cfb_market_quote_integrity_v1",
       "cfb_market_outlier_v1"
      ],
-     "candidates": 1776,
-     "accepted": 1776,
+     "candidates": 1851,
+     "accepted": 1851,
      "rejected": 0,
      "quarantined": 0,
      "quarantine_written": 0,
@@ -69,54 +69,281 @@
     }
    },
    "dedupe": {
-    "received": 1776,
-    "written": 13,
-    "duplicates": 1763,
+    "received": 1851,
+    "written": 84,
+    "duplicates": 1767,
     "refused": 0,
     "refusals": {}
    },
-   "written": 13,
+   "written": 84,
    "conflicts": [],
-   "schedule_games": 68,
-   "ms": 1479
+   "schedule_games": 120,
+   "ms": 1428
   },
   "freeze_import": {
    "ok": true,
    "files": 2,
    "imported": 0,
    "skipped": [],
-   "ms": 318
+   "ms": 383
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-08T03:07:25.000Z",
+   "now": "2026-10-08T04:07:26.000Z",
    "season": 2026,
-   "due": 3,
-   "taken": 3,
+   "due": 1,
+   "taken": 1,
    "skipped_no_projection": 0,
    "by_model": {
-    "edgedesk_cfb_p4_v1.0.0": 1,
-    "edgedesk_cfb_v2.1.0": 1,
-    "edgedesk_cfb_v2.0.0": 1
+    "edgedesk_cfb_p4_v1.0.0": 1
    },
    "by_checkpoint": {
-    "T72": 3
+    "OPEN": 1
    },
    "skipped_schedule": {},
-   "kickoff_moved": [],
+   "kickoff_moved": [
+    {
+     "game_id": "401856719",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401856720",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401856721",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401856722",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:30:00.000Z"
+    },
+    {
+     "game_id": "401856723",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401856724",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401856726",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:00:00.000Z"
+    },
+    {
+     "game_id": "401856809",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:30:00.000Z"
+    },
+    {
+     "game_id": "401856828",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401856829",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401856830",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401856831",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:30:00.000Z"
+    },
+    {
+     "game_id": "401856832",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:00:00.000Z"
+    },
+    {
+     "game_id": "401858261",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401858263",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:00:00.000Z"
+    },
+    {
+     "game_id": "401858264",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401858265",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:30:00.000Z"
+    },
+    {
+     "game_id": "401858266",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401858267",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401858268",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401858488",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401858489",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:30:00.000Z"
+    },
+    {
+     "game_id": "401858491",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401862803",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T17:00:00.000Z"
+    },
+    {
+     "game_id": "401862804",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-18T00:00:00.000Z"
+    },
+    {
+     "game_id": "401862805",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T20:30:00.000Z"
+    },
+    {
+     "game_id": "401862806",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:00:00.000Z"
+    },
+    {
+     "game_id": "401864521",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-18T02:30:00.000Z"
+    },
+    {
+     "game_id": "401866441",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401866442",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T17:00:00.000Z"
+    },
+    {
+     "game_id": "401866443",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T17:30:00.000Z"
+    },
+    {
+     "game_id": "401866444",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401866445",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-18T02:00:00.000Z"
+    },
+    {
+     "game_id": "401866478",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T19:30:00.000Z"
+    },
+    {
+     "game_id": "401869934",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T23:00:00.000Z"
+    },
+    {
+     "game_id": "401869957",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T16:00:00.000Z"
+    },
+    {
+     "game_id": "401869966",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-17T21:00:00.000Z"
+    },
+    {
+     "game_id": "401871091",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-17T04:00:00.000Z",
+     "to": "2026-10-18T00:00:00.000Z"
+    }
+   ],
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 1233
+   "ms": 1511
   },
   "audit": {
    "ok": true,
    "events": 0,
-   "ms": 1
+   "ms": 0
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-08T03:07:25.000Z",
+   "now": "2026-10-08T04:07:26.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -132,9 +359,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-08T03:07:25.000Z",
+     "last_success_at": "2026-10-08T04:07:26.000Z",
      "last_failure_at": null,
-     "calls": 278,
+     "calls": 279,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -145,14 +372,14 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-08T03:07:25.000Z",
+     "last_success_at": "2026-10-08T04:07:26.000Z",
      "last_failure_at": null,
-     "calls": 6394,
+     "calls": 6417,
      "failures": 0
     }
    },
    "readings": [
-    61,
+    62,
     390
    ],
    "results": 1,
@@ -162,54 +389,54 @@
     "derived": 14,
     "written": 14,
     "conflicts": [],
-    "waiting_for_result": 1
+    "waiting_for_result": 0
    },
    "evaluations": 26,
-   "miss_reviews": 0,
-   "ms": 1716
+   "miss_reviews": 1,
+   "ms": 1253
   },
   "report": {
    "ok": true,
-   "now": "2026-10-08T03:07:25.000Z",
+   "now": "2026-10-08T04:07:26.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 0,
-   "public_graded": 61,
-   "ms": 265
+   "public_graded": 62,
+   "ms": 262
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 659
+   "ms": 770
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-08T03:07:25.000Z",
+  "at": "2026-10-08T04:07:26.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 3237
+   "upcoming_quotes": 3291
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 1.62,
+   "age_h": 0.06,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 16.33,
+   "age_h": 17.33,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
-  "results_newest": "2026-10-08T03:07:25.000Z"
+  "results_newest": "2026-10-08T04:07:26.000Z"
  },
- "finished_at": "2026-10-08T03:07:32.188Z",
+ "finished_at": "2026-10-08T04:07:32.801Z",
  "ok": true
 }
