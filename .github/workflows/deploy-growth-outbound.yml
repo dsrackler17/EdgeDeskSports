@@ -6,6 +6,9 @@
 #                            one-click endpoint (a GET changes nothing)
 #   growth_outbound_research the research engine: finds, reads and verifies
 #                            (never approves or sends); the owner presses it
+#   growth_outbound_draft    the drafting engine: writes drafts the database
+#                            accepts into the review queue (never approves or
+#                            sends); the owner presses it
 #
 # MANUAL ON PURPOSE (workflow_dispatch). Shipping the code that can send email
 # to real people is a decision a person makes. This workflow never touches the
@@ -32,6 +35,8 @@
 #   BRAVE_SEARCH_API_KEY, HUNTER_API_KEY, ANTHROPIC_API_KEY   (the research
 #                    function; each optional: without one, that provider is
 #                    said to be not set up and nothing is faked)
+#   ANTHROPIC_API_KEY (the drafting function too; without it, every draft is
+#                    the template)
 # None of the three holds a service-role key, and none needs one. The webhook
 # signing secret is NOT a function secret: it lives in the database
 # (select growth_outbound.set_webhook_secret('whsec_...'), in the SQL editor).
@@ -66,6 +71,7 @@ jobs:
           node tools/growth/outbound_send.test.js
           node tools/growth/outbound_events.test.js
           OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_research.test.js
+          OUTBOUND_PG_REQUIRED=1 node tools/growth/outbound_draft.test.js
 
       - name: Check the credentials exist before claiming anything
         id: creds
@@ -77,7 +83,7 @@ jobs:
           echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
           echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
           if [ -z "$TOKEN" ] || [ -z "$REF" ]; then
-            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the outbound functions cannot be deployed from CI. Deploy them from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt (and growth_outbound_webhook, growth_outbound_optout, growth_outbound_research)"
+            echo "::error::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — the outbound functions cannot be deployed from CI. Deploy them from a terminal instead: supabase functions deploy growth_outbound_send --no-verify-jwt (and growth_outbound_webhook, growth_outbound_optout, growth_outbound_research, growth_outbound_draft)"
             exit 1
           fi
 
@@ -86,12 +92,12 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy the outbound functions (send, webhook, opt-out, research)
+      - name: Deploy the outbound functions (send, webhook, opt-out, research, draft)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
-          for fn in growth_outbound_send growth_outbound_webhook growth_outbound_optout growth_outbound_research; do
+          for fn in growth_outbound_send growth_outbound_webhook growth_outbound_optout growth_outbound_research growth_outbound_draft; do
             supabase functions deploy "$fn" \
               --project-ref "$PROJECT_REF" \
               --no-verify-jwt

@@ -43,7 +43,7 @@
 
   var S = null, OWNER = false, LOADED = false, SETTINGS = null, DETAIL = null, CATALOG = null;
   var QUEUE = 'pending_review', QROWS = [], PICKED = {};
-  var CSTATUS = 'new', BUSY = false;
+  var CSTATUS = 'new', BUSY = false, WRITING = false;
   var BLOCKERS = {
     postal_address_missing: 'no postal address is configured (required in every commercial email)',
     unsubscribe_endpoint_missing: 'the opt-out endpoint is not configured yet',
@@ -85,7 +85,7 @@
                ['min_role_confidence', 'num', 'Minimum role confidence'], ['min_research_confidence', 'num', 'Minimum research confidence'],
                ['min_email_confidence', 'num', 'Minimum email confidence']]],
     ['Follow-ups', [['followup_enabled', 'bool', 'Follow-up 1 (still needs your approval)'], ['followup_delay_days', 'int', 'Days before follow-up 1', 2, 30],
-                    ['final_followup_enabled', 'bool', 'Final follow-up'], ['final_followup_delay_days', 'int', 'Days before the final follow-up', 3, 60]]],
+                    ['final_followup_enabled', 'bool', 'Final follow-up'], ['final_followup_delay_days', 'int', 'Days after follow-up 1 before the final one', 3, 60]]],
     ['Sender and compliance', [['sender_name', 'text', 'Sender name'], ['sender_email', 'email', 'Sender email (@edgedesksports.com)'],
                                ['reply_to_email', 'email', 'Reply-to (@edgedesksports.com, optional)'], ['cta_url', 'text', 'Call-to-action URL (edgedesksports.com)'],
                                ['business_name', 'text', 'Business name in the footer'], ['postal_address', 'text', 'Postal address in the footer (required to send)'],
@@ -190,7 +190,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadQueue(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadQueue(), loadDrafting(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -399,10 +399,10 @@
       }).join('') : '<tr><td colspan="6" class="dim">No identifiers.</td></tr>') + '</table></div>'
       + '<div class="note">An email address or a profile names one prospect. "Not theirs" releases it from this person (kept on the record) so it can belong to someone else.</div>';
 
-    h += '<h3>Drafts</h3><div class="tw"><table><tr><th>Step</th><th>Subject</th><th>Status</th><th class="r">Claims cited</th></tr>'
+    h += '<h3>Drafts</h3><div class="tw"><table><tr><th>Step</th><th>Subject</th><th>By</th><th>Status</th><th class="r">Claims cited</th></tr>'
       + ((d.drafts || []).length ? d.drafts.map(function (x) {
-        return '<tr><td>' + esc(x.sequence_number) + '</td><td class="wrap">' + esc(clip(x.subject, 150)) + '</td><td>' + esc(x.status) + '</td><td class="r">' + esc((x.claims || []).length) + '</td></tr>';
-      }).join('') : '<tr><td colspan="4" class="dim">No drafts yet.</td></tr>') + '</table></div>';
+        return '<tr><td>' + esc(x.sequence_number) + '</td><td class="wrap">' + esc(clip(x.subject, 150)) + '</td><td>' + esc(writer(x)) + '</td><td>' + esc(x.status) + '</td><td class="r">' + esc((x.claims || []).length) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="dim">No drafts yet.</td></tr>') + '</table></div>';
 
     var citeable = current.filter(function (e) { return e.field_name !== 'email'; });
     h += '<h3>Write a draft</h3><div class="row">'
@@ -414,8 +414,11 @@
           + citeable.map(function (e) { return '<option value="' + esc(e.id) + '">#' + esc(e.id) + ' ' + esc(label(EV_FIELDS, e.field_name)) + ': ' + esc(clip(e.claim, 60)) + '</option>'; }).join('')
           + '</select></div><div class="f"><label for="wdTxt' + i + '">…in the email\'s exact words</label><input id="wdTxt' + i + '" maxlength="300"></div></div>';
       }).join('')
-      + '<div class="row" style="margin-top:8px"><span class="sp"></span><button type="button" id="wdCreate">Put it in the review queue</button></div><div class="msg" id="wdMsg"></div>'
-      + '<div class="note">Each thing the email says about them must be in its words and rest on current evidence; a real prospect\'s email says at least one. No promised winnings or locks, $49.99/month, a 7-day free trial, links to edgedesksports.com only.</div>';
+      + '<div class="row" style="margin-top:8px"><span class="sp"></span>'
+      + (p.status === 'suppressed' || p.status === 'rejected' ? '' : '<button type="button" class="g" id="wdEngine" title="The drafting engine writes this step from what can be cited; it waits in the review queue for you">Let the engine write it</button>')
+      + '<button type="button" id="wdCreate">Put it in the review queue</button></div><div class="msg" id="wdMsg"></div>'
+      + '<div class="note">Each thing the email says about them must be in its words and rest on current evidence; a real prospect\'s email says at least one. No promised winnings or locks, $49.99/month, a 7-day free trial, links to edgedesksports.com only.'
+      + ' The engine is held to more: only facts sure enough on their own, nothing specific it cannot cite, and their first name only when the evidence establishes it.</div>';
 
     h += '<div class="row" style="margin-top:12px"><span class="sp"></span>'
       + (p.status === 'suppressed' || p.status === 'rejected' ? '' : '<button type="button" class="g" id="pdResearchAgain" title="Read their pages again and record what can be quoted">Research again</button>')
@@ -568,8 +571,10 @@
     $('dvRuns').innerHTML = '<tr><th>When</th><th>What</th><th>Status</th><th>Found / read</th><th>Spent</th><th>Note</th></tr>'
       + (runs.length ? runs.map(function (r) {
         var c = r.counts || {}, sp = c.spent || {};
-        var did = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '') : (c.pages != null ? c.pages + ' page(s), ' + (c.evidence || 0) + ' fact(s)' + (c.dropped ? ', ' + c.dropped + ' dropped' : '') : '');
-        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(r.kind === 'discover' ? 'search' : 'research') + (r.input && r.input.query ? ' <span class="sub">' + esc(clip(r.input.query, 60)) + '</span>' : '') + '</td>'
+        var did = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '')
+          : r.kind === 'draft' ? (c.drafted != null ? c.drafted + ' drafted' + (c.not_drafted ? ', ' + c.not_drafted + ' not' : '') : '')
+          : (c.pages != null ? c.pages + ' page(s), ' + (c.evidence || 0) + ' fact(s)' + (c.dropped ? ', ' + c.dropped + ' dropped' : '') : '');
+        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(r.kind === 'discover' ? 'search' : r.kind === 'draft' ? 'drafting' : 'research') + (r.input && r.input.query ? ' <span class="sub">' + esc(clip(r.input.query, 60)) + '</span>' : '') + '</td>'
           + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td><td>' + esc(did) + '</td>'
           + '<td>' + esc(Object.keys(sp).map(function (k) { return k + ' ' + sp[k]; }).join(', ')) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
       }).join('') : '<tr><td colspan="6">No research has run yet.</td></tr>');
@@ -684,6 +689,85 @@
     }, function (e) { fail('dvMsg', e); });
   }
 
+  /* ── the drafting engine (Phase 8) ────────────────────────────────── */
+  var DRAFT_WHY = {
+    not_installed: 'The drafting function is not deployed yet: deploy supabase/functions/growth_outbound_draft (docs/growth-outbound.md, Phase 8).',
+    too_many_running: 'Three engine runs are already going; wait for one to finish.',
+    nothing_due: 'Nobody is due a draft right now.',
+    no_citeable_fact: 'no fact about them is sure enough to cite on its own; research them further',
+    not_drafted: 'neither Claude nor the template wrote a draft the database accepts (it is left alone for a week, unless new evidence arrives)',
+    not_found: 'that prospect is no longer there'
+  };
+  function draftWhy(r) { return (r && r.reason === 'not_due' && r.detail) ? 'not due: ' + r.detail : DRAFT_WHY[r && (r.reason || r.code)] || (r && (r.detail || r.reason)) || 'it could not be done'; }
+  function paintDrafting(prov, ov) {
+    ov = ov || {};
+    var dc = ov.due_counts || {}, st = (ov.stats || {}).engine, tp = (ov.stats || {}).template, b = ov.llm_budget;
+    var due = (dc.first || 0) + (dc.followup || 0) + (dc.final || 0);
+    var chips = prov
+      ? (prov.llm ? '<span class="chip ok" data-prov="writing">Writing: Claude · ' + used(b) + ' today</span>'
+                  : '<span class="chip off" data-prov="writing">Writing: the template only (ANTHROPIC_API_KEY not set)</span>')
+      : '<span class="chip off" data-prov="writing">The drafting function is not deployed: deploy supabase/functions/growth_outbound_draft (docs/growth-outbound.md, Phase 8)</span>';
+    chips += '<span class="chip" data-due="' + due + '">Due: ' + esc(dc.first || 0) + ' first email' + (dc.first === 1 ? '' : 's') + ', ' + esc((dc.followup || 0) + (dc.final || 0)) + ' follow-up' + ((dc.followup || 0) + (dc.final || 0) === 1 ? '' : 's') + '</span>';
+    var all = function (x) { return x ? x.drafts || 0 : 0; }, sum = function (k) { return (st ? st[k] || 0 : 0) + (tp ? tp[k] || 0 : 0); };
+    if (all(st) + all(tp)) {
+      chips += '<span class="chip" data-stats="engine">Engine drafts, 90 days: ' + esc(all(st) + all(tp)) + ' written · ' + esc(sum('approved_as_written')) + ' approved as written · '
+        + esc(sum('approved_after_edit')) + ' after your edit · ' + esc(sum('rejected')) + ' rejected</span>';
+    }
+    $('rqDrafting').innerHTML = chips;
+    var n = Math.min(due, 5);
+    $('rqWrite').textContent = due ? 'Write the next ' + (n === 1 ? 'draft' : n + ' drafts') : 'Write drafts';
+    $('rqWrite').disabled = WRITING || !prov || !due;
+    $('rqWrite').setAttribute('data-n', String(n));
+  }
+  function loadDrafting() {
+    if (!OWNER) return Promise.resolve();
+    return S.invoke('growth_outbound_draft', { action: 'status' }).then(function (r) {
+      if (!r || !r.providers) throw new Error('no status from the drafting function');
+      return r;
+    }).then(function (r) { paintDrafting(r.providers, r.overview); }, function () {
+      // the function is not deployed (or failing): the database can still say who is due
+      return S.rpc('growth_outbound_drafting_overview', {}).then(function (ov) { paintDrafting(null, ov); }, function (e2) {
+        if (e2 && e2.kind === 'not_installed') { $('rqDrafting').innerHTML = '<span class="chip off">The drafting engine arrives with the Phase 8 SQL: run supabase/growth_outbound.sql again.</span>'; $('rqWrite').disabled = true; return; }
+        throw e2;
+      });
+    });
+  }
+  function drafted(r) {
+    return 'by ' + (r.writer === 'claude' ? 'Claude' : 'the template') + (r.writer === 'template' && r.attempts && r.attempts.length
+      ? ' (' + r.attempts.filter(function (a) { return a.writer === 'claude'; }).map(function (a) { return a.error || 'Claude\'s draft was refused: ' + clip((a.problems || []).join('; '), 160); }).join('; ') + ')' : '');
+  }
+  function writeDrafts(t) {
+    if (WRITING) return Promise.resolve();
+    var msg = t.prospect_id ? 'wdMsg' : 'rqMsg';
+    WRITING = true;
+    if ($('rqWrite')) $('rqWrite').disabled = true;
+    if ($('wdEngine')) $('wdEngine').disabled = true;
+    say(msg, '', 'Writing from what can be cited, and having the database check every word — this can take a minute…');
+    return S.invoke('growth_outbound_draft', Object.assign({ action: 'draft' }, t), { timeoutMs: 150000 }).then(function (r) {
+      if (t.prospect_id) {
+        if (r && r.ok) say(msg, 'ok', 'Drafted ' + drafted(r) + '. It is in the review queue: nothing is sent until you approve it and press Send.');
+        else say(msg, 'err', 'Not drafted: ' + draftWhy(r) + (r && r.attempts && r.attempts.length ? ' — ' + clip(r.attempts.map(function (a) { return a.error || (a.problems || []).join('; '); }).join(' | '), 400) : '') + '.');
+        return;
+      }
+      if (!r || r.ok === false) { say(msg, 'err', 'Nothing was drafted: ' + draftWhy(r) + '.'); return; }
+      if (!r.results || !r.results.length) { say(msg, '', DRAFT_WHY.nothing_due); return; }
+      var not = r.results.filter(function (x) { return !x.ok; });
+      say(msg, r.drafted ? 'ok' : 'err', 'Drafted ' + r.drafted + ' of ' + r.tried + (r.by_claude || r.by_template ? ' (' + [r.by_claude ? r.by_claude + ' by Claude' : '', r.by_template ? r.by_template + ' by the template' : ''].filter(Boolean).join(', ') + ')' : '')
+        + '. ' + (r.drafted ? 'They wait below for your review; nothing is sent until you approve and press Send.' : '')
+        + (not.length ? ' Not drafted: ' + not.map(function (x) { return draftWhy(x); }).join('; ') + '.' : '') + (r.notes && r.notes.length ? ' ' + r.notes.join('; ') + '.' : ''));
+    }, function (e) {
+      if (e && e.kind === 'not_installed') say(msg, 'err', DRAFT_WHY.not_installed);
+      else if (e && e.code && DRAFT_WHY[e.code]) say(msg, 'err', DRAFT_WHY[e.code]);
+      else fail(msg, e);
+    }).then(function () {
+      WRITING = false;
+      var said = { cls: $(msg).className, text: $(msg).textContent };
+      var again = [loadQueue(), loadDrafting(), loadOverview(), loadActivity(), loadProspects()];
+      if (t.prospect_id) again.push(openProspect(t.prospect_id));
+      return Promise.all(again).then(function () { $(msg).className = said.cls; $(msg).textContent = said.text; });
+    });
+  }
+
   /* ── the review queue ─────────────────────────────────────────────── */
   function loadQueue() {
     if (!OWNER) return Promise.resolve();
@@ -703,7 +787,8 @@
     var p = c.prospect || {};
     if (c.draft.status !== 'pending_review' || (c.lint || []).length) return false;
     if (p.is_test) return true;
-    return !(p.gates || []).length && !(c.claims_missing || []).length && p.status === 'ready_for_review';
+    if (c.greeting_problem) return false;
+    return !(p.gates || []).length && !(c.claims_missing || []).length && (c.draft.sequence_number > 1 ? p.status === 'contacted' : p.status === 'ready_for_review');
   }
   function paintQueue(r) {
     $('rqSeg').querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-q') === QUEUE); });
@@ -720,7 +805,8 @@
       + '<span class="pill ' + (pv.test ? 'test' : 'bad') + '">' + (pv.test ? 'TEST' : 'LIVE') + '</span>'
       + '<button type="button" class="lnk" data-open="' + esc(p.id) + '">' + esc(p.full_name || '(name not established)') + '</button>'
       + '<span class="sub">' + esc([p.organization, 'step ' + d.sequence_number, p.fit_score == null ? 'fit —' : 'fit ' + p.fit_score].filter(Boolean).join(' · ')) + '</span>'
-      + '<span class="sp"></span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
+      + '<span class="sp"></span><span class="pill by" data-by="' + esc(writerKey(d)) + '">' + esc(writer(d)) + '</span><span class="pill st">' + esc(STATUS[p.status] || p.status) + '</span></div>';
+    if (c.greeting_problem) h += '<div class="block"><b>The greeting:</b> ' + esc(c.greeting_problem) + '. Edit it (your words are yours) or reject it.</div>';
     if (gates.length || miss.length) h += '<div class="block"><b>Not approvable yet.</b> ' + gates.concat(miss.map(function (m) { return 'the email no longer says "' + m + '"'; })).map(esc).join(' · ') + '</div>';
     if (lint.length) h += '<div class="block"><b>Breaks the content rules:</b> ' + lint.map(esc).join(' · ') + '</div>';
     h += '<div class="mail"><div class="mh"><i>From</i>' + esc(pv.from || '') + '</div>'
@@ -752,6 +838,15 @@
     return h;
   }
   function byId(id) { for (var i = 0; i < QROWS.length; i++) if (QROWS[i].draft.id === id) return QROWS[i]; return null; }
+  /* who wrote a draft: you, the engine (Claude), or its template — and whether you edited the engine's words */
+  function writerKey(d) {
+    var g = String(d.generator_version || '');
+    return /^engine:template:/.test(g) ? 'template' : /^engine:/.test(g) ? 'engine' : 'owner';
+  }
+  function writer(d) {
+    var k = writerKey(d);
+    return k === 'owner' ? 'by you' : (k === 'template' ? 'by the template' : 'by the engine') + (d.edited_by_owner ? ', edited by you' : '');
+  }
   function pickCount() {
     var n = Object.keys(PICKED).length;
     $('rqBatch').textContent = 'Approve selected (' + n + ')';
@@ -792,7 +887,8 @@
     }, function (e) { pickCount(); fail('rqMsg', e); });
   }
   function rejectOne(id) {
-    var reason = root.prompt('Reject this draft? Why (optional)?');
+    var c = byId(id), eng = c && writerKey(c.draft) !== 'owner';
+    var reason = root.prompt('Reject this draft? Why (optional)?' + (eng ? '\n\nThe drafting engine reads your reason before it writes the next ones.' : ''));
     if (reason == null) return Promise.resolve();
     return S.rpc('growth_outbound_draft_reject', { p_draft_id: id, p_reason: String(reason).trim() || null }).then(function (r) {
       if (!r || r.ok === false) { say('rqm_' + id, 'err', 'Not rejected: ' + why(r)); return; }
@@ -990,6 +1086,8 @@
       else if (b.id === 'pdReplied') replied(false);
       else if (b.id === 'pdReplyStop') replied(true);
       else if (b.id === 'wdCreate') writeDraft();
+      else if (b.id === 'wdEngine') { if (DETAIL) writeDrafts({ prospect_id: DETAIL.prospect.id, sequence_number: Number($('wdSeq').value) }); }
+      else if (b.id === 'rqWrite') writeDrafts({ next: Number(b.getAttribute('data-n')) || 5 });
       else if (b.getAttribute('data-approve')) approveOne(b.getAttribute('data-approve'));
       else if (b.getAttribute('data-reject')) rejectOne(b.getAttribute('data-reject'));
       else if (b.getAttribute('data-unapprove')) unapprove(b.getAttribute('data-unapprove'));

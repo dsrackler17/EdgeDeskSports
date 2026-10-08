@@ -77,6 +77,20 @@
     40  saving the searches and the budget; a refused budget in the database's
         words
     41  the research function not deployed: said, the queue still shown
+    42  THE DRAFTING ENGINE (Phase 8): the review queue says whether Claude
+        writes and today's use, who is due, how the engine's drafts fare;
+        opening the page drafts nothing
+    43  "Write the next N drafts": the function is asked for exactly that
+        many; what was drafted, by whom, and why not, is said; the queue
+        is reloaded
+    44  each card says who wrote it (the engine, its template, you, edited
+        by you); a greeting the evidence no longer supports blocks approval
+        and says so; a follow-up for a contacted prospect can be approved
+    45  rejecting an engine draft says the engine reads the reason
+    46  "Let the engine write it" from a prospect, for the chosen step; a
+        step not due is said in the database's words
+    47  the drafting function not deployed: said, who is due still shown,
+        the button off
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -133,7 +147,15 @@ const RESEARCH_OV = { budget: { search: { cap: 20, used: 3, left: 17 }, fetch: {
   runs: [{ id: 9, kind: 'discover', started_by: 'owner', started_at: '2026-10-07T09:00:00Z', finished_at: '2026-10-07T09:00:05Z', status: 'done',
            input: { query: 'cfb models' }, counts: { new: 5, results: 18, spent: { search: 1 } }, error: null },
          { id: 10, kind: 'research', started_by: 'owner', started_at: '2026-10-07T09:05:00Z', finished_at: '2026-10-07T09:05:40Z', status: 'failed',
-           input: { candidate_id: 70 }, counts: { pages: 0, spent: { fetch: 2 } }, error: 'robots.txt disallows it' }] };
+           input: { candidate_id: 70 }, counts: { pages: 0, spent: { fetch: 2 } }, error: 'robots.txt disallows it' },
+         { id: 11, kind: 'draft', started_by: 'owner', started_at: '2026-10-07T09:10:00Z', finished_at: '2026-10-07T09:11:00Z', status: 'done',
+           input: { next: 3 }, counts: { drafted: 2, not_drafted: 1, spent: { llm: 3 } }, error: null }] };
+const DRAFT_OV = { llm_budget: { cap: 30, used: 4, left: 26 }, due_counts: { first: 3, followup: 1, final: 0 },
+  due: [{ prospect_id: 'pc', sequence_number: 2, full_name: 'Cam Contacted', fit_score: 88 }, { prospect_id: 'p1', sequence_number: 1, full_name: 'Pat Analyst', fit_score: 89 }],
+  stats: { engine: { drafts: 6, waiting: 2, approved_as_written: 2, approved_after_edit: 1, rejected: 1, sent: 2, replied: 0 },
+           template: { drafts: 2, waiting: 1, approved_as_written: 1, approved_after_edit: 0, rejected: 0, sent: 1, replied: 0 },
+           owner: { drafts: 3, waiting: 0, approved_as_written: 0, approved_after_edit: 3, rejected: 0, sent: 3, replied: 1 } },
+  lessons: ['too long'], cadence: { followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10 }, runs: [] };
 const CANDS = [
   { id: 71, url: 'https://cfbnumbers.test', title: 'CFB Numbers', snippet: 'Ratings ' + XSS, query: 'cfb models', times_seen: 2, status: 'new', last_seen_at: '2026-10-07T09:00:00Z' },
   { id: 72, url: 'javascript:alert(1)', title: XSS, snippet: null, query: 'cfb models', times_seen: 1, status: 'new', last_seen_at: '2026-10-07T09:00:00Z' }];
@@ -160,9 +182,10 @@ const CATALOG = [{ code: 'quant_analysis', label: 'publishes quantitative sports
                  { code: 'touting', label: 'sells picks or promises winnings', points: -40, needs_evidence: false }];
 const MAILFOOT = '--\nDavis, EdgeDesk Sports\n[no postal address is set: sending is blocked until there is one]\nNot for you? Reply "stop", or opt out in one click: [your personal opt-out link is added when this is sent]';
 const card = (o) => ({
-  draft: { id: o.id, prospect_id: o.pid, sequence_number: 1, status: o.status || 'pending_review', subject: o.subject, body_text: o.body, content_hash: 'h-' + o.id, approved_at: o.status === 'approved' ? '2026-10-07T10:00:00Z' : null },
+  draft: { id: o.id, prospect_id: o.pid, sequence_number: o.seq || 1, status: o.status || 'pending_review', subject: o.subject, body_text: o.body, content_hash: 'h-' + o.id,
+    approved_at: o.status === 'approved' ? '2026-10-07T10:00:00Z' : null, generator_version: o.gen || 'owner', edited_by_owner: o.edited == null ? !o.gen : !!o.edited },
   prospect: { id: o.pid, full_name: o.name, organization: o.org || null, fit_score: o.fit == null ? null : o.fit, status: o.pstatus || 'ready_for_review', is_test: !!o.test, gates: o.gates || [], email: o.email },
-  lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [],
+  lint: o.lint || [], claims_missing: o.missing || [], claims: o.claims || [], greeting_problem: o.greeting || null,
   preview: { test: true, from: 'Davis <davis@edgedesksports.com>', to: 'owner-test@edgedesk.test', intended_recipient: o.email, subject: o.subject, body: o.body, footer: MAILFOOT } });
 const SENDS = [
   { id: 's1', draft_id: 'd7', prospect_id: 'p1', full_name: 'Pat Analyst', is_test: true, sequence_number: 1, recipient: 'owner-test@edgedesk.test', intended_recipient: 'pat@cfbnumbers.test',
@@ -181,6 +204,16 @@ const QPENDING = { ok: true, status: 'pending_review', total: 3, rows: [
   card({ id: 'd2', pid: 'p2', name: 'Lo Confidence', fit: 0, pstatus: 'needs_research', email: 'lo@maybe.test', subject: 'A lock for you', body: 'Hi, a lock.',
     gates: ['fit 0 < 80', 'identity 0.2500 < 0.90'], lint: ['promises winnings, a lock or a guarantee'], missing: ['your show'],
     claims: [{ text: 'your show', evidence_id: null, confidence: 0, evidence: null }] })] };
+const PAT_CLAIM = [{ text: 'CFB power ratings against the market', evidence_id: 9, confidence: 0.91,
+  evidence: { id: 9, field_name: 'project', claim: 'CFB power ratings against the market', source_url: 'https://cfbnumbers.test/ratings', source_kind: 'own_site', source_excerpt: 'Week 5 power ratings against the closing line', current: true, own: true } }];
+const Q8 = { ok: true, status: 'pending_review', total: 3, rows: [
+  card({ id: 'd81', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89, email: 'pat@cfbnumbers.test', subject: 'A research tool for your work', gen: 'engine:claude:p1',
+    body: 'Hi Pat,\n\nI came across your CFB power ratings against the market and wanted to reach out.', claims: PAT_CLAIM }),
+  card({ id: 'd82', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89, email: 'pat@cfbnumbers.test', subject: 'EdgeDesk Sports, for your research', gen: 'engine:template:p1', edited: true,
+    body: 'Hi Pat,\n\nI came across your work recently, in particular this: "CFB power ratings against the market".', claims: PAT_CLAIM,
+    greeting: 'the greeting names "Pat", but their established first name is "Patricia"' }),
+  card({ id: 'd83', pid: 'pc', name: 'Cam Contacted', fit: 88, seq: 2, pstatus: 'contacted', email: 'cam@contacted.test', subject: 'Following up',
+    body: 'Hi Cam,\n\nFollowing up on my note about your CFB power ratings against the market.', claims: PAT_CLAIM })] };
 const QAPPROVED = { ok: true, status: 'approved', total: 1, rows: [
   card({ id: 'd9', pid: 'p1', name: 'Pat Analyst', status: 'approved', fit: 89, email: 'pat@cfbnumbers.test', subject: 'Approved one', body: 'Hi Pat.' })] };
 const PROSPECTS = { total: 2, rows: [
@@ -235,6 +268,23 @@ const PROSPECTS = { total: 2, rows: [
         }
         return reply(400, { ok: false, reason: 'bad_request' });
       }
+      if (/functions\/v1\/growth_outbound_draft/.test(url)) {
+        const body = JSON.parse(req.postData() || '{}');
+        calls.push(['fn:growth_outbound_draft', body]);
+        if (state.draft === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
+        if (body.action === 'status') return reply(200, { ok: true, providers: { llm: true, model: 'claude-opus-5-5' }, overview: DRAFT_OV });
+        if (body.action === 'draft' && body.prospect_id) {
+          if (body.sequence_number === 2) return reply(200, { ok: false, prospect_id: body.prospect_id, sequence_number: 2, reason: 'not_due', code: 'not_due', detail: 'not due until 2026-10-12 09:00 UTC' });
+          return reply(200, { ok: true, prospect_id: body.prospect_id, sequence_number: body.sequence_number, draft_id: 'd88', writer: 'claude', status: 'ready_for_review', attempts: [], run_id: 31, llm_calls: 1, notes: [] });
+        }
+        if (body.action === 'draft') {
+          return reply(200, { ok: true, run_id: 30, asked: body.next, tried: 3, drafted: 2, by_claude: 1, by_template: 1, not_drafted: 1, llm_calls: 3, notes: [],
+            results: [{ ok: true, writer: 'claude', prospect_id: 'p1', sequence_number: 1, draft_id: 'd81' },
+              { ok: true, writer: 'template', prospect_id: 'p2', sequence_number: 1, draft_id: 'd82', attempts: [{ writer: 'claude', problems: ['"2024" comes from no cited claim'] }] },
+              { ok: false, prospect_id: 'p3', sequence_number: 2, reason: 'no_citeable_fact' }] });
+        }
+        return reply(400, { ok: false, reason: 'bad_request' });
+      }
       if (/functions\/v1\/growth_outbound_send/.test(url)) {
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_send', body, req.headers().authorization]);
@@ -263,10 +313,11 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
         if (name === 'growth_outbound_review_queue') {
           if (o.noQueue) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
-          return reply(200, body.p_status === 'approved' ? QAPPROVED : QPENDING);
+          return reply(200, body.p_status === 'approved' ? QAPPROVED : state.queue8 ? Q8 : QPENDING);
         }
         if (name === 'growth_outbound_sends') return reply(200, SENDS);
         if (name === 'growth_outbound_research_overview') return reply(200, RESEARCH_OV);
+        if (name === 'growth_outbound_drafting_overview') return reply(200, DRAFT_OV);
         if (name === 'growth_outbound_candidates') return reply(200, body.p_status === 'new' ? CANDS : []);
         if (name === 'growth_outbound_candidate_set') return reply(200, { ok: true, status: body.p_status });
         if (name === 'growth_outbound_draft_approve') return reply(200, { ok: true, draft_id: body.p_draft_id, approved_hash: body.p_content_hash });
@@ -826,6 +877,59 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('[data-research="71"]'); await settle(t.page, 700);
     chk('41 … and Research says so too', /The research function is not deployed yet/.test(await text(t.page, '#dvMsg')));
     chk('41 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 42–47. the drafting engine (Phase 8) ───────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    t.state.queue8 = true;
+    const dcalls = () => t.calls.filter((c) => c[0] === 'fn:growth_outbound_draft');
+    const cardText = (id) => text(t.page, '[data-draft="' + id + '"]');
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const info = await text(t.page, '#rqDrafting');
+    chk('42 the queue says Claude writes and today\'s use, who is due, and how the engine\'s drafts fare', /Writing: Claude · 4 \/ 30 today/.test(info)
+      && /Due: 3 first emails, 1 follow-up/.test(info) && /Engine drafts, 90 days: 8 written · 3 approved as written · 1 after your edit · 1 rejected/.test(info), info);
+    chk('42 opening the page drafts nothing', dcalls().length >= 1 && dcalls().every((c) => c[1].action === 'status'));
+    chk('42 the button offers the next ones due', (await text(t.page, '#rqWrite')) === 'Write the next 4 drafts' && !(await t.page.isDisabled('#rqWrite')));
+    chk('42 the runs table names a drafting run and what it did', /drafting/.test(await text(t.page, '#dvRuns')) && /2 drafted, 1 not/.test(await text(t.page, '#dvRuns')));
+    chk('44 each card says who wrote it', /by the engine/.test(await cardText('d81')) && /by the template, edited by you/.test(await cardText('d82')) && /by you/.test(await cardText('d83')));
+    chk('44 a greeting the evidence no longer supports: said, and it cannot be approved or selected', /The greeting: the greeting names "Pat", but their established first name is "Patricia"/.test(await cardText('d82'))
+      && await t.page.isDisabled('[data-approve="d82"]') && await t.page.isDisabled('[data-pick="d82"]'));
+    chk('44 the engine\'s draft that passes can be approved', !(await t.page.isDisabled('[data-approve="d81"]')));
+    chk('44 a follow-up for a contacted prospect can be approved', !(await t.page.isDisabled('[data-approve="d83"]')) && !(await t.page.isDisabled('[data-pick="d83"]')));
+    t.setAnswers([false]);
+    await t.page.click('[data-reject="d81"]'); await settle(t.page);
+    chk('45 rejecting an engine draft says the engine reads the reason; declining sends nothing', /The drafting engine reads your reason/.test(t.dialogs[t.dialogs.length - 1].msg)
+      && !t.calls.some((c) => c[0] === 'growth_outbound_draft_reject'), t.dialogs.slice(-1));
+    const queued = t.calls.filter((c) => c[0] === 'growth_outbound_review_queue').length;
+    await t.page.click('#rqWrite'); await settle(t.page, 900);
+    const w = dcalls().filter((c) => c[1].action === 'draft');
+    chk('43 "Write the next 4 drafts" asks the function for exactly 4', w.length === 1 && JSON.stringify(w[0][1]) === JSON.stringify({ action: 'draft', next: 4 }), w);
+    const wm = await text(t.page, '#rqMsg');
+    chk('43 … and says what was drafted, by whom, and why one was not', /Drafted 2 of 3 \(1 by Claude, 1 by the template\)\. They wait below for your review; nothing is sent until you approve and press Send\./.test(wm)
+      && /Not drafted: no fact about them is sure enough to cite on its own; research them further\./.test(wm), wm);
+    chk('43 … and the queue is reloaded', t.calls.filter((c) => c[0] === 'growth_outbound_review_queue').length > queued);
+    await t.page.evaluate(() => window.EDOutbound.open('p1')); await settle(t.page, 700);
+    chk('46 a prospect offers "Let the engine write it"', await visible(t.page, '#wdEngine'));
+    await t.page.selectOption('#wdSeq', '2'); await t.page.click('#wdEngine'); await settle(t.page, 900);
+    const e1 = dcalls().filter((c) => c[1].action === 'draft').slice(-1)[0];
+    chk('46 … for the chosen step', !!e1 && JSON.stringify(e1[1]) === JSON.stringify({ action: 'draft', prospect_id: 'p1', sequence_number: 2 }), e1);
+    chk('46 a step not due is said in the database\'s words', /Not drafted: not due: not due until 2026-10-12 09:00 UTC\./.test(await text(t.page, '#wdMsg')), await text(t.page, '#wdMsg'));
+    await t.page.selectOption('#wdSeq', '1'); await t.page.click('#wdEngine'); await settle(t.page, 900);
+    chk('46 drafted: said, and that nothing is sent until you approve it', /Drafted by Claude\. It is in the review queue: nothing is sent until you approve it and press Send\./.test(await text(t.page, '#wdMsg')), await text(t.page, '#wdMsg'));
+    chk('42 the settings say when the final follow-up goes', /Days after follow-up 1 before the final one/.test(await text(t.page, '#tabOutbound')));
+    chk('42-46 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.draft = 'missing';
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const info = await text(t.page, '#rqDrafting');
+    chk('47 the drafting function not deployed: said; who is due still shown from the database; the button off', /drafting function is not deployed/.test(info)
+      && /Due: 3 first emails, 1 follow-up/.test(info) && await t.page.isDisabled('#rqWrite') && !(await visible(t.page, '#obMsg')), info);
+    chk('47 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

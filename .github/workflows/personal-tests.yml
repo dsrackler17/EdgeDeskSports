@@ -70,6 +70,7 @@ on:
       - 'supabase/functions/growth_outbound_webhook/**'
       - 'supabase/functions/growth_outbound_optout/**'
       - 'supabase/functions/growth_outbound_research/**'
+      - 'supabase/functions/growth_outbound_draft/**'
       - 'supabase/functions/newsletter/**'
       - 'email/stop/**'
       - '.github/workflows/deploy-growth-outbound.yml'
@@ -226,6 +227,17 @@ jobs:
       # every made-up quote dropped before the database refuses it.
       - name: The research function reads politely and keeps only verified quotes
         run: node tools/growth/outbound_research.test.js
+      # The drafting engine may draft, never approve or send: every claim is
+      # the person's own cited evidence in its words, nothing specific comes
+      # from nowhere, a first name only when established, follow-ups only on
+      # the cadence (at sending too).
+      - name: The drafting engine says only what the database can cite, and greets by an established first name or none
+        run: node tools/growth/outbound_drafting_sql.test.js
+      # The deployed drafting function against the real SQL: Claude (via the
+      # SDK) mocked; a made-up detail refused and retried; the template floor;
+      # no door that approves, edits or sends.
+      - name: The drafting function writes only what the database accepts, and never approves or sends
+        run: node tools/growth/outbound_draft.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

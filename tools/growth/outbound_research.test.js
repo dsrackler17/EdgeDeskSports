@@ -38,6 +38,7 @@ const { register } = require('node:module');
 const { pathToFileURL } = require('node:url');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const INLINE = require(path.join(__dirname, 'inline_outbound_auth.js'));
+const { rpcShim, jres } = require(path.join(__dirname, '_rpc_shim.js'));
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -68,30 +69,13 @@ let LOG = [];       // every request: {url, host, headers}
 let WEB = {};       // 'https://host/path' -> {status, type, body, headers}
 let ROBOTS = {};    // origin -> {status, body}
 let BRAVE, HUNTER_DS, HUNTER_V, CLAUDE_REQS = [], RPC_OVERRIDE = null;
-const sqlVal = (v) => v === null || v === undefined ? 'null' : typeof v === 'number' || typeof v === 'boolean' ? String(v)
-  : typeof v === 'string' ? lit(v) : lit(JSON.stringify(v)) + '::jsonb';
-const jres = (status, body, headers) => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers: Object.assign({ 'content-type': 'application/json' }, headers || {}) });
+const SHIM = rpcShim(db, { url: URL_, users: { [OWNER_T]: { id: OWNER, email: 'owner@edgedesk.test' }, [ADMIN_T]: { id: ADMIN, email: 'admin@edgedesk.test' } },
+  override: () => RPC_OVERRIDE });
 globalThis.fetch = async (input, init) => {
   const url = String(input), u = new URL(url), h = Object.assign({}, (init && init.headers) || {});
   LOG.push({ url, host: u.host, headers: h, method: (init && init.method) || 'GET', redirect: init && init.redirect });
-  if (u.origin === URL_) {
-    const uid = h.authorization === 'Bearer ' + OWNER_T ? OWNER : h.authorization === 'Bearer ' + ADMIN_T ? ADMIN : null;
-    if (u.pathname === '/auth/v1/user') return uid ? jres(200, { id: uid, email: uid === OWNER ? 'owner@edgedesk.test' : 'admin@edgedesk.test' }) : jres(401, { msg: 'bad jwt' });
-    const m = /^\/rest\/v1\/rpc\/([a-z_]+)$/.exec(u.pathname);
-    if (!m) return jres(404, {});
-    const args = JSON.parse((init && init.body) || '{}');
-    if (RPC_OVERRIDE) { const o = RPC_OVERRIDE(m[1], args); if (o) return o; }
-    const sql = `select public.${m[1]}(${Object.entries(args).map(([k, v]) => k + ' => ' + sqlVal(v)).join(', ')});`;
-    try {
-      const out = uid ? db.as(uid, sql) : db.anon(sql);
-      return jres(200, out === 't' ? true : out === 'f' ? false : out === '' ? null : JSON.parse(out));
-    } catch (e) {
-      const msg = String(e.sqlMessage || e.message);
-      if (/outbound owner only/.test(msg)) return jres(403, { code: '42501', message: 'outbound owner only' });
-      if (/does not exist/.test(msg)) return jres(404, { code: 'PGRST202', message: msg.slice(0, 200) });
-      return jres(400, { message: msg.slice(0, 300) });
-    }
-  }
+  const viaDb = await SHIM(url, init);
+  if (viaDb) return viaDb;
   if (u.host === 'api.search.brave.com') return typeof BRAVE === 'function' ? BRAVE(u, h) : jres(500, {});
   if (u.host === 'api.hunter.io') {
     if (u.pathname === '/v2/domain-search') return typeof HUNTER_DS === 'function' ? HUNTER_DS(u) : jres(404, {});

@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-10-08 — Growth console: the drafting engine (outbound engine, phase 8)
+
+**The engine may draft. It may not approve or send, and it may not say anything about a person that the database cannot cite.**
+
+**`supabase/functions/growth_outbound_draft`** (new; owner only, no service-role key):
+- **what it writes from:** for each prospect due a first email or a follow-up, the database gives the facts that may be cited (each sure enough on its own to clear the research gate) and the first name only if the evidence establishes it;
+- **how it writes:** Claude (official SDK, `claude-opus-5-5`, low effort, structured output, server-side refusal fallback) writes, citing each fact it uses in that fact's own words;
+- **who decides:** the database. If it refuses, Claude gets the objections and one more try; then a plain template from the best fact, checked the same way;
+- **when nothing passes:** nothing is drafted, the reasons are recorded, and that step leaves the due list for a week;
+- it never calls a door that approves, edits or sends.
+
+**`supabase/growth_outbound.sql`** adds:
+- **`growth_outbound_draft_propose`**, the engine's only way into the review queue. Every claim must be this person's current, citeable, confident evidence, in its own words, said in the email. No figure, brand, name or capitalised detail may come from nowhere, and a sentence about them ("your …") must carry a claim. The greeting is "Hi <established first name>," or "Hi there,", never a guess. The step must be due, and the content rules hold;
+- **who is due** (`drafting_due`): first emails for qualified prospects, and follow-ups on the configured cadence;
+- **the context**, **gave-up** and **overview** doors (who is due; how the engine's drafts fare: approved as written, after your edit, rejected);
+- **at approval:** an unedited engine draft is approved only while its greeting matches the first name as the evidence stands now;
+- **at sending:** a live follow-up goes only while it is turned on, after the step before it went out (and did not bounce or fail), and once its delay has passed;
+- `research_runs.kind = 'draft'` (a drafting run spends only on Claude; the research doors refuse it), `drafts.run_id`, and report rows 30–31.
+
+**`/admin/growth/` → Outbound → Review queue:**
+- whether Claude writes, and today's use;
+- who is due, and how the engine's drafts fare;
+- **Write the next drafts**;
+- each card says who wrote it, and a greeting the evidence no longer supports blocks approval;
+- rejecting an engine draft says the engine reads your reason.
+
+A prospect gains **Let the engine write it**. Fixed: a follow-up for a contacted prospect can now be selected and approved on the page (the database always allowed it). "Claude reads / day" is now "Claude calls / day": research and drafting share it.
+
+**Tests:**
+- `outbound_drafting_sql.test.js`: 139 checks; 72 mutations, all caught except two that cannot change behaviour (explained in the docs);
+- `outbound_draft.test.js`: the deployed function against the real SQL, 66 checks; 30 mutations, all caught;
+- console e2e: 191;
+- the send suite: adds the follow-up cadence;
+- `tools/growth/_rpc_shim.js`: the PostgREST stand-in, now shared by both function tests;
+- earlier suites: all passing.
+
 ## 2026-10-07 — Growth console: discovery and research (outbound engine, phase 7)
 
 **The engine may find, read and verify. It may not approve, draft or send, and it may not make anything up.**
