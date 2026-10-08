@@ -306,7 +306,9 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.waitForSelector('#tab-gen:not(.hide)');
     await P.selectOption('#gFormat', 'nfl_weekly_preview');
     await P.click('#gDraft');
-    await P.waitForFunction(() => { const e = document.getElementById('eChecks'); return e && /all hard checks pass/.test(e.textContent) && !document.getElementById('gEditor').classList.contains('hide'); }, null, { timeout: 30000 });
+    /* the editor still shows the first article until the new draft is saved: wait for THIS one */
+    await P.waitForFunction(() => { const t = document.getElementById('eTitle'), e = document.getElementById('eChecks');
+      return t && /^NFL Week/.test(t.value) && e && /all hard checks pass/.test(e.textContent); }, null, { timeout: 30000 });
     const art3 = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where opportunity_id = '${opp2}' order by created_at desc limit 1;`));
     await P.click('#gEditor button[data-act="submit"]');
     await P.waitForFunction(() => /In review/.test(document.getElementById('eMsg').textContent), null, { timeout: 15000 });
